@@ -361,7 +361,7 @@ module cime_comp_mod
   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
-  logical  :: ocn_c2_glc             ! .true.  => ocn to glc coupling on   
+  logical  :: ocn_c2_glc             ! .true.  => ocn to glc coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
@@ -1507,7 +1507,7 @@ contains
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
-       write(logunit,F0L)'ocn_c2_glc            = ',ocn_c2_glc      
+       write(logunit,F0L)'ocn_c2_glc            = ',ocn_c2_glc
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
@@ -2025,9 +2025,9 @@ contains
        if (glc_c2_ocn) then
           call prep_ocn_calc_g2x_ox(timer='CPL:init_glc2ocn')
        endif
-       
+
        if (glcshelf_c2_ocn) then
-          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:init_glc2ocn_shelf') 
+          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:init_glc2ocn_shelf')
        endif
 
        if (rof_c2_ice) then
@@ -2038,8 +2038,8 @@ contains
        endif
 
        if (glcshelf_c2_ice) then
-          call prep_ice_shelf_calc_g2x_ix(timer='CPL:init_glc2ice_shelf') 
-       endif	
+          call prep_ice_shelf_calc_g2x_ix(timer='CPL:init_glc2ice_shelf')
+       endif
 
        if (rof_c2_lnd) then
           call prep_lnd_calc_r2x_lx(timer='CPL:init_rof2lnd')
@@ -2928,7 +2928,7 @@ contains
        !----------------------------------------------------------
 
    if (glc_present) then
-   
+
       if (ocn_c2_glc) then
          call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
       end if
@@ -2976,7 +2976,7 @@ contains
                 ! NOTE - only create appropriate input to glc if the avg_alarm is on
                 if (glcrun_avg_alarm) then
                    call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-                   
+
 		   if (lnd_c2_glc .or. ocn_c2_glc) then
                       call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                            info_debug=info_debug, timer_diag='CPL:glcprep_diagav')

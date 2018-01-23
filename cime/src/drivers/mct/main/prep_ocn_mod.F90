@@ -38,7 +38,7 @@ module prep_ocn_mod
   public :: prep_ocn_calc_i2x_ox
   public :: prep_ocn_calc_r2x_ox
   public :: prep_ocn_calc_g2x_ox
-  public :: prep_ocn_shelf_calc_g2x_ox  
+  public :: prep_ocn_shelf_calc_g2x_ox
   public :: prep_ocn_calc_w2x_ox
 
   public :: prep_ocn_get_a2x_ox
@@ -63,8 +63,8 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_SFi2o
   public :: prep_ocn_get_mapper_Rg2o_liq
   public :: prep_ocn_get_mapper_Rg2o_ice
-  public :: prep_ocn_get_mapper_Sg2o 
-  public :: prep_ocn_get_mapper_Fg2o    
+  public :: prep_ocn_get_mapper_Sg2o
+  public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
 
   !--------------------------------------------------------------------------
@@ -87,8 +87,8 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_SFi2o
   type(seq_map), pointer :: mapper_Rg2o_liq
   type(seq_map), pointer :: mapper_Rg2o_ice
-  type(seq_map), pointer :: mapper_Fg2o  
-  type(seq_map), pointer :: mapper_Sg2o   
+  type(seq_map), pointer :: mapper_Fg2o
+  type(seq_map), pointer :: mapper_Sg2o
   type(seq_map), pointer :: mapper_Sw2o
 
   ! attribute vectors
@@ -187,8 +187,8 @@ contains
     allocate(mapper_SFi2o)
     allocate(mapper_Rg2o_liq)
     allocate(mapper_Rg2o_ice)
-    allocate(mapper_Sg2o)    
-    allocate(mapper_Fg2o)    
+    allocate(mapper_Sg2o)
+    allocate(mapper_Fg2o)
     allocate(mapper_Sw2o)
 
     if (ocn_present) then
@@ -356,7 +356,7 @@ contains
        endif
        call shr_sys_flush(logunit)
 
-       if (glcshelf_c2_ocn) then !ice shelf coupled properties	   
+       if (glcshelf_c2_ocn) then !ice shelf coupled properties
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sg2o'
@@ -370,7 +370,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Fg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_fmapname:', 'glc2ocn_fmaptype:',samegrid_og, &
-               'mapper_Fg2o initialization',esmf_map_flag)	       
+               'mapper_Fg2o initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -564,14 +564,14 @@ contains
     character(CL),allocatable :: field_rof(:)   ! string converted to char
     character(CL),allocatable :: field_wav(:)   ! string converted to char
     character(CL),allocatable :: field_xao(:)   ! string converted to char
-    character(CL),allocatable :: field_glc(:)   ! string converted to char    
+    character(CL),allocatable :: field_glc(:)   ! string converted to char
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
     character(CL),allocatable :: itemc_atm(:)   ! string converted to char
     character(CL),allocatable :: itemc_ice(:)   ! string converted to char
     character(CL),allocatable :: itemc_rof(:)   ! string converted to char
     character(CL),allocatable :: itemc_wav(:)   ! string converted to char
     character(CL),allocatable :: itemc_xao(:)   ! string converted to char
-    character(CL),allocatable :: itemc_g2x(:)   ! string converted to char    
+    character(CL),allocatable :: itemc_g2x(:)   ! string converted to char
     integer, save :: index_a2x_Faxa_swvdr
     integer, save :: index_a2x_Faxa_swvdf
     integer, save :: index_a2x_Faxa_swndr
@@ -641,7 +641,7 @@ contains
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: w2x_sharedindices
     type(mct_aVect_sharedindices),save :: xao_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices    
+    type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
     character(*),parameter :: subName = '(prep_ocn_merge) '
     !-----------------------------------------------------------------------
@@ -654,7 +654,7 @@ contains
     nrflds = mct_aVect_nRattr(r2x_o)
     nwflds = mct_aVect_nRattr(w2x_o)
     nxflds = mct_aVect_nRattr(xao_o)
-    ngflds = mct_aVect_nRattr(g2x_o) 
+    ngflds = mct_aVect_nRattr(g2x_o)
 
     if (first_time) then
        index_a2x_Faxa_swvdr     = mct_aVect_indexRA(a2x_o,'Faxa_swvdr')
@@ -782,7 +782,7 @@ contains
        do kx = 1,ngflds
           field_glc(kx) = mct_aVect_getRList2c(kx, g2x_o)
           itemc_g2x(kx) = trim(field_glc(kx)(scan(field_glc(kx),'_'):))
-       enddo       
+       enddo
 
        call mct_aVect_setSharedIndices(a2x_o, x2o_o, a2x_SharedIndices)
        call mct_aVect_setSharedIndices(i2x_o, x2o_o, i2x_SharedIndices)
@@ -918,7 +918,7 @@ contains
          i1=g2x_SharedIndices%shared_real%aVindices1(i)
          o1=g2x_SharedIndices%shared_real%aVindices2(i)
          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field_glc(i1))
-      enddo      
+      enddo
     endif
 
     !    call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=mct_usevector)
@@ -931,7 +931,7 @@ contains
     call mct_aVect_copy(aVin=r2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     call mct_aVect_copy(aVin=w2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=w2x_SharedIndices)
     call mct_aVect_copy(aVin=xao_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=xao_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=g2x_SharedIndices)    
+    call mct_aVect_copy(aVin=g2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
     !--- document manual merges ---
     if (first_time) then
@@ -1441,16 +1441,16 @@ contains
     type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o_ice
     prep_ocn_get_mapper_Rg2o_ice => mapper_Rg2o_ice
   end function prep_ocn_get_mapper_Rg2o_ice
-  
+
   function prep_ocn_get_mapper_Sg2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_Sg2o
-    prep_ocn_get_mapper_Sg2o => mapper_Sg2o  
-  end function prep_ocn_get_mapper_Sg2o    
-  
+    prep_ocn_get_mapper_Sg2o => mapper_Sg2o
+  end function prep_ocn_get_mapper_Sg2o
+
   function prep_ocn_get_mapper_Fg2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_Fg2o
-    prep_ocn_get_mapper_Fg2o => mapper_Fg2o  
-  end function prep_ocn_get_mapper_Fg2o  
+    prep_ocn_get_mapper_Fg2o => mapper_Fg2o
+  end function prep_ocn_get_mapper_Fg2o
 
   function prep_ocn_get_mapper_Sw2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o

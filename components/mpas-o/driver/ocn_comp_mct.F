@@ -16,7 +16,7 @@ module ocn_comp_mct
    use seq_infodata_mod
    use seq_timemgr_mod
    use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-   use shr_file_mod 
+   use shr_file_mod
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
    use shr_pio_mod
@@ -86,8 +86,8 @@ module ocn_comp_mct
 
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
-   type(seq_infodata_type), pointer :: infodata   
-   type (iosystem_desc_t), pointer :: io_system 
+   type(seq_infodata_type), pointer :: infodata
+   type (iosystem_desc_t), pointer :: io_system
    integer :: ocnLogUnit ! unit number for ocn log
 
    !! MPAS-O Datatypes
@@ -109,7 +109,7 @@ contains
   subroutine ocn_init_mct( EClock, cdata_o, x2o_o, o2x_o, NLFilename )!{{{
 !
 ! !DESCRIPTION:
-! Initialize MPAS-O 
+! Initialize MPAS-O
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -245,7 +245,7 @@ contains
 !   set cdata pointers
 !
 !-----------------------------------------------------------------------
-    errorCode = 0 
+    errorCode = 0
 
     call seq_cdata_setptrs(cdata_o, ID=OCNID, mpicom=mpicom_o, &
          gsMap=gsMap_o, dom=dom_o, infodata=infodata)
@@ -258,7 +258,7 @@ contains
 #if (defined _MEMTRACE)
     if(iam == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ocn_init_mct:start::',lbnum) 
+        call memmon_dump_fort('memmon.out','ocn_init_mct:start::',lbnum)
     endif
 #endif
 
@@ -267,7 +267,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   initialize the model run 
+!   initialize the model run
 !
 !-----------------------------------------------------------------------
 
@@ -541,7 +541,7 @@ contains
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
     end if
-    ! Doublecheck that clocks are synced here.  
+    ! Doublecheck that clocks are synced here.
     ! (Note that if this is an initial run, a section below will advance the ocean clock
     ! by one coupling interval, at which point we expect the clocks to be OUT of sync.)
     call check_clocks_sync(domain % clock, Eclock, ierr)
@@ -559,15 +559,15 @@ contains
 
     ! Initialize mct ocn domain (needs ocn initialization info)
     call ocn_domain_mct( lsize, gsMap_o, dom_o )
-    
+
     ! Inialize mct attribute vectors
-    
+
     call mct_aVect_init(x2o_o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o_o)
-    
-    call mct_aVect_init(o2x_o, rList=seq_flds_o2x_fields, lsize=lsize) 
+
+    call mct_aVect_init(o2x_o, rList=seq_flds_o2x_fields, lsize=lsize)
     call mct_aVect_zero(o2x_o)
-    
+
     nsend = mct_avect_nRattr(o2x_o)
     nrecv = mct_avect_nRattr(x2o_o)
 
@@ -670,7 +670,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ocn_export_mct(o2x_o, errorCode)  
+    call ocn_export_mct(o2x_o, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('ERROR in ocn_export_mct', MPAS_LOG_CRIT)
     endif
@@ -702,7 +702,7 @@ contains
     timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
     call mpas_get_timeInterval(timeStep, dt=dt)
 
-    call ocn_import_mct(x2o_o, errorCode)  
+    call ocn_import_mct(x2o_o, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
     endif
@@ -770,7 +770,7 @@ contains
 #if defined (_MEMTRACE)
     if(iam  == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ocn_init_mct:end::',lbnum) 
+        call memmon_dump_fort('memmon.out','ocn_init_mct:end::',lbnum)
         call memmon_reset_addr()
     endif
 #endif
@@ -843,7 +843,7 @@ contains
 #ifdef MPAS_DEBUG
       debugOn = .true.
 #endif
- 
+
       domain_ptr => domain
 
       ! Set MPAS Log module instance
@@ -977,12 +977,12 @@ contains
          end do
 
          if (debugOn) call mpas_log_write('   Computing analysis members')
-         call ocn_analysis_compute(domain_ptr, ierr) 
+         call ocn_analysis_compute(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write( '   Finished computing analysis members')
             call mpas_log_write('   Preparing analysis members for restart')
          endif
-         call ocn_analysis_restart(domain_ptr, ierr) 
+         call ocn_analysis_restart(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished preparing analysis members for restart')
             call mpas_log_write('   Writing analysis member output')
@@ -1203,7 +1203,7 @@ contains
 
     integer :: i, n, lsize, gsize, ier
 
-    type (block_type), pointer :: block_ptr 
+    type (block_type), pointer :: block_ptr
     type (mpas_pool_type), pointer :: meshPool
 
     integer, dimension(:), pointer :: indexToCellID
@@ -1271,7 +1271,7 @@ contains
 
     integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(in)    :: gsMap_o
-    type(mct_ggrid), intent(inout) :: dom_o     
+    type(mct_ggrid), intent(inout) :: dom_o
 
 !EOP
 !BOC
@@ -1322,19 +1322,19 @@ contains
 
 !-------------------------------------------------------------------
 !
-! Determine domain 
+! Determine domain
 ! Initialize attribute vector with special value
 !
 !-------------------------------------------------------------------
 
-    data(:) = -9999.0_R8 
-    call mct_gGrid_importRAttr(dom_o,"lat"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"lon"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"area" ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"aream",data,lsize) 
-    data(:) = 1.0_R8     
-    call mct_gGrid_importRAttr(dom_o,"mask",data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"frac",data,lsize) 
+    data(:) = -9999.0_R8
+    call mct_gGrid_importRAttr(dom_o,"lat"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"lon"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"area" ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"aream",data,lsize)
+    data(:) = 1.0_R8
+    call mct_gGrid_importRAttr(dom_o,"mask",data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"frac",data,lsize)
 
 !-------------------------------------------------------------------
 !
@@ -1355,10 +1355,10 @@ contains
           n = n + 1
           data(n) = lonCell(i) * r2d
        end do
-       
+
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"lon",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"lon",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1375,7 +1375,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"lat",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"lat",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1393,7 +1393,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"area",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"area",data,lsize)
 
     ! Build mask and frac based on landIceMask
     block_ptr => domain % blocklist
@@ -1422,8 +1422,8 @@ contains
        block_ptr => block_ptr % next
     end do
 
-    call mct_gGrid_importRattr(dom_o,"mask",data,lsize) 
-    call mct_gGrid_importRattr(dom_o,"frac",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"mask",data,lsize)
+    call mct_gGrid_importRattr(dom_o,"frac",data,lsize)
 
     deallocate(data)
     deallocate(idata)
@@ -1446,7 +1446,7 @@ contains
 !  This routine receives message from cpl7 driver
 !
 !    The following fields are always received from the coupler:
-! 
+!
 !    o  taux   -- zonal wind stress (taux)                 (W/m2   )
 !    o  tauy   -- meridonal wind stress (tauy)             (W/m2   )
 !    o  snow   -- water flux due to snow                   (kg/m2/s)
@@ -1462,15 +1462,15 @@ contains
 !    o  ifrac  -- ice fraction                             (%)
 !    o  rofl   -- river runoff flux                        (kg/m2/s)
 !    o  rofi   -- ice runoff flux                          (kg/m2/s)
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  pbot   -- bottom atm pressure                      (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -1496,7 +1496,7 @@ contains
    character (len=StrKIND) ::   &
       label,                 &
       message
- 
+
    integer ::  &
       i,n
 
@@ -1591,10 +1591,10 @@ contains
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
                                                  iceFluxDOC
-   
-!----------------------------------------------------------------------- 
+
+!-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
 
@@ -1889,7 +1889,7 @@ contains
               iceFluxDMS(i) = x2o_o % rAttr(index_x2o_Fioi_dms, n)
            endif
            if ( iceFluxDMSPField % isActive ) then
-              !JW TODO: dmspp? dmspd? the sum? 
+              !JW TODO: dmspp? dmspd? the sum?
               iceFluxDMSP(i) = x2o_o % rAttr(index_x2o_Fioi_dmspp, n)
            endif
          endif
@@ -1926,7 +1926,7 @@ contains
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTemperature', landIceInterfaceTemperatureField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceSalinity', landIceInterfaceSalinityField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
-   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)	  
+   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
 
    ! BGC fields
    if (config_use_ecosysTracers) then
@@ -2013,7 +2013,7 @@ contains
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
    end if
-   
+
    if ( landIceFreshwaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
    end if
@@ -2156,7 +2156,7 @@ contains
                                                avgOceanSurfaceDOCr, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
- 
+
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
@@ -2326,7 +2326,7 @@ In file "../ACME_ice_ocean_coupling_hookup_CIME/components/mpas-o/driver//ocn_co
        o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
        o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
        o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
-     
+
        !Fyke: test
        !write(stderrUnit,*) 'n=',n
        !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_blt, n)=',o2x_o % rAttr(index_o2x_So_blt, n)
@@ -2436,7 +2436,7 @@ In file "../ACME_ice_ocean_coupling_hookup_CIME/components/mpas-o/driver//ocn_co
       else
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
-     
+
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)

@@ -1414,7 +1414,7 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)	
+         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
@@ -1436,8 +1436,8 @@ contains
             g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
             g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
-            g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G	    
-	    
+            g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+
 	    !!!Mask configurations
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
             ! Sg_icemask should be 1 in locations where GLC will use a SMB value
@@ -1502,10 +1502,10 @@ contains
       character (len=StrKIND), intent(out) :: timeStamp
       real (kind=RKIND) :: secondsPerHour, secondsPerMinute, remaining
       integer :: minutes, hours, secondsLeft
-   
+
       secondsPerHour = 3600
       secondsPerMinute = 60
-   
+
       if(seconds < 0 .or. seconds > 86400) then
         secondsLeft = 00
         minutes = 00
@@ -1513,16 +1513,16 @@ contains
       else
         hours = int(seconds/secondsPerHour)
         remaining = seconds - real(hours) * secondsPerHour
-   
+
         minutes = int(remaining/secondsPerMinute)
         remaining = remaining - real(minutes) * secondsPerMinute
-   
+
         secondsLeft = int(remaining)
       end if
-   
+
       write(timeStamp,"(a,i2.2,a,i2.2,a,i2.2)") "00_",hours,":",minutes,":",secondsLeft
       timeStamp = trim(timeStamp)
-   
+
    end subroutine convert_seconds_to_timestamp!}}}
 
    subroutine add_stream_attributes(stream_manager, domain)!{{{

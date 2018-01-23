@@ -1,5 +1,5 @@
 module glc_cpl_indices
-  
+
   use seq_flds_mod
   use mct_mod
 !  use glc_constants, only : glc_nec, glc_smb  ! TODO Will these be needed?  If so, need to add MPAS version
@@ -16,7 +16,7 @@ module glc_cpl_indices
 
   integer, public :: index_x2g_Flgl_qice = 0 !Ice sheet surface mass balance
   integer, public :: index_x2g_Sl_tsrf   = 0 !Ice sheet upper surface boundary temperature
-  
+
   integer, public :: index_x2g_So_blt    = 0 !Ice shelf boundary layer ocean temperature
   integer, public :: index_x2g_So_bls    = 0 !Ice shelf boundary layer ocean salinity
   integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
@@ -42,7 +42,7 @@ module glc_cpl_indices
   integer, public :: index_g2x_Sg_icemask_grounded = 0 !grounded mask
   integer, public :: index_g2x_Sg_icemask_floating = 0 !floating mask
   integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0 !ice mask for coupled fluxes
-  
+
 contains
 
   subroutine glc_cpl_indices_set( )
@@ -50,7 +50,7 @@ contains
     !-------------------------------------------------------------
     type(mct_aVect)   :: g2x      ! temporary
     type(mct_aVect)   :: x2g      ! temporary
-    integer           :: num 
+    integer           :: num
     character(len= 2) :: cnum
     character(len=64) :: name
     !-------------------------------------------------------------
@@ -63,8 +63,8 @@ contains
     !Following block are input boundary conditions for ice sheet model
     index_x2g_Flgl_qice =                 mct_avect_indexra(x2g,'Flgl_qice',perrwith='quiet')
     ! surface mass balance (kg/m^2/s)
-    
-    index_x2g_Sl_tsrf =                   mct_avect_indexra(x2g,'Sl_tsrf',perrwith='quiet')    
+
+    index_x2g_Sl_tsrf =                   mct_avect_indexra(x2g,'Sl_tsrf',perrwith='quiet')
     ! Surface temperature (deg C)
 
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
@@ -80,25 +80,25 @@ contains
     index_g2x_Sg_tbot =                   mct_avect_indexra(g2x,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot =                 mct_avect_indexra(g2x,'Sg_dztbot',perrwith='quiet')
     index_g2x_Sg_lithop =                 mct_avect_indexra(g2x,'Sg_lithop',perrwith='quiet')
-    
-    !Following block are GLC outputs for other components.  
 
-    index_g2x_Fogg_rofi =                 mct_avect_indexra(g2x,'Fogg_rofi',perrwith='quiet')    
+    !Following block are GLC outputs for other components.
+
+    index_g2x_Fogg_rofi =                 mct_avect_indexra(g2x,'Fogg_rofi',perrwith='quiet')
     ! solid ice runoff to OCN  (kg/m^2/s = mm H2O/s) (flux: time-average)
-    
-    index_g2x_Figg_rofi =                 mct_avect_indexra(g2x,'Figg_rofi',perrwith='quiet')    
+
+    index_g2x_Figg_rofi =                 mct_avect_indexra(g2x,'Figg_rofi',perrwith='quiet')
     ! solid ice runoff to ICE  (kg/m^2/s = mm H2O/s) (flux: time-average)
-    
+
     index_g2x_Fogg_rofl =                 mct_avect_indexra(g2x,'Fogg_rofl',perrwith='quiet')
     ! liquid runoff to OCN  (kg/m^2/s = mm H2O/s) (flux: time-average)
-    
-    index_g2x_Sg_topo =                   mct_avect_indexra(g2x,'Sg_topo',perrwith='quiet')    
+
+    index_g2x_Sg_topo =                   mct_avect_indexra(g2x,'Sg_topo',perrwith='quiet')
     ! surface elevation (m), current snapshot
-    
+
     index_g2x_Flgg_hflx =                 mct_avect_indexra(g2x,'Flgg_hflx',perrwith='quiet')
     ! ice surface heat flux (W/m^2, positive down), time average
-    
-    index_g2x_Sg_icemask =                mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')    
+
+    index_g2x_Sg_icemask =                mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')
     ! mask of ice sheet grid coverage (state: current snapshot)
     ! This mask (0 or 1) defines where the ice sheet model is able to handle
     ! surface mass balance, i.e., where there is ice (grounded or floating)
@@ -115,7 +115,7 @@ contains
     ! 'rework.)  This mask is used by the coupler to determine where to send
     ! ice sheet landunit SMB vs. bare land landunit SMB.  This mask is used by
     ! CLM to differentiate bare land and ice sheet landunit types.
-    
+
     index_g2x_Sg_icemask_grounded =       mct_avect_indexra(g2x,'Sg_icemask_grounded',perrwith='quiet')
     index_g2x_Sg_icemask_floating =       mct_avect_indexra(g2x,'Sg_icemask_floating',perrwith='quiet')
     index_g2x_Sg_icemask_coupled_fluxes = mct_avect_indexra(g2x,'Sg_icemask_coupled_fluxes',perrwith='quiet')
@@ -137,7 +137,7 @@ contains
     index_g2x_Fogx_qiceho = mct_avect_indexra(g2x,'Fogx_qiceho',perrwith='quiet')
     index_g2x_Sg_blis =     mct_avect_indexra(g2x,'Sg_blis',perrwith='quiet')
     index_g2x_Sg_blit =     mct_avect_indexra(g2x,'Sg_blit',perrwith='quiet')
-    
+
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)
 

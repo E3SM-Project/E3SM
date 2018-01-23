@@ -1,15 +1,15 @@
 module prep_ice_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc 
+  use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
   use seq_comm_mct    , only: CPLID, ICEID, logunit
-  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs                               
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -32,8 +32,8 @@ module prep_ice_mod
   public :: prep_ice_calc_a2x_ix
   public :: prep_ice_calc_o2x_ix
   public :: prep_ice_calc_r2x_ix
-  public :: prep_ice_calc_g2x_ix 
-  public :: prep_ice_shelf_calc_g2x_ix   
+  public :: prep_ice_calc_g2x_ix
+  public :: prep_ice_shelf_calc_g2x_ix
 
   public :: prep_ice_get_a2x_ix
   public :: prep_ice_get_o2x_ix
@@ -42,8 +42,8 @@ module prep_ice_mod
 
   public :: prep_ice_get_mapper_SFo2i
   public :: prep_ice_get_mapper_Rg2i
-  public :: prep_ice_get_mapper_Sg2i 
-  public :: prep_ice_get_mapper_Fg2i    
+  public :: prep_ice_get_mapper_Sg2i
+  public :: prep_ice_get_mapper_Fg2i
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -56,13 +56,13 @@ module prep_ice_mod
   !--------------------------------------------------------------------------
 
   ! mappers
-  type(seq_map), pointer :: mapper_SFo2i 
+  type(seq_map), pointer :: mapper_SFo2i
   type(seq_map), pointer :: mapper_Rg2i
-  type(seq_map), pointer :: mapper_Sg2i 
-  type(seq_map), pointer :: mapper_Fg2i 
+  type(seq_map), pointer :: mapper_Sg2i
+  type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
 
-  ! attribute vectors 
+  ! attribute vectors
   type(mct_aVect), pointer :: a2x_ix(:) ! Atm export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_ix(:) ! Ocn export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: g2x_ix(:) ! Glc export, ice grid, cpl pes - allocated in driver
@@ -87,7 +87,7 @@ contains
     type (seq_infodata_type) , intent(in)    :: infodata
     logical,                   intent(in)    :: ocn_c2_ice ! .true.  => ocn to ice coupling on
     logical,                   intent(in)    :: glc_c2_ice ! .true.  => glc to ice coupling on
-    logical,                   intent(in)    :: glcshelf_c2_ice ! .true.  => glc ice shelf to ice coupling on    
+    logical,                   intent(in)    :: glcshelf_c2_ice ! .true.  => glc ice shelf to ice coupling on
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
     !
     ! Local Variables
@@ -115,10 +115,10 @@ contains
          rof_gnam=rof_gnam            , &
          glc_gnam=glc_gnam)
 
-    allocate(mapper_SFo2i) 
+    allocate(mapper_SFo2i)
     allocate(mapper_Rg2i)
     allocate(mapper_Sg2i)
-    allocate(mapper_Fg2i)    
+    allocate(mapper_Fg2i)
     allocate(mapper_Rr2i)
 
     if (ice_present) then
@@ -126,7 +126,7 @@ contains
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       i2x_ix => component_get_c2x_cx(ice(1)) 
+       i2x_ix => component_get_c2x_cx(ice(1))
        lsize_i = mct_aVect_lsize(i2x_ix)
 
        allocate(a2x_ix(num_inst_atm))
@@ -149,7 +149,7 @@ contains
           call mct_aVect_init(r2x_ix(eri), rList=seq_flds_r2x_fields, lsize=lsize_i)
           call mct_aVect_zero(r2x_ix(eri))
        end do
-      
+
        samegrid_ig = .true.
        samegrid_ro = .true.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
@@ -170,10 +170,10 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Rg2i, glc(1), ice(1), &
                'seq_maps.rc','glc2ice_rmapname:','glc2ice_rmaptype:',samegrid_ig, &
-               'mapper_Rg2i initialization', esmf_map_flag)        
+               'mapper_Rg2i initialization', esmf_map_flag)
        endif
-       
-       if (glcshelf_c2_ice) then       
+
+       if (glcshelf_c2_ice) then
 	 if (iamroot_CPLID) then
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing mapper_Sg2i'
@@ -181,14 +181,14 @@ contains
 	 call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
               'seq_maps.rc','glc2ice_smapname:','glc2ice_smaptype:',samegrid_ig, &
               'mapper_Sg2i initialization', esmf_map_flag)
-	      
+
 	 if (iamroot_CPLID) then
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing mapper_Fg2i'
 	 end if
 	 call seq_map_init_rcfile(mapper_Fg2i, glc(1), ice(1), &
               'seq_maps.rc','glc2ice_fmapname:','glc2ice_fmaptype:',samegrid_ig, &
-              'mapper_Fg2i initialization', esmf_map_flag)   	      	    
+              'mapper_Fg2i initialization', esmf_map_flag)
        endif
 
        if (rof_c2_ice) then
@@ -249,10 +249,10 @@ contains
 
   subroutine prep_ice_merge(flux_epbalfact, a2x_i, o2x_i, r2x_i, g2x_i, x2i_i )
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
     !
     ! Arguments
-    real(r8)        , intent(inout) :: flux_epbalfact            
+    real(r8)        , intent(inout) :: flux_epbalfact
     type(mct_aVect) , intent(in)    :: a2x_i
     type(mct_aVect) , intent(in)    :: o2x_i
     type(mct_aVect) , intent(in)    :: r2x_i
@@ -298,7 +298,7 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     character(*), parameter   :: subname = '(prep_ice_merge) '
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2i_i)
@@ -311,11 +311,11 @@ contains
        index_a2x_Faxa_snowl = mct_aVect_indexRA(a2x_i,'Faxa_snowl')
        index_a2x_Faxa_rainc = mct_aVect_indexRA(a2x_i,'Faxa_rainc')
        index_a2x_Faxa_rainl = mct_aVect_indexRA(a2x_i,'Faxa_rainl')
-       index_g2x_Figg_rofi  = mct_aVect_indexRA(g2x_i,'Figg_rofi') 
-       index_r2x_Firr_rofi  = mct_aVect_indexRA(r2x_i,'Firr_rofi') 
+       index_g2x_Figg_rofi  = mct_aVect_indexRA(g2x_i,'Figg_rofi')
+       index_r2x_Firr_rofi  = mct_aVect_indexRA(r2x_i,'Firr_rofi')
        index_x2i_Faxa_rain  = mct_aVect_indexRA(x2i_i,'Faxa_rain' )
        index_x2i_Faxa_snow  = mct_aVect_indexRA(x2i_i,'Faxa_snow' )
-       index_x2i_Fixx_rofi  = mct_aVect_indexRA(x2i_i,'Fixx_rofi') 
+       index_x2i_Fixx_rofi  = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
 
        ! Water isotope fields
        index_a2x_Faxa_snowc_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_16O', perrWith='quiet')
@@ -406,15 +406,15 @@ contains
     call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
     ! Merge total snow and precip for ice input
-    ! Scale total precip and runoff by flux_epbalfact 
+    ! Scale total precip and runoff by flux_epbalfact
 
     do i = 1,lsize
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = a2x_i%rAttr(index_a2x_Faxa_rainc,i) + &
 	                                    a2x_i%rAttr(index_a2x_Faxa_rainl,i)
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = a2x_i%rAttr(index_a2x_Faxa_snowc,i) + &
-	                                    a2x_i%rAttr(index_a2x_Faxa_snowl,i) 
+	                                    a2x_i%rAttr(index_a2x_Faxa_snowl,i)
        x2i_i%rAttr(index_x2i_Fixx_rofi,i) = g2x_i%rAttr(index_g2x_Figg_rofi,i) + &
-	                                    r2x_i%rAttr(index_r2x_Firr_rofi,i) 
+	                                    r2x_i%rAttr(index_r2x_Firr_rofi,i)
 
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
@@ -450,7 +450,7 @@ contains
        end if
 
     end do
- 
+
     if (first_time) then
        if (iamroot) then
           write(logunit,'(A)') subname//' Summary:'
@@ -561,7 +561,7 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Fixx_rofi', norm=.true.)		
+                        fldlist='Fixx_rofi', norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -587,7 +587,7 @@ contains
     do egi = 1,num_inst_rof
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Sg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Sg_icemask_coupled_fluxes', norm=.true.)		
+                        fldlist='Sg_icemask_coupled_fluxes', norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -597,42 +597,42 @@ contains
 
   function prep_ice_get_a2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_a2x_ix(:)
-    prep_ice_get_a2x_ix => a2x_ix(:)   
+    prep_ice_get_a2x_ix => a2x_ix(:)
   end function prep_ice_get_a2x_ix
 
   function prep_ice_get_o2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_o2x_ix(:)
-    prep_ice_get_o2x_ix => o2x_ix(:)   
+    prep_ice_get_o2x_ix => o2x_ix(:)
   end function prep_ice_get_o2x_ix
 
   function prep_ice_get_g2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_g2x_ix(:)
-    prep_ice_get_g2x_ix => g2x_ix(:)   
+    prep_ice_get_g2x_ix => g2x_ix(:)
   end function prep_ice_get_g2x_ix
 
   function prep_ice_get_r2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_r2x_ix(:)
-    prep_ice_get_r2x_ix => r2x_ix(:)   
+    prep_ice_get_r2x_ix => r2x_ix(:)
   end function prep_ice_get_r2x_ix
 
   function prep_ice_get_mapper_SFo2i()
     type(seq_map), pointer :: prep_ice_get_mapper_SFo2i
-    prep_ice_get_mapper_SFo2i => mapper_SFo2i  
+    prep_ice_get_mapper_SFo2i => mapper_SFo2i
   end function prep_ice_get_mapper_SFo2i
 
   function prep_ice_get_mapper_Rg2i()
     type(seq_map), pointer :: prep_ice_get_mapper_Rg2i
-    prep_ice_get_mapper_Rg2i => mapper_Rg2i  
+    prep_ice_get_mapper_Rg2i => mapper_Rg2i
   end function prep_ice_get_mapper_Rg2i
-  
+
   function prep_ice_get_mapper_Sg2i()
     type(seq_map), pointer :: prep_ice_get_mapper_Sg2i
-    prep_ice_get_mapper_Sg2i => mapper_Sg2i  
+    prep_ice_get_mapper_Sg2i => mapper_Sg2i
   end function prep_ice_get_mapper_Sg2i
-  
+
   function prep_ice_get_mapper_Fg2i()
     type(seq_map), pointer :: prep_ice_get_mapper_Fg2i
-    prep_ice_get_mapper_Fg2i => mapper_Fg2i  
-  end function prep_ice_get_mapper_Fg2i  
+    prep_ice_get_mapper_Fg2i => mapper_Fg2i
+  end function prep_ice_get_mapper_Fg2i
 
 end module prep_ice_mod

@@ -30,10 +30,10 @@ module seq_rest_mod
    use shr_file_mod,      only: shr_file_getunit, shr_file_freeunit
    use mct_mod
    use ESMF
-   use component_type_mod     
+   use component_type_mod
 
    ! diagnostic routines
-   use seq_diag_mct, only : budg_dataG, budg_ns      
+   use seq_diag_mct, only : budg_dataG, budg_ns
 
    ! Sets mpi communicators, logunit and loglevel
    use seq_comm_mct, only: seq_comm_getdata=>seq_comm_setptrs, seq_comm_setnthreads, &
@@ -45,7 +45,7 @@ module seq_rest_mod
    ! clock & alarm routines
   use seq_timemgr_mod, only: seq_timemgr_type, seq_timemgr_EClockGetData
 
-   ! diagnostic routines                          
+   ! diagnostic routines
    use seq_diag_mct, only: budg_datag
 
    ! lower level io routines
@@ -58,13 +58,13 @@ module seq_rest_mod
 #ifdef SUMMITDEV_PGI
   use prep_ocn_mod,    only: dummy_pgibugfix
 #endif
-   use prep_rof_mod,    only: prep_rof_get_l2racc_lx 
+   use prep_rof_mod,    only: prep_rof_get_l2racc_lx
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
    use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
-   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt  
-   
+   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt
+
    use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
    use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
@@ -129,7 +129,7 @@ module seq_rest_mod
    type(mct_aVect), pointer :: l2gacc_lx(:)
    integer        , pointer :: l2gacc_lx_cnt
    type(mct_aVect), pointer :: x2gacc_gx(:)
-   integer        , pointer :: x2gacc_gx_cnt   
+   integer        , pointer :: x2gacc_gx_cnt
    type(mct_aVect), pointer :: xao_ox(:)
    type(mct_aVect), pointer :: xao_ax(:)
 
@@ -230,15 +230,15 @@ contains
          call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
          call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
       end if
-      
+
       if (ocn_present .and. glc_prognostic) then
          gsmap         => component_get_gsmap_cx(ocn(1))
          x2gacc_gx     => prep_glc_get_x2gacc_gx()
          x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
          call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
          call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
-      end if     
-      
+      end if
+
       if (ocn_present) then
          gsmap         => component_get_gsmap_cx(ocn(1))
          x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -256,22 +256,22 @@ contains
       if (ice_present) then
          gsmap => component_get_gsmap_cx(ice(1))
          call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
-         call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix') 
+         call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix')
       endif
       if (rof_present) then
          gsmap => component_get_gsmap_cx(rof(1))
          call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
-         call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx') 
+         call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx')
       endif
       if (glc_present) then
          gsmap => component_get_gsmap_cx(glc(1))
          call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
-         call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx') 
+         call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx')
       endif
       if (wav_present) then
          gsmap => component_get_gsmap_cx(wav(1))
          call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
-         call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx') 
+         call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
       endif
        ! Add ESP restart read here
 
@@ -470,7 +470,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ax, 'fractions_ax', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, atm, 'c2x', 'a2x_ax', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
             call seq_io_write(rest_file, gsmap, xao_ax, 'xao_ax', &
                  whead=whead, wdata=wdata)
          endif
@@ -505,7 +505,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
                  whead=whead, wdata=wdata)
-         end if	 
+         end if
          if (ocn_present) then
             gsmap         => component_get_gsmap_cx(ocn(1))
             x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -517,7 +517,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
             call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
@@ -530,7 +530,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
          if (rof_present) then
             gsmap  => component_get_gsmap_cx(rof(1))
@@ -544,14 +544,14 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
          if (wav_present) then
             gsmap  => component_get_gsmap_cx(wav(1))
             call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
           ! Write ESP restart data here
       enddo
