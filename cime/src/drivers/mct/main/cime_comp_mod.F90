@@ -1399,7 +1399,7 @@ contains
     rof_c2_ice = .false.
     glc_c2_lnd = .false.
     glc_c2_ocn = .false.
-    glc_c2_ice = .false.  
+    glc_c2_ice = .false.
     glcshelf_c2_ocn = .false.
     glcshelf_c2_ice = .false.
     wav_c2_ocn = .false.

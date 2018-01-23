@@ -5,11 +5,11 @@ module prep_glc_mod
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
-                              num_inst_ocn  
+                              num_inst_ocn
   use seq_comm_mct    , only: CPLID, GLCID, logunit
-  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs 
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -47,15 +47,15 @@ module prep_glc_mod
   public :: prep_glc_get_o2x_gx
   public :: prep_glc_get_x2gacc_gx
   public :: prep_glc_get_x2gacc_gx_cnt
-  
+
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
 
   public :: prep_glc_get_mapper_So2g
   public :: prep_glc_get_mapper_Fo2g
-  
+
   public :: prep_glc_calculate_subshelf_boundary_fluxes
-  
+
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -78,14 +78,14 @@ module prep_glc_mod
   type(seq_map), pointer :: mapper_Fo2g
   type(seq_map), pointer :: mapper_Fg2l
 
-  ! attribute vectors 
+  ! attribute vectors
   type(mct_aVect), pointer :: l2x_gx(:) ! Lnd export, glc grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_gx(:) ! Ocn export, glc grid, cpl pes - allocated in driver
 
   ! accumulation variables
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
-  
+
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
 
@@ -106,7 +106,7 @@ module prep_glc_mod
   character(len=:), allocatable :: g2x_lx_fields
 
   type(mct_aVect), pointer :: o2gacc_ox(:) ! Ocn export, lnd grid, cpl pes - allocated in driver
-  integer        , target :: o2gacc_ox_cnt ! number of time samples accumulated  
+  integer        , target :: o2gacc_ox_cnt ! number of time samples accumulated
 
   real(r8), allocatable ::  oceanTemperature(:)
   real(r8), allocatable ::  oceanSalinity(:)
@@ -151,12 +151,12 @@ contains
     character(CL)                    :: lnd_gnam      ! lnd grid
     character(CL)                    :: glc_gnam      ! glc grid
     character(CL)                    :: ocn_gnam      ! ocn grid
-    
+
     type(mct_avect), pointer         :: l2x_lx
     type(mct_avect), pointer         :: x2g_gx
     type(mct_avect), pointer         :: o2x_ox
     type(mct_avect), pointer         :: g2x_gx
-    
+
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -171,7 +171,7 @@ contains
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
     allocate(mapper_So2g)
-    allocate(mapper_Fo2g)   
+    allocate(mapper_Fo2g)
     allocate(mapper_Fg2l)
 
     smb_renormalize = prep_glc_do_renormalize_smb(infodata)
@@ -187,10 +187,9 @@ contains
 
        l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
-              
+
        allocate(l2x_gx(num_inst_lnd))
        allocate(l2gacc_lx(num_inst_lnd))
-       
        do eli = 1,num_inst_lnd
           call mct_aVect_init(l2x_gx(eli), rList=seq_flds_x2g_fields, lsize=lsize_g)
           call mct_aVect_zero(l2x_gx(eli))
@@ -234,7 +233,7 @@ contains
           call prep_glc_set_g2x_lx_fields()
        end if
        call shr_sys_flush(logunit)
-          
+
     end if
 
     if (glc_present .and. ocn_c2_glc) then
@@ -285,11 +284,11 @@ contains
        allocate(outFreshwaterFlux(lsize_g))
        allocate(outOceanHeatFlux(lsize_g))
        allocate(outIceHeatFlux(lsize_g))
-       
+
        call shr_sys_flush(logunit)
-       
+
     end if
-    
+
 
   end subroutine prep_glc_init
 
@@ -339,11 +338,11 @@ contains
        call shr_sys_abort(subname//' ERROR: unknown value for glc_renormalize_smb')
     end select
   end function prep_glc_do_renormalize_smb
-       
+
   !================================================================================================
-       
+
   subroutine prep_glc_set_g2x_lx_fields()
-    
+
     !---------------------------------------------------------------
     ! Description
     ! Sets the module-level g2x_lx_fields variable.
@@ -385,36 +384,34 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(lnd_c2_glc,ocn_c2_glc,timer)
+  subroutine prep_glc_accum(timer)
 
     !---------------------------------------------------------------
     ! Description
     ! Accumulate glc inputs
     !
-    ! Arguments    
-    logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
+    ! Arguments
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
     integer :: eli, egi
     type(mct_avect), pointer :: l2x_lx
     type(mct_avect), pointer :: x2g_gx
-        
+
     character(*), parameter :: subname = '(prep_glc_accum)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-       do eli = 1,num_inst_lnd
-	  l2x_lx => component_get_c2x_cx(lnd(eli))
-	  if (l2gacc_lx_cnt == 0) then
-             call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-	  else
-             call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-	  endif
-       end do
-       l2gacc_lx_cnt = l2gacc_lx_cnt + 1
-    
+    do eli = 1,num_inst_lnd
+       l2x_lx => component_get_c2x_cx(lnd(eli))
+       if (l2gacc_lx_cnt == 0) then
+          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+       else
+          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+       endif
+    end do
+    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
        if (x2gacc_gx_cnt == 0) then
@@ -424,7 +421,7 @@ contains
        endif
     end do
     x2gacc_gx_cnt = x2gacc_gx_cnt + 1
-    
+
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_glc_accum
@@ -442,8 +439,8 @@ contains
     !
     ! Local Variables
     integer :: eli, egi
-    type(mct_avect), pointer :: x2g_gx  
-    
+    type(mct_avect), pointer :: x2g_gx
+
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
@@ -460,22 +457,22 @@ contains
        if (x2gacc_gx_cnt > 1) then
 	  call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
        end if
-       
+
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
-       x2g_gx	=> component_get_x2c_cx(glc(egi)) 
+       x2g_gx	=> component_get_x2c_cx(glc(egi))
        call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
     enddo
     x2gacc_gx_cnt = 0
-    
 
-    
+
+
     call t_drvstopf  (trim(timer))
-    
+
   end subroutine prep_glc_accum_avg
 
   !================================================================================================
-  
-  subroutine prep_glc_mrg(infodata, fractions_gx, timer_mrg) 
+
+  subroutine prep_glc_mrg(infodata, fractions_gx, timer_mrg)
 
     !---------------------------------------------------------------
     ! Description
@@ -498,7 +495,7 @@ contains
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
 
-       x2g_gx => component_get_x2c_cx(glc(egi)) 
+       x2g_gx => component_get_x2c_cx(glc(egi))
        call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
@@ -509,7 +506,7 @@ contains
 
   subroutine prep_glc_merge( l2x_g, fractions_g, x2g_g )
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
     ! Description
     ! "Merge" land forcing for glc input.
     !
@@ -523,7 +520,7 @@ contains
     type(mct_aVect), intent(inout)  :: l2x_g  ! input
     type(mct_aVect), intent(in)     :: fractions_g
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     integer       :: num_flux_fields
     integer       :: num_state_fields
@@ -541,14 +538,14 @@ contains
     character(CL) :: field   ! string converted to char
     character(*), parameter   :: subname = '(prep_glc_merge) '
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2g_g)
-    
+
     num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
     num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
-    
+
     if (first_time) then
        nflds = mct_aVect_nRattr(x2g_g)
        if (nflds /= (num_flux_fields + num_state_fields)) then
@@ -556,7 +553,7 @@ contains
                nflds, num_flux_fields, num_state_fields
           call shr_sys_abort(subname//' ERROR: nflds /= num_flux_fields + num_state_fields')
        end if
-          
+
        allocate(mrgstr(nflds))
     end if
 
@@ -585,13 +582,13 @@ contains
        call seq_flds_getField(field, i, seq_flds_x2g_fluxes)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
-       
+
        if (trim(field) == qice_fieldname) then
        if (first_time) then
           mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
                      ' = l2x%'//trim(field)
        end if
-       
+
              ! treat qice as if it were a state variable, with a simple copy.
        do n = 1, lsize
         	x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
@@ -599,6 +596,7 @@ contains
        endif  ! qice_fieldname
 
        mrgstr_index = mrgstr_index + 1
+
     end do
 
     if (first_time) then
@@ -620,24 +618,24 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_gx
-    
+
     ! Arguments
     character(len=*), intent(in) :: timer
-    
+
     character(*), parameter :: subname = '(prep_glc_calc_o2x_gx)'
     ! Local Variables
     integer eoi
     type(mct_avect), pointer :: o2x_ox
-    
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)   
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
       call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
 	   fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
     enddo
-    
-    call t_drvstopf  (trim(timer))     
-  end subroutine prep_glc_calc_o2x_gx	 
+
+    call t_drvstopf  (trim(timer))
+  end subroutine prep_glc_calc_o2x_gx
 
   !================================================================================================
 
@@ -668,12 +666,12 @@ contains
 
     num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
     num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
-    
+
     do egi = 1,num_inst_glc
        ! Use fortran mod to address ensembles in merge
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
-       
+
        do field_num = 1, num_flux_fields
           call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes)
 
@@ -683,7 +681,7 @@ contains
              ! The Fg2l mapper is needed to map some glc fields to the land grid
              !  for purposes of conservation.
              call prep_glc_map_qice_conservative_lnd2glc(egi=egi, eli=eli, &
-               fractions_lx = fractions_lx(efi), &
+                  fractions_lx = fractions_lx(efi), &
                   mapper_Sl2g = mapper_Sl2g, &
                   mapper_Fg2l = mapper_Fg2l)
           endif   ! qice_fieldname
@@ -701,6 +699,7 @@ contains
     enddo   ! egi
 
     call t_drvstopf  (trim(timer))
+
   end subroutine prep_glc_calc_l2x_gx
 
   !================================================================================================
@@ -742,11 +741,11 @@ contains
   !================================================================================================
 
   subroutine prep_glc_calculate_subshelf_boundary_fluxes
-  
+
     !---------------------------------------------------------------
     ! Description
     ! On the ice sheet grid, calculate shelf boundary fluxes
-    
+
     use shr_const_mod , only: SHR_CONST_KAPPA_LAND_ICE
 
     ! Local Variables
@@ -763,7 +762,7 @@ contains
     integer :: index_o2x_So_rhoeff
     integer :: index_g2x_Sg_tbot
     integer :: index_g2x_Sg_dztbot
-    
+
     integer :: index_g2x_Sg_blis
     integer :: index_g2x_Sg_blit
     integer :: index_g2x_Fogx_qiceho
@@ -772,7 +771,7 @@ contains
     integer :: index_x2g_Fogx_qicehi
 
     character(*), parameter :: subname = '(prep_glc_calculate_subshelf_boundary_fluxes)'
-    !--------------------------------------------------------------- 
+    !---------------------------------------------------------------
 
     gsize = mct_aVect_lsize(o2x_gx(1))
 
@@ -794,7 +793,7 @@ contains
     index_o2x_So_rhoeff = mct_avect_indexra(o2x_gx(1),'So_rhoeff',perrwith='quiet')
     index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
-    
+
     index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
     index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
     index_g2x_Fogx_qiceho = mct_avect_indexra(g2x_gx,'Fogx_qiceho',perrwith='quiet')
@@ -836,7 +835,7 @@ contains
       !       oceanSaltTransferVelocity(n)=3.e-6_r8
       !       interfacePressure(n)=1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
       !     end do
-    
+
     !...calculate fluxes...
     call compute_melt_fluxes(oceanTemperature,&
                              oceanSalinity,&
@@ -868,7 +867,7 @@ contains
       g2x_gx%rAttr(index_g2x_Sg_blit,n) =     outInterfaceTemperature(n) !to ocean
       g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
       g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
-      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet 
+      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet
       x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)       !to ice sheet
     end do
 
@@ -879,7 +878,7 @@ contains
   !================================================================================================
 
   subroutine prep_glc_zero_fields()
-  
+
     !---------------------------------------------------------------
     ! Description
     ! Set glc inputs to zero
@@ -902,7 +901,7 @@ contains
   end subroutine prep_glc_zero_fields
 
   !================================================================================================
-    
+
   subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fractions_lx, &
        mapper_Sl2g, mapper_Fg2l)
 
@@ -940,7 +939,7 @@ contains
 
     real(r8), dimension(:), allocatable :: aream_g   ! cell areas on glc grid, for mapping
     real(r8), dimension(:), allocatable :: area_g    ! cell areas on glc grid, according to glc model
-    
+
     type(mct_ggrid), pointer :: dom_g   ! glc grid info
 
     integer :: lsize_g   ! number of points on glc grid
@@ -950,7 +949,7 @@ contains
 
     real(r8), pointer :: qice_g(:)        ! qice data on glc grid
 
-    !--------------------------------------------------------------- 
+    !---------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -959,7 +958,7 @@ contains
        write(logunit,*) 'In prep_glc_map_qice_conservative_lnd2glc'
        write(logunit,*) 'smb_renormalize = ', smb_renormalize
     endif
-    
+
     ! Get attribute vector needed for mapping and conservation
     g2x_gx => component_get_c2x_cx(glc(egi))
 
@@ -1016,7 +1015,7 @@ contains
        else
           qice_g(n) = 0.0_r8
        endif
-    end do
+    enddo
 
     if (smb_renormalize) then
        call prep_glc_renormalize_smb( &
@@ -1044,15 +1043,15 @@ contains
   end subroutine prep_glc_map_qice_conservative_lnd2glc
 
   !================================================================================================
-  
+
   subroutine prep_glc_renormalize_smb(eli, fractions_lx, g2x_gx, mapper_Fg2l, aream_g, qice_g)
 
     ! Renormalizes surface mass balance (smb, here named qice_g) so that the global
     ! integral on the glc grid is equal to the global integral on the land grid.
-!
+    !
     ! This is required for conservation - although conservation is only necessary if we
     ! are running with a fully-interactive, two-way-coupled glc.
-!
+    !
     ! For high-level design, see:
     ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
 
@@ -1200,7 +1199,7 @@ contains
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
     call mct_aVect_init(g2x_lx, rList=g2x_lx_fields, lsize=lsize_l)
-  
+
     ! Map Sg_ice_covered and Sg_topo from glc to land
     call map_glc2lnd_ec( &
          g2x_g = g2x_gx, &
@@ -1231,7 +1230,7 @@ contains
        call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
        qice_l(:,ec) = tmp_field_l(:)
 
-    end do
+    enddo
 
     ! clean the temporary attribute vector g2x_lx
     call mct_aVect_clean(g2x_lx)
@@ -1254,7 +1253,7 @@ contains
           else
              local_ablat_on_land_grid = local_ablat_on_land_grid &
                   + effective_area * frac_l(n,ec) * qice_l(n,ec)
-      end if
+          endif
 
        enddo  ! ec
 
@@ -1334,7 +1333,7 @@ contains
        else
           qice_g(n) = qice_g(n) * ablat_renorm_factor
        endif
-    end do
+    enddo
 
     deallocate(aream_l)
     deallocate(lfrac)
@@ -1350,12 +1349,12 @@ contains
 
   function prep_glc_get_l2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_l2x_gx(:)
-    prep_glc_get_l2x_gx => l2x_gx(:)   
+    prep_glc_get_l2x_gx => l2x_gx(:)
   end function prep_glc_get_l2x_gx
 
   function prep_glc_get_l2gacc_lx()
     type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx(:)
-    prep_glc_get_l2gacc_lx => l2gacc_lx(:)   
+    prep_glc_get_l2gacc_lx => l2gacc_lx(:)
   end function prep_glc_get_l2gacc_lx
 
   function prep_glc_get_l2gacc_lx_cnt()
@@ -1365,12 +1364,12 @@ contains
 
   function prep_glc_get_o2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_o2x_gx(:)
-    prep_glc_get_o2x_gx => o2x_gx(:)   
+    prep_glc_get_o2x_gx => o2x_gx(:)
   end function prep_glc_get_o2x_gx
 
   function prep_glc_get_x2gacc_gx()
     type(mct_aVect), pointer :: prep_glc_get_x2gacc_gx(:)
-    prep_glc_get_x2gacc_gx => x2gacc_gx(:)   
+    prep_glc_get_x2gacc_gx => x2gacc_gx(:)
   end function prep_glc_get_x2gacc_gx
 
   function prep_glc_get_x2gacc_gx_cnt()
@@ -1380,23 +1379,23 @@ contains
 
   function prep_glc_get_mapper_Sl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Sl2g
-    prep_glc_get_mapper_Sl2g => mapper_Sl2g  
+    prep_glc_get_mapper_Sl2g => mapper_Sl2g
   end function prep_glc_get_mapper_Sl2g
 
   function prep_glc_get_mapper_Fl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Fl2g
-    prep_glc_get_mapper_Fl2g => mapper_Fl2g  
+    prep_glc_get_mapper_Fl2g => mapper_Fl2g
   end function prep_glc_get_mapper_Fl2g
 
   function prep_glc_get_mapper_So2g()
     type(seq_map), pointer :: prep_glc_get_mapper_So2g
-    prep_glc_get_mapper_So2g=> mapper_So2g  
+    prep_glc_get_mapper_So2g=> mapper_So2g
   end function prep_glc_get_mapper_So2g
-  
+
   function prep_glc_get_mapper_Fo2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Fo2g
-    prep_glc_get_mapper_Fo2g=> mapper_Fo2g  
-  end function prep_glc_get_mapper_Fo2g  
+    prep_glc_get_mapper_Fo2g=> mapper_Fo2g
+  end function prep_glc_get_mapper_Fo2g
 
 !***********************************************************************
 !
@@ -1415,7 +1414,7 @@ contains
 !>  observations of turbulent mixing rates in the under-ice boundary layer.
 !>  They should be the product of the friction velocity and a (possibly
 !>  spatially variable) non-dimenional transfer coefficient.
-!>  
+!>
 !>  The iceTemperatureDistance is the distance between the location
 !>  where the iceTemperature is supplied and the ice-ocean interface,
 !>  used to compute a temperature gradient.  The ice thermal conductivity,
@@ -1462,7 +1461,7 @@ contains
       oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
       interfacePressure, &         !< Input: pressure at the ice-ocean interface
       iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface      
+      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
 
@@ -1489,7 +1488,7 @@ contains
                          iceHeatFluxCoeff, iceDeltaT
     integer :: iCell
     character(*), parameter :: subname = '(compute_melt_fluxes)'
-  
+
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
 
