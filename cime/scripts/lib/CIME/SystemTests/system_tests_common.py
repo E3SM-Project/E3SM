@@ -3,13 +3,14 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog
+from CIME.utils import append_testlog, get_model
 from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
 from CIME.test_status import *
 from CIME.check_lockedfiles import *
 from CIME.hist_utils import *
+from CIME.provenance import save_test_time
 
 import CIME.build as build
 
@@ -168,6 +169,9 @@ class SystemTestsCommon(object):
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
+
+        if success and get_model() == "acme":
+            save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
@@ -477,7 +481,7 @@ class FakeTest(SystemTestsCommon):
 
             os.chmod(modelexe, 0o755)
 
-            build.post_build(self._case, [])
+            build.post_build(self._case, [], build_complete=True)
 
     def run_indv(self, suffix='base', st_archive=False):
         mpilib = self._case.get_value("MPILIB")
@@ -500,7 +504,7 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                       sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
     """

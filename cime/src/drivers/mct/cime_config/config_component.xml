@@ -2032,7 +2032,7 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component</desc>
+    <desc>The mpi processor stride associated with the mpi tasks</desc>
   </entry>
 
   <entry id="TOTALPES">
@@ -2466,14 +2466,6 @@
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
-  </entry>
-
-  <entry id="USER_MODS_FULLPATH">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>user_mods</group>
-    <file>env_case.xml</file>
-    <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
   </entry>
 
   <!-- ===================================================================== -->

@@ -83,7 +83,6 @@ contains
     character(CX)               :: mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
-    integer(IN)                 :: ssize,dsize
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -345,7 +344,6 @@ contains
     type(mct_gGrid), pointer   :: dom_s
     type(mct_gGrid), pointer   :: dom_d
     integer(IN)                :: klon, klat, lsize, n
-    logical                    :: lnorm
     character(len=CL)          :: lstring
     character(len=*),parameter :: subname = "(seq_map_initvect) "
     !-----------------------------------------------------
@@ -760,8 +758,8 @@ contains
     character(len=*), intent(in),optional :: rList   ! fields list
     logical         , intent(in),optional :: norm    ! normalize at end
     !
-    integer(IN) :: lsize_i, lsize_f, lsize_o, kf, j
-    real(r8),allocatable :: frac_i(:),frac_o(:)
+    integer(IN) :: lsize_i, lsize_f, kf, j
+    real(r8),allocatable :: frac_i(:)
     logical :: lnorm
     character(*),parameter :: subName = '(seq_map_avNormAvF) '
     !-----------------------------------------------------
@@ -816,7 +814,7 @@ contains
     !
     type(mct_sMatp)        :: sMatp ! sMat
     type(mct_aVect)        :: avp_i , avp_o
-    integer(IN)            :: i,j,ier,kf
+    integer(IN)            :: j,kf
     integer(IN)            :: lsize_i,lsize_o
     real(r8)               :: normval
     character(CX)          :: lrList

@@ -108,7 +108,7 @@ class EnvBatch(EnvBase):
 
         orig_group = self.get_child("group", {"id":"job_submission"},
                                     err_msg="Looks like job groups have already been created")
-        orig_group_children = EnvBase.get_children(self, root=orig_group, no_validate=True)
+        orig_group_children = EnvBase.get_children(self, root=orig_group)
 
         childnodes = []
         for child in reversed(orig_group_children):
@@ -144,7 +144,7 @@ class EnvBatch(EnvBase):
             self.set_batch_system_type(batch_system_type)
 
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
-            for node in batchobj.get_children(root=batchobj.machine_node, no_validate=True):
+            for node in batchobj.get_children(root=batchobj.machine_node):
                 oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
                 if oldnode is not None and self.name(oldnode) != "directives":
                     logger.debug( "Replacing {}".format(self.name(oldnode)))
@@ -579,7 +579,7 @@ class EnvBatch(EnvBase):
     def get_children(self, name=None, attributes=None, root=None):
         if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
-            nodes = EnvBase.scan_children(self, "entry", attributes={"id":name}, root=root)
+            nodes = EnvBase.get_children(self, "entry", attributes={"id":name}, root=root)
         else:
             nodes = EnvBase.scan_children(self, name, attributes=attributes, root=root)
 

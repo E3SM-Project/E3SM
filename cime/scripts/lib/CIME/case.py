@@ -217,7 +217,8 @@ class Case(object):
         newcase = deepcopy(self)
         for env_file in newcase._files: # pylint: disable=protected-access
             basename = os.path.basename(env_file.filename)
-            env_file.filename = os.path.join(newcaseroot,basename)
+            newfile = os.path.join(newcaseroot, basename)
+            env_file.change_file(newfile, copy=True)
 
         if newcimeroot is not None:
             newcase.set_value("CIMEROOT", newcimeroot)
