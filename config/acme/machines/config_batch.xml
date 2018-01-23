@@ -325,7 +325,7 @@
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
-        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="8" nodemax="4392" default="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="9" nodemax="4392" default="true">default</queue>
         <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>
       </queues>
     </batch_system>
