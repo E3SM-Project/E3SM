@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 import xml.etree.ElementTree as ET
 from distutils.spawn import find_executable
-import getpass
+import getpass, shutil
 import six
 from copy import deepcopy
 
@@ -32,6 +32,13 @@ class _Element(object): # private class, don't want users constructing directly 
 
 class GenericXML(object):
 
+    _FILEMAP = {}
+
+    @classmethod
+    def invalidate_file(cls, filepath):
+        if filepath in cls._FILEMAP:
+            del cls._FILEMAP[filepath]
+
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
         """
         Initialize an object
@@ -39,6 +46,7 @@ class GenericXML(object):
         logger.debug("Initializing {}".format(infile))
         self.tree = None
         self.root = None
+        self.locked = False
 
         if infile == None:
             # if file is not defined just return
@@ -69,15 +77,21 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: " + infile)
-        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
-        with file_open(infile) as fd:
-            self.read_fd(fd)
+        if infile in self._FILEMAP:
+            logger.debug("read (cached): " + infile)
+            self.tree, self.root = self._FILEMAP[infile]
+        else:
+            logger.debug("read: " + infile)
+            file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+            with file_open(infile) as fd:
+                self.read_fd(fd)
 
-        if schema is not None and self.get_version() > 1.0:
-            self.validate_xml_file(infile, schema)
+            if schema is not None and self.get_version() > 1.0:
+                self.validate_xml_file(infile, schema)
 
-        logger.debug("File version is {}".format(str(self.get_version())))
+            logger.debug("File version is {}".format(str(self.get_version())))
+
+            self._FILEMAP[infile] = (self.tree, self.root)
 
     def read_fd(self, fd):
         if self.tree:
@@ -85,6 +99,27 @@ class GenericXML(object):
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
+
+    def lock(self):
+        """
+        A subclass is doing caching, we need to lock the tree structure
+        in order to avoid invalidating cache.
+        """
+        self.locked = True
+
+    def unlock(self):
+        self.locked = False
+
+    def change_file(self, newfile, copy=False):
+        if copy:
+            new_case = os.path.dirname(newfile)
+            if not os.path.exists(new_case):
+                os.makedirs(new_case)
+            shutil.copy(self.filename, newfile)
+
+        self.tree = None
+        self.filename = newfile
+        self.read(newfile)
 
     #
     # API for individual node operations
@@ -97,9 +132,13 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
         return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
         return node.xml_element.attrib.pop(attrib_name)
 
     def attrib(self, node):
@@ -122,6 +161,7 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         root.xml_element.append(node.xml_element)
 
@@ -129,10 +169,12 @@ class GenericXML(object):
         return deepcopy(node)
 
     def remove_child(self, node, root=None):
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         if attributes is None:
             node = _Element(ET.SubElement(root.xml_element, name))
@@ -144,7 +186,7 @@ class GenericXML(object):
 
         return node
 
-    def get_children(self, name=None, attributes=None, root=None, no_validate=False):
+    def get_children(self, name=None, attributes=None, root=None):
         """
         This is the critical function, its interface and performance are crucial.
 
@@ -163,7 +205,7 @@ class GenericXML(object):
                     continue
                 else:
                     match = True
-                    for key, value in attributes.iteritems():
+                    for key, value in attributes.items():
                         if key not in child.attrib:
                             match = False
                             break
@@ -176,15 +218,6 @@ class GenericXML(object):
                         continue
 
             children.append(_Element(child))
-
-        # Remove
-        if not no_validate:
-            validate = self.scan_children(name, attributes=attributes, root=root)
-            assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
-            # if validate != children:
-            #     import pdb
-            #     pdb.set_trace()
-            #     validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 

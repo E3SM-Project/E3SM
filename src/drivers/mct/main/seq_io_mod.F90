@@ -104,7 +104,6 @@ module seq_io_mod
   type(iosystem_desc_t), pointer :: cpl_io_subsystem
 
   character(CL) :: charvar   ! buffer for string read/write
-  integer(IN) :: io_comm
 
   !=================================================================================
 contains
@@ -243,7 +242,6 @@ contains
 
     integer :: iam
     integer :: lfile_ind
-    integer :: rcode
     character(*),parameter :: subName = '(seq_io_close) '
 
     !-------------------------------------------------------------------------------
@@ -391,10 +389,9 @@ contains
     !EOP
 
     integer(in) :: rcode
-    integer(in) :: mpicom
     integer(in) :: iam
     integer(in) :: nf,ns,ng
-    integer(in) :: i,j,k,n
+    integer(in) :: k
     integer(in),target  :: dimid2(2)
     integer(in),target  :: dimid3(3)
     integer(in),pointer :: dimid(:)
@@ -408,13 +405,11 @@ contains
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
     character(CL)    :: lpre        ! local prefix
-    logical :: exists
     logical :: lwhead, lwdata
     logical :: luse_float
     integer(in) :: lnx,lny
     real(r8) :: lfillvalue
     character(*),parameter :: subName = '(seq_io_write_av) '
-    integer :: lbnum
     integer, pointer :: Dof(:)
     integer :: lfile_ind
 
@@ -580,10 +575,9 @@ contains
     !EOP
 
     integer(in) :: rcode
-    integer(in) :: mpicom
     integer(in) :: iam
     integer(in) :: nf,ns,ng,ni
-    integer(in) :: i,j,k,n,k1,k2
+    integer(in) :: k,n,k1
     integer(in),target  :: dimid2(2)
     integer(in),target  :: dimid3(3)
     integer(in),target  :: dimid4(4)
@@ -598,14 +592,12 @@ contains
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
     character(CL)    :: lpre        ! local prefix
-    logical :: exists
     logical :: lwhead, lwdata
     logical :: luse_float
     integer(in) :: lnx,lny
     real(r8) :: lfillvalue
     real(r8), allocatable :: data(:)
     character(*),parameter :: subName = '(seq_io_write_avs) '
-    integer :: lbnum
     integer, pointer :: Dof(:)
     integer, pointer :: Dofn(:)
     integer :: lfile_ind
@@ -808,10 +800,9 @@ contains
     type(mct_avect), pointer :: avcomp1
     type(mct_avect), pointer :: avcomp
     integer(in)              :: rcode
-    integer(in)              :: mpicom
     integer(in)              :: iam
     integer(in)              :: nf,ns,ng,ni
-    integer(in)              :: i,j,k,n,k1,k2
+    integer(in)              :: k,n,k1,k2
     integer(in),target       :: dimid2(2)
     integer(in),target       :: dimid3(3)
     integer(in),target       :: dimid4(4)
@@ -826,14 +817,12 @@ contains
     character(CL)            :: lname       ! long name
     character(CL)            :: sname       ! standard name
     character(CL)            :: lpre        ! local prefix
-    logical                  :: exists
     logical                  :: lwhead, lwdata
     logical                  :: luse_float
     integer(in)              :: lnx,lny
     real(r8)                 :: lfillvalue
     real(r8), allocatable    :: data(:)
     character(*),parameter   :: subName = '(seq_io_write_avs) '
-    integer                  :: lbnum
     integer, pointer         :: Dof(:)
     integer, pointer         :: Dofn(:)
     integer                  :: lfile_ind
@@ -1039,7 +1028,6 @@ contains
     character(CL)    :: cunit       ! var units
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_int) '
@@ -1117,7 +1105,6 @@ contains
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
     integer(in) :: lnx
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_int1d) '
@@ -1193,7 +1180,6 @@ contains
     character(CL)    :: cunit       ! var units
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_r8) '
@@ -1267,7 +1253,6 @@ contains
     !EOP
 
     integer(in) :: rcode
-    integer(in) :: mpicom
     integer(in) :: iam
     integer(in) :: dimid(1)
     type(var_desc_t) :: varid
@@ -1275,7 +1260,6 @@ contains
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
     integer(in) :: lnx
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_r81d) '
@@ -1345,7 +1329,6 @@ contains
     !EOP
 
     integer(in) :: rcode
-    integer(in) :: mpicom
     integer(in) :: iam
     integer(in) :: dimid(1)
     type(var_desc_t) :: varid
@@ -1353,7 +1336,6 @@ contains
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
     integer(in) :: lnx
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_char) '
@@ -1434,8 +1416,6 @@ contains
     integer(in) :: dimid(1)
     integer(in) :: dimid2(2)
     type(var_desc_t) :: varid
-    integer(in) :: lnx
-    logical :: exists
     logical :: lwhead, lwdata
     integer :: start(4),count(4)
     character(len=shr_cal_calMaxLen) :: lcalendar
@@ -1535,14 +1515,14 @@ contains
     integer(in) :: rcode
     integer(in) :: iam,mpicom
     integer(in) :: nf,ns,ng
-    integer(in) :: i,j,k,n, ndims
+    integer(in) :: k,n, ndims
+    logical :: exists
     type(file_desc_t) :: pioid
     integer(in) :: dimid(2)
     type(var_desc_t) :: varid
     integer(in) :: lnx,lny
     type(mct_string) :: mstring     ! mct char type
     character(CL)    :: itemc       ! string converted to char
-    logical :: exists
     type(io_desc_t) :: iodesc
     integer(in), pointer :: dof(:)
     character(CL)  :: lversion
@@ -1661,7 +1641,7 @@ contains
     integer(in) :: rcode
     integer(in) :: iam,mpicom
     integer(in) :: nf,ns,ng,ni
-    integer(in) :: i,j,k,n,n1,n2,ndims
+    integer(in) :: k,n,n1,n2,ndims
     type(file_desc_t) :: pioid
     integer(in) :: dimid(4)
     type(var_desc_t) :: varid
@@ -1830,7 +1810,7 @@ contains
     integer(in)              :: rcode
     integer(in)              :: iam,mpicom
     integer(in)              :: nf,ns,ng,ni
-    integer(in)              :: i,j,k,n,n1,n2,ndims
+    integer(in)              :: k,n,n1,n2,ndims
     type(file_desc_t)        :: pioid
     integer(in)              :: dimid(4)
     type(var_desc_t)         :: varid

@@ -35,7 +35,7 @@ def _main_func():
         os.environ["PIO_VERSION"] = str(case.get_value("PIO_VERSION"))
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
-        
+
 
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
@@ -49,8 +49,8 @@ def _main_func():
     cmd = "%s exec_se -j %d EXEC_SE=%s MODEL=%s LIBROOT=%s -f %s "\
         % (gmake, gmake_j, exename, "driver", libroot, makefile)
 
-    rc, out, err = run_cmd(cmd)
-    expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
+    rc, out, _ = run_cmd(cmd, combine_output=True)
+    expect(rc==0,"Command %s failed rc=%d\nout=%s"%(cmd,rc,out))
     logger.info(out)
 
 ###############################################################################

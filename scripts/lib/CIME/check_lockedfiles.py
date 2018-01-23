@@ -7,6 +7,7 @@ from CIME.XML.env_build import EnvBuild
 from CIME.XML.env_case import EnvCase
 from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.env_batch import EnvBatch
+from CIME.XML.generic_xml import GenericXML
 from CIME.utils import run_cmd_no_fail
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,14 @@ def lock_file(filename, caseroot=None, newname=None):
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
     logging.debug("Locking file {} to {}".format(filename, newname))
+
+    # JGF: It is extremely dangerous to alter our database (xml files) without
+    # going through the standard API. The copy below invalidates all existing
+    # GenericXML instances that represent this file and all caching that may
+    # have involved this file. We should probably seek a safer way of locking
+    # files.
     shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
+    GenericXML.invalidate_file(os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
     expect("/" not in filename, "Please just provide basename of locked file")
@@ -36,18 +44,6 @@ def is_locked(filename, caseroot=None):
     expect("/" not in filename, "Please just provide basename of locked file")
     caseroot = os.getcwd() if caseroot is None else caseroot
     return os.path.exists(os.path.join(caseroot, LOCKED_DIR, filename))
-
-def restore(filename, caseroot=None, newname=None):
-    """
-    Restore the locked version of filename into main case dir
-    """
-    expect("/" not in filename, "Please just provide basename of locked file")
-    caseroot = os.getcwd() if caseroot is None else caseroot
-    newname = filename if newname is None else newname
-    shutil.copyfile(os.path.join(caseroot, LOCKED_DIR, filename), os.path.join(caseroot, newname))
-    # relock the restored file if names diffs
-    if newname != filename:
-        lock_file(newname, caseroot)
 
 def check_pelayouts_require_rebuild(case, models):
     """
@@ -125,15 +121,16 @@ def check_lockedfiles(case):
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")
                 elif objname == "env_build":
-                    logging.warning("Setting build complete to False")
-                    case.set_value("BUILD_COMPLETE", False)
-                    if "PIO_VERSION" in diffs:
-                        case.set_value("BUILD_STATUS", 2)
-                        logging.critical("Changing PIO_VERSION requires running "
-                                         "case.build --clean-all and rebuilding")
-                    elif toggle_build_status:
-                        case.set_value("BUILD_STATUS", 1)
-                    f2obj.set_value("BUILD_COMPLETE", False)
+                    if toggle_build_status:
+                        logging.warning("Setting build complete to False")
+                        case.set_value("BUILD_COMPLETE", False)
+                        if "PIO_VERSION" in diffs:
+                            case.set_value("BUILD_STATUS", 2)
+                            logging.critical("Changing PIO_VERSION requires running "
+                                             "case.build --clean-all and rebuilding")
+                        else:
+                            case.set_value("BUILD_STATUS", 1)
+                        f2obj.set_value("BUILD_COMPLETE", False)
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:
