@@ -34,6 +34,11 @@ class GenericXML(object):
 
     _FILEMAP = {}
 
+    @classmethod
+    def invalidate_file(cls, filepath):
+        if filepath in cls._FILEMAP:
+            del cls._FILEMAP[filepath]
+
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
         """
         Initialize an object
