@@ -83,6 +83,10 @@ module prep_glc_mod
   type(mct_aVect), pointer :: o2x_gx(:) ! Ocn export, glc grid, cpl pes - allocated in driver
 
   ! accumulation variables
+  
+  type(mct_aVect), pointer :: x2gacc_gx(:) ! Glc export, glc grid, cpl pes - allocated in driver
+  integer        , target :: x2gacc_gx_cnt ! x2gacc_gx: number of time samples accumulated 
+
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
 

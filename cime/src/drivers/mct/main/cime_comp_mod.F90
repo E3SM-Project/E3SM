@@ -2958,7 +2958,7 @@ contains
                                            !unsafe to do it here.
       endif
 
-      call prep_glc_accum(lnd_c2_glc,ocn_c2_glc,timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+      call prep_glc_accum(timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
 
    endif
 
