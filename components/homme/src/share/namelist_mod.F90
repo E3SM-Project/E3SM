@@ -765,8 +765,12 @@ module namelist_mod
     end if
     ! set map
     if (cubed_sphere_map<0) then
+#if ( defined MODEL_THETA_CXX || defined MODEL_THETA_L ) 
+       cubed_sphere_map=2  ! theta model default = element local
+#else
        cubed_sphere_map=0  ! default is equi-angle gnomonic
-       if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
+#endif
+       if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 

@@ -12,7 +12,7 @@ ne=11
 qsize = 0
 nmax = 12960
 statefreq=270
-restartfreq =   129600
+restartfreq =   -100
 restartfile   = "./restart/R000012960"
 runtype       = 0
 mesh_file='/dev/null'
@@ -49,7 +49,7 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
 
  output_timeunits=0              ! 1- days, 2 hours, 0 - tsteps
- output_frequency=4320
+ output_frequency=6480
  output_start_time=10
  output_end_time=12960
  output_varnames1='ps','zeta','u','v','T'
