@@ -183,7 +183,7 @@ contains
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
     type(urbanparams_type)   , intent(in)    :: urbanparams_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
+    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
@@ -287,7 +287,7 @@ contains
 
        call initialize_new_columns(bounds_clump, &
             prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), &
-            temperature_vars)
+            temperature_vars, waterstate_vars, soilhydrology_vars)
 
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
