@@ -563,7 +563,7 @@ contains
     character(len=*),intent(in),optional :: istr
     logical         ,intent(in),optional :: timers
 
-    integer(IN) :: n,m,i,k,l,kf           ! generic index
+    integer(IN) :: n,m,i,kf           ! generic index
     integer(IN) :: my_task,npes
     integer(IN),parameter :: master_task = 0
     logical :: mssrmlf
@@ -580,9 +580,6 @@ contains
     real(R8) :: flb,fub            ! factor for lb and ub
 
     !--- for cosz method ---
-    real(R8) :: calday             ! julian day of year
-    real(R8) :: declin             ! solar declination (radians)
-    real(R8) :: eccf               ! earth sun distance factor
     real(R8),pointer :: lonr(:)    ! lon radians
     real(R8),pointer :: latr(:)    ! lat radians
     real(R8),pointer :: cosz(:)    ! cosz
@@ -595,7 +592,6 @@ contains
     integer(IN)   :: dday          ! delta days
     real(R8)      :: dtime         ! delta time
     integer(IN)   :: uvar,vvar
-    logical       :: someNewData ! newData test
     character(CS) :: uname       ! u vector field name
     character(CS) :: vname       ! v vector field name
     integer(IN)   :: year,month,day  ! date year month day
@@ -1017,8 +1013,7 @@ contains
     character(len=*)      ,intent(in)    :: str2
 
     !--- local ----
-    type(shr_stream_streamtype),pointer :: streams(:)
-    integer(IN) :: n,my_task,ier
+    integer(IN) :: my_task,ier
 
     !----- formats -----
     character(len=*),parameter :: subname = "(shr_strdata_restWrite) "
@@ -1046,8 +1041,7 @@ contains
     integer(IN)           ,intent(in)    :: mpicom
 
     !--- local ----
-    type(shr_stream_streamtype),pointer :: streams(:)
-    integer(IN) :: n,my_task,ier
+    integer(IN) :: my_task,ier
 
     !----- formats -----
     character(len=*),parameter :: subname = "(shr_strdata_restRead) "
@@ -1143,11 +1137,6 @@ contains
     character(CL) :: mapwrite(nStrMax) ! regrid mapping file to write
     character(CL) :: tintalgo(nStrMax) ! time interpolation algorithm
     character(CL) :: readmode(nStrMax) ! file read mode
-    character(CL) :: io_type
-    integer(IN)   :: num_iotasks
-    integer(IN)   :: io_root
-    integer(IN)   :: io_stride
-    integer(IN)   :: num_agg
     character(CL) :: fileName    ! generic file name
     integer(IN)   :: yearFirst   ! first year to use in data stream
     integer(IN)   :: yearLast    ! last  year to use in data stream

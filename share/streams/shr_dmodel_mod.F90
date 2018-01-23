@@ -202,8 +202,8 @@ CONTAINS
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
        scmmode, scmlon, scmlat)
 
-    use seq_flds_mod, only : seq_flds_dom_coord, seq_flds_dom_other
-    use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
+    use shr_flds_mod  , only : seq_flds_dom_coord, seq_flds_dom_other
+    use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
     use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes, &
          shr_ncread_varexists, shr_ncread_vardimnum, &
@@ -542,9 +542,6 @@ CONTAINS
     character(len=*),optional  ,intent(in)    :: istr
 
     !----- local -----
-    integer(IN)   :: n,k,j,i    ! indices
-    integer(IN)   :: lsize      ! lsize
-    integer(IN)   :: gsize      ! gsize
     integer(IN)   :: my_task, master_task
     integer(IN)   :: ierr       ! error code
     integer(IN)   :: rCode      ! return code
@@ -639,7 +636,7 @@ CONTAINS
                   path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
           case ('full_file')
              call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
-                  pio_iodesc, gsMap, avLB, avFile, mpicom, &
+                  gsMap, avLB, avFile, mpicom, &
                   path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
           case default
              write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
@@ -657,7 +654,7 @@ CONTAINS
                path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
        case ('full_file')
           call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
-               pio_iodesc, gsMap, avUB, avFile, mpicom, &
+               gsMap, avUB, avFile, mpicom, &
                path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
        case default
           write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
@@ -750,12 +747,6 @@ CONTAINS
     type(file_desc_t) :: pioid
     type(var_desc_t) :: varid
     integer(kind=pio_offset_kind) :: frame
-    type(io_desc_t) :: pio_iodesc_local
-
-    integer :: gsmap_lsize, gsmap_gsize, cnt,m,n
-    real(R8),allocatable :: rattr_local(:)
-    integer, allocatable :: count(:), compDOF(:)
-    integer, pointer,dimension(:) :: gsmOP   ! gsmap ordered points
 
     character(*), parameter :: subname = '(shr_dmodel_readstrm) '
     character(*), parameter :: F00   = "('(shr_dmodel_readstrm) ',8a)"
@@ -913,7 +904,7 @@ CONTAINS
   !===============================================================================
 
   subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
-       pio_iodesc, gsMap, av, avFile, mpicom, &
+       gsMap, av, avFile, mpicom, &
        path, fn, nt, istr, boundstr)
 
     use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
@@ -926,7 +917,6 @@ CONTAINS
     type      (shr_stream_streamType) ,intent(inout)         :: stream
     type      (iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
     integer   (IN)                    ,intent(in)            :: pio_iotype
-    type      (io_desc_t)             ,intent(inout)         :: pio_iodesc
     type      (mct_gsMap)             ,intent(in)            :: gsMap
     type      (mct_aVect)             ,intent(inout)         :: av
     type      (mct_aVect)             ,intent(inout)         :: avFile
@@ -942,17 +932,11 @@ CONTAINS
     integer(IN)                   :: master_task
     integer(IN)                   :: ierr
     logical                       :: localCopy,fileexists
-    type(mct_avect)               :: avG
     integer(IN)                   :: gsize,nx,ny,nz
     integer(IN)                   :: k
-    integer(IN)                   :: fid
     integer(IN)                   :: rCode   ! return code
-    real(R8),allocatable          :: data2d(:,:)
-    real(R8),allocatable          :: data3d(:,:,:)
-    logical                       :: d3dflag
     character(CL)                 :: fileName
     character(CL)                 :: sfldName
-    type(mct_avect)               :: avtmp
     character(len=32)             :: lstr
     character(len=32)             :: bstr
     logical                       :: fileopen
@@ -1562,7 +1546,7 @@ CONTAINS
     !----- local -----
 
     integer(IN) :: n,i,j
-    integer(IN) :: lsizeS,gsizeS,lsizeD,gsizeD
+    integer(IN) :: lsizeS,gsizeS,lsizeD
     integer(IN) :: nlon,nlat,nmsk
     integer(IN) :: my_task,master_task,ierr
 
@@ -1796,9 +1780,8 @@ CONTAINS
     type(mct_rearr), intent(in),optional :: rearr     ! rearranger for diff decomp
 
     !----- local -----
-    integer(IN)      :: n,k,ka,kb,kc,cnt  ! indices
+    integer(IN)      :: k,ka,kb,kc,cnt  ! indices
     integer(IN)      :: lsize      ! lsize
-    integer(IN)      :: gsize      ! gsize
     integer(IN)      :: nflds      ! number of fields in avi
 
     type(mct_aVect)  :: avtri,avtro ! translated av on input/output grid
@@ -1887,8 +1870,7 @@ CONTAINS
 
 
     !----- local -----
-    integer(IN)      :: n,k,ka,kb,kc ! indices
-    integer(IN)      :: lsize        ! lsize
+    integer(IN)      :: k,ka,kb,kc ! indices
     integer(IN)      :: nflds        ! number of fields in avi
     character(CL)    :: cfld         ! character field name
     type(mct_string) :: sfld         ! string field
