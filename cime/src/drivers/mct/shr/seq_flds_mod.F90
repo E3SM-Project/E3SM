@@ -2382,37 +2382,6 @@ contains
     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes)
     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes_from_glc, &
          additional_list = .true.)
-     attname  = 'Sg_ice_covered'
-     call seq_flds_add(g2x_states,trim(name))
-     call seq_flds_add(g2x_states_to_lnd,trim(name))
-     call metadata_set(attname, longname, stdname, units)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states_from_glc, &
-          additional_list = .true.)
-
-     name = 'Sg_topo'
-     longname = 'Surface height of glacier'
-     stdname  = 'height'
-     units    = 'm'
-     attname  = 'Sg_topo'
-     call seq_flds_add(g2x_states,trim(name))
-     call seq_flds_add(g2x_states_to_lnd,trim(name))
-     call metadata_set(attname, longname, stdname, units)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states_from_glc, &
-          additional_list = .true.)
-
-     name = 'Flgg_hflx'
-     longname = 'Downward heat flux from glacier interior'
-     stdname  = 'downward_heat_flux_in_glacier'
-     units    = 'W m-2'
-     attname  = 'Flgg_hflx'
-     call seq_flds_add(g2x_fluxes,trim(name))
-     call seq_flds_add(g2x_fluxes_to_lnd,trim(name))
-     call metadata_set(attname, longname, stdname, units)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes)
-     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes_from_glc, &
-          additional_list = .true.)
 
      name = 'So_blt'
      call seq_flds_add(o2x_states,trim(name))
