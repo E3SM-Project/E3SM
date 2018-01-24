@@ -33,6 +33,7 @@ class _Element(object): # private class, don't want users constructing directly 
 class GenericXML(object):
 
     _FILEMAP = {}
+    DISABLE_CACHING = False
 
     @classmethod
     def invalidate_file(cls, filepath):
@@ -77,7 +78,7 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        if infile in self._FILEMAP:
+        if infile in self._FILEMAP and not self.DISABLE_CACHING:
             logger.debug("read (cached): " + infile)
             self.tree, self.root = self._FILEMAP[infile]
         else:
