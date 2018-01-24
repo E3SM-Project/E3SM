@@ -1270,7 +1270,7 @@ contains
               theta_i(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
            enddo
 #else
-           ! E conserving average
+           ! E conserving average, but much more dissipative
            do k=2,nlev
               theta_i(:,:,k) = -dpnh_dp_i(:,:,k)*(phi(:,:,k)-phi(:,:,k-1))/&
                    (exner(:,:,k)-exner(:,:,k-1))

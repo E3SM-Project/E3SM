@@ -1234,9 +1234,8 @@ contains
         ! this loop constructs d( eta-dot * theta_dp_cp)/deta
         ! d( eta_dot_dpdn * theta*cp)
         ! so we need to compute theta_cp form theta_dp_cp and average to interfaces
-#define NEWBAR
-#ifdef NEWBAR
-        do k=2,nlev  ! E conserving averaging
+#if 1
+        do k=2,nlev  ! E conserving averaging, but much more unstable
            theta_bar(:,:,k) = - ( (dpnh_dp(:,:,k) + dpnh_dp(:,:,k-1))/2 ) * &
                 (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1))
         enddo
@@ -1328,7 +1327,8 @@ contains
                    - gradKE(i,j,1,k) - gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,1,k)&
                   +theta_cp(i,j,k)*grad_kappastar(i,j,1,k)*exner(i,j,k)*log(pnh(i,j,k)/p0)&
-                  -wvor(i,j,1,k) )*scale1
+                  -wvor(i,j,1,k) &
+                  )*scale1
 
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
@@ -1336,7 +1336,8 @@ contains
                    - gradKE(i,j,2,k) - gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,2,k) &
                   +theta_cp(i,j,k)*grad_kappastar(i,j,2,k)*exner(i,j,k)*log(pnh(i,j,k)/p0) &
-                  -wvor(i,j,2,k) )*scale1
+                  -wvor(i,j,2,k) &
+                  )*scale1
 
            end do
         end do     

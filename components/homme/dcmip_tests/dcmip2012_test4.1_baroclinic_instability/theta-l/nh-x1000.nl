@@ -15,7 +15,7 @@ statefreq=60
 runtype       = 0
 mesh_file='/dev/null'
 tstep=0.12   !  this case can run with tstep=0.2 if tstep_type=5
-rsplit=10
+rsplit=6     ! aborts with dt_remap=1.2 (rsplit=10)
 qsplit = 1
 tstep_type = 7
 integration   = "explicit"
@@ -30,8 +30,7 @@ limiter_option = 9
 vert_remap_q_alg = 0
 hypervis_scaling=0
 hypervis_order = 2
-hypervis_subcycle = 1
-hypervis_subcycle = 1
+hypervis_subcycle = 1    ! NOTE: for tstep>.16, may need to subcycle viscosity
 /
 &vert_nl
 vform         = "ccm"

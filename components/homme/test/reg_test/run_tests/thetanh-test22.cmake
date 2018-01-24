@@ -12,7 +12,7 @@
 # The name of this test (should be the basename of this file)
 SET(TEST_NAME thetanh-test22)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME theta-nlev20)
+SET(EXEC_NAME theta-l-nlev20)
 
 
 SET(NUM_CPUS 16)
