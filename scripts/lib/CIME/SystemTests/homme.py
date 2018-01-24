@@ -39,7 +39,7 @@ class HOMME(SystemTestsCommon):
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
-            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")])
+            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
 
     def run_phase(self):
 
