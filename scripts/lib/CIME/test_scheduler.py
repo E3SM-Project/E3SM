@@ -18,6 +18,7 @@ from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
 from CIME.XML.machines import Machines
+from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
@@ -880,7 +881,9 @@ class TestScheduler(object):
         # Setup cs files
         self._setup_cs_files()
 
+        GenericXML.DISABLE_CACHING = True
         self._producer()
+        GenericXML.DISABLE_CACHING = False
 
         expect(threading.active_count() == 1, "Leftover threads?")
 
