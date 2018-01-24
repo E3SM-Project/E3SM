@@ -1,5 +1,68 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 01-24-2018
+Tag: cime5.4.0-alpha.21
+Answer Changes: None
+Tests: scripts-regression-tests
+Dependencies:
+
+Brief Summary:
+    - Turn off XML file caching in test scheduler.
+    - Fix typo in cime_bisect.
+    - Cache file reads to avoid re-parsing XML files.
+    - Fix some minor log formatting issues.
+    - Fixed a broken hyperlink in the data ocean model rst documentation.
+    - Always want to see test-scheduler time taken.
+    - Query config update.
+    - Fix formatting of rst documentation for load balancing tool.
+    - Implement walltime stash to support more-accurate walltimes.
+    - Merge branch 'master' of github.com:ESMCI/cime.
+    - Hot fix for acme xsd error.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+d2850d5 Merge pull request #2247 from ESMCI/jgfouca/turn_off_caching_in_testsched
+29006c6 Fix typo in cime_bisect
+263c909 Merge pull request #2243 from ESMCI/jgfouca/cache_file_reads
+ace29c3 Merge pull request #2239 from jedwards4b/format_issues
+367ca98 Merge pull request #2238 from bertinia/master
+f52a005 Always want to see test-scheduler time taken
+f272ecf Merge pull request #2236 from jedwards4b/query_config_update
+39ac021 Merge pull request #2235 from ESMCI/sarich/fix-load-balance-docs
+b978107 Merge pull request #2234 from ESMCI/jgfouca/walltime_optimization
+52b22fa Merge branch 'master' of github.com:ESMCI/cime
+b9e0c52 hot fix for acme xsd error
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/config_files.xml
+M       config/acme/machines/config_machines.xml
+M       config/cesm/config_files.xml
+M       doc/source/data_models/data-ocean.rst
+M       doc/source/misc_tools/load-balancing-tool.rst
+M       scripts/Tools/cime_bisect
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/compsets.py
+M       scripts/lib/CIME/XML/env_mach_specific.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/grids.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/check_lockedfiles.py
+M       scripts/lib/CIME/provenance.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/query_config
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component_acme.xml
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+M       src/drivers/mct/shr/seq_timemgr_mod.F90
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 01-16-2018
 Tag: cime5.4.0-alpha.20
