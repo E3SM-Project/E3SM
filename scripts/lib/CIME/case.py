@@ -93,7 +93,6 @@ class Case(object):
         self.set_lookup_value('MODEL', self._cime_model)
         self._compsetname = None
         self._gridname = None
-        self._compsetsfile = None
         self._pesfile = None
         self._gridfile = None
         self._components = []
@@ -457,10 +456,7 @@ class Case(object):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
-                                   files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     return compset_alias, science_support
@@ -540,6 +536,9 @@ class Case(object):
         """
 
         component = self.get_primary_component()
+        self.set_lookup_value("COMPSETS_SPEC_FILE" ,
+                              files.get_value("COMPSETS_SPEC_FILE",
+                                              {"component":component}, resolved=False))
 
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
