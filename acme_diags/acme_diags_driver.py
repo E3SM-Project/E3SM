@@ -105,8 +105,8 @@ if __name__ == '__main__':
         parameters = parser.get_parameters(
             orig_parameters=original_parameter, other_parameters=other_parameters)
 
-    else:
-        raise RuntimeError('You tried running the diags without -p and/or -d')
+    else:  # command line args without -p or -d
+        parameters = parser.get_parameters()
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
