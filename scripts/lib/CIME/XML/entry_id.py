@@ -403,17 +403,23 @@ class EntryID(GenericXML):
                     f2val = other.get_value(vid, resolved=False)
                     if f1val != f2val:
                         xmldiffs[vid] = [f1val, f2val]
-                else:
-                    for comp in self.get_values("COMP_CLASSES"):
+                elif hasattr(self, "_components"):
+                    for comp in self._components:
                         f1val = self.get_value("{}_{}".format(vid,comp), resolved=False)
                         if f1val is not None:
                             f2val = other.get_value("{}_{}".format(vid,comp), resolved=False)
                             if f1val != f2val:
                                 xmldiffs[vid] = [f1val, f2val]
                         else:
-                            f1val = self.to_string(node, method="text")
-                            f2val = self.to_string(f2match, method="text")
-                            if f2val != f1val:
+                            try:
+                                f1val = self.to_string(node, method="text")
+                            except:
+                                pass
+                            try:
+                                f2val = self.to_string(f2match, method="text")
+                            except:
+                                pass
+                            if f1val is not None and f2val != f1val:
                                 f1value_nodes = self.get_children("value", root=node)
                                 for valnode in f1value_nodes:
                                     f2valnodes = other.get_children("value", root=f2match, attributes=self.attrib(valnode))
