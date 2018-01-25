@@ -15,7 +15,7 @@ requirements:
     - setuptools
 
   run:
-    - cdp 1.1.0
+    - cdp 1.1.1
     - vcs 2.12
     - vtk-cdat 7.1.0.2.12
     - vcsaddons 2.12
