@@ -350,26 +350,17 @@ def create_metadata(parameter):
 
     from acme_diags.acme_parser import ACMEParser
     parser = ACMEParser()
-    #print(parser)
-    #print(dir(parser))
+
     args = parser.view_args()
-    # TODO: In a future version of CDP, don't include the other_parameters keywork in the parser or parameters
-    del(args.__dict__['other_parameters'])
-    cmd_args = args.__dict__.keys()
-    #print(args)
-    #print(dir(args))
-
-    #return {}
-
+    supported_cmd_args = args.__dict__.keys()
+    
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
         # we don't want to include blank values
         if not param:
             continue
 
-        metadata[param_name] = param
-
-        if param_name in cmd_args:
+        if param_name in supported_cmd_args:
             if isinstance(param, list) or isinstance(param, tuple):
                 # ex: --diff_levels -7, -6, -5, -4
                 cmd += "--{} ".format(param_name)

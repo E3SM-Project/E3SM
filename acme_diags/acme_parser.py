@@ -24,6 +24,18 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='reference_data_path',
             help='Path for the reference climitologies',
             required=False)
+        
+        self.add_argument(
+            '--ref_name',
+            dest='ref_name',
+            help="I don't know what this is, ask Jill.",
+            required=False)
+
+        self.add_argument(
+            '--ref_file',
+            dest='ref_file',
+            help="Path to the reference file.",
+            required=False)
 
         self.add_argument(
             '-t', '--test_data_set',
@@ -37,6 +49,12 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             '--test_data_path',
             dest='test_data_path',
             help='Path for the test climitologies',
+            required=False)
+
+        self.add_argument(
+            '--test_file',
+            dest='test_file',
+            help="Path to the test file.",
             required=False)
 
         self.add_argument(
@@ -75,10 +93,10 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
-            '-s', '--season',
+            '-s', '--seasons',
             nargs='+',
-            dest='season',
-            help='Season to use',
+            dest='seasons',
+            help='Seasons to use',
             required=False)
 
         self.add_argument(
@@ -107,6 +125,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             nargs='+',
             dest='contour_levels',
             help='Levels for the test and reference',
+            required=False)
+
+        self.add_argument(
+            '--diff_levels',
+            type=float,
+            nargs='+',
+            dest='diff_levels',
+            help='Levels for the difference',
             required=False)
 
         self.add_argument(
@@ -178,7 +204,7 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--backend',
             dest='backend',
-            help='Graphical backend',
+            help='Graphical backend to use',
             required=False)
 
         self.add_argument(
