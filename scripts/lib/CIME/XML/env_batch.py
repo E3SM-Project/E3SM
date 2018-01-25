@@ -615,3 +615,22 @@ class EnvBatch(EnvBase):
                 logger.warning("Batch cancel command '{}' failed with error '{}'".format(cmd, out + "\n" + err))
             else:
                 return True
+
+    def compare_xml(self, other):
+        f1batchnodes = self.get_children("batch_system")
+        for bnode in f1batchnodes:
+            f2bnode = other.get_child("batch_system", attributes = bnode.attrib)
+            f1batchnodes = self.scan_children(root=bnode)
+            for node in f1batchnodes:
+                f2match = other.scan_optional_child(name=node.tag, root=f2batch)
+                if f2match is not None:
+                    text1 = self.get_element_text(name=node.tag, root=f1batch)
+                    text2 = other.get_element_text(name=node.tag, root=f1batch)
+                    if text1 != text2:
+                        logger.error(" Found difference in {} : case {} locked {}".format(node.tag,text1,text2))
+                        expect(False, "Invoke case.setup --reset")
+        f1groups = self.get_children("group")
+        for node in f1groups:
+            group = self.get(node, "id")
+            f2group = other.get_child("group", attributes={"id":group})
+            super(EnvBatch, self).compare_xml(self, other, root=group, otherroot=f2group)

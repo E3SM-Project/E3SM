@@ -391,35 +391,29 @@ class EntryID(GenericXML):
         """
         expect(False, " Not expected to be here {}".format(self.get(node, "id")))
 
-    def compare_xml(self, other):
+    def compare_xml(self, other, root=None, otherroot=None):
         xmldiffs = {}
-        f1nodes = self.scan_children("entry")
+        if root is not None:
+            expect(otherroot is not None," inconsistant request")
+        f1nodes = self.scan_children("entry", root=root)
         for node in f1nodes:
             vid = self.get(node, "id")
-            f2match = other.scan_optional_child("entry", attributes={"id":vid})
+            f2match = other.scan_optional_child("entry", attributes={"id":vid},root=otherroot)
             if f2match is not None:
-                f1val = self.get_value(vid, resolved=False)
+                f1val = self.get_value(vid, resolved=False, root=root)
                 if f1val is not None:
-                    f2val = other.get_value(vid, resolved=False)
+                    f2val = other.get_value(vid, resolved=False, root=otherroot)
                     if f1val != f2val:
                         xmldiffs[vid] = [f1val, f2val]
                 elif hasattr(self, "_components"):
                     for comp in self._components:
-                        f1val = self.get_value("{}_{}".format(vid,comp), resolved=False)
+                        f1val = self.get_value("{}_{}".format(vid,comp), resolved=False, root=root)
                         if f1val is not None:
-                            f2val = other.get_value("{}_{}".format(vid,comp), resolved=False)
+                            f2val = other.get_value("{}_{}".format(vid,comp), resolved=False, root=otherroot)
                             if f1val != f2val:
                                 xmldiffs[vid] = [f1val, f2val]
                         else:
-                            try:
-                                f1val = self.to_string(node, method="text")
-                            except:
-                                pass
-                            try:
-                                f2val = self.to_string(f2match, method="text")
-                            except:
-                                pass
-                            if f1val is not None and f2val != f1val:
+                            if not elements_equal(node, f2match):
                                 f1value_nodes = self.get_children("value", root=node)
                                 for valnode in f1value_nodes:
                                     f2valnodes = other.get_children("value", root=f2match, attributes=self.attrib(valnode))
