@@ -6019,13 +6019,13 @@
   <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
-        <comment>"265 node version gets 10.4 SYPD"</comment>
+        <comment>"285 node version gets 11.5 SYPD"</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
           <ntasks_lnd>600</ntasks_lnd>
           <ntasks_rof>600</ntasks_rof>
           <ntasks_ice>3200</ntasks_ice>
-          <ntasks_ocn>960</ntasks_ocn>
+          <ntasks_ocn>1440</ntasks_ocn>
           <ntasks_glc>600</ntasks_glc>
           <ntasks_wav>4800</ntasks_wav>
           <ntasks_cpl>4800</ntasks_cpl>
