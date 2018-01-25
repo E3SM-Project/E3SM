@@ -49,7 +49,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
-                 separate_builds,
+                 separate_builds = False,
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = '',
@@ -213,6 +213,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         first_phase = self._case1.get_value("RESUBMIT") == 1 # Only relevant for multi-submit tests
         run_type = self._case1.get_value("RUN_TYPE")
+
         # First run
         if not self._multisubmit or first_phase:
             logger.info('Doing first run: ' + self._run_one_description)

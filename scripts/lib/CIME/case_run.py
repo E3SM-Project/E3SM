@@ -231,7 +231,7 @@ def resubmit_check(case):
         run_cmd(cmd, verbose=True)
 
     if resubmit:
-        if testcase is not None and testcase in ['ERR']:
+        if testcase is not None and testcase in ['ERR', 'PET']:
             job = "case.test"
         else:
             job = "case.run"
