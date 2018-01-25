@@ -33,7 +33,7 @@ class _Element(object): # private class, don't want users constructing directly 
 class GenericXML(object):
 
     _FILEMAP = {}
-    DISABLE_CACHING = False
+    DISABLE_CACHING = True
 
     @classmethod
     def invalidate_file(cls, filepath):
