@@ -71,6 +71,7 @@ class EnvMachSpecific(EnvBase):
         # Do the modules so we can refer to env vars set by the modules
         # in the environment_variables block
         modules_to_load = self._get_modules_for_case(case)
+        print modules_to_load
         if (modules_to_load is not None):
             self.load_modules(modules_to_load)
 
@@ -262,7 +263,7 @@ class EnvMachSpecific(EnvBase):
         for action,argument in modules_to_load:
             cmd += " && {} {} {}".format(sh_mod_cmd, action, argument)
 
-        cmd += " && env"
+#        cmd += " && env"
         output = run_cmd_no_fail(cmd)
 
         ###################################################

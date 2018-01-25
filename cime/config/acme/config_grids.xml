@@ -902,7 +902,7 @@
       <file atm_mask="oEC60to30wLI">domain.lnd.T62_oEC60to30wLI_mask.160830.nc</file>
       <file atm_mask="oEC60to30v3wLI">domain.lnd.T62_oEC60to30v3wLI_mask.170328.nc</file>
       <file atm_mask="oRRS30to10">domain.lnd.T62_oRRS30to10.150722.nc</file>
-      <file atm_mask="oRRS30to10v3">domain.lnd.T62_oRRS30to10v3.161221.nc</file>
+      <file atm_mask="oRRS30to10v3">domain.lnd.T62_oRRS30to10v3.171129.nc</file>
       <file atm_mask="oRRS30to10wLI">domain.lnd.T62_oRRS30to10wLI_mask.160930.nc</file>
       <file atm_mask="oRRS18to6">domain.lnd.T62_oRRS18to6.160831.nc</file>
       <file atm_mask="oRRS18to6v3">domain.lnd.T62_oRRS18to6v3.170111.nc</file>
@@ -918,7 +918,7 @@
       <file lnd_mask="oEC60to30wLI">domain.lnd.T62_oEC60to30wLI_mask.160830.nc</file>
       <file lnd_mask="oEC60to30v3wLI">domain.lnd.T62_oEC60to30v3wLI_mask.170328.nc</file>
       <file lnd_mask="oRRS30to10">domain.lnd.T62_oRRS30to10.150722.nc</file>
-      <file lnd_mask="oRRS30to10v3">domain.lnd.T62_oRRS30to10v3.161221.nc</file>
+      <file lnd_mask="oRRS30to10v3">domain.lnd.T62_oRRS30to10v3.171129.nc</file>
       <file lnd_mask="oRRS30to10wLI">domain.lnd.T62_oRRS30to10wLI_mask.160930.nc</file>
       <file lnd_mask="oRRS18to6">domain.lnd.T62_oRRS18to6.160831.nc</file>
       <file lnd_mask="oRRS18to6v3">domain.lnd.T62_oRRS18to6v3.170111.nc</file>
@@ -1136,8 +1136,8 @@
 
     <domain name="oRRS30to10v3">
       <nx>1445367</nx>  <ny>1</ny>
-      <file ocn_mask="oRRS30to10v3">domain.ocn.oRRS30to10v3.161221.nc</file>
-      <file ice_mask="oRRS30to10v3">domain.ocn.oRRS30to10v3.161221.nc</file>
+      <file ocn_mask="oRRS30to10v3">domain.ocn.oRRS30to10v3.171129.nc</file>
+      <file ice_mask="oRRS30to10v3">domain.ocn.oRRS30to10v3.171129.nc</file>
       <desc>oRRS30to10v3 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 30 km gridcells at low and 10 km gridcells at high latitudes:</desc>
       <support>Experimental, under development</support>
     </domain>
@@ -1673,11 +1673,11 @@
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="oRRS30to10v3">
-      <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_aave.161221.nc</ATM2OCN_FMAPNAME>
-      <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_blin.161221.nc</ATM2OCN_SMAPNAME>
-      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_patc.161221.nc</ATM2OCN_VMAPNAME>
-      <OCN2ATM_FMAPNAME>cpl/gridmaps/oRRS30to10v3/map_oRRS30to10v3_TO_T62_aave.161221.nc</OCN2ATM_FMAPNAME>
-      <OCN2ATM_SMAPNAME>cpl/gridmaps/oRRS30to10v3/map_oRRS30to10v3_TO_T62_aave.161221.nc</OCN2ATM_SMAPNAME>
+      <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_aave.171128.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_blin.171128.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10v3_patc.171128.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/gridmaps/oRRS30to10v3/map_oRRS30to10v3_TO_T62_aave.171128.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/gridmaps/oRRS30to10v3/map_oRRS30to10v3_TO_T62_aave.171128.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="oRRS30to10wLI">
@@ -1990,8 +1990,8 @@
     </gridmap>
 
     <gridmap rof_grid="rx1" ocn_grid="oRRS30to10v3" >
-      <ROF2OCN_ICE_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v3_smoothed.r150e300.161221.nc</ROF2OCN_ICE_RMAPNAME>
-      <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v3_smoothed.r150e300.161221.nc</ROF2OCN_LIQ_RMAPNAME>
+      <ROF2OCN_ICE_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v3_smoothed.r150e300.171129.nc</ROF2OCN_ICE_RMAPNAME>
+      <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v3_smoothed.r150e300.171129.nc</ROF2OCN_LIQ_RMAPNAME>
     </gridmap>
 
     <gridmap rof_grid="rx1" ocn_grid="oRRS30to10wLI" >
