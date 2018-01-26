@@ -1,5 +1,54 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 01-26-2018 
+Tag: cime5.4.0-alpha.22
+Answer Changes: None
+Tests: scripts_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - Remove debug print statement
+    - Second fix for user compsets.
+    - Rearrange code in case.py so that compset alias and 
+      compset longname get the same result.
+    - Minor fix to get acme provenance test working again.
+    - Fix for LockedFiles.
+    - Change PET to be a multisubmit job.
+    - Minor fix to get query config test working on melvin.
+    - Disable file caching for now.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+2a235e5 remove debug print statement
+d6f6e08 Merge pull request #2257 from jedwards4b/user_compset_fix
+fea933c Merge pull request #2253 from jedwards4b/user_compset_fix
+169518c Minor fix to get acme provenance test working again
+91451ed Merge pull request #2254 from jedwards4b/lockedfiles_fix
+1878159 Merge pull request #2255 from ESMCI/jgfouca/change_pet_to_multisubmit
+2dc1cf6 Minor fix to get query config test working on melvin
+d3ab655 Merge pull request #2251 from jedwards4b/disable_file_caching
+
+Modified files: git diff --name-status [previous_tag]
+M       config/config_tests.xml
+M       scripts/lib/CIME/SystemTests/pet.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/case_run.py
+M       scripts/lib/CIME/case_setup.py
+M       scripts/lib/CIME/utils.py
+M       scripts/tests/scripts_regression_tests.py
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 01-24-2018
 Tag: cime5.4.0-alpha.21
