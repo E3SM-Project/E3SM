@@ -625,16 +625,23 @@ class EnvBatch(EnvBase):
             f2bnode=None
             if len(f2bnodes):
                 f2bnode = f2bnodes[0]
-            f1batchnodes = self.get_children(root=bnode)
-            for idx, node in enumerate(f1batchnodes):
-                f2matches = other.scan_children(self.name(node), attributes=self.attrib(node), root=f2bnode)
-                f2match = f2matches[idx] if len(f2matches)> idx else None
-                if f2match is not None:
-                    name = self.name(node)
-                    text1 = self.text(node)
-                    text2 = other.text(f2match)
-                    if text1 != text2:
-                        xmldiffs[name] = [text1, text2]
+            f1batchnodes = self.get_children(root=bnode)            
+            for node in f1batchnodes:
+                name = self.name(node)
+                text1 = self.text(node)
+                attribs = self.attrib(node)
+                f2matches = other.scan_children(name, attributes=attribs, root=f2bnode)
+                foundmatch=False
+                for chkmatch in f2matches:
+                    name2 = other.name(chkmatch)
+                    attribs2 = other.attrib(chkmatch)
+                    text2 = other.text(chkmatch)
+                    if(name == name2 and attribs==attribs2 and text1==text2):
+                        foundmatch=True
+                        break
+                if not foundmatch:
+                    xmldiffs[name] = [text1, text2]
+
         f1groups = self.get_children("group")
         for node in f1groups:
             group = self.get(node, "id")
