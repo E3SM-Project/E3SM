@@ -457,7 +457,6 @@ class Case(object):
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
                     self._compsetname = match
-                    self.set_lookup_value("COMPSETS_SPEC_FILE", compsets_filename)
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     return compset_alias, science_support
