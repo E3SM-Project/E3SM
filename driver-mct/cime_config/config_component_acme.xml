@@ -204,7 +204,7 @@
 
     CO2A_OI: sets the driver namelist variable flds_co2a = .true.; this adds
     prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
-    the atmosphere to the land and ocean. Also sets the driver namelist variable 
+    the atmosphere to the land and ocean. Also sets the driver namelist variable
     flds_bgc_oi = .true.; this turns on the transfer of bgc fields between the
     ocean and seaice components via the coupler.
 
@@ -223,6 +223,17 @@
     The namelist variables flds_co2a, flds_co2b, flds_co2c and flds_co2_dmsa are
     in the namelist group cpl_flds_inparm.
     </desc>
+  </entry>
+
+  <entry id="CPL_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <values match="last">
+      <value/>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
   </entry>
 
   <entry id="NCPL_BASE_PERIOD">
