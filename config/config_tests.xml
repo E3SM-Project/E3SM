@@ -518,6 +518,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <DOUT_S>FALSE</DOUT_S>
+    <RESUBMIT>1</RESUBMIT>
   </test>
 
   <test NAME="PFS">
