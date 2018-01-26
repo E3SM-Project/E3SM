@@ -281,6 +281,16 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
+        with Case(testdir, read_only=False) as case:
+            ntasks = case.get_value("NTASKS_ATM")
+            case.set_value("NTASKS_ATM", ntasks+1)
+        # this should fail with a locked file issue
+        run_cmd_assert_result(self, "./case.build",
+                              from_dir=testdir, expected_stat=1)
+
+        run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+
         cls._do_teardown.append(testdir)
 
     def test_aa_no_flush_on_instantiate(self):

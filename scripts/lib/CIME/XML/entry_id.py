@@ -408,6 +408,7 @@ class EntryID(GenericXML):
                     if f1val != f2val:
                         xmldiffs[vid] = [f1val, f2val]
                 elif hasattr(self, "_components"):
+                    # pylint: disable=no-member
                     for comp in self._components:
                         f1val = self.get_value("{}_{}".format(vid,comp), resolved=False)
                         if f1val is not None:

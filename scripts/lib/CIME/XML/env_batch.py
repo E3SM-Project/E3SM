@@ -631,7 +631,6 @@ class EnvBatch(EnvBase):
                 f2match = f2matches[idx] if len(f2matches)> idx else None
                 if f2match is not None:
                     name = self.name(node)
-                    attribs = self.attrib(node)
                     text1 = self.text(node)
                     text2 = other.text(f2match)
                     if text1 != text2:
