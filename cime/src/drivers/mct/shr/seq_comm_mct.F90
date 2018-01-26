@@ -197,6 +197,7 @@ module seq_comm_mct
 
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_InitializeFortran
+    integer, public :: MHID, MPOID
 #endif
 !=======================================================================
 contains

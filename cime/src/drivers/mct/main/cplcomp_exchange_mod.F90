@@ -14,8 +14,7 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
 #ifdef HAVE_MOAB
-  use semoab_mod, only : MHID
-  use mpas_moabmesh, only : MPOID
+  use seq_comm_mct, only : MHID, MPOID
 #endif
 
   implicit none
