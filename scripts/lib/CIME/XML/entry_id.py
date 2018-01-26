@@ -398,7 +398,7 @@ class EntryID(GenericXML):
         f1nodes = self.scan_children("entry", root=root)
         for node in f1nodes:
             vid = self.get(node, "id")
-            logger.info("Compare vid {}".format(vid))
+            logger.debug("Compare vid {}".format(vid))
             f2match = other.scan_optional_child("entry", attributes={"id":vid},root=otherroot)
             expect(f2match is not None,"Could not find {} in Locked file".format(vid))
             if node != f2match:
