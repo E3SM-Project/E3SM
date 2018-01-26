@@ -18,8 +18,8 @@ module RtmVar
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
 
   ! Run control variables
-  character(len=256), public :: caseid  = ' '          ! case id
-  character(len=256), public :: ctitle  = ' '          ! case title
+  character(len=512), public :: caseid  = ' '          ! case id
+  character(len=512), public :: ctitle  = ' '          ! case title
   integer, public, parameter :: nsrStartup  = 0        ! Startup from initial conditions
   integer, public, parameter :: nsrContinue = 1        ! Continue from restart files
   integer, public, parameter :: nsrBranch   = 2        ! Branch from restart files
@@ -27,11 +27,11 @@ module RtmVar
   logical, public :: brnch_retain_casename = .false.   ! true => allow case name to remain the same for branch run
                                                        ! by default this is not allowed
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
-  character(len=256), public :: hostname = ' '         ! Hostname of machine running on
-  character(len=256), public :: username = ' '         ! username of user running program
-  character(len=256), public :: version  = " "         ! version of program
-  character(len=256), public :: conventions = "CF-1.0" ! dataset conventions
-  character(len=256), public :: source   = "Community Land Model CLM4.0" ! description of this source
+  character(len=512), public :: hostname = ' '         ! Hostname of machine running on
+  character(len=512), public :: username = ' '         ! username of user running program
+  character(len=512), public :: version  = " "         ! version of program
+  character(len=512), public :: conventions = "CF-1.0" ! dataset conventions
+  character(len=512), public :: source   = "Community Land Model CLM4.0" ! description of this source
 
   ! Unit Numbers
   integer, public :: iulog = 6        ! "stdout" log file unit number, default is 6
@@ -42,9 +42,9 @@ module RtmVar
   character(len=16), public :: inst_suffix
 
   ! Rtm control variables
-  character(len=256), public :: nrevsn_rtm   = ' '   ! restart data file name for branch run
-  character(len=256), public :: finidat_rtm  = ' '   ! initial conditions file name
-  character(len=256), public :: frivinp_rtm  = ' '   ! RTM input data file name
+  character(len=512), public :: nrevsn_rtm   = ' '   ! restart data file name for branch run
+  character(len=512), public :: finidat_rtm  = ' '   ! initial conditions file name
+  character(len=512), public :: frivinp_rtm  = ' '   ! RTM input data file name
   logical,            public :: ice_runoff = .true.  ! true => runoff is split into liquid and ice, 
                                                      ! otherwise just liquid
   logical,            public :: rtm_active    = .true.   ! true => rtm on
@@ -55,7 +55,7 @@ module RtmVar
   integer :: rtmlon = 1 ! number of rtm longitudes (initialize)
   integer :: rtmlat = 1 ! number of rtm latitudes  (initialize)
 
-  character(len=256), public :: rpntfil = 'rpointer.rof' ! file name for local restart pointer file
+  character(len=512), public :: rpntfil = 'rpointer.rof' ! file name for local restart pointer file
 
   logical, private :: RtmVar_isset = .false.
 
@@ -71,12 +71,12 @@ contains
     !  Set input control variables.
     !
     ! !ARGUMENTS:
-    character(len=256), optional, intent(IN) :: caseid_in    ! case id
-    character(len=256), optional, intent(IN) :: ctitle_in    ! case title
+    character(len=512), optional, intent(IN) :: caseid_in    ! case id
+    character(len=512), optional, intent(IN) :: ctitle_in    ! case title
     integer,            optional, intent(IN) :: nsrest_in    ! 0: initial run. 1: restart: 3: branch
-    character(len=256), optional, intent(IN) :: version_in   ! model version
-    character(len=256), optional, intent(IN) :: hostname_in  ! hostname running on
-    character(len=256), optional, intent(IN) :: username_in  ! username running job
+    character(len=512), optional, intent(IN) :: version_in   ! model version
+    character(len=512), optional, intent(IN) :: hostname_in  ! hostname running on
+    character(len=512), optional, intent(IN) :: username_in  ! username running job
     logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to
     !-----------------------------------------------------------------------
 

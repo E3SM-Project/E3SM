@@ -110,7 +110,7 @@ module RtmIO
 
   integer,parameter,private :: debug = 0             ! local debug level
 
-  integer , parameter  , public  :: max_string_len = 256     ! length of strings
+  integer , parameter  , public  :: max_string_len = 512     ! length of strings
   real(r8), parameter  , public  :: fillvalue = 1.e36_r8     ! fill value for netcdf fields
 
   integer, public :: io_type
@@ -700,7 +700,7 @@ contains
     integer :: lxtype              ! local external type (in case logical variable)
     type(var_desc_t)   :: vardesc  ! local vardesc
     character(len=128) :: dimname  ! temporary
-    character(len=256) :: str      ! temporary
+    character(len=512) :: str      ! temporary
     character(len=*),parameter :: subname='ncd_defvar_bynf' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -848,7 +848,7 @@ contains
     integer :: dimid(5)       ! dimension ids
     integer :: varid          ! variable id
     integer :: itmp           ! temporary
-    character(len=256) :: str ! temporary
+    character(len=512) :: str ! temporary
     character(len=*),parameter :: subname='ncd_defvar_bygrid' ! subroutine name
     !-----------------------------------------------------------------------
 
