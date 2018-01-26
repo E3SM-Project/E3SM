@@ -74,11 +74,11 @@ class EnvMachSpecific(EnvBase):
         # in the environment_variables block
         modules_to_load = self._get_modules_for_case(case)
         if (modules_to_load is not None):
-            self.load_modules(modules_to_load)
+            self._load_modules(modules_to_load)
 
         envs_to_set = self._get_envs_for_case(case)
         if (envs_to_set is not None):
-            self.load_envs(envs_to_set)
+            self._load_envs(envs_to_set)
 
         self._get_resources_for_case(case)
 
@@ -93,12 +93,10 @@ class EnvMachSpecific(EnvBase):
                 limits = (int(val), limits[1])
                 resource.setrlimit(attr, limits)
 
-    def load_modules(self, modules_to_load):
+    def _load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
-        elif (module_system == "module_lmod"):
-            self._load_modules_generic(modules_to_load)
         elif (module_system == "soft"):
             self._load_modules_generic(modules_to_load)
         elif (module_system == "generic"):
@@ -120,7 +118,7 @@ class EnvMachSpecific(EnvBase):
         else:
             source_cmd = ""
 
-        if (module_system in ["module", "module_lmod"]):
+        if (module_system in ["module"]):
             return run_cmd_no_fail("{}module list".format(source_cmd), combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
@@ -161,7 +159,7 @@ class EnvMachSpecific(EnvBase):
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
 
-    def load_envs(self, envs_to_set):
+    def _load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
             os.environ[env_name] = "" if env_value is None else env_value
 
@@ -231,10 +229,25 @@ class EnvMachSpecific(EnvBase):
         # Note this is independent of module system type
         mod_cmd = self.get_module_system_cmd_path(shell)
         cmds = []
+        last_action = None
+        last_cmd    = None
+
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("{} {} {}".format(mod_cmd, action, "" if argument is None else argument))
+
+            if action == last_action:
+                last_cmd = "{} {}".format(last_cmd, argument)
+            else:
+                if last_cmd is not None:
+                    cmds.append(last_cmd)
+
+                last_cmd = "{} {} {}".format(mod_cmd, action, "" if argument is None else argument)
+                last_action = action
+
+        if last_cmd:
+            cmds.append(last_cmd)
+
         return cmds
 
     def _load_module_modules(self, modules_to_load):
@@ -298,6 +311,8 @@ class EnvMachSpecific(EnvBase):
         for key in newenv:
             if key in os.environ and key not in newenv:
                 del(os.environ[key])
+            elif key in os.environ and os.environ[key] == newenv[key]:
+                pass
             else:
                 os.environ[key] = newenv[key]
 
