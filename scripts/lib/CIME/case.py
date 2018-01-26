@@ -93,7 +93,6 @@ class Case(object):
         self.set_lookup_value('MODEL', self._cime_model)
         self._compsetname = None
         self._gridname = None
-        self._compsetsfile = None
         self._pesfile = None
         self._gridfile = None
         self._components = []
@@ -457,10 +456,8 @@ class Case(object):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
-                                   files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
+                    self.set_lookup_value("COMPSETS_SPEC_FILE", compsets_filename)
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     return compset_alias, science_support
@@ -540,6 +537,11 @@ class Case(object):
         """
 
         component = self.get_primary_component()
+
+        compset_spec_file = files.get_value("COMPSETS_SPEC_FILE",
+                                            {"component":component}, resolved=False)
+
+        self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
 
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
@@ -631,12 +633,22 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
+        # will need a change here for new cpl components
+        root_dir_node_name = 'COMP_ROOT_DIR_CPL'
+        comp_root_dir = files.get_value(root_dir_node_name,
+                                        {"component":"drv"}, resolved=False)
+        if comp_root_dir is not None:
+            files.set_value(root_dir_node_name, comp_root_dir)
+            self.set_value(root_dir_node_name, comp_root_dir)
+
+
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
             root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+
             if comp_root_dir is not None:
                 # the set_value in files is needed for the archiver setup below
                 files.set_value(root_dir_node_name, comp_root_dir)
@@ -813,6 +825,8 @@ class Case(object):
 
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
+        self.clean_up_lookups(allow_undefined=True)
+
         self.get_compset_var_settings()
 
         self.clean_up_lookups(allow_undefined=True)
@@ -981,7 +995,7 @@ class Case(object):
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
-                logger.debug("Compset specific settings: name is {} and value is {}".format(name, value))
+                logger.info("Compset specific settings: name is {} and value is {}".format(name, value))
                 self.set_lookup_value(name, value)
 
     def set_initial_test_values(self):

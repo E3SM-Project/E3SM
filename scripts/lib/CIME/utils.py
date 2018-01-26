@@ -203,7 +203,8 @@ def get_model():
     # One last try
     if (model is None):
         srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")):
+        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
+           or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
         else:
             model = 'acme'
