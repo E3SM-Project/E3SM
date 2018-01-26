@@ -72,8 +72,8 @@ module seq_timemgr_mod
   integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_nmonth = 4
   integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_nyear  = 5
 
-  character(SHR_KIND_CL),public,parameter :: seq_timemgr_noleap    = shr_cal_noleap
-  character(SHR_KIND_CL),public,parameter :: seq_timemgr_gregorian = shr_cal_gregorian
+  character(SHR_KIND_CS),public,parameter :: seq_timemgr_noleap    = shr_cal_noleap
+  character(SHR_KIND_CS),public,parameter :: seq_timemgr_gregorian = shr_cal_gregorian
 
   !  These are public but declared in the private area for clarity
 
@@ -289,7 +289,6 @@ contains
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
     integer                     :: n, i               ! index
-    logical                     :: found
     integer                     :: min_dt             ! smallest time step
     integer                     :: dtime(max_clocks)  ! time-step to use
     integer                     :: offset(max_clocks) ! run offset
@@ -2414,7 +2413,7 @@ contains
 
     character(len=*), parameter ::  F06 = "(2A,L3)"
     character(len=*), parameter ::  F07 = "(3A)"
-    character(len=*), parameter ::  F08 = "(2A,I8.8,3x,I5.5)"
+    character(len=*), parameter ::  F08 = "(2A,I12.8,3x,I5.5)"
     character(len=*), parameter ::  F09 = "(2A,2I8,I12)"
     character(len=*), parameter ::  F10 = "(2A,I2,2x,A)"
 

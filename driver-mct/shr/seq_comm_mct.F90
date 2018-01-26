@@ -605,8 +605,6 @@ contains
     ! Also calls mct_world_clean, to be symmetric with the mct_world_init call from
     ! seq_comm_init.
 
-    integer :: id
-
     character(*), parameter :: subName =   '(seq_comm_clean) '
     !----------------------------------------------------------
 
@@ -634,7 +632,7 @@ contains
     integer :: mpigrp_world
     integer :: mpigrp
     integer :: mpicom
-    integer :: ntask,ntasks,cnt
+    integer :: ntasks
     integer :: ierr
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
@@ -1129,14 +1127,16 @@ contains
   integer function seq_comm_getnthreads()
 
     implicit none
-    integer :: omp_get_num_threads
     character(*),parameter :: subName =   '(seq_comm_getnthreads) '
-
-    seq_comm_getnthreads = -1
 #ifdef _OPENMP
+    integer :: omp_get_num_threads
+    seq_comm_getnthreads = -1
+
     !$OMP PARALLEL
     seq_comm_getnthreads = omp_get_num_threads()
     !$OMP END PARALLEL
+#else
+    seq_comm_getnthreads = -1
 #endif
 
   end function seq_comm_getnthreads
