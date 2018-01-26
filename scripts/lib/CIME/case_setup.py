@@ -151,6 +151,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             check_pelayouts_require_rebuild(case, models)
 
             unlock_file("env_build.xml")
+            unlock_file("env_batch.xml")
 
             case.flush()
             check_lockedfiles(case)
@@ -181,9 +182,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
+            logger.info("Locking file env_batch.xml")
             case.flush()
             logger.debug("at copy TOTALPES = {}".format(case.get_value("TOTALPES")))
             lock_file("env_mach_pes.xml")
+            lock_file("env_batch.xml")
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
