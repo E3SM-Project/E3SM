@@ -143,9 +143,8 @@ contains
     logical                  :: samegrid_ro    ! samegrid runoff and ocean
     integer                  :: atm_nx, atm_ny
     integer                  :: lsize_o
-    integer                  :: eli, egi, eri
+    integer                  :: egi, eri
     integer                  :: ewi, eai, eii, eoi
-    integer                  :: ka,km,k1,k2,k3 ! aVect field indices
     character(CL)            :: ocn_gnam       ! ocn grid
     character(CL)            :: atm_gnam       ! atm grid
     character(CL)            :: rof_gnam       ! rof grid
@@ -522,7 +521,7 @@ contains
     type(mct_aVect), intent(inout) :: x2o_o
     !
     ! Local variables
-    integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1,ierr
+    integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1
     integer  :: kof,kif
     integer  :: lsize
     integer  :: noflds,naflds,niflds,nrflds,nwflds,nxflds
@@ -605,7 +604,7 @@ contains
     integer, save :: index_x2o_Faxa_prec_HDO
     logical :: iamroot
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
-    integer, save, pointer :: aindx(:), iindx(:), oindx(:), xindx(:)
+    integer, save, pointer :: aindx(:), iindx(:), xindx(:)
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: i2x_sharedindices

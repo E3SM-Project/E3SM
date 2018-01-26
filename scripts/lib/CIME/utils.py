@@ -366,7 +366,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR' from dir ...
+    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
     >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
     True
@@ -550,7 +550,11 @@ def get_current_branch(repo=None):
     """
     Return the name of the current branch for a repository
 
-    >>> get_current_branch() is not None
+    >>> if "GIT_BRANCH" in os.environ:
+    ...     get_current_branch() is not None
+    ... else:
+    ...     os.environ["GIT_BRANCH"] = "foo"
+    ...     get_current_branch() == "foo"
     True
     """
     if ("GIT_BRANCH" in os.environ):

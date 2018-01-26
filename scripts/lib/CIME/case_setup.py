@@ -12,7 +12,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
 from CIME.test_status       import *
 
-import shutil, six
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +75,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
            "inputdata root is not a directory: {}".format(din_loc_root))
-
-    # Check that userdefine settings are specified before expanding variable
-    for vid, value in case:
-        expect(not (isinstance(value, six.string_types) and "USERDEFINED_required_build" in value),
-               "Parameter '{}' must be defined".format(vid))
 
     # Remove batch scripts
     if reset or clean:

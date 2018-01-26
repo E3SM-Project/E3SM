@@ -51,6 +51,11 @@ class Machines(GenericXML):
         expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
 
+    def get_child(self, name=None, attributes=None, root=None, err_msg=None):
+        if root is None:
+            root = self.machine_node
+        return super(Machines, self).get_child(name, attributes, root, err_msg)
+
     def get_machines_dir(self):
         """
         Return the directory of the machines file
@@ -67,7 +72,7 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.get_children(root=self.machine_node, no_validate=True)
+        nodes = self.get_children(root=self.machine_node)
         node_names = []
         for node in nodes:
             node_names.append(self.name(node))
@@ -158,7 +163,7 @@ class Machines(GenericXML):
         if machine == "Query":
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
-            self.machine_node = self.get_child("machine", {"MACH" : machine}, err_msg="No machine {} found".format(machine))
+            self.machine_node = super(Machines,self).get_child("machine", {"MACH" : machine}, err_msg="No machine {} found".format(machine))
             self.machine = machine
 
         return machine
