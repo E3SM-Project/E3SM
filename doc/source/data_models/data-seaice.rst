@@ -127,54 +127,14 @@ Field names
 -----------
 
 DICE defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
-In general, the stream input file should translate the stream input variable names into the ``dice_fld`` names below for use within the data ice model.
+
+.. note:: In general, the stream input file should translate the stream input variable names into the ``docn_fld`` names below for use within the data ocn model.
 
 .. csv-table:: "DICE internal field names"
    :header: "dice_fld (avifld)", "driver_fld (avofld)"
    :widths: 30, 30
 
-   "to",    "So_t"	       
-   "s",	    "So_s"	       
-   "uo",    "So_u"	       
-   "vo",    "So_v"	       
-   "dhdx",  "So_dhdx"      
-   "dhdy",  "So_dhdy"      
-   "q",	    "Fioo_q"       
-   "z",	    "Sa_z"	       
-   "ua",    "Sa_u"	       
-   "va",    "Sa_v"	       
-   "ptem",  "Sa_ptem"      
-   "tbot",  "Sa_tbot"      
-   "shum",  "Sa_shum"      
-   "dens",  "Sa_dens"      
-   "swndr", "Faxa_swndr"   
-   "swvdr", "Faxa_swvdr"   
-   "swndf", "Faxa_swndf"   
-   "swvdf", "Faxa_swvdf"   
-   "lwdn",  "Faxa_lwdn"    
-   "rain",  "Faxa_rain"    
-   "snow",  "Faxa_snow"    
-   "t",	    "Si_t"	       
-   "tref",  "Si_tref"      
-   "qref",  "Si_qref"      
    "ifrac", "Si_ifrac"     
-   "avsdr", "Si_avsdr"     
-   "anidr", "Si_anidr"     
-   "avsdf", "Si_avsdf"     
-   "anidf", "Si_anidf"     
-   "tauxa", "Faii_taux"    
-   "tauya", "Faii_tauy"    
-   "lat",   "Faii_lat"     
-   "sen",   "Faii_sen"     
-   "lwup",  "Faii_lwup"    
-   "evap",  "Faii_evap"    
-   "swnet", "Faii_swnet"   
-   "swpen", "Fioi_swpen"   
-   "melth", "Fioi_melth"   
-   "meltw", "Fioi_meltw"   
-   "salt",  "Fioi_salt"    
-   "tauxo", "Fioi_taux"    
-   "tauyo", "Fioi_tauy"    
 
 
 
