@@ -7,6 +7,7 @@ module EMI_CanopyStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use CanopyStateType                       , only : canopystate_type
+  use EMI_CanopyStateType_Constants
   !
   implicit none
   !
@@ -23,9 +24,6 @@ contains
     ! Unack data for ALM canopystate_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_FSUN
-    use ExternalModelConstants , only : E2L_STATE_LAISUN
-    use ExternalModelConstants , only : E2L_STATE_LAISHA
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

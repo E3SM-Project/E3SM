@@ -6,6 +6,7 @@ module EMI_Landunit_Exchange
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_Landunit_Constants
   !
   implicit none
   !
@@ -22,9 +23,6 @@ contains
     ! Pack data from ALM's landunit type for EM
     !
     ! !USES:
-    use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
-    use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
-    use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
     use LandunitType              , only : lun_pp
     !
     implicit none

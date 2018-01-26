@@ -9,7 +9,18 @@ module ExternalModelBETRMod
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
   use decompMod                    , only : bounds_type
-
+  use ExternalModelConstants
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ColumnType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_Filter_Constants
+  use EMI_Landunit_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
   !
   implicit none
   !
@@ -42,21 +53,6 @@ contains
     ! Create a list of all variables needed by BeTR from ALM
     !
     ! !USES:
-    use ExternalModelConstants    , only : EM_BETR_BEGIN_MASS_BALANCE_STAGE
-    use ExternalModelConstants    , only : EM_BETR_PRE_DIAG_WATER_FLUX_STAGE
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_H2OSFC
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_INUNDATED
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_AIR_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_RHO_VAP_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_RHVAP_SOI_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC
     !
     implicit none
     !
@@ -163,8 +159,6 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use ExternalModelConstants    , only : EM_BETR_BEGIN_MASS_BALANCE_STAGE
-    use ExternalModelConstants    , only : EM_BETR_PRE_DIAG_WATER_FLUX_STAGE
     use clm_varctl                , only : iulog
     !
     implicit none
@@ -202,8 +196,6 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use ExternalModelConstants    , only : EM_BETR_BEGIN_MASS_BALANCE_STAGE
-    use ExternalModelConstants    , only : EM_BETR_PRE_DIAG_WATER_FLUX_STAGE
     use clm_varctl                , only : iulog
 #ifdef BETR_VIA_EMI
     use clm_instMod               , only : ep_betr
@@ -238,8 +230,6 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use ExternalModelConstants    , only : EM_BETR_BEGIN_MASS_BALANCE_STAGE
-    use ExternalModelConstants    , only : EM_BETR_PRE_DIAG_WATER_FLUX_STAGE
     use clm_varctl                , only : iulog
     use clm_varpar                , only : nlevsoi
 #ifdef BETR_VIA_EMI

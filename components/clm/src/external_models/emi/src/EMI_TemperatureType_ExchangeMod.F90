@@ -7,6 +7,7 @@ module EMI_TemperatureType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use TemperatureType                       , only : temperature_type
+  use EMI_TemperatureType_Constants
   !
   implicit none
   !
@@ -25,10 +26,6 @@ contains
     ! Pack data from ALM temperature_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_STATE_T_SOI10CM
-    use ExternalModelConstants , only : L2E_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants , only : L2E_STATE_TSNOW
-    use ExternalModelConstants , only : L2E_STATE_TH2OSFC
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -122,7 +119,6 @@ contains
     ! Pack data from ALM temperature_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_STATE_T_VEG
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -189,9 +185,6 @@ contains
     ! Unack data for ALM temperature_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants , only : E2L_STATE_TSNOW_NLEVSNOW
-    use ExternalModelConstants , only : E2L_STATE_TH2OSFC
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

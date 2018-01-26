@@ -7,6 +7,7 @@ module EMI_SoilStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use SoilStateType                         , only : soilstate_type
+  use EMI_SoilStateType_Constants
   !
   implicit none
   !
@@ -24,14 +25,6 @@ contains
     ! Pack data from ALM soilstate_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_PARAMETER_WATSATC
-    use ExternalModelConstants , only : L2E_PARAMETER_HKSATC
-    use ExternalModelConstants , only : L2E_PARAMETER_BSWC
-    use ExternalModelConstants , only : L2E_PARAMETER_SUCSATC
-    use ExternalModelConstants , only : L2E_PARAMETER_EFFPOROSITYC
-    use ExternalModelConstants , only : L2E_PARAMETER_CSOL
-    use ExternalModelConstants , only : L2E_PARAMETER_TKMG
-    use ExternalModelConstants , only : L2E_PARAMETER_TKDRY
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -170,7 +163,6 @@ contains
     ! Unack data for ALM soilstate_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_SOIL_MATRIC_POTENTIAL
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

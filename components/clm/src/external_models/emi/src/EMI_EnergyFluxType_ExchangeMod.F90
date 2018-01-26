@@ -7,6 +7,7 @@ module EMI_EnergyFluxType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use EnergyFluxType                        , only : energyflux_type
+  use EMI_EnergyFluxType_Constants
   !
   implicit none
   !
@@ -23,11 +24,6 @@ contains
     ! Pack data from ALM energyflux_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_FLUX_ABSORBED_SOLAR_RADIATION
-    use ExternalModelConstants , only : L2E_FLUX_SOIL_HEAT_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_SNOW_HEAT_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_H2OSFC_HEAT_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

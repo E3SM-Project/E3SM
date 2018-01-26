@@ -6,6 +6,7 @@ module EMI_Filter_Exchange
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_Filter_Constants
   !
   implicit none
   !
@@ -22,12 +23,6 @@ contains
     ! Pack data from ALM's filter for EM
     !
     ! !USES:
-    use ExternalModelConstants    , only : L2E_FILTER_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC_AND_NOURBANC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC
     !
     implicit none
     !

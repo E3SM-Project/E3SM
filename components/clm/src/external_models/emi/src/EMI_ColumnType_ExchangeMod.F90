@@ -7,6 +7,8 @@ module EMI_ColumnType_Exchange
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_ColumnType_Constants
+  
   !
   implicit none
   !
@@ -23,20 +25,6 @@ contains
     ! Pack data from ALM's column type for EM
     !
     ! !USES:
-    use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
-    use ExternalModelConstants    , only : L2E_COLUMN_TYPE
-    use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ
-    use ExternalModelConstants    , only : L2E_COLUMN_Z
-    use ExternalModelConstants    , only : L2E_COLUMN_AREA
-    use ExternalModelConstants    , only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_BEGIN
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_END
-    use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
     use ColumnType                , only : col_pp
     use clm_varpar                , only : nlevgrnd, nlevsno
     !

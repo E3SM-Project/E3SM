@@ -14,6 +14,18 @@ module ExternalModelVSFMMod
   use ExternalModelBaseType        , only : em_base_type
   use MultiPhysicsProbVSFM         , only : mpp_vsfm_type
   use decompMod                    , only : bounds_type
+  use ExternalModelConstants
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ColumnType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_Filter_Constants
+  use EMI_Landunit_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
   !
   implicit none
   !
@@ -110,29 +122,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Create a list of all variables needed by VSFM from ALM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_INITIALIZATION_STAGE
-    use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
-    use ExternalModelConstants    , only : L2E_COLUMN_TYPE
-    use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ
-    use ExternalModelConstants    , only : L2E_COLUMN_Z
-    use ExternalModelConstants    , only : L2E_COLUMN_AREA
-    use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
-    use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
-    use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use ExternalModelConstants    , only : L2E_PARAMETER_WATSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_HKSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_BSWC
-    use ExternalModelConstants    , only : L2E_PARAMETER_SUCSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_EFFPOROSITYC
-    use ExternalModelConstants    , only : L2E_STATE_WTD
-    use ExternalModelConstants    , only : L2E_STATE_VSFM_PROGNOSTIC_SOILP
-    use ExternalModelConstants    , only : L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVGRND
     !
     implicit none
     !
@@ -240,14 +229,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables to be returned by VSFM from ALM
     !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_INITIALIZATION_STAGE
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_LIQ
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_ICE
-    use ExternalModelConstants    , only : E2L_STATE_SOIL_MATRIC_POTENTIAL
-    use ExternalModelConstants    , only : E2L_STATE_WTD
-    use ExternalModelConstants    , only : E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    !
     implicit none
     !
     ! !ARGUMENTS:
@@ -294,21 +275,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Create a list of all variables needed by VSFM from ALM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_VSFM_SOIL_HYDRO_STAGE
-    use ExternalModelConstants    , only : L2E_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVGRND
-    use ExternalModelConstants    , only : L2E_FLUX_INFIL_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_VERTICAL_ET_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DEW_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DRAINAGE_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FILTER_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI
     !
     implicit none
     !
@@ -385,15 +351,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Create a list of all variables to be returned by VSFM from ALM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_VSFM_SOIL_HYDRO_STAGE
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_LIQ
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_ICE
-    use ExternalModelConstants    , only : E2L_STATE_SOIL_MATRIC_POTENTIAL
-    use ExternalModelConstants    , only : E2L_STATE_WTD
-    use ExternalModelConstants    , only : E2L_STATE_VSFM_PROGNOSTIC_SOILP
-    use ExternalModelConstants    , only : E2L_FLUX_AQUIFER_RECHARGE
     !
     implicit none
     !
@@ -1864,9 +1821,6 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     ! !DESCRIPTION:
     ! The VSFM dirver subroutine
-    !
-    ! !USES:
-    use ExternalModelConstants , only : EM_VSFM_SOIL_HYDRO_STAGE
     !
     implicit none
     !

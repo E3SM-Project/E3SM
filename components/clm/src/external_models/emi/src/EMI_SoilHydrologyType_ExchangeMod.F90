@@ -7,6 +7,17 @@ module EMI_SoilHydrologyType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use SoilHydrologyType                     , only : soilhydrology_type
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ColumnType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_Filter_Constants
+  use EMI_Landunit_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
   !
   implicit none
   !
@@ -24,9 +35,6 @@ contains
     ! Pack data from ALM soilhydrology_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_STATE_WTD
-    use ExternalModelConstants , only : L2E_STATE_QCHARGE
-    use ExternalModelConstants , only : L2E_STATE_FRACICE
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -111,8 +119,6 @@ contains
     ! Unack data for ALM soilhydrology_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_WTD
-    use ExternalModelConstants , only : E2L_FLUX_AQUIFER_RECHARGE
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

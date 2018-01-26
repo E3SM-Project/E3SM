@@ -7,6 +7,7 @@ module EMI_WaterFluxType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterFluxType                         , only : waterflux_type
+  use EMI_WaterFluxType_Constants
   !
   implicit none
   !
@@ -24,13 +25,6 @@ contains
     ! Pack data from ALM waterflux_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_FLUX_INFIL_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_VERTICAL_ET_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_DEW_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants , only : L2E_FLUX_DRAINAGE_MASS_FLUX
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -149,8 +143,6 @@ contains
     ! Unack data for ALM waterflux_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_FLUX_AQUIFER_RECHARGE
-    use ExternalModelConstants , only : E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

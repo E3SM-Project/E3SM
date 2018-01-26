@@ -7,6 +7,7 @@ module EMI_WaterStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterStateType                        , only : waterstate_type
+  use EMI_WaterStateType_Constants
   !
   implicit none
   !
@@ -24,25 +25,6 @@ contains
     ! Pack data from ALM waterstate_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_LIQ_NLEVGRND
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_ICE_NLEVGRND
-    use ExternalModelConstants , only : L2E_STATE_VSFM_PROGNOSTIC_SOILP
-    use ExternalModelConstants , only : L2E_STATE_FRAC_H2OSFC
-    use ExternalModelConstants , only : L2E_STATE_FRAC_INUNDATED
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_VOL_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_AIR_VOL_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_RHO_VAP_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_RHVAP_SOI_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_LIQ_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_ICE_NLEVSOI
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_LIQ_NLEVSNOW
-    use ExternalModelConstants , only : L2E_STATE_H2OSOI_ICE_NLEVSNOW
-    use ExternalModelConstants , only : L2E_STATE_H2OSNOW
-    use ExternalModelConstants , only : L2E_STATE_H2OSFC
-    use ExternalModelConstants , only : L2E_STATE_FRAC_SNOW_EFFECTIVE
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
@@ -277,9 +259,6 @@ contains
     ! Unack data for ALM waterstate_vars from EM
     !
     ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_H2OSOI_LIQ
-    use ExternalModelConstants , only : E2L_STATE_H2OSOI_ICE
-    use ExternalModelConstants , only : E2L_STATE_VSFM_PROGNOSTIC_SOILP
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none

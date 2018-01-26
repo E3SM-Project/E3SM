@@ -7,6 +7,7 @@ module EMI_Atm2LndType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use Atm2LndType                           , only : atm2lnd_type
+  use EMI_Atm2LndType_Constants
   !
   implicit none
   !
@@ -23,9 +24,7 @@ contains
     ! Pack data from ALM atm2lndtype_vars for EM
     !
     ! !USES:
-    use ExternalModelConstants , only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
-    use ExternalModelConstants , only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
-    use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
+    use clm_varpar                 , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
     !
