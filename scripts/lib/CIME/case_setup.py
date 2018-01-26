@@ -151,6 +151,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             check_pelayouts_require_rebuild(case, models)
 
             unlock_file("env_build.xml")
+            unlock_file("env_batch.xml")
 
             case.flush()
             check_lockedfiles(case)

@@ -617,20 +617,29 @@ class EnvBatch(EnvBase):
                 return True
 
     def compare_xml(self, other):
+        xmldiffs = {}
         f1batchnodes = self.get_children("batch_system")
         for bnode in f1batchnodes:
-            f2bnode = other.get_child("batch_system", attributes = bnode.attrib)
-            f1batchnodes = self.scan_children(root=bnode)
-            for node in f1batchnodes:
-                f2match = other.scan_optional_child(name=node.tag, root=f2batch)
+            f2bnodes = other.get_children("batch_system",
+                                          attributes = self.attrib(bnode))
+            f2bnode=None
+            if len(f2bnodes):
+                f2bnode = f2bnodes[0]
+            f1batchnodes = self.get_children(root=bnode)
+            for idx, node in enumerate(f1batchnodes):
+                f2matches = other.scan_children(self.name(node), attributes=self.attrib(node), root=f2bnode)
+                f2match = f2matches[idx] if len(f2matches)> idx else None
                 if f2match is not None:
-                    text1 = self.get_element_text(name=node.tag, root=f1batch)
-                    text2 = other.get_element_text(name=node.tag, root=f1batch)
+                    name = self.name(node)
+                    attribs = self.attrib(node)
+                    text1 = self.text(node)
+                    text2 = other.text(f2match)
                     if text1 != text2:
-                        logger.error(" Found difference in {} : case {} locked {}".format(node.tag,text1,text2))
-                        expect(False, "Invoke case.setup --reset")
+                        xmldiffs[name] = [text1, text2]
         f1groups = self.get_children("group")
         for node in f1groups:
             group = self.get(node, "id")
             f2group = other.get_child("group", attributes={"id":group})
-            super(EnvBatch, self).compare_xml(self, other, root=group, otherroot=f2group)
+            xmldiffs.update(super(EnvBatch, self).compare_xml(other,
+                                              root=node, otherroot=f2group))
+        return xmldiffs

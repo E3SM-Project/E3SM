@@ -398,22 +398,24 @@ class EntryID(GenericXML):
         f1nodes = self.scan_children("entry", root=root)
         for node in f1nodes:
             vid = self.get(node, "id")
+            logger.info("Compare vid {}".format(vid))
             f2match = other.scan_optional_child("entry", attributes={"id":vid},root=otherroot)
-            if f2match is not None:
-                f1val = self.get_value(vid, resolved=False, root=root)
+            expect(f2match is not None,"Could not find {} in Locked file".format(vid))
+            if node != f2match:
+                f1val = self.get_value(vid, resolved=False)
                 if f1val is not None:
-                    f2val = other.get_value(vid, resolved=False, root=otherroot)
+                    f2val = other.get_value(vid, resolved=False)
                     if f1val != f2val:
                         xmldiffs[vid] = [f1val, f2val]
                 elif hasattr(self, "_components"):
                     for comp in self._components:
-                        f1val = self.get_value("{}_{}".format(vid,comp), resolved=False, root=root)
+                        f1val = self.get_value("{}_{}".format(vid,comp), resolved=False)
                         if f1val is not None:
-                            f2val = other.get_value("{}_{}".format(vid,comp), resolved=False, root=otherroot)
+                            f2val = other.get_value("{}_{}".format(vid,comp), resolved=False)
                             if f1val != f2val:
                                 xmldiffs[vid] = [f1val, f2val]
                         else:
-                            if not elements_equal(node, f2match):
+                            if node != f2match:
                                 f1value_nodes = self.get_children("value", root=node)
                                 for valnode in f1value_nodes:
                                     f2valnodes = other.get_children("value", root=f2match, attributes=self.attrib(valnode))
