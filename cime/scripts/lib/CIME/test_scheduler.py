@@ -18,6 +18,7 @@ from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
 from CIME.XML.machines import Machines
+from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
@@ -25,6 +26,7 @@ from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
 from CIME.check_lockedfiles import lock_file
+from CIME.provenance import get_recommended_test_time_based_on_past
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -447,9 +449,14 @@ class TestScheduler(object):
         else:
             # model specific ways of setting time
             if get_model() == "acme":
-                recommended_time = get_recommended_test_time(test)
+                recommended_time = get_recommended_test_time_based_on_past(self._baseline_root, test)
+
+                if recommended_time is None:
+                    recommended_time = get_recommended_test_time(test)
+
                 if recommended_time is not None:
                     create_newcase_cmd += " --walltime {}".format(recommended_time)
+
             else:
                 if test in self._test_data and "options" in self._test_data[test] and \
                         "wallclock" in self._test_data[test]['options']:
@@ -874,7 +881,9 @@ class TestScheduler(object):
         # Setup cs files
         self._setup_cs_files()
 
+        GenericXML.DISABLE_CACHING = True
         self._producer()
+        GenericXML.DISABLE_CACHING = False
 
         expect(threading.active_count() == 1, "Leftover threads?")
 
@@ -924,6 +933,6 @@ class TestScheduler(object):
 
                 logger.info( "    Case dir: {}".format(self._get_test_dir(test)))
 
-            logger.info( "test-scheduler took {} seconds".format(time.time() - start_time))
+        logger.info( "test-scheduler took {} seconds".format(time.time() - start_time))
 
         return rv

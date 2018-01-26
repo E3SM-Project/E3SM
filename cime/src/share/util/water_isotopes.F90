@@ -27,12 +27,12 @@ module water_isotopes
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
 !  use abortutils,    only: endrun
-  use shr_const_mod, only: SHR_CONST_TKTRIP, &
-                           SHR_CONST_RSTD_H2ODEV, &
-                           SHR_CONST_VSMOW_16O, &
-                           SHR_CONST_VSMOW_18O, &
-                           SHR_CONST_VSMOW_D , &
-                           SHR_CONST_VSMOW_H
+  use shr_const_mod, only: SHR_CONST_TKTRIP
+!                           SHR_CONST_RSTD_H2ODEV, &
+!                           SHR_CONST_VSMOW_16O, &
+!                           SHR_CONST_VSMOW_18O, &
+!                           SHR_CONST_VSMOW_D , &
+!                           SHR_CONST_VSMOW_H
 
   implicit none
 
@@ -230,11 +230,11 @@ contains
     real(r8) z0                 ! roughness length (constant in cam 9.5e-5)
     real(r8) reno               ! surface reynolds number
     real(r8) tmr                ! ratio of turbulen to molecular resistance
-    real(r8) enn	        ! diffusive power
+    real(r8) enn                ! diffusive power
     real(r8) sc                 ! Schmidt number (Prandtl number)
     real(r8) vmu                ! kinematic viscocity of air
     real(r8) difn               ! ratio of difusivities to the power of n
-    real(r8) difrmj	        ! isotopic diffusion with substitutions
+    real(r8) difrmj             ! isotopic diffusion with substitutions
 
     real(r8) kmol               ! Merlivals k_mol
 !-----------------------------------------------------------------------

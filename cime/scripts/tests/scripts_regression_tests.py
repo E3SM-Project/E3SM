@@ -804,9 +804,9 @@ class TestCreateTestCommon(unittest.TestCase):
         extra_args.append("--baseline-root {}".format(self._baseline_area))
         if NO_BATCH:
             extra_args.append("--no-batch")
-        if TEST_COMPILER:
+        if TEST_COMPILER and ([extra_arg for extra_arg in extra_args if "--compiler" in extra_arg] == []):
             extra_args.append("--compiler={}".format(TEST_COMPILER))
-        if TEST_MPILIB:
+        if TEST_MPILIB and ([extra_arg for extra_arg in extra_args if "--mpilib" in extra_arg] == []):
             extra_args.append("--mpilib={}".format(TEST_MPILIB))
         extra_args.append("--test-root={0} --output-root={0}".format(TEST_ROOT))
 
@@ -1340,6 +1340,19 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Basic namelist compare should now pass again
         self._create_test(compargs)
 
+class X_TestQueryConfig(unittest.TestCase):
+    def test_query_compsets(self):
+        run_cmd_no_fail("{}/query_config --compsets".format(SCRIPT_DIR))
+
+    def test_query_components(self):
+        run_cmd_no_fail("{}/query_config --components".format(SCRIPT_DIR))
+
+    def test_query_grids(self):
+        run_cmd_no_fail("{}/query_config --grids".format(SCRIPT_DIR))
+
+    def test_query_machines(self):
+        run_cmd_no_fail("{}/query_config --machines".format(SCRIPT_DIR))
+
 ###############################################################################
 class Z_FullSystemTest(TestCreateTestCommon):
 ###############################################################################
@@ -1461,8 +1474,9 @@ class K_TestCimeCase(TestCreateTestCommon):
                 jobid_ident = 'jobid'
                 dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
                 self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
-                dep_str = dep_str_fmt[:-len(jobid_ident)]
+                dep_str = dep_str_fmt[:dep_str_fmt.index(jobid_ident)]
 
+                prereq_substr = None
                 while dep_str in batch_cmd_args:
                     dep_id_pos = batch_cmd_args.find(dep_str) + len(dep_str)
                     batch_cmd_args = batch_cmd_args[dep_id_pos:]
@@ -1711,7 +1725,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "melvin", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
-        self._create_test(["--no-setup", "--machine={}".format(machine), "--project=testproj", test_name], test_id=self._baseline_name,
+        self._create_test(["--no-setup", "--machine={}".format(machine), "--compiler={}".format(compiler), "--project=testproj", test_name],
+                          test_id=self._baseline_name,
                           env_changes="unset CIME_GLOBAL_WALLTIME &&")
 
         casedir = os.path.join(self._testroot,

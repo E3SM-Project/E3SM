@@ -104,7 +104,7 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
             is_text_file = "text" in out
             if (not (not show_binary and not is_text_file)):
                 the_text = open(path2, "r").read()
-                for replace_item, replace_with in repls.iteritems():
+                for replace_item, replace_with in repls.items():
                     the_text = the_text.replace(replace_item, replace_with)
 
                 stat, out, _ = run_cmd("diff -w {} -".format(path1), input_str=the_text)

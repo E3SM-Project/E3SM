@@ -2203,7 +2203,7 @@
 	   <!-- This increases the stack size, which is necessary
 		for CICE to run threaded on this machine -->
 	   <env name="OMP_STACKSIZE">64M</env>
-	   
+
 	 </environment_variables>
 </machine>
 
@@ -2748,7 +2748,7 @@
 	 </mpirun>
 		<!-- Useful jsrun options:
 		-n	(hyphen-hyphen)nrs	Number of resource sets
-		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set 
+		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set
 		-c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
 		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
 		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
@@ -2809,7 +2809,7 @@
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
-      </modules> 
+      </modules>
  	  <modules compiler="pgi" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>

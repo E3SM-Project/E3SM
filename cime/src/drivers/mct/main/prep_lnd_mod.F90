@@ -101,7 +101,7 @@ contains
     !
     ! Local Variables
     integer                  :: lsize_l
-    integer                  :: eai, eri, egi, eli
+    integer                  :: eai, eri, egi
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
     logical                  :: samegrid_lg   ! samegrid land and glc
@@ -271,7 +271,7 @@ contains
     character(len=*)     , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eai, eri, egi, eli, efi
+    integer                  :: eai, eri, egi, eli
     type(mct_aVect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_mrg)'
     !---------------------------------------------------------------

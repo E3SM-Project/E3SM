@@ -460,7 +460,7 @@ class Grids(GenericXML):
         logger.info("{:10s}  default component grids:\n".format(""))
         logger.info("     component         compset       value " )
         logger.info("{:5s}-------------------------------------------------------------".format(""))
-        default_nodes = self.get_children("model_grid_defaults")
+        default_nodes = self.get_children("model_grid_defaults", root=self.get_child("grids"))
         for default_node in default_nodes:
             grid_nodes = self.get_children("grid", root=default_node)
             for grid_node in grid_nodes:
@@ -472,13 +472,12 @@ class Grids(GenericXML):
 
         domains = {}
         if long_output is not None:
-            domain_nodes = self.get_children("domain")
+            domain_nodes = self.get_children("domain",root=self.get_child("domains"))
             for domain_node in domain_nodes:
-                name = self.get(domain_node, "name")
+                name = self.get(domain_node, 'name')
                 if name == 'null':
                     continue
                 desc = self.text(self.get_child("desc", root=domain_node))
-                #support = self.get_optional_child("support", root=domain_node).text
                 files = ""
                 file_nodes = self.get_children("file", root=domain_node)
                 for file_node in file_nodes:
@@ -496,7 +495,7 @@ class Grids(GenericXML):
                         files += ")"
                 domains[name] = "\n       {} with domain file(s): {} ".format(desc, files)
 
-        model_grid_nodes = self.get_children("model_grid")
+        model_grid_nodes = self.get_children("model_grid", root=self.get_child("grids"))
         for model_grid_node in model_grid_nodes:
             alias = self.get(model_grid_node, "alias")
             compset = self.get(model_grid_node, "compset")
@@ -528,7 +527,7 @@ class Grids(GenericXML):
 
     def _print_values_v1(self, long_output=None):
         # write out grid elements
-        grid_nodes = self.get_children("grid")
+        grid_nodes = self.get_children("grid", root=self.get_child('grids'))
         for grid_node in grid_nodes:
             lname = self.get_element_text("lname",root=grid_node)
             sname = self.get_element_text("sname",root=grid_node)
@@ -540,9 +539,9 @@ class Grids(GenericXML):
                 logger.info("   short name: {}".format(sname))
             if alias is not None:
                 logger.info("   alias: {}".format(alias))
-            for attr, value in grid_node.items():
-                if  attr == 'compset':
-                    logger.info("   compset match: {}".format(value))
+            compset = self.get(grid_node, 'compset')
+            if compset is not None:
+                logger.info("   compset match: {}".format(compset))
 
             # in long_output mode add domain description and mapping fiels
             if long_output is not None:
@@ -553,9 +552,17 @@ class Grids(GenericXML):
                 for domain in list(set(component_grids)):
                     if domain != 'null':
                         logger.info("   domain is {}".format(domain))
-                        domain_node = self.get_child("domain", attributes={"name":domain})
-                        for child in domain_node:
-                            logger.info("        {}: {}".format(self.name(child), self.text(child)))
+                        domain_node = self.get_optional_child("domain", attributes={"name":domain}, root=self.get_child("domains"))
+                        if domain_node is None:
+                            continue
+                        dnode = self.get_optional_child("desc",root=domain_node)
+                        if dnode is not None:
+                            desc = self.text(dnode)
+                            logger.info("       Description: {}".format(desc))
+                        snode = self.get_optional_child("support",root=domain_node)
+                        if snode is not None:
+                            support = self.text(snode)
+                            logger.info("       Support: {}".format(support))
 
                 # write out mapping files
                 grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
