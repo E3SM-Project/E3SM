@@ -2008,9 +2008,9 @@
         <command name="rm">atp</command>
         <command name="rm">esmf</command>
         <command name="rm">cudatoolkit</command>
-        <command name="load">cray-mpich/7.4.0</command>
-        <command name="load">cray-libsci/16.06.1</command>
-        <command name="load">atp/2.0.2</command>
+        <command name="load">cray-mpich/7.6.3</command>
+        <command name="load">cray-libsci/16.11.1</command>
+        <command name="load">atp/2.1.1</command>
         <command name="load">esmf/5.2.0rp2</command>
         <command name="load">cudatoolkit</command>
       </modules>
@@ -2025,9 +2025,9 @@
         <command name="rm">cray-libsci</command>
         <command name="rm">atp</command>
         <command name="rm">esmf</command>
-        <command name="load">cray-mpich/7.4.0</command>
-        <command name="load">cray-libsci/16.06.1</command>
-        <command name="load">atp/2.0.2</command>
+        <command name="load">cray-mpich/7.6.3</command>
+        <command name="load">cray-libsci/16.11.1</command>
+        <command name="load">atp/2.1.1</command>
         <command name="load">esmf/5.2.0rp2</command>
       </modules>
       <modules compiler="intel">
@@ -2040,10 +2040,10 @@
         <command name="rm">cray-libsci</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">atp</command>
-        <command name="load">intel/15.0.2.164</command>
-        <command name="load">cray-libsci/16.06.1</command>
-        <command name="load">cray-mpich/7.4.0</command>
-        <command name="load">atp/2.0.2</command>
+        <command name="load">intel/18.0.0.128</command>
+        <command name="load">cray-libsci/16.11.1</command>
+        <command name="load">cray-mpich/7.6.3</command>
+        <command name="load">atp/2.1.1</command>
       </modules>
       <modules compiler="cray">
         <command name="rm">PrgEnv-pgi</command>
@@ -2053,16 +2053,16 @@
         <command name="load">PrgEnv-cray</command>
         <command name="rm">cce</command>
         <command name="rm">cray-mpich</command>
-        <command name="load">cce/8.5.0</command>
-        <command name="load">cray-mpich/7.4.0</command>
+        <command name="load">cce/8.6.4</command>
+        <command name="load">cray-mpich/7.6.3</command>
       </modules>
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
-        <command name="load">cray-netcdf/4.4.1.1</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.7.0</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+        <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
       <!-- Default -->
@@ -2076,28 +2076,28 @@
         <env name="OMP_STACKSIZE">128M</env>
       </environment_variables>
       <environment_variables compiler="pgi">
-	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1.3/PGI/15.3/</env>
       </environment_variables>
       <environment_variables compiler="pgi" mpilib="!mpi-serial">
-	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.8.1.3/PGI/15.3</env>
       </environment_variables>
       <environment_variables compiler="pgiacc">
-	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1.3/PGI/15.3/</env>
       </environment_variables>
       <environment_variables compiler="pgiacc" mpilib="!mpi-serial">
-	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.8.1.3/PGI/15.3</env>
       </environment_variables>
       <environment_variables compiler="intel">
-	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/INTEL/15.0/</env>
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1.3/INTEL/16.0/</env>
       </environment_variables>
       <environment_variables compiler="intel" mpilib="!mpi-serial">
-	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.8.1.3/INTEL/16.0</env>
       </environment_variables>
       <environment_variables compiler="cray">
-	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/CRAY/8.3/</env>
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1.3/CRAY/8.6/</env>
       </environment_variables>
       <environment_variables compiler="cray" mpilib="!mpi-serial">
-	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.8.1.3/CRAY/8.6</env>
       </environment_variables>
 
       <!-- Set if compiler and mpilib  -->
