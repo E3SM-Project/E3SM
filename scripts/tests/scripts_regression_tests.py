@@ -1802,8 +1802,8 @@ class L_TestSaveTimings(TestCreateTestCommon):
             run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
 
         if CIME.utils.get_model() == "acme":
-            provenance_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0])
-            self.assertTrue(os.path.isdir(provenance_dir), msg="'%s' was missing" % provenance_dir)
+            provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
+            self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
 
     ###########################################################################
     def test_save_timings(self):
