@@ -72,6 +72,7 @@ contains
 
   subroutine component_init_pre(comp, compid, cplcompid, cplallcompid, &
        infodata, ntype)
+    use seq_timemgr_mod, only: seq_timemgr_data_assimilation_active
 
     !---------------------------------------------------------------
     ! Initialize driver rearrangers and AVs on driver
@@ -91,6 +92,7 @@ contains
     !
     ! Local Variables
     integer  :: eci       ! index
+    character(len=cl), allocatable :: comp_resume(:) ! Set if comp needs post-DA process
     character(*), parameter :: subname = '(component_init_pre)'
     !---------------------------------------------------------------
 
@@ -102,6 +104,7 @@ contains
     iamin_CPLID = seq_comm_iamin(CPLID)
 
     ! Initialize component type variables
+    allocate(comp_resume(size(comp)))
     do eci = 1,size(comp)
 
        comp(eci)%compid       = compid(eci)
@@ -141,21 +144,54 @@ contains
        comp(eci)%cdata_cc%gsmap    => comp(eci)%gsmap_cc
        comp(eci)%cdata_cc%infodata => infodata
 
-       ! Determine initial value of comp_present in infodata - to do - add this to component
+       ! Does this component need to do post-data assimilation processing?
+       if (seq_timemgr_data_assimilation_active(ntype(1:3))) then
+          comp_resume(:) = 'TRUE'
+       else
+          comp_resume(:) = ''
+       end if
 
+       ! Determine initial value of comp_present in infodata - to do - add this to component
 #ifdef CPRPGI
-       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'a') then
+          call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, atm_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'l') then
+          call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, lnd_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'i') then
+          call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, ice_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'o') then
+          call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, ocn_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'r') then
+          call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, rof_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'g') then
+          call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, glc_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'w') then
+          call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, wav_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'e') then
+          call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       end if
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+
+       ! Does this component need to do post-data assimilation processing?
+       call seq_infodata_PutData(comp(1)%oneletterid, infodata, comp_resume=comp_resume)
 #endif
     end do
+    deallocate(comp_resume)
 
   end subroutine component_init_pre
 
