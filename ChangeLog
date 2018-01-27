@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 01-27-2018
+Tag: cime5.4.0-alpha.23
+Answer Changes: None
+Tests: scripts_regression_tests.py on hobart 
+Dependencies:
+
+Brief Summary:
+    - Fix compare of env_batch.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+7b88f00 Merge pull request #2261 from jedwards4b/check_locked_files2
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/XML/env_batch.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 01-26-2018 
 Tag: cime5.4.0-alpha.22
 Answer Changes: None
