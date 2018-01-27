@@ -59,11 +59,11 @@ class PRE(SystemTestsCompareTwo):
         self._case.set_value("PAUSE_OPTION", stopopt)
         self._case.set_value("PAUSE_N", pausen)
         comps = self._case.get_values("COMP_CLASSES")
-        data_assimilation = []
+        pause_active = []
         for comp in comps:
-            data_assimilation.append(self._case.get_value("DATA_ASSIMILATION_{}".format(comp)))
+            pause_active.append(self._case.get_value("PAUSE_ACTIVE_{}".format(comp)))
 
-        expect(any(data_assimilation), "No Data_Assimilation flag is set")
+        expect(any(pause_active), "No pause_active flag is set")
 
         self._case.flush()
 
@@ -83,7 +83,7 @@ class PRE(SystemTestsCompareTwo):
         multi_driver = self._case.get_value("MULTI_DRIVER")
         comps = self._case.get_values("COMP_CLASSES")
         for comp in comps:
-            if not self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+            if not self._case.get_value("PAUSE_ACTIVE_{}".format(comp)):
                 continue
             if comp == "CPL":
                 if multi_driver:

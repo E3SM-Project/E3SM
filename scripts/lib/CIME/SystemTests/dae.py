@@ -50,7 +50,6 @@ class DAE(SystemTestsCompareTwo):
         expect(os.path.isfile(da_file), "ERROR: da_file, '{}', does not exist".format(da_file))
 
         # Set up two data assimilation cycles each half of the full run
-        self._case.set_value("DATA_ASSIMILATION_ATM", "TRUE")
         self._case.set_value("DATA_ASSIMILATION_SCRIPT", da_file)
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")
@@ -91,9 +90,12 @@ class DAE(SystemTestsCompareTwo):
                "ERROR: There were {:d} DA cycles in run but {:d} DA files were found".format(da_cycles, len(da_files) if da_files is not None else 0))
         da_files.sort()
         cycle_num = 0
+        compset = self._case.get_value("COMPSET")
+        is_dwav = '_DWAV' in compset
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
+            found_signal = not is_dwav
             with gzip.open(fname, "r") as dfile:
                 for bline in dfile:
                     line = bline.decode("utf-8")
@@ -104,11 +106,17 @@ class DAE(SystemTestsCompareTwo):
                         found_cycle = True
                         expect(int(line[7:]) == cycle_num,
                                "ERROR: Wrong cycle ({:d}) found in {} (expected {:d})".format(int(line[7:]), fname, cycle_num))
+                    elif 'resume signal' in line:
+                        found_signal = True
+                        expect('Post-DA resume signal found' in line[0:27],
+                               "ERROR: bad post-DA message found in {}".format(fname))
                     else:
                         expect(False, "ERROR: Unrecognized line ('{}') found in {}".format(line, fname))
 
                 # End of for loop
                 expect(found_caseroot, "ERROR: No caseroot found in {}".format(fname))
                 expect(found_cycle, "ERROR: No cycle found in {}".format(fname))
+                expect((cycle_num == 0) or found_signal,
+                       "ERROR: No post-DA resume signal message found in {}".format(fname))
             # End of with
             cycle_num = cycle_num + 1
