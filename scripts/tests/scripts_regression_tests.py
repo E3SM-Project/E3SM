@@ -1758,6 +1758,49 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
         self._create_test(["SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV", "--no-build"])
 
+    ###########################################################################
+    def test_env_loading(self):
+    ###########################################################################
+        self._create_test(["--no-build", "TESTRUNPASS.f19_g16_rx1.A"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        with Case(casedir, read_only=True) as case:
+            env_mach = case.get_env("mach_specific")
+            if env_mach.get_module_system_type() == "module":
+                orig_env = dict(os.environ)
+
+                env_mach.load_env(case)
+                module_env = dict(os.environ)
+
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+                env_mach.load_env(case, force_method="generic")
+                generic_env = dict(os.environ)
+
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+                problems = ""
+                for mkey, mval in module_env.items():
+                    if mkey not in generic_env:
+                        if not mkey.startswith("PS") and mkey != "OLDPWD":
+                            problems += "Generic missing key: {}\n".format(mkey)
+                    elif mval != generic_env[mkey] and mkey not in ["_", "SHLVL"] and not mkey.endswith("()"):
+                        problems += "Value mismatch for key {}: {} != {}\n".format(mkey, repr(mval), repr(generic_env[mkey]))
+
+                for gkey in generic_env.keys():
+                    if gkey not in module_env:
+                        problems += "Modules missing key: {}\n".format(gkey)
+
+                self.assertEqual(problems, "", msg=problems)
+
+            else:
+                self.skipTest("Skipping env load test - Only works on machines that support env modules")
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################

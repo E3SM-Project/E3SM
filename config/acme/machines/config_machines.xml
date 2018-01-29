@@ -1350,7 +1350,7 @@
          <mpirun mpilib="default">
            <executable>srun</executable>
          </mpirun>
-	 <module_system type="module_lmod">
+	 <module_system type="module">
 	      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
  	      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
 	      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
@@ -2772,7 +2772,7 @@
 		 <arg name="show-processmap"> display-map </arg>
 		-->
 
-    <module_system type="module_lmod">
+    <module_system type="module">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/sh</init_path>
       <init_path lang="csh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/csh</init_path>
@@ -2780,7 +2780,7 @@
       <init_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/perl</init_path>
       <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
       <cmd_path lang="perl">module</cmd_path>
-      <cmd_path lang="python">module</cmd_path>
+      <cmd_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
