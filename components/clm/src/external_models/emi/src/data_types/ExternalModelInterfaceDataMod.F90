@@ -1036,18 +1036,19 @@ contains
     !
     ! !USES:
     use ExternalModelConstants
-    use EMI_Atm2LndType_Constants
-    use EMI_CanopyStateType_Constants
+    use EMI_Atm2LndType_DataMod
+    use EMI_CanopyStateType_DataMod
+    use EMI_ChemStateType_DataMod
+    use EMI_EnergyFluxType_DataMod
+    use EMI_SoilHydrologyType_DataMod
+    use EMI_SoilStateType_DataMod
+    use EMI_TemperatureType_DataMod
+    use EMI_WaterFluxType_DataMod
+    use EMI_WaterStateType_DataMod
+    use EMI_TemperatureType_DataMod
     use EMI_ColumnType_Constants
-    use EMI_EnergyFluxType_Constants
     use EMI_Filter_Constants
     use EMI_Landunit_Constants
-    use EMI_SoilHydrologyType_Constants
-    use EMI_SoilStateType_Constants
-    use EMI_TemperatureType_Constants
-    use EMI_WaterFluxType_Constants
-    use EMI_WaterStateType_Constants
-    
     use ExternalModelIntefaceDataDimensionMod, only : dimname_begg
     use ExternalModelIntefaceDataDimensionMod, only : dimname_endg
     use ExternalModelIntefaceDataDimensionMod, only : dimname_begl
@@ -1064,7 +1065,6 @@ contains
     use ExternalModelIntefaceDataDimensionMod, only : dimname_one
     use ExternalModelIntefaceDataDimensionMod, only : dimname_two
     use ExternalModelIntefaceDataDimensionMod, only : dimname_col_one_based_idx
-
     !
     implicit none
     !
@@ -1092,6 +1092,7 @@ contains
     logical                                :: is_int_type
     logical                                :: is_real_type
     logical                                :: data_present
+    logical                                :: data_found
 
     call this%IsDataIDPresent(data_id, data_present)
     if (data_present) then
@@ -1100,939 +1101,362 @@ contains
        return
     endif
 
-    is_int_type    = .false.
-    is_real_type   = .false.
-    dim1_beg_name  = ''
-    dim2_beg_name  = ''
-    dim3_beg_name  = ''
-    dim4_beg_name  = ''
-    dim1_end_name  = ''
-    dim2_end_name  = ''
-    dim3_end_name  = ''
-    dim4_end_name  = ''
-
-    select case(data_id)
-
-       ! --------------------------------------------------------------
-       ! ALM-to-EM: State variables
-       ! --------------------------------------------------------------
-    case (L2E_STATE_TSOIL_NLEVGRND)
-       id_val        = L2E_STATE_TSOIL_NLEVGRND
-       name_val      = 'Soil temperature'
-       long_name_val = 'Soil temperature: ALM to External Model'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_STATE_H2OSOI_LIQ_NLEVGRND)
-       id_val        = L2E_STATE_H2OSOI_LIQ_NLEVGRND
-       name_val      = 'Soil liquid water'
-       long_name_val = 'Soil liquid water: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_STATE_H2OSOI_ICE_NLEVGRND)
-       id_val        = L2E_STATE_H2OSOI_ICE_NLEVGRND
-       name_val      = 'Soil ice water'
-       long_name_val = 'Soil ice water: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_STATE_WTD)
-       id_val        = L2E_STATE_WTD
-       name_val      = 'Water table depth'
-       long_name_val = 'Water table depth: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_VSFM_PROGNOSTIC_SOILP)
-       id_val        = L2E_STATE_VSFM_PROGNOSTIC_SOILP
-       name_val      = 'Soil liquid pressure'
-       long_name_val = 'Soil liquid pressure: ALM to External Model'
-       units_val     = '[Pa]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_STATE_FRAC_H2OSFC)
-       id_val        = L2E_STATE_FRAC_H2OSFC
-       name_val      = 'Fraction of standing water'
-       long_name_val = 'Fraction of standing water: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_FRAC_INUNDATED)
-       id_val        = L2E_STATE_FRAC_INUNDATED
-       name_val      = 'Fraction of inundated surface'
-       long_name_val = 'Fraction of inundated surface: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI)
-       id_val        = L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI
-       name_val      = 'Volumetric liquid content'
-       long_name_val = 'Volumetric liquid content: ALM to External Model'
-       units_val     = '[m3/m3]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI)
-       id_val        = L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI
-       name_val      = 'Volumetric ice content'
-       long_name_val = 'Volumetric ice content: ALM to External Model'
-       units_val     = '[m3/m3]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_H2OSOI_VOL_NLEVSOI)
-       id_val        = L2E_STATE_H2OSOI_VOL_NLEVSOI
-       name_val      = 'Volumetric soil water'
-       long_name_val = 'Volumetric soil water: ALM to External Model'
-       units_val     = '[m3/m3]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_AIR_VOL_NLEVSOI)
-       id_val        = L2E_STATE_AIR_VOL_NLEVSOI
-       name_val      = 'Air filled porosity'
-       long_name_val = 'Air filled porosity: ALM to External Model'
-       units_val     = '[m3/m3]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_RHO_VAP_NLEVSOI)
-       id_val        = L2E_STATE_RHO_VAP_NLEVSOI
-       name_val      = 'Water vapor pressure'
-       long_name_val = 'Water vapor pressure: ALM to External Model'
-       units_val     = '[Pa]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_RHVAP_SOI_NLEVSOI)
-       id_val        = L2E_STATE_RHVAP_SOI_NLEVSOI
-       name_val      = 'Relative humidity'
-       long_name_val = 'Relative humidity: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI)
-       id_val        = L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI
-       name_val      = 'Matric potential in soil & snow lyrs'
-       long_name_val = 'Matric potential in soil & snow lyrs: ALM to External Model'
-       units_val     = '[mm]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_H2OSOI_LIQ_NLEVSOI)
-       id_val        = L2E_STATE_H2OSOI_LIQ_NLEVSOI
-       name_val      = 'Soil liquid water'
-       long_name_val = 'Soil liquid water: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_H2OSOI_ICE_NLEVSOI)
-       id_val        = L2E_STATE_H2OSOI_ICE_NLEVSOI
-       name_val      = 'Soil ice water'
-       long_name_val = 'Soil ice water: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevsoi
-
-    case (L2E_STATE_TSNOW)
-       id_val        = L2E_STATE_TSNOW
-       name_val      = 'Temperature snow'
-       long_name_val = 'Temperature snow: ALM to External Model'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_zero
-
-    case (L2E_STATE_TH2OSFC)
-       id_val        = L2E_STATE_TH2OSFC
-       name_val      = 'Temperature of standing water'
-       long_name_val = 'Temperature of standing water: ALM to External Model'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_H2OSOI_LIQ_NLEVSNOW)
-       id_val        = L2E_STATE_H2OSOI_LIQ_NLEVSNOW
-       name_val      = 'Liquid water in snow'
-       long_name_val = 'Liquid water in snow: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_zero
-
-    case (L2E_STATE_H2OSOI_ICE_NLEVSNOW)
-       id_val        = L2E_STATE_H2OSOI_ICE_NLEVSNOW
-       name_val      = 'Ice water in snow'
-       long_name_val = 'Ice water in snow: ALM to External Model'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_zero
-
-    case (L2E_STATE_H2OSNOW)
-       id_val        = L2E_STATE_H2OSNOW
-       name_val      = 'Snow water'
-       long_name_val = 'Snow water: ALM to External Model'
-       units_val     = '[mm H2O]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_H2OSFC)
-       id_val        = L2E_STATE_H2OSFC
-       name_val      = 'Standing water'
-       long_name_val = 'Standing water: ALM to External Model'
-       units_val     = '[mm H2O]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_STATE_FRAC_SNOW_EFFECTIVE)
-       id_val        = L2E_STATE_FRAC_SNOW_EFFECTIVE
-       name_val      = 'Frac. of grnd covered with snow'
-       long_name_val = 'Frac. of ground covered with snow: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-       ! --------------------------------------------------------------
-       ! EM-to-ALM: State variables
-       ! --------------------------------------------------------------
-    case (E2L_STATE_H2OSOI_LIQ)
-       id_val        = E2L_STATE_H2OSOI_LIQ
-       name_val      = 'Soil liquid water'
-       long_name_val = 'Soil liquid water: External Model to ALM'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (E2L_STATE_H2OSOI_ICE)
-       id_val        = E2L_STATE_H2OSOI_ICE
-       name_val      = 'Soil ice water'
-       long_name_val = 'Soil ice water: External Model to ALM'
-       units_val     = '[kg/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (E2L_STATE_SOIL_MATRIC_POTENTIAL)
-       id_val        = E2L_STATE_SOIL_MATRIC_POTENTIAL
-       name_val      = 'Soil matric potential'
-       long_name_val = 'Soil matric potential: External Model to ALM'
-       units_val     = '[mm]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (E2L_STATE_WTD)
-       id_val        = E2L_STATE_WTD
-       name_val      = 'Water table depth'
-       long_name_val = 'Water table depth: External Model to ALM'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (E2L_STATE_VSFM_PROGNOSTIC_SOILP)
-       id_val        = E2L_STATE_VSFM_PROGNOSTIC_SOILP
-       name_val      = 'Soil liquid pressure'
-       long_name_val = 'Soil liquid pressure: External Model to ALM'
-       units_val     = '[Pa]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (E2L_STATE_FSUN)
-       id_val        = E2L_STATE_FSUN
-       name_val      = 'Fraction of canopy sunlit'
-       long_name_val = ': External Model to ALM'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begp
-       dim1_end_name = dimname_endp
-
-    case (E2L_STATE_LAISUN)
-       id_val        = E2L_STATE_LAISUN
-       name_val      = 'Sunlit leaf area'
-       long_name_val = 'Sunlit leaf area: External Model to ALM'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begp
-       dim1_end_name = dimname_endp
-
-    case (E2L_STATE_LAISHA)
-       id_val        = E2L_STATE_LAISHA
-       name_val      = 'Shaded leaf area'
-       long_name_val = 'Shaded leaf area: External Model to ALM'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begp
-       dim1_end_name = dimname_endp
-
-    case (E2L_STATE_TSOIL_NLEVGRND)
-       id_val        = E2L_STATE_TSOIL_NLEVGRND
-       name_val      = 'Soil temperature'
-       long_name_val = 'Soil temperature: External Model to ALM'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (E2L_STATE_TSNOW_NLEVSNOW)
-       id_val        = E2L_STATE_TSNOW_NLEVSNOW
-       name_val      = 'Snow temperature'
-       long_name_val = 'Snow temperature: External Model to ALM'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_zero
-
-    case (E2L_STATE_TH2OSFC)
-       id_val        = E2L_STATE_TH2OSFC
-       name_val      = 'Standing water temperature'
-       long_name_val = 'Standing water temperature: External Model to ALM'
-       units_val     = '[K]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-       ! --------------------------------------------------------------
-       ! ALM-to-EM: Flux variables
-       ! --------------------------------------------------------------
-    case (L2E_FLUX_INFIL_MASS_FLUX)
-       id_val        = L2E_FLUX_INFIL_MASS_FLUX
-       name_val      = 'Soil infiltration source'
-       long_name_val = 'Soil infiltration source: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_VERTICAL_ET_MASS_FLUX)
-       id_val        = L2E_FLUX_VERTICAL_ET_MASS_FLUX
-       name_val      = 'Evapotranspiration sink'
-       long_name_val = 'Evapotranspiration sink: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_FLUX_DEW_MASS_FLUX)
-       id_val        = L2E_FLUX_DEW_MASS_FLUX
-       name_val      = 'Dew sink'
-       long_name_val = 'Dew sink: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX)
-       id_val        = L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX
-       name_val      = 'Snow sublimation sink'
-       long_name_val = 'Snow sublimation sink: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-       id_val        = L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-       name_val      = 'Snow layer disappearance sink'
-       long_name_val = 'Snow layer disappearance sink: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-       id_val        = L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-       name_val      = 'Snow layer disappearance sink'
-       long_name_val = 'Snow layer disappearance sink from restart: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_DRAINAGE_MASS_FLUX)
-       id_val        = L2E_FLUX_DRAINAGE_MASS_FLUX
-       name_val      = 'Drainage sink'
-       long_name_val = 'Drainage sink: ALM to External Model'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_FLUX_SOLAR_DIRECT_RADDIATION)
-       id_val        = L2E_FLUX_SOLAR_DIRECT_RADDIATION
-       name_val      = 'Direct beam solar radiation'
-       long_name_val = 'Direct beam solar radiation: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begg
-       dim1_end_name = dimname_endg
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_two
-
-    case (L2E_FLUX_SOLAR_DIFFUSE_RADDIATION)
-       id_val        = L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
-       name_val      = 'Diffuse beam solar radiation'
-       long_name_val = 'Diffuse beam solar radiation: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begg
-       dim1_end_name = dimname_endg
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_two
-
-    case (L2E_FLUX_ABSORBED_SOLAR_RADIATION)
-       id_val        = L2E_FLUX_ABSORBED_SOLAR_RADIATION
-       name_val      = 'Absorbed solar radiation'
-       long_name_val = 'Absorbed beam solar radiation: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_one
-
-    case (L2E_FLUX_SOIL_HEAT_FLUX)
-       id_val        = L2E_FLUX_SOIL_HEAT_FLUX
-       name_val      = 'Net heat flux into soil'
-       long_name_val = 'Net heat flux into soil: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_SNOW_HEAT_FLUX)
-       id_val        = L2E_FLUX_SNOW_HEAT_FLUX
-       name_val      = 'Net heat flux into snow'
-       long_name_val = 'Net heat flux into snow: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_H2OSFC_HEAT_FLUX)
-       id_val        = L2E_FLUX_H2OSFC_HEAT_FLUX
-       name_val      = 'Net heat flux into standing water'
-       long_name_val = 'Net heat flux into standing water: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX)
-       id_val        = L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX
-       name_val      = 'Derivative of heat flux w.r.t. temperature'
-       long_name_val = 'Derivative of heat flux w.r.t. temperature: ALM to External Model'
-       units_val     = '[W/m2]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-       ! --------------------------------------------------------------
-       ! EM-to-ALM: Flux variables
-       ! --------------------------------------------------------------
-    case (E2L_FLUX_AQUIFER_RECHARGE)
-       id_val        = E2L_FLUX_AQUIFER_RECHARGE
-       name_val      = 'Aquifer recharge rate'
-       long_name_val = 'Aquifer recharge rate: External Model to ALM'
-       units_val     = '[mm/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-       id_val        = E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-       name_val      = 'Snow layer disappearance sink'
-       long_name_val = 'Snow layer disappearance sink initial value: External Model to ALM'
-       units_val     = '[kg/s]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-       ! --------------------------------------------------------------
-       ! ALM-to-ELM: Filter variables
-       ! --------------------------------------------------------------
-    case (L2E_FILTER_HYDROLOGYC)
-       id_val        = L2E_FILTER_HYDROLOGYC
-       name_val      = 'Hydrology filter'
-       long_name_val = 'Hydrology filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_col_one_based_idx
-
-    case (L2E_FILTER_NUM_HYDROLOGYC)
-       id_val        = L2E_FILTER_NUM_HYDROLOGYC
-       name_val      = 'Number of hydrology filter'
-       long_name_val = 'Number of hydrology filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_one
-
-    case (L2E_FILTER_NOLAKEC)
-       id_val        = L2E_FILTER_HYDROLOGYC
-       name_val      = 'Non-lake filter'
-       long_name_val = 'Non-lake filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_col_one_based_idx
-
-    case (L2E_FILTER_NUM_NOLAKEC)
-       id_val        = L2E_FILTER_NUM_HYDROLOGYC
-       name_val      = 'Number of non-lake filter'
-       long_name_val = 'Number of non-lake filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_one
-
-    case (L2E_FILTER_NOLAKEC_AND_NOURBANC)
-       id_val        = L2E_FILTER_NOLAKEC_AND_NOURBANC
-       name_val      = 'Non-lake & non-urban filter'
-       long_name_val = 'Non-lake & non-urban filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_col_one_based_idx
-
-    case (L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC)
-       id_val        = L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC
-       name_val      = 'Number of non-lake & non-urban filter'
-       long_name_val = 'Number of non-lake & non-urban filter: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_one
-       dim1_end_name = dimname_one
-
-       ! --------------------------------------------------------------
-       ! ALM-to-ELM: Column variables
-       ! --------------------------------------------------------------
-    case (L2E_COLUMN_ACTIVE)
-       id_val        = L2E_COLUMN_ACTIVE
-       name_val      = 'Column active'
-       long_name_val = 'Column active: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_TYPE)
-       id_val        = L2E_COLUMN_TYPE
-       name_val      = 'Column type'
-       long_name_val = 'Column type: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_LANDUNIT_INDEX)
-       id_val        = L2E_COLUMN_LANDUNIT_INDEX
-       name_val      = 'Column to landunit index'
-       long_name_val = 'Column landunit index: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_ZI)
-       id_val        = L2E_COLUMN_ZI
-       name_val      = 'Column layer interface depth'
-       long_name_val = 'Column layer interface depth: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_zero
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_COLUMN_DZ)
-       id_val        = L2E_COLUMN_DZ
-       name_val      = 'Column layer thickness'
-       long_name_val = 'Column layer thickness: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_COLUMN_Z)
-       id_val        = L2E_COLUMN_Z
-       name_val      = 'Column layer centroid depth'
-       long_name_val = 'Column layer centroid depth: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_COLUMN_AREA)
-       id_val        = L2E_COLUMN_AREA
-       name_val      = 'Column surface area'
-       long_name_val = 'Column surface area: ALM to External Model'
-       units_val     = '[m2]'
-       is_real_type  = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_GRIDCELL_INDEX)
-       id_val        = L2E_COLUMN_GRIDCELL_INDEX
-       name_val      = 'Column to gridcell index'
-       long_name_val = 'Column to gridcell index: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_PATCH_INDEX_BEGIN)
-       id_val        = L2E_COLUMN_PATCH_INDEX_BEGIN
-       name_val      = 'Beginning column to patch index'
-       long_name_val = 'Beginning column to patch index: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_PATCH_INDEX_END)
-       id_val        = L2E_COLUMN_PATCH_INDEX_END
-       name_val      = 'Ending column to patch index'
-       long_name_val = 'Ending column to patch index: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_NUM_SNOW_LAYERS)
-       id_val        = L2E_COLUMN_NUM_SNOW_LAYERS
-       name_val      = 'Number of snow layers'
-       long_name_val = 'Number of snow layers: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-
-    case (L2E_COLUMN_ZI_SNOW_AND_SOIL)
-       id_val        = L2E_COLUMN_ZI_SNOW_AND_SOIL
-       name_val      = 'Column layer interface depth'
-       long_name_val = 'Column layer interface depth: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_COLUMN_DZ_SNOW_AND_SOIL)
-       id_val        = L2E_COLUMN_DZ_SNOW_AND_SOIL
-       name_val      = 'Column layer thickness'
-       long_name_val = 'Column layer thickness: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_COLUMN_Z_SNOW_AND_SOIL)
-       id_val        = L2E_COLUMN_Z_SNOW_AND_SOIL
-       name_val      = 'Column layer centroid depth'
-       long_name_val = 'Column layer centroid depth: ALM to External Model'
-       units_val     = '[m]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_nlevsno_plus_one
-       dim2_end_name = dimname_nlevgrnd
-
-       ! --------------------------------------------------------------
-       ! ALM-to-ELM: Landunit variables
-       ! --------------------------------------------------------------
-    case (L2E_LANDUNIT_TYPE)
-       id_val        = L2E_LANDUNIT_TYPE
-       name_val      = 'Landunit type'
-       long_name_val = 'Landunit type: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begl
-       dim1_end_name = dimname_endl
-
-    case (L2E_LANDUNIT_LAKEPOINT)
-       id_val        = L2E_LANDUNIT_LAKEPOINT
-       name_val      = 'Landunit lake point'
-       long_name_val = 'Landunit lake point: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begl
-       dim1_end_name = dimname_endl
-
-    case (L2E_LANDUNIT_URBANPOINT)
-       id_val        = L2E_LANDUNIT_URBANPOINT
-       name_val      = 'Landunit urban point'
-       long_name_val = 'Landunit urban point: ALM to External Model'
-       units_val     = '[-]'
-       is_int_type   = .true.
-       ndim          = 1
-       dim1_beg_name = dimname_begl
-       dim1_end_name = dimname_endl
-
-       ! --------------------------------------------------------------
-       ! ALM-to-ELM: Parameters variables
-       ! --------------------------------------------------------------
-    case (L2E_PARAMETER_WATSATC)
-       id_val        = L2E_PARAMETER_WATSATC
-       name_val      = 'Soil porosity'
-       long_name_val = 'Soil porosity: ALM to External Model'
-       units_val     = '[m^3/m^3]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_HKSATC)
-       id_val        = L2E_PARAMETER_HKSATC
-       name_val      = 'Soil hydraulic conductivity'
-       long_name_val = 'Soil hydraulic conductivity at saturation: ALM to External Model'
-       units_val     = '[mm/s]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_BSWC)
-       id_val        = L2E_PARAMETER_BSWC
-       name_val      = 'Clapp and Hornberger parameter'
-       long_name_val = 'Clapp and Hornberger parameter: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_SUCSATC)
-       id_val        = L2E_PARAMETER_SUCSATC
-       name_val      = 'Minimum soil suction'
-       long_name_val = 'Minimum soil suction: ALM to External Model'
-       units_val     = '[mm]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_EFFPOROSITYC)
-       id_val        = L2E_PARAMETER_EFFPOROSITYC
-       name_val      = 'Effective porosity'
-       long_name_val = 'Effective porosity: ALM to External Model'
-       units_val     = '[-]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_CSOL)
-       id_val        = L2E_PARAMETER_CSOL
-       name_val      = 'Heat capacity'
-       long_name_val = 'Heat capacity: ALM to External Model'
-       units_val     = '[W/m/K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_TKMG)
-       id_val        = L2E_PARAMETER_TKMG
-       name_val      = 'Thermal conductivity minerals'
-       long_name_val = 'Thermal conductivity minerals: ALM to External Model'
-       units_val     = '[W/m/K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case (L2E_PARAMETER_TKDRY)
-       id_val        = L2E_PARAMETER_TKDRY
-       name_val      = 'Thermal conductivity dry soils'
-       long_name_val = 'Thermal conductivity dry soils: ALM to External Model'
-       units_val     = '[W/m/K]'
-       is_real_type  = .true.
-       ndim          = 2
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
-       dim2_beg_name = dimname_one
-       dim2_end_name = dimname_nlevgrnd
-
-    case default
+    data_found     = .false.
+
+    if (.not.data_found) then
+       call EMI_Atm2LndType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_CanopyStateType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_ChemStateType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_EnergyFluxType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_SoilHydrologyType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_SoilStateType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_TemperatureType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_WaterFluxType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_WaterStateType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       select case(data_id)
+          ! -------------------------------------------------------------
+          ! ALM-to-ELM: Filter variables
+          ! -------------------------------------------------------------
+       case (L2E_FILTER_HYDROLOGYC)
+          id_val        = L2E_FILTER_HYDROLOGYC
+          name_val      = 'Hydrology filter'
+          long_name_val = 'Hydrology filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_col_one_based_idx
+          data_found    = .true.
+
+       case (L2E_FILTER_NUM_HYDROLOGYC)
+          id_val        = L2E_FILTER_NUM_HYDROLOGYC
+          name_val      = 'Number of hydrology filter'
+          long_name_val = 'Number of hydrology filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_one
+          data_found    = .true.
+
+       case (L2E_FILTER_NOLAKEC)
+          id_val        = L2E_FILTER_HYDROLOGYC
+          name_val      = 'Non-lake filter'
+          long_name_val = 'Non-lake filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_col_one_based_idx
+          data_found    = .true.
+
+       case (L2E_FILTER_NUM_NOLAKEC)
+          id_val        = L2E_FILTER_NUM_HYDROLOGYC
+          name_val      = 'Number of non-lake filter'
+          long_name_val = 'Number of non-lake filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_one
+          data_found    = .true.
+
+       case (L2E_FILTER_NOLAKEC_AND_NOURBANC)
+          id_val        = L2E_FILTER_NOLAKEC_AND_NOURBANC
+          name_val      = 'Non-lake & non-urban filter'
+          long_name_val = 'Non-lake & non-urban filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_col_one_based_idx
+          data_found    = .true.
+
+       case (L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC)
+          id_val        = L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC
+          name_val      = 'Number of non-lake & non-urban filter'
+          long_name_val = 'Number of non-lake & non-urban filter: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_one
+          dim1_end_name = dimname_one
+          data_found    = .true.
+
+          ! -------------------------------------------------------------
+          ! ALM-to-ELM: Column variables
+          ! -------------------------------------------------------------
+       case (L2E_COLUMN_ACTIVE)
+          id_val        = L2E_COLUMN_ACTIVE
+          name_val      = 'Column active'
+          long_name_val = 'Column active: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_TYPE)
+          id_val        = L2E_COLUMN_TYPE
+          name_val      = 'Column type'
+          long_name_val = 'Column type: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_LANDUNIT_INDEX)
+          id_val        = L2E_COLUMN_LANDUNIT_INDEX
+          name_val      = 'Column to landunit index'
+          long_name_val = 'Column landunit index: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_ZI)
+          id_val        = L2E_COLUMN_ZI
+          name_val      = 'Column layer interface depth'
+          long_name_val = 'Column layer interface depth: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_zero
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+       case (L2E_COLUMN_DZ)
+          id_val        = L2E_COLUMN_DZ
+          name_val      = 'Column layer thickness'
+          long_name_val = 'Column layer thickness: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_one
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+       case (L2E_COLUMN_Z)
+          id_val        = L2E_COLUMN_Z
+          name_val      = 'Column layer centroid depth'
+          long_name_val = 'Column layer centroid depth: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_one
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+       case (L2E_COLUMN_AREA)
+          id_val        = L2E_COLUMN_AREA
+          name_val      = 'Column surface area'
+          long_name_val = 'Column surface area: ALM to External Model'
+          units_val     = '[m2]'
+          is_real_type  = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_GRIDCELL_INDEX)
+          id_val        = L2E_COLUMN_GRIDCELL_INDEX
+          name_val      = 'Column to gridcell index'
+          long_name_val = 'Column to gridcell index: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_PATCH_INDEX_BEGIN)
+          id_val        = L2E_COLUMN_PATCH_INDEX_BEGIN
+          name_val      = 'Beginning column to patch index'
+          long_name_val = 'Beginning column to patch index: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_PATCH_INDEX_END)
+          id_val        = L2E_COLUMN_PATCH_INDEX_END
+          name_val      = 'Ending column to patch index'
+          long_name_val = 'Ending column to patch index: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_NUM_SNOW_LAYERS)
+          id_val        = L2E_COLUMN_NUM_SNOW_LAYERS
+          name_val      = 'Number of snow layers'
+          long_name_val = 'Number of snow layers: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          data_found    = .true.
+
+       case (L2E_COLUMN_ZI_SNOW_AND_SOIL)
+          id_val        = L2E_COLUMN_ZI_SNOW_AND_SOIL
+          name_val      = 'Column layer interface depth'
+          long_name_val = 'Column layer interface depth: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_nlevsno
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+       case (L2E_COLUMN_DZ_SNOW_AND_SOIL)
+          id_val        = L2E_COLUMN_DZ_SNOW_AND_SOIL
+          name_val      = 'Column layer thickness'
+          long_name_val = 'Column layer thickness: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_nlevsno_plus_one
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+       case (L2E_COLUMN_Z_SNOW_AND_SOIL)
+          id_val        = L2E_COLUMN_Z_SNOW_AND_SOIL
+          name_val      = 'Column layer centroid depth'
+          long_name_val = 'Column layer centroid depth: ALM to External Model'
+          units_val     = '[m]'
+          is_real_type  = .true.
+          ndim          = 2
+          dim1_beg_name = dimname_begc
+          dim1_end_name = dimname_endc
+          dim2_beg_name = dimname_nlevsno_plus_one
+          dim2_end_name = dimname_nlevgrnd
+          data_found    = .true.
+
+          ! -------------------------------------------------------------
+          ! ALM-to-ELM: Landunit variables
+          ! -------------------------------------------------------------
+       case (L2E_LANDUNIT_TYPE)
+          id_val        = L2E_LANDUNIT_TYPE
+          name_val      = 'Landunit type'
+          long_name_val = 'Landunit type: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begl
+          dim1_end_name = dimname_endl
+          data_found    = .true.
+
+       case (L2E_LANDUNIT_LAKEPOINT)
+          id_val        = L2E_LANDUNIT_LAKEPOINT
+          name_val      = 'Landunit lake point'
+          long_name_val = 'Landunit lake point: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begl
+          dim1_end_name = dimname_endl
+          data_found    = .true.
+
+       case (L2E_LANDUNIT_URBANPOINT)
+          id_val        = L2E_LANDUNIT_URBANPOINT
+          name_val      = 'Landunit urban point'
+          long_name_val = 'Landunit urban point: ALM to External Model'
+          units_val     = '[-]'
+          is_int_type   = .true.
+          ndim          = 1
+          dim1_beg_name = dimname_begl
+          dim1_end_name = dimname_endl
+          data_found    = .true.
+       end select
+    end if
+
+    if (.not.data_found) then
        write(iulog,*)'Unknown EMID id = ',data_id
        call endrun(msg='EMIDListAddDataByID: Unknown EMID id.')
-    end select
+    end if
 
     allocate(data)
     call data%Init()
