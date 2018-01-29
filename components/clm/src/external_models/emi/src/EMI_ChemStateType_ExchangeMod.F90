@@ -1,4 +1,4 @@
-module EMI_EnergyFluxType_ExchangeMod
+module EMI_ChemStateType_ExchangeMod
   !
   use shr_kind_mod                          , only : r8 => shr_kind_r8
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
@@ -6,7 +6,7 @@ module EMI_EnergyFluxType_ExchangeMod
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
-  use EnergyFluxType                        , only : energyflux_type
+  use ChemStateType                         , only : chemstate_type
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -23,16 +23,16 @@ module EMI_EnergyFluxType_ExchangeMod
   implicit none
   !
   !
-  public :: EMI_Pack_EnergyFluxType_at_Column_Level_for_EM
+  public :: EMI_Pack_ChemStateType_at_Column_Level_for_EM
 
 contains
   
 !-----------------------------------------------------------------------
-  subroutine EMI_Pack_EnergyFluxType_at_Column_Level_for_EM(data_list, em_stage, &
-        num_filter, filter, energyflux_vars)
+  subroutine EMI_Pack_ChemStateType_at_Column_Level_for_EM(data_list, em_stage, &
+        num_filter, filter, chemstate_vars)
     !
     ! !DESCRIPTION:
-    ! Pack data from ALM energyflux_vars for EM
+    ! Pack data from ALM chemstate_vars for EM
     !
     ! !USES:
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
@@ -44,7 +44,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(energyflux_type)  , intent(in) :: energyflux_vars
+    type(chemstate_type)   , intent(in) :: chemstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j
@@ -54,11 +54,7 @@ contains
     integer                             :: count
 
     associate(& 
-         eflx_sabg_lyr    => energyflux_vars%eflx_sabg_lyr_col    , &
-         eflx_hs_soil     => energyflux_vars%eflx_hs_soil_col     , &
-         eflx_hs_top_snow => energyflux_vars%eflx_hs_top_snow_col , &
-         eflx_hs_h2osfc   => energyflux_vars%eflx_hs_h2osfc_col   , &
-         eflx_dhsdT       => energyflux_vars%eflx_dhsdT_col         &
+         soil => chemstate_vars%soil_ph   &
          )
 
     count = 0
@@ -79,40 +75,12 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_FLUX_ABSORBED_SOLAR_RADIATION)
+          case (L2E_STATE_SOIL_PH)
              do fc = 1, num_filter
                 c = filter(fc)
-                do j = -nlevsno+1, 1
-                   cur_data%data_real_2d(c,j) = eflx_sabg_lyr(c,j)
+                do j = 1, nlevsoi
+                   cur_data%data_real_2d(c,j) = soil(c,j)
                 enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SOIL_HEAT_FLUX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_real_1d(c) = eflx_hs_soil(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SNOW_HEAT_FLUX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_real_1d(c) = eflx_hs_top_snow(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_H2OSFC_HEAT_FLUX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_real_1d(c) = eflx_hs_h2osfc(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_real_1d(c) = eflx_dhsdT(c)
              enddo
              cur_data%is_set = .true.
 
@@ -125,7 +93,7 @@ contains
 
     end associate
 
-  end subroutine EMI_Pack_EnergyFluxType_at_Column_Level_for_EM
+  end subroutine EMI_Pack_ChemStateType_at_Column_Level_for_EM
 
 
-end module EMI_EnergyFluxType_ExchangeMod
+end module EMI_ChemStateType_ExchangeMod

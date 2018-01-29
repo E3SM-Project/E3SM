@@ -7,7 +7,18 @@ module EMI_TemperatureType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use TemperatureType                       , only : temperature_type
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ChemStateType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
   use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
+  use EMI_Filter_Constants
+  use EMI_ColumnType_Constants
+  use EMI_Landunit_Constants
   !
   implicit none
   !
@@ -45,9 +56,9 @@ contains
     integer                             :: count
 
     associate(& 
-         t_soi10cm => temperature_vars%t_soi10cm_col , &
          t_soisno  => temperature_vars%t_soisno_col  , &
-         t_h2osfc  => temperature_vars%t_h2osfc_col    &
+         t_h2osfc  => temperature_vars%t_h2osfc_col  , &
+         t_soi10cm => temperature_vars%t_soi10cm_col   &
          )
 
     count = 0
@@ -67,13 +78,6 @@ contains
        if (need_to_pack) then
 
           select case (cur_data%id)
-
-          case (L2E_STATE_T_SOI10CM)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_real_1d(c) = t_soi10cm(c)
-             enddo
-             cur_data%is_set = .true.
 
           case (L2E_STATE_TSOIL_NLEVGRND)
              do fc = 1, num_filter
@@ -97,6 +101,22 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 cur_data%data_real_1d(c) = t_h2osfc(c)
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_STATE_TSOI10CM)
+             do fc = 1, num_filter
+                c = filter(fc)
+                cur_data%data_real_1d(c) = t_soi10cm(c)
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_STATE_TSOIL_NLEVSOI)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevsoi
+                   cur_data%data_real_2d(c,j) = t_soisno(c,j)
+                enddo
              enddo
              cur_data%is_set = .true.
 
@@ -159,7 +179,7 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_T_VEG)
+          case (L2E_STATE_TVEG)
              do fp = 1, num_filter
                 p = filter(fp)
                 cur_data%data_real_1d(p) = t_veg(p)

@@ -7,12 +7,24 @@ module EMI_SoilStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use SoilStateType                         , only : soilstate_type
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ChemStateType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_SoilHydrologyType_Constants
   use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
+  use EMI_Filter_Constants
+  use EMI_ColumnType_Constants
+  use EMI_Landunit_Constants
   !
   implicit none
   !
   !
   public :: EMI_Pack_SoilStateType_at_Column_Level_for_EM
+  public :: EMI_Pack_SoilStateType_at_Patch_Level_for_EM
   public :: EMI_Unpack_SoilStateType_at_Column_Level_from_EM
 
 contains
@@ -51,7 +63,12 @@ contains
          eff_porosity => soilstate_vars%eff_porosity_col , &
          csol         => soilstate_vars%csol_col         , &
          tkmg         => soilstate_vars%tkmg_col         , &
-         tkdry        => soilstate_vars%tkdry_col          &
+         tkdry        => soilstate_vars%tkdry_col        , &
+         cellorg      => soilstate_vars%cellorg_col      , &
+         cellclay     => soilstate_vars%cellclay_col     , &
+         cellsand     => soilstate_vars%cellsand_col     , &
+         bd           => soilstate_vars%bd_col           , &
+         watfc        => soilstate_vars%watfc_col          &
          )
 
     count = 0
@@ -144,6 +161,51 @@ contains
              enddo
              cur_data%is_set = .true.
 
+          case (L2E_PARAMETER_CELLORG)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(c,j) = cellorg(c,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_PARAMETER_CELLCLAY)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(c,j) = cellclay(c,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_PARAMETER_CELLSAND)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(c,j) = cellsand(c,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_PARAMETER_BD)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(c,j) = bd(c,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_PARAMETER_WATFC)
+             do fc = 1, num_filter
+                c = filter(fc)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(c,j) = watfc(c,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
           end select
 
        endif
@@ -154,6 +216,74 @@ contains
     end associate
 
   end subroutine EMI_Pack_SoilStateType_at_Column_Level_for_EM
+
+!-----------------------------------------------------------------------
+  subroutine EMI_Pack_SoilStateType_at_Patch_Level_for_EM(data_list, em_stage, &
+        num_filter, filter, soilstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Pack data from ALM soilstate_vars for EM
+    !
+    ! !USES:
+    use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data_list)   , intent(in) :: data_list
+    integer                , intent(in) :: em_stage
+    integer                , intent(in) :: num_filter
+    integer                , intent(in) :: filter(:)
+    type(soilstate_type)   , intent(in) :: soilstate_vars
+    !
+    ! !LOCAL_VARIABLES:
+    integer                             :: fp,p,j
+    class(emi_data), pointer            :: cur_data
+    logical                             :: need_to_pack
+    integer                             :: istage
+    integer                             :: count
+
+    associate(& 
+         rootfr => soilstate_vars%rootfr_patch   &
+         )
+
+    count = 0
+    cur_data => data_list%first
+    do
+       if (.not.associated(cur_data)) exit
+       count = count + 1
+
+       need_to_pack = .false.
+       do istage = 1, cur_data%num_em_stages
+          if (cur_data%em_stage_ids(istage) == em_stage) then
+             need_to_pack = .true.
+             exit
+          endif
+       enddo
+
+       if (need_to_pack) then
+
+          select case (cur_data%id)
+
+          case (L2E_PARAMETER_ROOTFR_PATCH)
+             do fp = 1, num_filter
+                p = filter(fp)
+                do j = 1, nlevgrnd
+                   cur_data%data_real_2d(p,j) = rootfr(p,j)
+                enddo
+             enddo
+             cur_data%is_set = .true.
+
+          end select
+
+       endif
+
+       cur_data => cur_data%next
+    enddo
+
+    end associate
+
+  end subroutine EMI_Pack_SoilStateType_at_Patch_Level_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMI_Unpack_SoilStateType_at_Column_Level_from_EM(data_list, em_stage, &
