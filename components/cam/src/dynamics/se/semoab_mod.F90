@@ -39,7 +39,7 @@ contains
     integer, intent(in)                     :: nets  ! starting thread element number (private)
     integer, intent(in)                     :: nete
 
-    integer ierr, i, j, ie, iv, block_ID
+    integer ierr, i, j, ie, iv, block_ID, k, numvals
 
     real(kind=real_kind), allocatable, target :: moab_vert_coords(:)
     INTEGER (C_INT) ,allocatable , target :: moab_corner_quads(:)
@@ -56,7 +56,7 @@ contains
     integer, dimension(:), allocatable :: indx  !  this will be ordered 
     
     !  this will be moab vertex handle locally
-    integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:), elemids(:)
+    integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:), elemids(:), gdofel(:)
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
     character*100 outfile, wopts, localmeshfile, lnum, tagname
@@ -73,6 +73,8 @@ contains
 !     allocate(moab_fvm_coords(moab_dims_fvc))
      allocate(moab_corner_quads(moab_dim_cquads))
      allocate(elemids(nelemd))
+     allocate(gdofel(nelemd*np*np))
+     k=0 !   will be the index for element global dofs
      do ie=nets,nete
        ix = ie-nets
        moab_corner_quads(ix*4+1) = elem(ie)%gdofP(1,1)
@@ -80,6 +82,12 @@ contains
        moab_corner_quads(ix*4+3) = elem(ie)%gdofP(np,np)
        moab_corner_quads(ix*4+4) = elem(ie)%gdofP(1,np)
        elemids(ix+1) = ie
+       do i=1,np
+         do j=1,np
+           k = k+1
+           gdofel(k)=elem(ie)%gdofP(i,j)
+         enddo
+       enddo
      enddo
 ! now original order
      allocate(gdofv(moab_dim_cquads))
@@ -168,6 +176,20 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to resolve shared entities')
 
+!   global dofs are the GLL points are set for each element
+      tagname='GLOBAL_DOFS'//CHAR(0)
+      tagtype = 0  ! dense, integer
+      numco = np*np !  usually, it is 16; each element will have the dofs in order
+      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create global DOFS tag')
+      ! now set the values
+      ! set global dofs tag for coarse elements, too; they will start at nets, end at nete
+      ent_type = 1 ! now set the global id tag on elements
+      numvals = nelemd*np*np ! input is the total number of values
+      ierr = iMOAB_SetIntTagStorage ( MHID, tagname, numvals, ent_type, gdofel)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to set global id tag for vertices')
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 10) then
         write(lnum,"(I0.2)")par%rank
@@ -193,6 +215,7 @@ contains
      deallocate(moabvh)
      deallocate(moabconn)
      deallocate(vdone)
+     deallocate(gdofel)
      deallocate(indx)
      deallocate(elemids)
 
