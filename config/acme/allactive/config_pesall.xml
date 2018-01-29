@@ -6340,7 +6340,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="T">
-        <comment>"cori-knl ne30 coupled compest on 17 nodes, 67x4, (kmod017) sypd="</comment>
+        <comment>"cori-knl ne30 coupled compest on 17 nodes, 67x4, (kmod017) sypd=1.1"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>268</MAX_TASKS_PER_NODE>
         <ntasks>
