@@ -942,8 +942,13 @@ contains
               do j=1,np
                  do i=1,np
                     ! update v first (gives better results than updating v after heating)
-                    elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + &
-                         vtens(i,j,:,k,ie)
+                    ! intel/17 compiler bug on Edison produces incorrect results with this:
+                    !elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + &
+                    !     vtens(i,j,:,k,ie)
+                    elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%state%v(i,j,1,k,nt) + &
+                         vtens(i,j,1,k,ie)
+                    elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%state%v(i,j,2,k,nt) + &
+                         vtens(i,j,2,k,ie)
 
                     v1=elem(ie)%state%v(i,j,1,k,nt)
                     v2=elem(ie)%state%v(i,j,2,k,nt)
