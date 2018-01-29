@@ -182,7 +182,7 @@ contains
         num_filter, filter, canopystate_vars)
     !
     ! !DESCRIPTION:
-    ! Unack data for ALM canopystate_vars from EM
+    ! Unpack data for ALM canopystate_vars from EM
     !
     ! !USES:
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno

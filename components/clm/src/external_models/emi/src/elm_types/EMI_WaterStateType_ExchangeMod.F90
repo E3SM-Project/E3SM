@@ -267,7 +267,7 @@ contains
         num_filter, filter, waterstate_vars)
     !
     ! !DESCRIPTION:
-    ! Unack data for ALM waterstate_vars from EM
+    ! Unpack data for ALM waterstate_vars from EM
     !
     ! !USES:
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno

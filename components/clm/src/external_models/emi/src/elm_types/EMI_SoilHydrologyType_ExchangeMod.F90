@@ -117,7 +117,7 @@ contains
         num_filter, filter, soilhydrology_vars)
     !
     ! !DESCRIPTION:
-    ! Unack data for ALM soilhydrology_vars from EM
+    ! Unpack data for ALM soilhydrology_vars from EM
     !
     ! !USES:
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno

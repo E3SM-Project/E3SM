@@ -202,7 +202,7 @@ contains
         num_filter, filter, temperature_vars)
     !
     ! !DESCRIPTION:
-    ! Unack data for ALM temperature_vars from EM
+    ! Unpack data for ALM temperature_vars from EM
     !
     ! !USES:
     use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
