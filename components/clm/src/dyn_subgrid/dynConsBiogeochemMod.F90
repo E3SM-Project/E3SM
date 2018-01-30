@@ -328,30 +328,28 @@ contains
                   deadstemc_seed, deadstemn_seed, deadstemp_seed, &
                   deadstemc13_seed, deadstemc14_seed)
              
-             ! When PFT area expands (dwt > 0), the pft-level mass density 
-             ! is modified to conserve the original pft mass distributed
-             ! over the new (larger) area, plus a term to account for the 
-             ! introduction of new seed source for leaf and deadstem
-             t1 = prior_weights%pwtcol(p)/veg_pp%wtcol(p)
-             t2 = dwt/veg_pp%wtcol(p)
-             
-             call CarbonStateVarsUpdate(cs, p, t1, t2, &
+             call UpdateCarbonStateVarsDueToIncreaseInWt(cs, p, &
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p),     &
                   leafc_seed, deadstemc_seed, veg_vp%evergreen(veg_pp%itype(p)) )
              
              if ( use_c13 ) then
-                call CarbonStateVarsUpdate(c13_cs, p, t1, t2, &
+                call UpdateCarbonStateVarsDueToIncreaseInWt(c13_cs, p, &
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
                   leafc13_seed, deadstemc13_seed, veg_vp%evergreen(veg_pp%itype(p)))
              endif
              
              if ( use_c14 ) then
-                call CarbonStateVarsUpdate(c14_cs, p, t1, t2, &
+                call UpdateCarbonStateVarsDueToIncreaseInWt(c14_cs, p, &
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
                      leafc14_seed, deadstemc14_seed, veg_vp%evergreen(veg_pp%itype(p)) )
              endif
 
-             call NitrogenStateVarsUpdate(ns, p, t1, t2, &
+             call UpdateNitrogenStateVarsDueToIncreaseInWt(ns, p, &
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p),       &
                   leafn_seed, deadstemn_seed, npool_seed, veg_vp%evergreen(veg_pp%itype(p)))
              
-             call PhosphorusStateVarsUpdate(ps, p, t1, t2, &
+             call UpdatePhosphorusStateVarsDueToIncreaseInWt(ps, p, &
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
                   leafp_seed, deadstemp_seed, ppool_seed, veg_vp%evergreen(veg_pp%itype(p)))
 
              ! update temporary seed source arrays
@@ -391,7 +389,7 @@ contains
              wt_new = veg_pp%wtcol(p)
              wt_old = prior_weights%pwtcol(p)
              
-             call UpdateCarbonStateDueToWtShift( &
+             call UpdateCarbonStateDueToDecreaseInWt( &
                   cs, p, wt_old, wt_new,         &
                   conv_cflux(p),                 &
                   dwt_frootc_to_litter(p),       &
@@ -403,7 +401,7 @@ contains
                   pprod100(veg_pp%itype(p)))
 
              if ( use_c13 ) then
-                call UpdateCarbonStateDueToWtShift( &
+                call UpdateCarbonStateDueToDecreaseInWt( &
                      c13_cs, p, wt_old, wt_new,     &
                      conv_c13flux(p),               &
                      dwt_frootc13_to_litter(p),     &
@@ -416,7 +414,7 @@ contains
              endif
 
              if ( use_c14 ) then
-                call UpdateCarbonStateDueToWtShift( &
+                call UpdateCarbonStateDueToDecreaseInWt( &
                      c14_cs, p, wt_old, wt_new,     &
                      conv_c14flux(p),               &
                      dwt_frootc14_to_litter(p),     &
@@ -429,7 +427,7 @@ contains
 
              endif
              
-             call UpdateNitrogenStateDueToWtShift( &
+             call UpdateNitrogenStateDueToDecreaseInWt( &
                   ns, p, wt_old, wt_new,           &
                   conv_nflux(p),                   &
                   dwt_frootn_to_litter(p),         &
@@ -440,7 +438,7 @@ contains
                   pprod10(veg_pp%itype(p)),        &
                   pprod100(veg_pp%itype(p)))
 
-             call UpdatePhosphorusStateDueToWtShift( &
+             call UpdatePhosphorusStateDueToDecreaseInWt( &
                   ps, p, wt_old, wt_new,             &
                   conv_pflux(p),                     &
                   dwt_frootn_to_litter(p),           &
@@ -1136,33 +1134,42 @@ contains
  end subroutine ComputeStemSeedPools
 
  !-----------------------------------------------------------------------
- subroutine CarbonStateVarsUpdate(cs, p, t1, t2, &
+ subroutine UpdateCarbonStateVarsDueToIncreaseInWt(cs, p, wt_new, wt_old, &
       leafc_seed, deadstemc_seed, evergreen)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of carbonstate_type
+   ! When PFT area expands (dwt > 0), the pft-level mass density 
+   ! is modified to conserve the original pft mass distributed
+   ! over the new (larger) area, plus a term to account for the
+   ! introduction of new seed source for leaf and deadstem
    !
    implicit none
    !
    ! !ARGUMENT
    type(carbonstate_type), intent(inout) :: cs
    integer               , intent(in)    :: p
-   real(r8)              , intent(in)    :: t1
-   real(r8)              , intent(in)    :: t2
+   real(r8)              , intent(in)    :: wt_new
+   real(r8)              , intent(in)    :: wt_old
    real(r8)              , intent(in)    :: leafc_seed
    real(r8)              , intent(in)    :: deadstemc_seed
    real(r8)              , intent(in)    :: evergreen
    !
    ! !LOCAL
-   real(r8)                  :: pleaf
-   real(r8)                  :: pstor
-   real(r8)                  :: pxfer
-   real(r8)    :: tot_leaf
+   real(r8)                              :: pleaf
+   real(r8)                              :: pstor
+   real(r8)                              :: pxfer
+   real(r8)                              :: tot_leaf
+   real(r8)                              :: t1
+   real(r8)                              :: t2
 
    pleaf = 0._r8
    pstor = 0._r8
    pxfer = 0._r8
 
+   t1 = wt_old           /wt_new
+   t2 = (wt_new - wt_old)/wt_old
+   
    tot_leaf = cs%leafc_patch(p) + cs%leafc_storage_patch(p) + cs%leafc_xfer_patch(p)
 
    if (tot_leaf /= 0._r8) then
@@ -1207,22 +1214,26 @@ contains
    cs%totvegc_patch(p)            = cs%totvegc_patch(p)            * t1
    cs%totpftc_patch(p)            = cs%totpftc_patch(p)            * t1
 
- end subroutine CarbonStateVarsUpdate
+ end subroutine UpdateCarbonStateVarsDueToIncreaseInWt
 
  !-----------------------------------------------------------------------
- subroutine NitrogenStateVarsUpdate(ns, p, t1, t2, &
+ subroutine UpdateNitrogenStateVarsDueToIncreaseInWt(ns, p, wt_new, wt_old, &
       leafn_seed, deadstemn_seed, npool_seed, evergreen)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type
+   ! When PFT area expands (dwt > 0), the pft-level mass density
+   ! is modified to conserve the original pft mass distributed
+   ! over the new (larger) area, plus a term to account for the
+   ! introduction of new seed source for leaf and deadstem
    !
    implicit none
    !
    ! !ARGUMENT
    type(nitrogenstate_type) , intent(inout) :: ns
    integer                  , intent(in)    :: p
-   real(r8)                 , intent(in)    :: t1
-   real(r8)                 , intent(in)    :: t2
+   real(r8)                 , intent(in)    :: wt_new
+   real(r8)                 , intent(in)    :: wt_old
    real(r8)                 , intent(in)    :: leafn_seed
    real(r8)                 , intent(in)    :: deadstemn_seed
    real(r8)                 , intent(in)    :: npool_seed
@@ -1233,11 +1244,16 @@ contains
    real(r8)                                 :: pstor
    real(r8)                                 :: pxfer
    real(r8)                                 :: tot_leaf
+   real(r8)                                 :: t1
+   real(r8)                                 :: t2
 
    pleaf = 0._r8
    pstor = 0._r8
    pxfer = 0._r8
 
+   t1 = wt_old           /wt_new
+   t2 = (wt_new - wt_old)/wt_old
+   
    tot_leaf = ns%leafn_patch(p) + ns%leafn_storage_patch(p) + ns%leafn_xfer_patch(p)
 
    if (tot_leaf /= 0._r8) then
@@ -1279,22 +1295,26 @@ contains
    ns%totvegn_patch(p)            = ns%totvegn_patch(p)            * t1
    ns%totpftn_patch(p)            = ns%totpftn_patch(p)            * t1
 
- end subroutine NitrogenStateVarsUpdate
+ end subroutine UpdateNitrogenStateVarsDueToIncreaseInWt
 
  !-----------------------------------------------------------------------
- subroutine PhosphorusStateVarsUpdate(ps, p, t1, t2, &
+ subroutine UpdatePhosphorusStateVarsDueToIncreaseInWt(ps, p, wt_new, wt_old, &
       leafp_seed, deadstemp_seed, ppool_seed, evergreen)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of phosphorusstate_type
+   ! When PFT area expands (dwt > 0), the pft-level mass density
+   ! is modified to conserve the original pft mass distributed
+   ! over the new (larger) area, plus a term to account for the
+   ! introduction of new seed source for leaf and deadstem
    !
    implicit none
    !
    ! !ARGUMENT
    type(phosphorusstate_type) , intent(inout) :: ps
    integer                    , intent(in)    :: p
-   real(r8)                   , intent(in)    :: t1
-   real(r8)                   , intent(in)    :: t2
+   real(r8)                   , intent(in)    :: wt_new
+   real(r8)                   , intent(in)    :: wt_old
    real(r8)                   , intent(in)    :: leafp_seed
    real(r8)                   , intent(in)    :: deadstemp_seed
    real(r8)                   , intent(in)    :: ppool_seed
@@ -1305,6 +1325,8 @@ contains
    real(r8)                                   :: pstor
    real(r8)                                   :: pxfer
    real(r8)                                   :: tot_leaf
+   real(r8)                                   :: t1
+   real(r8)                                   :: t2
 
    pleaf = 0._r8
    pstor = 0._r8
@@ -1351,10 +1373,10 @@ contains
    ps%totvegp_patch(p)            = ps%totvegp_patch(p)            * t1
    ps%totpftp_patch(p)            = ps%totpftp_patch(p)            * t1
 
- end subroutine PhosphorusStateVarsUpdate
+ end subroutine UpdatePhosphorusStateVarsDueToIncreaseInWt
 
   !-----------------------------------------------------------------------
- subroutine UpdateCarbonStateDueToWtShift(cs, p, wt_old, wt_new, conv_flux, &
+ subroutine UpdateCarbonStateDueToDecreaseInWt(cs, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
       prod10_flux, prod100_flux, prod10, prod100)
    !
@@ -1380,47 +1402,47 @@ contains
    ! !LOCAL
    real(r8)                               :: mass_tmp
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_storage_patch(p)      , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_xfer_patch(p)         , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%leafc_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%leafc_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%leafc_xfer_patch(p)         , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_patch(p)             , dwt_froot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_storage_patch(p)     , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_xfer_patch(p)        , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%frootc_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%frootc_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%frootc_xfer_patch(p)        , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_patch(p)          , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livestemc_patch(p)          , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livestemc_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livestemc_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadstemc_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadstemc_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_patch(p)         , dwt_livecroot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livecrootc_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livecrootc_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%livecrootc_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_patch(p)         , dwt_deadcrootc_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadcrootc_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadcrootc_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadcrootc_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%gresp_storage_patch(p)      , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%gresp_xfer_patch(p)         , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%gresp_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%gresp_xfer_patch(p)         , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%cpool_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%xsmrpool_patch(p)           , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%ctrunc_patch(p)             , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%cpool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%xsmrpool_patch(p)           , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%ctrunc_patch(p)             , conv_flux)
 
    ! deadstemc
    mass_tmp = cs%deadstemc_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = cs%deadstemc_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_patch(p), conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, cs%deadstemc_patch(p), conv_flux)
 
- end subroutine UpdateCarbonStateDueToWtShift
+ end subroutine UpdateCarbonStateDueToDecreaseInWt
  
    !-----------------------------------------------------------------------
- subroutine UpdateNitrogenStateDueToWtShift(ns, p, wt_old, wt_new, conv_flux, &
+ subroutine UpdateNitrogenStateDueToDecreaseInWt(ns, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
       prod10_flux, prod100_flux, prod10, prod100)
    !
@@ -1446,44 +1468,44 @@ contains
    ! !LOCAL
    real(r8)                                  :: mass_tmp
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_storage_patch(p)      , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_xfer_patch(p)         , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%leafn_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%leafn_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%leafn_xfer_patch(p)         , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_patch(p)             , dwt_froot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_storage_patch(p)     , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_xfer_patch(p)        , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%frootn_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%frootn_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%frootn_xfer_patch(p)        , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_patch(p)          , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livestemn_patch(p)          , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livestemn_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livestemn_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadstemn_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadstemn_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_patch(p)         , dwt_livecroot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livecrootn_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livecrootn_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%livecrootn_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_patch(p)         , dwt_deadcrootc_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadcrootn_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadcrootn_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadcrootn_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%retransn_patch(p)           , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%npool_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%ntrunc_patch(p)             , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%retransn_patch(p)           , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%npool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%ntrunc_patch(p)             , conv_flux)
 
    ! deadstemc
    mass_tmp = ns%deadstemn_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = ns%deadstemn_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_patch(p), conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ns%deadstemn_patch(p), conv_flux)
 
- end subroutine UpdateNitrogenStateDueToWtShift
+ end subroutine UpdateNitrogenStateDueToDecreaseInWt
 
    !-----------------------------------------------------------------------
- subroutine UpdatePhosphorusStateDueToWtShift(ps, p, wt_old, wt_new, conv_flux, &
+ subroutine UpdatePhosphorusStateDueToDecreaseInWt(ps, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
       prod10_flux, prod100_flux, prod10, prod100)
    !
@@ -1509,44 +1531,44 @@ contains
    ! !LOCAL
    real(r8)                                    :: mass_tmp
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_storage_patch(p)      , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_xfer_patch(p)         , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%leafp_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%leafp_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%leafp_xfer_patch(p)         , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_patch(p)             , dwt_froot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_storage_patch(p)     , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_xfer_patch(p)        , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%frootp_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%frootp_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%frootp_xfer_patch(p)        , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_patch(p)          , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livestemp_patch(p)          , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livestemp_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livestemp_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_storage_patch(p)  , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_xfer_patch(p)     , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadstemp_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadstemp_xfer_patch(p)     , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_patch(p)         , dwt_livecroot_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livecrootp_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livecrootp_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%livecrootp_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_patch(p)         , dwt_deadcrootc_to_litter)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_storage_patch(p) , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_xfer_patch(p)    , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadcrootp_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadcrootp_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadcrootp_xfer_patch(p)    , conv_flux)
 
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%retransp_patch(p)           , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%ppool_patch(p)              , conv_flux)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%ptrunc_patch(p)             , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%retransp_patch(p)           , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%ppool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%ptrunc_patch(p)             , conv_flux)
 
    ! deadstemc
    mass_tmp = ps%deadstemp_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = ps%deadstemp_patch(p)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_patch(p), conv_flux)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, ps%deadstemp_patch(p), conv_flux)
 
- end subroutine UpdatePhosphorusStateDueToWtShift
+ end subroutine UpdatePhosphorusStateDueToDecreaseInWt
  
  !-----------------------------------------------------------------------
- subroutine ComputeMassLossDueToWtShift(wt_old, wt_new, mass, mass_loss, &
+ subroutine ComputeMassLossDueToDecreaseInWt(wt_old, wt_new, mass, mass_loss, &
       factor)
    !
    implicit none
@@ -1586,6 +1608,6 @@ contains
       end if
    endif
   
- end subroutine ComputeMassLossDueToWtShift
+ end subroutine ComputeMassLossDueToDecreaseInWt
  
 end module dynConsBiogeochemMod
