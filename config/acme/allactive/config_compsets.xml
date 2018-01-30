@@ -49,6 +49,21 @@
   <lname>20TR_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
+compset>
+  <alias>A_WCYCL1950S_CMIP6_LR</alias>
+  <lname>1950_CAM5-LR%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1950S_CMIP6_HR</alias >
+  <lname>1950_CAM5-HR%CMIP6-HR_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1950S_CMIP6_LRtunedHR</alias >
+  <lname>1950_CAM5-HRtunedLR%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ACME v1 science compsets -->
 
 <compset>
