@@ -295,12 +295,10 @@ contains
                                                                             indexSalinityPistonVelocity)
            block => domain % blocklist
            do while (associated(block))
-              !$omp do schedule(runtime)
               do iCell = 1, nCells
                  ! Set piston velocity to constant value
                  activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) = salinity_restoring_constant_piston_velocity
               end do
-              !$omp end do
               block => block % next
            end do
 
@@ -362,7 +360,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-        !$omp do schedule(runtime) private(deltaS)
+        ! This is not in a threaded region, so no openMP pragmas are needed.
         do iCell = 1, nCells
            if (landIceMask(iCell)==1) then
               ! Turn off salinity restoring in this cell
@@ -386,9 +384,7 @@ contains
 
            endif
         end do
-        !$omp end do
 
-        !$omp do schedule(runtime) private(deltaS)
         do iCell=1,nCellsSolve
            deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
            if (deltaS .ne. 0.0_RKIND) then
@@ -396,7 +392,6 @@ contains
               sumArea = sumArea + areaCell(iCell)
            endif
         enddo
-        !$omp end do
 
         block => block % next
       end do
@@ -428,7 +423,7 @@ contains
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
-        !$omp do schedule(runtime) private(deltaS)
+
         do iCell = 1, nCells
           deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
           if (deltaS .ne. 0.0_RKIND) then
@@ -441,7 +436,7 @@ contains
              salinitySurfaceRestoringTendency(iCell) = 0.0_RKIND
           endif
         enddo
-        !$omp end do
+
         block => block % next
       end do
 
