@@ -153,6 +153,7 @@ contains
     real(r8)                      :: c3_r2_c14                     ! isotope ratio (14c/[12c+14c]) for C3 photosynthesis
     real(r8)                      :: c4_r2_c14                     ! isotope ratio (14c/[12c+14c]) for C4 photosynthesis
     real(r8)                      :: leafc14_seed, deadstemc14_seed
+    real(r8) :: mass_tmp
     !-----------------------------------------------------------------------
     
     associate(&
@@ -390,1506 +391,66 @@ contains
              wt_new = veg_pp%wtcol(p)
              wt_old = prior_weights%pwtcol(p)
              
-             !---------------
-             ! C state update
-             !---------------
-             
-             ! leafc 
-             ptr => cs%leafc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! leafc_storage 
-             ptr => cs%leafc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! leafc_xfer 
-             ptr => cs%leafc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! frootc 
-             ptr => cs%frootc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_frootc_to_litter(p) = dwt_frootc_to_litter(p) - change_state
-             else
-                ptr = 0._r8
-                dwt_frootc_to_litter(p) = dwt_frootc_to_litter(p) + init_state
-             end if
-             
-             ! frootc_storage 
-             ptr => cs%frootc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! frootc_xfer 
-             ptr => cs%frootc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! livestemc 
-             ptr => cs%livestemc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! livestemc_storage 
-             ptr => cs%livestemc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! livestemc_xfer 
-             ptr => cs%livestemc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! deadstemc 
-             ptr => cs%deadstemc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state*pconv(veg_pp%itype(p))
-                prod10_cflux(p) = prod10_cflux(p) + change_state*pprod10(veg_pp%itype(p))
-                prod100_cflux(p) = prod100_cflux(p) + change_state*pprod100(veg_pp%itype(p))
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state*pconv(veg_pp%itype(p))
-                prod10_cflux(p) = prod10_cflux(p) - init_state*pprod10(veg_pp%itype(p))
-                prod100_cflux(p) = prod100_cflux(p) - init_state*pprod100(veg_pp%itype(p))
-             end if
-             
-             ! deadstemc_storage 
-             ptr => cs%deadstemc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! deadstemc_xfer 
-             ptr => cs%deadstemc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! livecrootc 
-             ptr => cs%livecrootc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_livecrootc_to_litter(p) = dwt_livecrootc_to_litter(p) - change_state
-             else
-                ptr = 0._r8
-                dwt_livecrootc_to_litter(p) = dwt_livecrootc_to_litter(p) + init_state
-             end if
-             
-             ! livecrootc_storage 
-             ptr => cs%livecrootc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! livecrootc_xfer 
-             ptr => cs%livecrootc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! deadcrootc 
-             ptr => cs%deadcrootc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_deadcrootc_to_litter(p) = dwt_deadcrootc_to_litter(p) - change_state
-             else
-                ptr = 0._r8
-                dwt_deadcrootc_to_litter(p) = dwt_deadcrootc_to_litter(p) + init_state
-             end if
-             
-             ! deadcrootc_storage 
-             ptr => cs%deadcrootc_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! deadcrootc_xfer 
-             ptr => cs%deadcrootc_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! gresp_storage 
-             ptr => cs%gresp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! gresp_xfer 
-             ptr => cs%gresp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! cpool 
-             ptr => cs%cpool_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! xsmrpool 
-             ptr => cs%xsmrpool_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
-             
-             ! pft_ctrunc 
-             ptr => cs%ctrunc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state
-             else
-                ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state
-             end if
+             call UpdateCarbonStateDueToWtShift( &
+                  cs, p, wt_old, wt_new,         &
+                  conv_cflux(p),                 &
+                  dwt_frootc_to_litter(p),       &
+                  dwt_livecrootc_to_litter(p),   &
+                  dwt_deadcrootc_to_litter(p),   &
+                  prod10_cflux(p),               &
+                  prod100_cflux(p),              &
+                  pprod10(veg_pp%itype(p)),      &
+                  pprod100(veg_pp%itype(p)))
 
              if ( use_c13 ) then
-                !-------------------
-                ! C13 state update
-                !-------------------
-                
-                ! set pointers to the conversion and product pool fluxes for this pft
-                ! dwt_ptr0 is reserved for local assignment to dwt_xxx_to_litter fluxes
-                dwt_ptr1 => conv_c13flux(p)
-                dwt_ptr2 => prod10_c13flux(p)
-                dwt_ptr3 => prod100_c13flux(p)
-                
-                ! leafc 
-                ptr => c13_cs%leafc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! leafc_storage 
-                ptr => c13_cs%leafc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! leafc_xfer 
-                ptr => c13_cs%leafc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! frootc 
-                ptr => c13_cs%frootc_patch(p)
-                dwt_ptr0 => dwt_frootc13_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! frootc_storage 
-                ptr => c13_cs%frootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! frootc_xfer 
-                ptr => c13_cs%frootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc 
-                ptr => c13_cs%livestemc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc_storage 
-                ptr => c13_cs%livestemc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc_xfer 
-                ptr => c13_cs%livestemc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadstemc 
-                ptr => c13_cs%deadstemc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
-                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
-                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
-                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
-                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
-                end if
-                
-                ! deadstemc_storage 
-                ptr => c13_cs%deadstemc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadstemc_xfer 
-                ptr => c13_cs%deadstemc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livecrootc 
-                ptr => c13_cs%livecrootc_patch(p)
-                dwt_ptr0 => dwt_livecrootc13_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! livecrootc_storage 
-                ptr => c13_cs%livecrootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livecrootc_xfer 
-                ptr => c13_cs%livecrootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadcrootc 
-                ptr => c13_cs%deadcrootc_patch(p)
-                dwt_ptr0 => dwt_deadcrootc13_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! deadcrootc_storage 
-                ptr => c13_cs%deadcrootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadcrootc_xfer 
-                ptr => c13_cs%deadcrootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! gresp_storage 
-                ptr => c13_cs%gresp_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! gresp_xfer 
-                ptr => c13_cs%gresp_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! cpool 
-                ptr => c13_cs%cpool_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! pft_ctrunc 
-                ptr => c13_cs%ctrunc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
+                call UpdateCarbonStateDueToWtShift( &
+                     c13_cs, p, wt_old, wt_new,     &
+                     conv_c13flux(p),               &
+                     dwt_frootc13_to_litter(p),     &
+                     dwt_livecrootc13_to_litter(p), &
+                     dwt_deadcrootc13_to_litter(p), &
+                     prod10_c13flux(p),             &
+                     prod100_c13flux(p),            &
+                     pprod10(veg_pp%itype(p)),      &
+                     pprod100(veg_pp%itype(p)))
              endif
 
              if ( use_c14 ) then
-                !-------------------
-                ! C14 state update
-                !-------------------
-                
-                ! set pointers to the conversion and product pool fluxes for this pft
-                ! dwt_ptr0 is reserved for local assignment to dwt_xxx_to_litter fluxes
-                dwt_ptr1 => conv_c14flux(p)
-                dwt_ptr2 => prod10_c14flux(p)
-                dwt_ptr3 => prod100_c14flux(p)
-                
-                ! leafc 
-                ptr => c14_cs%leafc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! leafc_storage 
-                ptr => c14_cs%leafc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! leafc_xfer 
-                ptr => c14_cs%leafc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! frootc 
-                ptr => c14_cs%frootc_patch(p)
-                dwt_ptr0 => dwt_frootc14_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! frootc_storage 
-                ptr => c14_cs%frootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! frootc_xfer 
-                ptr => c14_cs%frootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc 
-                ptr => c14_cs%livestemc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc_storage 
-                ptr => c14_cs%livestemc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livestemc_xfer 
-                ptr => c14_cs%livestemc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadstemc 
-                ptr => c14_cs%deadstemc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
-                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
-                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
-                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
-                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
-                end if
-                
-                ! deadstemc_storage 
-                ptr => c14_cs%deadstemc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadstemc_xfer 
-                ptr => c14_cs%deadstemc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livecrootc 
-                ptr => c14_cs%livecrootc_patch(p)
-                dwt_ptr0 => dwt_livecrootc14_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! livecrootc_storage 
-                ptr => c14_cs%livecrootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! livecrootc_xfer 
-                ptr => c14_cs%livecrootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadcrootc 
-                ptr => c14_cs%deadcrootc_patch(p)
-                dwt_ptr0 => dwt_deadcrootc14_to_litter(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr0 = dwt_ptr0 - change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr0 = dwt_ptr0 + init_state
-                end if
-                
-                ! deadcrootc_storage 
-                ptr => c14_cs%deadcrootc_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! deadcrootc_xfer 
-                ptr => c14_cs%deadcrootc_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! gresp_storage 
-                ptr => c14_cs%gresp_storage_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! gresp_xfer 
-                ptr => c14_cs%gresp_xfer_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! cpool 
-                ptr => c14_cs%cpool_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
-                
-                ! pft_ctrunc 
-                ptr => c14_cs%ctrunc_patch(p)
-                init_state = ptr*wt_old
-                change_state = ptr*dwt
-                new_state = init_state+change_state
-                if (wt_new /= 0._r8) then
-                   ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state
-                else
-                   ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state
-                end if
+                call UpdateCarbonStateDueToWtShift( &
+                     c14_cs, p, wt_old, wt_new,     &
+                     conv_c14flux(p),               &
+                     dwt_frootc14_to_litter(p),     &
+                     dwt_livecrootc14_to_litter(p), &
+                     dwt_deadcrootc14_to_litter(p), &
+                     prod10_c14flux(p),             &
+                     prod100_c14flux(p),            &
+                     pprod10(veg_pp%itype(p)),      &
+                     pprod100(veg_pp%itype(p)))
+
              endif
              
-             
-             !---------------
-             ! N state update
-             !---------------
-             
-             ! set pointers to the conversion and product pool fluxes for this pft
-             ! dwt_ptr0 is reserved for local assignment to dwt_xxx_to_litter fluxes
-             dwt_ptr1 => conv_nflux(p)
-             dwt_ptr2 => prod10_nflux(p)
-             dwt_ptr3 => prod100_nflux(p)
-             
-             ! leafn 
-             ptr => ns%leafn_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! leafn_storage  
-             ptr => ns%leafn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! leafn_xfer  
-             ptr => ns%leafn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! frootn 
-             ptr => ns%frootn_patch(p)
-             dwt_ptr0 => dwt_frootn_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! frootn_storage 
-             ptr => ns%frootn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! frootn_xfer  
-             ptr => ns%frootn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemn  
-             ptr => ns%livestemn_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemn_storage 
-             ptr => ns%livestemn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemn_xfer 
-             ptr => ns%livestemn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadstemn 
-             ptr => ns%deadstemn_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
-                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
-                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
-                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
-                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
-             end if
-             
-             ! deadstemn_storage 
-             ptr => ns%deadstemn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadstemn_xfer 
-             ptr => ns%deadstemn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livecrootn 
-             ptr => ns%livecrootn_patch(p)
-             dwt_ptr0 => dwt_livecrootn_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! livecrootn_storage  
-             ptr => ns%livecrootn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livecrootn_xfer  
-             ptr => ns%livecrootn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadcrootn 
-             ptr => ns%deadcrootn_patch(p)
-             dwt_ptr0 => dwt_deadcrootn_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! deadcrootn_storage  
-             ptr => ns%deadcrootn_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadcrootn_xfer  
-             ptr => ns%deadcrootn_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! retransn  
-             ptr => ns%retransn_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! npool  
-             ptr => ns%npool_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! pft_ntrunc  
-             ptr => ns%ntrunc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
+             call UpdateNitrogenStateDueToWtShift( &
+                  ns, p, wt_old, wt_new,           &
+                  conv_nflux(p),                   &
+                  dwt_frootn_to_litter(p),         &
+                  dwt_livecrootn_to_litter(p),     &
+                  dwt_deadcrootn_to_litter(p),     &
+                  prod10_nflux(p),                 &
+                  prod100_nflux(p),                &
+                  pprod10(veg_pp%itype(p)),        &
+                  pprod100(veg_pp%itype(p)))
 
-
-             !---------------
-             ! P state update  X.YANG
-             !---------------
-             
-             ! set pointers to the conversion and product pool fluxes for this pft
-             ! dwt_ptr0 is reserved for local assignment to dwt_xxx_to_litter fluxes
-             dwt_ptr1 => conv_pflux(p)
-             dwt_ptr2 => prod10_pflux(p)
-             dwt_ptr3 => prod100_pflux(p)
-             
-             ! leafp 
-             ptr => ps%leafp_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! leafp_storage  
-             ptr => ps%leafp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! leafp_xfer  
-             ptr => ps%leafp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! frootp 
-             ptr => ps%frootp_patch(p)
-             dwt_ptr0 => dwt_frootp_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! frootp_storage 
-             ptr => ps%frootp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! frootp_xfer  
-             ptr => ps%frootp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemp  
-             ptr => ps%livestemp_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemp_storage 
-             ptr => ps%livestemp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livestemp_xfer 
-             ptr => ps%livestemp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadstemp 
-             ptr => ps%deadstemp_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
-                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
-                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
-                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
-                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
-             end if
-             
-             ! deadstemp_storage 
-             ptr => ps%deadstemp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadstemp_xfer 
-             ptr => ps%deadstemp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livecrootp 
-             ptr => ps%livecrootp_patch(p)
-             dwt_ptr0 => dwt_livecrootp_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! livecrootp_storage  
-             ptr => ps%livecrootp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! livecrootp_xfer  
-             ptr => ps%livecrootp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadcrootp 
-             ptr => ps%deadcrootp_patch(p)
-             dwt_ptr0 => dwt_deadcrootp_to_litter(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr0 = dwt_ptr0 - change_state
-             else
-                ptr = 0._r8
-                dwt_ptr0 = dwt_ptr0 + init_state
-             end if
-             
-             ! deadcrootp_storage  
-             ptr => ps%deadcrootp_storage_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! deadcrootp_xfer  
-             ptr => ps%deadcrootp_xfer_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! retransp  
-             ptr => ps%retransp_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! ppool  
-             ptr => ps%ppool_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
-             ! pft_ptrunc  
-             ptr => ps%ptrunc_patch(p)
-             init_state = ptr*wt_old
-             change_state = ptr*dwt
-             new_state = init_state+change_state
-             if (wt_new /= 0._r8) then
-                ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state
-             else
-                ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state
-             end if
-             
+             call UpdatePhosphorusStateDueToWtShift( &
+                  ps, p, wt_old, wt_new,             &
+                  conv_pflux(p),                     &
+                  dwt_frootn_to_litter(p),           &
+                  dwt_livecrootp_to_litter(p),       &
+                  dwt_deadcrootp_to_litter(p),       &
+                  prod10_pflux(p),                   &
+                  prod100_pflux(p),                  &
+                  pprod10(veg_pp%itype(p)),          &
+                  pprod100(veg_pp%itype(p)))
+                                                    
           end if       ! weight decreasing
        end if           ! is soil
     end do               ! patch loop
@@ -2792,4 +1353,239 @@ contains
 
  end subroutine PhosphorusStateVarsUpdate
 
+  !-----------------------------------------------------------------------
+ subroutine UpdateCarbonStateDueToWtShift(cs, p, wt_old, wt_new, conv_flux, &
+      dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
+      prod10_flux, prod100_flux, prod10, prod100)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of carbonstate_type due to decrease in fractional cover
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(carbonstate_type), intent(inout)  :: cs
+   integer               , intent(in)     :: p
+   real(r8)              , intent(in)     :: wt_old
+   real(r8)              , intent(in)     :: wt_new
+   real(r8)              , intent (inout) :: conv_flux
+   real(r8)              , intent (inout) :: dwt_froot_to_litter
+   real(r8)              , intent (inout) :: dwt_livecroot_to_litter
+   real(r8)              , intent (inout) :: dwt_deadcrootc_to_litter
+   real(r8)              , intent (inout) :: prod10_flux
+   real(r8)              , intent (inout) :: prod100_flux
+   real(r8)              , intent (in)    :: prod10
+   real(r8)              , intent (in)    :: prod100
+   !
+   ! !LOCAL
+   real(r8)                               :: mass_tmp
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%leafc_xfer_patch(p)         , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%frootc_xfer_patch(p)        , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_patch(p)          , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livestemc_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%livecrootc_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadcrootc_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%gresp_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%gresp_xfer_patch(p)         , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%cpool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%xsmrpool_patch(p)           , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%ctrunc_patch(p)             , conv_flux)
+
+   ! deadstemc
+   mass_tmp = cs%deadstemc_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   mass_tmp = cs%deadstemc_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, cs%deadstemc_patch(p), conv_flux)
+
+ end subroutine UpdateCarbonStateDueToWtShift
+ 
+   !-----------------------------------------------------------------------
+ subroutine UpdateNitrogenStateDueToWtShift(ns, p, wt_old, wt_new, conv_flux, &
+      dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
+      prod10_flux, prod100_flux, prod10, prod100)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of nitrogenstate_type due to decrease in fractional cover
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(nitrogenstate_type) , intent (inout) :: ns
+   integer                  , intent (in)    :: p
+   real(r8)                 , intent (in)    :: wt_old
+   real(r8)                 , intent (in)    :: wt_new
+   real(r8)                 , intent (inout) :: conv_flux
+   real(r8)                 , intent (inout) :: dwt_froot_to_litter
+   real(r8)                 , intent (inout) :: dwt_livecroot_to_litter
+   real(r8)                 , intent (inout) :: dwt_deadcrootc_to_litter
+   real(r8)                 , intent (inout) :: prod10_flux
+   real(r8)                 , intent (inout) :: prod100_flux
+   real(r8)                 , intent (in)    :: prod10
+   real(r8)                 , intent (in)    :: prod100
+   !
+   ! !LOCAL
+   real(r8)                                  :: mass_tmp
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%leafn_xfer_patch(p)         , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%frootn_xfer_patch(p)        , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_patch(p)          , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livestemn_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%livecrootn_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadcrootn_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%retransn_patch(p)           , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%npool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%ntrunc_patch(p)             , conv_flux)
+
+   ! deadstemc
+   mass_tmp = ns%deadstemn_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   mass_tmp = ns%deadstemn_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ns%deadstemn_patch(p), conv_flux)
+
+ end subroutine UpdateNitrogenStateDueToWtShift
+
+   !-----------------------------------------------------------------------
+ subroutine UpdatePhosphorusStateDueToWtShift(ps, p, wt_old, wt_new, conv_flux, &
+      dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
+      prod10_flux, prod100_flux, prod10, prod100)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of nitrogenstate_type due to decrease in fractional cover
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(phosphorusstate_type) , intent (inout) :: ps
+   integer                    , intent (in)    :: p
+   real(r8)                   , intent (in)    :: wt_old
+   real(r8)                   , intent (in)    :: wt_new
+   real(r8)                   , intent (inout) :: conv_flux
+   real(r8)                   , intent (inout) :: dwt_froot_to_litter
+   real(r8)                   , intent (inout) :: dwt_livecroot_to_litter
+   real(r8)                   , intent (inout) :: dwt_deadcrootc_to_litter
+   real(r8)                   , intent (inout) :: prod10_flux
+   real(r8)                   , intent (inout) :: prod100_flux
+   real(r8)                   , intent (in)    :: prod10
+   real(r8)                   , intent (in)    :: prod100
+   !
+   ! !LOCAL
+   real(r8)                                    :: mass_tmp
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_storage_patch(p)      , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%leafp_xfer_patch(p)         , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_patch(p)             , dwt_froot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_storage_patch(p)     , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%frootp_xfer_patch(p)        , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_patch(p)          , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livestemp_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_storage_patch(p)  , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_xfer_patch(p)     , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_patch(p)         , dwt_livecroot_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%livecrootp_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_patch(p)         , dwt_deadcrootc_to_litter)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_storage_patch(p) , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadcrootp_xfer_patch(p)    , conv_flux)
+
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%retransp_patch(p)           , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%ppool_patch(p)              , conv_flux)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%ptrunc_patch(p)             , conv_flux)
+
+   ! deadstemc
+   mass_tmp = ps%deadstemp_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
+   mass_tmp = ps%deadstemp_patch(p)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
+   call ComputeMassLossDueToWtShift(wt_old, wt_new, ps%deadstemp_patch(p), conv_flux)
+
+ end subroutine UpdatePhosphorusStateDueToWtShift
+ 
+ !-----------------------------------------------------------------------
+ subroutine ComputeMassLossDueToWtShift(wt_old, wt_new, mass, mass_loss, &
+      factor)
+   !
+   implicit none
+   !
+   real(r8), intent (in)           :: wt_old
+   real(r8), intent (in)           :: wt_new
+   real(r8), intent (inout)        :: mass
+   real(r8), intent (inout)        :: mass_loss
+   real(r8), intent (in), optional :: factor
+   !
+   real(r8) :: dwt
+   real(r8) :: init_state
+   real(r8) :: change_state
+   real(r8) :: new_state
+
+   dwt = wt_new - wt_old
+
+   init_state   = mass*wt_old
+   change_state = mass*dwt
+   new_state    = init_state + change_state
+
+   if (.not.present(factor)) then
+      if (wt_new /= 0._r8) then
+         mass      = new_state/wt_new
+         mass_loss = mass_loss + change_state
+      else
+         mass      = 0._r8
+         mass_loss = mass_loss - init_state
+      end if
+   else
+      if (wt_new /= 0._r8) then
+         mass      = new_state/wt_new
+         mass_loss = mass_loss + change_state*factor
+      else
+         mass      = 0._r8
+         mass_loss = mass_loss - init_state*factor
+      end if
+   endif
+  
+ end subroutine ComputeMassLossDueToWtShift
+ 
 end module dynConsBiogeochemMod
