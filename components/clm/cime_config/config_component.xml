@@ -72,6 +72,7 @@
       <!-- CMIP6 DECK compsets -->
       <value compset="1850_CAM5%CMIP6_CLM">1850_CMIP6_control</value> 
       <value compset="20TR_CAM5%CMIP6_CLM">20thC_CMIP6_transient</value> 
+      <value compset="1950_CAM5%CMIP6_CLM">1950_CMIP6_control</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
