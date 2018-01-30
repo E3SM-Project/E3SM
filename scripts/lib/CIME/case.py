@@ -895,6 +895,8 @@ class Case(object):
             else:
                 self._check_testlists(compset_alias, grid_name, files)
 
+        self.set_value("REALUSER", os.environ["USER"])
+
         # Set project id
         if project is None:
             project = get_project(machobj)

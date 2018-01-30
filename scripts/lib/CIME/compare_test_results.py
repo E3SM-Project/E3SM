@@ -1,5 +1,5 @@
 import CIME.compare_namelists, CIME.simple_compare
-from CIME.utils import expect, append_status
+from CIME.utils import expect, append_status, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline
 from CIME.case_cmpgen_namelists import case_cmpgen_namelists
@@ -27,17 +27,19 @@ def compare_namelists(case, baseline_name, baseline_root, logfile_name):
 ###############################################################################
 def compare_history(case, baseline_name, baseline_root, log_id):
 ###############################################################################
-    baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+    real_user = case.get_value("REALUSER")
+    with EnvironmentContext(USER=real_user):
+        baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
 
-    outfile_suffix = "{}.{}".format(baseline_name, log_id)
-    try:
-        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
-                                            outfile_suffix=outfile_suffix)
-    except IOError:
-        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
-                                            outfile_suffix=None)
+        outfile_suffix = "{}.{}".format(baseline_name, log_id)
+        try:
+            result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                                outfile_suffix=outfile_suffix)
+        except IOError:
+            result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                                outfile_suffix=None)
 
-    return result, comments
+        return result, comments
 
 ###############################################################################
 def compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, compare_tests=None, namelists_only=False, hist_only=False):

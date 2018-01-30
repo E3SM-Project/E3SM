@@ -415,7 +415,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         shutil.copyfile(newestcpllogfile,
                     os.path.join(basegen_dir, "cpl.log.gz"))
 
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
+    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
