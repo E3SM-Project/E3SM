@@ -304,12 +304,10 @@ contains
                 call PhosphorusFluxVarsInit  (pf, p)
                 
                 if ( use_c13 ) then
-                   ! pft-level carbon-13 state variables
                    call CarbonStateVarsInit(c13_cs, p)
                 endif
                 
                 if ( use_c14 ) then
-                   ! pft-level carbon-14 state variables
                    call CarbonStateVarsInit(c14_cs, p)
                 endif
                                  
@@ -319,75 +317,15 @@ contains
                 
              end if  ! end initialization of new pft
              
-             ! (still in dwt > 0 block)
-             
              ! set the seed sources for leaf and deadstem
              ! leaf source is split later between leaf, leaf_storage, leaf_xfer
-             leafc_seed   = 0._r8
-             leafn_seed   = 0._r8
-             leafp_seed   = 0._r8
-             deadstemc_seed   = 0._r8
-             deadstemn_seed   = 0._r8
-             npool_seed       = 0._r8
-             ppool_seed       = 0._r8
-             deadstemp_seed   = 0._r8
-             if ( use_c13 ) then
-                leafc13_seed = 0._r8
-                deadstemc13_seed = 0._r8
-             endif
-             if ( use_c14 ) then
-                leafc14_seed = 0._r8
-                deadstemc14_seed = 0._r8
-             endif
-             if (veg_pp%itype(p) /= 0) then
-                leafc_seed = 1._r8
-                leafn_seed  = leafc_seed / veg_vp%leafcn(veg_pp%itype(p))
-                leafp_seed  = leafc_seed / veg_vp%leafcp(veg_pp%itype(p))
-                if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
-                   deadstemc_seed = 0.1_r8
-                   deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_pp%itype(p))
-                   deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_pp%itype(p))
-                end if
-                if (veg_vp%nstor(veg_pp%itype(p)) > 1e-6_r8) then
-                   npool_seed     = 0.1_r8
-                   ppool_seed     = 0.01_r8
-                end if
-
-                
-                if ( use_c13 ) then
-                   ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
-                   ! That translates to ratios of (13c/(12c+13c)) of 0.01080455 for C3, and 0.01096945 for C4
-                   ! based on the following formulae: 
-                   ! r1 (13/12) = PDB + (del13c * PDB)/1000.0
-                   ! r2 (13/(13+12)) = r1/(1+r1)
-                   ! PDB = 0.0112372_R8  (ratio of 13C/12C in Pee Dee Belemnite, C isotope standard)
-                   c3_del13c = -28._r8
-                   c4_del13c = -13._r8
-                   c3_r1_c13 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
-                   c3_r2_c13 = c3_r1_c13/(1._r8 + c3_r1_c13)
-                   c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
-                   c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
-                   
-                   if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
-                      leafc13_seed     = leafc_seed     * c3_r2_c13
-                      deadstemc13_seed = deadstemc_seed * c3_r2_c13
-                   else
-                      leafc13_seed     = leafc_seed     * c4_r2_c13
-                      deadstemc13_seed = deadstemc_seed * c4_r2_c13
-                   end if
-                endif
-                
-                if ( use_c14 ) then
-                   ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-                   if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
-                      leafc14_seed     = leafc_seed     * c14ratio
-                      deadstemc14_seed = deadstemc_seed * c14ratio
-                   else
-                      leafc14_seed     = leafc_seed     * c14ratio
-                      deadstemc14_seed = deadstemc_seed * c14ratio
-                   end if
-                endif
-             end if
+             call ComputeLeafSeedPools(p, &
+                  leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
+                  npool_seed, ppool_seed)
+             
+             call ComputeStemSeedPools(p, &
+                  deadstemc_seed, deadstemn_seed, deadstemp_seed, &
+                  deadstemc13_seed, deadstemc14_seed)
              
              ! When PFT area expands (dwt > 0), the pft-level mass density 
              ! is modified to conserve the original pft mass distributed
@@ -396,254 +334,49 @@ contains
              t1 = prior_weights%pwtcol(p)/veg_pp%wtcol(p)
              t2 = dwt/veg_pp%wtcol(p)
              
-             tot_leaf = cs%leafc_patch(p) + cs%leafc_storage_patch(p) + cs%leafc_xfer_patch(p)
-             pleaf = 0._r8
-             pstor = 0._r8
-             pxfer = 0._r8
-             if (tot_leaf /= 0._r8) then
-                ! when adding seed source to non-zero leaf state, use current proportions
-                pleaf = cs%leafc_patch(p)/tot_leaf
-                pstor = cs%leafc_storage_patch(p)/tot_leaf
-                pxfer = cs%leafc_xfer_patch(p)/tot_leaf
-             else
-                ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   pleaf = 1._r8
-                else
-                   pstor = 1._r8
-                end if
-             end if
-             cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
-             cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
-             cs%leafc_xfer_patch(p)         = cs%leafc_xfer_patch(p)         * t1 + leafc_seed*pxfer*t2
-             cs%frootc_patch(p)             = cs%frootc_patch(p)             * t1
-             cs%frootc_storage_patch(p)     = cs%frootc_storage_patch(p)     * t1
-             cs%frootc_xfer_patch(p)        = cs%frootc_xfer_patch(p)        * t1
-             cs%livestemc_patch(p)          = cs%livestemc_patch(p)          * t1
-             cs%livestemc_storage_patch(p)  = cs%livestemc_storage_patch(p)  * t1
-             cs%livestemc_xfer_patch(p)     = cs%livestemc_xfer_patch(p)     * t1
-             cs%deadstemc_patch(p)          = cs%deadstemc_patch(p)          * t1  + deadstemc_seed*t2
-             cs%deadstemc_storage_patch(p)  = cs%deadstemc_storage_patch(p)  * t1
-             cs%deadstemc_xfer_patch(p)     = cs%deadstemc_xfer_patch(p)     * t1
-             cs%livecrootc_patch(p)         = cs%livecrootc_patch(p)         * t1
-             cs%livecrootc_storage_patch(p) = cs%livecrootc_storage_patch(p) * t1
-             cs%livecrootc_xfer_patch(p)    = cs%livecrootc_xfer_patch(p)    * t1
-             cs%deadcrootc_patch(p)         = cs%deadcrootc_patch(p)         * t1
-             cs%deadcrootc_storage_patch(p) = cs%deadcrootc_storage_patch(p) * t1
-             cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)    * t1
-             cs%gresp_storage_patch(p)      = cs%gresp_storage_patch(p)      * t1
-             cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)         * t1
-             cs%cpool_patch(p)              = cs%cpool_patch(p)              * t1
-             cs%xsmrpool_patch(p)           = cs%xsmrpool_patch(p)           * t1
-             cs%ctrunc_patch(p)             = cs%ctrunc_patch(p)             * t1
-             cs%dispvegc_patch(p)           = cs%dispvegc_patch(p)           * t1
-             cs%storvegc_patch(p)           = cs%storvegc_patch(p)           * t1
-             cs%totvegc_patch(p)            = cs%totvegc_patch(p)            * t1
-             cs%totpftc_patch(p)            = cs%totpftc_patch(p)            * t1
+             call CarbonStateVarsUpdate(cs, p, t1, t2, &
+                  leafc_seed, deadstemc_seed, veg_vp%evergreen(veg_pp%itype(p)) )
              
              if ( use_c13 ) then
-                ! pft-level carbon-13 state variables 
-                tot_leaf = c13_cs%leafc_patch(p) + c13_cs%leafc_storage_patch(p) + c13_cs%leafc_xfer_patch(p)
-                pleaf = 0._r8
-                pstor = 0._r8
-                pxfer = 0._r8
-                if (tot_leaf /= 0._r8) then
-                   pleaf = c13_cs%leafc_patch(p)/tot_leaf
-                   pstor = c13_cs%leafc_storage_patch(p)/tot_leaf
-                   pxfer = c13_cs%leafc_xfer_patch(p)/tot_leaf
-                else
-                   ! when initiating from zero leaf state, use evergreen flag to set proportions
-                   if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                      pleaf = 1._r8
-                   else
-                      pstor = 1._r8
-                   end if
-                end if
-                c13_cs%leafc_patch(p)              = c13_cs%leafc_patch(p)              * t1 + leafc13_seed*pleaf*t2
-                c13_cs%leafc_storage_patch(p)      = c13_cs%leafc_storage_patch(p)      * t1 + leafc13_seed*pstor*t2
-                c13_cs%leafc_xfer_patch(p)         = c13_cs%leafc_xfer_patch(p)         * t1 + leafc13_seed*pxfer*t2
-                c13_cs%frootc_patch(p)             = c13_cs%frootc_patch(p)             * t1
-                c13_cs%frootc_storage_patch(p)     = c13_cs%frootc_storage_patch(p)     * t1
-                c13_cs%frootc_xfer_patch(p)        = c13_cs%frootc_xfer_patch(p)        * t1
-                c13_cs%livestemc_patch(p)          = c13_cs%livestemc_patch(p)          * t1
-                c13_cs%livestemc_storage_patch(p)  = c13_cs%livestemc_storage_patch(p)  * t1
-                c13_cs%livestemc_xfer_patch(p)     = c13_cs%livestemc_xfer_patch(p)     * t1
-                c13_cs%deadstemc_patch(p)          = c13_cs%deadstemc_patch(p)          * t1 + deadstemc13_seed*t2
-                c13_cs%deadstemc_storage_patch(p)  = c13_cs%deadstemc_storage_patch(p)  * t1
-                c13_cs%deadstemc_xfer_patch(p)     = c13_cs%deadstemc_xfer_patch(p)     * t1
-                c13_cs%livecrootc_patch(p)         = c13_cs%livecrootc_patch(p)         * t1
-                c13_cs%livecrootc_storage_patch(p) = c13_cs%livecrootc_storage_patch(p) * t1
-                c13_cs%livecrootc_xfer_patch(p)    = c13_cs%livecrootc_xfer_patch(p)    * t1
-                c13_cs%deadcrootc_patch(p)         = c13_cs%deadcrootc_patch(p)         * t1
-                c13_cs%deadcrootc_storage_patch(p) = c13_cs%deadcrootc_storage_patch(p) * t1
-                c13_cs%deadcrootc_xfer_patch(p)    = c13_cs%deadcrootc_xfer_patch(p)    * t1
-                c13_cs%gresp_storage_patch(p)      = c13_cs%gresp_storage_patch(p)      * t1
-                c13_cs%gresp_xfer_patch(p)         = c13_cs%gresp_xfer_patch(p)         * t1
-                c13_cs%cpool_patch(p)              = c13_cs%cpool_patch(p)              * t1
-                c13_cs%xsmrpool_patch(p)           = c13_cs%xsmrpool_patch(p)           * t1
-                c13_cs%ctrunc_patch(p)             = c13_cs%ctrunc_patch(p)             * t1
-                c13_cs%dispvegc_patch(p)           = c13_cs%dispvegc_patch(p)           * t1
-                c13_cs%storvegc_patch(p)           = c13_cs%storvegc_patch(p)           * t1
-                c13_cs%totvegc_patch(p)            = c13_cs%totvegc_patch(p)            * t1
-                c13_cs%totpftc_patch(p)            = c13_cs%totpftc_patch(p)            * t1
-                
+                call CarbonStateVarsUpdate(c13_cs, p, t1, t2, &
+                  leafc13_seed, deadstemc13_seed, veg_vp%evergreen(veg_pp%itype(p)))
              endif
              
              if ( use_c14 ) then
-                ! pft-level carbon-14 state variables 
-                tot_leaf = c14_cs%leafc_patch(p) + c14_cs%leafc_storage_patch(p) + c14_cs%leafc_xfer_patch(p)
-                pleaf = 0._r8
-                pstor = 0._r8
-                pxfer = 0._r8
-                if (tot_leaf /= 0._r8) then
-                   pleaf = c14_cs%leafc_patch(p)/tot_leaf
-                   pstor = c14_cs%leafc_storage_patch(p)/tot_leaf
-                   pxfer = c14_cs%leafc_xfer_patch(p)/tot_leaf
-                else
-                   ! when initiating from zero leaf state, use evergreen flag to set proportions
-                   if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                      pleaf = 1._r8
-                   else
-                      pstor = 1._r8
-                   end if
-                end if
-                c14_cs%leafc_patch(p)              = c14_cs%leafc_patch(p)              * t1 + leafc14_seed*pleaf*t2
-                c14_cs%leafc_storage_patch(p)      = c14_cs%leafc_storage_patch(p)      * t1 + leafc14_seed*pstor*t2
-                c14_cs%leafc_xfer_patch(p)         = c14_cs%leafc_xfer_patch(p)         * t1 + leafc14_seed*pxfer*t2
-                c14_cs%frootc_patch(p)             = c14_cs%frootc_patch(p)             * t1
-                c14_cs%frootc_storage_patch(p)     = c14_cs%frootc_storage_patch(p)     * t1
-                c14_cs%frootc_xfer_patch(p)        = c14_cs%frootc_xfer_patch(p)        * t1
-                c14_cs%livestemc_patch(p)          = c14_cs%livestemc_patch(p)          * t1
-                c14_cs%livestemc_storage_patch(p)  = c14_cs%livestemc_storage_patch(p)  * t1
-                c14_cs%livestemc_xfer_patch(p)     = c14_cs%livestemc_xfer_patch(p)     * t1
-                c14_cs%deadstemc_patch(p)          = c14_cs%deadstemc_patch(p)          * t1 + deadstemc14_seed*t2
-                c14_cs%deadstemc_storage_patch(p)  = c14_cs%deadstemc_storage_patch(p)  * t1
-                c14_cs%deadstemc_xfer_patch(p)     = c14_cs%deadstemc_xfer_patch(p)     * t1
-                c14_cs%livecrootc_patch(p)         = c14_cs%livecrootc_patch(p)         * t1
-                c14_cs%livecrootc_storage_patch(p) = c14_cs%livecrootc_storage_patch(p) * t1
-                c14_cs%livecrootc_xfer_patch(p)    = c14_cs%livecrootc_xfer_patch(p)    * t1
-                c14_cs%deadcrootc_patch(p)         = c14_cs%deadcrootc_patch(p)         * t1
-                c14_cs%deadcrootc_storage_patch(p) = c14_cs%deadcrootc_storage_patch(p) * t1
-                c14_cs%deadcrootc_xfer_patch(p)    = c14_cs%deadcrootc_xfer_patch(p)    * t1
-                c14_cs%gresp_storage_patch(p)      = c14_cs%gresp_storage_patch(p)      * t1
-                c14_cs%gresp_xfer_patch(p)         = c14_cs%gresp_xfer_patch(p)         * t1
-                c14_cs%cpool_patch(p)              = c14_cs%cpool_patch(p)              * t1
-                c14_cs%xsmrpool_patch(p)           = c14_cs%xsmrpool_patch(p)           * t1
-                c14_cs%ctrunc_patch(p)             = c14_cs%ctrunc_patch(p)             * t1
-                c14_cs%dispvegc_patch(p)           = c14_cs%dispvegc_patch(p)           * t1
-                c14_cs%storvegc_patch(p)           = c14_cs%storvegc_patch(p)           * t1
-                c14_cs%totvegc_patch(p)            = c14_cs%totvegc_patch(p)            * t1
-                c14_cs%totpftc_patch(p)            = c14_cs%totpftc_patch(p)            * t1
+                call CarbonStateVarsUpdate(c14_cs, p, t1, t2, &
+                     leafc14_seed, deadstemc14_seed, veg_vp%evergreen(veg_pp%itype(p)) )
              endif
-             
-             tot_leaf = ns%leafn_patch(p) + ns%leafn_storage_patch(p) + ns%leafn_xfer_patch(p)
-             pleaf = 0._r8
-             pstor = 0._r8
-             pxfer = 0._r8
-             if (tot_leaf /= 0._r8) then
-                pleaf = ns%leafn_patch(p)/tot_leaf
-                pstor = ns%leafn_storage_patch(p)/tot_leaf
-                pxfer = ns%leafn_xfer_patch(p)/tot_leaf
-             else
-                ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   pleaf = 1._r8
-                else
-                   pstor = 1._r8
-                end if
-             end if
-             ! pft-level nitrogen state variables
-             ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
-             ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
-             ns%leafn_xfer_patch(p)         = ns%leafn_xfer_patch(p)         * t1 + leafn_seed*pxfer*t2
-             ns%frootn_patch(p)  	    = ns%frootn_patch(p)             * t1
-             ns%frootn_storage_patch(p)     = ns%frootn_storage_patch(p)     * t1
-             ns%frootn_xfer_patch(p)        = ns%frootn_xfer_patch(p)        * t1
-             ns%livestemn_patch(p)	    = ns%livestemn_patch(p)          * t1
-             ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  * t1
-             ns%livestemn_xfer_patch(p)     = ns%livestemn_xfer_patch(p)     * t1
-             ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          * t1 + deadstemn_seed*t2
-             ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  * t1
-             ns%deadstemn_xfer_patch(p)     = ns%deadstemn_xfer_patch(p)     * t1
-             ns%npool_patch(p)              = ns%npool_patch(p)              * t1 + npool_seed*t2
-             ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         * t1
-             ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) * t1
-             ns%livecrootn_xfer_patch(p)    = ns%livecrootn_xfer_patch(p)    * t1
-             ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         * t1
-             ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) * t1
-             ns%deadcrootn_xfer_patch(p)    = ns%deadcrootn_xfer_patch(p)    * t1
-             ns%retransn_patch(p)	    = ns%retransn_patch(p)           * t1
-             ns%ntrunc_patch(p)             = ns%ntrunc_patch(p)             * t1
-             ns%dispvegn_patch(p)	    = ns%dispvegn_patch(p)           * t1
-             ns%storvegn_patch(p)	    = ns%storvegn_patch(p)           * t1
-             ns%totvegn_patch(p) 	    = ns%totvegn_patch(p)            * t1
-             ns%totpftn_patch(p) 	    = ns%totpftn_patch(p)            * t1
-             
-             ! add phosphorus -X.YANG
-             tot_leaf = ps%leafp_patch(p) + ps%leafp_storage_patch(p) + ps%leafp_xfer_patch(p)
-             pleaf = 0._r8
-             pstor = 0._r8
-             pxfer = 0._r8
-             if (tot_leaf /= 0._r8) then
-                pleaf = ps%leafp_patch(p)/tot_leaf
-                pstor = ps%leafp_storage_patch(p)/tot_leaf
-                pxfer = ps%leafp_xfer_patch(p)/tot_leaf
-             else
-                ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   pleaf = 1._r8
-                else
-                   pstor = 1._r8
-                end if
-             end if
-             ! pft-level nitrogen state variables
-             ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
-             ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
-             ps%leafp_xfer_patch(p)         = ps%leafp_xfer_patch(p)         * t1 + leafp_seed*pxfer*t2
-             ps%frootp_patch(p)  	    = ps%frootp_patch(p)             * t1
-             ps%frootp_storage_patch(p)     = ps%frootp_storage_patch(p)     * t1
-             ps%frootp_xfer_patch(p)        = ps%frootp_xfer_patch(p)        * t1
-             ps%livestemp_patch(p)	    = ps%livestemp_patch(p)          * t1
-             ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p)  * t1
-             ps%livestemp_xfer_patch(p)     = ps%livestemp_xfer_patch(p)     * t1
-             ps%deadstemp_patch(p)          = ps%deadstemp_patch(p)          * t1 + deadstemp_seed*t2
-             ps%deadstemp_storage_patch(p)  = ps%deadstemp_storage_patch(p)  * t1
-             ps%deadstemp_xfer_patch(p)     = ps%deadstemp_xfer_patch(p)     * t1
-             ps%livecrootp_patch(p)         = ps%livecrootp_patch(p)         * t1
-             ps%livecrootp_storage_patch(p) = ps%livecrootp_storage_patch(p) * t1
-             ps%livecrootp_xfer_patch(p)    = ps%livecrootp_xfer_patch(p)    * t1
-             ps%deadcrootp_patch(p)         = ps%deadcrootp_patch(p)         * t1
-             ps%deadcrootp_storage_patch(p) = ps%deadcrootp_storage_patch(p) * t1
-             ps%deadcrootp_xfer_patch(p)    = ps%deadcrootp_xfer_patch(p)    * t1
-             ps%retransp_patch(p)	    = ps%retransp_patch(p)           * t1
-             ps%ppool_patch(p)              = ps%ppool_patch(p)              * t1 + ppool_seed*t2
-             ps%ptrunc_patch(p)             = ps%ptrunc_patch(p)             * t1
-             ps%dispvegp_patch(p)	    = ps%dispvegp_patch(p)           * t1
-             ps%storvegp_patch(p)	    = ps%storvegp_patch(p)           * t1
-             ps%totvegp_patch(p) 	    = ps%totvegp_patch(p)            * t1
-             ps%totpftp_patch(p) 	    = ps%totpftp_patch(p)            * t1
 
+             call NitrogenStateVarsUpdate(ns, p, t1, t2, &
+                  leafn_seed, deadstemn_seed, npool_seed, veg_vp%evergreen(veg_pp%itype(p)))
+             
+             call PhosphorusStateVarsUpdate(ps, p, t1, t2, &
+                  leafp_seed, deadstemp_seed, ppool_seed, veg_vp%evergreen(veg_pp%itype(p)))
 
              ! update temporary seed source arrays
              ! These are calculated in terms of the required contributions from
              ! column-level seed source
-             dwt_leafc_seed(p)   = leafc_seed   * dwt
+             dwt_leafc_seed(p)     = leafc_seed     * dwt
+
+             dwt_leafn_seed(p)     = leafn_seed     * dwt
+             dwt_deadstemc_seed(p) = deadstemc_seed * dwt
+             dwt_deadstemn_seed(p) = deadstemn_seed * dwt
+             dwt_npool_seed(p)     = npool_seed     * dwt             
+
+             dwt_leafp_seed(p)     = leafp_seed     * dwt
+             dwt_deadstemp_seed(p) = deadstemp_seed * dwt
+             dwt_ppool_seed(p)     = ppool_seed     * dwt
+
              if ( use_c13 ) then
-                dwt_leafc13_seed(p) = leafc13_seed * dwt
+                dwt_leafc13_seed(p)     = leafc13_seed     * dwt
                 dwt_deadstemc13_seed(p) = deadstemc13_seed * dwt
              endif
+
              if ( use_c14 ) then
-                dwt_leafc14_seed(p) = leafc14_seed * dwt
+                dwt_leafc14_seed(p)     = leafc14_seed     * dwt
                 dwt_deadstemc14_seed(p) = deadstemc14_seed * dwt
              endif
-             dwt_leafn_seed(p)   = leafn_seed   * dwt
-             dwt_deadstemc_seed(p)   = deadstemc_seed   * dwt
-             dwt_deadstemn_seed(p)   = deadstemn_seed   * dwt
-             dwt_npool_seed(p)       = npool_seed * dwt             
 
-             dwt_leafp_seed(p)   = leafp_seed   * dwt
-             dwt_deadstemp_seed(p)   = deadstemp_seed   * dwt
-             dwt_ppool_seed(p)       = ppool_seed * dwt
           else if (dwt < 0._r8) then
              
              ! if the pft lost weight on the timestep, then the carbon and nitrogen state
@@ -2688,5 +2421,375 @@ contains
 
  end subroutine PhosphorusFluxVarsInit
 
+ !-----------------------------------------------------------------------
+ subroutine ComputeLeafSeedPools(p, &
+     leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
+      npool_seed, ppool_seed)
+   !
+   ! !DESCRIPTION:
+   ! Computes values of seed for various leaf pool
+   !
+   use shr_const_mod      , only : SHR_CONST_PDB
+   use clm_varcon         , only : c14ratio
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   integer               , intent(in)  :: p
+   real(r8)              , intent(out) :: leafc_seed
+   real(r8)              , intent(out) :: leafn_seed
+   real(r8)              , intent(out) :: leafp_seed
+   real(r8)              , intent(out) :: leafc13_seed
+   real(r8)              , intent(out) :: leafc14_seed
+   real(r8)              , intent(out) :: npool_seed
+   real(r8)              , intent(out) :: ppool_seed
+   !
+   ! !LOCAL
+   real(r8)                            :: c3_del13c ! typical del13C for C3 photosynthesis (permil, relative to PDB)
+   real(r8)                            :: c4_del13c ! typical del13C for C4 photosynthesis (permil, relative to PDB)
+   real(r8)                            :: c3_r1_c13 ! isotope ratio (13c/12c) for C3 photosynthesis
+   real(r8)                            :: c4_r1_c13 ! isotope ratio (13c/12c) for C4 photosynthesis
+   real(r8)                            :: c3_r2_c13 ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
+   real(r8)                            :: c4_r2_c13 ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
+  
+   leafc_seed     = 0._r8
+   leafn_seed     = 0._r8
+   leafp_seed     = 0._r8
+   npool_seed     = 0._r8
+   ppool_seed     = 0._r8
+
+   if (veg_pp%itype(p) /= 0) then
+      leafc_seed = 1._r8
+      leafn_seed = leafc_seed / veg_vp%leafcn(veg_pp%itype(p))
+      leafp_seed = leafc_seed / veg_vp%leafcp(veg_pp%itype(p))
+
+      if (veg_vp%nstor(veg_pp%itype(p)) > 1e-6_r8) then
+         npool_seed     = 0.1_r8
+         ppool_seed     = 0.01_r8
+      end if
+
+      if ( use_c13 ) then
+         ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
+         ! That translates to ratios of (13c/(12c+13c)) of 0.01080455 for C3, and 0.01096945 for C4
+         ! based on the following formulae: 
+         ! r1 (13/12) = PDB + (del13c * PDB)/1000.0
+         ! r2 (13/(13+12)) = r1/(1+r1)
+         ! PDB = 0.0112372_R8  (ratio of 13C/12C in Pee Dee Belemnite, C isotope standard)
+         c3_del13c = -28._r8
+         c4_del13c = -13._r8
+         c3_r1_c13 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
+         c3_r2_c13 = c3_r1_c13/(1._r8 + c3_r1_c13)
+         c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
+         c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
+
+         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+            leafc13_seed     = leafc_seed     * c3_r2_c13
+         else
+            leafc13_seed     = leafc_seed     * c4_r2_c13
+         end if
+      endif
+
+      if ( use_c14 ) then
+         ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
+         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+            leafc14_seed     = leafc_seed     * c14ratio
+         else
+            leafc14_seed     = leafc_seed     * c14ratio
+         end if
+      endif
+   end if
+
+ end subroutine ComputeLeafSeedPools
+
+ !-----------------------------------------------------------------------
+ subroutine ComputeStemSeedPools(p, &
+      deadstemc_seed, deadstemn_seed, deadstemp_seed, &
+      deadstemc13_seed, deadstemc14_seed)
+   !
+   ! !DESCRIPTION:
+   ! Computes values of seed for various stem pool
+   !
+   use shr_const_mod      , only : SHR_CONST_PDB
+   use clm_varcon         , only : c14ratio
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   integer               , intent(in)  :: p
+   real(r8)              , intent(out) :: deadstemc_seed
+   real(r8)              , intent(out) :: deadstemn_seed
+   real(r8)              , intent(out) :: deadstemp_seed
+   real(r8)              , intent(out) :: deadstemc13_seed
+   real(r8)              , intent(out) :: deadstemc14_seed
+   !
+   ! !LOCAL
+   real(r8)                            :: c3_del13c ! typical del13C for C3 photosynthesis (permil, relative to PDB)
+   real(r8)                            :: c4_del13c ! typical del13C for C4 photosynthesis (permil, relative to PDB)
+   real(r8)                            :: c3_r1_c13 ! isotope ratio (13c/12c) for C3 photosynthesis
+   real(r8)                            :: c4_r1_c13 ! isotope ratio (13c/12c) for C4 photosynthesis
+   real(r8)                            :: c3_r2_c13 ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
+   real(r8)                            :: c4_r2_c13 ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
+  
+   deadstemc_seed = 0._r8
+   deadstemn_seed = 0._r8
+   deadstemp_seed = 0._r8
+
+   if (veg_pp%itype(p) /= 0) then
+      if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+         deadstemc_seed = 0.1_r8
+         deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_pp%itype(p))
+         deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_pp%itype(p))
+      end if
+
+      if ( use_c13 ) then
+         ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
+         ! That translates to ratios of (13c/(12c+13c)) of 0.01080455 for C3, and 0.01096945 for C4
+         ! based on the following formulae: 
+         ! r1 (13/12) = PDB + (del13c * PDB)/1000.0
+         ! r2 (13/(13+12)) = r1/(1+r1)
+         ! PDB = 0.0112372_R8  (ratio of 13C/12C in Pee Dee Belemnite, C isotope standard)
+         c3_del13c = -28._r8
+         c4_del13c = -13._r8
+         c3_r1_c13 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
+         c3_r2_c13 = c3_r1_c13/(1._r8 + c3_r1_c13)
+         c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
+         c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
+
+         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+            deadstemc13_seed = deadstemc_seed * c3_r2_c13
+         else
+            deadstemc13_seed = deadstemc_seed * c4_r2_c13
+         end if
+      endif
+
+      if ( use_c14 ) then
+         ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
+         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+            deadstemc14_seed = deadstemc_seed * c14ratio
+         else
+            deadstemc14_seed = deadstemc_seed * c14ratio
+         end if
+      endif
+   end if
+
+ end subroutine ComputeStemSeedPools
+
+ !-----------------------------------------------------------------------
+ subroutine CarbonStateVarsUpdate(cs, p, t1, t2, &
+      leafc_seed, deadstemc_seed, evergreen)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of carbonstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(carbonstate_type), intent(inout) :: cs
+   integer               , intent(in)    :: p
+   real(r8)              , intent(in)    :: t1
+   real(r8)              , intent(in)    :: t2
+   real(r8)              , intent(in)    :: leafc_seed
+   real(r8)              , intent(in)    :: deadstemc_seed
+   real(r8)              , intent(in)    :: evergreen
+   !
+   ! !LOCAL
+   real(r8)                  :: pleaf
+   real(r8)                  :: pstor
+   real(r8)                  :: pxfer
+   real(r8)    :: tot_leaf
+
+   pleaf = 0._r8
+   pstor = 0._r8
+   pxfer = 0._r8
+
+   tot_leaf = cs%leafc_patch(p) + cs%leafc_storage_patch(p) + cs%leafc_xfer_patch(p)
+
+   if (tot_leaf /= 0._r8) then
+      ! when adding seed source to non-zero leaf state, use current proportions
+      pleaf = cs%leafc_patch(p)        /tot_leaf
+      pstor = cs%leafc_storage_patch(p)/tot_leaf
+      pxfer = cs%leafc_xfer_patch(p)   /tot_leaf
+   else
+      ! when initiating from zero leaf state, use evergreen flag to set proportions
+      if (evergreen == 1._r8) then
+         pleaf = 1._r8
+      else
+         pstor = 1._r8
+      end if
+   end if   
+
+   cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
+   cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
+   cs%leafc_xfer_patch(p)         = cs%leafc_xfer_patch(p)         * t1 + leafc_seed*pxfer*t2
+   cs%frootc_patch(p)             = cs%frootc_patch(p)             * t1
+   cs%frootc_storage_patch(p)     = cs%frootc_storage_patch(p)     * t1
+   cs%frootc_xfer_patch(p)        = cs%frootc_xfer_patch(p)        * t1
+   cs%livestemc_patch(p)          = cs%livestemc_patch(p)          * t1
+   cs%livestemc_storage_patch(p)  = cs%livestemc_storage_patch(p)  * t1
+   cs%livestemc_xfer_patch(p)     = cs%livestemc_xfer_patch(p)     * t1
+   cs%deadstemc_patch(p)          = cs%deadstemc_patch(p)          * t1  + deadstemc_seed*t2
+   cs%deadstemc_storage_patch(p)  = cs%deadstemc_storage_patch(p)  * t1
+   cs%deadstemc_xfer_patch(p)     = cs%deadstemc_xfer_patch(p)     * t1
+   cs%livecrootc_patch(p)         = cs%livecrootc_patch(p)         * t1
+   cs%livecrootc_storage_patch(p) = cs%livecrootc_storage_patch(p) * t1
+   cs%livecrootc_xfer_patch(p)    = cs%livecrootc_xfer_patch(p)    * t1
+   cs%deadcrootc_patch(p)         = cs%deadcrootc_patch(p)         * t1
+   cs%deadcrootc_storage_patch(p) = cs%deadcrootc_storage_patch(p) * t1
+   cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)    * t1
+   cs%gresp_storage_patch(p)      = cs%gresp_storage_patch(p)      * t1
+   cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)         * t1
+   cs%cpool_patch(p)              = cs%cpool_patch(p)              * t1
+   cs%xsmrpool_patch(p)           = cs%xsmrpool_patch(p)           * t1
+   cs%ctrunc_patch(p)             = cs%ctrunc_patch(p)             * t1
+   cs%dispvegc_patch(p)           = cs%dispvegc_patch(p)           * t1
+   cs%storvegc_patch(p)           = cs%storvegc_patch(p)           * t1
+   cs%totvegc_patch(p)            = cs%totvegc_patch(p)            * t1
+   cs%totpftc_patch(p)            = cs%totpftc_patch(p)            * t1
+
+ end subroutine CarbonStateVarsUpdate
+
+ !-----------------------------------------------------------------------
+ subroutine NitrogenStateVarsUpdate(ns, p, t1, t2, &
+      leafn_seed, deadstemn_seed, npool_seed, evergreen)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of nitrogenstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(nitrogenstate_type) , intent(inout) :: ns
+   integer                  , intent(in)    :: p
+   real(r8)                 , intent(in)    :: t1
+   real(r8)                 , intent(in)    :: t2
+   real(r8)                 , intent(in)    :: leafn_seed
+   real(r8)                 , intent(in)    :: deadstemn_seed
+   real(r8)                 , intent(in)    :: npool_seed
+   real(r8)                 , intent(in)    :: evergreen
+   !
+   ! !LOCAL
+   real(r8)                                 :: pleaf
+   real(r8)                                 :: pstor
+   real(r8)                                 :: pxfer
+   real(r8)                                 :: tot_leaf
+
+   pleaf = 0._r8
+   pstor = 0._r8
+   pxfer = 0._r8
+
+   tot_leaf = ns%leafn_patch(p) + ns%leafn_storage_patch(p) + ns%leafn_xfer_patch(p)
+
+   if (tot_leaf /= 0._r8) then
+      pleaf = ns%leafn_patch(p)         /tot_leaf
+      pstor = ns%leafn_storage_patch(p) /tot_leaf
+      pxfer = ns%leafn_xfer_patch(p)    /tot_leaf
+   else
+      ! when initiating from zero leaf state, use evergreen flag to set proportions
+      if (evergreen == 1._r8) then
+         pleaf = 1._r8
+      else
+         pstor = 1._r8
+      end if
+   end if
+
+   ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
+   ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
+   ns%leafn_xfer_patch(p)         = ns%leafn_xfer_patch(p)         * t1 + leafn_seed*pxfer*t2
+   ns%frootn_patch(p)             = ns%frootn_patch(p)             * t1
+   ns%frootn_storage_patch(p)     = ns%frootn_storage_patch(p)     * t1
+   ns%frootn_xfer_patch(p)        = ns%frootn_xfer_patch(p)        * t1
+   ns%livestemn_patch(p)	  = ns%livestemn_patch(p)          * t1
+   ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  * t1
+   ns%livestemn_xfer_patch(p)     = ns%livestemn_xfer_patch(p)     * t1
+   ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          * t1 + deadstemn_seed*t2
+   ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  * t1
+   ns%deadstemn_xfer_patch(p)     = ns%deadstemn_xfer_patch(p)     * t1
+   ns%npool_patch(p)              = ns%npool_patch(p)              * t1 + npool_seed*t2
+   ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         * t1
+   ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) * t1
+   ns%livecrootn_xfer_patch(p)    = ns%livecrootn_xfer_patch(p)    * t1
+   ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         * t1
+   ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) * t1
+   ns%deadcrootn_xfer_patch(p)    = ns%deadcrootn_xfer_patch(p)    * t1
+   ns%retransn_patch(p)           = ns%retransn_patch(p)           * t1
+   ns%ntrunc_patch(p)             = ns%ntrunc_patch(p)             * t1
+   ns%dispvegn_patch(p)           = ns%dispvegn_patch(p)           * t1
+   ns%storvegn_patch(p)           = ns%storvegn_patch(p)           * t1
+   ns%totvegn_patch(p)            = ns%totvegn_patch(p)            * t1
+   ns%totpftn_patch(p)            = ns%totpftn_patch(p)            * t1
+
+ end subroutine NitrogenStateVarsUpdate
+
+ !-----------------------------------------------------------------------
+ subroutine PhosphorusStateVarsUpdate(ps, p, t1, t2, &
+      leafp_seed, deadstemp_seed, ppool_seed, evergreen)
+   !
+   ! !DESCRIPTION:
+   ! Updates p-th patch of phosphorusstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(phosphorusstate_type) , intent(inout) :: ps
+   integer                    , intent(in)    :: p
+   real(r8)                   , intent(in)    :: t1
+   real(r8)                   , intent(in)    :: t2
+   real(r8)                   , intent(in)    :: leafp_seed
+   real(r8)                   , intent(in)    :: deadstemp_seed
+   real(r8)                   , intent(in)    :: ppool_seed
+   real(r8)                   , intent(in)    :: evergreen
+   !
+   ! !LOCAL
+   real(r8)                                   :: pleaf
+   real(r8)                                   :: pstor
+   real(r8)                                   :: pxfer
+   real(r8)                                   :: tot_leaf
+
+   pleaf = 0._r8
+   pstor = 0._r8
+   pxfer = 0._r8
+
+   tot_leaf = ps%leafp_patch(p) + ps%leafp_storage_patch(p) + ps%leafp_xfer_patch(p)
+
+   if (tot_leaf /= 0._r8) then
+      pleaf = ps%leafp_patch(p)         /tot_leaf
+      pstor = ps%leafp_storage_patch(p) /tot_leaf
+      pxfer = ps%leafp_xfer_patch(p)    /tot_leaf
+   else
+      ! when initiating from zero leaf state, use evergreen flag to set proportions
+      if (evergreen == 1._r8) then
+         pleaf = 1._r8
+      else
+         pstor = 1._r8
+      end if
+   end if
+
+   ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
+   ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
+   ps%leafp_xfer_patch(p)         = ps%leafp_xfer_patch(p)         * t1 + leafp_seed*pxfer*t2
+   ps%frootp_patch(p)             = ps%frootp_patch(p)             * t1
+   ps%frootp_storage_patch(p)     = ps%frootp_storage_patch(p)     * t1
+   ps%frootp_xfer_patch(p)        = ps%frootp_xfer_patch(p)        * t1
+   ps%livestemp_patch(p)	  = ps%livestemp_patch(p)          * t1
+   ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p)  * t1
+   ps%livestemp_xfer_patch(p)     = ps%livestemp_xfer_patch(p)     * t1
+   ps%deadstemp_patch(p)          = ps%deadstemp_patch(p)          * t1 + deadstemp_seed*t2
+   ps%deadstemp_storage_patch(p)  = ps%deadstemp_storage_patch(p)  * t1
+   ps%deadstemp_xfer_patch(p)     = ps%deadstemp_xfer_patch(p)     * t1
+   ps%livecrootp_patch(p)         = ps%livecrootp_patch(p)         * t1
+   ps%livecrootp_storage_patch(p) = ps%livecrootp_storage_patch(p) * t1
+   ps%livecrootp_xfer_patch(p)    = ps%livecrootp_xfer_patch(p)    * t1
+   ps%deadcrootp_patch(p)         = ps%deadcrootp_patch(p)         * t1
+   ps%deadcrootp_storage_patch(p) = ps%deadcrootp_storage_patch(p) * t1
+   ps%deadcrootp_xfer_patch(p)    = ps%deadcrootp_xfer_patch(p)    * t1
+   ps%retransp_patch(p)           = ps%retransp_patch(p)           * t1
+   ps%ppool_patch(p)              = ps%ppool_patch(p)              * t1 + ppool_seed*t2
+   ps%ptrunc_patch(p)             = ps%ptrunc_patch(p)             * t1
+   ps%dispvegp_patch(p)           = ps%dispvegp_patch(p)           * t1
+   ps%storvegp_patch(p)           = ps%storvegp_patch(p)           * t1
+   ps%totvegp_patch(p)            = ps%totvegp_patch(p)            * t1
+   ps%totpftp_patch(p)            = ps%totpftp_patch(p)            * t1
+
+ end subroutine PhosphorusStateVarsUpdate
 
 end module dynConsBiogeochemMod
