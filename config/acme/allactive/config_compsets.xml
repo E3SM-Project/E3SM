@@ -44,6 +44,11 @@
   <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>A_WCYCL20TRS_CMIP6</alias>
+  <lname>20TR_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ACME v1 science compsets -->
 
 <compset>

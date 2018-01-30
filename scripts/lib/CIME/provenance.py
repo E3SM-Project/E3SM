@@ -180,6 +180,7 @@ def _save_prerun_timing_acme(case, lid):
     globs_to_copy = [
         "CaseDocs/*",
         "*.run",
+        ".*.run",
         "*.xml",
         "user_nl_*",
         "*env_mach_specific*",
@@ -192,7 +193,7 @@ def _save_prerun_timing_acme(case, lid):
         ]
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            copy_umask(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
+            copy_umask(item, os.path.join(case_docs, "{}.{}".format(os.path.basename(item).lstrip("."), lid)))
 
     # Copy some items from build provenance
     blddir_globs_to_copy = [
@@ -369,6 +370,7 @@ def save_postrun_provenance(case, lid=None):
 
 _WALLTIME_BASELINE_NAME = "walltimes"
 _WALLTIME_FILE_NAME     = "walltimes"
+_GLOBAL_MINUMUM_TIME    = 900
 _WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
 def get_recommended_test_time_based_on_past(baseline_root, test):
@@ -382,6 +384,9 @@ def get_recommended_test_time_based_on_past(baseline_root, test):
                     if last_line <= cutoff:
                         best_walltime = int(float(last_line) * tolerance)
                         break
+
+                if best_walltime < _GLOBAL_MINUMUM_TIME:
+                    best_walltime = _GLOBAL_MINUMUM_TIME
 
                 return convert_to_babylonian_time(best_walltime)
         except:
