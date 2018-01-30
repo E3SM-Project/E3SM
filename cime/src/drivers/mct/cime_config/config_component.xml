@@ -160,6 +160,14 @@
     <desc>case user name</desc>
   </entry>
 
+  <entry id="REALUSER">
+    <type>char</type>
+    <default_value>$ENV{USER}</default_value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>username of user who created case</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- definitions runtimes -->
   <!-- ===================================================================== -->
