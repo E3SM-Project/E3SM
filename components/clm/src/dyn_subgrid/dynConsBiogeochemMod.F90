@@ -170,222 +170,54 @@ contains
 
 
     ! Allocate pft-level mass loss arrays
-    allocate(dwt_leafc_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_leafc_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_leafn_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_leafn_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadstemc_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadstemc_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadstemn_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadstemn_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_npool_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_npool_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_frootc_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_frootc_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_livecrootc_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_livecrootc_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadcrootc_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadcrootc_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_frootn_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_frootn_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_livecrootn_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_livecrootn_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadcrootn_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadcrootn_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(conv_cflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for conv_cflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod10_cflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod10_cflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod100_cflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod100_cflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(conv_nflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for conv_nflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod10_nflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod10_nflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod100_nflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod100_nflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
+    allocate(dwt_leafc_seed           (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_leafn_seed           (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadstemc_seed       (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadstemn_seed       (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_npool_seed           (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_frootc_to_litter     (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_livecrootc_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadcrootc_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_frootn_to_litter     (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_livecrootn_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadcrootn_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(conv_cflux               (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod10_cflux             (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod100_cflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(conv_nflux               (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod10_nflux             (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod100_nflux            (bounds%begp:bounds%endp), stat=ier)
 
     ! Allocate P arrays
-    allocate(dwt_leafp_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_leafp_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadstemp_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadstemp_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_ppool_seed(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_ppool_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_frootp_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_frootp_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_livecrootp_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_livecrootp_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(dwt_deadcrootp_to_litter(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadcrootp_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(conv_pflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for conv_pflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod10_pflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod10_pflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(prod100_pflux(bounds%begp:bounds%endp), stat=ier)
-    if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod100_pflux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
+    allocate(dwt_leafp_seed           (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadstemp_seed       (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_ppool_seed           (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_frootp_to_litter     (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_livecrootp_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(dwt_deadcrootp_to_litter (bounds%begp:bounds%endp), stat=ier)
+    allocate(conv_pflux               (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod10_pflux             (bounds%begp:bounds%endp), stat=ier)
+    allocate(prod100_pflux            (bounds%begp:bounds%endp), stat=ier)
 
     if ( use_c13 ) then
-       allocate(dwt_leafc13_seed(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_leafc13_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_deadstemc13_seed(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadstemc13_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_frootc13_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_frootc13_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_livecrootc13_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_livecrootc13_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_deadcrootc13_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadcrootc13_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(conv_c13flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for conv_c13flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(prod10_c13flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod10_c13flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(prod100_c13flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod100_c13flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
+       allocate(dwt_leafc13_seed           (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_deadstemc13_seed       (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_frootc13_to_litter     (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_livecrootc13_to_litter (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_deadcrootc13_to_litter (bounds%begp:bounds%endp), stat=ier)
+       allocate(conv_c13flux               (bounds%begp:bounds%endp), stat=ier)
+       allocate(prod10_c13flux             (bounds%begp:bounds%endp), stat=ier)
+       allocate(prod100_c13flux            (bounds%begp:bounds%endp), stat=ier)
     endif
     if ( use_c14 ) then
-       allocate(dwt_leafc14_seed(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_leafc14_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_deadstemc14_seed(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadstemc14_seed'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_frootc14_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_frootc14_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_livecrootc14_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_livecrootc14_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(dwt_deadcrootc14_to_litter(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for dwt_deadcrootc14_to_litter'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(conv_c14flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for conv_c14flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(prod10_c14flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod10_c14flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       allocate(prod100_c14flux(bounds%begp:bounds%endp), stat=ier)
-       if (ier /= 0) then
-          write(iulog,*)subname,' allocation error for prod100_c14flux'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
+       allocate(dwt_leafc14_seed           (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_deadstemc14_seed       (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_frootc14_to_litter     (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_livecrootc14_to_litter (bounds%begp:bounds%endp), stat=ier)
+       allocate(dwt_deadcrootc14_to_litter (bounds%begp:bounds%endp), stat=ier)
+       allocate(conv_c14flux               (bounds%begp:bounds%endp), stat=ier)
+       allocate(prod10_c14flux             (bounds%begp:bounds%endp), stat=ier)
+       allocate(prod100_c14flux            (bounds%begp:bounds%endp), stat=ier)
     endif
     
     ! Get time step
@@ -394,54 +226,54 @@ contains
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
        ! initialize all the pft-level local flux arrays
-       dwt_leafc_seed(p) = 0._r8
-       dwt_leafn_seed(p) = 0._r8
-       dwt_deadstemc_seed(p) = 0._r8
-       dwt_deadstemn_seed(p) = 0._r8
-       dwt_npool_seed(p) = 0._r8
-       dwt_frootc_to_litter(p) = 0._r8
+       dwt_leafc_seed(p)           = 0._r8
+       dwt_leafn_seed(p)           = 0._r8
+       dwt_deadstemc_seed(p)       = 0._r8
+       dwt_deadstemn_seed(p)       = 0._r8
+       dwt_npool_seed(p)           = 0._r8
+       dwt_frootc_to_litter(p)     = 0._r8
        dwt_livecrootc_to_litter(p) = 0._r8
        dwt_deadcrootc_to_litter(p) = 0._r8
-       dwt_frootn_to_litter(p) = 0._r8
+       dwt_frootn_to_litter(p)     = 0._r8
        dwt_livecrootn_to_litter(p) = 0._r8
        dwt_deadcrootn_to_litter(p) = 0._r8
-       conv_cflux(p) = 0._r8
-       prod10_cflux(p) = 0._r8
-       prod100_cflux(p) = 0._r8
-       conv_nflux(p) = 0._r8
-       prod10_nflux(p) = 0._r8
-       prod100_nflux(p) = 0._r8
+       conv_cflux(p)               = 0._r8
+       prod10_cflux(p)             = 0._r8
+       prod100_cflux(p)            = 0._r8
+       conv_nflux(p)               = 0._r8
+       prod10_nflux(p)             = 0._r8
+       prod100_nflux(p)            = 0._r8
        
-       dwt_leafp_seed(p) = 0._r8
-       dwt_deadstemp_seed(p) = 0._r8
-       dwt_ppool_seed(p) = 0._r8
-       dwt_frootp_to_litter(p) = 0._r8
+       dwt_leafp_seed(p)           = 0._r8
+       dwt_deadstemp_seed(p)       = 0._r8
+       dwt_ppool_seed(p)           = 0._r8
+       dwt_frootp_to_litter(p)     = 0._r8
        dwt_livecrootp_to_litter(p) = 0._r8
        dwt_deadcrootp_to_litter(p) = 0._r8
-       conv_pflux(p) = 0._r8
-       prod10_pflux(p) = 0._r8
-       prod100_pflux(p) = 0._r8
+       conv_pflux(p)               = 0._r8
+       prod10_pflux(p)             = 0._r8
+       prod100_pflux(p)            = 0._r8
 
        if ( use_c13 ) then
-          dwt_leafc13_seed(p) = 0._r8
-          dwt_deadstemc13_seed(p) = 0._r8
-          dwt_frootc13_to_litter(p) = 0._r8
+          dwt_leafc13_seed(p)           = 0._r8
+          dwt_deadstemc13_seed(p)       = 0._r8
+          dwt_frootc13_to_litter(p)     = 0._r8
           dwt_livecrootc13_to_litter(p) = 0._r8
           dwt_deadcrootc13_to_litter(p) = 0._r8
-          conv_c13flux(p) = 0._r8
-          prod10_c13flux(p) = 0._r8
-          prod100_c13flux(p) = 0._r8
+          conv_c13flux(p)               = 0._r8
+          prod10_c13flux(p)             = 0._r8
+          prod100_c13flux(p)            = 0._r8
        endif
        
        if ( use_c14 ) then
-          dwt_leafc14_seed(p) = 0._r8
-          dwt_deadstemc14_seed(p) = 0._r8
-          dwt_frootc14_to_litter(p) = 0._r8
+          dwt_leafc14_seed(p)           = 0._r8
+          dwt_deadstemc14_seed(p)       = 0._r8
+          dwt_frootc14_to_litter(p)     = 0._r8
           dwt_livecrootc14_to_litter(p) = 0._r8
           dwt_deadcrootc14_to_litter(p) = 0._r8
-          conv_c14flux(p) = 0._r8
-          prod10_c14flux(p) = 0._r8
-          prod100_c14flux(p) = 0._r8
+          conv_c14flux(p)               = 0._r8
+          prod10_c14flux(p)             = 0._r8
+          prod100_c14flux(p)            = 0._r8
        endif
        
        l = veg_pp%landunit(p)
@@ -462,214 +294,26 @@ contains
                 ! in this time step.  Based on the settings in cnIniTimeVar.
                 
                 ! pft-level carbon state variables
-                cs%leafc_patch(p)              = 0._r8
-                cs%leafc_storage_patch(p)      = 0._r8
-                cs%leafc_xfer_patch(p)         = 0._r8
-                cs%frootc_patch(p)             = 0._r8
-                cs%frootc_storage_patch(p)     = 0._r8
-                cs%frootc_xfer_patch(p)        = 0._r8
-                cs%livestemc_patch(p)          = 0._r8
-                cs%livestemc_storage_patch(p)  = 0._r8
-                cs%livestemc_xfer_patch(p)     = 0._r8
-                cs%deadstemc_patch(p)          = 0._r8
-                cs%deadstemc_storage_patch(p)  = 0._r8
-                cs%deadstemc_xfer_patch(p)     = 0._r8
-                cs%livecrootc_patch(p)         = 0._r8
-                cs%livecrootc_storage_patch(p) = 0._r8
-                cs%livecrootc_xfer_patch(p)    = 0._r8
-                cs%deadcrootc_patch(p)         = 0._r8
-                cs%deadcrootc_storage_patch(p) = 0._r8
-                cs%deadcrootc_xfer_patch(p)    = 0._r8
-                cs%gresp_storage_patch(p)      = 0._r8
-                cs%gresp_xfer_patch(p)         = 0._r8
-                cs%cpool_patch(p)              = 0._r8
-                cs%xsmrpool_patch(p)           = 0._r8
-                cs%ctrunc_patch(p)             = 0._r8
-                cs%dispvegc_patch(p)           = 0._r8
-                cs%storvegc_patch(p)           = 0._r8
-                cs%totvegc_patch(p)            = 0._r8
-                cs%totpftc_patch(p)            = 0._r8
+                call CarbonStateVarsInit     (cs, p)
+                call NitrogenStateVarsInit   (ns, p)
+                call PhosphorusStateVarsInit (ps, p)
+                call CanopyStateVarsInit     (canopystate_vars, p)
+                call CNStateVarsInit         (cnstate_vars, p, c)
+                call CabronFluxVarsInit      (cf, p)
+                call NitrogenFluxVarsInit    (nf, p)
+                call PhosphorusFluxVarsInit  (pf, p)
                 
                 if ( use_c13 ) then
                    ! pft-level carbon-13 state variables
-                   c13_cs%leafc_patch(p)              = 0._r8
-                   c13_cs%leafc_storage_patch(p)      = 0._r8
-                   c13_cs%leafc_xfer_patch(p)         = 0._r8
-                   c13_cs%frootc_patch(p)             = 0._r8
-                   c13_cs%frootc_storage_patch(p)     = 0._r8
-                   c13_cs%frootc_xfer_patch(p)        = 0._r8
-                   c13_cs%livestemc_patch(p)          = 0._r8
-                   c13_cs%livestemc_storage_patch(p)  = 0._r8
-                   c13_cs%livestemc_xfer_patch(p)     = 0._r8
-                   c13_cs%deadstemc_patch(p)          = 0._r8
-                   c13_cs%deadstemc_storage_patch(p)  = 0._r8
-                   c13_cs%deadstemc_xfer_patch(p)     = 0._r8
-                   c13_cs%livecrootc_patch(p)         = 0._r8
-                   c13_cs%livecrootc_storage_patch(p) = 0._r8
-                   c13_cs%livecrootc_xfer_patch(p)    = 0._r8
-                   c13_cs%deadcrootc_patch(p)         = 0._r8
-                   c13_cs%deadcrootc_storage_patch(p) = 0._r8
-                   c13_cs%deadcrootc_xfer_patch(p)    = 0._r8
-                   c13_cs%gresp_storage_patch(p)      = 0._r8
-                   c13_cs%gresp_xfer_patch(p)         = 0._r8
-                   c13_cs%cpool_patch(p)              = 0._r8
-                   c13_cs%xsmrpool_patch(p)           = 0._r8
-                   c13_cs%ctrunc_patch(p)             = 0._r8
-                   c13_cs%dispvegc_patch(p)           = 0._r8
-                   c13_cs%storvegc_patch(p)           = 0._r8
-                   c13_cs%totvegc_patch(p)            = 0._r8
-                   c13_cs%totpftc_patch(p)            = 0._r8
+                   call CarbonStateVarsInit(c13_cs, p)
                 endif
                 
                 if ( use_c14 ) then
                    ! pft-level carbon-14 state variables
-                   c14_cs%leafc_patch(p)              = 0._r8
-                   c14_cs%leafc_storage_patch(p)      = 0._r8
-                   c14_cs%leafc_xfer_patch(p)         = 0._r8
-                   c14_cs%frootc_patch(p)             = 0._r8
-                   c14_cs%frootc_storage_patch(p)     = 0._r8
-                   c14_cs%frootc_xfer_patch(p)        = 0._r8
-                   c14_cs%livestemc_patch(p)          = 0._r8
-                   c14_cs%livestemc_storage_patch(p)  = 0._r8
-                   c14_cs%livestemc_xfer_patch(p)     = 0._r8
-                   c14_cs%deadstemc_patch(p)          = 0._r8
-                   c14_cs%deadstemc_storage_patch(p)  = 0._r8
-                   c14_cs%deadstemc_xfer_patch(p)     = 0._r8
-                   c14_cs%livecrootc_patch(p)         = 0._r8
-                   c14_cs%livecrootc_storage_patch(p) = 0._r8
-                   c14_cs%livecrootc_xfer_patch(p)    = 0._r8
-                   c14_cs%deadcrootc_patch(p)         = 0._r8
-                   c14_cs%deadcrootc_storage_patch(p) = 0._r8
-                   c14_cs%deadcrootc_xfer_patch(p)    = 0._r8
-                   c14_cs%gresp_storage_patch(p)      = 0._r8
-                   c14_cs%gresp_xfer_patch(p)         = 0._r8
-                   c14_cs%cpool_patch(p)              = 0._r8
-                   c14_cs%xsmrpool_patch(p)           = 0._r8
-                   c14_cs%ctrunc_patch(p)             = 0._r8
-                   c14_cs%dispvegc_patch(p)           = 0._r8
-                   c14_cs%storvegc_patch(p)           = 0._r8
-                   c14_cs%totvegc_patch(p)            = 0._r8
-                   c14_cs%totpftc_patch(p)            = 0._r8
+                   call CarbonStateVarsInit(c14_cs, p)
                 endif
-                
-                ! pft-level nitrogen state variables
-                ns%leafn_patch(p)	       = 0._r8
-                ns%leafn_storage_patch(p)      = 0._r8
-                ns%leafn_xfer_patch(p)         = 0._r8
-                ns%frootn_patch(p)	       = 0._r8
-                ns%frootn_storage_patch(p)     = 0._r8
-                ns%frootn_xfer_patch(p)        = 0._r8
-                ns%livestemn_patch(p)          = 0._r8
-                ns%livestemn_storage_patch(p)  = 0._r8
-                ns%livestemn_xfer_patch(p)     = 0._r8
-                ns%deadstemn_patch(p)          = 0._r8
-                ns%deadstemn_storage_patch(p)  = 0._r8
-                ns%deadstemn_xfer_patch(p)     = 0._r8
-                ns%livecrootn_patch(p)         = 0._r8
-                ns%livecrootn_storage_patch(p) = 0._r8
-                ns%livecrootn_xfer_patch(p)    = 0._r8
-                ns%deadcrootn_patch(p)         = 0._r8
-                ns%deadcrootn_storage_patch(p) = 0._r8
-                ns%deadcrootn_xfer_patch(p)    = 0._r8
-                ns%retransn_patch(p)           = 0._r8
-                ns%npool_patch(p)	       = 0._r8
-                ns%ntrunc_patch(p)             = 0._r8
-                ns%dispvegn_patch(p)           = 0._r8
-                ns%storvegn_patch(p)           = 0._r8
-                ns%totvegn_patch(p)            = 0._r8
-                ns%totpftn_patch (p)           = 0._r8
-                
-                ! pft-level phosphorus state variables
-                ps%leafp_patch(p)	       = 0._r8
-                ps%leafp_storage_patch(p)      = 0._r8
-                ps%leafp_xfer_patch(p)         = 0._r8
-                ps%frootp_patch(p)	       = 0._r8
-                ps%frootp_storage_patch(p)     = 0._r8
-                ps%frootp_xfer_patch(p)        = 0._r8
-                ps%livestemp_patch(p)          = 0._r8
-                ps%livestemp_storage_patch(p)  = 0._r8
-                ps%livestemp_xfer_patch(p)     = 0._r8
-                ps%deadstemp_patch(p)          = 0._r8
-                ps%deadstemp_storage_patch(p)  = 0._r8
-                ps%deadstemp_xfer_patch(p)     = 0._r8
-                ps%livecrootp_patch(p)         = 0._r8
-                ps%livecrootp_storage_patch(p) = 0._r8
-                ps%livecrootp_xfer_patch(p)    = 0._r8
-                ps%deadcrootp_patch(p)         = 0._r8
-                ps%deadcrootp_storage_patch(p) = 0._r8
-                ps%deadcrootp_xfer_patch(p)    = 0._r8
-                ps%retransp_patch(p)           = 0._r8
-                ps%ppool_patch(p)	       = 0._r8
-                ps%ptrunc_patch(p)             = 0._r8
-                ps%dispvegp_patch(p)           = 0._r8
-                ps%storvegp_patch(p)           = 0._r8
-                ps%totvegp_patch(p)            = 0._r8
-                ps%totpftp_patch (p)           = 0._r8
-
-                ! initialize same flux and epv variables that are set
-                canopystate_vars%laisun_patch(p) = 0._r8
-                canopystate_vars%laisha_patch(p) = 0._r8
-                
-                cnstate_vars%dormant_flag_patch(p)          = 1._r8
-                cnstate_vars%days_active_patch(p)           = 0._r8
-                cnstate_vars%onset_flag_patch(p)            = 0._r8
-                cnstate_vars%onset_counter_patch(p)         = 0._r8
-                cnstate_vars%onset_gddflag_patch(p)         = 0._r8
-                cnstate_vars%onset_fdd_patch(p)             = 0._r8
-                cnstate_vars%onset_gdd_patch(p)             = 0._r8
-                cnstate_vars%onset_swi_patch(p)             = 0._r8
-                cnstate_vars%offset_flag_patch(p)           = 0._r8
-                cnstate_vars%offset_counter_patch(p)        = 0._r8
-                cnstate_vars%offset_fdd_patch(p)            = 0._r8
-                cnstate_vars%offset_swi_patch(p)            = 0._r8
-                cnstate_vars%lgsf_patch(p)                  = 0._r8
-                cnstate_vars%bglfr_patch(p)                 = 0._r8
-                cnstate_vars%bglfr_leaf_patch(p)            = 0._r8
-                cnstate_vars%bglfr_froot_patch(p)           = 0._r8
-                cnstate_vars%bgtr_patch(p)                  = 0._r8
-                cnstate_vars%annavg_t2m_patch(p)            = cnstate_vars%annavg_t2m_col(c)
-                cnstate_vars%tempavg_t2m_patch(p)           = 0._r8
-                cnstate_vars%alloc_pnow_patch(p)            = 1._r8
-                cnstate_vars%c_allometry_patch(p)           = 0._r8
-                cnstate_vars%n_allometry_patch(p)           = 0._r8
-                cnstate_vars%p_allometry_patch(p)           = 0._r8
-                cnstate_vars%tempsum_potential_gpp_patch(p) = 0._r8
-                cnstate_vars%annsum_potential_gpp_patch(p)  = 0._r8
-                cnstate_vars%tempmax_retransn_patch(p)      = 0._r8
-                cnstate_vars%annmax_retransn_patch(p)       = 0._r8
-                cnstate_vars%downreg_patch(p)               = 0._r8
- 
+                                 
                 ! add phosphorus related variables
-                cnstate_vars%tempmax_retransp_patch(p)      = 0._r8
-                cnstate_vars%annmax_retransp_patch(p)       = 0._r8
-           
-
-                cf%xsmrpool_recover_patch(p)      = 0._r8
-                cf%plant_calloc_patch(p)          = 0._r8
-                cf%excess_cflux_patch(p)          = 0._r8
-                cf%prev_leafc_to_litter_patch(p)  = 0._r8
-                cf%prev_frootc_to_litter_patch(p) = 0._r8
-                cf%availc_patch(p)                = 0._r8
-                cf%gpp_before_downreg_patch(p)    = 0._r8
-                cf%tempsum_npp_patch(p)           = 0._r8
-                cf%annsum_npp_patch(p)            = 0._r8
-
-                nf%plant_ndemand_patch(p)         = 0._r8
-                nf%avail_retransn_patch(p)        = 0._r8
-                nf%plant_nalloc_patch(p)          = 0._r8
-                 
-                ! add phosphorus related variables
-                pf%plant_pdemand_patch(p)         = 0._r8
-                pf%avail_retransp_patch(p)        = 0._r8
-                pf%plant_palloc_patch(p)          = 0._r8
-
-                if ( use_c13 ) then
-                   cf%xsmrpool_c13ratio_patch(p) = c13ratio
-                end if
-                if ( use_c14 ) then
-                   cnstate_vars%rc14_atm_patch(p) = c14ratio
-                   cnstate_vars%rc14_atm_patch(p) = 0._r8
-                endif
 
                 call photosyns_vars%NewPatchinit(p)
                 
@@ -2784,6 +2428,265 @@ contains
     endif
     
    end associate
-   end subroutine dyn_cnbal_patch
+ end subroutine dyn_cnbal_patch
+ 
+ !-----------------------------------------------------------------------
+ subroutine CarbonStateVarsInit(cs, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of carbonstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(carbonstate_type), intent(inout) :: cs
+   integer               , intent(in)    :: p
+   
+   cs%leafc_patch(p)              = 0._r8
+   cs%leafc_storage_patch(p)      = 0._r8
+   cs%leafc_xfer_patch(p)         = 0._r8
+   cs%frootc_patch(p)             = 0._r8
+   cs%frootc_storage_patch(p)     = 0._r8
+   cs%frootc_xfer_patch(p)        = 0._r8
+   cs%livestemc_patch(p)          = 0._r8
+   cs%livestemc_storage_patch(p)  = 0._r8
+   cs%livestemc_xfer_patch(p)     = 0._r8
+   cs%deadstemc_patch(p)          = 0._r8
+   cs%deadstemc_storage_patch(p)  = 0._r8
+   cs%deadstemc_xfer_patch(p)     = 0._r8
+   cs%livecrootc_patch(p)         = 0._r8
+   cs%livecrootc_storage_patch(p) = 0._r8
+   cs%livecrootc_xfer_patch(p)    = 0._r8
+   cs%deadcrootc_patch(p)         = 0._r8
+   cs%deadcrootc_storage_patch(p) = 0._r8
+   cs%deadcrootc_xfer_patch(p)    = 0._r8
+   cs%gresp_storage_patch(p)      = 0._r8
+   cs%gresp_xfer_patch(p)         = 0._r8
+   cs%cpool_patch(p)              = 0._r8
+   cs%xsmrpool_patch(p)           = 0._r8
+   cs%ctrunc_patch(p)             = 0._r8
+   cs%dispvegc_patch(p)           = 0._r8
+   cs%storvegc_patch(p)           = 0._r8
+   cs%totvegc_patch(p)            = 0._r8
+   cs%totpftc_patch(p)            = 0._r8
+
+ end subroutine CarbonStateVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine NitrogenStateVarsInit(ns, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of nitrogenstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(nitrogenstate_type), intent(inout) :: ns
+   integer                 , intent(in)    :: p
+   
+   ns%leafn_patch(p)              = 0._r8
+   ns%leafn_storage_patch(p)      = 0._r8
+   ns%leafn_xfer_patch(p)         = 0._r8
+   ns%frootn_patch(p)             = 0._r8
+   ns%frootn_storage_patch(p)     = 0._r8
+   ns%frootn_xfer_patch(p)        = 0._r8
+   ns%livestemn_patch(p)          = 0._r8
+   ns%livestemn_storage_patch(p)  = 0._r8
+   ns%livestemn_xfer_patch(p)     = 0._r8
+   ns%deadstemn_patch(p)          = 0._r8
+   ns%deadstemn_storage_patch(p)  = 0._r8
+   ns%deadstemn_xfer_patch(p)     = 0._r8
+   ns%livecrootn_patch(p)         = 0._r8
+   ns%livecrootn_storage_patch(p) = 0._r8
+   ns%livecrootn_xfer_patch(p)    = 0._r8
+   ns%deadcrootn_patch(p)         = 0._r8
+   ns%deadcrootn_storage_patch(p) = 0._r8
+   ns%deadcrootn_xfer_patch(p)    = 0._r8
+   ns%retransn_patch(p)           = 0._r8
+   ns%npool_patch(p)              = 0._r8
+   ns%ntrunc_patch(p)             = 0._r8
+   ns%dispvegn_patch(p)           = 0._r8
+   ns%storvegn_patch(p)           = 0._r8
+   ns%totvegn_patch(p)            = 0._r8
+   ns%totpftn_patch (p)           = 0._r8
+
+ end subroutine NitrogenStateVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine PhosphorusStateVarsInit(ps, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of phosphorusstate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(phosphorusstate_type), intent(inout) :: ps
+   integer                   , intent(in)    :: p
+
+   ps%leafp_patch(p)              = 0._r8
+   ps%leafp_storage_patch(p)      = 0._r8
+   ps%leafp_xfer_patch(p)         = 0._r8
+   ps%frootp_patch(p)             = 0._r8
+   ps%frootp_storage_patch(p)     = 0._r8
+   ps%frootp_xfer_patch(p)        = 0._r8
+   ps%livestemp_patch(p)          = 0._r8
+   ps%livestemp_storage_patch(p)  = 0._r8
+   ps%livestemp_xfer_patch(p)     = 0._r8
+   ps%deadstemp_patch(p)          = 0._r8
+   ps%deadstemp_storage_patch(p)  = 0._r8
+   ps%deadstemp_xfer_patch(p)     = 0._r8
+   ps%livecrootp_patch(p)         = 0._r8
+   ps%livecrootp_storage_patch(p) = 0._r8
+   ps%livecrootp_xfer_patch(p)    = 0._r8
+   ps%deadcrootp_patch(p)         = 0._r8
+   ps%deadcrootp_storage_patch(p) = 0._r8
+   ps%deadcrootp_xfer_patch(p)    = 0._r8
+   ps%retransp_patch(p)           = 0._r8
+   ps%ppool_patch(p)              = 0._r8
+   ps%ptrunc_patch(p)             = 0._r8
+   ps%dispvegp_patch(p)           = 0._r8
+   ps%storvegp_patch(p)           = 0._r8
+   ps%totvegp_patch(p)            = 0._r8
+   ps%totpftp_patch (p)           = 0._r8
+
+ end subroutine PhosphorusStateVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine CanopyStateVarsInit(canopystate_vars, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of canopystate_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(canopystate_type), intent(inout) :: canopystate_vars
+   integer               , intent(in)    :: p
+
+   canopystate_vars%laisun_patch(p) = 0._r8
+   canopystate_vars%laisha_patch(p) = 0._r8
+
+ end subroutine CanopyStateVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine CNStateVarsInit(cnstate_vars, p, c)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of cnstate_type
+   !
+   use clm_varcon, only : c14ratio
+   implicit none
+   !
+   ! !ARGUMENT
+   type(cnstate_type), intent(inout) :: cnstate_vars
+   integer           , intent(in)    :: p
+   integer           , intent(in)    :: c
+
+   cnstate_vars%dormant_flag_patch(p)          = 1._r8
+   cnstate_vars%days_active_patch(p)           = 0._r8
+   cnstate_vars%onset_flag_patch(p)            = 0._r8
+   cnstate_vars%onset_counter_patch(p)         = 0._r8
+   cnstate_vars%onset_gddflag_patch(p)         = 0._r8
+   cnstate_vars%onset_fdd_patch(p)             = 0._r8
+   cnstate_vars%onset_gdd_patch(p)             = 0._r8
+   cnstate_vars%onset_swi_patch(p)             = 0._r8
+   cnstate_vars%offset_flag_patch(p)           = 0._r8
+   cnstate_vars%offset_counter_patch(p)        = 0._r8
+   cnstate_vars%offset_fdd_patch(p)            = 0._r8
+   cnstate_vars%offset_swi_patch(p)            = 0._r8
+   cnstate_vars%lgsf_patch(p)                  = 0._r8
+   cnstate_vars%bglfr_patch(p)                 = 0._r8
+   cnstate_vars%bglfr_leaf_patch(p)            = 0._r8
+   cnstate_vars%bglfr_froot_patch(p)           = 0._r8
+   cnstate_vars%bgtr_patch(p)                  = 0._r8
+   cnstate_vars%annavg_t2m_patch(p)            = cnstate_vars%annavg_t2m_col(c)
+   cnstate_vars%tempavg_t2m_patch(p)           = 0._r8
+   cnstate_vars%alloc_pnow_patch(p)            = 1._r8
+   cnstate_vars%c_allometry_patch(p)           = 0._r8
+   cnstate_vars%n_allometry_patch(p)           = 0._r8
+   cnstate_vars%p_allometry_patch(p)           = 0._r8
+   cnstate_vars%tempsum_potential_gpp_patch(p) = 0._r8
+   cnstate_vars%annsum_potential_gpp_patch(p)  = 0._r8
+   cnstate_vars%tempmax_retransn_patch(p)      = 0._r8
+   cnstate_vars%annmax_retransn_patch(p)       = 0._r8
+   cnstate_vars%downreg_patch(p)               = 0._r8
+
+   cnstate_vars%tempmax_retransp_patch(p)      = 0._r8
+   cnstate_vars%annmax_retransp_patch(p)       = 0._r8
+
+   if ( use_c14 ) then
+      cnstate_vars%rc14_atm_patch(p) = c14ratio
+      cnstate_vars%rc14_atm_patch(p) = 0._r8
+   endif
+
+ end subroutine CNStateVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine CabronFluxVarsInit(cf, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of carbonflux_type
+   !
+   use clm_varcon, only : c13ratio
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(carbonflux_type), intent(inout) :: cf
+   integer              , intent(in)    :: p
+
+   cf%xsmrpool_recover_patch(p)      = 0._r8
+   cf%plant_calloc_patch(p)          = 0._r8
+   cf%excess_cflux_patch(p)          = 0._r8
+   cf%prev_leafc_to_litter_patch(p)  = 0._r8
+   cf%prev_frootc_to_litter_patch(p) = 0._r8
+   cf%availc_patch(p)                = 0._r8
+   cf%gpp_before_downreg_patch(p)    = 0._r8
+   cf%tempsum_npp_patch(p)           = 0._r8
+   cf%annsum_npp_patch(p)            = 0._r8
+
+   if ( use_c13 ) then
+      cf%xsmrpool_c13ratio_patch(p) = c13ratio
+   end if
+
+ end subroutine CabronFluxVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine NitrogenFluxVarsInit(nf, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of nitrogenflux_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(nitrogenflux_type), intent(inout) :: nf
+   integer                , intent(in)    :: p
+
+   nf%plant_ndemand_patch(p)         = 0._r8
+   nf%avail_retransn_patch(p)        = 0._r8
+   nf%plant_nalloc_patch(p)          = 0._r8
+
+ end subroutine NitrogenFluxVarsInit
+
+ !-----------------------------------------------------------------------
+ subroutine PhosphorusFluxVarsInit(pf, p)
+   !
+   ! !DESCRIPTION:
+   ! Initializes p-th patch of phosphorusflux_type
+   !
+   implicit none
+   !
+   ! !ARGUMENT
+   type(phosphorusflux_type), intent(inout) :: pf
+   integer                  , intent(in)    :: p
+
+   pf%plant_pdemand_patch(p)         = 0._r8
+   pf%avail_retransp_patch(p)        = 0._r8
+   pf%plant_palloc_patch(p)          = 0._r8
+
+ end subroutine PhosphorusFluxVarsInit
+
 
 end module dynConsBiogeochemMod
