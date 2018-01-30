@@ -102,7 +102,7 @@ CONTAINS
     use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
 #ifdef HAVE_MOAB
-    use semoab_mod ,      only: MHID  ! id of homme moab coarse application 
+    use seq_comm_mct,      only: MHID  ! id of homme moab coarse application
 #endif
 
     ! PARAMETERS:

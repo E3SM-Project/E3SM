@@ -18,14 +18,12 @@ module semoab_mod
   use cam_grid_support, only:  iMap
   use cam_abortutils,   only : endrun
 
+  use seq_comm_mct,  only: MHID !  app id on moab side, for homme moab coarse mesh
+
   implicit none
 
 #include "moab/MOABConfig.h"
   
-  integer, public :: MHID !   app id on moab side, for homme moab coarse mesh
-  
-  
-
 contains
 
   subroutine create_moab_mesh_coarse(par, elem, nets, nete)
