@@ -291,7 +291,7 @@ class EnvMachSpecific(EnvBase):
                 key, val = line.split("=", 1)
                 newenv[key] = val
                 lastkey = key
-            else:
+            elif lastkey is not None:
                 newenv[lastkey] += "\n" + line
 
         # resolve variables
