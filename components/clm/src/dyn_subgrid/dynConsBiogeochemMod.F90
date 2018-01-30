@@ -119,8 +119,6 @@ contains
     real(r8)                      :: leafp_seed
     real(r8)                      :: deadstemp_seed, ppool_seed
 
-
-
     !! C13
     real(r8), allocatable         :: dwt_leafc13_seed(:)           ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_deadstemc13_seed(:)       ! pft-level mass gain due to seeding of new area
@@ -130,12 +128,6 @@ contains
     real(r8), allocatable, target :: conv_c13flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c13flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c13flux(:)            ! pft-level mass loss due to weight shift
-    real(r8)                      :: c3_del13c                     ! typical del13C for C3 photosynthesis (permil, relative to PDB)
-    real(r8)                      :: c4_del13c                     ! typical del13C for C4 photosynthesis (permil, relative to PDB)
-    real(r8)                      :: c3_r1_c13                     ! isotope ratio (13c/12c) for C3 photosynthesis
-    real(r8)                      :: c4_r1_c13                     ! isotope ratio (13c/12c) for C4 photosynthesis
-    real(r8)                      :: c3_r2_c13                     ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
-    real(r8)                      :: c4_r2_c13                     ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
     real(r8)                      :: leafc13_seed, deadstemc13_seed
     !! C14
     real(r8), allocatable         :: dwt_leafc14_seed(:)           ! pft-level mass gain due to seeding of new area
@@ -146,14 +138,9 @@ contains
     real(r8), allocatable, target :: conv_c14flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c14flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c14flux(:)            ! pft-level mass loss due to weight shift
-    real(r8)                      :: c3_del14c                     ! typical del14C for C3 photosynthesis (permil, relative to PDB)
-    real(r8)                      :: c4_del14c                     ! typical del14C for C4 photosynthesis (permil, relative to PDB)
-    real(r8)                      :: c3_r1_c14                     ! isotope ratio (14c/12c) for C3 photosynthesis
-    real(r8)                      :: c4_r1_c14                     ! isotope ratio (14c/12c) for C4 photosynthesis
-    real(r8)                      :: c3_r2_c14                     ! isotope ratio (14c/[12c+14c]) for C3 photosynthesis
-    real(r8)                      :: c4_r2_c14                     ! isotope ratio (14c/[12c+14c]) for C4 photosynthesis
     real(r8)                      :: leafc14_seed, deadstemc14_seed
-    real(r8) :: mass_tmp
+    real(r8) :: froot, croot
+    real(r8) :: fr_flab, fr_fcel, fr_flig
     !-----------------------------------------------------------------------
     
     associate(&
@@ -459,11 +446,11 @@ contains
           if ( pi <=  col_pp%npfts(c) ) then
              p = col_pp%pfti(c) + pi - 1
              
-             ! C fluxes
+             ! C fluxe
              cf%dwt_seedc_to_leaf_col(c) = cf%dwt_seedc_to_leaf_col(c) + dwt_leafc_seed(p)/dt
              cf%dwt_seedc_to_deadstem_col(c) = cf%dwt_seedc_to_deadstem_col(c) &
                   + dwt_deadstemc_seed(p)/dt
-             
+
              if ( use_c13 ) then
                 c13_cf%dwt_seedc_to_leaf_col(c) = c13_cf%dwt_seedc_to_leaf_col(c) + dwt_leafc13_seed(p)/dt
                 c13_cf%dwt_seedc_to_deadstem_col(c) = c13_cf%dwt_seedc_to_deadstem_col(c) &
@@ -499,97 +486,104 @@ contains
           do c = bounds%begc, bounds%endc
              if ( pi <=  col_pp%npfts(c) ) then
                 p = col_pp%pfti(c) + pi - 1
+
+                froot   = cnstate_vars%froot_prof_patch(p,j)
+                croot   = cnstate_vars%croot_prof_patch(p,j)
+                fr_flab = veg_vp%fr_flab(veg_pp%itype(p))
+                fr_fcel = veg_vp%fr_fcel(veg_pp%itype(p))
+                fr_flig = veg_vp%fr_flig(veg_pp%itype(p))
+                
                 
                 ! fine root litter carbon fluxes
                 cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)* fr_flab)/dt * froot
 
                 cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)* fr_fcel)/dt * froot
 
                 cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)* fr_flig)/dt * froot
                 
                 
                 ! fine root litter nitrogen fluxes
                 nf%dwt_frootn_to_litr_met_n_col(c,j) = &
                      nf%dwt_frootn_to_litr_met_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)* fr_flab)/dt * froot
                 nf%dwt_frootn_to_litr_cel_n_col(c,j) = &
 
                      nf%dwt_frootn_to_litr_cel_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)* fr_fcel)/dt * froot
 
                 nf%dwt_frootn_to_litr_lig_n_col(c,j) = &
                      nf%dwt_frootn_to_litr_lig_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)* fr_flig)/dt * froot
                 
 
                 ! fine root litter phosphorus fluxes
                 pf%dwt_frootp_to_litr_met_p_col(c,j) = &
                      pf%dwt_frootp_to_litr_met_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)* fr_flab)/dt * froot
                 pf%dwt_frootp_to_litr_cel_p_col(c,j) = &
 
                      pf%dwt_frootp_to_litr_cel_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)* fr_fcel)/dt * froot
 
                 pf%dwt_frootp_to_litr_lig_p_col(c,j) = &
                      pf%dwt_frootp_to_litr_lig_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)* fr_flig)/dt * froot
 
                 ! livecroot fluxes to cwd
                 cf%dwt_livecrootc_to_cwdc_col(c,j) = &
                      cf%dwt_livecrootc_to_cwdc_col(c,j) + &
-                     (dwt_livecrootc_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_livecrootc_to_litter(p))/dt * croot
 
                 nf%dwt_livecrootn_to_cwdn_col(c,j) = &
                      nf%dwt_livecrootn_to_cwdn_col(c,j) + &
-                     (dwt_livecrootn_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_livecrootn_to_litter(p))/dt * croot
                 
                 pf%dwt_livecrootp_to_cwdp_col(c,j) = &
                      pf%dwt_livecrootp_to_cwdp_col(c,j) + &
-                     (dwt_livecrootp_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_livecrootp_to_litter(p))/dt * croot
 
                 ! deadcroot fluxes to cwd
                 cf%dwt_deadcrootc_to_cwdc_col(c,j) = &
                      cf%dwt_deadcrootc_to_cwdc_col(c,j) + &
-                     (dwt_deadcrootc_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_deadcrootc_to_litter(p))/dt * croot
 
                 nf%dwt_deadcrootn_to_cwdn_col(c,j) = &
                      nf%dwt_deadcrootn_to_cwdn_col(c,j) + &
-                     (dwt_deadcrootn_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_deadcrootn_to_litter(p))/dt * croot
              
                 pf%dwt_deadcrootp_to_cwdp_col(c,j) = &
                      pf%dwt_deadcrootp_to_cwdp_col(c,j) + &
-                     (dwt_deadcrootp_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                     (dwt_deadcrootp_to_litter(p))/dt * croot
 
                 if ( use_c13 ) then
                    ! C13 fine root litter fluxes
                    c13_cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)* fr_flab)/dt * froot
 
                    c13_cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)* fr_fcel)/dt * froot
 
                    c13_cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)* fr_flig)/dt * froot
 
                    ! livecroot fluxes to cwd
                    c13_cf%dwt_livecrootc_to_cwdc_col(c,j) = &
                         c13_cf%dwt_livecrootc_to_cwdc_col(c,j) + &
-                        (dwt_livecrootc13_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                        (dwt_livecrootc13_to_litter(p))/dt * croot
 
                    ! deadcroot fluxes to cwd
                    c13_cf%dwt_deadcrootc_to_cwdc_col(c,j) = &
                         c13_cf%dwt_deadcrootc_to_cwdc_col(c,j) + &
-                        (dwt_deadcrootc13_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                        (dwt_deadcrootc13_to_litter(p))/dt * croot
                    
                 endif
                 
@@ -597,25 +591,25 @@ contains
                    ! C14 fine root litter fluxes
                    c14_cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)* fr_flab)/dt * froot
 
                    c14_cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)* fr_fcel)/dt * froot
 
                    c14_cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)* fr_flig)/dt * froot
 
                    ! livecroot fluxes to cwd
                    c14_cf%dwt_livecrootc_to_cwdc_col(c,j) = &
                         c14_cf%dwt_livecrootc_to_cwdc_col(c,j) + &
-                        (dwt_livecrootc14_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                        (dwt_livecrootc14_to_litter(p))/dt * croot
 
                    ! deadcroot fluxes to cwd
                    c14_cf%dwt_deadcrootc_to_cwdc_col(c,j) = &
                         c14_cf%dwt_deadcrootc_to_cwdc_col(c,j) + &
-                        (dwt_deadcrootc14_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
+                        (dwt_deadcrootc14_to_litter(p))/dt * croot
                 endif
                 
              end if
