@@ -137,7 +137,7 @@ contains
       do iCell=1,nCells
         do iTracer=1,nTracers
 
-!maltrud for monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
+          ! For monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
           if (trim(groupName) == 'activeTracers' &
                 .and. iTracer == indexSalinity   &
                 .and. use_surface_salinity_monthly_restoring) then
@@ -237,6 +237,7 @@ contains
 
         integer, pointer :: nCells, nCellsSolve, indexSalinity, indexSalinitySurfaceRestoringValue, indexSalinityPistonVelocity
         integer :: iCell, timeLevel
+        integer, dimension(:), pointer :: landIceMask
 
         character(len=strKIND) :: &
            forcingIntervalMonthly,  &
@@ -249,7 +250,7 @@ contains
         integer, parameter :: nSums = 2
         real (kind=RKIND), dimension(nSums) :: reductions, sums
 
-! initialize monthly forcing to be read from file
+        ! initialize monthly forcing to be read from file
 
         call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
@@ -258,7 +259,7 @@ contains
            currTime = mpas_get_clock_time( simulationClock, MPAS_NOW, ierr)
            call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
            timeStamp = '0000'//trim(timeStamp(5:))
-          
+
            forcingIntervalMonthly = "0000-01-00_00:00:00"
            forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
@@ -282,10 +283,24 @@ contains
                 forcingIntervalMonthly)
 
            call MPAS_forcing_init_field_data( forcingGroupHead, &
-                'surfaceSalinityMonthlyClimatology', & 
+                'surfaceSalinityMonthlyClimatology', &
                 domain % streamManager, &
                 config_do_restart, &
                 .false.)
+
+           call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
+                                                             salinity_restoring_constant_piston_velocity)
+           call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity)
+           call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinityPistonVelocity',  &
+                                                                            indexSalinityPistonVelocity)
+           block => domain % blocklist
+           do while (associated(block))
+              do iCell = 1, nCells
+                 ! Set piston velocity to constant value
+                 activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) = salinity_restoring_constant_piston_velocity
+              end do
+              block => block % next
+           end do
 
            return
         endif  !  first timestep
@@ -293,8 +308,6 @@ contains
         call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
         call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_max_difference',  &
                                                           salinity_restoring_max_difference)
-        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
-                                                          salinity_restoring_constant_piston_velocity)
 
         call mpas_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
                                                    config_salinity_restoring_under_sea_ice)
@@ -326,7 +339,7 @@ contains
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
-!maltrud make sure of timeLevel
+        ! Use time level 1, which is always the new time level
         timeLevel = 1
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
@@ -335,9 +348,6 @@ contains
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
-        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinityPistonVelocity',  &
-                                                                         indexSalinityPistonVelocity)
-
         call mpas_pool_get_subpool(block % structs, 'surfaceSalinityMonthlyForcing',  &
                                                                   surfaceSalinityMonthlyForcing)
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
@@ -345,22 +355,35 @@ contains
 
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
            activeTracersSurfaceRestoringValue)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity)
 
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
-
+        call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
+        ! This is not in a threaded region, so no openMP pragmas are needed.
         do iCell = 1, nCells
-           deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
-           if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
-           if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
-           if (iceFraction(iCell) > 1.e-10_RKIND .and. .not.   &
-                               config_salinity_restoring_under_sea_ice) deltaS = 0.0_RKIND
-           activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
-           activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) =  &
-                   salinity_restoring_constant_piston_velocity
-        end do 
+           if (landIceMask(iCell)==1) then
+              ! Turn off salinity restoring in this cell
+              activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = 0.0_RKIND
+           else
+              ! Turn on salinity restoring in this cell
+              deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
+              if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
+              if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+
+              if (config_salinity_restoring_under_sea_ice) then
+                 ! Salinity restoring below sea ice is always on, regardless of
+                 ! iceFraction value
+                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
+              else
+                 ! Salinity restoring below sea ice tapers below partial sea ice
+                 ! coverage, from full in the open ocean to zero when iceFraction=1.0
+                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = &
+                    deltaS*(1.0_RKIND - iceFraction(iCell))
+              endif
+
+           endif
+        end do
 
         do iCell=1,nCellsSolve
            deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
@@ -370,10 +393,10 @@ contains
            endif
         enddo
 
-         block => block % next
+        block => block % next
       end do
 
-!     do global sum to subtract global mean of deltaS
+      ! Global sum to subtract global mean of deltaS
       dminfo = domain % dminfo
       sums(1) = sumAreaDeltaS
       sums(2) = sumArea
@@ -385,7 +408,7 @@ contains
       !decompositions, the next line rounds each value to 10 decimal places to
       !ensure BFB results
       avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
-      
+
       block => domain % blocklist
       do while (associated(block))
 
@@ -400,16 +423,20 @@ contains
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
-       !$omp do schedule(runtime)
-       do iCell = 1, nCells
-           if (iceFraction(iCell) <= 1.e-10_RKIND .and. .not.  &
-                               config_salinity_restoring_under_sea_ice)  &
-           activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
-              activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
-           salinitySurfaceRestoringTendency(iCell) = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) &
-                   * activeTracersPistonVelocity(indexSalinitySurfaceRestoringValue,iCell)
+
+        do iCell = 1, nCells
+          deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
+          if (deltaS .ne. 0.0_RKIND) then
+             activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
+                deltaS - avgDeltaS
+             salinitySurfaceRestoringTendency(iCell) = &
+                activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) &
+                * activeTracersPistonVelocity(indexSalinitySurfaceRestoringValue,iCell)
+          else
+             salinitySurfaceRestoringTendency(iCell) = 0.0_RKIND
+          endif
         enddo
-        !$omp end do
+
         block => block % next
       end do
 
