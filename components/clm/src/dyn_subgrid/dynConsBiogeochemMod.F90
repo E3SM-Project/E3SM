@@ -996,7 +996,12 @@ contains
    real(r8)              , intent(out) :: leafc14_seed
    real(r8)              , intent(out) :: npool_seed
    real(r8)              , intent(out) :: ppool_seed
-  
+   !
+   ! !LOCAL
+   real(r8)              , parameter :: leafc_seed_param = 1._r8
+   real(r8)              , parameter :: npool_seed_param = 0.1_r8
+   real(r8)              , parameter :: ppool_seed_param = 0.01_r8
+
    leafc_seed     = 0._r8
    leafn_seed     = 0._r8
    leafp_seed     = 0._r8
@@ -1004,13 +1009,13 @@ contains
    ppool_seed     = 0._r8
 
    if (veg_type /= 0) then
-      leafc_seed = 1._r8
+      leafc_seed = leafc_seed_param
       leafn_seed = leafc_seed / veg_vp%leafcn(veg_type)
       leafp_seed = leafc_seed / veg_vp%leafcp(veg_type)
 
       if (veg_vp%nstor(veg_type) > 1e-6_r8) then
-         npool_seed     = 0.1_r8
-         ppool_seed     = 0.01_r8
+         npool_seed     = npool_seed_param
+         ppool_seed     = ppool_seed_param
       end if
 
       if ( use_c13 ) then
@@ -1053,6 +1058,9 @@ contains
    real(r8)              , intent(out) :: deadstemp_seed
    real(r8)              , intent(out) :: deadstemc13_seed
    real(r8)              , intent(out) :: deadstemc14_seed
+   !
+   ! !LOCAL
+   real(r8)              , parameter :: deadstemc_seed_param = 0.1_r8
   
    deadstemc_seed = 0._r8
    deadstemn_seed = 0._r8
@@ -1060,7 +1068,7 @@ contains
 
    if (veg_type /= 0) then
       if (veg_vp%woody(veg_type) == 1._r8) then
-         deadstemc_seed = 0.1_r8
+         deadstemc_seed = deadstemc_seed_param
          deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_type)
          deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_type)
       end if
