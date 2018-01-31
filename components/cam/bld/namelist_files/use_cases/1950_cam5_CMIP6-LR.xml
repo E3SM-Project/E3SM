@@ -17,13 +17,11 @@
 <f12vmr>6.382257e-12</f12vmr>
 
 <!-- Stratospheric aerosols from CMIP6 input4MIPS -->
-<!-- COMMENT OUT STRATOSPHERIC AEROSOLS, SINCE THEY ARE NOT READY YET 
 <prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
-<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171115.nc</prescribed_volcaero_file    >
+<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file    >
 <prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
 <prescribed_volcaero_type    >CYCLICAL						       </prescribed_volcaero_type    >
 <prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
--->
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc    >.true.</use_hetfrz_classnuc>
@@ -92,7 +90,7 @@
 <prc_exp                 > 3.19D0    </prc_exp>
 <prc_exp1                > -1.2D0    </prc_exp1>
 <se_ftype                > 2         </se_ftype>
-<clubb_C14               > 1.3D0     </clubb_C14>
+<clubb_C14               > 1.2D0     </clubb_C14>
 <relvar_fix              > .true.    </relvar_fix>
 <mg_prc_coeff_fix        > .true.    </mg_prc_coeff_fix>
 <rrtmg_temp_fix          > .true.    </rrtmg_temp_fix>

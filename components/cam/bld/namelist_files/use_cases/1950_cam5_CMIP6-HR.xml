@@ -17,13 +17,11 @@
 <f12vmr>0.0</f12vmr>
 
 <!-- Stratospheric aerosols from CMIP6 input4MIPS -->
-<!-- COMMENT OUT STRATOSPHERIC AEROSOLS, SINCE THEY ARE NOT READY YET 
 <prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
-<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171115.nc</prescribed_volcaero_file    >
+<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file    >
 <prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
 <prescribed_volcaero_type    >CYCLICAL						       </prescribed_volcaero_type    >
 <prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
--->
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc    >.true.</use_hetfrz_classnuc>
@@ -60,27 +58,27 @@
 <!-- Tunable parameters for 72 layer model -->
 
 <ice_sed_ai>         500.0  </ice_sed_ai>
-<clubb_ice_deep>     16.e-6 </clubb_ice_deep>
+<clubb_ice_deep>     12.e-6 </clubb_ice_deep>
 <clubb_ice_sh>       50.e-6 </clubb_ice_sh>
 <clubb_liq_deep>     8.e-6  </clubb_liq_deep>  
 <clubb_liq_sh>       10.e-6 </clubb_liq_sh>
 <clubb_C2rt>         1.75D0 </clubb_C2rt>
 <effgw_oro>          0.25    </effgw_oro>
 <seasalt_emis_scale> 0.85   </seasalt_emis_scale>
-<dust_emis_fact>     2.05D0 </dust_emis_fact>
+<dust_emis_fact>     2.5D0 </dust_emis_fact>
 <clubb_gamma_coef>   0.32   </clubb_gamma_coef>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
-<so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
+<so4_sz_thresh_icenuc>0.05e-6</so4_sz_thresh_icenuc>
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
 <micro_mg_accre_enhan_fac>1.5D0</micro_mg_accre_enhan_fac>
 <zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
 <zmconv_cape_cin         >1</zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj   >2</zmconv_mx_bot_lyr_adj>
 <taubgnd                 >2.5D-3 </taubgnd>
-<clubb_C1                >1.335</clubb_C1>
+<clubb_C1                >1.5</clubb_C1>
 <raytau0                 >5.0D0</raytau0>
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
@@ -96,8 +94,8 @@
 <zmconv_c0_lnd       >0.0035D0</zmconv_c0_lnd>
 <zmconv_c0_ocn       >0.0043D0</zmconv_c0_ocn>
 <zmconv_dmpdz        >-0.2e-3</zmconv_dmpdz>
-<zmconv_ke           >5.0E-6</zmconv_ke>
-<cldfrc_dp1          >0.030D0</cldfrc_dp1>
+<zmconv_ke           >6.0E-6</zmconv_ke>
+<cldfrc_dp1          >0.039D0</cldfrc_dp1>
 <clubb_C8            >4.73D0</clubb_C8>
 <clubb_C14           >1.75D0</clubb_C14>
 <se_nsplit           >6</se_nsplit>
@@ -155,15 +153,15 @@
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
-<chlorine_loading_fixed_ymd >18500101</chlorine_loading_fixed_ymd>
+<chlorine_loading_fixed_ymd >19500101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
-<linoz_data_cycle_yr        >1850</linoz_data_cycle_yr>
+<linoz_data_cycle_yr        >1950</linoz_data_cycle_yr>
 <linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
-<sim_year>1950</sim_year>
+<sim_year>1955</sim_year>
 
 <!-- land datasets -->
 <!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
