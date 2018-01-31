@@ -67,6 +67,8 @@ module mpas_atm_boundaries
         type (mpas_pool_type), pointer :: lbc
         real (kind=RKIND) :: dt
 
+        integer, pointer :: nEdges
+
         real (kind=RKIND), dimension(:,:), pointer :: u
         real (kind=RKIND), dimension(:,:), pointer :: ru
         real (kind=RKIND), dimension(:,:), pointer :: rho_edge
@@ -84,11 +86,15 @@ module mpas_atm_boundaries
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: lbc_tend_scalars
 
+        integer, dimension(:,:), pointer :: cellsOnEdge
+
         integer :: ierr
         integer :: dd_intv, s_intv, sn_intv, sd_intv
         type (MPAS_Time_Type) :: currTime
         type (MPAS_TimeInterval_Type) :: lbc_interval
         character(len=StrKIND) :: read_time
+        integer :: iEdge
+        integer :: cell1, cell2
 
 
         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -114,6 +120,19 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
         call mpas_pool_get_array(lbc, 'lbc_rtheta_m', rtheta_m, 2)
         call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
+
+        call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+        call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+        ! Average lbc_rho_zz to edges
+        do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            if (cell1 > 0 .and. cell2 > 0) then
+                rho_edge(:,iEdge) = 0.5_RKIND * (rho_zz(:,cell1) + rho_zz(:,cell2))
+            end if
+        end do
+
         ru(:,:) = u(:,:) * rho_edge(:,:)
         rtheta_m(:,:) = theta_m(:,:) * rho_zz(:,:)
 

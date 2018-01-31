@@ -1064,7 +1064,12 @@
                         immutable="true">
 
                         <var name="xtime" />
-                        <var_struct name="lbc" />
+                        <var name="lbc_u" />
+                        <var name="lbc_w" />
+                        <var name="lbc_rho_zz" />
+                        <var name="lbc_theta_m" />
+                        <var_array name="lbc_scalars" />
+
                 </stream>
 	</streams>
 
