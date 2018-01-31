@@ -307,11 +307,11 @@ contains
              
              ! set the seed sources for leaf and deadstem
              ! leaf source is split later between leaf, leaf_storage, leaf_xfer
-             call ComputeLeafSeedPools(p, &
+             call ComputeLeafSeedPools(veg_pp%itype(p), &
                   leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
                   npool_seed, ppool_seed)
              
-             call ComputeStemSeedPools(p, &
+             call ComputeStemSeedPools(veg_pp%itype(p), &
                   deadstemc_seed, deadstemn_seed, deadstemp_seed, &
                   deadstemc13_seed, deadstemc14_seed)
              
@@ -975,7 +975,7 @@ contains
  end subroutine PhosphorusFluxVarsInit
 
  !-----------------------------------------------------------------------
- subroutine ComputeLeafSeedPools(p, &
+ subroutine ComputeLeafSeedPools(veg_type, &
      leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
       npool_seed, ppool_seed)
    !
@@ -988,7 +988,7 @@ contains
    implicit none
    !
    ! !ARGUMENT
-   integer               , intent(in)  :: p
+   integer               , intent(in)  :: veg_type
    real(r8)              , intent(out) :: leafc_seed
    real(r8)              , intent(out) :: leafn_seed
    real(r8)              , intent(out) :: leafp_seed
@@ -1003,18 +1003,18 @@ contains
    npool_seed     = 0._r8
    ppool_seed     = 0._r8
 
-   if (veg_pp%itype(p) /= 0) then
+   if (veg_type /= 0) then
       leafc_seed = 1._r8
-      leafn_seed = leafc_seed / veg_vp%leafcn(veg_pp%itype(p))
-      leafp_seed = leafc_seed / veg_vp%leafcp(veg_pp%itype(p))
+      leafn_seed = leafc_seed / veg_vp%leafcn(veg_type)
+      leafp_seed = leafc_seed / veg_vp%leafcp(veg_type)
 
-      if (veg_vp%nstor(veg_pp%itype(p)) > 1e-6_r8) then
+      if (veg_vp%nstor(veg_type) > 1e-6_r8) then
          npool_seed     = 0.1_r8
          ppool_seed     = 0.01_r8
       end if
 
       if ( use_c13 ) then
-         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+         if (veg_vp%c3psn(veg_type) == 1._r8) then
             leafc13_seed     = leafc_seed     * c3_r2
          else
             leafc13_seed     = leafc_seed     * c4_r2
@@ -1023,7 +1023,7 @@ contains
 
       if ( use_c14 ) then
          ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+         if (veg_vp%c3psn(veg_type) == 1._r8) then
             leafc14_seed     = leafc_seed     * c14ratio
          else
             leafc14_seed     = leafc_seed     * c14ratio
@@ -1034,7 +1034,7 @@ contains
  end subroutine ComputeLeafSeedPools
 
  !-----------------------------------------------------------------------
- subroutine ComputeStemSeedPools(p, &
+ subroutine ComputeStemSeedPools(veg_type, &
       deadstemc_seed, deadstemn_seed, deadstemp_seed, &
       deadstemc13_seed, deadstemc14_seed)
    !
@@ -1047,7 +1047,7 @@ contains
    implicit none
    !
    ! !ARGUMENT
-   integer               , intent(in)  :: p
+   integer               , intent(in)  :: veg_type
    real(r8)              , intent(out) :: deadstemc_seed
    real(r8)              , intent(out) :: deadstemn_seed
    real(r8)              , intent(out) :: deadstemp_seed
@@ -1058,15 +1058,15 @@ contains
    deadstemn_seed = 0._r8
    deadstemp_seed = 0._r8
 
-   if (veg_pp%itype(p) /= 0) then
-      if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+   if (veg_type /= 0) then
+      if (veg_vp%woody(veg_type) == 1._r8) then
          deadstemc_seed = 0.1_r8
-         deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_pp%itype(p))
-         deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_pp%itype(p))
+         deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_type)
+         deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_type)
       end if
 
       if ( use_c13 ) then
-         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+         if (veg_vp%c3psn(veg_type) == 1._r8) then
             deadstemc13_seed = deadstemc_seed * c3_r2
          else
             deadstemc13_seed = deadstemc_seed * c4_r2
@@ -1075,7 +1075,7 @@ contains
 
       if ( use_c14 ) then
          ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-         if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
+         if (veg_vp%c3psn(veg_type) == 1._r8) then
             deadstemc14_seed = deadstemc_seed * c14ratio
          else
             deadstemc14_seed = deadstemc_seed * c14ratio
