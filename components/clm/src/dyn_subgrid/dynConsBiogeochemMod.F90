@@ -983,7 +983,7 @@ contains
    ! Computes values of seed for various leaf pool
    !
    use shr_const_mod      , only : SHR_CONST_PDB
-   use clm_varcon         , only : c14ratio
+   use clm_varcon         , only : c14ratio, c3_r2, c4_r2
    !
    implicit none
    !
@@ -996,14 +996,6 @@ contains
    real(r8)              , intent(out) :: leafc14_seed
    real(r8)              , intent(out) :: npool_seed
    real(r8)              , intent(out) :: ppool_seed
-   !
-   ! !LOCAL
-   real(r8)                            :: c3_del13c ! typical del13C for C3 photosynthesis (permil, relative to PDB)
-   real(r8)                            :: c4_del13c ! typical del13C for C4 photosynthesis (permil, relative to PDB)
-   real(r8)                            :: c3_r1_c13 ! isotope ratio (13c/12c) for C3 photosynthesis
-   real(r8)                            :: c4_r1_c13 ! isotope ratio (13c/12c) for C4 photosynthesis
-   real(r8)                            :: c3_r2_c13 ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
-   real(r8)                            :: c4_r2_c13 ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
   
    leafc_seed     = 0._r8
    leafn_seed     = 0._r8
@@ -1022,23 +1014,10 @@ contains
       end if
 
       if ( use_c13 ) then
-         ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
-         ! That translates to ratios of (13c/(12c+13c)) of 0.01080455 for C3, and 0.01096945 for C4
-         ! based on the following formulae: 
-         ! r1 (13/12) = PDB + (del13c * PDB)/1000.0
-         ! r2 (13/(13+12)) = r1/(1+r1)
-         ! PDB = 0.0112372_R8  (ratio of 13C/12C in Pee Dee Belemnite, C isotope standard)
-         c3_del13c = -28._r8
-         c4_del13c = -13._r8
-         c3_r1_c13 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
-         c3_r2_c13 = c3_r1_c13/(1._r8 + c3_r1_c13)
-         c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
-         c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
-
          if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
-            leafc13_seed     = leafc_seed     * c3_r2_c13
+            leafc13_seed     = leafc_seed     * c3_r2
          else
-            leafc13_seed     = leafc_seed     * c4_r2_c13
+            leafc13_seed     = leafc_seed     * c4_r2
          end if
       endif
 
@@ -1063,7 +1042,7 @@ contains
    ! Computes values of seed for various stem pool
    !
    use shr_const_mod      , only : SHR_CONST_PDB
-   use clm_varcon         , only : c14ratio
+   use clm_varcon         , only : c14ratio, c3_r2, c4_r2
    !
    implicit none
    !
@@ -1074,14 +1053,6 @@ contains
    real(r8)              , intent(out) :: deadstemp_seed
    real(r8)              , intent(out) :: deadstemc13_seed
    real(r8)              , intent(out) :: deadstemc14_seed
-   !
-   ! !LOCAL
-   real(r8)                            :: c3_del13c ! typical del13C for C3 photosynthesis (permil, relative to PDB)
-   real(r8)                            :: c4_del13c ! typical del13C for C4 photosynthesis (permil, relative to PDB)
-   real(r8)                            :: c3_r1_c13 ! isotope ratio (13c/12c) for C3 photosynthesis
-   real(r8)                            :: c4_r1_c13 ! isotope ratio (13c/12c) for C4 photosynthesis
-   real(r8)                            :: c3_r2_c13 ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
-   real(r8)                            :: c4_r2_c13 ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
   
    deadstemc_seed = 0._r8
    deadstemn_seed = 0._r8
@@ -1095,23 +1066,10 @@ contains
       end if
 
       if ( use_c13 ) then
-         ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
-         ! That translates to ratios of (13c/(12c+13c)) of 0.01080455 for C3, and 0.01096945 for C4
-         ! based on the following formulae: 
-         ! r1 (13/12) = PDB + (del13c * PDB)/1000.0
-         ! r2 (13/(13+12)) = r1/(1+r1)
-         ! PDB = 0.0112372_R8  (ratio of 13C/12C in Pee Dee Belemnite, C isotope standard)
-         c3_del13c = -28._r8
-         c4_del13c = -13._r8
-         c3_r1_c13 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
-         c3_r2_c13 = c3_r1_c13/(1._r8 + c3_r1_c13)
-         c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
-         c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
-
          if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
-            deadstemc13_seed = deadstemc_seed * c3_r2_c13
+            deadstemc13_seed = deadstemc_seed * c3_r2
          else
-            deadstemc13_seed = deadstemc_seed * c4_r2_c13
+            deadstemc13_seed = deadstemc_seed * c4_r2
          end if
       endif
 
