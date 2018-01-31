@@ -317,27 +317,27 @@ contains
              
              call UpdateCStateVarsDueToWtInc(cs, p, &
                   veg_pp%wtcol(p), prior_weights%pwtcol(p),     &
-                  leafc_seed, deadstemc_seed, veg_vp%evergreen(veg_pp%itype(p)) )
+                  leafc_seed, deadstemc_seed)
              
              if ( use_c13 ) then
                 call UpdateCStateVarsDueToWtInc(c13_cs, p, &
                      veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                  leafc13_seed, deadstemc13_seed, veg_vp%evergreen(veg_pp%itype(p)))
+                  leafc13_seed, deadstemc13_seed)
              endif
              
              if ( use_c14 ) then
                 call UpdateCStateVarsDueToWtInc(c14_cs, p, &
                      veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                     leafc14_seed, deadstemc14_seed, veg_vp%evergreen(veg_pp%itype(p)) )
+                     leafc14_seed, deadstemc14_seed)
              endif
 
              call UpdateNStateVarsDueToWtInc(ns, p, &
                   veg_pp%wtcol(p), prior_weights%pwtcol(p),       &
-                  leafn_seed, deadstemn_seed, npool_seed, veg_vp%evergreen(veg_pp%itype(p)))
+                  leafn_seed, deadstemn_seed, npool_seed)
              
              call UpdatePStateVarsDueToWtInc(ps, p, &
                   veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                  leafp_seed, deadstemp_seed, ppool_seed, veg_vp%evergreen(veg_pp%itype(p)))
+                  leafp_seed, deadstemp_seed, ppool_seed)
 
              ! update temporary seed source arrays
              ! These are calculated in terms of the required contributions from
@@ -1095,7 +1095,7 @@ contains
 
  !-----------------------------------------------------------------------
  subroutine UpdateCStateVarsDueToWtInc(cs, p, wt_new, wt_old, &
-      leafc_seed, deadstemc_seed, evergreen)
+      leafc_seed, deadstemc_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of carbonstate_type
@@ -1113,38 +1113,20 @@ contains
    real(r8)              , intent(in)    :: wt_old
    real(r8)              , intent(in)    :: leafc_seed
    real(r8)              , intent(in)    :: deadstemc_seed
-   real(r8)              , intent(in)    :: evergreen
    !
    ! !LOCAL
    real(r8)                              :: pleaf
    real(r8)                              :: pstor
    real(r8)                              :: pxfer
-   real(r8)                              :: tot_leaf
    real(r8)                              :: t1
    real(r8)                              :: t2
-
-   pleaf = 0._r8
-   pstor = 0._r8
-   pxfer = 0._r8
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
    
-   tot_leaf = cs%leafc_patch(p) + cs%leafc_storage_patch(p) + cs%leafc_xfer_patch(p)
-
-   if (tot_leaf /= 0._r8) then
-      ! when adding seed source to non-zero leaf state, use current proportions
-      pleaf = cs%leafc_patch(p)        /tot_leaf
-      pstor = cs%leafc_storage_patch(p)/tot_leaf
-      pxfer = cs%leafc_xfer_patch(p)   /tot_leaf
-   else
-      ! when initiating from zero leaf state, use evergreen flag to set proportions
-      if (evergreen == 1._r8) then
-         pleaf = 1._r8
-      else
-         pstor = 1._r8
-      end if
-   end if   
+   call LeafProportions(veg_pp%itype(p), &
+       cs%leafc_patch(p), cs%leafc_storage_patch(p), cs%leafc_xfer_patch(p), &
+       pleaf, pstor, pxfer)
 
    cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
    cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
@@ -1178,7 +1160,7 @@ contains
 
  !-----------------------------------------------------------------------
  subroutine UpdateNStateVarsDueToWtInc(ns, p, wt_new, wt_old, &
-      leafn_seed, deadstemn_seed, npool_seed, evergreen)
+      leafn_seed, deadstemn_seed, npool_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type
@@ -1197,37 +1179,20 @@ contains
    real(r8)                 , intent(in)    :: leafn_seed
    real(r8)                 , intent(in)    :: deadstemn_seed
    real(r8)                 , intent(in)    :: npool_seed
-   real(r8)                 , intent(in)    :: evergreen
    !
    ! !LOCAL
    real(r8)                                 :: pleaf
    real(r8)                                 :: pstor
    real(r8)                                 :: pxfer
-   real(r8)                                 :: tot_leaf
    real(r8)                                 :: t1
    real(r8)                                 :: t2
-
-   pleaf = 0._r8
-   pstor = 0._r8
-   pxfer = 0._r8
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
    
-   tot_leaf = ns%leafn_patch(p) + ns%leafn_storage_patch(p) + ns%leafn_xfer_patch(p)
-
-   if (tot_leaf /= 0._r8) then
-      pleaf = ns%leafn_patch(p)         /tot_leaf
-      pstor = ns%leafn_storage_patch(p) /tot_leaf
-      pxfer = ns%leafn_xfer_patch(p)    /tot_leaf
-   else
-      ! when initiating from zero leaf state, use evergreen flag to set proportions
-      if (evergreen == 1._r8) then
-         pleaf = 1._r8
-      else
-         pstor = 1._r8
-      end if
-   end if
+   call LeafProportions(veg_pp%itype(p), &
+       ns%leafn_patch(p), ns%leafn_storage_patch(p), ns%leafn_xfer_patch(p), &
+       pleaf, pstor, pxfer)
 
    ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
    ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
@@ -1259,7 +1224,7 @@ contains
 
  !-----------------------------------------------------------------------
  subroutine UpdatePStateVarsDueToWtInc(ps, p, wt_new, wt_old, &
-      leafp_seed, deadstemp_seed, ppool_seed, evergreen)
+      leafp_seed, deadstemp_seed, ppool_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of phosphorusstate_type
@@ -1278,34 +1243,20 @@ contains
    real(r8)                   , intent(in)    :: leafp_seed
    real(r8)                   , intent(in)    :: deadstemp_seed
    real(r8)                   , intent(in)    :: ppool_seed
-   real(r8)                   , intent(in)    :: evergreen
    !
    ! !LOCAL
    real(r8)                                   :: pleaf
    real(r8)                                   :: pstor
    real(r8)                                   :: pxfer
-   real(r8)                                   :: tot_leaf
    real(r8)                                   :: t1
    real(r8)                                   :: t2
 
-   pleaf = 0._r8
-   pstor = 0._r8
-   pxfer = 0._r8
-
-   tot_leaf = ps%leafp_patch(p) + ps%leafp_storage_patch(p) + ps%leafp_xfer_patch(p)
-
-   if (tot_leaf /= 0._r8) then
-      pleaf = ps%leafp_patch(p)         /tot_leaf
-      pstor = ps%leafp_storage_patch(p) /tot_leaf
-      pxfer = ps%leafp_xfer_patch(p)    /tot_leaf
-   else
-      ! when initiating from zero leaf state, use evergreen flag to set proportions
-      if (evergreen == 1._r8) then
-         pleaf = 1._r8
-      else
-         pstor = 1._r8
-      end if
-   end if
+   t1 = wt_old           /wt_new
+   t2 = (wt_new - wt_old)/wt_old
+   
+   call LeafProportions(veg_pp%itype(p), &
+       ps%leafp_patch(p), ps%leafp_storage_patch(p), ps%leafp_xfer_patch(p), &
+       pleaf, pstor, pxfer)
 
    ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
    ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
@@ -1570,4 +1521,49 @@ contains
   
  end subroutine ComputeMassLossDueToWtDec
  
+  !-----------------------------------------------------------------------
+  subroutine LeafProportions(pft_type, &
+       leaf, leaf_storage, leaf_xfer, &
+       pleaf, pstorage, pxfer)
+    !
+    ! !DESCRIPTION:
+    ! Compute leaf proportions (leaf, storage and xfer)
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    integer , intent(in)  :: pft_type
+    real(r8), intent(in)  :: leaf         ! g/m2 leaf C or N
+    real(r8), intent(in)  :: leaf_storage ! g/m2 leaf C or N storage
+    real(r8), intent(in)  :: leaf_xfer    ! g/m2 leaf C or N transfer
+
+    real(r8), intent(out) :: pleaf        ! proportion in leaf itself
+    real(r8), intent(out) :: pstorage     ! proportion in leaf storage
+    real(r8), intent(out) :: pxfer        ! proportion in leaf xfer
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: tot_leaf
+
+    character(len=*), parameter :: subname = 'LeafProportions'
+    !-----------------------------------------------------------------------
+
+    tot_leaf = leaf + leaf_storage + leaf_xfer
+    pleaf    = 0._r8
+    pstorage = 0._r8
+    pxfer    = 0._r8
+
+    if (tot_leaf == 0._r8) then
+       if (veg_vp%evergreen(pft_type) == 1._r8) then
+          pleaf    = 1._r8
+       else
+          pstorage = 1._r8
+       end if
+    else
+       pleaf    = leaf        /tot_leaf
+       pstorage = leaf_storage/tot_leaf
+       pxfer    = leaf_xfer   /tot_leaf
+    end if
+
+  end subroutine LeafProportions
+
 end module dynConsBiogeochemMod
