@@ -33,14 +33,8 @@ class _Element(object): # private class, don't want users constructing directly 
 class GenericXML(object):
 
     _FILEMAP = {}
-    DISABLE_CACHING = True
 
-    @classmethod
-    def invalidate_file(cls, filepath):
-        if filepath in cls._FILEMAP:
-            del cls._FILEMAP[filepath]
-
-    def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
+    def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None, read_only=True):
         """
         Initialize an object
         """
@@ -48,6 +42,7 @@ class GenericXML(object):
         self.tree = None
         self.root = None
         self.locked = False
+        self.read_only = read_only
 
         if infile == None:
             # if file is not defined just return
@@ -61,6 +56,7 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+            expect(not read_only, "Makes no sense to have empty read-only file")
 
             logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
@@ -78,7 +74,7 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        if infile in self._FILEMAP and not self.DISABLE_CACHING:
+        if infile in self._FILEMAP and self.read_only:
             logger.debug("read (cached): " + infile)
             self.tree, self.root = self._FILEMAP[infile]
         else:
@@ -133,11 +129,13 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
+        expect(not self.read_only, "locked")
         if attrib_name == "id":
             expect(not self.locked, "locked")
         return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
+        expect(not self.read_only, "locked")
         if attrib_name == "id":
             expect(not self.locked, "locked")
         return node.xml_element.attrib.pop(attrib_name)
@@ -147,9 +145,11 @@ class GenericXML(object):
         return None if node.xml_element.attrib is None else dict(node.xml_element.attrib)
 
     def set_name(self, node, name):
+        expect(not self.read_only, "locked")
         node.xml_element.tag = name
 
     def set_text(self, node, text):
+        expect(not self.read_only, "locked")
         node.xml_element.text = text
 
     def name(self, node):
@@ -162,7 +162,7 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
-        expect(not self.locked, "locked")
+        expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
         root.xml_element.append(node.xml_element)
 
@@ -170,12 +170,12 @@ class GenericXML(object):
         return deepcopy(node)
 
     def remove_child(self, node, root=None):
-        expect(not self.locked, "locked")
+        expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
-        expect(not self.locked, "locked")
+        expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
         if attributes is None:
             node = _Element(ET.SubElement(root.xml_element, name))

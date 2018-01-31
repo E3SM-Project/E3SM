@@ -416,3 +416,6 @@ class EnvMachSpecific(EnvBase):
         executable = self.text(exec_node)
 
         return executable, args
+
+    def get_type_info(self, vid):
+        return "char"
