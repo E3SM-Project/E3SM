@@ -96,7 +96,12 @@ class GenericXML(object):
 
     def read_fd(self, fd):
         if self.tree:
-            self.add_child(_Element(ET.parse(fd).getroot()))
+            addroot = _Element(ET.parse(fd).getroot())
+            if addroot.xml_element.tag == self.name(self.root):
+                for child in addroot.get_children():
+                    self.add_child(child)
+            else:
+                self.add_child(addroot)
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
@@ -164,12 +169,7 @@ class GenericXML(object):
         """
         expect(not self.locked, "locked")
         root = root if root is not None else self.root
-        logger.debug("add_child node name is {} root name is {}".format(node.xml_element.tag, self.name(root)))
-        if node.xml_element.tag == self.name(root):
-            for child in node.xml_element:
-                root.xml_element.append(child)
-        else:
-            root.xml_element.append(node.xml_element)
+        root.xml_element.append(node.xml_element)
 
     def copy(self, node):
         return deepcopy(node)
