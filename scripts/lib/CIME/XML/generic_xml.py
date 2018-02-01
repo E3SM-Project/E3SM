@@ -164,7 +164,12 @@ class GenericXML(object):
         """
         expect(not self.locked, "locked")
         root = root if root is not None else self.root
-        root.xml_element.append(node.xml_element)
+        logger.debug("add_child node name is {} root name is {}".format(node.xml_element.tag, self.name(root)))
+        if node.xml_element.tag == self.name(root):
+            for child in node.xml_element:
+                root.xml_element.append(child)
+        else:
+            root.xml_element.append(node.xml_element)
 
     def copy(self, node):
         return deepcopy(node)
