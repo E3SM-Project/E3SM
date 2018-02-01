@@ -75,7 +75,7 @@ contains
 
    subroutine ocn_tracer_surface_restoring_compute(groupName, nTracers, nCells, tracers, pistonVelocity, &
                  tracersSurfaceRestoringValue, tracersSurfaceFlux, indexSalinity,  &
-                 use_surface_salinity_monthly_restoring, err)!{{{
+                 use_surface_salinity_monthly_restoring, salinity_restoring_constant_piston_velocity, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -90,6 +90,8 @@ contains
           nTracers,           &
           indexSalinity,      &
           nCells
+
+      real (kind=RKIND), intent(in) :: salinity_restoring_constant_piston_velocity
 
       ! logicals
       logical, intent(in) ::  &
@@ -142,7 +144,7 @@ contains
                 .and. iTracer == indexSalinity   &
                 .and. use_surface_salinity_monthly_restoring) then
           tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) + &
-                                                 pistonVelocity(iTracer,iCell) *      &
+                                                 salinity_restoring_constant_piston_velocity * &
                                                  tracersSurfaceRestoringValue(iTracer,iCell)
           else
           tracersSurfaceFlux(iTracer, iCell) =  tracersSurfaceFlux(iTracer, iCell) - &
@@ -230,12 +232,11 @@ contains
            surfaceSalinityMonthlyClimatologyValue, iceFraction, areaCell, salinitySurfaceRestoringTendency
 
         real (kind=RKIND), dimension(:,:), pointer :: &
-           activeTracersPistonVelocity,  &
            activeTracersSurfaceRestoringValue
 
         real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-        integer, pointer :: nCells, nCellsSolve, indexSalinity, indexSalinitySurfaceRestoringValue, indexSalinityPistonVelocity
+        integer, pointer :: nCells, nCellsSolve, indexSalinity, indexSalinitySurfaceRestoringValue
         integer :: iCell, timeLevel
         integer, dimension(:), pointer :: landIceMask
 
@@ -288,20 +289,6 @@ contains
                 config_do_restart, &
                 .false.)
 
-           call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
-                                                             salinity_restoring_constant_piston_velocity)
-           call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity)
-           call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinityPistonVelocity',  &
-                                                                            indexSalinityPistonVelocity)
-           block => domain % blocklist
-           do while (associated(block))
-              do iCell = 1, nCells
-                 ! Set piston velocity to constant value
-                 activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) = salinity_restoring_constant_piston_velocity
-              end do
-              block => block % next
-           end do
-
            return
         endif  !  first timestep
 
@@ -311,6 +298,8 @@ contains
 
         call mpas_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
                                                    config_salinity_restoring_under_sea_ice)
+        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
+                                                   salinity_restoring_constant_piston_velocity)
         call mpas_set_timeInterval(timeStepSurfaceSalinity,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
 
@@ -417,8 +406,6 @@ contains
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(diagnosticsPool,'salinitySurfaceRestoringTendency',salinitySurfaceRestoringTendency)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
-           activeTracersPistonVelocity)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
@@ -431,7 +418,7 @@ contains
                 deltaS - avgDeltaS
              salinitySurfaceRestoringTendency(iCell) = &
                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) &
-                * activeTracersPistonVelocity(indexSalinitySurfaceRestoringValue,iCell)
+                * salinity_restoring_constant_piston_velocity
           else
              salinitySurfaceRestoringTendency(iCell) = 0.0_RKIND
           endif
