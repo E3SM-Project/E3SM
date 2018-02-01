@@ -1,23 +1,30 @@
 MODULE q3d_init_module
-! Contains the programs related to initializing the x-arrays
-! (Not finished yet)
+! Contains the programs related to initializing the channels
 
       USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
       USE vvm_data_types, only: channel_t
 
-      USE parmsld, only: channel_l,channel_w,nk1,nk2,nk3
+      USE parmsld, only: channel_l,channel_w,nk1,nk2,nk3,ntracer,nhalo,nhalo_adv
       USE mphysics_variables, only: rho_int,rhol,dzl,pl0,pil0 
       
       USE constld                    
 
 #ifdef FIXTHIS
 ! Need to be able to compile all of RRTMG
-USE trace_gases, only: trace_gas_input
-USE rrtm_grid, only: nrad_rad => nrad, &
-                     nrestart_rad => nrestart, &
-                     masterproc,dtn,nstat    
-USE rrtm_vars, only: pres,presi
+      USE trace_gases, only: trace_gas_input
+      USE rrtm_grid,   only: nrad_rad => nrad, &
+                             nrestart_rad => nrestart, &
+                             masterproc,dtn,nstat    
+      USE rrtm_vars,   only: pres,presi
 #endif
+
+      USE bound_channel_module, only: bound_channel
+      USE bound_extra,          only: bound_normal,bound_vert,bound_sync
+      USE halo_q,               only: halo_correc_q
+      USE halo_vort,            only: vort_comm_pre,vort_comm_post
+      USE halo_z,               only: halo_correc_z     
+      USE vort_3d_module,       only: zeta_diag
+      USE wind_module,          only: wind_3d
       
 IMPLICIT NONE
 PRIVATE
@@ -27,17 +34,21 @@ PUBLIC :: init_common,init_channel
 CONTAINS
 
 !===================================================================================
-   SUBROUTINE INIT_common 
+   SUBROUTINE INIT_common (isRestart) 
 !===================================================================================
 !  Initialize the common parameters and vertical profiles
 
+      logical, intent(in) :: isRestart  ! .true. iff restart run
+      
+      ! Local
       INTEGER :: K
       REAL (KIND=dbl_kind),DIMENSION(nk2) :: PBARZ,PIBARZ  ! used for radcode initialization
       
-      ! Local
       REAL (kind=dbl_kind) :: PZERO = 100000._dbl_kind     ! [Pa]
       REAL (kind=dbl_kind) :: RBCP,CPBR,ALPHAW
       REAL (KIND=dbl_kind), DIMENSION(NK3) :: TV,ALPHA
+      
+      IF (.NOT. isRestart) THEN
       
 !***********************************************************************************
 !                             SET DEFAULT VALUES in CONSTLD
@@ -91,7 +102,7 @@ CONTAINS
       ZRSEA   = 2.0E-04                 ! surface roughness over sea (m)
       ZRLAND  = 1.0E-02                 ! surface roughness over land (m)
       
-!!      SST   = 298.0_dbl_kind          ! sea surface temperature (K)
+      SST   = 298.0_dbl_kind            ! sea surface temperature (K)
 
       PSFC    = 100000._dbl_kind        ! surface pressure (Pa)
 
@@ -204,18 +215,21 @@ CONTAINS
        FN2(K)=RHO(K)*FNZ(K)/FNT(K)      ! map factor ratio, used in vort_3d_module
       ENDDO 
 
-!***********************************************************************************
-!                 Define parameters and vertical profiles used in PHYSICS
-!***********************************************************************************
-
+!     Find the vertical index of the lowest layer where GWD is applied.
       IF (CRAD .NE. D0_0) THEN
         K = 2
         DO WHILE (ZT(K) .LT. GWDHT)
         K = K + 1
         ENDDO
-        KLOW_GWD = K                    ! index of the lowest layer where GWD is applied
+        KLOW_GWD = K            
       ENDIF
 
+    ENDIF   ! .NOT. isRestart 
+
+!***********************************************************************************
+!                 Define parameters and vertical profiles used in PHYSICS
+!***********************************************************************************
+    
 !--------------------------
     IF (physics) THEN
 !--------------------------    
@@ -290,11 +304,14 @@ CONTAINS
 !===================================================================================
 !  Initialize the variables of channel segments
 
-      type(channel_t), intent(inout) :: channel  ! Channel data
+      type(channel_t), intent(inout) :: channel  ! channel data
 
-      INTEGER :: I,J,K
-      INTEGER :: num_seg,mi1,mj1 
-    
+      ! Local
+      REAL (KIND=dbl_kind) :: ZRSEA = 2.0E-04    ! temporary setting 
+      
+      INTEGER :: I,J,K,nt,num_seg,mi1,mj1,mim,mip,mjm,mjp
+
+! Calculate various coefficients    
 !*************************************************************************   
       DO num_seg = 1, 4
 !************************************************************************* 
@@ -302,7 +319,7 @@ CONTAINS
       mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
 
 
-!     Calculate the coefficients used in turbulence and diffusion      
+      ! Calculate the coefficients used in turbulence and diffusion      
       DO J = 1, mj1
       DO I = 1, mi1  
       channel%seg(num_seg)%COEFX(I,J) = 1./(channel%seg(num_seg)%RG_T(I,J)*DXSQ)
@@ -323,7 +340,7 @@ CONTAINS
       ENDDO
       ENDDO
 
-!     Calculate the coefficients used in relaxation_3d     
+      ! Calculate the coefficients used in relaxation_3d     
       DO K = 2, NK1
        DO J = 1, mj1
         DO I = 1, mi1 
@@ -343,7 +360,7 @@ CONTAINS
        ENDDO  
       ENDDO      
 
-!     Calculate the coefficients used in relaxation_2d        
+      ! Calculate the coefficients used in relaxation_2d        
       DO J = 1, mj1
        DO I = 1, mi1 
           channel%seg(num_seg)%RX2D_C1(I,J) = (channel%seg(num_seg)%RGG_V(1,I,J)         &
@@ -356,13 +373,196 @@ CONTAINS
                                             + (channel%seg(num_seg)%RGG_V(3,I,J)         &
                                               +channel%seg(num_seg)%RGG_V(3,I,J-1))/DYSQ
        ENDDO  
-      ENDDO          
-      
+      ENDDO   
 !******************************  
       ENDDO   ! num_seg 
 !******************************   
 
+! Prepare characteristics of topography  
       CALL TOPO_PREPARE (channel)
+
+! Initialize basic segment data 
+!*************************************************************************   
+      DO num_seg = 1, 4
+!************************************************************************* 
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
+
+      mim = channel%seg(num_seg)%mim  
+      mip = channel%seg(num_seg)%mip
+      
+      mjm = channel%seg(num_seg)%mjm
+      mjp = channel%seg(num_seg)%mjp  
+
+! Surface fluxes: initialization is not really necessary.
+      IF (PHYSICS) THEN     
+      DO J = 1,mj1
+       DO I = 1,mi1
+        channel%seg(num_seg)%SPREC(I,J) = D0_0
+        
+        channel%seg(num_seg)%WTH(I,J) = D0_0
+        channel%seg(num_seg)%WQV(I,J) = D0_0
+        
+        channel%seg(num_seg)%UW(I,J) = D0_0
+        channel%seg(num_seg)%WV(I,J) = D0_0
+       ENDDO
+      ENDDO   
+      ENDIF     
+
+! Surface information      
+!-------------------------------------------------------------------
+!      GWET is not used anymore (no surface flux caculation). 
+!      TG is used in radiation.
+!      ZROUGH is used in the calculation of turbulence coefficient.
+!-------------------------------------------------------------------
+      DO J = mjm, mjp
+       DO I = mim, mip 
+        channel%seg(num_seg)%TG(I,J) = SST 
+        channel%seg(num_seg)%ZROUGH(I,J) = ZRSEA
+       ENDDO
+      ENDDO  
+!      CALL BOUND_NORMAL  (nhalo,channel,TG=.TRUE.,ZROUGH=.TRUE.)      
+!      CALL BOUND_CHANNEL (nhalo_adv,channel,TG=.TRUE.,ZROUGH=.TRUE.)
+!      IF (.not.nomap) &
+!      CALL HALO_CORREC_Q (nhalo_adv,TG=.TRUE.,ZROUGH=.TRUE.)
+
+! Thermodynamic Fields (Temporary setting: zero deviation)
+      
+      DO K = 2, NK2
+       DO J = 1, mj1
+        DO I = 1, mi1
+         channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D_bg(I,J,K)
+         channel%seg(num_seg)%QV3D(I,J,K) = channel%seg(num_seg)%QV3D_bg(I,J,K)
+        ENDDO 
+       ENDDO
+      ENDDO
+
+      IF (PHYSICS) THEN 
+      DO K = 2, NK2
+       DO J = 1, mj1
+        DO I = 1, mi1
+         channel%seg(num_seg)%QC3D(I,J,K) = channel%seg(num_seg)%QC3D_bg(I,J,K)
+         channel%seg(num_seg)%QI3D(I,J,K) = channel%seg(num_seg)%QI3D_bg(I,J,K)
+         channel%seg(num_seg)%QR3D(I,J,K) = channel%seg(num_seg)%QR3D_bg(I,J,K)
+         channel%seg(num_seg)%QS3D(I,J,K) = channel%seg(num_seg)%QS3D_bg(I,J,K)
+         channel%seg(num_seg)%QG3D(I,J,K) = channel%seg(num_seg)%QG3D_bg(I,J,K)
+        ENDDO 
+       ENDDO
+      ENDDO
+      ENDIF
+
+      DO NT = 1, ntracer 
+      DO K = 2, NK2
+       DO J = 1, mj1
+        DO I = 1, mi1
+         channel%seg(num_seg)%QT3D(I,J,K,nt) = channel%seg(num_seg)%QT3D_bg(I,J,K,nt)
+        ENDDO 
+       ENDDO
+      ENDDO
+            
+!------------------------
+      IF (PHYSICS) THEN
+!------------------------
+      CALL BOUND_NORMAL  (nhalo,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE., &
+                          QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
+                          
+      CALL BOUND_CHANNEL (nhalo_adv,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE., &
+                          QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
+      IF (.not.nomap) &
+      CALL HALO_CORREC_Q (nhalo_adv,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE., &
+                          QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
+
+      CALL BOUND_VERT (channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE., &
+                       QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
+!------------------------
+      ELSE
+!------------------------
+      CALL BOUND_NORMAL  (nhalo,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE.)
+      CALL BOUND_CHANNEL (nhalo_adv,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE.)
+
+      IF (.not.nomap) &
+      CALL HALO_CORREC_Q (nhalo_adv,channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE.)
+
+      CALL BOUND_VERT (channel,TH3D=.TRUE.,QV3D=.TRUE.,QT3D=.TRUE.)
+!------------------------
+      ENDIF  ! PHYSICS
+!------------------------            
+
+! Vorticity Components (Temporary setting: zero deviation)
+
+      DO K = 2, NK1
+       DO J = 1, mj1
+        DO I = 1, mi1
+         channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX_bg(I,J,K)
+         channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY_bg(I,J,K)
+        ENDDO
+       ENDDO
+      ENDDO
+      CALL BOUND_NORMAL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
+      IF (.NOT.nomap) CALL VORT_COMM_PRE (channel)
+      CALL BOUND_CHANNEL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
+      IF (.NOT.nomap) CALL VORT_COMM_POST (channel)
+      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
+            
+      DO J = 1, mj1
+       DO I = 1, mi1
+        channel%seg(num_seg)%Z3DZ(I,J,nk2) = channel%seg(num_seg)%Z3DZ_bg(I,J,1)
+       ENDDO
+      ENDDO
+      CALL BOUND_NORMAL  (nhalo,channel,Z3DZ=.TRUE.)
+      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)   
+      CALL BOUND_CHANNEL (nhalo,channel,Z3DZ=.TRUE.)
+      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)
+
+      CALL ZETA_DIAG (channel)
+
+! Diagnose wind components
+
+      DO J = mjm, mjp
+       DO I = mim, mip
+        channel%seg(num_seg)%W3D(I,J,  1) = D0_0
+        channel%seg(num_seg)%W3D(I,J,nk2) = D0_0
+       ENDDO
+      ENDDO
+      DO K = 2, NK1
+       DO J = 1, mj1
+        DO I = 1, mi1
+         channel%seg(num_seg)%W3D(I,J,K) = channel%seg(num_seg)%W3D_bg(I,J,K)
+        ENDDO
+       ENDDO
+      ENDDO
+      CALL BOUND_NORMAL  (nhalo,channel,W3D=.TRUE.)
+      CALL BOUND_CHANNEL (nhalo,channel,W3D=.TRUE.)
+      IF (.not.nomap) CALL HALO_CORREC_Q (nhalo,channel,W3D=.TRUE.) 
+
+      DO K = 1, NK2
+       DO J = mjm, mjp
+        DO I = mim, mip
+         channel%seg(num_seg)%W3Dnm1(I,J,K) = channel%seg(num_seg)%W3D(I,J,K)
+        ENDDO
+       ENDDO
+      ENDDO 
+
+      ! PSI & CHI are only for deviation parts      
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%PSI(I,J,K) = D0_0
+         channel%seg(num_seg)%CHI(I,J,K) = D0_0
+       ENDDO
+      ENDDO  
+      
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%PSInm1(I,J,K) = channel%seg(num_seg)%PSI(I,J,K)
+         channel%seg(num_seg)%CHInm1(I,J,K) = channel%seg(num_seg)%CHI(I,J,K)
+       ENDDO
+      ENDDO                 
+           
+      CALL WIND_3D  (.TRUE., .TRUE., channel, NITER2D=5000)  
+      
+!******************************  
+      ENDDO   ! num_seg 
+!******************************   
       
       CONTAINS
 

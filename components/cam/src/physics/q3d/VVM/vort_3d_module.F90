@@ -11,7 +11,7 @@ USE constld, only: d0_0,d1_0,d6_0,d8_0,d0_5,d0_25, &
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel  ! HALO DATA COMMUNICATION
-USE bound_extra,    only: bound_normal,bound_vert
+USE bound_extra,    only: bound_normal,bound_vert,bound_sync
 USE halo_vort,      only: vort_comm_pre,vort_comm_post
 USE halo_z,         only: halo_correc_z
 USE damping,        only: damping_vort

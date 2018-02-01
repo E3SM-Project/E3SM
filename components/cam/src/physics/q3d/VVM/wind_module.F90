@@ -26,7 +26,7 @@ CONTAINS
 !    D4_0  = 4.0_dbl_kind
 
 !=======================================================================
-   SUBROUTINE WIND_3D (N1,N2,UCHANGE,WCHANGE,channel,NITER2D)
+   SUBROUTINE WIND_3D (UCHANGE,WCHANGE,channel,NITER2D)
 !=======================================================================   
 !  Diagnose three components of wind
 !
@@ -45,7 +45,6 @@ CONTAINS
 !------------------------------------------------------------------------ 
       type(channel_t), intent(inout) :: channel   ! channel data
       
-      INTEGER, INTENT(IN) :: N1, N2
       LOGICAL, INTENT(IN) :: UCHANGE, WCHANGE
 
       INTEGER, INTENT(IN), OPTIONAL :: NITER2D   

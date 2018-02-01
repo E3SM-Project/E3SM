@@ -11,7 +11,7 @@ USE parmsld,        only: ntracer,nk1,nk2,nk3
 IMPLICIT NONE
 PRIVATE
 
-PUBLIC ::  bound_normal,bound_vert    
+PUBLIC ::  bound_normal,bound_vert,bound_sync    
            
 CONTAINS
 

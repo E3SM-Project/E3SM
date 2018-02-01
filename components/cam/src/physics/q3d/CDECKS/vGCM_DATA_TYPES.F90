@@ -52,6 +52,15 @@ module vGCM_data_types
     real(kind=dbl_kind), allocatable :: dV(:,:)     ! meridional velocity tencency
   end type vGCM_tend_t
 
+  type, public :: vGCM_out_t
+    ! diagnostic fields can be added here.
+    real(kind=dbl_kind), allocatable :: SPREC(:)    ! surface precipitation
+    real(kind=dbl_kind), allocatable :: WTH(:)      ! surface heat flux
+    real(kind=dbl_kind), allocatable :: WQV(:)      ! surface moisture flux
+    real(kind=dbl_kind), allocatable :: UW(:)       ! surface momentum flux (u"w")
+    real(kind=dbl_kind), allocatable :: WV(:)       ! surface momentum flux (v"w")
+  end type vGCM_out_t
+
 !***********************************************************************************************
 ! Define a type (2): Combination of 4 channel segments (a channel)
 !***********************************************************************************************
@@ -59,6 +68,7 @@ module vGCM_data_types
   type, public :: channel_vGCM_t
         type(vGCM_state_t), public :: vGCM_state(4)
         type(vGCM_tend_t),  public :: vGCM_tend(4)
+        type(vGCM_out_t),   public :: vGCM_out(4)
   end type  channel_vGCM_t
 
 !***********************************************************************************************
@@ -84,18 +94,20 @@ CONTAINS
 
     do j = 1, nch
     do i = 1, 4
-      call allocate_channel_vGCM_section(channel_vGCM(j)%vGCM_state(i),channel_vGCM(j)%vGCM_tend(i))
+      call allocate_channel_vGCM_section(channel_vGCM(j)%vGCM_state(i), &
+                                         channel_vGCM(j)%vGCM_tend(i),  &
+                                         channel_vGCM(j)%vGCM_out(i))
     enddo
     enddo
 
   end subroutine allocate_channel_vGCM_data
 
-  subroutine allocate_channel_vGCM_section (seg_state,seg_tend)
+  subroutine allocate_channel_vGCM_section (seg_state,seg_tend,seg_out)
 
     ! Dummy argument
     type(vGCM_state_t), intent(inout) :: seg_state  ! vGCM state variables to be allocated 
     type(vGCM_tend_t),  intent(inout) :: seg_tend   ! vGCM tendency variables to be allocated
-
+    type(vGCM_out_t),   intent(inout) :: seg_out    ! vGCM output variables to be allocated
 !----------------------------------------------------------------------- 
 !   State Variables
 !-----------------------------------------------------------------------        
@@ -131,6 +143,15 @@ CONTAINS
 
     allocate(seg_tend%dU(nVGCM_seg, nLevel))
     allocate(seg_tend%dV(nVGCM_seg, nLevel))
+
+!----------------------------------------------------------------------- 
+!   Output Variables
+!-----------------------------------------------------------------------        
+    allocate(seg_out%SPREC(nVGCM_seg))
+    allocate(seg_out%WTH(nVGCM_seg))
+    allocate(seg_out%WQV(nVGCM_seg))
+    allocate(seg_out%UW(nVGCM_seg))
+    allocate(seg_out%WV(nVGCM_seg))
 
   end subroutine allocate_channel_vGCM_section
   
