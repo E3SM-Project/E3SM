@@ -60,6 +60,7 @@ module clm_driver
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
+  use ndepStreamBeTRMod      , only : ndep_interp_betr=> ndep_interp
   use pdepStreamMod          , only : pdep_interp
   use ActiveLayerMod         , only : alt_calc
   use ch4Mod                 , only : ch4
@@ -384,7 +385,11 @@ contains
     if (use_cn) then
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
-       call ndep_interp(bounds_proc, atm2lnd_vars)
+       if(use_betr .and. is_active_betr_bgc)then
+         call ndep_interp_betr(bounds_proc, atm2lnd_vars)
+       else
+         call ndep_interp(bounds_proc, atm2lnd_vars)
+       endif
        call CNFireInterp(bounds_proc)
        call t_stopf('ndep_interp')
     end if

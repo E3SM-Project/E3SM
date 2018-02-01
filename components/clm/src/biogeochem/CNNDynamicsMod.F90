@@ -135,13 +135,19 @@ contains
     
     associate(& 
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
-         ndep_to_sminn =>  nitrogenflux_vars%ndep_to_sminn_col   & ! Output: [real(r8) (:)]                                                    
+         ndep_to_sminn =>  nitrogenflux_vars%ndep_to_sminn_col  , & ! Output: [real(r8) (:)]                                                    
+         forc_ndep_nh3x     =>  atm2lnd_vars%forc_ndep_nh3x_grc        , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         forc_ndep_noy     =>  atm2lnd_vars%forc_ndep_noy_grc          , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         ndep_to_smin_nh3 =>  nitrogenflux_vars%ndep_to_smin_nh3_col   , & ! Output: [real(r8) (:)]                                                    
+         ndep_to_smin_no3 =>  nitrogenflux_vars%ndep_to_smin_no3_col     & ! Output: [real(r8) (:)]                                                    
          )
       
       ! Loop through columns
       do c = bounds%begc, bounds%endc
          g = col_pp%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
+         ndep_to_smin_nh3(c)=forc_ndep_nh3x(g)
+         ndep_to_smin_no3(c)=forc_ndep_noy(g)
       end do
 
     end associate

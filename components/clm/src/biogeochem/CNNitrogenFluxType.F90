@@ -197,6 +197,8 @@ module CNNitrogenFluxType
 
      ! deposition fluxes
      real(r8), pointer :: ndep_to_sminn_col                         (:)     ! col atmospheric N deposition to soil mineral N (gN/m2/s)
+     real(r8), pointer :: ndep_to_smin_nh3_col                      (:)     ! col atmospheric N deposition to soil mineral N (gN/m2/s)
+     real(r8), pointer :: ndep_to_smin_no3_col                      (:)     ! col atmospheric N deposition to soil mineral N (gN/m2/s)
      real(r8), pointer :: nfix_to_sminn_col                         (:)     ! col symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s) 
      real(r8), pointer :: nfix_to_plantn_patch                      (:)     ! nitrogen fixation goes to plant
      real(r8), pointer :: nfix_to_ecosysn_col                       (:)     ! total nitrogen fixation
@@ -593,6 +595,8 @@ contains
     allocate(this%supplement_to_sminn_surf_patch    (begp:endp)) ; this%supplement_to_sminn_surf_patch    (:) = nan
 
     allocate(this%ndep_to_sminn_col             (begc:endc))    ; this%ndep_to_sminn_col	     (:) = nan
+    allocate(this%ndep_to_smin_nh3_col          (begc:endc))    ; this%ndep_to_smin_nh3_col	     (:) = nan
+    allocate(this%ndep_to_smin_no3_col          (begc:endc))    ; this%ndep_to_smin_no3_col	     (:) = nan
     allocate(this%nfix_to_sminn_col             (begc:endc))    ; this%nfix_to_sminn_col	     (:) = nan
     allocate(this%nfix_to_ecosysn_col           (begc:endc))    ; this%nfix_to_ecosysn_col           (:) = nan
     allocate(this%fert_to_sminn_col             (begc:endc))    ; this%fert_to_sminn_col	     (:) = nan
@@ -2588,6 +2592,8 @@ contains
        i = filter_column(fi)
 
        this%ndep_to_sminn_col(i)             = value_column
+       this%ndep_to_smin_nh3_col(i)          = value_column
+       this%ndep_to_smin_no3_col(i)          = value_column
        this%nfix_to_sminn_col(i)             = value_column
        this%nfix_to_ecosysn_col(i)           = value_column
        this%fert_to_sminn_col(i)             = value_column

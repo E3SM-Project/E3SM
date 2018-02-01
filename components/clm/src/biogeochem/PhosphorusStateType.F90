@@ -139,7 +139,7 @@ module PhosphorusStateType
      real(r8), pointer :: som1p_col                    (:) => null()
      real(r8), pointer :: som2p_col                    (:) => null()
      real(r8), pointer :: som3p_col                    (:) => null()
-     
+     real(r8), pointer :: weather_scalar               (:) => null()     
    contains
 
      procedure , public  :: Init   
@@ -302,6 +302,7 @@ contains
     allocate(this%som1p_col(begc:endc)); this%som1p_col(:) = nan
     allocate(this%som2p_col(begc:endc)); this%som2p_col(:) = nan
     allocate(this%som3p_col(begc:endc)); this%som3p_col(:) = nan    
+    allocate(this%weather_scalar(bounds%begg:bounds%endg)); this%weather_scalar(:)=1._r8
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1429,7 +1430,11 @@ contains
     use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
     use soilorder_varcon       , only : smax, ks_sorption
     use clm_varcon             , only : dzsoi_decomp, zisoi
+    use clm_varcon             , only : grlnd
+    use fileutils              , only : getfil
     use CNStateType            , only : cnstate_type
+    use clm_varctl             , only : fsurdat
+    use ncdio_pio              , only : file_desc_t,  ncd_io, ncd_pio_openfile, ncd_pio_closefile
     implicit none
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
@@ -1438,7 +1443,11 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
 
     real(r8) :: a, b, d, zdep
-    integer  :: c, j
+    integer  :: c, j, g
+    type(file_desc_t)  :: ncid         ! netcdf id
+    character(len=256) :: locfn        ! local filename
+    integer            :: ier          ! error status
+    logical            :: readvar 
 
     if (.not. cnstate_vars%pdatasets_present) then
       call endrun(msg='ERROR:: P pools are required on surface dataset'//&
@@ -1475,6 +1484,18 @@ contains
       enddo
     enddo
 
+    if(spinup_state==1)then
+      call getfil (fsurdat, locfn, 0)
+      call ncd_pio_openfile (ncid, locfn, 0)
+      call ncd_io(ncid=ncid, varname='wethr_scal', flag='read', data=this%weather_scalar, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+         call endrun(msg=' ERROR: wethr_scal NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+      end if
+      call ncd_pio_closefile(ncid)
+      do g = bounds%begg, bounds%endg
+        if(abs(this%weather_scalar(g))<2._r8)this%weather_scalar(g)=this%weather_scalar(g)*100._r8
+      enddo
+    endif
   end subroutine readProfileP
   !-----------------------------------------------------------------------
   subroutine SetValues ( this, &

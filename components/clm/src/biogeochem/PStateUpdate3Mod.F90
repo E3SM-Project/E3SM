@@ -19,7 +19,7 @@ module PStateUpdate3Mod
   use soilorder_varcon    , only : smax,ks_sorption
   use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
+  use clm_varctl          , only : use_pflotran, pf_cmode, spinup_state
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp 

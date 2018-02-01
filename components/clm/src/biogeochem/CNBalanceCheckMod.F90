@@ -89,7 +89,6 @@ contains
 !         endif
 !         col_pp%debug_flag(c)=.true.
       end do
-      if(iam==129) col_pp%debug_flag(23467)=.true.
 !      if(iam==6)col_pp%debug_flag(17236)=.true.
     end associate
 

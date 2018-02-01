@@ -407,6 +407,7 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
+    use ndepStreamBeTRMod     , only : ndep_init_betr=> ndep_init, ndep_interp_betr => ndep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
@@ -796,8 +797,13 @@ contains
 
     if (use_cn) then
        call t_startf('init_ndep')
-       call ndep_init(bounds_proc)
-       call ndep_interp(bounds_proc, atm2lnd_vars)
+       if(use_betr .and. is_active_betr_bgc)then
+         call ndep_init_betr(bounds_proc)
+         call ndep_interp_betr(bounds_proc, atm2lnd_vars)
+       else
+         call ndep_init(bounds_proc)
+         call ndep_interp(bounds_proc, atm2lnd_vars)
+       endif
        call t_stopf('init_ndep')
     end if
     

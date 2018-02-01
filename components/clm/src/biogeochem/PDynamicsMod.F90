@@ -114,7 +114,7 @@ contains
     real(r8)     :: rr
     real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
-    integer :: j
+    integer :: j, g
 
     !-----------------------------------------------------------------------
 
@@ -144,6 +144,8 @@ contains
               r_weather_c=1._r8-exp(-rr*dtd)
               primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
             endif
+            g=col_pp%gridcell(c)
+            primp_to_labilep(c,j)=primp_to_labilep(c,j)*phosphorusstate_vars%weather_scalar(g)
       !     primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
       !     primp_to_labilep(c,j) = 0._r8       
          end do
