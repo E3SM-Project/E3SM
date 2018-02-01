@@ -71,7 +71,8 @@ if __name__ == '__main__':
     args = parser.view_args()
 
     if args.parameters and not args.other_parameters:  # -p only
-        original_parameter = parser.get_orig_parameters(default_vars=False)
+        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
+        original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
 
         if not hasattr(original_parameter, 'sets'):
             original_parameter.sets = [
@@ -87,26 +88,28 @@ if __name__ == '__main__':
             for ds in datasets:
                 default_jsons_paths.append(_get_default_diags(set_num, ds))
         other_parameters = parser.get_other_parameters(
-            files_to_open=default_jsons_paths, check_values=False)
-        # Don't put the sets from the Python parameters to the default.
+            files_to_open=default_jsons_paths, check_values=False, cmd_default_vars=False)
+        # Don't put the sets from the Python parameters to each of the parameters.
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
-        # default jsons like lat_lon_AMWG_default.json
+        # default jsons like lat_lon_ACME_default.json
         vars_to_ignore = ['sets']
-        parameters = parser.get_parameters(
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
             orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
 
     elif not args.parameters and args.other_parameters:  # -d only
-        other_parameters = parser.get_other_parameters(check_values=True)
-        parameters = parser.get_parameters(other_parameters=other_parameters)
+        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
+        other_parameters = parser.get_other_parameters(check_values=True, cmd_default_vars=False)
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, other_parameters=other_parameters)
 
     elif args.parameters and args.other_parameters:  # -p and -d
-        original_parameter = parser.get_orig_parameters(default_vars=False)
-        other_parameters = parser.get_other_parameters(check_values=False)
-        parameters = parser.get_parameters(
+        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
+        original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
+        other_parameters = parser.get_other_parameters(check_values=False, cmd_default_vars=False)
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
             orig_parameters=original_parameter, other_parameters=other_parameters)
 
-    else:
-        raise RuntimeError('You tried running the diags without -p and/or -d')
+    else:  # command line args without -p or -d
+        parameters = parser.get_parameters(cmd_default_vars=False)
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
@@ -137,3 +140,4 @@ if __name__ == '__main__':
 
     else:
         print('There was not a single valid diagnostics run, no viewer created')
+
