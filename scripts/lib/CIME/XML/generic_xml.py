@@ -98,7 +98,7 @@ class GenericXML(object):
         if self.tree:
             addroot = _Element(ET.parse(fd).getroot())
             if addroot.xml_element.tag == self.name(self.root):
-                for child in addroot.get_children():
+                for child in self.get_children(root=addroot):
                     self.add_child(child)
             else:
                 self.add_child(addroot)
