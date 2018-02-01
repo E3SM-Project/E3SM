@@ -881,9 +881,7 @@ class TestScheduler(object):
         # Setup cs files
         self._setup_cs_files()
 
-        GenericXML.DISABLE_CACHING = True
         self._producer()
-        GenericXML.DISABLE_CACHING = False
 
         expect(threading.active_count() == 1, "Leftover threads?")
 
