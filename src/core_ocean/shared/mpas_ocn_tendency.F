@@ -400,6 +400,7 @@ contains
 
       logical, pointer :: config_compute_active_tracer_budgets, &
                           config_cvmix_kpp_nonlocal_with_implicit_mix
+     real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
 
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
@@ -684,15 +685,15 @@ contains
                      modifiedGroupName = trim(groupItr % memberName) // "SurfaceRestoringValue"
                      call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupSurfaceRestoringValue)
-!maltrud monthly surface salinity restoring is a special case
+                     ! Note: monthly surface salinity restoring is a special case for tracer restoring
                      call mpas_pool_get_config(ocnConfigs, 'config_use_surface_salinity_monthly_restoring',  &
                                                             config_use_surface_salinity_monthly_restoring)
-!  within ocn_tracer_surface_restoring_compute makes sure this is only applied to salinity (using indexSalinity)
-!                    if (trim(groupItr % memberName) /= 'activeTracers')   &
-!                       config_use_surface_salinity_monthly_restoring = .false.
+                     call MPAS_pool_get_config(ocnConfigs, 'config_salinity_restoring_constant_piston_velocity',  &
+                                                                salinity_restoring_constant_piston_velocity)
                      call ocn_tracer_surface_restoring_compute(groupItr % memberName, nTracerGroup, nCells, tracerGroup,  &
                         tracerGroupPistonVelocity, tracerGroupSurfaceRestoringValue, tracerGroupSurfaceFlux, indexSalinity, &
-                        config_use_surface_salinity_monthly_restoring, err)
+                        config_use_surface_salinity_monthly_restoring, &
+                        salinity_restoring_constant_piston_velocity, err)
                      call mpas_timer_stop("surface_restoring_" // trim(groupItr % memberName))
                  endif
 
