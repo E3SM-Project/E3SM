@@ -1008,7 +1008,6 @@ class Case(object):
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "case.qstatus"),
-                    os.path.join(toolsdir, "case.st_archive"),
                     os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "preview_run"),
