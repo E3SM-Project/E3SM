@@ -1066,7 +1066,7 @@
                         <var name="xtime" />
                         <var name="lbc_u" />
                         <var name="lbc_w" />
-                        <var name="lbc_rho_zz" />
+                        <var name="lbc_rho" />
                         <var name="lbc_theta" />
                         <var_array name="lbc_scalars" />
 
@@ -1733,6 +1733,9 @@
 
                 <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
                      description="Lateral boundary tendency of w"/>
+
+                <var name="lbc_rho" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="Lateral boundary tendency of rho"/>
 
                 <var name="lbc_rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
                      description="Lateral boundary tendency of rho_zz"/>
