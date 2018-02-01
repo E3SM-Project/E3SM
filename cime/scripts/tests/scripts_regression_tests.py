@@ -1090,11 +1090,11 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 
         # Need to run in a subdir in order to not have CTest clash. Name it
         # such that it should be cleaned up by the parent tearDown
-        self._testdir = os.path.join(self._testroot, "jenkins_generic_test_subdir_%s" % self._baseline_name)
+        self._testdir = os.path.join(self._testroot, "jenkins_test_%s" % self._baseline_name)
         os.makedirs(self._testdir)
 
         # Change root to avoid clashing with other jenkins_generic_jobs
-        self._jenkins_root = os.path.join(self._testdir, "jenkins")
+        self._jenkins_root = os.path.join(self._testdir, "J")
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
@@ -1118,15 +1118,13 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_num_leftovers(self, test_id=None):
+    def assert_num_leftovers(self):
     ###########################################################################
         # There should only be two directories matching the test_id in both
         # the testroot (bld/run dump area) and jenkins root
-        if (test_id is None):
-            test_id = self._baseline_name
         num_tests_in_tiny = len(update_acme_tests.get_test_suite("cime_test_only_pass"))
 
-        jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id)) # case dirs
+        jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
 
         self.assertEqual(num_tests_in_tiny, len(jenkins_dirs),
