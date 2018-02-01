@@ -72,7 +72,7 @@ CONTAINS
       CALL VORT_3D_COREC(channel)
 
 !     Diagnose the wind components
-      CALL WIND_3D  (N1, N2, .TRUE., .TRUE., channel)  ! UCHANGE=.T., WCHANGE=.T. 
+      CALL WIND_3D  (.TRUE., .TRUE., channel)  ! UCHANGE=.T., WCHANGE=.T. 
 
    END SUBROUTINE ab_3d
 
