@@ -532,12 +532,10 @@ CONTAINS
     allocate(segment%ZROUGH(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     allocate(segment%GWET(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     
-    allocate(segment%UW(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
-    allocate(segment%WV(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
-    
+    allocate(segment%UW(isize,jsize))
+    allocate(segment%WV(isize,jsize))
     allocate(segment%WTH(isize,jsize))
     allocate(segment%WQV(isize,jsize))
-    
     allocate(segment%SPREC(isize,jsize))
     
 !-----------------  

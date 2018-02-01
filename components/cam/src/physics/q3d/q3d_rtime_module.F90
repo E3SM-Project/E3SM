@@ -20,8 +20,10 @@ CONTAINS
 !  Prepare tau_rx (time-scale of relaxation)
 !  channel width is fixed as 1 (i.e., # of prognostic grid = 1: chn = 1).
 !
-!  PLAN to do:
-!  Should it be the wind in RLL coordinates (vector handling)?
+!  JUNG_PLAN:
+!  Should it be the wind component (speed calculation) in RLL coordinates?
+!  In the 1-D interpolation, mapping is not considered at the cube edge.
+!       Is this OK?   (Currently, INTERPOL = .F.)
 !  TOPOGRAPHY (coupling strength) needs to be recovered.
 !-------------------------------------------------------------------------
       type(channel_t), intent(inout) :: channel  ! Channel data
