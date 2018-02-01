@@ -1067,7 +1067,7 @@
                         <var name="lbc_u" />
                         <var name="lbc_w" />
                         <var name="lbc_rho_zz" />
-                        <var name="lbc_theta_m" />
+                        <var name="lbc_theta" />
                         <var_array name="lbc_scalars" />
 
                 </stream>
@@ -1740,8 +1740,8 @@
                 <var name="lbc_rho_edge" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-3} s^{-1}"
                      description="Lateral boundary tendency of rho_zz averaged from cell centers to cell faces (edges)"/>
 
-                <var name="lbc_theta_m" type="real" dimensions="nVertLevels nCells Time" units="K s^{-2}"
-                     description="Lateral boundary tendency of theta_m"/>
+                <var name="lbc_theta" type="real" dimensions="nVertLevels nCells Time" units="K s^{-2}"
+                     description="Lateral boundary tendency of theta"/>
 
                 <var name="lbc_rtheta_m" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-2}"
                      description="Lateral boundary tendency of rho_zz-coupled theta_m"/>

@@ -55,6 +55,8 @@ module mpas_atm_boundaries
     !-----------------------------------------------------------------------
     subroutine mpas_atm_update_bdy_tend(clock, streamManager, block, firstCall)
 
+        use mpas_constants, only : rvord
+
         implicit none
 
         type (mpas_clock_type), intent(in) :: clock
@@ -68,12 +70,13 @@ module mpas_atm_boundaries
         real (kind=RKIND) :: dt
 
         integer, pointer :: nEdges
+        integer, pointer :: index_qv
 
         real (kind=RKIND), dimension(:,:), pointer :: u
         real (kind=RKIND), dimension(:,:), pointer :: ru
         real (kind=RKIND), dimension(:,:), pointer :: rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: w
-        real (kind=RKIND), dimension(:,:), pointer :: theta_m
+        real (kind=RKIND), dimension(:,:), pointer :: theta
         real (kind=RKIND), dimension(:,:), pointer :: rtheta_m
         real (kind=RKIND), dimension(:,:), pointer :: rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: scalars
@@ -81,7 +84,7 @@ module mpas_atm_boundaries
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_ru
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_edge
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_w
-        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_theta_m
+        real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_theta
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rtheta_m
         real (kind=RKIND), dimension(:,:), pointer :: lbc_tend_rho_zz
         real (kind=RKIND), dimension(:,:,:), pointer :: lbc_tend_scalars
@@ -117,12 +120,14 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(lbc, 'lbc_u', u, 2)
         call mpas_pool_get_array(lbc, 'lbc_ru', ru, 2)
         call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
-        call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
+        call mpas_pool_get_array(lbc, 'lbc_theta', theta, 2)
         call mpas_pool_get_array(lbc, 'lbc_rtheta_m', rtheta_m, 2)
         call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
+        call mpas_pool_get_array(lbc, 'lbc_scalars', scalars, 2)
 
         call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
         call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+        call mpas_pool_get_dimension(lbc, 'index_qv', index_qv)
 
         ! Average lbc_rho_zz to edges
         do iEdge=1,nEdges
@@ -134,7 +139,7 @@ module mpas_atm_boundaries
         end do
 
         ru(:,:) = u(:,:) * rho_edge(:,:)
-        rtheta_m(:,:) = theta_m(:,:) * rho_zz(:,:)
+        rtheta_m(:,:) = theta(:,:) * rho_zz(:,:) * (1.0_RKIND + rvord * scalars(index_qv,:,:))
 
         if (.not. firstCall) then
             lbc_interval = currTime - LBC_intv_end
@@ -146,7 +151,7 @@ module mpas_atm_boundaries
             call mpas_pool_get_array(lbc, 'lbc_ru', ru, 2)
             call mpas_pool_get_array(lbc, 'lbc_rho_edge', rho_edge, 2)
             call mpas_pool_get_array(lbc, 'lbc_w', w, 2)
-            call mpas_pool_get_array(lbc, 'lbc_theta_m', theta_m, 2)
+            call mpas_pool_get_array(lbc, 'lbc_theta', theta, 2)
             call mpas_pool_get_array(lbc, 'lbc_rtheta_m', rtheta_m, 2)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', rho_zz, 2)
             call mpas_pool_get_array(lbc, 'lbc_scalars', scalars, 2)
@@ -155,7 +160,7 @@ module mpas_atm_boundaries
             call mpas_pool_get_array(lbc, 'lbc_ru', lbc_tend_ru, 1)
             call mpas_pool_get_array(lbc, 'lbc_rho_edge', lbc_tend_rho_edge, 1)
             call mpas_pool_get_array(lbc, 'lbc_w', lbc_tend_w, 1)
-            call mpas_pool_get_array(lbc, 'lbc_theta_m', lbc_tend_theta_m, 1)
+            call mpas_pool_get_array(lbc, 'lbc_theta', lbc_tend_theta, 1)
             call mpas_pool_get_array(lbc, 'lbc_rtheta_m', lbc_tend_rtheta_m, 1)
             call mpas_pool_get_array(lbc, 'lbc_rho_zz', lbc_tend_rho_zz, 1)
             call mpas_pool_get_array(lbc, 'lbc_scalars', lbc_tend_scalars, 1)
@@ -166,7 +171,7 @@ module mpas_atm_boundaries
             lbc_tend_ru(:,:) = (ru(:,:) - lbc_tend_ru(:,:)) * dt
             lbc_tend_rho_edge(:,:) = (rho_edge(:,:) - lbc_tend_rho_edge(:,:)) * dt
             lbc_tend_w(:,:) = (w(:,:) - lbc_tend_w(:,:)) * dt
-            lbc_tend_theta_m(:,:) = (theta_m(:,:) - lbc_tend_theta_m(:,:)) * dt
+            lbc_tend_theta(:,:) = (theta(:,:) - lbc_tend_theta(:,:)) * dt
             lbc_tend_rtheta_m(:,:) = (rtheta_m(:,:) - lbc_tend_rtheta_m(:,:)) * dt
             lbc_tend_rho_zz(:,:) = (rho_zz(:,:) - lbc_tend_rho_zz(:,:)) * dt
             lbc_tend_scalars(:,:,:) = (scalars(:,:,:) - lbc_tend_scalars(:,:,:)) * dt
@@ -206,7 +211,7 @@ module mpas_atm_boundaries
     !>   tend_u(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nEdges, 'u', 0.0_RKIND)
     !>   tend_w(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels+1, nCells, 'w', 0.0_RKIND)
     !>   tend_rho_zz(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND)
-    !>   tend_theta_m(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'theta_m', 0.0_RKIND)
+    !>   tend_theta(:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'theta', 0.0_RKIND)
     !>   tend_scalars(1,:,:) = mpas_atm_get_bdy_tend(clock, domain % blocklist, nVertLevels, nCells, 'qv', 0.0_RKIND)
     !
     !-----------------------------------------------------------------------
@@ -275,7 +280,7 @@ module mpas_atm_boundaries
     !>   u(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nEdges, 'u', 0.0_RKIND)
     !>   w(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels+1, nCells, 'w', 0.0_RKIND)
     !>   rho_zz(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND)
-    !>   theta_m(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'theta_m', 0.0_RKIND)
+    !>   theta(:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'theta', 0.0_RKIND)
     !>   scalars(1,:,:) = mpas_atm_get_bdy_state(clock, domain % blocklist, nVertLevels, nCells, 'qv', 0.0_RKIND)
     !
     !-----------------------------------------------------------------------
