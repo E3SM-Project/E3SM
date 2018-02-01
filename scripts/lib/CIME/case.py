@@ -243,42 +243,35 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
-        results = []
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
             if len(results) > 0:
                 new_results = []
-                vtype = env_file.get_type_info(item)
                 if resolved:
                     for result in results:
                         if isinstance(result, six.string_types):
                             result = self.get_resolved_value(result)
-                            new_results.append(convert_to_type(result, vtype, item))
+                            vtype = env_file.get_type_info(item)
+                            if vtype is not None or vtype != "char":
+                                result = convert_to_type(result, vtype, item)
+
+                            new_results.append(result)
+
                         else:
                             new_results.append(result)
+
                 else:
                     new_results = results
+
                 return new_results
 
-        for env_file in self._env_generic_files:
-            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-            if len(results) > 0:
-                if resolved:
-                    for result in results:
-                        if isinstance(result, six.string_types):
-                            new_results.append(self.get_resolved_value(result))
-                        else:
-                            new_results.append(result)
-                else:
-                    new_results = results
-                return new_results
         # Return empty result
-        return results
+        return []
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         result = None
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
@@ -286,17 +279,9 @@ class Case(object):
                 if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    if vtype is not None:
+                    if vtype is not None or vtype != "char":
                         result = convert_to_type(result, vtype, item)
-                return result
 
-        for env_file in self._env_generic_files:
-
-            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-
-            if result is not None:
-                if resolved and isinstance(result, six.string_types):
-                    return self.get_resolved_value(result)
                 return result
 
         # Return empty result
@@ -315,6 +300,7 @@ class Case(object):
                 roots = env_file.scan_children("entry")
             else:
                 roots = env_file.get_nodes_by_id(variable)
+
             for root in roots:
                 if root is not None:
                     if field == "raw":
@@ -379,14 +365,7 @@ class Case(object):
             self._caseroot = value
         result = None
 
-        for env_file in self._env_entryid_files:
-            result = env_file.set_value(item, value, subgroup, ignore_type)
-            if (result is not None):
-                logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
-                return result
-
-        for env_file in self._env_generic_files:
+        for env_file in self._files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
