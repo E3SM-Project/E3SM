@@ -20,6 +20,7 @@ module CNCarbonStateType
   use ColumnType             , only : col_pp                
   use clm_varctl             , only : nu_com, use_fates
   use VegetationType         , only : veg_pp
+  use CNSpeciesMod           , only : species_from_string
 
   ! bgc interface & pflotran
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
@@ -32,6 +33,8 @@ module CNCarbonStateType
   !
   type, public :: carbonstate_type
      
+     integer :: species  ! c12, c13, c14
+
      real(r8), pointer :: grainc_patch             (:)     ! (gC/m2) grain C (crop model)
      real(r8), pointer :: grainc_storage_patch     (:)     ! (gC/m2) grain C storage (crop model)
      real(r8), pointer :: grainc_xfer_patch        (:)     ! (gC/m2) grain C transfer (crop model)
@@ -149,6 +152,8 @@ contains
     character(len=3)       , intent(in)           :: carbon_type
     real(r8)               , intent(in)           :: ratio
     type(carbonstate_type) , intent(in), optional :: c12_carbonstate_vars
+
+    this%species = species_from_string(carbon_type)
 
     call this%InitAllocate ( bounds)
     call this%InitHistory ( bounds, carbon_type)

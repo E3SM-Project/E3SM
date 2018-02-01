@@ -24,10 +24,20 @@ module dynConsBiogeochemMod
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use VegetationType           , only : veg_pp                
+  use CNSpeciesMod        , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
+  use CNSpeciesMod        , only : CN_SPECIES_N, CN_SPECIES_P
+  use clm_varcon          , only : c3_r2, c4_r2, c14ratio
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   private
+  integer  , parameter :: COMPONENT_LEAF       = 1
+  integer  , parameter :: COMPONENT_DEADWOOD   = 2
+  real(r8) , parameter :: leafc_seed_param     = 1._r8
+  real(r8) , parameter :: npool_seed_param     = 0.1_r8
+  real(r8) , parameter :: ppool_seed_param     = 0.01_r8
+  real(r8) , parameter :: deadstemc_seed_param = 0.1_r8
+
   save
   
   public :: dyn_cnbal_patch
@@ -996,11 +1006,6 @@ contains
    real(r8)              , intent(out) :: leafc14_seed
    real(r8)              , intent(out) :: npool_seed
    real(r8)              , intent(out) :: ppool_seed
-   !
-   ! !LOCAL
-   real(r8)              , parameter :: leafc_seed_param = 1._r8
-   real(r8)              , parameter :: npool_seed_param = 0.1_r8
-   real(r8)              , parameter :: ppool_seed_param = 0.01_r8
 
    leafc_seed     = 0._r8
    leafn_seed     = 0._r8
@@ -1058,9 +1063,6 @@ contains
    real(r8)              , intent(out) :: deadstemp_seed
    real(r8)              , intent(out) :: deadstemc13_seed
    real(r8)              , intent(out) :: deadstemc14_seed
-   !
-   ! !LOCAL
-   real(r8)              , parameter :: deadstemc_seed_param = 0.1_r8
   
    deadstemc_seed = 0._r8
    deadstemn_seed = 0._r8
@@ -1120,6 +1122,8 @@ contains
    real(r8)                              :: pxfer
    real(r8)                              :: t1
    real(r8)                              :: t2
+   real(r8)                              :: leafc_seed_local
+   real(r8)                              :: deadstemc_seed_local
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1127,6 +1131,11 @@ contains
    call LeafProportions(veg_pp%itype(p), &
        cs%leafc_patch(p), cs%leafc_storage_patch(p), cs%leafc_xfer_patch(p), &
        pleaf, pstor, pxfer)
+
+   leafc_seed_local     = leafc_seed_param     * &
+                          SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_LEAF)
+   deadstemc_seed_local = deadstemc_seed_param * &
+                          SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_DEADWOOD)
 
    cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
    cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
@@ -1186,6 +1195,8 @@ contains
    real(r8)                                 :: pxfer
    real(r8)                                 :: t1
    real(r8)                                 :: t2
+   real(r8)                                 :: leafn_seed_local
+   real(r8)                                 :: deadstemn_seed_local
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1194,6 +1205,11 @@ contains
        ns%leafn_patch(p), ns%leafn_storage_patch(p), ns%leafn_xfer_patch(p), &
        pleaf, pstor, pxfer)
 
+   leafn_seed_local     = leafc_seed_param     * &
+                          SpeciesTypeMultiplier(CN_SPECIES_N, veg_pp%itype(p), COMPONENT_LEAF)
+   deadstemn_seed_local = deadstemc_seed_param * &
+                          SpeciesTypeMultiplier(CN_SPECIES_N, veg_pp%itype(p), COMPONENT_DEADWOOD)
+   
    ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
    ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
    ns%leafn_xfer_patch(p)         = ns%leafn_xfer_patch(p)         * t1 + leafn_seed*pxfer*t2
@@ -1250,6 +1266,8 @@ contains
    real(r8)                                   :: pxfer
    real(r8)                                   :: t1
    real(r8)                                   :: t2
+   real(r8)                                   :: leafp_seed_local
+   real(r8)                                   :: deadstemp_seed_local
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1257,6 +1275,11 @@ contains
    call LeafProportions(veg_pp%itype(p), &
        ps%leafp_patch(p), ps%leafp_storage_patch(p), ps%leafp_xfer_patch(p), &
        pleaf, pstor, pxfer)
+
+   leafp_seed_local     = leafc_seed_param     * &
+                          SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_LEAF)
+   deadstemp_seed_local = deadstemc_seed_param * &
+                          SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_DEADWOOD)
 
    ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
    ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
@@ -1565,5 +1588,70 @@ contains
     end if
 
   end subroutine LeafProportions
+
+  !-----------------------------------------------------------------------
+  function SpeciesTypeMultiplier(species, pft_type, component) result(multiplier)
+    !
+    ! !DESCRIPTION:
+    ! Returns a multiplier based on the species type. This multiplier is
+    ! meant to be applied to some state variable expressed in terms of g C, translating
+    ! this value into an appropriate value for c13, c14, n or p.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    real(r8)            :: multiplier ! function result
+    integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in CNSpeciesMod
+    integer, intent(in) :: pft_type
+    integer, intent(in) :: component  ! which plant component; should be one of the COMPONENT_* parameters defined in this module
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'SpeciesTypeMultiplier'
+    !-----------------------------------------------------------------------
+
+    select case (species)
+    case (CN_SPECIES_C12)
+       multiplier = 1._r8
+
+    case (CN_SPECIES_C13)
+       if (veg_vp%c3psn(pft_type) == 1._r8) then
+          multiplier = c3_r2
+       else
+          multiplier = c4_r2
+       end if
+
+    case (CN_SPECIES_C14)
+       ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
+       multiplier = c14ratio
+
+    case (CN_SPECIES_N)
+       select case (component)
+       case (COMPONENT_LEAF)
+          multiplier = 1._r8 / veg_vp%leafcn(pft_type)
+       case (COMPONENT_DEADWOOD)
+          multiplier = 1._r8 / veg_vp%deadwdcn(pft_type)
+       case default
+          write(iulog,*) subname//' ERROR: unknown component: ', component
+          call endrun(subname//': unknown component')
+       end select
+
+    case (CN_SPECIES_P)
+       select case (component)
+       case (COMPONENT_LEAF)
+          multiplier = 1._r8 / veg_vp%leafcp(pft_type)
+       case (COMPONENT_DEADWOOD)
+          multiplier = 1._r8 / veg_vp%deadwdcp(pft_type)
+       case default
+          write(iulog,*) subname//' ERROR: unknown component: ', component
+          call endrun(subname//': unknown component')
+       end select
+
+    case default
+       write(iulog,*) subname//' ERROR: unknown species: ', species
+       call endrun(subname//': unknown species')
+    end select
+
+  end function SpeciesTypeMultiplier
 
 end module dynConsBiogeochemMod
