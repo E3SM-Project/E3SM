@@ -1199,8 +1199,8 @@ class T_TestRunRestart(TestCreateTestCommon):
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
-
-        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        rundir = run_cmd_no_fail("./xmlquery RUNDIR --value", from_dir=casedir)
+        fail_sentinel = os.path.join(rundir, "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
 
         self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 3)
@@ -1212,7 +1212,8 @@ class T_TestRunRestart(TestCreateTestCommon):
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
-        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        rundir = run_cmd_no_fail("./xmlquery RUNDIR --value", from_dir=casedir)
+        fail_sentinel = os.path.join(rundir, "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
 
         self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 4)
