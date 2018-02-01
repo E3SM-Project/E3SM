@@ -89,9 +89,9 @@ if __name__ == '__main__':
                 default_jsons_paths.append(_get_default_diags(set_num, ds))
         other_parameters = parser.get_other_parameters(
             files_to_open=default_jsons_paths, check_values=False, cmd_default_vars=False)
-        # Don't put the sets from the Python parameters to the default.
+        # Don't put the sets from the Python parameters to each of the parameters.
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
-        # default jsons like lat_lon_AMWG_default.json
+        # default jsons like lat_lon_ACME_default.json
         vars_to_ignore = ['sets']
         parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
             orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
             orig_parameters=original_parameter, other_parameters=other_parameters)
 
     else:  # command line args without -p or -d
-        parameters = parser.get_cmdline_parameters(cmd_default_vars=False)
+        parameters = parser.get_parameters(cmd_default_vars=False)
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
@@ -140,3 +140,4 @@ if __name__ == '__main__':
 
     else:
         print('There was not a single valid diagnostics run, no viewer created')
+

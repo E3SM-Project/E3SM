@@ -7,9 +7,9 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         super(ACMEParser, self).__init__(
             acme_diags.acme_parameter.ACMEParameter, *args, **kwargs)
 
-    def load_default_args(self):
+    def load_default_args(self, files=[]):
         # this has '-p' and '--parameter' reserved
-        super(ACMEParser, self).load_default_args()
+        super(ACMEParser, self).load_default_args(files)
 
         self.add_argument(
             '-r', '--reference_data_set',
@@ -28,7 +28,8 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--ref_name',
             dest='ref_name',
-            help="I don't know what this is, ask Jill.",
+            help="The string used to locate the reference file. " + 
+                 "The reference file starts with the string.",
             required=False)
 
         self.add_argument(
