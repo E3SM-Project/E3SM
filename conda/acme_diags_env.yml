@@ -5,7 +5,7 @@ channels:
 - uvcdat
 - defaults
 dependencies:
-- acme_diags=1.0.1
+- acme_diags=1.1.1
 - asn1crypto=0.22.0
 - backports=1.0
 - backports.functools_lru_cache=1.4
@@ -146,7 +146,7 @@ dependencies:
 - numpy=1.13.1
 - scipy=0.19.1=np113py27_0
 - system=5.8
-- cdp=1.1.0
+- cdp=1.2.1
 - dv3d=2.12
 - output_viewer=1.2.2
 - vcs=2.12
