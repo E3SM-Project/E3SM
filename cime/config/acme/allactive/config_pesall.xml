@@ -7050,22 +7050,22 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
-        <comment>ne120-wcycl on 825 nodes</comment>
+        <comment>ne120-wcycl on 863 nodes</comment>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>43200</ntasks_atm>
           <ntasks_cpl>43200</ntasks_cpl>
-          <ntasks_ice>19200</ntasks_ice>
+          <ntasks_ice>24000</ntasks_ice>
           <ntasks_lnd>4800</ntasks_lnd>
           <ntasks_rof>4800</ntasks_rof>
-          <ntasks_ocn>9600</ntasks_ocn>
+          <ntasks_ocn>12000</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
         <nthrds>
           <nthrds_atm>2</nthrds_atm>
-          <nthrds_cpl>2</nthrds_cpl>
+          <nthrds_cpl>1</nthrds_cpl>
           <nthrds_ice>2</nthrds_ice>
           <nthrds_lnd>2</nthrds_lnd>
           <nthrds_rof>2</nthrds_rof>
