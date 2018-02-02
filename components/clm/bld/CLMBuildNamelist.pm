@@ -1034,11 +1034,7 @@ sub setup_cmdl_bgc {
     $var = "use_dynroot";
     $val = $nl_flags->{$var};
     if ( ! defined($nl->get_value($var))) {
-      if ( $nl_flags->{'bgc_mode'} ne "sp") {
-        $val = ".true.";
-      } else {
-        $val = ".false.";
-      }
+      $val = ".false.";
     } else {
       $nl_flags->{$var} = $nl->get_value($var);
       $val = $nl_flags->{$var};
