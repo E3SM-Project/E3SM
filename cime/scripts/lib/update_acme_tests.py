@@ -142,10 +142,6 @@ _TEST_SUITES = {
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
                         )),
 
-    "acme_test_me" : (None, "01:00:00",
-                      ("ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
-                      )),
-
     "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
