@@ -267,7 +267,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset X --res f19_g16 --output-root %s " % (testdir, cls._testroot)
+        args =  " --case %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args +  " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -308,7 +308,6 @@ class J_TestCreateNewcase(unittest.TestCase):
             case.set_value("HIST_OPTION","nsteps")
             self.assertTrue(case._env_files_that_need_rewrite, msg="Expected flush call not triggered")
 
-
     def test_b_user_mods(self):
         cls = self.__class__
 
@@ -319,7 +318,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test1")
-        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"% (testdir, user_mods_dir, cls._testroot)
+        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s --handle-preexisting-dirs=r"% (testdir, user_mods_dir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args + " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -435,7 +434,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
         if TEST_COMPILER is not None:
@@ -459,7 +458,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join(previous_testdir,"env_mach_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
         if TEST_COMPILER is not None:
