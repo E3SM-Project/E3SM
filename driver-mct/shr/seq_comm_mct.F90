@@ -405,7 +405,7 @@ contains
        pelist(3,1) = cpl_pestride
     end if
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
-    call seq_comm_setcomm(CPLID,pelist,cpl_nthreads,'CPL')
+    call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
     call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
@@ -571,9 +571,9 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
-          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,drv_comm_id=drv_comm_id)
        else
-          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=n,tinst=num_inst_comp)
        endif
        call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
     enddo
@@ -619,7 +619,7 @@ contains
   end subroutine seq_comm_clean
 
   !---------------------------------------------------------
-  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
+  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst,drv_comm_id)
 
     implicit none
     integer,intent(IN) :: ID
@@ -628,6 +628,7 @@ contains
     character(len=*),intent(IN),optional :: iname  ! name of component
     integer,intent(IN),optional :: inst  ! instance of component
     integer,intent(IN),optional :: tinst ! total number of instances for this component
+    integer, intent(in), optional :: drv_comm_id
 
     integer :: mpigrp_world
     integer :: mpigrp
