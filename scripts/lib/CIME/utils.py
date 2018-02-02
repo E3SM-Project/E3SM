@@ -1420,7 +1420,6 @@ def batch_jobid():
         jobid = os.environ.get("COBALT_JOBID")
     return jobid
 
-
 def analyze_build_log(comp, log, compiler):
     """
     Capture and report warning count,
@@ -1586,4 +1585,4 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
     expect(stat == 0, filter_unicode(errput))
 
 def get_batch_script_for_job(job):
-    return "." + job
+    return job if "st_archive" in job else "." + job

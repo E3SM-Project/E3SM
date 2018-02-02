@@ -267,7 +267,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset X --res f19_g16 --output-root %s " % (testdir, cls._testroot)
+        args =  " --case %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args +  " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -308,7 +308,6 @@ class J_TestCreateNewcase(unittest.TestCase):
             case.set_value("HIST_OPTION","nsteps")
             self.assertTrue(case._env_files_that_need_rewrite, msg="Expected flush call not triggered")
 
-
     def test_b_user_mods(self):
         cls = self.__class__
 
@@ -319,7 +318,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test1")
-        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"% (testdir, user_mods_dir, cls._testroot)
+        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s --handle-preexisting-dirs=r"% (testdir, user_mods_dir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args + " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -435,7 +434,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
         if TEST_COMPILER is not None:
@@ -459,7 +458,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join(previous_testdir,"env_mach_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
         if TEST_COMPILER is not None:
@@ -1199,8 +1198,8 @@ class T_TestRunRestart(TestCreateTestCommon):
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
-
-        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        rundir = run_cmd_no_fail("./xmlquery RUNDIR --value", from_dir=casedir)
+        fail_sentinel = os.path.join(rundir, "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
 
         self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 3)
@@ -1212,7 +1211,8 @@ class T_TestRunRestart(TestCreateTestCommon):
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
-        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        rundir = run_cmd_no_fail("./xmlquery RUNDIR --value", from_dir=casedir)
+        fail_sentinel = os.path.join(rundir, "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
 
         self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 4)
@@ -1761,6 +1761,9 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_env_loading(self):
     ###########################################################################
+        if self._machine != "melvin":
+            self.skipTest("Skipping env load test - Only works on melvin")
+
         self._create_test(["--no-build", "TESTRUNPASS.f19_g16_rx1.A"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
@@ -1769,37 +1772,33 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         with Case(casedir, read_only=True) as case:
             env_mach = case.get_env("mach_specific")
-            if env_mach.get_module_system_type() == "module":
-                orig_env = dict(os.environ)
+            orig_env = dict(os.environ)
 
-                env_mach.load_env(case)
-                module_env = dict(os.environ)
+            env_mach.load_env(case)
+            module_env = dict(os.environ)
 
-                os.environ.clear()
-                os.environ.update(orig_env)
+            os.environ.clear()
+            os.environ.update(orig_env)
 
-                env_mach.load_env(case, force_method="generic")
-                generic_env = dict(os.environ)
+            env_mach.load_env(case, force_method="generic")
+            generic_env = dict(os.environ)
 
-                os.environ.clear()
-                os.environ.update(orig_env)
+            os.environ.clear()
+            os.environ.update(orig_env)
 
-                problems = ""
-                for mkey, mval in module_env.items():
-                    if mkey not in generic_env:
-                        if not mkey.startswith("PS") and mkey != "OLDPWD":
-                            problems += "Generic missing key: {}\n".format(mkey)
-                    elif mval != generic_env[mkey] and mkey not in ["_", "SHLVL"] and not mkey.endswith("()"):
-                        problems += "Value mismatch for key {}: {} != {}\n".format(mkey, repr(mval), repr(generic_env[mkey]))
+            problems = ""
+            for mkey, mval in module_env.items():
+                if mkey not in generic_env:
+                    if not mkey.startswith("PS") and mkey != "OLDPWD":
+                        problems += "Generic missing key: {}\n".format(mkey)
+                elif mval != generic_env[mkey] and mkey not in ["_", "SHLVL", "PWD"] and not mkey.endswith("()"):
+                    problems += "Value mismatch for key {}: {} != {}\n".format(mkey, repr(mval), repr(generic_env[mkey]))
 
-                for gkey in generic_env.keys():
-                    if gkey not in module_env:
-                        problems += "Modules missing key: {}\n".format(gkey)
+            for gkey in generic_env.keys():
+                if gkey not in module_env:
+                    problems += "Modules missing key: {}\n".format(gkey)
 
-                self.assertEqual(problems, "", msg=problems)
-
-            else:
-                self.skipTest("Skipping env load test - Only works on machines that support env modules")
+            self.assertEqual(problems, "", msg=problems)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
