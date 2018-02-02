@@ -92,7 +92,12 @@ class GenericXML(object):
 
     def read_fd(self, fd):
         if self.tree:
-            self.add_child(_Element(ET.parse(fd).getroot()))
+            addroot = _Element(ET.parse(fd).getroot())
+            if addroot.xml_element.tag == self.name(self.root):
+                for child in self.get_children(root=addroot):
+                    self.add_child(child)
+            else:
+                self.add_child(addroot)
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
