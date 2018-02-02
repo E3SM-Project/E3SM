@@ -6879,6 +6879,7 @@ module atm_time_integration
    end subroutine atm_bdy_adjust_scalars_work
 
 !-------------------------------------------------------------------------
+
    subroutine atm_bdy_set_scalars( state, mesh, scalars_driving, nVertLevels, &
                                    cellStart, cellEnd, &
                                    cellSolveStart, cellSolveEnd )
@@ -6899,6 +6900,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: scalars_driving
 
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_new
       integer, pointer :: nCells, num_scalars
       integer, dimension(:), pointer :: bdyMaskCell
 
@@ -6908,7 +6910,9 @@ module atm_time_integration
 
       call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-      call atm_bdy_set_scalars_work( scalars_driving, &
+      call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
+
+      call atm_bdy_set_scalars_work( scalars_driving, scalars_new, &
                                         nVertLevels, nCells, num_scalars, &
                                         bdyMaskCell, &
                                         cellStart, cellEnd, &
@@ -6918,7 +6922,7 @@ module atm_time_integration
 
 !-------------------------------------------------------------------------
 
-   subroutine atm_bdy_set_scalars_work( scalars_driving, &
+   subroutine atm_bdy_set_scalars_work( scalars_driving, scalars_new, &
                                            nVertLevels, nCells, num_scalars, &
                                            bdyMaskCell, &
                                            cellStart, cellEnd, &
@@ -6927,6 +6931,7 @@ module atm_time_integration
       implicit none
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: scalars_driving
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: scalars_new
       integer, intent(in) :: nVertLevels, nCells, num_scalars
       integer, intent(in) :: cellStart, cellEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd
@@ -6934,7 +6939,6 @@ module atm_time_integration
 
       ! local variables
 
-      real (kind=RKIND), dimension(1:num_scalars,1:nVertLevels, cellSolveStart:cellSolveEnd) :: scalars_tmp
       real (kind=RKIND) :: laplacian_filter_coef, rayleigh_damping_coef, filter_flux
       integer :: iCell, iScalar, i, k, cell1, cell2
 
@@ -6949,7 +6953,7 @@ module atm_time_integration
 !DIR$ IVDEP
             do k=1,nVertLevels
                do iScalar = 1, num_scalars
-                  scalars_tmp(iScalar,k,iCell) = scalars_driving(iScalar,k,iCell)
+                  scalars_new(iScalar,k,iCell) = scalars_driving(iScalar,k,iCell)
                end do
             end do
 
