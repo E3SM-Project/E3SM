@@ -40,22 +40,38 @@ else
           errcode=$(( errcode + 1 ))
         else
           # Check the latest log file for a resume signal
-          lfile="`ls -t wav.log.* | head -1`"
-          if [ -n "${lfile}" -a -f "${lfile}" ]; then
-            if [ -n "`echo ${lfile} | grep 'gz$'`" ]; then
-              sig="`zcat ${lfile} | grep 'Resume signal, TRUE' 2> /dev/null`"
-            else
-              sig="`cat ${lfile} | grep 'Resume signal, TRUE' 2> /dev/null`"
-            fi
-            if [ -n "${sig}" ]; then
-              echo "Post-DA resume signal found for cycle ${cycle}"
-            else
-              echo "ERROR: No post-DA resume signal found for cycle ${cycle}"
-              errcode=$(( errcode + 1 ))
-            fi
-          else
+          lfiles="`ls -t wav.log.* 2> /dev/null | head -1`"
+          if [ -z "${lfiles}" ]; then
+            # We did not find any wav.log*, look for wav_nnnn.log*
+            for inst in `seq 1 9999`; do
+              ifilename="`printf "wav_%04d.log.*" $inst`"
+              ifile="`ls -t ${ifilename} 2> /dev/null | head -1`"
+              if [ -z "${ifile}" ]; then
+                break;
+              elif [ -z "${lfiles}" ]; then
+                lfiles="${ifile}"
+              else
+                lfiles="${lfiles} ${ifile}"
+              fi
+            done
+          fi
+          if [ -z "${lfiles}" ]; then
             echo "ERROR: Unable to find wav log file in `pwd -P`"
             errcode=$(( errcode + 1 ))
+          else
+            for wavfile in ${lfiles}; do
+              if [ -n "`echo ${lfiles} | grep 'gz$'`" ]; then
+                sig="`zcat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
+              else
+                sig="`cat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
+              fi
+              if [ -n "${sig}" ]; then
+                echo "Post-DA resume signal found for cycle ${cycle}"
+              else
+                echo "ERROR: No post-DA resume signal found for cycle ${cycle}"
+                errcode=$(( errcode + 1 ))
+              fi
+            done
           fi
         fi
       else
