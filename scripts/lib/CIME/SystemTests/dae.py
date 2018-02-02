@@ -95,7 +95,12 @@ class DAE(SystemTestsCompareTwo):
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
-            found_signal = not is_dwav
+            found_signal = 0
+            if is_dwav and (cycle_num > 0):
+                expected_signal = self._case.get_value("NINST_WAV")
+            else:
+                expected_signal = 0
+
             with gzip.open(fname, "r") as dfile:
                 for bline in dfile:
                     line = bline.decode("utf-8")
@@ -107,7 +112,7 @@ class DAE(SystemTestsCompareTwo):
                         expect(int(line[7:]) == cycle_num,
                                "ERROR: Wrong cycle ({:d}) found in {} (expected {:d})".format(int(line[7:]), fname, cycle_num))
                     elif 'resume signal' in line:
-                        found_signal = True
+                        found_signal = found_signal + 1
                         expect('Post-DA resume signal found' in line[0:27],
                                "ERROR: bad post-DA message found in {}".format(fname))
                     else:
@@ -116,7 +121,7 @@ class DAE(SystemTestsCompareTwo):
                 # End of for loop
                 expect(found_caseroot, "ERROR: No caseroot found in {}".format(fname))
                 expect(found_cycle, "ERROR: No cycle found in {}".format(fname))
-                expect((cycle_num == 0) or found_signal,
-                       "ERROR: No post-DA resume signal message found in {}".format(fname))
+                expect(found_signal == expected_signal,
+                       "ERROR: Expected {} post-DA resume signal message(s), {} found in {}".format(expected_signal, found_signal, fname))
             # End of with
             cycle_num = cycle_num + 1
