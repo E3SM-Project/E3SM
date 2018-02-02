@@ -64,6 +64,7 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), allocatable :: rt_driving_values ! regional_MPAS addition 
    real (kind=RKIND), dimension(:,:), allocatable :: rho_driving_values ! regional_MPAS addition 
    integer, dimension(:), pointer :: bdyMaskEdge ! regional_MPAS addition
+   logical, parameter :: regional_mpas = .true., debug_regional =.false. ! regional_MPAS addition
    
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
@@ -219,7 +220,6 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
 
-      logical, parameter :: regional_mpas = .true., debug_regional =.false.
       real (kind=RKIND)  :: time_dyn_step
       logical, parameter :: debug = .false.
 
@@ -3098,7 +3098,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), pointer :: coef_3rd_order
 
-      integer, dimension(:), pointer :: bdyMaskCell    ! regional_MPAS addition
+      integer, dimension(:), pointer :: bdyMaskCell, bdyMaskEdge    ! regional_MPAS addition
 
       logical :: local_advance_density
 
@@ -3149,18 +3149,9 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
 
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+      call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
 
       if (local_advance_density) then
-!      call atm_advance_scalars_work(num_scalars, nCells, nVertLevels, dt, &
-!             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-!             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-!             coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
-!             uhAvg, wwAvg, deriv_two, dvEdge, &
-!             cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
-!             scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-!             nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
-!             nCellsSolve, nEdges, horiz_flux_arr, &
-!             local_advance_density, scalar_tend, rho_zz_int)
       call atm_advance_scalars_work_new(num_scalars, nCells, nVertLevels, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
@@ -3168,21 +3159,11 @@ module atm_time_integration
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-             bdyMaskCell,  &
+             bdyMaskCell, bdyMaskEdge, &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              local_advance_density, scalar_tend, rho_zz_int)
       else
-!      call atm_advance_scalars_work(num_scalars, nCells, nVertLevels, dt, &
-!             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-!             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-!             coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
-!             uhAvg, wwAvg, deriv_two, dvEdge, &
-!             cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
-!             scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-!             nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
-!             nCellsSolve, nEdges, horiz_flux_arr, &
-!             local_advance_density)
       call atm_advance_scalars_work_new(num_scalars, nCells, nVertLevels, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
@@ -3190,14 +3171,13 @@ module atm_time_integration
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-             bdyMaskCell,  &
+             bdyMaskCell, bdyMaskEdge, &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              local_advance_density)
       end if
 
    end subroutine atm_advance_scalars
-
 
    subroutine atm_advance_scalars_work( num_scalars_dummy, nCells, nVertLevels_dummy, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -3477,7 +3457,7 @@ module atm_time_integration
              uhAvg, wwAvg, deriv_two, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
              scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-             bdyMaskCell,  &
+             bdyMaskCell, bdyMaskEdge, &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              advance_density, scalar_tend, rho_zz_int)
@@ -3536,7 +3516,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout), optional :: scalar_tend
       real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout), optional :: rho_zz_int
       real (kind=RKIND), dimension(:), intent(in) :: invAreaCell
-      integer, dimension(:), intent(in) :: bdyMaskCell  ! regional_MPAS addition
+      integer, dimension(:), intent(in) :: bdyMaskCell, bdyMaskEdge ! regional_MPAS addition
       integer, intent(in) :: nCellsSolve, nEdges
 
       integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
@@ -3556,6 +3536,7 @@ module atm_time_integration
 
       real (kind=RKIND) :: weight_time_old, weight_time_new
       real (kind=RKIND), dimension(num_scalars,nVertLevels) :: scalar_tend_column  ! local storage to accumulate tendency
+      real (kind=RKIND) :: u_direction, u_positive, u_negative
 
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
           ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
@@ -3589,6 +3570,8 @@ module atm_time_integration
 
 
       do iEdge=edgeStart,edgeEnd
+
+         if( (.not.regional_mpas) .or. (bdyMaskEdge(iEdge) .lt. nRelaxZone-1) )  then  ! full flux calculation
 
          select case(nAdvCellsForEdge(iEdge))
 
@@ -3637,6 +3620,24 @@ module atm_time_integration
             end do
 
          end select
+
+         else if(regional_mpas .and. (bdyMaskEdge(iEdge) .ge. nRelaxZone-1) .and. (bdyMaskEdge(iEdge) .le. nRelaxZone) ) then
+          !  upwind flux evaluation for outermost 2 edges in specified zone
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
+            do k=1,nVertLevels
+               u_direction = sign(0.5_RKIND,uhAvg(k,iEdge))
+               u_positive = dvEdge(iEdge)*abs(u_direction + 0.5_RKIND)
+               u_negative = dvEdge(iEdge)*abs(u_direction - 0.5_RKIND)
+!DIR$ IVDEP
+               do iScalar=1,num_scalars
+                  horiz_flux_arr(iScalar,k,iEdge) = u_positive*scalar_new(iScalar,k,cell1) + u_negative*scalar_new(iScalar,k,cell2)
+               end do
+            end do
+
+          end if ! end of regional MPAS test
+
       end do
 
 !$OMP BARRIER
@@ -3769,7 +3770,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
 
-      integer, dimension(:), pointer :: bdyMaskCell  ! regional_MPAS addition
+      integer, dimension(:), pointer :: bdyMaskCell, bdyMaskEdge  ! regional_MPAS addition
 
       integer, pointer :: nCellsSolve
 
@@ -3807,6 +3808,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
 
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)  ! MPAS_regional addition
+      call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)  ! MPAS_regional addition
 
       call atm_advance_scalars_mono_work(block, state, nCells, nEdges, nVertLevels, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -3816,7 +3818,7 @@ module atm_time_integration
                                    edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
-                                   bdyMaskCell, &
+                                   bdyMaskCell, bdyMaskEdge, &
                                    advance_density, rho_zz_int)
 
    end subroutine atm_advance_scalars_mono
@@ -3830,7 +3832,7 @@ module atm_time_integration
                                    edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
-                                   bdyMaskCell, &
+                                   bdyMaskCell, bdyMaskEdge, &
                                    advance_density, rho_zz_int)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
@@ -3889,7 +3891,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(in) :: wwAvg
       real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invAreaCell
       integer, dimension(:,:), intent(in) :: cellsOnEdge, cellsOnCell, edgesOnCell
-      integer, dimension(:) :: bdyMaskCell
+      integer, dimension(:) :: bdyMaskCell, bdyMaskEdge
       real (kind=RKIND), dimension(:,:), intent(in) :: edgesOnCell_sign
 
       integer, dimension(:,:), intent(in) :: advCellsForEdge
@@ -4236,6 +4238,12 @@ module atm_time_integration
                       (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
                flux_tmp(k,iEdge) = dt * flux_arr(k,iEdge) - flux_upwind_tmp(k,iEdge)
             end do
+
+            if( regional_mpas .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
+               flux_tmp(:,iEdge) = 0.
+               flux_arr(:,iEdge) = flux_upwind_tmp(:,iEdge)
+            end if
+
          end do
 !$OMP BARRIER
          do iCell=cellSolveStart,cellSolveEnd
@@ -4326,6 +4334,11 @@ module atm_time_integration
                          (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
                   flux_arr(k,iEdge) = dt*flux_arr(k,iEdge) - flux_upwind
                end do
+
+               if( regional_mpas .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
+                  flux_arr(:,iEdge) = 0.
+               end if
+
             end if
          end do
 
