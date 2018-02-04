@@ -30,16 +30,10 @@ def _get_datenames(rundir, casename, case):
     """
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
 
-    # KDR
     # The MULTI_DRIVER option requires a more careful search for dates.
     # When True, each date has MULTI_DRIVER cpl_####.r files.
     ndriver = case.get_value('MULTI_DRIVER')
     logger.debug("_get_datenames:  ndriver = {} ".format(ndriver))
-   
-    # glob uses shell style wildcards:
-    #   [!chars], instead of [^chars]).
-    #   ? matches a single char, instead of .
-    #   * matches everything
     if ndriver :
        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
     else:
