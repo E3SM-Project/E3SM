@@ -350,29 +350,73 @@ contains
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
         ! This is not in a threaded region, so no openMP pragmas are needed.
-        do iCell = 1, nCells
-           if (landIceMask(iCell)==1) then
-              ! Turn off salinity restoring in this cell
-              activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = 0.0_RKIND
-           else
-              ! Turn on salinity restoring in this cell
+        if ( associated(landIceMask)) then
+          if (config_salinity_restoring_under_sea_ice) then
+            ! Simulation has landIceMask AND config_salinity_restoring_under_sea_ice=.true.
+            do iCell = 1, nCells
+              if (landIceMask(iCell)==1) then
+                ! Turn off salinity restoring in this cell
+                activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = 0.0_RKIND
+              else
+                ! Turn on salinity restoring in this cell
+                deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
+                if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
+                if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+
+                ! Salinity restoring below sea ice is always on, regardless of iceFraction value
+                activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
+              endif
+            end do
+          else
+            ! Simulation has landIceMask AND config_salinity_restoring_under_sea_ice=.false. (default)
+            do iCell = 1, nCells
+              if (landIceMask(iCell)==1) then
+                ! Turn off salinity restoring in this cell
+                activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = 0.0_RKIND
+              else
+                ! Turn on salinity restoring in this cell
+                deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
+                if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
+                if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+
+                if (config_salinity_restoring_under_sea_ice) then
+                   ! Salinity restoring below sea ice is always on, regardless of
+                   ! iceFraction value
+                   activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
+                else
+                   ! Salinity restoring below sea ice tapers below partial sea ice
+                   ! coverage, from full in the open ocean to zero when iceFraction=1.0
+                   activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = &
+                      deltaS*(1.0_RKIND - iceFraction(iCell))
+                endif
+              endif
+            end do
+          endif
+        else
+          if (config_salinity_restoring_under_sea_ice) then
+            ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.true.
+            do iCell = 1, nCells
               deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
               if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
               if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
 
-              if (config_salinity_restoring_under_sea_ice) then
-                 ! Salinity restoring below sea ice is always on, regardless of
-                 ! iceFraction value
-                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
-              else
-                 ! Salinity restoring below sea ice tapers below partial sea ice
-                 ! coverage, from full in the open ocean to zero when iceFraction=1.0
-                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = &
-                    deltaS*(1.0_RKIND - iceFraction(iCell))
-              endif
+              ! Salinity restoring below sea ice is always on, regardless of iceFraction value
+              activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
+            end do
+          else
+            ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.false. (default)
+            do iCell = 1, nCells
+                deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
+                if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
+                if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
 
-           endif
-        end do
+                ! Salinity restoring below sea ice tapers below partial sea ice
+                ! coverage, from full in the open ocean to zero when iceFraction=1.0
+                activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = &
+                   deltaS*(1.0_RKIND - iceFraction(iCell))
+            end do
+          endif
+        endif
 
         do iCell=1,nCellsSolve
            deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
