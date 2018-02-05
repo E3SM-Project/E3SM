@@ -10,7 +10,7 @@ module TotalWaterAndHeatMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
-  use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb
+  use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
   use ColumnType         , only : col_pp
   use LandunitType       , only : lun_pp
   use subgridAveMod      , only : p2c
@@ -22,6 +22,8 @@ module TotalWaterAndHeatMod
   use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon      , only : icol_road_perv, icol_road_imperv
   use landunit_varcon    , only : istdlak, istsoil,istcrop,istwet,istice,istice_mec
+  use VegetationType     , only : veg_pp
+  use LakeStateType      , only : lakestate_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -124,7 +126,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeWaterMassLake(bounds, num_lakec, filter_lakec, &
-       waterstate_inst, water_mass)
+       waterstate_inst, lakestate_vars, water_mass)
     !
     ! !DESCRIPTION:
     ! Compute total water mass for all lake columns
@@ -134,6 +136,7 @@ contains
     integer                  , intent(in)    :: num_lakec                  ! number of column lake points in column filter
     integer                  , intent(in)    :: filter_lakec(:)            ! column filter for lake points
     type(waterstate_type)    , intent(in)    :: waterstate_inst
+    type(lakestate_type)     , intent(in)    :: lakestate_vars
     real(r8)                 , intent(inout) :: water_mass( bounds%begc: ) ! computed water mass (kg m-2)
     !
     ! !LOCAL VARIABLES:
@@ -151,6 +154,7 @@ contains
          num_lakec = num_lakec, &
          filter_lakec = filter_lakec, &
          waterstate_inst = waterstate_inst, &
+         lakestate_vars  = lakestate_vars, &
          liquid_mass = liquid_mass(bounds%begc:bounds%endc), &
          ice_mass = ice_mass(bounds%begc:bounds%endc))
 
@@ -182,7 +186,7 @@ contains
     real(r8)                 , intent(inout) :: ice_mass( bounds%begc: )    ! computed ice mass (kg m-2)
     !
     ! !LOCAL VARIABLES:
-    integer :: c, j, fc                  ! indices
+    integer  :: c, j, fc, l, p                  ! indices
     logical  :: has_h2o  ! whether this point potentially has water to add
     real(r8) :: h2ocan_col(bounds%begc:bounds%endc)  ! canopy water (mm H2O)
     real(r8) :: snocan_col(bounds%begc:bounds%endc)  ! canopy snow water (mm H2O)
@@ -236,10 +240,6 @@ contains
        ! where FATES hydraulics is not turned on, this total_plant_stored_h2o is
        ! non-changing, and is set to 0 for a trivial solution.
 
-       liqcan = h2ocan_col(c) - snocan_col(c)
-       liquid_mass(c) = liquid_mass(c) + liqcan + total_plant_stored_h2o(c)
-       ice_mass(c) = ice_mass(c) + snocan_col(c)
-
        if (snl(c) < 0) then
           ! Loop over snow layers
           do j = snl(c)+1,0
@@ -252,40 +252,15 @@ contains
           ice_mass(c) = ice_mass(c) + h2osno(c)
        end if
 
-       !if (col_pp%hydrologically_active(c)) then
-          ! It's important to exclude non-hydrologically-active points, because some of
-          ! them have wa set, but seemingly incorrectly (set to 4000).
-
-          ! NOTE(wjs, 2017-03-23) We subtract aquifer_water_baseline because water in the
-          ! unconfined aquifer is in some senses a virtual water pool. For CLM45 physics,
-          ! it isn't clear to me if this subtraction is the "right" thing to do (it can
-          ! lead to a net negative value, though that's probably okay). But we definitely
-          ! want to do it for CLM5 physics: there, wa stays fixed at 5000 for
-          ! hydrologically-active columns, yet this apparently doesn't interact with the
-          ! system, so we don't want to count that water mass in the total column water.
-          liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
-       !end if
-
-       if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
-            .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
-          ! Nothing more to add in this case
-       else
-          liquid_mass(c) = liquid_mass(c) + h2osfc(c)
-       end if
     end do
 
     ! Soil water content
     do j = 1, nlevgrnd
        do fc = 1, num_nolakec
           c = filter_nolakec(fc)
-          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. &
+              col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
              has_h2o = .false.
-          else if (col_pp%itype(c) == icol_roof) then
-             if (j <= nlevurb) then
-                has_h2o = .true.
-             else
-                has_h2o = .false.
-             end if
           else
              has_h2o = .true.
           end if
@@ -293,17 +268,47 @@ contains
           if (has_h2o) then
              liquid_mass(c) = liquid_mass(c) + h2osoi_liq(c,j)
              ice_mass(c) = ice_mass(c) + h2osoi_ice(c,j)
-          end if
+         end if
        end do
     end do
 
-    end associate
+    do fc = 1, num_nolakec
+       c = filter_nolakec(fc)
+       l = col_pp%landunit(c)
+       if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
+            .or. (lun_pp%itype(l) == istwet                                   )  &
+            .or. (lun_pp%itype(l) == istice                                   )  &
+            .or. (lun_pp%itype(l) == istice_mec                               )  &
+            .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
+          liquid_mass(c) = liquid_mass(c) + wa(c)
+       end if
+       l = col_pp%landunit(c)
+
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
+          do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
+             if (veg_pp%active(p)) then
+                liquid_mass(c) = liquid_mass(c) + h2ocan_patch(p) * veg_pp%wtcol(p)
+            end if
+          end do
+       end if
+       !liqcan = h2ocan_col(c) - snocan_col(c)
+       !liquid_mass(c) = liquid_mass(c) + liqcan + total_plant_stored_h2o(c)
+       ice_mass(c)    = ice_mass(c) + snocan_col(c)
+
+       if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
+            .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
+          ! Nothing more to add in this case
+       else
+          !liquid_mass(c) = liquid_mass(c) +  h2osfc(c)
+       end if
+    end do
+  end associate
 
   end subroutine ComputeLiqIceMassNonLake
 
   !-----------------------------------------------------------------------
   subroutine ComputeLiqIceMassLake(bounds, num_lakec, filter_lakec, &
-       waterstate_inst, liquid_mass, ice_mass)
+       waterstate_inst, lakestate_vars, liquid_mass, ice_mass)
     !
     ! !DESCRIPTION:
     ! Compute total water mass for all lake columns, separated into liquid and ice
@@ -316,6 +321,7 @@ contains
     integer               , intent(in)    :: num_lakec                   ! number of column lake points in column filter
     integer               , intent(in)    :: filter_lakec(:)             ! column filter for lake points
     type(waterstate_type) , intent(in)    :: waterstate_inst
+    type(lakestate_type)  , intent(in)    :: lakestate_vars
     real(r8)              , intent(inout) :: liquid_mass( bounds%begc: ) ! computed liquid water mass (kg m-2)
     real(r8)              , intent(inout) :: ice_mass( bounds%begc: )    ! computed ice mass (kg m-2)
     !
@@ -367,7 +373,16 @@ contains
        end do
     end do
 
-    end associate
+    do fc = 1, num_lakec
+       c = filter_lakec(fc)
+       do j = 1,nlevlak
+          liquid_mass(c) = liquid_mass(c) + (1 - lakestate_vars%lake_icefrac_col(c,j)) * col_pp%dz_lake(c,j) * denh2o
+          ice_mass(c)    = ice_mass(c)    +      lakestate_vars%lake_icefrac_col(c,j)  * col_pp%dz_lake(c,j) * denh2o
+          ! lake layers do not change thickness when freezing, so denh2o should be used
+          ! (thermal properties are appropriately adjusted; see LakeTemperatureMod)
+       end do
+    end do
+  end associate
 
   end subroutine ComputeLiqIceMassLake
 

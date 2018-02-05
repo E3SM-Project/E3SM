@@ -81,7 +81,7 @@ contains
     call dyn_water_content(bounds,                                        &
          num_nolakec, filter_nolakec,                                     &
          num_lakec, filter_lakec,                                         &
-         soilhydrology_vars, waterstate_vars,                             &
+         soilhydrology_vars, waterstate_vars, lakestate_vars,             &
          liquid_mass = waterstate_vars%liq1_grc(bounds%begg:bounds%endg), &
          ice_mass    = waterstate_vars%ice1_grc(bounds%begg:bounds%endg))
 
@@ -99,7 +99,7 @@ contains
   subroutine dyn_hwcontent_final(bounds, &
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
-       urbanparams_vars, soilstate_vars, soilhydrology_vars, &
+       urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
     !
     ! Should be called AFTER all subgrid weight updates this time step
@@ -117,6 +117,7 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
+    type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(energyflux_type)    , intent(inout) :: energyflux_vars
@@ -136,7 +137,7 @@ contains
     call dyn_water_content(bounds, &
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
-         soilhydrology_vars, waterstate_vars, &
+         soilhydrology_vars, waterstate_vars, lakestate_vars, &
          liquid_mass = waterstate_vars%liq2_grc(bounds%begg:bounds%endg), &
          ice_mass    = waterstate_vars%ice2_grc(bounds%begg:bounds%endg))
 
@@ -153,7 +154,7 @@ contains
           delta_liq(g) = 0._r8
           delta_ice(g) = 0._r8
           delta_heat(g) = 0._r8
-       end do
+      end do
     else
        do g = begg, endg
           delta_liq(g)  = waterstate_vars%liq2_grc(g) - waterstate_vars%liq1_grc(g)
@@ -190,7 +191,7 @@ contains
   subroutine dyn_water_content(bounds, &
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
-       soilhydrology_vars, waterstate_vars, &
+       soilhydrology_vars, waterstate_vars, lakestate_vars, &
        liquid_mass, ice_mass)
     !
     ! !DESCRIPTION:
@@ -204,6 +205,7 @@ contains
     integer                  , intent(in)    :: filter_lakec(:)
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(lakestate_type)     , intent(in)    :: lakestate_vars
     real(r8)                 , intent(out)   :: liquid_mass( bounds%begg: ) ! kg m-2
     real(r8)                 , intent(out)   :: ice_mass( bounds%begg: )    ! kg m-2
     !
@@ -223,20 +225,20 @@ contains
          ice_mass_col(bounds%begc:bounds%endc))
 
     call ComputeLiqIceMassLake(bounds, num_lakec, filter_lakec, &
-         waterstate_vars, &
+         waterstate_vars, lakestate_vars, &
          liquid_mass_col(bounds%begc:bounds%endc), &
          ice_mass_col(bounds%begc:bounds%endc))
 
     call c2g(bounds, &
          carr = liquid_mass_col(bounds%begc:bounds%endc), &
          garr = liquid_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'urbanf', &
+         c2l_scale_type = 'unity', &
          l2g_scale_type = 'unity')
 
     call c2g(bounds, &
          carr = ice_mass_col(bounds%begc:bounds%endc), &
          garr = ice_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'urbanf', &
+         c2l_scale_type = 'unity', &
          l2g_scale_type = 'unity')
 
   end subroutine dyn_water_content

@@ -292,7 +292,7 @@ contains
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
-            urbanparams_vars, soilstate_vars, soilhydrology_vars, &
+            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
             waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
 
        if (use_cn) then
