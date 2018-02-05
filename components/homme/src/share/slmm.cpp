@@ -481,8 +481,8 @@ struct SphereGeometry {
   static void normalize (V v) {
     scale(1.0/std::sqrt(norm2(v)), v);
   }
-  template <typename CV> KOKKOS_INLINE_FUNCTION
-  static Real dot_c_amb (const CV c, const CV a, const CV b) {
+  template <typename CVC, typename CVA, typename CVB> KOKKOS_INLINE_FUNCTION
+  static Real dot_c_amb (const CVC c, const CVA a, const CVB b) {
     return c[0]*(a[0] - b[0]) + c[1]*(a[1] - b[1]) + c[2]*(a[2] - b[2]);
   }
   template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
@@ -519,8 +519,8 @@ struct SphereGeometry {
   }
 
   // Is v inside the line anchored at a with inward-facing normal n?
-  template <typename CV> KOKKOS_INLINE_FUNCTION
-  static bool inside (const CV v, const CV a, const CV n) {
+  template <typename CVV, typename CVA, typename CVN> KOKKOS_INLINE_FUNCTION
+  static bool inside (const CVV v, const CVA a, const CVN n) {
     return dot_c_amb(n, v, a) >= 0;
   }
 
@@ -2359,21 +2359,45 @@ int dpotrs (char uplo, int n, int nrhs, const double* a, int lda, double* bx,
   return info;
 }
 
-struct Remapper {
-  typedef std::shared_ptr<Remapper> Ptr;
+struct Advecter {
+  typedef std::shared_ptr<Advecter> Ptr;
   typedef siqk::sh::Mesh<ko::HostSpace> Mesh;
 
-  Remapper (const Int np, const Int nelem)
-    : np_(np), np2_(np*np), np4_(np2_*np2_), tq_order_(12)
+  struct Alg {
+    enum Enum {
+      jct,             // Cell-integrated Jacobian-combined transport.
+      csl_gll,         // Intended to mimic original Fortran CSL.
+      csl_gll_subgrid, // Stable np=4 subgrid reconstruction.
+      csl_gll_exp
+    };
+    static Enum convert (Int alg) {
+      switch (alg) {
+      case 2: return jct;
+      case 10: return csl_gll;
+      case 11: return csl_gll_subgrid;
+      case 12: return csl_gll_exp;
+      default: ir_throw_if(true, "transport_alg " << alg << " is invalid.");
+      }
+    }
+    static bool is_cisl (const Enum& alg) { return alg == jct; }
+    static bool is_subgrid (const Enum& alg) { return alg == csl_gll_subgrid; }
+  };
+
+  Advecter (const Int np, const Int nelem, const Int transport_alg)
+    : alg_(Alg::convert(transport_alg)),
+      np_(np), np2_(np*np), np4_(np2_*np2_), tq_order_(12)
   {
-    mass_mix_.resize(np4_);
     local_mesh_.resize(nelem);
+    if (Alg::is_cisl(alg_))
+      mass_mix_.resize(np4_);
   }
 
   Int np  () const { return np_ ; }
   Int np2 () const { return np2_; }
   Int np4 () const { return np4_; }
   Int tq_order () const { return tq_order_; }
+  Alg::Enum alg () const { return alg_; }
+  bool is_cisl () const { return Alg::is_cisl(alg_); }
 
   template <typename Array3D>
   void init_local_mesh_if_needed (const Int ie, const Array3D& corners) {
@@ -2458,7 +2482,10 @@ struct Remapper {
 
 private:
 
-  const Int np_, np2_, np4_, tq_order_;
+  const Alg::Enum alg_;
+  const Int np_, np2_, np4_;
+  // For JCT:
+  const Int tq_order_;
   std::vector<Real> mass_tgt_, mass_mix_, rhs_;
   std::vector<Mesh> local_mesh_;
 };
@@ -2520,6 +2547,103 @@ int unittest () {
 }
 } // namespace ir
 
+namespace csl {
+using siqk::Int;
+using siqk::Real;
+typedef Int Size;
+
+static const Real sqrt5 = std::sqrt(5.0);
+static const Real oosqrt5 = 1.0 / sqrt5;
+
+void gll_np4_eval (const Real x, Real y[4]) {
+  static constexpr Real oo8 = 1.0/8.0;
+  const Real x2 = x*x;
+  y[0] = (1.0 - x)*(5.0*x2 - 1.0)*oo8;
+  y[1] = -sqrt5*oo8*(sqrt5 - 5.0*x)*(x2 - 1.0);
+  y[2] = -sqrt5*oo8*(sqrt5 + 5.0*x)*(x2 - 1.0);
+  y[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
+}
+
+// Quadratic interpolant across nodes 1,2,3 -- i.e., excluding node 0 -- of the
+// np=4 reference element.
+void outer_eval (const Real& x, Real v[4]) {
+  static const Real
+    xbar = (2*oosqrt5) / (1 + oosqrt5),
+    ooxbar = 1 / xbar,
+    ybar = 1 / (xbar - 1);
+  const Real xn = (x + oosqrt5) / (1 + oosqrt5);
+  v[0] = 0;
+  v[1] = 1 + ybar*xn*((1 - ooxbar)*xn + ooxbar - xbar);
+  v[2] = ybar*ooxbar*xn*(xn - 1);
+  v[3] = ybar*xn*(xbar - xn);
+}
+
+// In the middle region, use the standard GLL np=4 interpolant; in the two outer
+// regions, use an order-reduced interpolant, but one that makes the resulting
+// classical SL method stable.
+void gll_np4_subgrid_eval (const Real& x, Real v[4]) {
+  if (x < -oosqrt5) {
+    outer_eval(-x, v);
+    std::swap(v[0], v[3]);
+    std::swap(v[1], v[2]);
+  } else if (x < oosqrt5)
+    gll_np4_eval(x, v);
+  else
+    outer_eval(x, v);
+}
+
+void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
+  static constexpr Real
+    alpha = 0.5527864045000421,
+    v = 0.426*(1 + alpha),
+    x2 = 0.4472135954999579277,
+    x3 = 1 - x2,
+    det = x2*x3*(x2 - x3),
+    y2 = alpha,
+    y3 = v,
+    c1 = (x3*y2 - x2*y3)/det,
+    c2 = (-x3*x3*y2 + x2*x2*y3)/det;
+  if (x < -oosqrt5 || x > oosqrt5) {
+    if (x < -oosqrt5) {
+      outer_eval(-x, y);
+      std::swap(y[0], y[3]);
+      std::swap(y[1], y[2]);
+    } else
+      outer_eval(x, y);
+    Real y4[4];
+    gll_np4_eval(x, y4);
+    const Real x0 = 1 - std::abs(x);
+    const Real a = (c1*x0 + c2)*x0;
+    for (int i = 0; i < 4; ++i)
+      y[i] = a*y[i] + (1 - a)*y4[i];
+  } else
+    gll_np4_eval(x, y);
+}
+
+//todo Might speed up a little by searching the middle element first.
+Int get_src_cell (const ir::Advecter::Mesh& m, const Real* v) {
+  using ir::slice;
+  using ir::len;
+
+  const Int nc = len(m.e);
+  for (Int ic = 0; ic < nc; ++ic) {
+    const auto cell = slice(m.e, ic);
+    const auto celln = slice(m.en, ic);
+    const Int ne = 4;
+    bool inside = true;
+    for (Int ie = 0; ie < ne; ++ie)
+      if ( ! siqk::SphereGeometry::inside(v, slice(m.p, cell[ie]),
+                                          slice(m.nml, celln[ie]))) {
+        inside = false;
+        break;
+      }
+    if (inside) return ic;
+  }
+
+  return -1;
+}
+} // namespace csl
+
 #ifdef IR_MAIN
 int main (int argc, char** argv) {
   int ret = 0;
@@ -2546,7 +2670,7 @@ namespace ko = Kokkos;
 template <typename T> using FA2 =
   Kokkos::View<T**,    Kokkos::LayoutLeft, Kokkos::HostSpace>;
 template <typename T> using FA3 =
-  Kokkos::View<T***,  Kokkos::LayoutLeft, Kokkos::HostSpace>;
+  Kokkos::View<T***,   Kokkos::LayoutLeft, Kokkos::HostSpace>;
 template <typename T> using FA4 =
   Kokkos::View<T****,  Kokkos::LayoutLeft, Kokkos::HostSpace>;
 template <typename T> using FA5 =
@@ -2581,10 +2705,10 @@ void study (const Int elem_global_id, const Cartesian3D* corners,
   std::cout << ss.str();
 }
 
-static ir::Remapper::Ptr g_remapper;
+static ir::Advecter::Ptr g_advecter;
 
-void slmm_init (const Int np, const Int nelem) {
-  g_remapper = std::make_shared<ir::Remapper>(np, nelem);
+void slmm_init (const Int np, const Int nelem, const Int transport_alg) {
+  g_advecter = std::make_shared<ir::Advecter>(np, nelem, transport_alg);
 }
 
 // On HSW, this demonstrably is not needed; speedup in slmm_project_np4 is a
@@ -2592,23 +2716,13 @@ void slmm_init (const Int np, const Int nelem) {
 // of use on KNL.
 #define IR_ALIGN(decl) Real decl __attribute__((aligned(64)))
 
-void gll_np4_eval (const Real x, Real y[4]) {
-  static constexpr Real oo8 = 1.0/8.0;
-  static const Real sqrt5 = std::sqrt(5.0);
-  const Real x2 = x*x;
-  y[0] = (1.0 - x)*(5.0*x2 - 1.0)*oo8;
-  y[1] = -sqrt5*oo8*(sqrt5 - 5.0*x)*(x2 - 1.0);
-  y[2] = -sqrt5*oo8*(sqrt5 + 5.0*x)*(x2 - 1.0);
-  y[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
-}
-
 void slmm_project_np4 (
   const Int lev, const Int nets, const Int ie,
   const Int nnc, const Int np, const Int nlev, const Int qsize,
   const Real* dep_points_r, const Real* Qj_src_r, const Real* jac_tgt_r,
   const Real* rho_tgt_r, const Int tl_np1, Real* q_r, Real* q_min_r, Real* q_max_r)
 {
-  ir_assert(g_remapper);
+  ir_assert(g_advecter);
   using ir::slice;
 
   static constexpr Int max_num_vertices = 4;
@@ -2632,7 +2746,7 @@ void slmm_project_np4 (
     q_min(q_min_r, np, np, nlev, qsize, ie0+1),
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
 
-  const Real* const M_tgt = g_remapper->M_tgt();
+  const Real* const M_tgt = g_advecter->M_tgt();
   IR_ALIGN(M_mix[my_np4]);
   IR_ALIGN(rhs_r[my_np2*max_qsize]);
   IR_ALIGN(vi_buf[3*max_num_vertices]);
@@ -2651,13 +2765,13 @@ void slmm_project_np4 (
   siqk::TriangleQuadrature tq;
   siqk::RawConstVec3s tq_bary;
   siqk::RawConstArray tq_w;
-  tq.get_coef(g_remapper->tq_order(), tq_bary, tq_w);
+  tq.get_coef(g_advecter->tq_order(), tq_bary, tq_w);
   const Int nq = ir::len(tq_w);
 
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
   FA3<Real> rhs(rhs_r, np, np, qsize);
 
-  const auto& m = g_remapper->local_mesh(ie);
+  const auto& m = g_advecter->local_mesh(ie);
   bool first = true;
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
@@ -2672,7 +2786,7 @@ void slmm_project_np4 (
           slice(vi, i),
           ko::subview(dep_points, ko::ALL(), crnr[i][0], crnr[i][1]));
       siqk::sh::clip_against_poly<siqk::SphereGeometry>(
-        g_remapper->local_mesh(ie), sci, vi, max_num_vertices, vo, no, wrk);
+        g_advecter->local_mesh(ie), sci, vi, max_num_vertices, vo, no, wrk);
     }
 
     // If the intersection is empty, move on.
@@ -2725,12 +2839,12 @@ void slmm_project_np4 (
       for (Int qp = 0; qp < nq; ++qp) { // quad point
         siqk::PlaneGeometry::bary2coord(tvo, tvo+2*ktri, tvo+2*(ktri+1),
                                         slice(tq_bary, qp), tvo_coord);
-        gll_np4_eval(tvo_coord[0], tgi);
-        gll_np4_eval(tvo_coord[1], tgj);
+        csl::gll_np4_eval(tvo_coord[0], tgi);
+        csl::gll_np4_eval(tvo_coord[1], tgj);
         siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
                                         slice(tq_bary, qp), svo_coord);
-        gll_np4_eval(svo_coord[0], sgi);
-        gll_np4_eval(svo_coord[1], sgj);
+        csl::gll_np4_eval(svo_coord[0], sgi);
+        csl::gll_np4_eval(svo_coord[1], sgj);
 
         {
           Int os = 0;
@@ -2824,7 +2938,7 @@ void slmm_project (
   Real* q_r,                      // q(1:np, 1:np, lev, 1:qsize)
   Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
-  ir_assert(g_remapper);
+  ir_assert(g_advecter);
 
   if (np == 4) {
     // This version is thread safe.
@@ -2863,16 +2977,16 @@ void slmm_project (
   siqk::TriangleQuadrature tq;
   siqk::RawConstVec3s tq_bary;
   siqk::RawConstArray tq_w;
-  tq.get_coef(g_remapper->tq_order(), tq_bary, tq_w);
+  tq.get_coef(g_advecter->tq_order(), tq_bary, tq_w);
   const Int nq = ir::len(tq_w);
 
-  auto& rhs_r = g_remapper->rhs_buffer(qsize);
+  auto& rhs_r = g_advecter->rhs_buffer(qsize);
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
   FA3<Real> rhs(rhs_r.data(), np, np, qsize);
-  const Real* const M_tgt = g_remapper->M_tgt();
-  auto& M_mix = g_remapper->mass_mix_buffer();
+  const Real* const M_tgt = g_advecter->M_tgt();
+  auto& M_mix = g_advecter->mass_mix_buffer();
 
-  const auto& m = g_remapper->local_mesh(ie);
+  const auto& m = g_advecter->local_mesh(ie);
   bool first = true;
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
@@ -2889,7 +3003,7 @@ void slmm_project (
           slice(vi, i),
           ko::subview(dep_points, ko::ALL(), crnr[i][0], crnr[i][1]));
       siqk::sh::clip_against_poly<siqk::SphereGeometry>(
-        g_remapper->local_mesh(ie), sci, vi, max_num_vertices, vo, no, wrk);
+        g_advecter->local_mesh(ie), sci, vi, max_num_vertices, vo, no, wrk);
     }
 
     // If the intersection is empty, move on.
@@ -3006,10 +3120,102 @@ void slmm_project (
       for (Int i = 0; i < np; ++i)
         q_max(i,j,lev,q,ie0) = q_max(0,0,lev,q,ie0);
 }
+
+void slmm_csl (
+  const Int lev, const Int nets, const Int ie,
+  const Int nnc, const Int np, const Int nlev, const Int qsize,
+  // Geometry.
+  const Cartesian3D* dep_points_r,     // dep_points(1:np, 1:np)
+  // Fields.
+  const Real* q_src_r,                 // q_src(1:np, 1:np, 1:qsize, 1:nnc)
+  const Real* jac_tgt_r,               // jac_tgt(1:np, 1:np) [unused]
+  // rho_tgt(1:np, 1:np, lev, tl_np1+1) [unused]
+  const Real* rho_tgt_r, const Int tl_np1,
+  // Output target tracer mixing ratio and bounds derived from the domain of
+  // dependence.
+  Real* q_r,                      // q(1:np, 1:np, lev, 1:qsize)
+  Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
+{
+  ir_throw_if(np != 4, "SLMM CSL is supported for np 4 only.");
+  using ir::slice;
+
+  const Int np2 = np*np;
+  const Int ie0 = ie - nets;
+  const auto alg = g_advecter->alg();
+  FA3<const Real>
+    dep_points(reinterpret_cast<const Real*>(dep_points_r), 3, np2);
+  FA4<const Real>
+    q_src(q_src_r, np, np, qsize+1, nnc);
+  FA4<Real>
+    q_tgt(q_r, np, np, nlev, qsize);
+  FA5<Real>
+    q_min(q_min_r, np, np, nlev, qsize, ie0+1),
+    q_max(q_max_r, np, np, nlev, qsize, ie0+1);
+
+  const ir::Basis basis(np, 0);
+  const ir::GLL gll;
+
+  const auto& m = g_advecter->local_mesh(ie);
+  for (Int tvi = 0; tvi < np2; ++tvi) {
+    const Int ti = tvi % np;
+    const Int tj = tvi / np;
+
+    // Determine which cell the departure point is in.
+    const Real* dep_point = dep_points.data() + 3*tvi;
+    const Int sci = csl::get_src_cell(m, dep_point);
+    ir_throw_if(sci == -1, "Departure point is outside of halo.");
+
+    // Get reference point.
+    Real ref_coord[2];
+    siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, sci), dep_point,
+                                  ref_coord[0], ref_coord[1]);
+
+    // Interpolate.
+    Real rx[4], ry[4];
+    switch (alg) {
+    case ir::Advecter::Alg::csl_gll:
+      csl::gll_np4_eval(ref_coord[0], rx);
+      csl::gll_np4_eval(ref_coord[1], ry);
+      break;
+    case ir::Advecter::Alg::csl_gll_subgrid:
+      csl::gll_np4_subgrid_eval(ref_coord[0], rx);
+      csl::gll_np4_subgrid_eval(ref_coord[1], ry);
+      break;
+    case ir::Advecter::Alg::csl_gll_exp:
+      csl::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
+      csl::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
+      break;
+    }
+    for (Int q = 0; q < qsize; ++q) {
+      Real accum = 0;
+      for (Int j = 0; j < np; ++j)
+        for (Int i = 0; i < np; ++i)
+          accum += rx[i] * ry[j] * q_src(i,j,q,sci);
+      q_tgt(ti,tj,lev,q) = accum;
+    }
+
+    //todo Could rm redundant computations of this by storing array of sci and
+    // then uniq'ing it.
+    for (Int q = 0; q < qsize; ++q) {
+      Real q_min_s, q_max_s;
+      q_min_s = q_max_s = q_src(0,0,q,sci);
+      for (Int j = 0; j < np; ++j)
+        for (Int i = 0; i < np; ++i) {
+          const Real q_s = q_src(i,j,q,sci);
+          q_min_s = std::min(q_min_s, q_s);
+          q_max_s = std::max(q_max_s, q_s);
+        }
+      q_min(ti,tj,lev,q,ie0) = q_min_s;
+      q_max(ti,tj,lev,q,ie0) = q_max_s;
+    }
+  }
+}
+
 } // namespace homme
 
-extern "C" void slmm_init_ (homme::Int* np, homme::Int* nelem) {
-  homme::slmm_init(*np, *nelem);
+extern "C" void slmm_init_ (homme::Int* np, homme::Int* nelem,
+                            homme::Int* transport_alg) {
+  homme::slmm_init(*np, *nelem, *transport_alg);
 }
 
 // Figure shtuff out.
@@ -3027,19 +3233,23 @@ extern "C" void slmm_study_ (
 extern "C" void slmm_init_local_mesh_ (
   homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc)
 {
-  homme::g_remapper->init_local_mesh_if_needed(
+  homme::g_advecter->init_local_mesh_if_needed(
     *ie - 1, homme::FA3<const homme::Real>(
       reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc));
-  homme::g_remapper->init_M_tgt_if_needed();
+  homme::g_advecter->init_M_tgt_if_needed();
 }
 
-extern "C" void slmm_project_ (
+extern "C" void slmm_advect_ (
   homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
   homme::Int* qsize, homme::Int* nets, homme::Int* nete,
   homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
   homme::Real* dp3d, homme::Int* tl_np1, homme::Real* q, homme::Real* minq,
   homme::Real* maxq)
 {
-  homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
-                      dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+  if (homme::g_advecter->is_cisl())
+    homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
+                        dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+  else
+    homme::slmm_csl(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
+                    dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
 }

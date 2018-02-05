@@ -92,8 +92,8 @@ module compose_mod
      end subroutine cedr_sl_check
 
      ! For sl_advection's use of incremental remap (IR).
-     subroutine slmm_init(np, nelem)
-       integer, intent(in) :: np, nelem
+     subroutine slmm_init(np, nelem, transport_alg)
+       integer, intent(in) :: np, nelem, transport_alg
      end subroutine slmm_init
 
      subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors)
@@ -108,7 +108,7 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: corners(4), neigh_corners(:,:)
      end subroutine slmm_study
 
-     subroutine slmm_project(lev, ie, nnc, np, nlev, qsize, nets, nete, &
+     subroutine slmm_advect(lev, ie, nnc, np, nlev, qsize, nets, nete, &
           dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq)
        use coordinate_systems_mod, only : cartesian3D_t
        use kinds, only : real_kind
@@ -120,7 +120,7 @@ module compose_mod
             metdet(np,np), dp3d(np,np,nlev,timelevels)
        real(kind=real_kind), intent(out) :: q(np,np,nlev,qsize_d), &
             minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
-     end subroutine slmm_project
+     end subroutine slmm_advect
   end interface
 
 contains

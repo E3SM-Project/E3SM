@@ -52,18 +52,22 @@ subroutine sl_init1(par, elem)
   type(parallel_t) :: par
   type (element_t) :: elem(:)
   integer :: nslots, ie, num_neighbors, need_conservation
+  logical :: slmm, cisl
   
   if (transport_alg > 0) then
+     slmm = transport_alg > 1
+     cisl = transport_alg == 2 .or. transport_alg >= 20
      call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
      nslots = nlev*qsize
-     if (transport_alg > 1) then
+     if (cisl) then
         nslots = nslots + nlev
      end if
      call initghostbuffer3D(ghostbuf_tr,nslots,np)
      call interpolate_tracers_init()
-     if (transport_alg > 1) then
-        call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
-        call slmm_init(np, size(elem))
+     ! All methods should DSS.
+     call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
+     if (slmm) then
+        call slmm_init(np, size(elem), transport_alg)
         do ie = 1, size(elem)
            num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
            call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors)
@@ -73,7 +77,7 @@ subroutine sl_init1(par, elem)
         need_conservation = 1
         ! The IR method is locally conservative, so we don't need QLT to handle
         ! conservation.
-        if (transport_alg > 1) need_conservation = 0
+        if (cisl) need_conservation = 0
         call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
      end if
   endif
@@ -122,41 +126,66 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer                                       :: num_neighbors, scalar_q_bounds
-
+  logical :: slmm, cisl
+  
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
+
+  slmm = transport_alg > 1
+  cisl = transport_alg == 2 .or. transport_alg >= 20
 
   call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
   ! compute displacements for departure grid store in elem%derived%vstar
   call ALE_RKdss (elem, nets, nete, hybrid, deriv, dt, tl)
 
-  if (transport_alg > 1) then
+  if (slmm) then
+
      if (barrier) call perf_barrier(hybrid)
      call t_startf('SLMM_ghost_pack')
-     n = qsize + 1 ! Number of fields to unpack.
-     do ie = nets, nete
+     if (cisl) then
+        n = qsize + 1 ! Number of fields to unpack.
+        do ie = nets, nete
 #if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k,kptr,q)
+           !$omp parallel do private(k,kptr,q)
 #endif
-        do k = 1, nlev
-           kptr = (k-1)*n
-           ! Send rho*Jacobian[ref elem -> sphere].
-           !todo What's the difference between derived.dp and state.dp3d?
-           !elem(ie)%state%Q(:,:,k,1) = elem(ie)%state%dp3d(:,:,k,tl%n0) * elem(ie)%metdet(:,:)
-           elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
-           call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, 1, kptr, elem(ie)%desc)
-           kptr = kptr + 1
-           do q = 1, qsize
-              ! Remap the curious quantity
-              !     (tracer density)*Jacobian[ref elem -> sphere],
-              ! not simply the tracer mixing ratio.
-              elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * elem(ie)%metdet(:,:)
-              call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), np, 1, kptr, elem(ie)%desc)
+           do k = 1, nlev
+              kptr = (k-1)*n
+              ! Send rho*Jacobian[ref elem -> sphere].
+              elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+              call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, &
+                   1, kptr, elem(ie)%desc)
               kptr = kptr + 1
+              do q = 1, qsize
+                 ! Remap the curious quantity
+                 !     (tracer density)*Jacobian[ref elem -> sphere],
+                 ! not simply the tracer mixing ratio.
+                 elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * &
+                      elem(ie)%metdet(:,:)
+                 call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), &
+                      np, 1, kptr, elem(ie)%desc)
+                 kptr = kptr + 1
+              enddo
            enddo
-        enddo
-     end do
+        end do
+     else
+        n = qsize ! Number of fields to unpack.
+        do ie = nets, nete
+#if (defined COLUMN_OPENMP)
+           !$omp parallel do private(k,kptr,q)
+#endif
+           do k = 1, nlev
+              kptr = (k-1)*n
+              do q = 1, qsize
+                 elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) / &
+                      elem(ie)%derived%dp(:,:,k)
+                 call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), &
+                      np, 1, kptr, elem(ie)%desc)
+                 kptr = kptr + 1
+              enddo
+           enddo
+        end do
+     end if
      if (barrier) call perf_barrier(hybrid)
      call t_stopf('SLMM_ghost_pack')
 
@@ -172,25 +201,41 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         !$omp parallel do private(k,kptr,dep_points,u,neigh_q)
 #endif
         do k = 1, nlev
-           call ALE_departure_from_gll(dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+           call ALE_departure_from_gll(dep_points, elem(ie)%derived%vstar(:,:,:,k), &
+                elem(ie), dt)
 
            ! Unpack all tracer neighbor data on level k.
            kptr = (k-1)*n
-           u(:,:,1        ) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
-           u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
-           call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q, np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+           if (cisl) then
+              u(:,:,1        ) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+              u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
+              call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q, &
+                np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+           else
+              u(:,:,1:qsize) = elem(ie)%state%Q(:,:,k,1:qsize)
+              call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q(:,:,1:qsize,:), &
+                   np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u(:,:,1:qsize))
+           end if
 
-           call slmm_project(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
+           call slmm_advect(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
                 dep_points, &
-                neigh_q, &                     ! (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
-                elem(ie)%metdet, &             ! Jacobian[ref elem -> sphere] on target element.
-                elem(ie)%state%dp3d, tl%np1, & ! Total density to get mixing ratios.
-                elem(ie)%state%Q, minq, maxq)  ! Outputs are all mixing ratios.
+                ! cisl: (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
+                !  csl: Mixing ratios.
+                neigh_q, &
+                ! cisl: Jacobian[ref elem -> sphere] on target element.
+                !  csl: Unused.
+                elem(ie)%metdet, &
+                ! cisl: Total density to get mixing ratios.
+                !  csl: Unused.
+                elem(ie)%state%dp3d, tl%np1, &
+                ! Outputs are all mixing ratios.
+                elem(ie)%state%Q, minq, maxq)
         end do
      end do
      if (barrier) call perf_barrier(hybrid)
      call t_stopf('SLMM_project')
-  else
+
+  else ! Original CSL method.
      if (barrier) call perf_barrier(hybrid)
      call t_startf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
      do ie=nets,nete
@@ -210,6 +255,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
      do ie=nets,nete
         num_neighbors = elem(ie)%desc%actual_neigh_edges+1
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k,kptr,dep_points,elem_indexes,para_coords,u,neigh_q,f,g)
+#endif
         do k=1,nlev
 
            ! find departure points
@@ -253,7 +301,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   if (semi_lagrange_cdr_alg > 1) then
      scalar_q_bounds = 0
      ! The IR method has uniform bounds on q throughout a cell.
-     if (transport_alg > 1) scalar_q_bounds = 1
+     if (cisl) scalar_q_bounds = 1
 
      call cedr_sl_set_pointers_begin(nets, nete)
      do ie = nets, nete
@@ -281,12 +329,13 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            enddo
         end do
      end if
-  end if
-  if (transport_alg > 1) then
-     call t_startf('SLMM_dss')
-     call slmm_dss(elem, nets, nete, hybrid, np1_qdp)
+     ! All transport algs should DSS. I still permit the CSL-Cobra code path not
+     ! to; they commented out the DSS code long ago for some reason. Maybe Cobra
+     ! does it.
+     call t_startf('SL_dss')
+     call dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
      if (barrier) call perf_barrier(hybrid)
-     call t_stopf('SLMM_dss')
+     call t_stopf('SL_dss')
   end if
   if (semi_lagrange_cdr_alg > 1 .and. semi_lagrange_cdr_check) then
      call t_startf('CEDR_check')
@@ -1040,7 +1089,7 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
   end do
 end subroutine ALE_parametric_coords
 
-subroutine slmm_dss(elem, nets, nete, hybrid, np1_qdp)
+subroutine dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
   use edgetype_mod,    only : EdgeBuffer_t
   use bndry_mod,       only : bndry_exchangev
   use hybrid_mod,      only : hybrid_t
@@ -1073,7 +1122,7 @@ subroutine slmm_dss(elem, nets, nete, hybrid, np1_qdp)
         end do
      end do
   end do
-end subroutine slmm_dss
+end subroutine dss_Qdp
 
 ! Replacement for edge_mod_base::ghostvpack_unoriented, which has a strange
 ! 'threadsafe' module variable that causes a race condition when HORIZ and

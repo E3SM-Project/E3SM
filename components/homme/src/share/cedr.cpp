@@ -1122,7 +1122,8 @@ void QLT<ES>::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
       cedr_kernel_throw_if(true, "set_Q: invalid problem_type.");
     }
     if (problem_type & ProblemType::conserve) {
-      cedr_kernel_throw_if(Qm_prev < 0, "Qm_prev was not provided to set_Q.");
+      cedr_kernel_throw_if(Qm_prev < -0.5,
+                           "Qm_prev was not provided to set_Q.");
       bd[3] = Qm_prev;
     }
   }
