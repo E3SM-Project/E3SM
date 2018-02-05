@@ -1,6 +1,8 @@
 """
-Implementation of the CIME data assimilation test: Tests simple DA script
-which does not change the CAM input. Compares answers to non-DA run.
+Implementation of the CIME data assimilation test:
+Compares standard run with run broken into two data assimilation cycles.
+Runs a simple DA script on each cycle which performs checks but does not
+change any model state (restart files). Compares answers of two runs.
 
 """
 
@@ -18,8 +20,10 @@ from CIME.case_setup import case_setup
 class DAE(SystemTestsCompareTwo):
 ###############################################################################
     """
-    Implementation of the CIME data assimilation test: Tests simple DA script
-    which does not change the CAM input. Compares answers to non-DA run.
+    Implementation of the CIME data assimilation test:
+    Compares standard run with a run broken into two data assimilation cycles.
+    Runs a simple DA script on each cycle which performs checks but does not
+    change any model state (restart files). Compares answers of two runs.
     Refers to a faux data assimilation script in the
     cime/scripts/data_assimilation directory
     """

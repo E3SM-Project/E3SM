@@ -1,9 +1,9 @@
 """
 Implementation of the CIME pause/resume test: Tests having driver
 'pause' (write cpl restart file) and 'resume' (read cpl restart file)
-without changing restart file. Compare to non-pause/resume run.
+possibly changing the restart file. Compared to non-pause/resume run.
 Test can also be run with other component combinations.
-
+Test requires DESP component to function correctly.
 """
 
 import os.path
@@ -21,7 +21,7 @@ class PRE(SystemTestsCompareTwo):
     """
     Implementation of the CIME pause/resume test: Tests having driver
     'pause' (write cpl and/or other restart file(s)) and 'resume'
-    (read cpl and/or other restart file(s)) without changing restart
+    (read cpl and/or other restart file(s)) possibly changing restart
     file. Compare to non-pause/resume run.
     """
 
