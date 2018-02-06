@@ -348,7 +348,7 @@ CONTAINS
     if (write_restart) then
        call t_startf('dwav_restart')
        call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
-       write(rest_file,"(6aa)") &
+       write(rest_file,"(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
        write(rest_file_strm,"(6a)") &

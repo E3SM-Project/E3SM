@@ -1131,6 +1131,9 @@ contains
 
   subroutine cime_init()
 
+    character(CL), allocatable :: comp_resume(:)
+
+
 104 format( A, i10.8, i8)
 
   !-----------------------------------------------------------------------------
@@ -2019,6 +2022,22 @@ contains
           call prep_lnd_calc_g2x_lx(timer='CPL:init_gllndnd')
        endif
     endif
+
+    !----------------------------------------------------------
+    !| Clear all resume signals
+    !----------------------------------------------------------
+    allocate(comp_resume(num_inst_max))
+    comp_resume = ''
+    call seq_infodata_putData(infodata,          &
+         atm_resume=comp_resume(1:num_inst_atm), &
+         lnd_resume=comp_resume(1:num_inst_lnd), &
+         ocn_resume=comp_resume(1:num_inst_ocn), &
+         ice_resume=comp_resume(1:num_inst_ice), &
+         glc_resume=comp_resume(1:num_inst_glc), &
+         rof_resume=comp_resume(1:num_inst_rof), &
+         wav_resume=comp_resume(1:num_inst_wav), &
+         cpl_resume=comp_resume(1))
+    deallocate(comp_resume)
 
     !----------------------------------------------------------
     !| Write histinit output file

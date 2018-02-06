@@ -1,38 +1,20 @@
 """
-Interface to the env_archive.xml file.  This class inherits from GenericXML
+Interface to the env_archive.xml file.  This class inherits from EnvBase
 """
 from CIME.XML.standard_module_setup import *
 
-from CIME.XML.generic_xml import GenericXML
-from CIME.XML.headers import Headers
+from CIME.XML.env_base import EnvBase
 
 logger = logging.getLogger(__name__)
 
-class EnvArchive(GenericXML):
+class EnvArchive(EnvBase):
 
     def __init__(self, case_root=None, infile="env_archive.xml"):
         """
         initialize an object interface to file env_archive.xml in the case directory
         """
-        logger.debug("Case_root = {}".format(case_root))
-
-        # Check/Build path to env_archive.xml
-        if case_root is None:
-            case_root = os.getcwd()
-
-        if os.path.isabs(infile):
-            fullpath = infile
-        else:
-            fullpath = os.path.join(case_root, infile)
-
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_archive.xsd")
-        GenericXML.__init__(self, fullpath, schema=schema)
-
-        # The following creates the CASEROOT/env_archive.xml contents in self.root
-        if not os.path.isfile(fullpath):
-            headerobj = Headers()
-            headernode = headerobj.get_header_node(os.path.basename(fullpath))
-            self.add_child(headernode)
+        EnvBase.__init__(self, case_root, infile, schema=schema)
 
     def get_entries(self):
         return self.get_children('comp_archive_spec')
@@ -74,3 +56,6 @@ class EnvArchive(GenericXML):
             content_node = self.get_child('rpointer_content', root=rpointer_node)
             rpointer_items.append([self.text(file_node),self.text(content_node)])
         return rpointer_items
+
+    def get_type_info(self, vid):
+        return "char"

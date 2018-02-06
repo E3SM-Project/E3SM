@@ -293,12 +293,12 @@
       <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/csh</init_path>
-      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/sh</init_path>
-      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -334,13 +334,14 @@
 	<command name="load">netcdf-mpi/4.4.1.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.4.1.1</command>
-	<command name="load">pnetcdf/1.8.1</command>
+	<command name="load">mpt/2.15f</command>
+	<command name="load">netcdf-mpi/4.5.0</command>
+	<command name="load">pnetcdf/1.9.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.15f</command>
 	<command name="load">netcdf-mpi/4.5.0</command>
+	<command name="load">pnetcdf/1.9.0</command>
       </modules>
       <modules mpilib="openmpi">
 	<command name="load">openmpi/2.1.0</command>
@@ -350,7 +351,7 @@
 	<command name="load">ncarcompilers/0.4.1</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">netcdf/4.4.1.1</command>
+	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
     <environment_variables>

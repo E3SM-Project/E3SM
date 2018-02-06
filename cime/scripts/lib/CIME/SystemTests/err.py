@@ -30,7 +30,6 @@ class ERR(RestartTest):
         super(ERR, self)._case_two_setup()
         self._case.set_value("DOUT_S", False)
 
-
     def _case_two_custom_prerun_action(self):
         dout_s_root = self._case1.get_value("DOUT_S_ROOT")
         rest_root = os.path.abspath(os.path.join(dout_s_root,"rest"))
