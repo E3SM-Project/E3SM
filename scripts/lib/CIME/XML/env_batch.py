@@ -615,3 +615,37 @@ class EnvBatch(EnvBase):
                 logger.warning("Batch cancel command '{}' failed with error '{}'".format(cmd, out + "\n" + err))
             else:
                 return True
+
+    def compare_xml(self, other):
+        xmldiffs = {}
+        f1batchnodes = self.get_children("batch_system")
+        for bnode in f1batchnodes:
+            f2bnodes = other.get_children("batch_system",
+                                          attributes = self.attrib(bnode))
+            f2bnode=None
+            if len(f2bnodes):
+                f2bnode = f2bnodes[0]
+            f1batchnodes = self.get_children(root=bnode)            
+            for node in f1batchnodes:
+                name = self.name(node)
+                text1 = self.text(node)
+                attribs = self.attrib(node)
+                f2matches = other.scan_children(name, attributes=attribs, root=f2bnode)
+                foundmatch=False
+                for chkmatch in f2matches:
+                    name2 = other.name(chkmatch)
+                    attribs2 = other.attrib(chkmatch)
+                    text2 = other.text(chkmatch)
+                    if(name == name2 and attribs==attribs2 and text1==text2):
+                        foundmatch=True
+                        break
+                if not foundmatch:
+                    xmldiffs[name] = [text1, text2]
+
+        f1groups = self.get_children("group")
+        for node in f1groups:
+            group = self.get(node, "id")
+            f2group = other.get_child("group", attributes={"id":group})
+            xmldiffs.update(super(EnvBatch, self).compare_xml(other,
+                                              root=node, otherroot=f2group))
+        return xmldiffs

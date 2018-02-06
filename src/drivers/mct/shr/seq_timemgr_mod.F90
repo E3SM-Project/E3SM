@@ -62,6 +62,9 @@ module seq_timemgr_mod
   public :: seq_timemgr_pause_component_index ! Index of named component
   public :: seq_timemgr_pause_component_active ! .true. is comp should pause
 
+  ! --- Alert components if they need to do post-data assimilation processing
+  public :: seq_timemgr_data_assimilation_active ! .true. do post-DA
+
   ! ! PUBLIC PARAMETERS:
 
   integer(SHR_KIND_IN),public :: seq_timemgr_histavg_type
@@ -214,6 +217,9 @@ module seq_timemgr_mod
   ! Active pause - resume components
   logical, private :: pause_active(max_clocks) = .false.
 
+  ! Active post-data assimilation components
+  logical, private :: data_assimilation_active(max_clocks) = .false.
+
   type EClock_pointer     ! needed for array of pointers
      type(ESMF_Clock),pointer :: EClock => null()
   end type EClock_pointer
@@ -306,6 +312,15 @@ contains
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
 
+    logical :: pause_active_atm
+    logical :: pause_active_cpl
+    logical :: pause_active_ocn
+    logical :: pause_active_wav
+    logical :: pause_active_glc
+    logical :: pause_active_ice
+    logical :: pause_active_rof
+    logical :: pause_active_lnd
+
     logical :: data_assimilation_atm
     logical :: data_assimilation_cpl
     logical :: data_assimilation_ocn
@@ -363,6 +378,14 @@ contains
          restart_option, restart_n, restart_ymd,                 &
          pause_option,   &
          pause_n,           &
+         pause_active_atm, &
+         pause_active_cpl, &
+         pause_active_ocn, &
+         pause_active_wav, &
+         pause_active_glc, &
+         pause_active_ice, &
+         pause_active_rof, &
+         pause_active_lnd, &
          data_assimilation_atm, &
          data_assimilation_cpl, &
          data_assimilation_ocn, &
@@ -416,6 +439,14 @@ contains
        restart_ymd      = -1
        pause_option     = seq_timemgr_optNever
        pause_n          = -1
+       pause_active_atm = .false.
+       pause_active_cpl = .false.
+       pause_active_ocn = .false.
+       pause_active_wav = .false.
+       pause_active_glc = .false.
+       pause_active_ice = .false.
+       pause_active_rof = .false.
+       pause_active_lnd = .false.
        data_assimilation_atm = .false.
        data_assimilation_cpl = .false.
        data_assimilation_ocn = .false.
@@ -660,14 +691,22 @@ contains
     call shr_mpi_bcast( restart_ymd,          mpicom )
     call shr_mpi_bcast( pause_n,              mpicom )
     call shr_mpi_bcast( pause_option,         mpicom )
-    call shr_mpi_bcast(data_assimilation_atm, mpicom)
-    call shr_mpi_bcast(data_assimilation_cpl, mpicom)
-    call shr_mpi_bcast(data_assimilation_ocn, mpicom)
-    call shr_mpi_bcast(data_assimilation_wav, mpicom)
-    call shr_mpi_bcast(data_assimilation_glc, mpicom)
-    call shr_mpi_bcast(data_assimilation_ice, mpicom)
-    call shr_mpi_bcast(data_assimilation_rof, mpicom)
-    call shr_mpi_bcast(data_assimilation_lnd, mpicom)
+    call shr_mpi_bcast(pause_active_atm,      mpicom )
+    call shr_mpi_bcast(pause_active_cpl,      mpicom )
+    call shr_mpi_bcast(pause_active_ocn,      mpicom )
+    call shr_mpi_bcast(pause_active_wav,      mpicom )
+    call shr_mpi_bcast(pause_active_glc,      mpicom )
+    call shr_mpi_bcast(pause_active_ice,      mpicom )
+    call shr_mpi_bcast(pause_active_rof,      mpicom )
+    call shr_mpi_bcast(pause_active_lnd,      mpicom )
+    call shr_mpi_bcast(data_assimilation_atm, mpicom )
+    call shr_mpi_bcast(data_assimilation_cpl, mpicom )
+    call shr_mpi_bcast(data_assimilation_ocn, mpicom )
+    call shr_mpi_bcast(data_assimilation_wav, mpicom )
+    call shr_mpi_bcast(data_assimilation_glc, mpicom )
+    call shr_mpi_bcast(data_assimilation_ice, mpicom )
+    call shr_mpi_bcast(data_assimilation_rof, mpicom )
+    call shr_mpi_bcast(data_assimilation_lnd, mpicom )
 
     call shr_mpi_bcast( history_n,            mpicom )
     call shr_mpi_bcast( history_option,       mpicom )
@@ -734,33 +773,27 @@ contains
     seq_timemgr_calendar             = shr_cal_calendarName(calendar)
     seq_timemgr_esp_run_on_pause     = esp_run_on_pause
     seq_timemgr_end_restart          = end_restart
-    ! --- Figure out which components (if any) are doing pause this run
     rc = 1
     i = 1
-    if (data_assimilation_atm) then
-       pause_active(seq_timemgr_nclock_atm) = .true.
-    endif
-    if (data_assimilation_cpl) then
-       pause_active(seq_timemgr_nclock_drv) = .true.
-    endif
-    if (data_assimilation_ocn) then
-       pause_active(seq_timemgr_nclock_ocn) = .true.
-    endif
-    if (data_assimilation_wav) then
-       pause_active(seq_timemgr_nclock_wav) = .true.
-    endif
-    if (data_assimilation_glc) then
-       pause_active(seq_timemgr_nclock_glc) = .true.
-    endif
-    if (data_assimilation_ice) then
-       pause_active(seq_timemgr_nclock_ice) = .true.
-    endif
-    if (data_assimilation_rof) then
-       pause_active(seq_timemgr_nclock_rof) = .true.
-    endif
-    if (data_assimilation_lnd) then
-       pause_active(seq_timemgr_nclock_lnd) = .true.
-    endif
+    ! --- Figure out which components (if any) are doing pause this run
+    pause_active(seq_timemgr_nclock_atm) = pause_active_atm
+    pause_active(seq_timemgr_nclock_drv) = pause_active_cpl
+    pause_active(seq_timemgr_nclock_ocn) = pause_active_ocn
+    pause_active(seq_timemgr_nclock_wav) = pause_active_wav
+    pause_active(seq_timemgr_nclock_glc) = pause_active_glc
+    pause_active(seq_timemgr_nclock_ice) = pause_active_ice
+    pause_active(seq_timemgr_nclock_rof) = pause_active_rof
+    pause_active(seq_timemgr_nclock_lnd) = pause_active_lnd
+
+    ! Figure out which compoments need to do post-data assimilation processing
+    data_assimilation_active(seq_timemgr_nclock_atm) = data_assimilation_atm
+    data_assimilation_active(seq_timemgr_nclock_drv) = data_assimilation_cpl
+    data_assimilation_active(seq_timemgr_nclock_ocn) = data_assimilation_ocn
+    data_assimilation_active(seq_timemgr_nclock_wav) = data_assimilation_wav
+    data_assimilation_active(seq_timemgr_nclock_glc) = data_assimilation_glc
+    data_assimilation_active(seq_timemgr_nclock_ice) = data_assimilation_ice
+    data_assimilation_active(seq_timemgr_nclock_rof) = data_assimilation_rof
+    data_assimilation_active(seq_timemgr_nclock_lnd) = data_assimilation_lnd
 
     if ( ANY(pause_active) .and.                                              &
          (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
@@ -2124,6 +2157,56 @@ contains
     seq_timemgr_pause_component_active = pause_active(component_index)
 
   end function seq_timemgr_pause_component_active
+
+  !===============================================================================
+  !===============================================================================
+  ! !IROUTINE: seq_timemgr_data_assimilation_active -- Check if component paused
+  !
+  ! !DESCRIPTION:
+  !
+  !     Return .true. if component is active in driver pause
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
+
+  logical function seq_timemgr_data_assimilation_active(component_ntype)
+
+    !    !INPUT/OUTPUT PARAMETERS:
+
+    character(len=3), intent(IN) :: component_ntype
+
+    !EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_data_assimilation_active) '
+
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
+
+    select case(component_ntype)
+    case ('atm')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_atm)
+    case ('cpl')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_drv)
+    case ('ocn')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_ocn)
+    case ('wav')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_wav)
+    case ('glc')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_glc)
+    case ('ice')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_ice)
+    case ('rof')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_rof)
+    case ('lnd')
+       seq_timemgr_data_assimilation_active = data_assimilation_active(seq_timemgr_nclock_lnd)
+    case ('esp')
+       seq_timemgr_data_assimilation_active = .FALSE.
+    case default
+       call shr_sys_abort(subname//': component_ntype, "'//component_ntype//'" not recognized"')
+    end select
+
+  end function seq_timemgr_data_assimilation_active
 
   !===============================================================================
   !===============================================================================

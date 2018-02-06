@@ -389,13 +389,34 @@
     </desc>
   </entry>
 
+  <entry id="PAUSE_ACTIVE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Pause the model at times specified by PAUSE_OPTION and PAUSE_N.
+      Components 'pause' by writing a restart file.
+    </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
+  </entry>
+
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+      Sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
   </entry>
 
@@ -419,7 +440,7 @@
     <desc>
       ESP component runs after driver 'pause cycle' If any component
       'pauses' (see PAUSE_OPTION,
-      PAUSE_N and DATA_ASSIMILATION XML variables),
+      PAUSE_N and PAUSE_ACTIVE_XXX XML variables),
       the ESP component (if present) will be run to process the
       component 'pause' (restart) files and set any required 'resume'
       signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
@@ -1908,15 +1929,15 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value compclass="ATM"> 0</value>
-      <value compclass="CPL"> 0</value>
-      <value compclass="OCN"> 0</value>
-      <value compclass="WAV"> 0</value>
-      <value compclass="GLC"> 0</value>
-      <value compclass="ICE"> 0</value>
-      <value compclass="ROF"> 0</value>
-      <value compclass="LND"> 0</value>
-      <value compclass="ESP"> 0</value>
+      <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP"> $MAX_MPITASKS_PER_NODE</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>

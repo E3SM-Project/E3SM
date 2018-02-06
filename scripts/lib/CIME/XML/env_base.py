@@ -18,7 +18,7 @@ class EnvBase(EntryID):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath, schema=schema)
+        EntryID.__init__(self, fullpath, schema=schema, read_only=False)
 
         self._id_map = None
         self._group_map = None
