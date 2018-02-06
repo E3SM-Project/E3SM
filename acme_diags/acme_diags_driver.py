@@ -2,6 +2,10 @@
 from __future__ import print_function
 
 import os
+# Must be done before any CDAT library is called
+if 'UVCDAT_ANONYMOUS_LOG' not in os.environ:
+    os.environ['UVCDAT_ANONYMOUS_LOG'] = 'no'
+
 import sys
 import getpass
 import datetime

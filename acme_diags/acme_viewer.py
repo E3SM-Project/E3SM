@@ -137,7 +137,6 @@ def _extras(root_dir, parameters):
 
     _edit_table_html(root_dir)
     _add_table_and_taylor_to_viewer_index(root_dir)
-    # _add_lat_lon_table_to_viewer_index(root_dir)
 
     
 def _add_pages_and_top_row(viewer, parameters):
