@@ -25,12 +25,19 @@ class Files(EntryID):
         schema = os.path.join(cimeroot, "config", "xml_schemas", "entry_id.xsd")
         EntryID.__init__(self, infile, schema=schema)
         config_files_override = os.path.join(os.path.dirname(cimeroot),".config_files.xml")
+        # variables COMP_ROOT_DIR_{} are mutable, all other variables are read only
+        self.COMP_ROOTS = {}
+
         # .config_file.xml at the top level may overwrite COMP_ROOT_DIR_ nodes in config_files
+
         if os.path.isfile(config_files_override):
             self.read(config_files_override)
             self.overwrite_existing_entries()
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
+        if "COMP_ROOT_DIR" in vid:
+            if vid in self.COMP_ROOTS:
+                return self.COMP_ROOTS[vid]
         value = super(Files, self).get_value(vid, attribute=attribute, resolved=False, subgroup=subgroup)
         if "COMP_ROOT_DIR" not in vid and value is not None and resolved and "COMP_ROOT_DIR" in value:
             m = re.search("(COMP_ROOT_DIR_[^/]+)/", value)
@@ -40,6 +47,13 @@ class Files(EntryID):
         if resolved and value is not None:
             value = self.get_resolved_value(value)
 
+        return value
+
+    def set_value(self, vid, value):
+        if "COMP_ROOT_DIR" in vid:
+            self.COMP_ROOTS[vid] = value
+        else:
+            expect(False, "Attempt to set a nonmutable variable {}".format(vid))
         return value
 
     def get_schema(self, nodename, attributes=None):

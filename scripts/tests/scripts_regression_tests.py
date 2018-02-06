@@ -538,6 +538,18 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         cls._do_teardown.append(testdir)
 
+    def test_k_append_config(self):
+        machlist_before = MACHINE.list_available_machines()
+        self.assertEqual(len(machlist_before)>1, True, msg="Problem reading machine list")
+
+        newmachfile = os.path.join(CIME.utils.get_cime_root(),"config",
+                                   "xml_schemas","config_machines_template.xml")
+        MACHINE.read(newmachfile)
+        machlist_after = MACHINE.list_available_machines()
+
+        self.assertEqual(len(machlist_after)-len(machlist_before), 1, msg="Not able to append config_machines.xml {} {}".format(len(machlist_after), len(machlist_before)))
+        self.assertEqual("mymachine" in machlist_after, True, msg="Not able to append config_machines.xml")
+
 
     @classmethod
     def tearDownClass(cls):
