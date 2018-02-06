@@ -371,30 +371,30 @@ contains
       a1 = 0.5
       a2 = 0.5
       a3 = 1.0
-      dhat1 = .1
+      dhat1 = 2.25
       dhat2 = (0.5-dhat1)/(1.0-dhat1)
       ahat2 = 0.5-dhat2
       ahat3 = 1.0
 
-      ! compute un0 + dt*a1*n(k1=u(n0))+dt*ahat1*s(k1)
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
+      ! compute un0 + dt*a1*n(k1=u(n0))+dt*ahat1*s(k1) and store at nm1
+      call compute_andor_apply_rhs(nm1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
 
       maxiter=10
       itertol=1e-12
       ! solve k2 = u(n) + dt*a1*n(k1) + dt*dhat1*s(k2) and store solution at np1
-      call compute_stage_value_dirk(np1,np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,nm1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !================= end of phase 1 =========================================
 
-     ! compute u(n)+dt*a2*n(k2) and store at np1
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
+     ! compute u(n)+dt*a2*n(k2) and store at nm1
+      call compute_andor_apply_rhs(nm1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w/2,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
       ! solve k3 = u(n) + dt*a2*n(k2) + dt*ahat2*s(k2) + dt*dhat2*s(k3) and store solution at np1
-      call compute_stage_value_dirk(np1,np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,nm1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 ! ================ end of phase 2 ========================================
 
@@ -407,12 +407,12 @@ contains
     elseif (tstep_type==10)  then ! kgs 262
       call t_startf("KGS262_timestep")
 
-  a1 = .25
+     a1 = .25
      a2 = 1.0/6.0
      a3 = 3.0/8.0
      a4 = .5
      a5 = 1.0
-     dhat2 = 2.0
+     dhat2 = 2.25
      ahat4 = 0.5-dhat2
      dhat1 = ahat4/(1-dhat2)
 
@@ -433,18 +433,18 @@ contains
       maxiter=10
       itertol=1e-12
       call elemstate_add(elem,statesave,nets,nete,1,np1,nm1,nm1,1d0,0d0,0d0)
-      call compute_stage_value_dirk(np1,np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,nm1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  !     print *, maxiter
  !     print *, itertol
-    ! compute u(n)+dt*a4*n(k3) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
+    ! compute u(n)+dt*a4*n(k3) and store at nm1
+     call compute_andor_apply_rhs(nm1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
 
      ! solve k4 = u(n)+dt*a4*n(k2)+dt*ahat4*s(k3)+dt*dhat2*s(k4) and store at np1
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,nm1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !      print *, maxiter
 !      print *, itertol
