@@ -317,47 +317,28 @@ contains
              end if  ! end initialization of new pft
              
              call UpdateCStateVarsDueToWtInc(cs, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p), &
+                  dwt_leafc_seed(p), dwt_deadstemc_seed(p))
              
              if ( use_c13 ) then
                 call UpdateCStateVarsDueToWtInc(c13_cs, p, &
-                     veg_pp%wtcol(p), prior_weights%pwtcol(p))
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p), &
+                     dwt_leafc13_seed(p), dwt_deadstemc13_seed(p))
              endif
              
              if ( use_c14 ) then
                 call UpdateCStateVarsDueToWtInc(c14_cs, p, &
-                     veg_pp%wtcol(p), prior_weights%pwtcol(p))
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p), &
+                     dwt_leafc14_seed(p), dwt_deadstemc14_seed(p))
              endif
 
              call UpdateNStateVarsDueToWtInc(ns, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p), &
+                  dwt_leafn_seed(p), dwt_deadstemn_seed(p), dwt_npool_seed(p))
              
              call UpdatePStateVarsDueToWtInc(ps, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
-
-             ! update temporary seed source arrays
-             ! These are calculated in terms of the required contributions from
-             ! column-level seed source
-             dwt_leafc_seed(p)     = leafc_seed     * dwt
-
-             dwt_leafn_seed(p)     = leafn_seed     * dwt
-             dwt_deadstemc_seed(p) = deadstemc_seed * dwt
-             dwt_deadstemn_seed(p) = deadstemn_seed * dwt
-             dwt_npool_seed(p)     = npool_seed     * dwt             
-
-             dwt_leafp_seed(p)     = leafp_seed     * dwt
-             dwt_deadstemp_seed(p) = deadstemp_seed * dwt
-             dwt_ppool_seed(p)     = ppool_seed     * dwt
-
-             if ( use_c13 ) then
-                dwt_leafc13_seed(p)     = leafc13_seed     * dwt
-                dwt_deadstemc13_seed(p) = deadstemc13_seed * dwt
-             endif
-
-             if ( use_c14 ) then
-                dwt_leafc14_seed(p)     = leafc14_seed     * dwt
-                dwt_deadstemc14_seed(p) = deadstemc14_seed * dwt
-             endif
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p), &
+                  dwt_leafp_seed(p), dwt_deadstemp_seed(p), dwt_ppool_seed(p))
 
           else if (dwt < 0._r8) then
              
@@ -976,7 +957,8 @@ contains
  end subroutine PhosphorusFluxVarsInit
 
  !-----------------------------------------------------------------------
- subroutine UpdateCStateVarsDueToWtInc(cs, p, wt_new, wt_old)
+ subroutine UpdateCStateVarsDueToWtInc(cs, p, wt_new, wt_old, &
+      dwt_leafc_seed, dwt_deadstemc_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of carbonstate_type
@@ -992,6 +974,8 @@ contains
    integer               , intent(in)    :: p
    real(r8)              , intent(in)    :: wt_new
    real(r8)              , intent(in)    :: wt_old
+   real(r8)              , intent(out)   :: dwt_leafc_seed
+   real(r8)              , intent(out)   :: dwt_deadstemc_seed
    !
    ! !LOCAL
    real(r8)                              :: pleaf
@@ -1013,6 +997,9 @@ contains
         SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_LEAF)
    deadstemc_seed = deadstemc_seed_param * &
         SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_DEADWOOD)
+
+   dwt_leafc_seed     = leafc_seed     * (wt_new - wt_old)
+   dwt_deadstemc_seed = deadstemc_seed * (wt_new - wt_old)
 
    cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
    cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
@@ -1045,7 +1032,8 @@ contains
  end subroutine UpdateCStateVarsDueToWtInc
 
  !-----------------------------------------------------------------------
- subroutine UpdateNStateVarsDueToWtInc(ns, p, wt_new, wt_old)
+ subroutine UpdateNStateVarsDueToWtInc(ns, p, wt_new, wt_old, &
+      dwt_leafn_seed, dwt_deadstemn_seed, dwt_npool_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type
@@ -1061,6 +1049,9 @@ contains
    integer                  , intent(in)    :: p
    real(r8)                 , intent(in)    :: wt_new
    real(r8)                 , intent(in)    :: wt_old
+   real(r8)                 , intent(out)   :: dwt_leafn_seed
+   real(r8)                 , intent(out)   :: dwt_deadstemn_seed
+   real(r8)                 , intent(out)   :: dwt_npool_seed
    !
    ! !LOCAL
    real(r8)                                 :: pleaf
@@ -1089,6 +1080,10 @@ contains
    if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then
       npool_seed     = 0._r8
    end if
+
+   dwt_leafn_seed     = leafn_seed     * (wt_new - wt_old)
+   dwt_deadstemn_seed = deadstemn_seed * (wt_new - wt_old)
+   dwt_npool_seed     = npool_seed     * (wt_new - wt_old)
 
    ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
    ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
@@ -1119,7 +1114,8 @@ contains
  end subroutine UpdateNStateVarsDueToWtInc
 
  !-----------------------------------------------------------------------
- subroutine UpdatePStateVarsDueToWtInc(ps, p, wt_new, wt_old)
+ subroutine UpdatePStateVarsDueToWtInc(ps, p, wt_new, wt_old, &
+      dwt_leafp_seed, dwt_deadstemp_seed, dwt_ppool_seed)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of phosphorusstate_type
@@ -1135,6 +1131,9 @@ contains
    integer                    , intent(in)    :: p
    real(r8)                   , intent(in)    :: wt_new
    real(r8)                   , intent(in)    :: wt_old
+   real(r8)                   , intent(out)   :: dwt_leafp_seed
+   real(r8)                   , intent(out)   :: dwt_deadstemp_seed
+   real(r8)                   , intent(out)   :: dwt_ppool_seed
    !
    ! !LOCAL
    real(r8)                                   :: pleaf
@@ -1163,6 +1162,10 @@ contains
    if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then
       ppool_seed     = 0._r8
    end if
+
+   dwt_leafp_seed     = leafp_seed     * (wt_new - wt_old)
+   dwt_deadstemp_seed = deadstemp_seed * (wt_new - wt_old)
+   dwt_ppool_seed     = ppool_seed     * (wt_new - wt_old)
 
    ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
    ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
