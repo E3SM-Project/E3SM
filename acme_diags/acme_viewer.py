@@ -136,7 +136,8 @@ def _extras(root_dir, parameters):
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
-    _add_lat_lon_table_to_viewer_index(root_dir)
+    _add_table_and_taylor_to_viewer_index(root_dir)
+    # _add_lat_lon_table_to_viewer_index(root_dir)
 
     
 def _add_pages_and_top_row(viewer, parameters):
@@ -379,8 +380,8 @@ def _create_lat_lon_table_index(viewer, root_dir):
 def _create_taylor_index(viewer, root_dir, season_to_png):
     """Create an index in the viewer that links the individual htmls for the lat-lon table."""
     seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
-    viewer.add_page('Taylor', seasons)
-    viewer.add_group('Summary Taylors')
+    viewer.add_page('Taylor Diagram', seasons)
+    viewer.add_group('Summary Taylor Diagrams')
     viewer.add_row('All variables')
 
     for s in seasons:
@@ -390,26 +391,41 @@ def _create_taylor_index(viewer, root_dir, season_to_png):
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
-def _add_lat_lon_table_to_viewer_index(root_dir):
-    """Move the link to Table next to the link to Latitude-Longitude contour maps"""
+def _add_table_and_taylor_to_viewer_index(root_dir):
+    """Move the link to 'Table' and 'Taylor Diagram' next to the link to Latitude-Longitude contour maps"""
     index_page = os.path.join(root_dir, 'index.html')
     soup = BeautifulSoup(open(index_page), "lxml")
 
     # append the new tag underneath the old one, so add it to the parent of the old one
-    td_to_move = None
+    td_to_move_table = None
+    td_to_move_taylor = None
+
+    # rows to delete
+    delete_this_table = None
+    delete_this_taylor = None
+
     for tr in soup.find_all("tr"):
         for td in tr.find_all("td"):
             for a in td.find_all("a"):
                 if 'table' in a['href']:
-                    td_to_move = copy.deepcopy(td)
-                    tr.decompose()
+                    td_to_move_table = copy.deepcopy(td)
+                    delete_this_table = tr
+                if 'taylor' in a['href']:
+                    td_to_move_taylor = copy.deepcopy(td)
+                    delete_this_taylor = tr
 
-    if td_to_move:
-        for tr in soup.find_all("tr"):
-            for td in tr.find_all("td"):
-                for a in td.find_all("a"):
-                    if _better_page_name('lat_lon') in a.string:
-                        td.append(td_to_move)
+    if delete_this_table:
+        delete_this_table.decompose()
+    if delete_this_taylor:
+        delete_this_taylor.decompose()
+
+    for tr in soup.find_all("tr"):
+        for td in tr.find_all("td"):
+            for a in td.find_all("a"):
+                if _better_page_name('lat_lon') in a.string and td_to_move_table:
+                    td.append(td_to_move_table)
+                if _better_page_name('lat_lon') in a.string and td_to_move_taylor:
+                    td.append(td_to_move_taylor)    
 
     html = soup.prettify("utf-8")
     with open(index_page, "wb") as f:
