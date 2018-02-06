@@ -507,7 +507,8 @@ contains
       do iCell=1,nCellsSolve
          BGC_input%number_of_active_levels(column) = maxLevelCell(iCell)
          BGC_input%cell_latitude(column) = latCell(iCell)
-         BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)
+! convert dust flux from kg/m2/s to g/cm2/s
+         BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)*0.1_RKIND
          BGC_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
          zTop = 0.0_RKIND
          do iLevel=1,maxLevelCell(iCell)
@@ -1220,6 +1221,7 @@ contains
          BGC_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
          BGC_input%BGC_tracers(1,column,BGC_indices%dic_ind) = ecosysTracers(ecosysIndices%dic_ind,1,iCell)
+         BGC_input%BGC_tracers(1,column,BGC_indices%dic_alt_co2_ind) = ecosysTracers(ecosysIndices%dic_alt_co2_ind,1,iCell)
          BGC_input%BGC_tracers(1,column,BGC_indices%alk_ind) = ecosysTracers(ecosysIndices%alk_ind,1,iCell)
          BGC_input%BGC_tracers(1,column,BGC_indices%po4_ind) = ecosysTracers(ecosysIndices%po4_ind,1,iCell)
          BGC_input%BGC_tracers(1,column,BGC_indices%sio3_ind) = ecosysTracers(ecosysIndices%sio3_ind,1,iCell)
