@@ -11,6 +11,9 @@ from bs4 import BeautifulSoup
 from cdp.cdp_viewer import OutputViewer
 import acme_diags
 from acme_diags.driver.utils import get_set_name
+from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
+import matplotlib.pyplot as plt
+import matplotlib
 
 # Dict of
 # {
@@ -133,7 +136,8 @@ def _extras(root_dir, parameters):
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
-    _add_lat_lon_table_to_viewer_index(root_dir)
+    _add_table_and_taylor_to_viewer_index(root_dir)
+    # _add_lat_lon_table_to_viewer_index(root_dir)
 
     
 def _add_pages_and_top_row(viewer, parameters):
@@ -189,7 +193,7 @@ def _add_to_lat_lon_metrics_table(metrics_path, season, row_name):
             LAT_LON_TABLE_INFO[season][row_name] = collections.OrderedDict()
         LAT_LON_TABLE_INFO[season][row_name]['metrics'] = metrics_dict
 
-def _create_csv_from_dict(output_dir, season):
+def _create_csv_from_dict(output_dir, season, test_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     #table_path = os.path.abspath(os.path.join(output_dir, season + '_metrics_table.csv'))
     table_path = os.path.join(output_dir, season + '_metrics_table.csv')
@@ -206,11 +210,88 @@ def _create_csv_from_dict(output_dir, season):
 
     return table_path
 
-def _cvs_to_html(csv_path, season):
+def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
+    """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it.
+    Since the Taylor Diagram uses the same seasons as LAT_LON_TABLE_INFO, we can use that."""
+    taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
+    control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
+
+    col_names = ['Variables', 'Model std', 'Obs std', 'correlation']
+
+    with open(taylor_diag_path, 'w') as table_csv:
+        writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
+        writer.writerow(col_names)
+
+        for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
+            # only include variables in a a certain list for taylor diagram
+            if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:
+                metrics = metrics_dic['metrics']
+                row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
+                writer.writerow(row)
+    
+    with open(taylor_diag_path, 'r') as taylor_csv:
+        reader = csv.reader(taylor_csv, delimiter = ",")
+        data =  list(reader)
+        row_count=len(data)
+   
+    # read control run data
+    with open(control_runs_path, 'r') as control_runs_taylor_csv:
+        reader = csv.reader(control_runs_taylor_csv, delimiter = ",")
+        control_runs_data =  list(reader)
+
+    keys_control_runs = []
+    for i in range(0, len(control_runs_data)):
+        keys_control_runs.append(control_runs_data[i][0])
+    print keys_control_runs
+   
+    # generate taylor diagram plot if there is metrics saved for any variable within the list.
+    marker = ['o', 'd', '+', 's', '>', '<', 'v' , '^'] 
+    color = ['k', 'r', 'g', 'y', 'm']
+ 
+    if row_count > 0:
+        matplotlib.rcParams.update({'font.size': 20})
+        fig = plt.figure(figsize=(9,8))
+        refstd =  1.0
+        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "OBS")
+        ax = taylordiag._ax
+        
+        # Add samples to taylor diagram
+        for irow in range(1,row_count):
+            std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
+            print std_norm, correlation
+            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = 'None', markeredgecolor = color[0], linestyle = 'None')
+        # Add a figure legend
+
+        fig.legend(taylordiag.samplePoints,
+                   [ p.get_label() for p in taylordiag.samplePoints],
+                   numpoints=1,  loc='center right', bbox_to_anchor=(1.0, .5), prop={'size':10})
+
+
+        # Add samples for baseline simulation:
+        for irow in range(1,row_count):
+            if data[irow][0] in keys_control_runs:
+                control_irow = keys_control_runs.index(data[irow][0])
+                #print control_irow
+                std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
+                #print std_norm, correlation
+                taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
+
+        baseline_text = 'E3SMv0_B1850'
+        model_text = test_name
+        ax.text(0.7, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
+        ax.text(0.7, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
+
+        plt.title(season + ': Spatial Variability', y = 1.08)
+        fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
+
+    return taylor_diag_path
+
+def _cvs_to_html(csv_path, season, test_name):
     """Convert the csv for a season located at csv_path to an HTML, returning the path to the HTML"""
     html_path = csv_path.replace('csv', 'html')
 
     with open(html_path, 'w') as htmlfile:
+        htmlfile.write('<p><th><b>Model Name: {}</b></th></p>'.format(test_name))
         htmlfile.write('<p><th><b>{} Mean </b></th></p>'.format(season))
         htmlfile.write('<table>')
 
@@ -296,26 +377,55 @@ def _create_lat_lon_table_index(viewer, root_dir):
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
-def _add_lat_lon_table_to_viewer_index(root_dir):
-    """Move the link to Table next to the link to Latitude-Longitude contour maps"""
+def _create_taylor_index(viewer, root_dir, season_to_png):
+    """Create an index in the viewer that links the individual htmls for the lat-lon table."""
+    seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
+    viewer.add_page('Taylor Diagram', seasons)
+    viewer.add_group('Summary Taylor Diagrams')
+    viewer.add_row('All variables')
+
+    for s in seasons:
+        if s in season_to_png:
+            pth = os.path.join('..', '..', season_to_png[s])
+            viewer.add_col(pth, is_file=True, title=s)
+        else:
+            viewer.add_col('-----', is_file=True, title='-----')
+
+def _add_table_and_taylor_to_viewer_index(root_dir):
+    """Move the link to 'Table' and 'Taylor Diagram' next to the link to Latitude-Longitude contour maps"""
     index_page = os.path.join(root_dir, 'index.html')
     soup = BeautifulSoup(open(index_page), "lxml")
 
     # append the new tag underneath the old one, so add it to the parent of the old one
-    td_to_move = None
+    td_to_move_table = None
+    td_to_move_taylor = None
+
+    # rows to delete
+    delete_this_table = None
+    delete_this_taylor = None
+
     for tr in soup.find_all("tr"):
         for td in tr.find_all("td"):
             for a in td.find_all("a"):
                 if 'table' in a['href']:
-                    td_to_move = copy.deepcopy(td)
-                    tr.decompose()
+                    td_to_move_table = copy.deepcopy(td)
+                    delete_this_table = tr
+                if 'taylor' in a['href']:
+                    td_to_move_taylor = copy.deepcopy(td)
+                    delete_this_taylor = tr
 
-    if td_to_move:
-        for tr in soup.find_all("tr"):
-            for td in tr.find_all("td"):
-                for a in td.find_all("a"):
-                    if _better_page_name('lat_lon') in a.string:
-                        td.append(td_to_move)
+    if delete_this_table:
+        delete_this_table.decompose()
+    if delete_this_taylor:
+        delete_this_taylor.decompose()
+
+    for tr in soup.find_all("tr"):
+        for td in tr.find_all("td"):
+            for a in td.find_all("a"):
+                if _better_page_name('lat_lon') in a.string and td_to_move_table:
+                    td.append(td_to_move_table)
+                if _better_page_name('lat_lon') in a.string and td_to_move_taylor:
+                    td.append(td_to_move_taylor)    
 
     html = soup.prettify("utf-8")
     with open(index_page, "wb") as f:
@@ -327,7 +437,7 @@ def _make_relative_lat_lon_html_path(abs_html_path):
     # to this: output_dir/viewer/table-data/ANN_metrics_table.html
     return '/'.join(abs_html_path.split('/')[-4:])
 
-def generate_lat_lon_metrics_table(viewer, root_dir):
+def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
 
@@ -335,10 +445,25 @@ def generate_lat_lon_metrics_table(viewer, root_dir):
         os.mkdir(table_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(table_dir, season)
-        html_path = _cvs_to_html(csv_path, season)
+        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name)
+        html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
         LAT_LON_TABLE_INFO[season]['html_path'] = _make_relative_lat_lon_html_path(html_path)
+
     _create_lat_lon_table_index(viewer, root_dir)
+
+def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
+    """For each season in LAT_LON_TABLE_INFO, create a csv, plot using taylor diagram  and append that html to the viewer."""
+    taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram-data')  # output_dir/viewer/table-data
+
+    if not os.path.exists(taylor_diag_dir):
+        os.mkdir(taylor_diag_dir)
+
+    season_to_png = {}
+    for season in LAT_LON_TABLE_INFO:
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
+        season_to_png[season] = csv_path.replace('csv', 'png')
+
+    _create_taylor_index(viewer, root_dir, season_to_png)
 
 def create_metadata(parameter):
     """
@@ -415,8 +540,8 @@ def create_viewer(root_dir, parameters, ext):
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{} {} {} {}'.format(
-                                    var, str(int(plev)) + ' mb', region, ref_name)
+                                row_name = '{}-{} {} {}'.format(
+                                    var, str(int(plev)) + 'mb', region, ref_name)
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
@@ -480,6 +605,7 @@ def create_viewer(root_dir, parameters, ext):
                         viewer.add_col(fnm + '.' + ext, is_file=True,
                                        title=col_season, other_files=formatted_files, meta=metadata)
 
-    generate_lat_lon_metrics_table(viewer, root_dir)
+    generate_lat_lon_metrics_table(viewer, root_dir, parameters)
+    generate_lat_lon_taylor_diag(viewer, root_dir, parameters)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
