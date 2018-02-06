@@ -380,6 +380,7 @@ contains
                   dwt_deadcrootc_to_litter(p),   &
                   prod10_cflux(p),               &
                   prod100_cflux(p),              &
+                  pconv(veg_pp%itype(p)),        &
                   pprod10(veg_pp%itype(p)),      &
                   pprod100(veg_pp%itype(p)))
 
@@ -392,6 +393,7 @@ contains
                      dwt_deadcrootc13_to_litter(p), &
                      prod10_c13flux(p),             &
                      prod100_c13flux(p),            &
+                     pconv(veg_pp%itype(p)),        &
                      pprod10(veg_pp%itype(p)),      &
                      pprod100(veg_pp%itype(p)))
              endif
@@ -405,6 +407,7 @@ contains
                      dwt_deadcrootc14_to_litter(p), &
                      prod10_c14flux(p),             &
                      prod100_c14flux(p),            &
+                     pconv(veg_pp%itype(p)),        &
                      pprod10(veg_pp%itype(p)),      &
                      pprod100(veg_pp%itype(p)))
 
@@ -418,6 +421,7 @@ contains
                   dwt_deadcrootn_to_litter(p),     &
                   prod10_nflux(p),                 &
                   prod100_nflux(p),                &
+                  pconv(veg_pp%itype(p)),          &
                   pprod10(veg_pp%itype(p)),        &
                   pprod100(veg_pp%itype(p)))
 
@@ -429,6 +433,7 @@ contains
                   dwt_deadcrootp_to_litter(p),       &
                   prod10_pflux(p),                   &
                   prod100_pflux(p),                  &
+                  pconv(veg_pp%itype(p)),            &
                   pprod10(veg_pp%itype(p)),          &
                   pprod100(veg_pp%itype(p)))
                                                     
@@ -1190,7 +1195,7 @@ contains
   !-----------------------------------------------------------------------
  subroutine UpdateCStateDueToWtDec(cs, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
-      prod10_flux, prod100_flux, prod10, prod100)
+      prod10_flux, prod100_flux, pconv, prod10, prod100)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of carbonstate_type due to decrease in fractional cover
@@ -1208,6 +1213,7 @@ contains
    real(r8)              , intent (inout) :: dwt_deadcrootc_to_litter
    real(r8)              , intent (inout) :: prod10_flux
    real(r8)              , intent (inout) :: prod100_flux
+   real(r8)              , intent (in)    :: pconv
    real(r8)              , intent (in)    :: prod10
    real(r8)              , intent (in)    :: prod100
    !
@@ -1249,14 +1255,14 @@ contains
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = cs%deadstemc_patch(p)
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtDec(wt_old, wt_new, cs%deadstemc_patch(p), conv_flux)
+   call ComputeMassLossDueToWtDec(wt_old, wt_new, cs%deadstemc_patch(p), conv_flux, pconv)
 
  end subroutine UpdateCStateDueToWtDec
  
    !-----------------------------------------------------------------------
  subroutine UpdateNStateDueToWtDec(ns, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
-      prod10_flux, prod100_flux, prod10, prod100)
+      prod10_flux, prod100_flux, pconv, prod10, prod100)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type due to decrease in fractional cover
@@ -1274,6 +1280,7 @@ contains
    real(r8)                 , intent (inout) :: dwt_deadcrootc_to_litter
    real(r8)                 , intent (inout) :: prod10_flux
    real(r8)                 , intent (inout) :: prod100_flux
+   real(r8)                 , intent (in)    :: pconv
    real(r8)                 , intent (in)    :: prod10
    real(r8)                 , intent (in)    :: prod100
    !
@@ -1312,14 +1319,14 @@ contains
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = ns%deadstemn_patch(p)
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtDec(wt_old, wt_new, ns%deadstemn_patch(p), conv_flux)
+   call ComputeMassLossDueToWtDec(wt_old, wt_new, ns%deadstemn_patch(p), conv_flux, pconv)
 
  end subroutine UpdateNStateDueToWtDec
 
    !-----------------------------------------------------------------------
  subroutine UpdatePStateDueToWtDec(ps, p, wt_old, wt_new, conv_flux, &
       dwt_froot_to_litter, dwt_livecroot_to_litter, dwt_deadcrootc_to_litter, &
-      prod10_flux, prod100_flux, prod10, prod100)
+      prod10_flux, prod100_flux, pconv, prod10, prod100)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type due to decrease in fractional cover
@@ -1337,6 +1344,7 @@ contains
    real(r8)                   , intent (inout) :: dwt_deadcrootc_to_litter
    real(r8)                   , intent (inout) :: prod10_flux
    real(r8)                   , intent (inout) :: prod100_flux
+   real(r8)                   , intent (in)    :: pconv
    real(r8)                   , intent (in)    :: prod10
    real(r8)                   , intent (in)    :: prod100
    !
@@ -1375,7 +1383,7 @@ contains
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod10_flux, prod10)
    mass_tmp = ps%deadstemp_patch(p)
    call ComputeMassLossDueToWtDec(wt_old, wt_new, mass_tmp, prod100_flux, prod100)
-   call ComputeMassLossDueToWtDec(wt_old, wt_new, ps%deadstemp_patch(p), conv_flux)
+   call ComputeMassLossDueToWtDec(wt_old, wt_new, ps%deadstemp_patch(p), conv_flux, pconv)
 
  end subroutine UpdatePStateDueToWtDec
  
