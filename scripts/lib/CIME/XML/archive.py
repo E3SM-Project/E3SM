@@ -38,7 +38,7 @@ class Archive(GenericXML):
 
             if infile is not None and os.path.isfile(infile):
                 arch = Archive(infile=infile, files=files)
-                specs = arch.get_child(name="comp_archive_spec", attributes={"compname":comp})
+                specs = arch.get_optional_child(name="comp_archive_spec", attributes={"compname":comp})
             else:
                 if infile is None:
                     logger.debug("No archive file defined for component {}".format(comp))
