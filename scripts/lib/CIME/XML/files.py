@@ -38,7 +38,8 @@ class Files(EntryID):
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
-                    return self.COMP_ROOT_DIR[vid+attribute["component"]]
+                    if vid+attribute["component"] in self.COMP_ROOT_DIR:
+                        return self.COMP_ROOT_DIR[vid+attribute["component"]]
                 else:
                     return self.COMP_ROOT_DIR[vid]
 
