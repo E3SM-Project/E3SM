@@ -93,7 +93,6 @@ class Case(object):
         self.set_lookup_value('MODEL', self._cime_model)
         self._compsetname = None
         self._gridname = None
-        self._compsetsfile = None
         self._pesfile = None
         self._gridfile = None
         self._components = []
@@ -244,42 +243,35 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
-        results = []
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
             if len(results) > 0:
                 new_results = []
-                vtype = env_file.get_type_info(item)
                 if resolved:
                     for result in results:
                         if isinstance(result, six.string_types):
                             result = self.get_resolved_value(result)
-                            new_results.append(convert_to_type(result, vtype, item))
+                            vtype = env_file.get_type_info(item)
+                            if vtype is not None or vtype != "char":
+                                result = convert_to_type(result, vtype, item)
+
+                            new_results.append(result)
+
                         else:
                             new_results.append(result)
+
                 else:
                     new_results = results
+
                 return new_results
 
-        for env_file in self._env_generic_files:
-            results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-            if len(results) > 0:
-                if resolved:
-                    for result in results:
-                        if isinstance(result, six.string_types):
-                            new_results.append(self.get_resolved_value(result))
-                        else:
-                            new_results.append(result)
-                else:
-                    new_results = results
-                return new_results
         # Return empty result
-        return results
+        return []
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         result = None
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
@@ -287,17 +279,9 @@ class Case(object):
                 if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    if vtype is not None:
+                    if vtype is not None or vtype != "char":
                         result = convert_to_type(result, vtype, item)
-                return result
 
-        for env_file in self._env_generic_files:
-
-            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-
-            if result is not None:
-                if resolved and isinstance(result, six.string_types):
-                    return self.get_resolved_value(result)
                 return result
 
         # Return empty result
@@ -316,6 +300,7 @@ class Case(object):
                 roots = env_file.scan_children("entry")
             else:
                 roots = env_file.get_nodes_by_id(variable)
+
             for root in roots:
                 if root is not None:
                     if field == "raw":
@@ -380,14 +365,7 @@ class Case(object):
             self._caseroot = value
         result = None
 
-        for env_file in self._env_entryid_files:
-            result = env_file.set_value(item, value, subgroup, ignore_type)
-            if (result is not None):
-                logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
-                return result
-
-        for env_file in self._env_generic_files:
+        for env_file in self._files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
@@ -457,10 +435,7 @@ class Case(object):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
-                                   files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     return compset_alias, science_support
@@ -540,6 +515,11 @@ class Case(object):
         """
 
         component = self.get_primary_component()
+
+        compset_spec_file = files.get_value("COMPSETS_SPEC_FILE",
+                                            {"component":component}, resolved=False)
+
+        self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
 
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
@@ -631,6 +611,14 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
+        # will need a change here for new cpl components
+        root_dir_node_name = 'COMP_ROOT_DIR_CPL'
+        comp_root_dir = files.get_value(root_dir_node_name,
+                                        {"component":"drv"}, resolved=False)
+        if comp_root_dir is not None:
+            self.set_value(root_dir_node_name, comp_root_dir)
+
+
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
@@ -638,21 +626,19 @@ class Case(object):
             node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
             if comp_root_dir is not None:
-                # the set_value in files is needed for the archiver setup below
-                files.set_value(root_dir_node_name, comp_root_dir)
                 self.set_value(root_dir_node_name, comp_root_dir)
-                compatt = None
-            else:
-                compatt = {"component":comp_name}
+
+            compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
             comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
-            comp_config_file = self.get_resolved_value(comp_config_file)
+            comp_config_file =  files.get_value(node_name, compatt)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
             # For files following version 3 schema this also checks the compsetname validity
+            
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
@@ -683,6 +669,7 @@ class Case(object):
         pes_ntasks = {}
         pes_nthrds = {}
         pes_rootpe = {}
+        pes_pstrid = {}
         other      = {}
 
         force_tasks = None
@@ -700,7 +687,7 @@ class Case(object):
             force_tasks = int(match2.group(1))
             pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
         else:
-            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                                machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         if match1 or match2:
@@ -728,16 +715,19 @@ class Case(object):
             ntasks_str = "NTASKS_{}".format(comp_class)
             nthrds_str = "NTHRDS_{}".format(comp_class)
             rootpe_str = "ROOTPE_{}".format(comp_class)
+            pstrid_str = "PSTRID_{}".format(comp_class)
 
             ntasks = pes_ntasks[ntasks_str] if ntasks_str in pes_ntasks else 1
             nthrds = pes_nthrds[nthrds_str] if nthrds_str in pes_nthrds else 1
             rootpe = pes_rootpe[rootpe_str] if rootpe_str in pes_rootpe else 0
+            pstrid = pes_pstrid[pstrid_str] if pstrid_str in pes_pstrid else 1
 
             totaltasks.append( (ntasks + rootpe) * nthrds )
 
             mach_pes_obj.set_value(ntasks_str, ntasks)
             mach_pes_obj.set_value(nthrds_str, nthrds)
             mach_pes_obj.set_value(rootpe_str, rootpe)
+            mach_pes_obj.set_value(pstrid_str, pstrid)
 
         pesize = 1
         max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
@@ -812,6 +802,8 @@ class Case(object):
         self._primary_component = self.get_primary_component()
 
         self._set_info_from_primary_component(files, pesfile=pesfile)
+
+        self.clean_up_lookups(allow_undefined=True)
 
         self.get_compset_var_settings()
 
@@ -983,7 +975,7 @@ class Case(object):
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
-                logger.debug("Compset specific settings: name is {} and value is {}".format(name, value))
+                logger.info("Compset specific settings: name is {} and value is {}".format(name, value))
                 self.set_lookup_value(name, value)
 
     def set_initial_test_values(self):
@@ -1016,7 +1008,6 @@ class Case(object):
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "case.qstatus"),
-                    os.path.join(toolsdir, "case.st_archive"),
                     os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "preview_run"),

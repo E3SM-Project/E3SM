@@ -8,6 +8,7 @@ module wav_comp_mct
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+   use seq_comm_mct   , only: num_inst_wav
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_strdata_mod , only: shr_strdata_type
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
@@ -76,6 +77,7 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    character (CL)    :: wav_resume(num_inst_wav) ! reset state from restart?
     character(*), parameter :: subName = "(wav_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -91,7 +93,8 @@ CONTAINS
     call seq_infodata_getData(infodata, &
          single_column=scmMode, &
          scmlat=scmlat, scmlon=scmLon, &
-         read_restart=read_restart)
+         read_restart=read_restart, &
+         wav_resume=wav_resume)
 
     ! Determine instance information
     inst_name   = seq_comm_name(compid)
@@ -142,6 +145,15 @@ CONTAINS
     end if
 
     ! NOTE: the following will never be called if wav_present is .false.
+
+    ! Diagnostic print statement to test DATA_ASSIMILATION_WAV XML variable
+    !   usage (and therefore a proxy for other component types).
+    if (len_trim(wav_resume(inst_index)) > 0) then
+       if (my_task == master_task) then
+          write(logunit, *) subName//': Resume signal, '//trim(wav_resume(inst_index))
+          call shr_sys_flush(logunit)
+       end if
+    end if
 
     !----------------------------------------------------------------------------
     ! Initialize dwav
@@ -210,7 +222,7 @@ CONTAINS
 
     call dwav_comp_run(EClock, x2w, w2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, case_name)
+         inst_suffix, logunit, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

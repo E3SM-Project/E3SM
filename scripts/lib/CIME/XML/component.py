@@ -281,4 +281,4 @@ class Component(EntryID):
         for entry in entries:
             name = self.get(entry, "id")
             text = self.text(self.get_child("desc", root=entry))
-            logger.info("   {:20s} : {}".format(name, text))
+            logger.info("   {:20s} : {}".format(name, text.encode('utf-8')))

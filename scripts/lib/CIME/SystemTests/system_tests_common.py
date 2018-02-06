@@ -350,7 +350,7 @@ class SystemTestsCommon(object):
         Compare env_run file to original and warn about differences
         """
         components = self._case.get_values("COMP_CLASSES")
-        f1obj = EnvRun(self._caseroot, "env_run.xml", components=components)
+        f1obj = self._case.get_env("run")
         f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"), components=components)
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
