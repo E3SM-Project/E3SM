@@ -389,13 +389,34 @@
     </desc>
   </entry>
 
+  <entry id="PAUSE_ACTIVE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Pause the model at times specified by PAUSE_OPTION and PAUSE_N.
+      Components 'pause' by writing a restart file.
+    </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
+  </entry>
+
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+      Sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
   </entry>
 
@@ -419,7 +440,7 @@
     <desc>
       ESP component runs after driver 'pause cycle' If any component
       'pauses' (see PAUSE_OPTION,
-      PAUSE_N and DATA_ASSIMILATION XML variables),
+      PAUSE_N and PAUSE_ACTIVE_XXX XML variables),
       the ESP component (if present) will be run to process the
       component 'pause' (restart) files and set any required 'resume'
       signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
