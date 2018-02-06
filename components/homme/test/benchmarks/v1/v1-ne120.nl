@@ -1,5 +1,5 @@
 &ctl_nl
-NThreads=1
+NThreads=-1
 partmethod    = 4
 topology      = "cube"
 test_case     = "jw_baroclinic"
@@ -9,6 +9,7 @@ ne=120
 qsize = 40
 ndays=1
 statefreq=360
+disable_diagnostics = .true.
 restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0

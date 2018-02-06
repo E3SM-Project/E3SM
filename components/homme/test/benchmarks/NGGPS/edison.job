@@ -1,11 +1,10 @@
 #!/bin/tcsh 
 #
 #  This script will configure, build and run HOMME using the
-#  Jablownowski and Williamson baroclinic instability test case
-#  configured as the dycore is used in E3SM v1
+#  NGGPS benchmark problem
 #
-#  72 levels
-#  40 tracers
+#  128 levels
+#  10 tracers
 #    
 #  ne4  ultra-low-res for testing
 #  ne30 (1 degree) 

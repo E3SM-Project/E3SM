@@ -16,6 +16,7 @@
 #SBATCH --job-name v1bench
 #SBATCH -N 4
 #SBATCH --time=0:15:00
+#SBATCH -p debug
 #XSBATCH --account=FY150001
 #XSBATCH -p ec
 #

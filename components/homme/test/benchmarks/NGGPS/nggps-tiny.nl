@@ -1,5 +1,5 @@
 &ctl_nl
-NThreads=1
+NThreads=-1   ! use maximum threads available
 partmethod    = 4
 topology      = "cube"
 test_case     = "jw_baroclinic"

@@ -45,7 +45,7 @@ set namelist = nggps-tiny.nl ; set name = tiny
 #
 #  mpi run command
 #
-setenv OMP_STACKSIZE 64M     #  Edison has 64GB per node
+setenv OMP_STACKSIZE 16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 setenv PER_NODE  64          #  MPI per node
 setenv OMP_NUM_THREADS 4
 #setenv OMP_NUM_THREADS 1
