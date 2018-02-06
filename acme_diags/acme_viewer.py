@@ -385,7 +385,8 @@ def _create_taylor_index(viewer, root_dir, season_to_png):
 
     for s in seasons:
         if s in season_to_png:
-            viewer.add_col(season_to_png[s], is_file=True, title=s)
+            pth = os.path.join('..', '..', season_to_png[s])
+            viewer.add_col(pth, is_file=True, title=s)
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
