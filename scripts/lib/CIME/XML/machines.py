@@ -293,6 +293,7 @@ class Machines(GenericXML):
         return None
 
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
+        expect(False, "This object is not mutable")
         tmproot = self.root
         self.root = self.machine_node
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,

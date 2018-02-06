@@ -616,7 +616,6 @@ class Case(object):
         comp_root_dir = files.get_value(root_dir_node_name,
                                         {"component":"drv"}, resolved=False)
         if comp_root_dir is not None:
-            files.set_value(root_dir_node_name, comp_root_dir)
             self.set_value(root_dir_node_name, comp_root_dir)
 
 
@@ -626,23 +625,20 @@ class Case(object):
             root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
-
             if comp_root_dir is not None:
-                # the set_value in files is needed for the archiver setup below
-                files.set_value(root_dir_node_name, comp_root_dir)
                 self.set_value(root_dir_node_name, comp_root_dir)
-                compatt = None
-            else:
-                compatt = {"component":comp_name}
+
+            compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
             comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
-            comp_config_file = self.get_resolved_value(comp_config_file)
+            comp_config_file =  files.get_value(node_name, compatt)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
             # For files following version 3 schema this also checks the compsetname validity
+            
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))

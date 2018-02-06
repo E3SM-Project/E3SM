@@ -93,11 +93,17 @@ class GenericXML(object):
     def read_fd(self, fd):
         if self.tree:
             addroot = _Element(ET.parse(fd).getroot())
+            read_only = self.read_only
+            # we need to override the read_only mechanism here to append the xml object
+            if read_only:
+                self.read_only = False
             if addroot.xml_element.tag == self.name(self.root):
                 for child in self.get_children(root=addroot):
                     self.add_child(child)
             else:
                 self.add_child(addroot)
+            if read_only:
+                self.read_only = True
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
