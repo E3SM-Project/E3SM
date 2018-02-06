@@ -33,6 +33,7 @@ module dynConsBiogeochemMod
   private
   integer  , parameter :: COMPONENT_LEAF       = 1
   integer  , parameter :: COMPONENT_DEADWOOD   = 2
+  integer  , parameter :: COMPONENT_SEED       = 3
   real(r8) , parameter :: leafc_seed_param     = 1._r8
   real(r8) , parameter :: npool_seed_param     = 0.1_r8
   real(r8) , parameter :: ppool_seed_param     = 0.01_r8
@@ -315,39 +316,24 @@ contains
                 
              end if  ! end initialization of new pft
              
-             ! set the seed sources for leaf and deadstem
-             ! leaf source is split later between leaf, leaf_storage, leaf_xfer
-             call ComputeLeafSeedPools(veg_pp%itype(p), &
-                  leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
-                  npool_seed, ppool_seed)
-             
-             call ComputeStemSeedPools(veg_pp%itype(p), &
-                  deadstemc_seed, deadstemn_seed, deadstemp_seed, &
-                  deadstemc13_seed, deadstemc14_seed)
-             
              call UpdateCStateVarsDueToWtInc(cs, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p),     &
-                  leafc_seed, deadstemc_seed)
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
              
              if ( use_c13 ) then
                 call UpdateCStateVarsDueToWtInc(c13_cs, p, &
-                     veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                  leafc13_seed, deadstemc13_seed)
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p))
              endif
              
              if ( use_c14 ) then
                 call UpdateCStateVarsDueToWtInc(c14_cs, p, &
-                     veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                     leafc14_seed, deadstemc14_seed)
+                     veg_pp%wtcol(p), prior_weights%pwtcol(p))
              endif
 
              call UpdateNStateVarsDueToWtInc(ns, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p),       &
-                  leafn_seed, deadstemn_seed, npool_seed)
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
              
              call UpdatePStateVarsDueToWtInc(ps, p, &
-                  veg_pp%wtcol(p), prior_weights%pwtcol(p),         &
-                  leafp_seed, deadstemp_seed, ppool_seed)
+                  veg_pp%wtcol(p), prior_weights%pwtcol(p))
 
              ! update temporary seed source arrays
              ! These are calculated in terms of the required contributions from
@@ -985,119 +971,7 @@ contains
  end subroutine PhosphorusFluxVarsInit
 
  !-----------------------------------------------------------------------
- subroutine ComputeLeafSeedPools(veg_type, &
-     leafc_seed, leafn_seed, leafp_seed, leafc13_seed, leafc14_seed, &
-      npool_seed, ppool_seed)
-   !
-   ! !DESCRIPTION:
-   ! Computes values of seed for various leaf pool
-   !
-   use shr_const_mod      , only : SHR_CONST_PDB
-   use clm_varcon         , only : c14ratio, c3_r2, c4_r2
-   !
-   implicit none
-   !
-   ! !ARGUMENT
-   integer               , intent(in)  :: veg_type
-   real(r8)              , intent(out) :: leafc_seed
-   real(r8)              , intent(out) :: leafn_seed
-   real(r8)              , intent(out) :: leafp_seed
-   real(r8)              , intent(out) :: leafc13_seed
-   real(r8)              , intent(out) :: leafc14_seed
-   real(r8)              , intent(out) :: npool_seed
-   real(r8)              , intent(out) :: ppool_seed
-
-   leafc_seed     = 0._r8
-   leafn_seed     = 0._r8
-   leafp_seed     = 0._r8
-   npool_seed     = 0._r8
-   ppool_seed     = 0._r8
-
-   if (veg_type /= 0) then
-      leafc_seed = leafc_seed_param
-      leafn_seed = leafc_seed / veg_vp%leafcn(veg_type)
-      leafp_seed = leafc_seed / veg_vp%leafcp(veg_type)
-
-      if (veg_vp%nstor(veg_type) > 1e-6_r8) then
-         npool_seed     = npool_seed_param
-         ppool_seed     = ppool_seed_param
-      end if
-
-      if ( use_c13 ) then
-         if (veg_vp%c3psn(veg_type) == 1._r8) then
-            leafc13_seed     = leafc_seed     * c3_r2
-         else
-            leafc13_seed     = leafc_seed     * c4_r2
-         end if
-      endif
-
-      if ( use_c14 ) then
-         ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-         if (veg_vp%c3psn(veg_type) == 1._r8) then
-            leafc14_seed     = leafc_seed     * c14ratio
-         else
-            leafc14_seed     = leafc_seed     * c14ratio
-         end if
-      endif
-   end if
-
- end subroutine ComputeLeafSeedPools
-
- !-----------------------------------------------------------------------
- subroutine ComputeStemSeedPools(veg_type, &
-      deadstemc_seed, deadstemn_seed, deadstemp_seed, &
-      deadstemc13_seed, deadstemc14_seed)
-   !
-   ! !DESCRIPTION:
-   ! Computes values of seed for various stem pool
-   !
-   use shr_const_mod      , only : SHR_CONST_PDB
-   use clm_varcon         , only : c14ratio, c3_r2, c4_r2
-   !
-   implicit none
-   !
-   ! !ARGUMENT
-   integer               , intent(in)  :: veg_type
-   real(r8)              , intent(out) :: deadstemc_seed
-   real(r8)              , intent(out) :: deadstemn_seed
-   real(r8)              , intent(out) :: deadstemp_seed
-   real(r8)              , intent(out) :: deadstemc13_seed
-   real(r8)              , intent(out) :: deadstemc14_seed
-  
-   deadstemc_seed = 0._r8
-   deadstemn_seed = 0._r8
-   deadstemp_seed = 0._r8
-
-   if (veg_type /= 0) then
-      if (veg_vp%woody(veg_type) == 1._r8) then
-         deadstemc_seed = deadstemc_seed_param
-         deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_type)
-         deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_type)
-      end if
-
-      if ( use_c13 ) then
-         if (veg_vp%c3psn(veg_type) == 1._r8) then
-            deadstemc13_seed = deadstemc_seed * c3_r2
-         else
-            deadstemc13_seed = deadstemc_seed * c4_r2
-         end if
-      endif
-
-      if ( use_c14 ) then
-         ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-         if (veg_vp%c3psn(veg_type) == 1._r8) then
-            deadstemc14_seed = deadstemc_seed * c14ratio
-         else
-            deadstemc14_seed = deadstemc_seed * c14ratio
-         end if
-      endif
-   end if
-
- end subroutine ComputeStemSeedPools
-
- !-----------------------------------------------------------------------
- subroutine UpdateCStateVarsDueToWtInc(cs, p, wt_new, wt_old, &
-      leafc_seed, deadstemc_seed)
+ subroutine UpdateCStateVarsDueToWtInc(cs, p, wt_new, wt_old)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of carbonstate_type
@@ -1113,8 +987,6 @@ contains
    integer               , intent(in)    :: p
    real(r8)              , intent(in)    :: wt_new
    real(r8)              , intent(in)    :: wt_old
-   real(r8)              , intent(in)    :: leafc_seed
-   real(r8)              , intent(in)    :: deadstemc_seed
    !
    ! !LOCAL
    real(r8)                              :: pleaf
@@ -1122,8 +994,8 @@ contains
    real(r8)                              :: pxfer
    real(r8)                              :: t1
    real(r8)                              :: t2
-   real(r8)                              :: leafc_seed_local
-   real(r8)                              :: deadstemc_seed_local
+   real(r8)                              :: leafc_seed
+   real(r8)                              :: deadstemc_seed
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1132,10 +1004,10 @@ contains
        cs%leafc_patch(p), cs%leafc_storage_patch(p), cs%leafc_xfer_patch(p), &
        pleaf, pstor, pxfer)
 
-   leafc_seed_local     = leafc_seed_param     * &
-                          SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_LEAF)
-   deadstemc_seed_local = deadstemc_seed_param * &
-                          SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_DEADWOOD)
+   leafc_seed     = leafc_seed_param     * &
+        SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_LEAF)
+   deadstemc_seed = deadstemc_seed_param * &
+        SpeciesTypeMultiplier(cs%species, veg_pp%itype(p), COMPONENT_DEADWOOD)
 
    cs%leafc_patch(p)              = cs%leafc_patch(p)              * t1 + leafc_seed*pleaf*t2
    cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)      * t1 + leafc_seed*pstor*t2
@@ -1168,8 +1040,7 @@ contains
  end subroutine UpdateCStateVarsDueToWtInc
 
  !-----------------------------------------------------------------------
- subroutine UpdateNStateVarsDueToWtInc(ns, p, wt_new, wt_old, &
-      leafn_seed, deadstemn_seed, npool_seed)
+ subroutine UpdateNStateVarsDueToWtInc(ns, p, wt_new, wt_old)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of nitrogenstate_type
@@ -1185,9 +1056,6 @@ contains
    integer                  , intent(in)    :: p
    real(r8)                 , intent(in)    :: wt_new
    real(r8)                 , intent(in)    :: wt_old
-   real(r8)                 , intent(in)    :: leafn_seed
-   real(r8)                 , intent(in)    :: deadstemn_seed
-   real(r8)                 , intent(in)    :: npool_seed
    !
    ! !LOCAL
    real(r8)                                 :: pleaf
@@ -1195,8 +1063,9 @@ contains
    real(r8)                                 :: pxfer
    real(r8)                                 :: t1
    real(r8)                                 :: t2
-   real(r8)                                 :: leafn_seed_local
-   real(r8)                                 :: deadstemn_seed_local
+   real(r8)                                 :: leafn_seed
+   real(r8)                                 :: deadstemn_seed
+   real(r8)                                 :: npool_seed
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1205,11 +1074,17 @@ contains
        ns%leafn_patch(p), ns%leafn_storage_patch(p), ns%leafn_xfer_patch(p), &
        pleaf, pstor, pxfer)
 
-   leafn_seed_local     = leafc_seed_param     * &
+   leafn_seed     = leafc_seed_param     * &
                           SpeciesTypeMultiplier(CN_SPECIES_N, veg_pp%itype(p), COMPONENT_LEAF)
-   deadstemn_seed_local = deadstemc_seed_param * &
+   deadstemn_seed = deadstemc_seed_param * &
                           SpeciesTypeMultiplier(CN_SPECIES_N, veg_pp%itype(p), COMPONENT_DEADWOOD)
-   
+   npool_seed     = npool_seed_param     * &
+                          SpeciesTypeMultiplier(CN_SPECIES_N, veg_pp%itype(p), COMPONENT_SEED)
+
+   if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then
+      npool_seed     = 0._r8
+   end if
+
    ns%leafn_patch(p)              = ns%leafn_patch(p)              * t1 + leafn_seed*pleaf*t2
    ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      * t1 + leafn_seed*pstor*t2
    ns%leafn_xfer_patch(p)         = ns%leafn_xfer_patch(p)         * t1 + leafn_seed*pxfer*t2
@@ -1239,8 +1114,7 @@ contains
  end subroutine UpdateNStateVarsDueToWtInc
 
  !-----------------------------------------------------------------------
- subroutine UpdatePStateVarsDueToWtInc(ps, p, wt_new, wt_old, &
-      leafp_seed, deadstemp_seed, ppool_seed)
+ subroutine UpdatePStateVarsDueToWtInc(ps, p, wt_new, wt_old)
    !
    ! !DESCRIPTION:
    ! Updates p-th patch of phosphorusstate_type
@@ -1256,9 +1130,6 @@ contains
    integer                    , intent(in)    :: p
    real(r8)                   , intent(in)    :: wt_new
    real(r8)                   , intent(in)    :: wt_old
-   real(r8)                   , intent(in)    :: leafp_seed
-   real(r8)                   , intent(in)    :: deadstemp_seed
-   real(r8)                   , intent(in)    :: ppool_seed
    !
    ! !LOCAL
    real(r8)                                   :: pleaf
@@ -1266,8 +1137,9 @@ contains
    real(r8)                                   :: pxfer
    real(r8)                                   :: t1
    real(r8)                                   :: t2
-   real(r8)                                   :: leafp_seed_local
-   real(r8)                                   :: deadstemp_seed_local
+   real(r8)                                   :: leafp_seed
+   real(r8)                                   :: deadstemp_seed
+   real(r8)                                   :: ppool_seed
 
    t1 = wt_old           /wt_new
    t2 = (wt_new - wt_old)/wt_old
@@ -1276,10 +1148,16 @@ contains
        ps%leafp_patch(p), ps%leafp_storage_patch(p), ps%leafp_xfer_patch(p), &
        pleaf, pstor, pxfer)
 
-   leafp_seed_local     = leafc_seed_param     * &
-                          SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_LEAF)
-   deadstemp_seed_local = deadstemc_seed_param * &
-                          SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_DEADWOOD)
+   leafp_seed     = leafc_seed_param     * &
+        SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_LEAF)
+   deadstemp_seed = deadstemc_seed_param * &
+        SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_DEADWOOD)
+   ppool_seed     = ppool_seed_param     * &
+        SpeciesTypeMultiplier(CN_SPECIES_P, veg_pp%itype(p), COMPONENT_SEED)
+
+   if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then
+      ppool_seed     = 0._r8
+   end if
 
    ps%leafp_patch(p)              = ps%leafp_patch(p)              * t1 + leafp_seed*pleaf*t2
    ps%leafp_storage_patch(p)      = ps%leafp_storage_patch(p)      * t1 + leafp_seed*pstor*t2
@@ -1631,6 +1509,12 @@ contains
           multiplier = 1._r8 / veg_vp%leafcn(pft_type)
        case (COMPONENT_DEADWOOD)
           multiplier = 1._r8 / veg_vp%deadwdcn(pft_type)
+       case (COMPONENT_SEED)
+          if (pft_type /= 0) then
+             multiplier = 1._r8
+          else
+             multiplier = 0._r8
+          end if
        case default
           write(iulog,*) subname//' ERROR: unknown component: ', component
           call endrun(subname//': unknown component')
@@ -1642,6 +1526,12 @@ contains
           multiplier = 1._r8 / veg_vp%leafcp(pft_type)
        case (COMPONENT_DEADWOOD)
           multiplier = 1._r8 / veg_vp%deadwdcp(pft_type)
+       case (COMPONENT_SEED)
+          if (pft_type /= 0) then
+             multiplier = 1._r8
+          else
+             multiplier = 0._r8
+          end if
        case default
           write(iulog,*) subname//' ERROR: unknown component: ', component
           call endrun(subname//': unknown component')
