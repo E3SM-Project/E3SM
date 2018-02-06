@@ -669,6 +669,7 @@ class Case(object):
         pes_ntasks = {}
         pes_nthrds = {}
         pes_rootpe = {}
+        pes_pstrid = {}
         other      = {}
 
         force_tasks = None
@@ -686,7 +687,7 @@ class Case(object):
             force_tasks = int(match2.group(1))
             pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
         else:
-            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                                machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         if match1 or match2:
@@ -714,16 +715,19 @@ class Case(object):
             ntasks_str = "NTASKS_{}".format(comp_class)
             nthrds_str = "NTHRDS_{}".format(comp_class)
             rootpe_str = "ROOTPE_{}".format(comp_class)
+            pstrid_str = "PSTRID_{}".format(comp_class)
 
             ntasks = pes_ntasks[ntasks_str] if ntasks_str in pes_ntasks else 1
             nthrds = pes_nthrds[nthrds_str] if nthrds_str in pes_nthrds else 1
             rootpe = pes_rootpe[rootpe_str] if rootpe_str in pes_rootpe else 0
+            pstrid = pes_pstrid[pstrid_str] if pstrid_str in pes_pstrid else 1
 
             totaltasks.append( (ntasks + rootpe) * nthrds )
 
             mach_pes_obj.set_value(ntasks_str, ntasks)
             mach_pes_obj.set_value(nthrds_str, nthrds)
             mach_pes_obj.set_value(rootpe_str, rootpe)
+            mach_pes_obj.set_value(pstrid_str, pstrid)
 
         pesize = 1
         max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
