@@ -1929,15 +1929,15 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value compclass="ATM"> 0</value>
-      <value compclass="CPL"> 0</value>
-      <value compclass="OCN"> 0</value>
-      <value compclass="WAV"> 0</value>
-      <value compclass="GLC"> 0</value>
-      <value compclass="ICE"> 0</value>
-      <value compclass="ROF"> 0</value>
-      <value compclass="LND"> 0</value>
-      <value compclass="ESP"> 0</value>
+      <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP"> $MAX_MPITASKS_PER_NODE</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
