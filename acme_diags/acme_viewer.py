@@ -210,7 +210,8 @@ def _create_csv_from_dict(output_dir, season, test_name):
     return table_path
 
 def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
-    """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
+    """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it.
+    Since the Taylor Diagram uses the same seasons as LAT_LON_TABLE_INFO, we can use that."""
     taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
     control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
 
@@ -221,11 +222,11 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
         writer.writerow(col_names)
 
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
-            if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:  #only include variables in a a certain list for taylor diagram
+            # only include variables in a a certain list for taylor diagram
+            if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:
                 metrics = metrics_dic['metrics']
                 row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
                 writer.writerow(row)
-
     
     with open(taylor_diag_path, 'r') as taylor_csv:
         reader = csv.reader(taylor_csv, delimiter = ",")
@@ -375,6 +376,19 @@ def _create_lat_lon_table_index(viewer, root_dir):
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
+def _create_taylor_index(viewer, root_dir, season_to_png):
+    """Create an index in the viewer that links the individual htmls for the lat-lon table."""
+    seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
+    viewer.add_page('Taylor', seasons)
+    viewer.add_group('Summary Taylors')
+    viewer.add_row('All variables')
+
+    for s in seasons:
+        if s in season_to_png:
+            viewer.add_col(season_to_png[s], is_file=True, title=s)
+        else:
+            viewer.add_col('-----', is_file=True, title='-----')
+
 def _add_lat_lon_table_to_viewer_index(root_dir):
     """Move the link to Table next to the link to Latitude-Longitude contour maps"""
     index_page = os.path.join(root_dir, 'index.html')
@@ -421,12 +435,12 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
     if not os.path.exists(taylor_diag_dir):
         os.mkdir(taylor_diag_dir)
 
+    season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
-        #html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
-        #LAT_LON_TABLE_INFO[season]['html_path'] = html_path
+        season_to_png[season] = csv_path.replace('csv', 'png')
 
-    _create_lat_lon_table_index(viewer, root_dir)
+    _create_taylor_index(viewer, root_dir, season_to_png)
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
