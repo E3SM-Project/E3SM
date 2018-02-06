@@ -431,6 +431,12 @@ def _add_table_and_taylor_to_viewer_index(root_dir):
     with open(index_page, "wb") as f:
         f.write(html)
 
+def _make_relative_lat_lon_html_path(abs_html_path):
+    """If the given path is an absolute path, make it relative to output_dir"""
+    # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
+    # to this: output_dir/viewer/table-data/ANN_metrics_table.html
+    return '/'.join(abs_html_path.split('/')[-4:])
+
 def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
@@ -441,7 +447,7 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name)
         html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
-        LAT_LON_TABLE_INFO[season]['html_path'] = html_path
+        LAT_LON_TABLE_INFO[season]['html_path'] = _make_relative_lat_lon_html_path(html_path)
 
     _create_lat_lon_table_index(viewer, root_dir)
 
@@ -458,6 +464,51 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
         season_to_png[season] = csv_path.replace('csv', 'png')
 
     _create_taylor_index(viewer, root_dir, season_to_png)
+
+def create_metadata(parameter):
+    """
+    From a set of parameters, extract the metadata.
+    """
+    metadata = collections.OrderedDict()
+    metadata['Command to run'] = ''
+    cmd = 'acme_diags_driver.py '
+
+    from acme_diags.acme_parser import ACMEParser
+    parser = ACMEParser()
+
+    args = parser.view_args()
+    supported_cmd_args = args.__dict__.keys()
+    
+    for param_name in parameter.__dict__:
+        param = parameter.__dict__[param_name]
+        # we don't want to include blank values
+        if not param:
+            continue
+
+        if param_name in supported_cmd_args:
+            if isinstance(param, list) or isinstance(param, tuple):
+                # ex: --diff_levels -7, -6, -5, -4
+                cmd += "--{} ".format(param_name)
+                for p in param:
+                    if isinstance(p, str) and p.isdigit():
+                        cmd += " {} ".format(str(p))
+                    else:
+                        cmd += " '{}' ".format(str(p))
+            
+            elif isinstance(param, bool):
+                # ex: --multiprocessing
+                # note there's no value after the parameter, it's just a flag
+                if param:  # command is True, so add --command to set it to True
+                    cmd += "--{} ".format(param_name)
+
+            elif isinstance(param, str) and param.isdigit():
+                cmd += "--{} {} ".format(param_name, param)
+            else:
+                cmd += "--{} '{}' ".format(param_name, param)
+    
+    metadata['Command to run'] = cmd
+
+    return metadata
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
@@ -511,9 +562,12 @@ def create_viewer(root_dir, parameters, ext):
                                 )
                                 ROW_INFO[set_num][parameter.case_id][row_name]['descr'] = _get_description(
                                     var, parameter)
+                            # each season has a image_path and metadata linked to it, thus we use a dict
+                            ROW_INFO[set_num][parameter.case_id][row_name][season] = {}
                             # format fnm to support relative paths
-                            ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join(
+                            ROW_INFO[set_num][parameter.case_id][row_name][season]['image_path'] = os.path.join(
                                 '..', '{}'.format(set_num), parameter.case_id, fnm)
+                            ROW_INFO[set_num][parameter.case_id][row_name][season]['metadata'] = create_metadata(parameter)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA,
     # SON order
@@ -540,7 +594,8 @@ def create_viewer(root_dir, parameters, ext):
                     if col_season not in ROW_INFO[set_num][group][row_name]:
                         viewer.add_col('-----', is_file=True, title='-----')
                     else:
-                        fnm = ROW_INFO[set_num][group][row_name][col_season]
+                        metadata = ROW_INFO[set_num][group][row_name][col_season]['metadata']
+                        fnm = ROW_INFO[set_num][group][row_name][col_season]['image_path']
                         formatted_files = []
                         if parameters[0].save_netcdf:
                             nc_files = [
@@ -548,7 +603,7 @@ def create_viewer(root_dir, parameters, ext):
                             formatted_files = [
                                 {'url': f, 'title': f} for f in nc_files]
                         viewer.add_col(fnm + '.' + ext, is_file=True,
-                                       title=col_season, other_files=formatted_files)
+                                       title=col_season, other_files=formatted_files, meta=metadata)
 
     generate_lat_lon_metrics_table(viewer, root_dir, parameters)
     generate_lat_lon_taylor_diag(viewer, root_dir, parameters)
