@@ -51,7 +51,8 @@ module li_setup
              li_setup_wachspress_vertex_to_cell_weights, &
              li_interpolate_vertex_to_cell_2d, &
              li_cells_to_vertices_1dfield_using_kiteAreas, &
-             li_calculate_layerThickness
+             li_calculate_layerThickness, &
+             li_compute_gradient_2d
 
 
    !--------------------------------------------------------------------
@@ -591,6 +592,136 @@ contains
      enddo
 
    end subroutine li_calculate_layerThickness
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine li_compute_gradient_2d
+!
+!> \brief  compute the gradient of a 2D scalar field
+!> \author Matt Hoffman, William Lipscomb
+!> \date   April 2015, Feb 2018
+!> \details
+!>  This routine computes the x and y coordinates of the gradient of a
+!>  2D scalar field. The gradient is located at cell centers.
+!>  Modified from a version in sea ice incremental remapping.
+!
+!-----------------------------------------------------------------------
+
+  subroutine li_compute_gradient_2d(&
+       meshPool,                     &
+       field,                        &
+       xGrad,  yGrad,                &
+       err)
+
+    !-----------------------------------------------------------------
+    ! input variables
+    !-----------------------------------------------------------------
+    type (mpas_pool_type), intent(in) :: &
+         meshPool                                     !< Input: mesh object
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         field               !< Input: scalar field defined at cell centers
+
+    !-----------------------------------------------------------------
+    ! input/output variables
+    !-----------------------------------------------------------------
+
+    !-----------------------------------------------------------------
+    ! output variables
+    !-----------------------------------------------------------------
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         xGrad, & !< Output: gradient in x-direction
+         yGrad    !< Output: gradient in y-direction
+
+    integer, intent(out) :: err            !< Output: error flag
+
+    !-----------------------------------------------------------------
+    ! local variables
+    !-----------------------------------------------------------------
+    integer, pointer :: &
+         nCells,           & !< number of cells
+         maxEdges            !< max number of edges per cell
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell        !< number of edges per cell
+
+    integer, dimension(:,:), pointer ::  &
+         edgesOnCell,      & !< index for each edge of a given cell
+         cellsOnCell,      & !< index for each cell neighbor of a given cell
+         cellsOnEdge         !< index for each cell neighbor of a given edge
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         dcEdge              !< distance between the 2 cell centers on each side of an edge
+
+    real(kind=RKIND), dimension(:,:,:), pointer ::  &
+         coeffs_reconstruct   !< coefficients for reconstructing the gradient at a cell center,
+                             !<  given normal components on edges
+
+    integer :: iCell, iEdge, iEdgeOnCell, iCellNeighbor
+
+    real(kind=RKIND) :: &
+         signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
+
+    real(kind=RKIND), dimension(:), allocatable ::   &
+         normalGrad  ! normal components of the gradient, defined on cell edges.  For one cell.
+
+    err = 0
+
+    ! get needed variables
+    call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+    call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+    call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+    call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+    call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+    call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+    call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+    call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffs_reconstruct)
+
+    ! find dimensions and allocate arrays
+    allocate(normalGrad(maxEdges))
+
+    ! initialize the gradient
+    xGrad(:) = 0.0_RKIND
+    yGrad(:) = 0.0_RKIND
+
+    ! loop over cells
+    do iCell = 1, nCells
+
+       ! initialize normal gradient components on edges of this cell
+       normalGrad(:) = 0.0_RKIND
+
+       ! loop over edges of this cell
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+          iCellNeighbor = cellsOnCell(iEdgeOnCell, iCell)
+
+          ! compute the normal component of the gradient on this edge
+          if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! there is a cell neighbor on this edge
+             iEdge = edgesOnCell(iEdgeOnCell,iCell)
+             if (iCell == cellsOnEdge(1,iEdge)) then
+                signGradient =  1.0_RKIND
+             else
+                signGradient = -1.0_RKIND
+             end if
+             normalGrad(iEdgeOnCell) = signGradient * (field(iCellNeighbor) - field(iCell)) / dcEdge(iEdge)
+          else   ! there is no cell neighbor on this edge
+             ! set gradient component = 0
+             normalGrad(iEdgeOnCell) = 0.0_RKIND
+          endif
+
+          ! add the contribution of this normal component to the reconstructed
+          ! gradient at the cell center (in global x/y/z coordinates)
+          xGrad(iCell) = xGrad(iCell) + coeffs_reconstruct(1,iEdgeOnCell,iCell) * normalGrad(iEdgeOnCell)
+          yGrad(iCell) = yGrad(iCell) + coeffs_reconstruct(2,iEdgeOnCell,iCell) * normalGrad(iEdgeOnCell)
+       enddo  ! iEdgeOnCell
+
+    enddo  ! iCell
+
+    ! cleanup
+    deallocate(normalGrad)
+
+  end subroutine li_compute_gradient_2d
 
 
 !***********************************************************************
