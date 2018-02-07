@@ -284,7 +284,8 @@ contains
       integer, dimension(:,:), pointer :: cellsOnCell
       logical, pointer :: onSphere
       logical :: config_AM_lagrPartTrack_reset_particles
-      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
+      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria, &
+        config_AM_lagrPartTrack_compute_interval, config_AM_lagrPartTrack_output_stream
 
       real (kind=RKIND), dimension(4) :: kWeightK, kWeightKVert
       real (kind=RKIND), dimension(3,4) :: kWeightX
@@ -319,6 +320,8 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_compute_interval', config_AM_lagrPartTrack_compute_interval)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_output_stream', config_AM_lagrPartTrack_output_stream)
 
       if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
         config_AM_lagrPartTrack_reset_particles = .False.
@@ -386,9 +389,30 @@ contains
 
         call mpas_pool_get_config(meshPool, 'on_a_sphere', onSphere)
         call mpas_pool_get_config(meshPool, 'sphere_radius', sphereRadius)
-        call mpas_pool_get_config(block % configs, 'config_dt', config_dt)
-        call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
         !}}}
+
+        ! get the appropriate time scale for particle integration, e.g., dtSim
+        if (trim(config_AM_lagrPartTrack_compute_interval) == 'dt') then
+          ! from time step value
+          ! would eventually need to correspond to domain dt, but for now this is a
+          ! global constant
+          call mpas_pool_get_config(block % configs, 'config_dt', config_dt)
+          call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
+          ! using the output interval
+        else if (trim(config_AM_lagrPartTrack_compute_interval) == 'output') then
+          LIGHT_ERROR_WRITE('LIGHT output mode is not yet supported!')
+          !! from output interval
+          !call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_lagrPartTrack_output_stream, &
+          !                                  MPAS_STREAM_PROPERTY_REF_TIME, config_dt, err)
+          !write(*,*) 'config_AM_lagrPartTrack_output_stream = ', config_AM_lagrPartTrack_output_stream
+          !write(*,*) 'config_dt= ', config_dt
+          !call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
+        else
+          ! using specified interval from timestring
+          call mpas_set_timeInterval(timeStepESMF, timeString=trim(config_AM_lagrPartTrack_compute_interval), ierr=err)
+        end if
+        call mpas_get_timeInterval(timeStepESMF, dt=dtSim)
+        LIGHT_DEBUG_WRITE('dtSim = ' COMMA dtSim)
 
         !{{{
         ! flip previous time level to back (switching memory pointers)
@@ -467,9 +491,6 @@ contains
 #ifdef MPAS_DEBUG
           call mpas_timer_start("time_step_LPT")
 #endif
-          ! would eventually need to correspond to domain dt, but for now this is a
-          ! global constant
-          call mpas_get_timeInterval(timeStepESMF, dt=dtSim)
           ! adjust time step for consistency with integer number of steps
           nSteps = ceiling(dtSim/dtParticle)
           dt = dtSim/nSteps
