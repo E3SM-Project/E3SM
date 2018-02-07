@@ -638,6 +638,12 @@ contains
          surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
          basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
 
+         ! ---
+         ! --- Calculate strain rates on cell centers
+         ! ---
+         call calculate_strain_rates(meshPool, velocityPool, err_tmp)
+         err = ior(err, err_tmp)
+
          block => block % next
       end do
 
@@ -850,7 +856,74 @@ contains
    end subroutine calculate_beta
 
 
+!***********************************************************************
+!
+!  routine calculate_strain_rates
+!
+!> \brief  Calulates strain rates on cell centers
+!> \author Matt Hoffman
+!> \date   Feb. 2018
+!> \details
+!>  This routine calculates strain rates on cell centers.
+!
+!-----------------------------------------------------------------------
 
+   subroutine calculate_strain_rates(meshPool, velocityPool, err)
+
+      use li_setup
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool                                     !< Input: mesh object
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         velocityPool                                     !< Input: mesh object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), pointer :: exx, eyy, exy, eyx, eTheta, eMax, eMin
+      real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      integer :: err_tmp
+
+      err = 0
+
+      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(velocityPool, 'exx', exx)
+      call mpas_pool_get_array(velocityPool, 'eyy', eyy)
+      call mpas_pool_get_array(velocityPool, 'exy', exy)
+      call mpas_pool_get_array(velocityPool, 'eyx', eyx)
+      call mpas_pool_get_array(velocityPool, 'eTheta', eTheta)
+      call mpas_pool_get_array(velocityPool, 'eMax', eMax)
+      call mpas_pool_get_array(velocityPool, 'eMin', eMin)
+
+      ! Calculate strain rates
+      call li_compute_gradient_2d(meshPool, uReconstructX(1,:), exx, exy, err_tmp)
+      err = ior(err, err_tmp)
+
+      call li_compute_gradient_2d(meshPool, uReconstructY(1,:), eyx, eyy, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Calculate principal strain rate angle
+      eTheta = 0.5_RKIND * atan( (exy + eyx) / (exx - eyy + 1.0e-42_RKIND) )
+
+      ! Calculate principal strain rates
+      eMax = 0.5_RKIND * (exx + eyy) + sqrt( (0.5_RKIND * (exx - eyy))**2 + (0.25_RKIND*(exy + eyx))**2)
+      eMin = 0.5_RKIND * (exx + eyy) - sqrt( (0.5_RKIND * (exx - eyy))**2 + (0.25_RKIND*(exy + eyx))**2)
+
+   !--------------------------------------------------------------------
+   end subroutine calculate_strain_rates
 
 !***********************************************************************
 
