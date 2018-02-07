@@ -14,7 +14,8 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
 #ifdef HAVE_MOAB
-  use seq_comm_mct, only : MHID, MPOID
+  use seq_comm_mct, only : mhid, mpoid
+  use shr_mpi_mod,  only: shr_mpi_max
 #endif
 
   implicit none
@@ -1005,6 +1006,7 @@ contains
     character*32             :: appname, outfile, wopts
     integer                  :: pid_target  ! it is out from this routine, should be saved as
                                             !   moab pid
+    integer                  :: maxMH, maxMPO ! max pids for moab apps
 
     !-----------------------------------------------------
 
@@ -1022,14 +1024,19 @@ contains
     call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
+    call shr_mpi_max(mhid, maxMH, mpicom_join)
+    call shr_mpi_max(mpoid, maxMPO, mpicom_join)
+    if (seq_comm_iamroot(CPLID) ) then
+       write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO
+    endif
     ! this works now for atmosphere only;
-    if (comp%oneletterid == 'a') then
+    if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
       ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(MHID, mpicom_join, mpigrp_cplid, id_new);
+        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_new);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
@@ -1043,13 +1050,13 @@ contains
       endif
     endif !  only for atm for the time being
     ! this works now for atmosphere only;
-    if (comp%oneletterid == 'o') then
+    if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(MPOID, mpicom_join, mpigrp_cplid, id_new);
+        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_new);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)

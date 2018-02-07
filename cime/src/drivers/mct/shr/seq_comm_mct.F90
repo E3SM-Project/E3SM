@@ -197,7 +197,7 @@ module seq_comm_mct
 
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_InitializeFortran
-    integer, public :: MHID, MPOID
+    integer, public :: mhid, mpoid
 #endif
 !=======================================================================
 contains
@@ -491,6 +491,8 @@ contains
     if (ierr /= 0) then
        write(logunit,*) trim(subname),' ERROR initialize MOAB '
     endif
+    mhid = -1
+    mpoid = -1
 #endif
 
     deallocate(comps,comms)

@@ -194,6 +194,11 @@ CONTAINS
        ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHID)
        if (ierr > 0 )  &
            call endrun('Error: cannot register moab app')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+           write(iulog,*) " "
+       endif
 #endif
        call prim_init1(elem,par,dom_mt,TimeLevel)
 
