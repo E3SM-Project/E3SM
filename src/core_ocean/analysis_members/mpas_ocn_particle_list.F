@@ -4145,9 +4145,9 @@ end subroutine allocate_list_particlelists !}}}
       do while (associated(block))
 
         ! write out all blockNeighs and procNeighs
-        call mpas_log_write( 'blockID = $i ', intArgs=(/  block % blockID /) )
-        call mpas_log_write( 'blockNeighs = i ', intArgs=(/ block % blockNeighs /) )
-        call mpas_log_write( 'procNeighs = i ', intArgs=(/ block % procNeighs /) )
+        call mpas_log_write( 'blockID = $i', intArgs=(/  block % blockID /) )
+        call mpas_log_write( 'blockNeighs = $i', intArgs=(/ block % blockNeighs /) )
+        call mpas_log_write( 'procNeighs = $i', intArgs=(/ block % procNeighs /) )
 
         block => block % next
       end do
@@ -4163,15 +4163,15 @@ end subroutine allocate_list_particlelists !}}}
 
      numNeighs = size(procNeighs)
 
-     call mpas_log_write( 'myproc, procNeighs')
+     LIGHT_DEBUG_WRITE( 'myproc, procNeighs')
      do i=1,numNeighs
-       print *,  myproc, procNeighs(i)
+       LIGHT_DEBUG_WRITE(myproc COMMA procNeighs(i))
      end do
      if(associated(ioProcNeighs)) then
-       call mpas_log_write( 'myproc, ioProcNeighs')
+       LIGHT_DEBUG_WRITE( 'myproc, ioProcNeighs')
        numNeighs = size(ioProcNeighs)
        do i=1,numNeighs
-         print *,  myproc, ioProcNeighs(i)
+         LIGHT_DEBUG_WRITE(myproc COMMA ioProcNeighs(i))
        end do
      end if
 
@@ -4188,9 +4188,9 @@ end subroutine allocate_list_particlelists !}}}
        ! THIS LINE CAUSED A VERY, VERY, VERY NASTY BUG-- BE CAREFUL ABOUT GETTING THE LOCATION OF POTENTIALLY NULLS!
        nPartList = count_particlelist(block % particlelist)
        nPartList_particles = count_particlelist_particles(block % particlelist)
-       print *,  'block = ', block % blockID, ' nPartList= ',  nPartList, ' nparticles = ', nPartList_particles
+       LIGHT_DEBUG_WRITE('block = ' COMMA block % blockID COMMA ' nPartList= ' COMMA  nPartList COMMA ' nparticles = ' COMMA nPartList_particles)
        if (nPartList > nPartList_particles) then
-         print *,  'Possible error! ', nPartList - nPartList_particles, ' particles on particle list is not allocated!'
+         LIGHT_DEBUG_WRITE('Possible error! ' COMMA nPartList - nPartList_particles COMMA ' particles on particle list is not allocated!')
        end if
 
        block => block % next
@@ -4216,7 +4216,7 @@ end subroutine allocate_list_particlelists !}}}
 
        block => block % next
      end do
-     print *,  'number of particles on processor = ', countOnProc
+     LIGHT_DEBUG_WRITE('number of particles on processor = ' COMMA countOnProc)
 
    end subroutine test_currentBlock !}}}
 
@@ -4230,10 +4230,10 @@ end subroutine allocate_list_particlelists !}}}
      sumtot = 0
      do i = 1, nlist
        listparticles = count_particlelist(listPL(i)%list)
-       print *,  'list i=',i,' nparticles=', listparticles
+       LIGHT_DEBUG_WRITE('list i=' COMMA i COMMA ' nparticles=' COMMA listparticles)
        sumtot = sumtot + listparticles
      end do
-     print *,  'total_on_list=', sumtot
+     LIGHT_DEBUG_WRITE('total_on_list=' COMMA sumtot)
    end subroutine test_num_particles_on_particlelist !}}}
 !}}}
 
