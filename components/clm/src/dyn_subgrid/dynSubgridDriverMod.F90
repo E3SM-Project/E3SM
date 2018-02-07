@@ -282,6 +282,8 @@ contains
        ! (particularly mask that is past through coupler).
 
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       call patch_state_updater%set_new_weights(bounds_clump)
+       call column_state_updater%set_new_weights(bounds_clump, nc)
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
@@ -296,7 +298,11 @@ contains
             waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
 
        if (use_cn) then
-          call dyn_cnbal_patch(bounds_clump, prior_weights, &
+          call dyn_cnbal_patch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               prior_weights, &
+               patch_state_updater, &
                canopystate_vars, photosyns_vars, cnstate_vars, &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
