@@ -21,20 +21,23 @@ def _get_archive_file_fn(copy_only):
     return shutil.copyfile if copy_only else shutil.move
 
 ###############################################################################
-def _get_datenames(rundir, casename, case):
+def _get_datenames(case):
 ###############################################################################
     """
     Returns the datetime objects specifying the times of each file
     Note we are assuming that the coupler restart files exist and are consistent with other component datenames
     Not doc-testable due to filesystem dependence
     """
+    rundir = case.get_value("RUNDIR")
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
 
     # The MULTI_DRIVER option requires a more careful search for dates.
-    # When True, each date has MULTI_DRIVER cpl_####.r files.
-    ndriver = case.get_value('MULTI_DRIVER')
-    logger.debug("_get_datenames:  ndriver = {} ".format(ndriver))
-    if ndriver :
+    # When True, each date has NINST cpl_####.r files.
+    multidriver = case.get_value('MULTI_DRIVER')
+    logger.debug("_get_datenames:  multidriver = {} ".format(multidriver))
+
+    casename = case.get_value("CASE")
+    if multidriver :
        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
     else:
        files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
@@ -555,7 +558,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                        archive_incomplete_logs, archive_file_fn)
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
-    datenames = _get_datenames(case.get_value("RUNDIR"), case.get_value("CASE"), case)
+    datenames = _get_datenames(case)
     histfiles_savein_rundir_by_compname = {}
     for datename in datenames:
         datename_is_last = False
@@ -619,7 +622,7 @@ def archive_last_restarts(case, archive_restdir, last_date=None, link_to_restart
     files that are associated with these restart files.)
     """
     archive = case.get_env('archive')
-    datenames = _get_datenames(case.get_value("RUNDIR"), case.get_value("CASE"), case)
+    datenames = _get_datenames(case)
     expect(len(datenames) >= 1, "No restart dates found")
     last_datename = datenames[-1]
 
