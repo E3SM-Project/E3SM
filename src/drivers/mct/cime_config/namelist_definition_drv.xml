@@ -442,6 +442,7 @@
     </desc>
     <values>
       <value>1990</value>
+      <value iyear="1850"> 1850 </value>
     </values>
   </entry>
 
@@ -454,6 +455,7 @@
     </desc>
     <values>
       <value>1990</value>
+      <value iyear="1850"> 1850 </value>
     </values>
   </entry>
 
