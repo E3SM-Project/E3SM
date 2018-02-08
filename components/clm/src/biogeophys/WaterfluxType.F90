@@ -46,6 +46,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_snwcp_ice_col       (:)   ! col excess snowfall due to snow capping (mm H2O /s)
      real(r8), pointer :: qflx_tran_veg_patch      (:)   ! patch vegetation transpiration (mm H2O/s) (+ = to atm)
      real(r8), pointer :: qflx_tran_veg_col        (:)   ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+     real(r8), pointer :: qflx_tran_veg_col_sat    (:)   ! col vegetation transpiration (mm H2O/s) (+ = to atm)
      real(r8), pointer :: qflx_dew_snow_patch      (:)   ! patch surface dew added to snow pack (mm H2O /s) [+]
      real(r8), pointer :: qflx_dew_snow_col        (:)   ! col surface dew added to snow pack (mm H2O /s) [+]
      real(r8), pointer :: qflx_dew_grnd_patch      (:)   ! patch ground surface dew formation (mm H2O /s) [+]
@@ -127,6 +128,9 @@ module WaterfluxType
      real(r8), pointer :: mflx_et_col              (:,:) ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
+     real(r8), pointer :: qflx_lat_aqu_layer       (:,:) ! lateral flow for each layer
+     real(r8), pointer :: qflx_lat_aqu             (:)   ! total lateral flow
+     real(r8), pointer :: qflx_surf_input          (:)   ! surface runoff input to hollow (mmH2O /s)
 
      ! Objects that help convert once-per-year dynamic land cover changes into fluxes
      ! that are dribbled throughout the year
@@ -204,6 +208,7 @@ contains
     allocate(this%qflx_snwcp_liq_col       (begc:endc))              ; this%qflx_snwcp_liq_col       (:)   = nan
     allocate(this%qflx_snwcp_ice_col       (begc:endc))              ; this%qflx_snwcp_ice_col       (:)   = nan
     allocate(this%qflx_tran_veg_col        (begc:endc))              ; this%qflx_tran_veg_col        (:)   = nan
+    allocate(this%qflx_tran_veg_col_sat    (begc:endc))              ; this%qflx_tran_veg_col_sat    (:)   = nan
     allocate(this%qflx_sub_snow_vol_col    (begc:endc))              ; this%qflx_sub_snow_vol_col    (:)   = nan
     allocate(this%qflx_evap_veg_col        (begc:endc))              ; this%qflx_evap_veg_col        (:)   = nan
     allocate(this%qflx_evap_can_col        (begc:endc))              ; this%qflx_evap_can_col        (:)   = nan
@@ -293,6 +298,9 @@ contains
     allocate(this%mflx_drain_col         (begc:endc,1:nlevgrnd))     ; this%mflx_drain_col           (:,:) = nan
     allocate(this%mflx_sub_snow_col      (begc:endc))                ; this%mflx_sub_snow_col        (:)   = nan
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
+    allocate(this%qflx_surf_input        (begc:endc))                ; this%qflx_surf_input          (:)   = nan
+    allocate(this%qflx_lat_aqu           (begc:endc))                ; this%qflx_lat_aqu             (:)   = nan
+    allocate(this%qflx_lat_aqu_layer     (begc:endc,1:nlevgrnd))     ; this%qflx_lat_aqu_layer     (:,:)   = nan
 
     this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
          bounds = bounds, &
@@ -500,6 +508,17 @@ contains
     call hist_addfld1d (fname='QFLX_DEW_SNOW', units='mm H2O/s', &
          avgflag='A', long_name='surface dew added to snow pacK', &
          ptr_patch=this%qflx_dew_snow_patch, default='inactive', c2l_scale_type='urbanf')
+      
+     this%qflx_lat_aqu(begc:endc) = spval
+       call hist_addfld1d (fname='QFLX_LAT_AQU', units='mm H2O/s', &
+            avgflag='A', long_name='Lateral flow between hummock and hollow', &
+            ptr_col=this%qflx_lat_aqu, default='inactive', c2l_scale_type='urbanf')
+       this%qflx_surf_input(begc:endc) = spval
+       call hist_addfld1d (fname='QFLX_SURF_INPUT', units='mm H2O/s', &
+            avgflag='A', long_name='Runoff from hummock to hollow', &
+            ptr_col=this%qflx_surf_input, default='inactive', c2l_scale_type='urbanf')
+
+
 
     this%qflx_h2osfc_surf_col(begc:endc) = spval
     call hist_addfld1d (fname='QH2OSFC',  units='mm/s',  &

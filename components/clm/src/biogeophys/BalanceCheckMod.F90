@@ -243,6 +243,10 @@ contains
           qflx_sl_top_soil           =>    waterflux_vars%qflx_sl_top_soil_col        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_liq_dynbal            =>    waterflux_vars%qflx_liq_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
           qflx_ice_dynbal            =>    waterflux_vars%qflx_ice_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
+#if (defined HUM_HOL)
+          qflx_lat_aqu               =>    waterflux_vars%qflx_lat_aqu                , & ! Input:   [real(r8) (:)   ]  lateral flow between hummock and hollow (mm H2O /s)
+          qflx_surf_input            =>    waterflux_vars%qflx_surf_input             , & ! Input:   [real(r8) (:)   ] input to hollow surface water from hummock (mm H2O /s)
+#endif
           snow_sources               =>    waterflux_vars%snow_sources_col            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
           snow_sinks                 =>    waterflux_vars%snow_sinks_col              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
           qflx_lateral               =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
@@ -313,12 +317,21 @@ contains
 
           ! add qflx_drain_perched and qflx_flood
           if (col_pp%active(c)) then
-
+#if (defined HUM_HOL)
+          ! add qflx_drain_perched and qflx_flood
+             ! HUM_HOL
+             errh2o(c) = endwb(c) - begwb(c) &
+                 - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
+                  - qflx_evap_tot(c) - qflx_surf(c) + qflx_surf_input(c) - qflx_h2osfc_surf(c) &
+                  - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)  &
+                  + qflx_lat_aqu(c)) * dtime
+#else
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
                   - qflx_lateral(c) ) * dtime
+#endif
              dwb(c) = (endwb(c)-begwb(c))/dtime
 
           else
@@ -408,9 +421,13 @@ contains
              write(iulog,*)'qflx_glcice_melt           = ',qflx_glcice_melt(indexc)
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
+#if (defined HUM_HOL)
+             write(iulog,*)'qflx_lat_aqu               = ',qflx_lat_aqu(indexc)
+             write(iulog,*)'qflx_surf_input            = ',qflx_surf_input(indexc)
+#endif
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             !call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 

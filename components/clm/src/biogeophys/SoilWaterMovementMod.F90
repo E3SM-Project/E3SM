@@ -377,6 +377,8 @@ contains
          qflx_deficit      =>    waterflux_vars%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
          qflx_rootsoi_col  =>    waterflux_vars%qflx_rootsoi_col    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
+         qflx_tran_veg_col_sat     =>    waterflux_vars%qflx_tran_veg_col_sat, & ! Output: [real(r8) (:)   ]
+
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
 
@@ -580,6 +582,18 @@ contains
       ! Set up r, a, b, and c vectors for tridiagonal solution
 
       ! Node j=1 (top)
+      !DMR 3/5/15 - fix problem of transpiration drawn below water table not being replaced
+      !  This term will be removed from the soil water calculation and subtracted
+      !  from qcharge
+      do fc = 1, num_hydrologyc
+        c = filter_hydrologyc(fc)
+        qflx_tran_veg_col_sat(c) = 0._r8
+        if (jwt(c)+2  .lt. nlevsoi) then
+          do j=jwt(c)+2,nlevsoi
+            qflx_tran_veg_col_sat(c) = qflx_tran_veg_col_sat(c)+qflx_rootsoi_col(c,j)
+          end do
+        end if
+      end do
 
       j = 1
       do fc = 1, num_hydrologyc
@@ -591,7 +605,11 @@ contains
          qout(c,j)   = -hk(c,j)*num/den
          dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
          dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-         rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+         if (j == jwt(c)+1) then !water table in this layer
+           rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) - qflx_tran_veg_col_sat(c)
+         else                    !water table below this layer
+           rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+         end if
          amx(c,j) =  0._r8
          bmx(c,j) =  dzmm(c,j)*(sdamp+1._r8/dtime) + dqodw1(c,j)
          cmx(c,j) =  dqodw2(c,j)
@@ -615,7 +633,13 @@ contains
             qout(c,j)   = -hk(c,j)*num/den
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-            rmx(c,j)    =  qin(c,j) - qout(c,j) -  qflx_rootsoi_col(c,j)
+            if (j > jwt(c)+1) then                     !Water table above this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j)
+            else if (j == jwt(c)+1) then               !water table in this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) - qflx_tran_veg_col_sat(c)
+            else                                       !Water table below this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+            end if
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  dqodw2(c,j)
@@ -928,7 +952,6 @@ contains
          qflx_dew_grnd             =>    waterflux_vars%qflx_dew_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_sub_snow             =>    waterflux_vars%qflx_sub_snow_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_drain                =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
-
          mflx_infl_col             =>    waterflux_vars%mflx_infl_col               , & ! Output: [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
          mflx_dew_col              =>    waterflux_vars%mflx_dew_col                , & ! Output: [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
          mflx_snowlyr_disp_col     =>    waterflux_vars%mflx_snowlyr_disp_col       , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
