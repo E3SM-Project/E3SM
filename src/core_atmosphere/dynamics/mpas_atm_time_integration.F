@@ -395,7 +395,7 @@ module atm_time_integration
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
 #ifdef DO_PHYSICS
-      call mpas_timer_start('physics_addtend')
+      call mpas_timer_start('physics_get_tend')
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -419,7 +419,7 @@ module atm_time_integration
                      tend_rho_physics )
          block => block % next
       end do
-      call mpas_timer_stop('physics_addtend')
+      call mpas_timer_stop('physics_get_tend')
 #endif
 
       !
@@ -594,29 +594,6 @@ module atm_time_integration
                block => block % next
             end do
             call mpas_timer_stop('atm_compute_dyn_tend')
-
-#ifdef DO_PHYSICS
-!            call mpas_timer_start('physics_addtend')
-!            block => domain % blocklist
-!            do while (associated(block))
-!               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-!               call mpas_pool_get_subpool(block % structs, 'state', state)
-!               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-!               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-!               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-!               call physics_addtend( block, &
-!                                      mesh, &
-!                                     state, &     
-!                                      diag, &
-!                                      tend, &
-!                              tend_physics, &
-!                           block % configs, &
-!                                   rk_step, &
-!                          dynamics_substep  )
-!               block => block % next
-!            end do
-!            call mpas_timer_stop('physics_addtend')
-#endif
 
 
             !***********************************
