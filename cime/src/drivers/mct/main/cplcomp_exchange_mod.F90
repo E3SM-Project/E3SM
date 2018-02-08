@@ -1024,8 +1024,8 @@ contains
     call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    call shr_mpi_max(mhid, maxMH, mpicom_join)
-    call shr_mpi_max(mpoid, maxMPO, mpicom_join)
+    call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.)
+    call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO
     endif
