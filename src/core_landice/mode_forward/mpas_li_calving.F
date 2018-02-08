@@ -98,63 +98,26 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 
-      type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
 
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: velocityPool
 
       ! calving-relevant config options
       character (len=StrKIND), pointer :: config_calving
       logical, pointer :: config_print_calving_info, config_data_calving
-
-      real(kind=RKIND), pointer :: config_calving_topography, &
-                                   config_calving_thickness, &
-                                   config_calving_timescale, &
-                                   config_sea_level, &
-                                   config_dynamic_thickness,  &
-                                   config_ice_density,  &
-                                   config_ocean_density
-
-      ! fields for calving masks
-      ! The calvingLaw mask is used for the floating and topographic_threshold options
-      ! The activeForCalving, inactiveMargin and ocean masks are used for the more complex thickness_threshold option
-
-      type (field1dInteger), pointer :: calvingLawMaskField
-      integer, dimension(:), pointer :: calvingLawMask     ! = 1 where calving-law criterion is satisfied, else = 0
-
-      type (field1dInteger), pointer :: activeForCalvingMaskField
-      integer, dimension(:), pointer :: activeForCalvingMask   ! = 1 for grounded cells thicker than config_dynamic_thickness;
-                                                               ! = 1 for floating cells thicker than config_calving_thickness;
-                                                               ! = 0 elsewhere
-
-      type (field1dInteger), pointer :: inactiveMarginMaskField
-      integer, dimension(:), pointer :: inactiveMarginMask
-      ! = 1 for inactive cells (thin or no ice) that have 1 or more active neighbors
-
-      type (field1dInteger), pointer :: oceanMaskField
-      integer, dimension(:), pointer :: oceanMask   ! = 1 for cells that are not land and do not have active ice
-                                                    ! includes floating cells with inactive ice
+      real(kind=RKIND), pointer :: config_calving_timescale
 
       integer, pointer :: nCells
 
       real (kind=RKIND), pointer :: deltat  !< time step (s)
 
       integer, dimension(:), pointer :: &
-           nEdgesOnCell,     & ! number of cells that border each cell
-           cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
-
-      integer, dimension(:), pointer :: &
            indexToCellID       ! list of global cell IDs
 
-      integer, dimension(:,:), pointer :: &
-           cellsOnCell         ! list of cells that neighbor each cell
-
       real (kind=RKIND) ::  &
-           calvingFraction,  & ! fraction of ice that calves in each column; depends on calving_timescale
-           flotationThickness  ! thickness at which marine-based ice starts to float
+           calvingFraction ! fraction of ice that calves in each column; depends on calving_timescale
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,        & ! ice thickness
@@ -165,30 +128,15 @@ module li_calving
                                ! typically the entire ice thickness, but will be a fraction of the thickness
                                ! if calving_timescale > dt
 
-      integer :: iCell, iCellOnCell, iCellNeighbor
+      integer :: iCell
 
       integer :: err_tmp
 
-      !WHL - debug
-      logical, parameter :: circular_shelf = .false.
-      integer, parameter :: ncellsPerRow = 40
-      integer, parameter :: nRows = 46
-      integer :: i, iRow
-
       err = 0
 
-      ! get config options
-      dminfo => domain % dminfo
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
-      call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
-      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
-      call mpas_pool_get_config(liConfigs, 'config_calving_topography', config_calving_topography)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
-      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
-      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
-      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
 
       ! Get deltat from first block (same on all blocks)
       block => domain % blocklist
@@ -207,281 +155,60 @@ module li_calving
          calvingFraction = 1.0_RKIND   ! calve the entire thickness in eligible columns
       endif
 
-      ! block loop
+      if (config_print_calving_info) then
+         call mpas_log_write('Do ice calving, option = ' // trim(config_calving))
+         call mpas_log_write('Calving timscale (yr) = $r', realArgs=(/config_calving_timescale / scyr/))
+      endif
+
+      ! compute calvingThickness based on the calving_config option
+      ! the calvingThickness field gets applied to the thickness state field
+      ! after this if-construct
+      if (trim(config_calving) == 'none') then
+
+         return ! do nothing
+
+      elseif (trim(config_calving) == 'thickness_threshold') then
+
+         call thickness_calving(domain, calvingFraction, err_tmp)
+         err = ior(err, err_tmp)
+
+      elseif (trim(config_calving) == 'floating') then
+
+         call floating_calving(domain, calvingFraction, err_tmp)
+         err = ior(err, err_tmp)
+
+      elseif (trim(config_calving) == 'topographic_threshold') then
+
+         call topographic_calving(domain, calvingFraction, err_tmp)
+         err = ior(err, err_tmp)
+
+      else
+
+         call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
+         err = 1
+
+      endif
+
+
+      ! Now that calvingThickness has been calculated, apply it to the thickness field,
+      ! unless we are in a data calving mode.  In data calving mode we just calculate
+      ! what should be calved but don't actually calve it.
       block => domain % blocklist
       do while (associated(block))
-
-         ! get pools
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)  ! required for cellMask computation
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-
-         ! get dimensions
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-         ! get required fields from the mesh pool
-         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
-
-         ! get required fields from the geometry pool
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-
-         if (config_print_calving_info) then
-            call mpas_log_write('Do ice calving, option = ' // trim(config_calving))
-            call mpas_log_write('Calving timscale (yr) = $r', realArgs=(/config_calving_timescale / scyr/))
-
-            !WHL - debug - for circular shelf test case
-!            if (circular_shelf) then
-!               write(stdoutUnit,*) ' '
-!               write(stdoutUnit,*) 'Ice thickness before calving'
-!               do iRow = nRows, 1, -1
-!                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stdoutUnit,'(a3)',advance='no') '    '
-!                  endif
-!!!                 do i = 1, nCellsPerRow
-!                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-!                     iCell = (iRow-1)*nCellsPerRow + i
-!!!                    write(stdoutUnit,'(i5)',advance='no') iCell
-!                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-!                  enddo
-!                  write(stdoutUnit,*) ' '
-!               enddo
-!            endif   ! circular_shelf
-
-         endif  ! config_print_calving_info
-
-         ! initialize
-         calvingThickness = 0.0_RKIND
-
-         ! compute calvingThickness based on the calving_config option
-         ! the calvingThickness field gets applied to the thickness state field
-         ! after this if-construct
-
-         if (trim(config_calving) == 'none') then
-
-            return ! do nothing
-
-         elseif (trim(config_calving) == 'thickness_threshold') then
-
-            ! calve ice thinner than a thickness threshold
-
-            ! Note: The thickness-threshold option is different from the others.
-            !       For the other options, we look at each cell and determine whether it meets the calving-law criteria
-            !        (e.g., ice is floating, or the topography lies below a given level).
-            !        If a cell meets the criteria and lies in the calving domain (e.g., at the margin), it is calved.
-            !       For the thickness-threshold option, ice thinner than config_calving_thickness is calved,
-            !        but only if it lies beyond a protected ring of thin ice at the floating margin.
-            !       The reason for this more complicated approach is that we do not want to remove all floating ice
-            !         thinner than the calving thickness, because then we would remove thin ice that has just
-            !         been advected from active cells at the margin, and the calving front would be unable to advance.
-            !       By protecting a ring of inactive ice (thickness < config_calving_thickness) at the margin,
-            !        we allow ice in these cells to thicken and become active, thus advancing the calving front.
-            !       The calving front retreats when active floating ice thins to become inactive, removing protection
-            !        from previously protected cells.
-            !
-            !      Specifically, the rules are as follows:
-            !      - Mark cells as active-for-calving if either (1) grounded, with thickness > config_dynamic_thickness
-            !        or (2) floating, with thickness > config_calving_thickness.
-            !      - Mark cells as ocean if not land and not active.
-            !      - Mark cells as lying on the inactive margin if not active, but with an active neighbor.
-            !      - Calve ice in ocean cells that are not on the inactive margin.
-
-            if (config_print_calving_info) then
-               call mpas_log_write('Calving thickness (m) = $r', realArgs=(/config_calving_thickness/))
-               call mpas_log_write('Dynamic thickness (m) = $r', realArgs=(/config_dynamic_thickness/))
-            endif
-
-            ! Make sure config_calving_thickness > config_dynamic_thickness.
-            ! Otherwise the algorithm will not work.
-
-            if (config_calving_thickness < config_dynamic_thickness) then
-               call mpas_log_write('config_calving_thickness (m) = $r', realArgs=(/config_calving_thickness/), messageType=MPAS_LOG_ERR)
-               call mpas_log_write('config_dynamic_thickness (m) = $r', realArgs=(/config_dynamic_thickness/), messageType=MPAS_LOG_ERR)
-               call mpas_log_write('Must have config_calving_thickness > config_dynamic_thickness', messageType=MPAS_LOG_CRIT)
-            endif
-
-            ! get scratch fields for calving
-            ! 'true' flag means to allocate the field for a single block
-
-            call mpas_pool_get_field(scratchPool, 'iceCellMask', activeForCalvingMaskField)
-            call mpas_allocate_scratch_field(activeForCalvingMaskField, .true.)
-            activeForCalvingMask => activeForCalvingMaskField % array
-
-            call mpas_pool_get_field(scratchPool, 'iceCellMask2',  inactiveMarginMaskField)
-            call mpas_allocate_scratch_field(inactiveMarginMaskField, .true.)
-            inactiveMarginMask => inactiveMarginMaskField % array
-
-            call mpas_pool_get_field(scratchPool, 'iceCellMask3', oceanMaskField)
-            call mpas_allocate_scratch_field(oceanMaskField, .true.)
-            oceanMask => oceanMaskField % array
-
-            ! Identify cells that are active-for-calving:
-            ! (1) Grounded ice with thickness > config_dynamic_thickness
-            ! (2) Floating ice with thickness > config_calving_thickness
-
-            activeForCalvingMask(:) = 0
-
-            do iCell = 1, nCells
-
-               if (bedTopography(iCell) >= config_sea_level) then   ! land cell
-                  if (thickness(iCell) > config_dynamic_thickness) then    ! active for calving
-                     activeForCalvingMask(iCell) = 1
-                  endif
-               else    ! marine cell, topography below sea level
-                  flotationThickness = (config_ocean_density/config_ice_density) * (config_sea_level - bedTopography(iCell))
-                  if (thickness(iCell) < flotationThickness) then   ! floating
-                     if (thickness(iCell) > config_calving_thickness) then
-                        activeForCalvingMask(iCell) = 1
-                     endif
-                  else   ! grounded marine ice
-                     if (thickness(iCell) > config_dynamic_thickness) then    ! active for calving
-                        activeForCalvingMask(iCell) = 1
-                     endif
-                  endif   ! floating or grounded
-               endif   ! land or marine
-
-            enddo   ! iCell
-
-            ! Identify cells that are inactive but border active-for-calving cells
-
-            inactiveMarginMask(:) = 0
-
-            do iCell = 1, nCells
-               if (activeForCalvingMask(iCell) == 0) then   ! inactive
-
-                  ! check whether any neighbor cells are active
-                  do iCellOnCell = 1, nEdgesOnCell(iCell)
-                     iCellNeighbor = cellsOnCell(iCellOnCell,iCell)
-                     if (activeForCalvingMask(iCellNeighbor) == 1) then  ! neighbor cell is active
-                        inactiveMarginMask(iCell) = 1
-                        exit
-                     endif
-                  enddo   ! iCellOnCell
-
-               endif   ! inactive
-            enddo    ! iCell
-
-            ! Identify ocean cells (not land and not active ice, but including inactive floating ice)
-
-            where (bedTopography < config_sea_level .and. activeForCalvingMask == 0)
-               oceanMask = 1
-            elsewhere
-               oceanMask = 0
-            endwhere
-
-            if (config_print_calving_info) then
-
-!               write(stdoutUnit,*) 'Active-for-calving mask'
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stdoutUnit,'(a3)',advance='no') '    '
-                  endif
-!!               do i = 1, nCellsPerRow
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stdoutUnit,'(i5)',advance='no') iCell
-!                     write(stdoutUnit,'(i8)',advance='no') activeForCalvingMask(iCell)
-                  enddo
-!                  write(stdoutUnit,*) ' '
-               enddo
-
-!               write(stdoutUnit,*) 'Inactive margin mask'
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stdoutUnit,'(a3)',advance='no') '    '
-                  endif
-!!               do i = 1, nCellsPerRow
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stdoutUnit,'(i5)',advance='no') iCell
-!                     write(stdoutUnit,'(i8)',advance='no') inactiveMarginMask(iCell)
-                  enddo
-!                  write(stdoutUnit,*) ' '
-               enddo
-
-            endif  ! config_print_calving_info
-
-            ! Calve ice in ocean cells that are not on the protected inactive margin
-
-            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND)
-               calvingThickness = thickness * calvingFraction
-            endwhere
-
-            ! clean up
-            call mpas_deallocate_scratch_field(activeForCalvingMaskField, .true.)
-            call mpas_deallocate_scratch_field(inactiveMarginMaskField, .true.)
-            call mpas_deallocate_scratch_field(oceanMaskField, .true.)
-
-         else   ! other calving options (floating, topographic_threshold)
-
-            ! get scratch fields for calving
-
-            call mpas_pool_get_field(scratchPool, 'iceCellMask',  calvingLawMaskField)
-            call mpas_allocate_scratch_field(calvingLawMaskField, .true.)
-            calvingLawMask => calvingLawMaskField % array
-
-            if (trim(config_calving) == 'floating') then
-
-               ! calculate masks - so we know where the ice is floating
-               call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-               err = ior(err, err_tmp)
-
-               ! calve floating ice
-               ! Note: The floating_ice mask includes all floating ice, both inactive and active
-
-               where (li_mask_is_floating_ice(cellMask))
-                  calvingLawMask = 1
-               elsewhere
-                  calvingLawMask = 0
-               endwhere
-
-            elseif (trim(config_calving) == 'topographic_threshold') then
-
-               ! calve ice where the bed topography lies below a threshold depth
-
-               if (config_print_calving_info) then
-                  call mpas_log_write('Calving topographic threshold (m) = $r', realArgs=(/config_calving_topography/))
-               endif
-
-               where (bedTopography < config_calving_topography + config_sea_level)
-                  calvingLawMask = 1
-               elsewhere
-                  calvingLawMask = 0
-               endwhere
-
-               !Note: Could add other calving options here (e.g., damage-based calving)
-
-            endif   ! floating or topographic_threshold
-
-            ! Calve ice where specified by the calving law.
-            ! If the calving timescale > 0, then will calve only a fraction of the thickness in each calving cell.
-
-            where (calvingLawMask == 1)
-
-               calvingThickness = thickness * calvingFraction
-
-            endwhere
-
-            call mpas_deallocate_scratch_field(calvingLawMaskField, .true.)
-
-         endif   ! config_calving
-
-         ! Now that calvingThickness has been calculated, apply it to the thickness field,
-         ! unless we are in a data calving mode.  In data calving mode we just calculate
-         ! what should be calved but don't actually calve it.
          if (.not. config_data_calving) then
             thickness = thickness - calvingThickness
          endif
 
-
          ! Optionally, print a list of cells with calving
-
          if (config_print_calving_info) then
+            call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+            call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
             call mpas_log_write(' ')
             call mpas_log_write('Global cell ID, bedTopography, calvingThickness:')
@@ -490,38 +217,12 @@ module li_calving
                   call mpas_log_write("$i $r $r", intArgs=(/indexToCellID(iCell)/), realArgs=(/bedTopography(iCell), calvingThickness(iCell)/))
                endif
             enddo
-
-            !WHL - debug - for circular shelf test case
-!            if (circular_shelf) then
-!               write(stdoutUnit,*) ' '
-!               write(stdoutUnit,*) 'Ice thickness after calving'
-!               do iRow = nRows, 1, -1
-!                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stdoutUnit,'(a3)',advance='no') '    '
-!                  endif
-!!!                 do i = 1, nCellsPerRow
-!                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-!                     iCell = (iRow-1)*nCellsPerRow + i
-!!!                    write(stdoutUnit,'(i5)',advance='no') iCell
-!                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-!                  enddo
-!                  write(stdoutUnit,*) ' '
-!               enddo
-!            endif   ! circular_shelf
-
          endif   ! config_print_calving_info
 
-         block => block % next
-      enddo
-
-      ! Update mask and geometry
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         ! Update mask and geometry
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
          call li_update_geometry(geometryPool)
 
          block => block % next
@@ -574,7 +275,6 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 
-      type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
 
       type (mpas_pool_type), pointer :: meshPool
@@ -810,7 +510,395 @@ module li_calving
 !***********************************************************************
 !***********************************************************************
 
-! No private subroutines so far
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine thickness_calving
+!
+!> \brief Calve ice based on thickness threshold
+!> \author William Lipscomb, moved to separate subroutine by Matt Hoffman Feb. 2018
+!> \date   September 2015
+!> \details  calve ice thinner than a thickness threshold
+!> Note: The thickness-threshold option is different from the others.
+!>       For the other options, we look at each cell and determine whether it meets the calving-law criteria
+!>        (e.g., ice is floating, or the topography lies below a given level).
+!>        If a cell meets the criteria and lies in the calving domain (e.g., at the margin), it is calved.
+!>       For the thickness-threshold option, ice thinner than config_calving_thickness is calved,
+!>        but only if it lies beyond a protected ring of thin ice at the floating margin.
+!>       The reason for this more complicated approach is that we do not want to remove all floating ice
+!>         thinner than the calving thickness, because then we would remove thin ice that has just
+!>         been advected from active cells at the margin, and the calving front would be unable to advance.
+!>       By protecting a ring of inactive ice (thickness < config_calving_thickness) at the margin,
+!>        we allow ice in these cells to thicken and become active, thus advancing the calving front.
+!>       The calving front retreats when active floating ice thins to become inactive, removing protection
+!>        from previously protected cells.
+!>
+!>      Specifically, the rules are as follows:
+!>      - Mark cells as active-for-calving if either (1) grounded, with thickness > config_dynamic_thickness
+!>        or (2) floating, with thickness > config_calving_thickness.
+!>      - Mark cells as ocean if not land and not active.
+!>      - Mark cells as lying on the inactive margin if not active, but with an active neighbor.
+!>      - Calve ice in ocean cells that are not on the inactive margin.
+
+!-----------------------------------------------------------------------
+   subroutine thickness_calving(domain, calvingFraction, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(in) :: calvingFraction !< fraction of possible ice to calve on this timestep
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+
+      real(kind=RKIND), pointer ::  &
+                                   config_calving_thickness, &
+                                   config_sea_level, &
+                                   config_dynamic_thickness,  &
+                                   config_ice_density,  &
+                                   config_ocean_density
+
+      logical, pointer :: config_print_calving_info
+
+      type (field1dInteger), pointer :: activeForCalvingMaskField
+      integer, dimension(:), pointer :: activeForCalvingMask   ! = 1 for grounded cells thicker than config_dynamic_thickness;
+                                                               ! = 1 for floating cells thicker than config_calving_thickness;
+                                                               ! = 0 elsewhere
+
+      type (field1dInteger), pointer :: inactiveMarginMaskField
+      integer, dimension(:), pointer :: inactiveMarginMask
+      ! = 1 for inactive cells (thin or no ice) that have 1 or more active neighbors
+
+      type (field1dInteger), pointer :: oceanMaskField
+      integer, dimension(:), pointer :: oceanMask   ! = 1 for cells that are not land and do not have active ice
+                                                    ! includes floating cells with inactive icea
+
+      type (mpas_pool_type), pointer :: meshPool, geometryPool, velocityPool, scratchPool
+
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+
+      integer, dimension(:,:), pointer :: &
+           cellsOnCell         ! list of cells that neighbor each cell
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           thickness,        & ! ice thickness
+           bedTopography       ! bed topography (negative below sea level)
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           calvingThickness    ! thickness of ice that calves (computed in this subroutine)
+
+      integer, pointer :: nCells
+      integer :: iCell, iCellOnCell, iCellNeighbor
+      real (kind=RKIND) :: flotationThickness  ! thickness at which marine-based ice starts to float
+
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+
+
+      if (config_print_calving_info) then
+         call mpas_log_write('Calving thickness (m) = $r', realArgs=(/config_calving_thickness/))
+         call mpas_log_write('Dynamic thickness (m) = $r', realArgs=(/config_dynamic_thickness/))
+      endif
+
+      ! Make sure config_calving_thickness > config_dynamic_thickness.
+      ! Otherwise the algorithm will not work.
+      if (config_calving_thickness < config_dynamic_thickness) then
+         call mpas_log_write('config_calving_thickness (m) = $r', realArgs=(/config_calving_thickness/), messageType=MPAS_LOG_ERR)
+         call mpas_log_write('config_dynamic_thickness (m) = $r', realArgs=(/config_dynamic_thickness/), messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Must have config_calving_thickness > config_dynamic_thickness', messageType=MPAS_LOG_ERR)
+         err = 1
+      endif
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)  ! required for cellMask computation
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         ! get required fields from the mesh pool
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+         ! get required fields from the geometry pool
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+
+         ! get scratch fields for calving
+         ! 'true' flag means to allocate the field for a single block
+         call mpas_pool_get_field(scratchPool, 'iceCellMask', activeForCalvingMaskField)
+         call mpas_allocate_scratch_field(activeForCalvingMaskField, .true.)
+         activeForCalvingMask => activeForCalvingMaskField % array
+
+         call mpas_pool_get_field(scratchPool, 'iceCellMask2',  inactiveMarginMaskField)
+         call mpas_allocate_scratch_field(inactiveMarginMaskField, .true.)
+         inactiveMarginMask => inactiveMarginMaskField % array
+
+         call mpas_pool_get_field(scratchPool, 'iceCellMask3', oceanMaskField)
+         call mpas_allocate_scratch_field(oceanMaskField, .true.)
+         oceanMask => oceanMaskField % array
+
+         ! Initialize
+         calvingThickness = 0.0_RKIND
+
+         ! Identify cells that are active-for-calving:
+         ! (1) Grounded ice with thickness > config_dynamic_thickness
+         ! (2) Floating ice with thickness > config_calving_thickness
+
+         activeForCalvingMask(:) = 0
+
+         do iCell = 1, nCells
+
+            if (bedTopography(iCell) >= config_sea_level) then   ! land cell
+               if (thickness(iCell) > config_dynamic_thickness) then    ! active for calving
+                  activeForCalvingMask(iCell) = 1
+               endif
+            else    ! marine cell, topography below sea level
+               flotationThickness = (config_ocean_density/config_ice_density) * (config_sea_level - bedTopography(iCell))
+               if (thickness(iCell) < flotationThickness) then   ! floating
+                  if (thickness(iCell) > config_calving_thickness) then
+                     activeForCalvingMask(iCell) = 1
+                  endif
+               else   ! grounded marine ice
+                  if (thickness(iCell) > config_dynamic_thickness) then    ! active for calving
+                     activeForCalvingMask(iCell) = 1
+                  endif
+               endif   ! floating or grounded
+            endif   ! land or marine
+
+         enddo   ! iCell
+
+         ! Identify cells that are inactive but border active-for-calving cells
+
+         inactiveMarginMask(:) = 0
+
+         do iCell = 1, nCells
+            if (activeForCalvingMask(iCell) == 0) then   ! inactive
+
+               ! check whether any neighbor cells are active
+               do iCellOnCell = 1, nEdgesOnCell(iCell)
+                  iCellNeighbor = cellsOnCell(iCellOnCell,iCell)
+                  if (activeForCalvingMask(iCellNeighbor) == 1) then  ! neighbor cell is active
+                     inactiveMarginMask(iCell) = 1
+                     exit
+                  endif
+               enddo   ! iCellOnCell
+
+            endif   ! inactive
+         enddo    ! iCell
+
+         ! Identify ocean cells (not land and not active ice, but including inactive floating ice)
+
+         where (bedTopography < config_sea_level .and. activeForCalvingMask == 0)
+            oceanMask = 1
+         elsewhere
+            oceanMask = 0
+         endwhere
+
+!         if (config_print_calving_info) then
+!
+!            write(stdoutUnit,*) 'Active-for-calving mask'
+!            do iRow = nRows, 1, -1
+!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                  write(stdoutUnit,'(a3)',advance='no') '    '
+!               endif
+!!            do i = 1, nCellsPerRow
+!               do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                  iCell = (iRow-1)*nCellsPerRow + i
+!!               write(stdoutUnit,'(i5)',advance='no') iCell
+!                  write(stdoutUnit,'(i8)',advance='no') activeForCalvingMask(iCell)
+!               enddo
+!               write(stdoutUnit,*) ' '
+!            enddo
+!
+!            write(stdoutUnit,*) 'Inactive margin mask'
+!            do iRow = nRows, 1, -1
+!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                  write(stdoutUnit,'(a3)',advance='no') '    '
+!               endif
+!!            do i = 1, nCellsPerRow
+!               do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                  iCell = (iRow-1)*nCellsPerRow + i
+!!               write(stdoutUnit,'(i5)',advance='no') iCell
+!                  write(stdoutUnit,'(i8)',advance='no') inactiveMarginMask(iCell)
+!               enddo
+!               write(stdoutUnit,*) ' '
+!            enddo
+!
+!         endif  ! config_print_calving_info
+
+         ! Calve ice in ocean cells that are not on the protected inactive margin
+
+         where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND)
+            calvingThickness = thickness * calvingFraction
+         endwhere
+
+         block => block % next
+      enddo
+
+      ! clean up
+      call mpas_deallocate_scratch_field(activeForCalvingMaskField, .true.)
+      call mpas_deallocate_scratch_field(inactiveMarginMaskField, .true.)
+      call mpas_deallocate_scratch_field(oceanMaskField, .true.)
+
+   end subroutine thickness_calving
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine floating_calving
+!
+!> \brief Calve any ice that is floating
+!> \author William Lipscomb, moved to separate subroutine by Matt Hoffman Feb. 2018
+!> \date   September 2015
+!> \details 
+!-----------------------------------------------------------------------
+   subroutine floating_calving(domain, calvingFraction, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(in) :: calvingFraction !< fraction of possible ice to calve on this timestep
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      integer, dimension(:), pointer :: cellMask
+
+      err = 0
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         calvingThickness = 0.0_RKIND
+
+         ! Note: The floating_ice mask includes all floating ice, both inactive and active
+         where (li_mask_is_floating_ice(cellMask))
+            calvingThickness = thickness * calvingFraction
+         endwhere
+
+         block => block % next
+      enddo
+
+   end subroutine floating_calving
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine topographic_calving
+!
+!> \brief Calve any floating ice existing where ocean bathymetry is deeper than a threshold
+!> \author William Lipscomb, moved to separate subroutine by Matt Hoffman Feb. 2018
+!> \date   September 2015
+!> \details calve ice where the bed topography lies below a threshold depth
+!-----------------------------------------------------------------------
+   subroutine topographic_calving(domain, calvingFraction, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(in) :: calvingFraction !< fraction of possible ice to calve on this timestep
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
+      real(kind=RKIND), pointer :: config_calving_topography
+      real(kind=RKIND), pointer :: config_sea_level
+      logical, pointer :: config_print_calving_info
+      real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
+      integer, dimension(:), pointer :: cellMask
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+      call mpas_pool_get_config(liConfigs, 'config_calving_topography', config_calving_topography)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+
+      if (config_print_calving_info) then
+         call mpas_log_write('Calving topographic threshold (m) = $r', realArgs=(/config_calving_topography/))
+      endif
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+         calvingThickness = 0.0_RKIND
+
+         where ( (li_mask_is_floating_ice(cellMask)) .and. (bedTopography < config_calving_topography + config_sea_level) )
+            calvingThickness = thickness * calvingFraction
+         endwhere
+
+         block => block % next
+      enddo
+
+   end subroutine topographic_calving
 
 end module li_calving
 
