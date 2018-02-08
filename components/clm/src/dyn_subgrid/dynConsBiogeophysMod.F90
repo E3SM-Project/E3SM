@@ -312,19 +312,19 @@ contains
     call c2g(bounds, &
          carr = heat_col(bounds%begc:bounds%endc), &
          garr = heat_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'urbanf', &
+         c2l_scale_type = 'unity', &
          l2g_scale_type = 'unity')
 
     call c2g(bounds, &
          carr = heat_liquid_col(bounds%begc:bounds%endc), &
          garr = heat_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'urbanf', &
+         c2l_scale_type = 'unity', &
          l2g_scale_type = 'unity')
 
     call c2g(bounds, &
          carr = cv_liquid_col(bounds%begc:bounds%endc), &
          garr = cv_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'urbanf', &
+         c2l_scale_type = 'unity', &
          l2g_scale_type = 'unity')
 
     do g = bounds%begg, bounds%endg
