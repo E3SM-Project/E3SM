@@ -260,6 +260,7 @@ contains
     real (r8) cfint
     real (r8) cfnew
     real (r8) xins(pcols)
+    logical any_intzero
 
 !     the minmod function 
     real (r8) a, b, c
@@ -268,13 +269,14 @@ contains
     minmod(a,b) = 0.5_r8*(sign(1._r8,a) + sign(1._r8,b))*min(abs(a),abs(b))
     medan(a,b,c) = a + minmod(b-a,c-a)
 
+    intz = 0
     do i = 1,ncol
        xins(i) = medan(x(i,1), xin(i), x(i,pverp))
-       intz(i) = 0
     end do
 
 ! first find the interval 
-    do k =  1,pverp-1
+    !$omp simd collapse(2)
+    do k = 1,pverp-1
        do i = 1,ncol
           if ((xins(i)-x(i,k))*(x(i,k+1)-xins(i)).ge.0._r8) then
              intz(i) = k
@@ -282,12 +284,11 @@ contains
        end do
     end do
 
-    do i = 1,ncol
-       if (intz(i).eq.0) then
-          write(iulog,*) ' interval was not found for col i ', i
-          call endrun('DUST_SEDIMENT_MOD:cfint2 -- interval was not found ')
-       endif
-    end do
+    any_intzero = .false.
+    any_intzero = any(intz(1:ncol).eq.0)
+    if (any_intzero) then
+       write(iulog,*) ' interval was not found for col 1..',ncol
+    endif
 
 ! now interpolate
     do i = 1,ncol
@@ -315,16 +316,12 @@ contains
        endif
        psim = medan(psi1, psi2, psi3)
        cfnew = medan(cfint, psi1, psim)
-       if (abs(cfnew-cfint)/(abs(cfnew)+abs(cfint)+1.e-36_r8)  .gt..03_r8) then
+!       if (abs(cfnew-cfint)/(abs(cfnew)+abs(cfint)+1.e-36_r8)  .gt..03_r8) then
 !     CHANGE THIS BACK LATER!!!
 !     $        .gt..1) then
-
-
 !     UNCOMMENT THIS LATER!!!
 !            write(iulog,*) ' cfint2 limiting important ', cfint, cfnew
-
-
-       endif
+!       endif
        psistar(i) = cfnew
     end do
 
