@@ -134,6 +134,7 @@ contains
     begg = bounds%begg
     endg = bounds%endg
 
+    dtime = get_step_size()
     call dyn_water_content(bounds, &
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
@@ -160,6 +161,9 @@ contains
           delta_liq(g)  = waterstate_vars%liq2_grc(g) - waterstate_vars%liq1_grc(g)
           delta_ice(g)  = waterstate_vars%ice2_grc(g) - waterstate_vars%ice1_grc(g)
           delta_heat(g) = temperature_vars%heat2_grc(g) - temperature_vars%heat1_grc(g)
+          waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
+          waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
+          energyflux_vars%eflx_dynbal_grc    (g) = delta_heat(g)/dtime
        end do
     end if
 
@@ -170,20 +174,20 @@ contains
     !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
     !     delta_heat = delta_heat(bounds%begg:bounds%endg))
 
-    call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
-         delta_liq(begg:endg))
-    call waterflux_vars%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
-         waterflux_vars%qflx_liq_dynbal_grc(begg:endg))
+    !call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_liq(begg:endg))
+    !call waterflux_vars%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
+    !     waterflux_vars%qflx_liq_dynbal_grc(begg:endg))
 
-    call waterflux_vars%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
-         delta_ice(begg:endg))
-    call waterflux_vars%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
-         waterflux_vars%qflx_ice_dynbal_grc(begg:endg))
+    !call waterflux_vars%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_ice(begg:endg))
+    !call waterflux_vars%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
+    !     waterflux_vars%qflx_ice_dynbal_grc(begg:endg))
 
-    call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
-         delta_heat(begg:endg))
-    call energyflux_vars%eflx_dynbal_dribbler%get_curr_flux(bounds, &
-         energyflux_vars%eflx_dynbal_grc(begg:endg))
+    !call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_heat(begg:endg))
+    !call energyflux_vars%eflx_dynbal_dribbler%get_curr_flux(bounds, &
+    !     energyflux_vars%eflx_dynbal_grc(begg:endg))
 
   end subroutine dyn_hwcontent_final
 
