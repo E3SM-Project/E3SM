@@ -1304,10 +1304,6 @@
 
                 <var name="north" type="real" dimensions="R3 nCells" units="unitless"
                      description="Cartesian components of the unit vector pointing north"/>
-
-                <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
-                <var name="m_hybi" type="real" dimensions="nAerLevels nCells" units="unitless"
-                     description="Matched hybi (needs to be re-checked)"/>
         </var_struct>
 
         <var_struct name="state" time_levs="2">
@@ -1327,9 +1323,6 @@
 
                 <var name="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Moist potential temperature: theta*(1+q_v*R_v/R_d)"/>
-
-                <var name="m_ps" type="real" dimensions="nCells Time" units="Pa"
-                     description="Surface pressure from match on MPAS grid"/>
 
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
                         <var name="qv" array_group="moist" units="kg kg^{-1}"
@@ -2554,6 +2547,12 @@
                 <!-- ================================================================================================== -->
                 <!-- ... ADDITIONAL "RADIATION" ARRAYS NEEDED ONLY IN THE "CAM" LW AND SW RADIATION CODES:              -->
                 <!-- ================================================================================================== -->
+
+                <var name="m_hybi" type="real" dimensions="nAerLevels nCells" units="unitless"
+                     description="Matched hybi (needs to be re-checked)"/>
+
+                <var name="m_ps" type="real" dimensions="nCells Time" units="Pa"
+                     description="Surface pressure from match on MPAS grid"/>
 
                 <!-- INFRARED ABSORPTION: -->
                 <var name="absnxt" type="real" dimensions="nVertLevels cam_dim1 nCells Time" units="-"
