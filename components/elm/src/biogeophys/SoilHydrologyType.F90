@@ -869,9 +869,8 @@ contains
      namelist / elm_soilhydrology_inparm / h2osfcflag, origflag
 
 
-     ! preset values
-     origflag = 0
-     h2osfcflag = 1
+     origflag = 1          
+     h2osfcflag = 1        
 
      if ( masterproc )then
 

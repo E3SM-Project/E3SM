@@ -34,7 +34,7 @@ module SoilLittVertTranspMod
   !$acc declare create(SoilLittVertTranspParamsInst)
 
   !
-  real(r8), public :: som_adv_flux =  0._r8
+  real(r8), public :: som_adv_flux =  0._r8    ! m/s advection
   !$acc declare copyin(som_adv_flux)
   real(r8), public :: max_depth_cryoturb = 3._r8   ! (m) this is the maximum depth of cryoturbation
   !$acc declare copyin(max_depth_cryoturb)
