@@ -234,7 +234,8 @@ def get_model():
     # One last try
     if (model is None):
         srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")):
+        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
+           or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
         else:
             model = 'acme'
@@ -1419,7 +1420,6 @@ def batch_jobid():
         jobid = os.environ.get("COBALT_JOBID")
     return jobid
 
-
 def analyze_build_log(comp, log, compiler):
     """
     Capture and report warning count,
@@ -1585,4 +1585,4 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
     expect(stat == 0, filter_unicode(errput))
 
 def get_batch_script_for_job(job):
-    return "." + job
+    return job if "st_archive" in job else "." + job

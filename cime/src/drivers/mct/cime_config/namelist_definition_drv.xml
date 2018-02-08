@@ -2101,6 +2101,102 @@
     </values>
   </entry>
 
+  <entry id="pause_active_atm" modify_via_xml="PAUSE_ACTIVE_ATM">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component atm
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_ATM</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_cpl" modify_via_xml="PAUSE_ACTIVE_CPL">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component CPL
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_ocn" modify_via_xml="PAUSE_ACTIVE_OCN">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component ocn
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_OCN</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_wav" modify_via_xml="PAUSE_ACTIVE_WAV">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component wav
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_glc" modify_via_xml="PAUSE_ACTIVE_GLC">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component glc
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_GLC</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_rof" modify_via_xml="PAUSE_ACTIVE_ROF">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component rof
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_ROF</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_ice" modify_via_xml="PAUSE_ACTIVE_ICE">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component ice
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_ICE</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_lnd" modify_via_xml="PAUSE_ACTIVE_LND">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component lnd
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_LND</value>
+    </values>
+  </entry>
+
   <entry id="logfilepostfix">
     <type>char</type>
     <category>driver</category>

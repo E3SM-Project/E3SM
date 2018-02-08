@@ -1974,7 +1974,7 @@ CONTAINS
     integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_ny         ! nx,ny 2d grid size global
     integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_phase
     logical,                optional, intent(IN)    :: histavg_comp
-    character(SHR_KIND_CL), optional, intent(IN) :: comp_resume(:)
+    character(SHR_KIND_CL), optional, intent(IN)    :: comp_resume(:)
 
     !EOP
 

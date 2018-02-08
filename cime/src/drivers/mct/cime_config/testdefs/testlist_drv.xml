@@ -614,12 +614,20 @@
       </machine>
     </machines>
   </test>
+  <test name="DAE" grid="ww3a" compset="ADWAV">
+    <machines>
+      <machine name="hobart" compiler="nag" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
+  </test>
   <test name="PRE" grid="f09_f09" compset="ADESP">
     <machines>
       <machine name="hobart" compiler="nag" category="pauseresume"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:20 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
   <test name="PRE" grid="f09_f09" compset="ADESP_TEST">
@@ -629,7 +637,7 @@
       <machine name="hobart" compiler="nag" category="pauseresume"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:20 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 </testlist>

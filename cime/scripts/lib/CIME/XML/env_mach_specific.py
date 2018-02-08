@@ -6,6 +6,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
 import string, resource
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class EnvMachSpecific(EnvBase):
 
         return envs_to_set
 
-    def load_env(self, case):
+    def load_env(self, case, force_method=None):
         """
         Should only be called by case.load_env
         """
@@ -74,11 +75,11 @@ class EnvMachSpecific(EnvBase):
         # in the environment_variables block
         modules_to_load = self._get_modules_for_case(case)
         if (modules_to_load is not None):
-            self.load_modules(modules_to_load)
+            self._load_modules(modules_to_load, force_method=force_method)
 
         envs_to_set = self._get_envs_for_case(case)
         if (envs_to_set is not None):
-            self.load_envs(envs_to_set)
+            self._load_envs(envs_to_set)
 
         self._get_resources_for_case(case)
 
@@ -93,12 +94,10 @@ class EnvMachSpecific(EnvBase):
                 limits = (int(val), limits[1])
                 resource.setrlimit(attr, limits)
 
-    def load_modules(self, modules_to_load):
-        module_system = self.get_module_system_type()
+    def _load_modules(self, modules_to_load, force_method=None):
+        module_system = self.get_module_system_type() if force_method is None else force_method
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
-        elif (module_system == "module_lmod"):
-            self._load_modules_generic(modules_to_load)
         elif (module_system == "soft"):
             self._load_modules_generic(modules_to_load)
         elif (module_system == "generic"):
@@ -120,7 +119,7 @@ class EnvMachSpecific(EnvBase):
         else:
             source_cmd = ""
 
-        if (module_system in ["module", "module_lmod"]):
+        if (module_system in ["module"]):
             return run_cmd_no_fail("{}module list".format(source_cmd), combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
@@ -161,7 +160,7 @@ class EnvMachSpecific(EnvBase):
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
 
-    def load_envs(self, envs_to_set):
+    def _load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
             os.environ[env_name] = "" if env_value is None else env_value
 
@@ -231,10 +230,25 @@ class EnvMachSpecific(EnvBase):
         # Note this is independent of module system type
         mod_cmd = self.get_module_system_cmd_path(shell)
         cmds = []
+        last_action = None
+        last_cmd    = None
+
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("{} {} {}".format(mod_cmd, action, "" if argument is None else argument))
+
+            if action == last_action:
+                last_cmd = "{} {}".format(last_cmd, argument)
+            else:
+                if last_cmd is not None:
+                    cmds.append(last_cmd)
+
+                last_cmd = "{} {} {}".format(mod_cmd, action, "" if argument is None else argument)
+                last_action = action
+
+        if last_cmd:
+            cmds.append(last_cmd)
+
         return cmds
 
     def _load_module_modules(self, modules_to_load):
@@ -264,42 +278,34 @@ class EnvMachSpecific(EnvBase):
         for action,argument in modules_to_load:
             cmd += " && {} {} {}".format(sh_mod_cmd, action, "" if argument is None else argument)
 
-        cmd += " && env"
+        # Use null terminated lines to give us something more definitive to split on.
+        # Env vars can contain newlines, so splitting on newlines can be ambiguous
+        cmd += " && env -0"
         output = run_cmd_no_fail(cmd)
 
         ###################################################
         # Parse the output to set the os.environ dictionary
         ###################################################
-        newenv = {}
-        dolater = []
-        for line in output.splitlines():
-            if line.find('$')>0:
-                dolater.append(line)
-                continue
-
-            m=re.match(r'^(\S+)=(\S+)\s*;*\s*$',line)
-            if m:
-                key = m.groups()[0]
-                val = m.groups()[1]
+        newenv = OrderedDict()
+        for line in output.split('\0'):
+            if "=" in line:
+                key, val = line.split("=", 1)
                 newenv[key] = val
 
-        # Now that initial newenv has been set, resolve variables
-        for line in dolater:
-            m=re.match(r'^(\S+)=(\S+)\s*;*\s*$',line)
-            if m:
-                key = m.groups()[0]
-                valunresolved = m.groups()[1]
-                val = string.Template(valunresolved).safe_substitute(newenv)
-                expect(val is not None,
-                       'string value {} unable to be resolved'.format(valunresolved))
-                newenv[key] = val
+        # resolve variables
+        for key, val in newenv.items():
+            newenv[key] = string.Template(val).safe_substitute(newenv)
 
         # Set environment with new or updated values
         for key in newenv:
-            if key in os.environ and key not in newenv:
-                del(os.environ[key])
+            if key in os.environ and os.environ[key] == newenv[key]:
+                pass
             else:
                 os.environ[key] = newenv[key]
+
+        for oldkey in list(os.environ.keys()):
+            if oldkey not in newenv:
+                del os.environ[oldkey]
 
     def _load_none_modules(self, modules_to_load):
         """
@@ -408,3 +414,6 @@ class EnvMachSpecific(EnvBase):
         executable = self.text(exec_node)
 
         return executable, args
+
+    def get_type_info(self, vid):
+        return "char"

@@ -93,7 +93,7 @@ that you run this script from the cime direcory.
 
     expect(os.path.isdir(".git"), "Please run the root of a repo")
 
-    if not args.basename_name:
+    if not args.baseline_name:
         expect(not args.check_namelists, "Makes no sense to check namelists without baselines")
         expect(not args.check_throughput, "Makes no sense to check throughput without baselines")
 

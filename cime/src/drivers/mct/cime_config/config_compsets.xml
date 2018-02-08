@@ -99,7 +99,7 @@
   </compset>
 
   <entries>
-    <entry id="DATA_ASSIMILATION_CPL">
+    <entry id="PAUSE_ACTIVE_CPL">
       <values match="last">
 	<value compset="DESP">TRUE</value>
       </values>
