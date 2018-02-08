@@ -100,7 +100,11 @@ def cime_bisect(testargs, good, bad, testroot,
     print("TESTING WITH ARGS '{}'".format(testargs))
     print("####################################################")
 
-    create_test = os.path.join(CIME.utils.get_scripts_root(), "create_test")
+    if os.path.exists("scripts/create_test"):
+        create_test = os.path.join(os.getcwd(), "scripts", "create_test")
+    else:
+        create_test = os.path.join(os.getcwd(), "cime", "scripts", "create_test")
+
     expect(os.path.exists(create_test), "Please run the root of a CIME repo")
 
     # Basic setup
@@ -143,7 +147,7 @@ def cime_bisect(testargs, good, bad, testroot,
         expect(len(bad_commits_filtered) == 1, bad_commits_filtered)
 
         print("####################################################")
-        print("BAD MERGE IS:")
+        print("BAD MERGE FOR ARGS '{}' IS:".format(testargs))
         print("####################################################")
         print(run_cmd_no_fail("git show {}".format(bad_commits_filtered.pop())))
 
