@@ -33,6 +33,7 @@ class _Element(object): # private class, don't want users constructing directly 
 class GenericXML(object):
 
     _FILEMAP = {}
+    DISABLE_CACHING = False
 
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None, read_only=True):
         """
@@ -74,7 +75,7 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        if infile in self._FILEMAP and self.read_only:
+        if not self.DISABLE_CACHING and infile in self._FILEMAP and self.read_only:
             logger.debug("read (cached): " + infile)
             self.tree, self.root = self._FILEMAP[infile]
         else:
