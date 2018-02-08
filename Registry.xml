@@ -112,7 +112,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold' "
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' "
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -121,6 +121,14 @@
 		<nml_option name="config_calving_thickness" type="real" default_value="100.0" units="m of ice"
 		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
 		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_calving_eigencalving_parameter_source" type="character" default_value="scalar" units="none"
+		            description="Source of the eigencalving parameter value"
+		            possible_values="'data' ('eigencalvingParameter' field read from input file), 'scalar' (specified by config_calving_eigencalving_parameter_scalar_value)"
+		/>
+                <nml_option name="config_calving_eigencalving_parameter_scalar_value" type="real" default_value="3.14e16" units="m s"
+		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 ma converted to units used here.)"
+		            possible_values="any positive real number"
 		/>
 		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
 		            description="Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)"
@@ -441,6 +449,7 @@
                         <var name="floatingBasalMassBal"/>
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
+                        <var name="eigencalvingParameter"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -826,6 +835,18 @@ is the value of that variable from the *previous* time level!
                 />
 		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice that calves (less than or equal to ice thickness)"
+		/>
+                <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="kg s m^{-2}" time_levs="1"
+		     description="proportionality constant K2+- used in eigencalving formulation"
+		/>
+        <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane).  This retreat rate is converted in the code to requiredCalvingVolumeRate."
+		/>
+                <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"
+		     description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
+		/>
+                <var name="uncalvedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+		     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
 		/>
 		<var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of basal water"
