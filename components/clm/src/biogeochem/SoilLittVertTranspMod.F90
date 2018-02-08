@@ -39,7 +39,7 @@ module SoilLittVertTranspMod
   type(SoilLittVertTranspParamsType),     private ::  SoilLittVertTranspParamsInst
 
   !
-  real(r8), public :: som_adv_flux =  0._r8
+  real(r8), public :: som_adv_flux =  0._r8    ! m/s advection
   real(r8), public :: max_depth_cryoturb = 3._r8   ! (m) this is the maximum depth of cryoturbation
   real(r8) :: som_diffus                   ! [m^2/sec] = 1 cm^2 / yr
   real(r8) :: cryoturb_diffusion_k         ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr

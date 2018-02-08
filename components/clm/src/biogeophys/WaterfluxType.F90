@@ -47,6 +47,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_snwcp_ice_col       (:)   ! col excess snowfall due to snow capping (mm H2O /s)
      real(r8), pointer :: qflx_tran_veg_patch      (:)   ! patch vegetation transpiration (mm H2O/s) (+ = to atm)
      real(r8), pointer :: qflx_tran_veg_col        (:)   ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+     real(r8), pointer :: qflx_tran_veg_col_sat    (:)   ! col vegetation transpiration (mm H2O/s) (+ = to atm)
      real(r8), pointer :: qflx_dew_snow_patch      (:)   ! patch surface dew added to snow pack (mm H2O /s) [+]
      real(r8), pointer :: qflx_dew_snow_col        (:)   ! col surface dew added to snow pack (mm H2O /s) [+]
      real(r8), pointer :: qflx_dew_grnd_patch      (:)   ! patch ground surface dew formation (mm H2O /s) [+]
@@ -138,6 +139,10 @@ module WaterfluxType
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
      real(r8), pointer :: sapflow_patch (:) !plant hydraulics, (mm/s)
+     !Hummock-Hollow
+     real(r8), pointer :: qflx_lat_aqu_layer       (:,:) ! lateral flow for each layer
+     real(r8), pointer :: qflx_lat_aqu             (:)   ! total lateral flow
+     real(r8), pointer :: qflx_surf_input          (:)   ! surface runoff input to hollow (mmH2O /s)
 
    contains
  
@@ -210,6 +215,7 @@ contains
     allocate(this%qflx_snwcp_liq_col       (begc:endc))              ; this%qflx_snwcp_liq_col       (:)   = nan
     allocate(this%qflx_snwcp_ice_col       (begc:endc))              ; this%qflx_snwcp_ice_col       (:)   = nan
     allocate(this%qflx_tran_veg_col        (begc:endc))              ; this%qflx_tran_veg_col        (:)   = nan
+    allocate(this%qflx_tran_veg_col_sat    (begc:endc))              ; this%qflx_tran_veg_col_sat    (:)   = nan
     allocate(this%qflx_sub_snow_vol_col    (begc:endc))              ; this%qflx_sub_snow_vol_col    (:)   = nan
     allocate(this%qflx_evap_veg_col        (begc:endc))              ; this%qflx_evap_veg_col        (:)   = nan
     allocate(this%qflx_evap_can_col        (begc:endc))              ; this%qflx_evap_can_col        (:)   = nan
@@ -310,6 +316,9 @@ contains
     allocate(this%mflx_sub_snow_col      (begc:endc))                ; this%mflx_sub_snow_col        (:)   = nan
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
     allocate(this%sapflow_patch          (begp:endp))                ; this%sapflow_patch              (:) = nan
+    allocate(this%qflx_surf_input        (begc:endc))                ; this%qflx_surf_input          (:)   = nan
+    allocate(this%qflx_lat_aqu           (begc:endc))                ; this%qflx_lat_aqu             (:)   = nan
+    allocate(this%qflx_lat_aqu_layer     (begc:endc,1:nlevgrnd))     ; this%qflx_lat_aqu_layer     (:,:)   = nan
 
   end subroutine InitAllocate
 
@@ -338,8 +347,6 @@ contains
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
 
-
- 
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------

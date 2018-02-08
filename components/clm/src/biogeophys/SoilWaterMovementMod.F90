@@ -382,6 +382,8 @@ contains
          qflx_deficit      =>    col_wf%qflx_deficit    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl         =>    col_wf%qflx_infl       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
          qflx_rootsoi_col  =>    col_wf%qflx_rootsoi    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
+         qflx_tran_veg_col_sat     =>    col_wf%qflx_tran_veg_col_sat, & ! Output: [real(r8) (:)   ]
+
          t_soisno          =>    col_es%t_soisno        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
 
@@ -585,6 +587,18 @@ contains
       ! Set up r, a, b, and c vectors for tridiagonal solution
 
       ! Node j=1 (top)
+      !DMR 3/5/15 - fix problem of transpiration drawn below water table not being replaced
+      !  This term will be removed from the soil water calculation and subtracted
+      !  from qcharge
+      do fc = 1, num_hydrologyc
+        c = filter_hydrologyc(fc)
+        qflx_tran_veg_col_sat(c) = 0._r8
+        if (jwt(c)+2  .lt. nlevsoi) then
+          do j=jwt(c)+2,nlevsoi
+            qflx_tran_veg_col_sat(c) = qflx_tran_veg_col_sat(c)+qflx_rootsoi_col(c,j)
+          end do
+        end if
+      end do
 
       j = 1
       do fc = 1, num_hydrologyc
@@ -596,7 +610,11 @@ contains
          qout(c,j)   = -hk(c,j)*num/den
          dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
          dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-         rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+         if (j == jwt(c)+1) then !water table in this layer
+           rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) - qflx_tran_veg_col_sat(c)
+         else                    !water table below this layer
+           rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+         end if
          amx(c,j) =  0._r8
          bmx(c,j) =  dzmm(c,j)*(sdamp+1._r8/dtime) + dqodw1(c,j)
          cmx(c,j) =  dqodw2(c,j)
@@ -620,7 +638,13 @@ contains
             qout(c,j)   = -hk(c,j)*num/den
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-            rmx(c,j)    =  qin(c,j) - qout(c,j) -  qflx_rootsoi_col(c,j)
+            if (j > jwt(c)+1) then                     !Water table above this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j)
+            else if (j == jwt(c)+1) then               !water table in this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) - qflx_tran_veg_col_sat(c)
+            else                                       !Water table below this layer
+              rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
+            end if
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  dqodw2(c,j)
