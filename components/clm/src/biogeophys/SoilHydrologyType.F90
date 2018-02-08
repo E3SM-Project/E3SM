@@ -859,7 +859,8 @@ contains
 
      ! preset values
 
-     origflag = 0          
+     !origflag = 0
+     origflag = 1          ! why changes here for 'HUM_HOL'
      h2osfcflag = 1        
 
      if ( masterproc )then
