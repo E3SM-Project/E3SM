@@ -2211,7 +2211,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_surface_salinity_monthly_restoring" type="logical"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-if true, apply monthly salinity restoring
+If true, apply monthly salinity restoring using a uniform piston velocity, defined at run-time by config_salinity_restoring_constant_piston_velocity.  When false, salinity piston velocity is specified in the input file by salinityPistonVelocity, which may be spatially variable.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2219,7 +2219,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_surface_salinity_monthly_restoring_compute_interval" type="char*1024"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-interval to compute salinity restoring tendency
+Time interval to compute salinity restoring tendency.
 
 Valid values: Any valid time stamp or 'dt'
 Default: Defined in namelist_defaults.xml
@@ -2227,7 +2227,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_constant_piston_velocity" type="real"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-maximum allowable difference between surface salinity and climatology
+When config_use_surface_salinity_monthly_restoring is true, this flag provides a run-time override of the salinityPistonVelocity variable in the input files.  It is uniform over the domain, and controls the rate at which salinity is restored to salinitySurfaceRestoringValue
 
 Valid values: any non-negative number
 Default: Defined in namelist_defaults.xml
@@ -2235,7 +2235,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_max_difference" type="real"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-maximum allowable difference between surface salinity and climatology
+Maximum allowable difference between surface salinity and climatology.
 
 Valid values: any non-negative number
 Default: Defined in namelist_defaults.xml
@@ -2243,7 +2243,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_under_sea_ice" type="logical"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-flag to enable salinity restoring under sea ice
+Flag to enable salinity restoring under sea ice.  The default setting is false, where salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction.  If true, full salinity restoring is used everywhere, regardless of iceFraction value
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -4778,7 +4778,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_transectTransport_transect_group" type="char*1024"
 	category="AM_transectTransport" group="AM_transectTransport">
-The name of the transect group that holds the transects for which the transport should be calculated.
+The name of the transect group that holds the transects for which the transport should be caclulated.
 
 Valid values: Either of '', 'all' or any valid transect group name.
 Default: Defined in namelist_defaults.xml
