@@ -1415,6 +1415,7 @@ subroutine normalizencheck_landuse(ldomain)
                    end if
                    pctpft_full(n,m) = 0.0_r8
                 end if
+                if (pctpft_full(n,m) < toosmallPFT) pctpft_full(n,m) = 0.0_r8
              end do
           end if
 
