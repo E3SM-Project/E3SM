@@ -102,7 +102,7 @@ CONTAINS
     use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
 #ifdef HAVE_MOAB
-    use seq_comm_mct,      only: MHID  ! id of homme moab coarse application
+    use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
 #endif
 
     ! PARAMETERS:
@@ -197,6 +197,16 @@ CONTAINS
        if(par%masterproc) then
            write(iulog,*) " "
            write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+           write(iulog,*) " "
+       endif
+       appname="HM_FINE"//CHAR(0)
+       ATM_ID1 = 119
+       ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHFID)
+       if (ierr > 0 )  &
+           call endrun('Error: cannot register moab app for fine mesh')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
            write(iulog,*) " "
        endif
 #endif

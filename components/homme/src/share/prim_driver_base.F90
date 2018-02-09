@@ -114,7 +114,7 @@ contains
 #endif
 
 #ifdef HAVE_MOAB
-    use semoab_mod, only : create_moab_mesh_coarse
+    use semoab_mod, only : create_moab_mesh_coarse, create_moab_mesh_fine
 #endif
 
     implicit none
@@ -487,6 +487,7 @@ contains
     nete=nelemd
 #ifdef HAVE_MOAB
     call create_moab_mesh_coarse(par, elem, nets, nete)
+    call create_moab_mesh_fine(par, elem, nets, nete)
 #endif
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = nthreads
