@@ -60,6 +60,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.debug = False
 
+        self.granulate = ['variables', 'seasons', 'regions', 'plevs']
+
     def check_values(self):
         if not hasattr(
                 self, 'reference_data_path') or self.reference_data_path == '':
