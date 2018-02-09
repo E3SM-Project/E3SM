@@ -787,8 +787,8 @@ contains
           vmr_arr(:ncol,lchnk) = flbcs%vmr(:ncol,lchnk,last) &
                + dels * (flbcs%vmr(:ncol,lchnk,next) - flbcs%vmr(:ncol,lchnk,last))
        enddo
-       call endrun ('BALLI- circular dependency[physics_types->cam_history->mo_flbc->phys_gmean->physics_type]')
-       !BALLIcall gmean (vmr_arr, global_mean_vmr)
+       !call endrun ('BSINGH- circular dependency[physics_types->cam_history->chem_surfvals->mo_flbc->phys_gmean->physics_type]')
+       call gmean (vmr_arr, global_mean_vmr) !BSINGH- Commented out due to circular dependency
     endif
 
   endfunction global_mean_vmr

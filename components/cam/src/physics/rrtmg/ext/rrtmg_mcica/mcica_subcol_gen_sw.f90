@@ -398,7 +398,7 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num)
-                  CDF(isubcol,:,ilev) = rand_num!BSINGH - This line will stay the same now.                  
+                  CDF(isubcol,:,ilev) = rand_num
                enddo
             enddo
          elseif (irnd.eq.1) then
