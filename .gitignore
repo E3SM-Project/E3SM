@@ -11,3 +11,8 @@ doc/build
 
 # ignore the JENKINS files created when make html is run
 scripts/Tools/JENKINS*
+
+# Ignore anything that are produced under scripts "cases" directory
+
+/scripts/cases/
+
