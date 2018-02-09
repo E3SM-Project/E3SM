@@ -10,11 +10,11 @@
 <solar_data_type>FIXED</solar_data_type>
 
 <!-- 1850 GHG values from CMIP6 input4MIPS -->
-<!-- <co2vmr>284.317e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in config_compset.xml -->
-<ch4vmr>808.249e-9</ch4vmr>
-<n2ovmr>273.0211e-9</n2ovmr>
-<f11vmr>32.1102e-12</f11vmr>
-<f12vmr>0.0</f12vmr>
+<!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
+<ch4vmr>1163.821e-9</ch4vmr>
+<n2ovmr>289.739e-9</n2ovmr>
+<f11vmr>62.83147e-12</f11vmr>
+<f12vmr>6.382257e-12</f12vmr>
 
 <!-- Stratospheric aerosols from CMIP6 input4MIPS -->
 <prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
