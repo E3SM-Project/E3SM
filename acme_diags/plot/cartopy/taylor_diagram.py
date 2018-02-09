@@ -10,6 +10,8 @@ __author__ = "Yannick Copin <yannick.copin@laposte.net>"
 
 import numpy as np
 from numpy import genfromtxt
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 class TaylorDiagram(object):
