@@ -152,7 +152,7 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <values match="last">
-      <value/>
+      <value compset="1850_">$SRCROOT/cime_config/usermods_dirs/b1850</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_case.xml</file>
