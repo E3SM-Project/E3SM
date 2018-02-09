@@ -5,8 +5,14 @@ buildnmlc
 # Ignore emacs backup files
 *~
 
+# Ignore anything that are produced under scripts "cases" directory
+
+/scripts/cases/
+
 # Ignore doc/build/doctrees
 ##doc/build/doctrees 
 # ignore for the merge to master and orphaning of the gh-pages branch
 doc/build
 
+# Compiled files under build_scripts
+src/build_scripts/buildlib.*c
