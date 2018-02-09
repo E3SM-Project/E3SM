@@ -10,12 +10,11 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSW][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
-    <desc option="GSW"> GSWP3 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
     <desc option="CPLHIST"> Coupler hist data set </desc>
     <desc option="1PT">single point tower site data set </desc>
