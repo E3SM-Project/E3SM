@@ -1594,6 +1594,14 @@ contains
          seed                       = seed_deadstemc_patch    (begp:endp) , &
          seed_addition              = dwt_deadstemc_seed     (begp:endp))
 
+    ! These fluxes are computed as negative quantities, but are expected to be positive,
+    ! so flip the signs
+    do p = begp, endp
+       dwt_frootc_to_litter(p)     = -1._r8 * dwt_frootc_to_litter(p)
+       dwt_livecrootc_to_litter(p) = -1._r8 * dwt_livecrootc_to_litter(p)
+       dwt_deadcrootc_to_litter(p) = -1._r8 * dwt_deadcrootc_to_litter(p)
+    end do
+
   end subroutine CStateDynamicPatchAdjustments
   
 
@@ -1930,6 +1938,15 @@ contains
          seed                       = seed_deadstemn_patch (begp:endp)    , &
          seed_addition              = dwt_deadstemn_seed   (begp:endp))
 
+
+    ! These fluxes are computed as negative quantities, but are expected to be positive,
+    ! so flip the signs
+    do p = begp,endp
+       dwt_frootn_to_litter(p)     = -1._r8 * dwt_frootn_to_litter(p)
+       dwt_livecrootn_to_litter(p) = -1._r8 * dwt_livecrootn_to_litter(p)
+       dwt_deadcrootn_to_litter(p) = -1._r8 * dwt_deadcrootn_to_litter(p)
+    end do
+
   end subroutine NStateDynamicPatchAdjustments
   
   !-----------------------------------------------------------------------
@@ -2264,6 +2281,14 @@ contains
          flux2_out                  = wood_product_pflux   (begp:endp)    , &
          seed                       = seed_deadstemp_patch (begp:endp)    , &
          seed_addition              = dwt_deadstemp_seed   (begp:endp))
+
+    ! These fluxes are computed as negative quantities, but are expected to be positive,
+    ! so flip the signs
+    do p = begp,endp
+       dwt_frootp_to_litter(p)     = -1._r8 * dwt_frootp_to_litter(p)
+       dwt_livecrootp_to_litter(p) = -1._r8 * dwt_livecrootp_to_litter(p)
+       dwt_deadcrootp_to_litter(p) = -1._r8 * dwt_deadcrootp_to_litter(p)
+    end do
 
   end subroutine PStateDynamicPatchAdjustments
 
