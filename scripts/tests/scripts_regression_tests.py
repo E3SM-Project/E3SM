@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import glob, os, re, shutil, signal, sys, tempfile, \
-    threading, time, logging, unittest, getpass
+    threading, time, logging, unittest, getpass, \
+    filecmp
 
 from xml.etree.ElementTree import ParseError
 
@@ -537,6 +538,80 @@ class J_TestCreateNewcase(unittest.TestCase):
             self.assertEqual(primary, "allactive", msg="primary component test expected allactive but got %s"%primary)
 
         cls._do_teardown.append(testdir)
+
+    def test_j_createnewcase_user_compset_vs_alias(self):
+        """
+        Create a compset using the alias and another compset using the full compset name
+        and make sure they are the same by comparing the namelist files in CaseDocs.
+        Ignore the modelio files and clean the directory names out first.
+        """
+
+        cls = self.__class__
+
+        testdir1 = os.path.join(cls._testroot, 'testcreatenewcase_user_compset')
+        if os.path.exists(testdir1):
+            shutil.rmtree(testdir1)
+        cls._testdirs.append(testdir1)
+        args = ' --case CreateNewcaseTest --script-root {} --compset 2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV --res f19_g16 --output-root {} --handle-preexisting-dirs u' .format(testdir1, cls._testroot)
+        if CIME.utils.get_model() == "cesm":
+            args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args +=  " --mpilib %s"%TEST_MPILIB
+
+        run_cmd_assert_result(self, "{}/create_newcase {}" .format (SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup ", from_dir=testdir1)
+        run_cmd_assert_result(self, "./preview_namelists ", from_dir=testdir1)
+
+        dir1 = os.path.join(testdir1,"CaseDocs")
+        dir2 = os.path.join(testdir1,"CleanCaseDocs")
+        os.mkdir(dir2);
+        for _file in os.listdir(dir1):
+            if "modelio" in _file:
+                continue
+            with open(os.path.join(dir1,_file),"r") as fi:
+                file_text = fi.read()
+                file_text = file_text.replace(os.path.basename(testdir1),"PATH")
+            with open(os.path.join(dir2,_file), "w") as fo:
+                fo.write(file_text)
+        cleancasedocs1 = dir2
+
+        testdir2 = os.path.join(cls._testroot, 'testcreatenewcase_alias_compset')
+        if os.path.exists(testdir2):
+            shutil.rmtree(testdir2)
+        cls._testdirs.append(testdir2)
+        args = ' --case CreateNewcaseTest --script-root {} --compset ADSOMAQP --res f19_g16 --output-root {} --handle-preexisting-dirs u'.format(testdir2, cls._testroot)
+        if CIME.utils.get_model() == "cesm":
+            args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args +=  " --mpilib %s"%TEST_MPILIB
+
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup ", from_dir=testdir2)
+        run_cmd_assert_result(self, "./preview_namelists ", from_dir=testdir2)
+
+        dir1 = os.path.join(testdir2,"CaseDocs")
+        dir2 = os.path.join(testdir2,"CleanCaseDocs")
+        os.mkdir(dir2);
+        for _file in os.listdir(dir1):
+            if "modelio" in _file:
+                continue
+            with open(os.path.join(dir1,_file),"r") as fi:
+                file_text = fi.read()
+                file_text = file_text.replace(os.path.basename(testdir2),"PATH")
+            with open(os.path.join(dir2,_file), "w") as fo:
+                fo.write(file_text)
+
+        cleancasedocs2 = dir2
+        dcmp = filecmp.dircmp(cleancasedocs1, cleancasedocs2)
+        self.assertTrue(len(dcmp.diff_files) == 0, "CaseDocs differ {}".format(dcmp.diff_files))
+
+        cls._do_teardown.append(testdir1)
+        cls._do_teardown.append(testdir2)
+
 
     def test_k_append_config(self):
         machlist_before = MACHINE.list_available_machines()
