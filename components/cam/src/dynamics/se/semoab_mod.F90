@@ -43,7 +43,7 @@ contains
     INTEGER (C_INT) ,allocatable , target :: moab_corner_quads(:)
     integer moab_dim_cquads, ix, idx ! used for indexing in loops; idx will have the number of local vertices
 
-    integer nelemd
+    integer nelemd  ! do not confuse this with dimensions_mod::nelemd
 
 ! do we really need this?
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
@@ -79,7 +79,7 @@ contains
        moab_corner_quads(ix*4+2) = elem(ie)%gdofP(np,1)
        moab_corner_quads(ix*4+3) = elem(ie)%gdofP(np,np)
        moab_corner_quads(ix*4+4) = elem(ie)%gdofP(1,np)
-       elemids(ix+1) = ie
+       elemids(ix+1) = elem(ie)%GlobalId
        do i=1,np
          do j=1,np
            k = k+1
@@ -237,12 +237,12 @@ contains
     INTEGER (C_INT) ,allocatable , target :: moab_corner_quads(:)
     integer moab_dim_cquads, ix, idx, nverts ! used for indexing in loops; nverts will have the number of local vertices
 
-    integer nelemd
+    integer nelemd  ! do not confuse this with dimensions_mod::nelemd
 
 ! do we really need this?
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
         iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo, iMOAB_DefineTagStorage, &
-        iMOAB_SetIntTagStorage
+        iMOAB_SetIntTagStorage, iMOAB_ReduceTagsMax
 
     integer(iMap), dimension(:), allocatable :: gdofv
     integer, dimension(:), allocatable :: indx  !  this will be ordered
@@ -251,10 +251,30 @@ contains
     integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:), elemids(:)
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
-    character*100 outfile, wopts, localmeshfile, lnum, tagname
+    character*100 outfile, wopts, localmeshfile, lnum, tagname, newtagg
     integer  tagtype, numco, tag_sto_len, ent_type, tagindex
     type (cartesian3D_t)             :: cart
+    integer  igcol, ii
+    integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
+    ! for np=4,
+    !      28, 32, 36, 35
+    !      25, 29, 33, 34
+    ! j |  13, 17, 21, 22
+    !      1,  5,  9,  10
+    !(1,1)     i->
 
+     do j=1,np-1
+       do i =1, np-1
+         ix = (j-1)*(np-1)+i-1
+         local_map(i,j) = ix*4 + 1
+       enddo
+     enddo
+     do j=1, np-1
+       i = j
+       local_map(np, j) = ((np-1)*j-1)*4 + 2
+       local_map(i, np) = ( (np-1)*(np-2)+i-1)*4 + 4
+     enddo
+     local_map(np, np) = ((np-1)*(np-1)-1)*4 + 3
 
      nelemd = (nete-nets+1)*(np-1)*(np-1)
      moab_dim_cquads = (nete-nets+1)*4*(np-1)*(np-1)
@@ -276,7 +296,7 @@ contains
            moab_corner_quads(ix*4+2) = elem(ie)%gdofP(i+1,j)
            moab_corner_quads(ix*4+3) = elem(ie)%gdofP(i+1,j+1)
            moab_corner_quads(ix*4+4) = elem(ie)%gdofP(i,j+1)
-           elemids(ix+1) = (ie-1)*(np-1)*(np-1)+(j-1)*(np-1)+i
+           elemids(ix+1) = (elem(ie)%GlobalId-1)*(np-1)*(np-1)+(j-1)*(np-1)+i
          enddo
        enddo
 
@@ -386,6 +406,34 @@ contains
       ierr = iMOAB_ResolveSharedEntities( MHFID, nverts, vdone );
       if (ierr > 0 )  &
         call endrun('Error: fail to resolve shared entities')
+
+      vdone = -1 !  reuse vdone for the new tag, GDOF
+! use element offset for actual global dofs
+      ! tagtype = 0  ! dense, integer
+      ! numco = 1
+      newtagg='GDOF'//CHAR(0)
+      ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create new GDOF tag')
+      do ie=nets,nete
+        do ii=1,elem(ie)%idxp%NumUniquePts
+          i=elem(ie)%idxp%ia(ii)
+          j=elem(ie)%idxp%ja(ii)
+          igcol = elem(ie)%idxp%UniquePtoffset+ii-1
+          ix = local_map(i,j)
+          idx = moabconn((ie-1)*(np-1)*(np-1)*4 + ix) ! should
+          vdone ( idx ) = igcol
+        end do
+      end do
+      ! now set the values
+      ent_type = 0 ! vertex type
+      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vdone)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to set global dof tag for vertices')
+
+      ierr = iMOAB_ReduceTagsMax ( MHFID, tagindex, ent_type)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to reduce max tag')
 
 
 ! write in serial, on each task, before ghosting
