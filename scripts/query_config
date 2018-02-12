@@ -7,7 +7,7 @@ information will be listed for each.
 """
 
 from Tools.standard_script_setup import *
-
+import re
 from CIME.utils         import expect
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
@@ -16,7 +16,7 @@ from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
 
-import re, argparse
+logger = logging.getLogger(__name__)
 
 def query_grids(long_output):
     """
@@ -125,19 +125,26 @@ def query_component(name, all_components=False):
     # and see if there is a match for the the target component in the component attribute
     match_found = False
     valid_components = []
+    config_exists = False
     for comp in components:
         string = "CONFIG_{}_FILE".format(comp)
-
+        config_file = None
         # determine all components in string
-        components = files.get_components(string)
+        root_dir_node_name = "COMP_ROOT_DIR_{}".format(comp)
+        components = files.get_components(root_dir_node_name)
+        if components is None:
+            components = files.get_components(string)
         for item in components:
             valid_components.append(item)
-
+        logger.debug ("{}: valid_components {}".format(comp, valid_components))
         # determine if config_file is on disk
         if name is None:
             config_file = files.get_value(string)
-        else:
+        elif name in valid_components:
+            root_dir = files.get_value(root_dir_node_name, {"component":name})
             config_file = files.get_value(string, attribute={"component":name})
+
+            logger.debug("query {}".format(config_file))
         if config_file is not None:
             match_found = True
             config_exists = os.path.isfile(config_file)
