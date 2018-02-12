@@ -88,6 +88,12 @@ module li_mask
    end interface
 
 
+   interface li_mask_is_margin
+      module procedure li_mask_is_margin_logout_1d
+      module procedure li_mask_is_margin_logout_0d
+   end interface
+
+
    interface li_mask_is_dynamic_margin
       module procedure li_mask_is_dynamic_margin_logout_1d
       module procedure li_mask_is_dynamic_margin_logout_0d
@@ -95,8 +101,8 @@ module li_mask
 
 
    interface li_mask_is_dynamic_margin_int
-      module procedure li_mask_is_dynamic_margin_logout_1d
-      module procedure li_mask_is_dynamic_margin_logout_0d
+      module procedure li_mask_is_dynamic_margin_intout_1d
+      module procedure li_mask_is_dynamic_margin_intout_0d
    end interface
 
 
@@ -286,6 +292,8 @@ contains
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
+      real (kind=RKIND) :: thinnestNeighborHeight
+      integer :: iCellNeighbor
 
       call mpas_timer_start('calculate mask')
 
@@ -334,25 +342,6 @@ contains
           cellMask = ior(cellMask, li_mask_ValueIce)
       end where
 
-      ! Identify cells where the ice is above the ice dynamics thickness limit
-      where ( thickness > config_dynamic_thickness )
-         cellMask = ior(cellMask, li_mask_ValueDynamicIce)
-      end where
-
-      ! Identify cells that Albany would consider as active
-      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
-           (trim(config_velocity_solver) == 'FO') .or. &
-           (trim(config_velocity_solver) == 'Stokes') ) then
-         ! HO external FEM dycore
-         ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
-         where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
-                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )  ! but exclude dirichletVelocityMask
-                    ! locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary,
-                    ! so we ignore the basal level
-            cellMask = ior(cellMask, li_mask_ValueAlbanyActive)
-         end where
-      endif
-
       ! Is it floating? (ice thickness equal to floatation is considered floating)
       ! For now floating ice and grounded ice are mutually exclusive.
       ! This may change if a grounding line parameterization is added.
@@ -374,6 +363,41 @@ contains
               endif
           endif
       enddo
+
+      ! Identify cells where the ice is above the ice dynamics thickness limit
+      where ( thickness > config_dynamic_thickness )
+         cellMask = ior(cellMask, li_mask_ValueDynamicIce)
+      end where
+      ! Exclude floating margin cells that are thinner than all their non-margin neighbors
+       do i=1,nCells
+          if (li_mask_is_margin(cellMask(i)) .and. li_mask_is_floating_ice(cellMask(i))) then
+              thinnestNeighborHeight = 1.0e36_RKIND
+              do j=1,nEdgesOnCell(i) ! Find height of thickest neighbor
+                 iCellNeighbor = cellsOnCell(j,i)
+                 if (thickness(iCellNeighbor) > 0.0_RKIND .and. .not. li_mask_is_margin(cellMask(iCellNeighbor))) then
+                    thinnestNeighborHeight = min(thinnestNeighborHeight, thickness(iCellNeighbor))
+                 endif
+              enddo
+              if (thickness(i) < 0.95_RKIND * thinnestNeighborHeight) then
+                 ! consider this NOT dynamic if the ice shelf margin is not almost as tall as it's inland neighbors
+                 cellMask(i) = iand(cellMask(i), not(li_mask_ValueDynamicIce))  ! (turn off this bit)
+              endif
+          endif
+      enddo
+
+      ! Identify cells that Albany would consider as active
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
+         ! HO external FEM dycore
+         ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
+         where ( li_mask_is_dynamic_ice(cellMask) .and.    &  ! same as for SIA case
+                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )  ! but exclude dirichletVelocityMask
+                    ! locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary,
+                    ! so we ignore the basal level
+            cellMask = ior(cellMask, li_mask_ValueAlbanyActive)
+         end where
+      endif
 
       ! Identify the dynamic margin
       ! For a cell, we define the dynamic margin as the last cell with dynamic ice
@@ -720,6 +744,22 @@ contains
 
       li_mask_is_dynamic_ice_intout_0d = iand(mask, li_mask_ValueDynamicIce) / li_mask_ValueDynamicIce
    end function li_mask_is_dynamic_ice_intout_0d
+
+
+   ! -- Functions that check for presence of margin --
+   function li_mask_is_margin_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_margin_logout_1d
+
+      li_mask_is_margin_logout_1d = (iand(mask, li_mask_ValueMargin) == li_mask_ValueMargin)
+   end function li_mask_is_margin_logout_1d
+
+   function li_mask_is_margin_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_margin_logout_0d
+
+      li_mask_is_margin_logout_0d = (iand(mask, li_mask_ValueMargin) == li_mask_ValueMargin)
+   end function li_mask_is_margin_logout_0d
 
 
    ! -- Functions that check for presence of active albany --
