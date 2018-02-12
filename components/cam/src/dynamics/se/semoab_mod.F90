@@ -386,7 +386,7 @@ contains
       ! for this particular problem, markers are the global dofs at corner nodes
 ! set the global id for vertices
 !   first, retrieve the tag
-      tagname='GLOBAL_ID'//CHAR(0)
+      tagname='GDOF'//CHAR(0)
       tagtype = 0  ! dense, integer
       numco = 1
       ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
@@ -396,12 +396,7 @@ contains
       ent_type = 0 ! vertex type
       ierr = iMOAB_SetIntTagStorage ( MHFID, tagname, nverts , ent_type, vdone)
       if (ierr > 0 )  &
-        call endrun('Error: fail to set global id tag for vertices')
-      ! set global id tag for coarse elements, too; they will start at nets, end at nete
-      ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHFID, tagname, nelemd , ent_type, elemids)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set global id tag for vertices')
+        call endrun('Error: fail to set marker id tag for vertices')
 
       ierr = iMOAB_ResolveSharedEntities( MHFID, nverts, vdone );
       if (ierr > 0 )  &
@@ -411,7 +406,7 @@ contains
 ! use element offset for actual global dofs
       ! tagtype = 0  ! dense, integer
       ! numco = 1
-      newtagg='GDOF'//CHAR(0)
+      newtagg='GLOBAL_ID'//CHAR(0)
       ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create new GDOF tag')
@@ -435,6 +430,11 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to reduce max tag')
 
+      ! set global id tag for elements
+      ent_type = 1 ! now set the global id tag on elements
+      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nelemd , ent_type, elemids)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to set global id tag for elements')
 
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 4) then
