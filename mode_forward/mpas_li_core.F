@@ -886,20 +886,12 @@ module li_core
 !!!      err = ior(err, err_tmp)
 
       ! Init for reconstruction of velocity
-      !TODO - Initialize the reconstruction regardless of the velocity solver, because
-      !        these coefficients will be needed in the future for IR transport.
-      !       For now, we avoid calling these subroutines when using the external FO solver,
-      !        because mpas_init_reconstruct fails with the MISMIP periodic mesh
-      !        (since x_period and y_period are not set properly).
-      if ( (trim(config_velocity_solver) == 'sia') .or.    &
-           (trim(config_velocity_solver) == 'simple') .or.    &
-           (trim(config_velocity_solver) == 'none') .or.    &
-           config_do_velocity_reconstruction_for_external_dycore .or.   &
-           config_adaptive_timestep_include_DCFL .or. &
-           config_SGH) then
-         call mpas_rbf_interp_initialize(meshPool)
-         call mpas_init_reconstruct(meshPool)
-      endif
+      !    Note: mpas_init_reconstruct fails with the MISMIP3d periodic mesh
+      !      because x_period and y_period are not set properly.
+      !      That should be fixed for that test, but a workaround is to 
+      !      disable these two calls for those runs.
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_init_reconstruct(meshPool)
 
       ! Initialize velocity solver
       !WHL - This is now after the call to mpas_init_reconstruct, so that the reconstruction coefficients are available.
