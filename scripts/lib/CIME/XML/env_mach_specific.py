@@ -278,21 +278,19 @@ class EnvMachSpecific(EnvBase):
         for action,argument in modules_to_load:
             cmd += " && {} {} {}".format(sh_mod_cmd, action, "" if argument is None else argument)
 
-        cmd += " && env"
+        # Use null terminated lines to give us something more definitive to split on.
+        # Env vars can contain newlines, so splitting on newlines can be ambiguous
+        cmd += " && env -0"
         output = run_cmd_no_fail(cmd)
 
         ###################################################
         # Parse the output to set the os.environ dictionary
         ###################################################
         newenv = OrderedDict()
-        lastkey = None
-        for line in output.splitlines():
+        for line in output.split('\0'):
             if "=" in line:
                 key, val = line.split("=", 1)
                 newenv[key] = val
-                lastkey = key
-            elif lastkey is not None:
-                newenv[lastkey] += "\n" + line
 
         # resolve variables
         for key, val in newenv.items():
