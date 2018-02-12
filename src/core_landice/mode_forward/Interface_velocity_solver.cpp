@@ -1481,7 +1481,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
 
   for (int iV = 0; iV < nVertices; iV++) {
     int fCell = vertexToFCell[iV];
-    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & ice_present_bit_value)) {
+    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & dynamic_ice_bit_value)) {
       int c;
       int nEdg = nEdgesOnCells_F[fCell];
       bool isFloating = false;
@@ -1498,21 +1498,23 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
          bool foundNeighbor = false;
          for (int j = 0; j < nEdg; j++) {
            int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-           // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-           //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-           // if (!keep)
-           //   continue;
+           //bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+           //    && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
+           //if (!keep)
+           //  continue;
 
            int c0 = cellsOnEdge_F[2 * fEdge] - 1;
            int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
            c = (fCellToVertex[c0] == iV) ? c1 : c0;
-           if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
+           //if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
+           if((cellsMask_F[c] & dynamic_ice_bit_value)) {
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
            std::cout << "  elev="<<elev<<std::endl;
            if (elev < elevTemp) {
              elevTemp = elev;
              bdExtensionMap[iV] = c;
              foundNeighbor = true;
+           }
            }
          }
          // check if we didn't assign anything.  This occurs if this node has no neighbors with ice that are floating.
