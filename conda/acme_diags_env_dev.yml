@@ -144,7 +144,7 @@ dependencies:
 - numpy=1.13.1
 - scipy=0.19.1=np113py27_0
 - system=5.8
-- cdp=1.2.1
+- cdp=1.2.3
 - dv3d=2.12
 - output_viewer=1.2.2
 - vcs=2.12

@@ -4,7 +4,7 @@ import cdms2
 import MV2
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
-from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
+from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean, std
 from acme_diags.driver import utils
 from acme_diags.driver.utils import get_output_dir
 import os
@@ -23,7 +23,8 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     metrics_dict['ref_regrid'] = {
         'min': float(min_cdms(ref_regrid)),
         'max': float(max_cdms(ref_regrid)),
-        'mean': float(mean(ref_regrid))
+        'mean': float(mean(ref_regrid)),
+        'std': float(std(ref_regrid))
     }
     metrics_dict['test'] = {
         'min': float(min_cdms(test)),
@@ -33,7 +34,8 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     metrics_dict['test_regrid'] = {
         'min': float(min_cdms(test_regrid)),
         'max': float(max_cdms(test_regrid)),
-        'mean': float(mean(test_regrid))
+        'mean': float(mean(test_regrid)),
+        'std': float(std(test_regrid))
     }
     metrics_dict['diff'] = {
         'min': float(min_cdms(diff)),
