@@ -141,9 +141,7 @@ def query_component(name, all_components=False):
         if name is None:
             config_file = files.get_value(string)
         elif name in valid_components:
-            root_dir = files.get_value(root_dir_node_name, {"component":name})
             config_file = files.get_value(string, attribute={"component":name})
-
             logger.debug("query {}".format(config_file))
         if config_file is not None:
             match_found = True

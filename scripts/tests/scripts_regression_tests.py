@@ -566,7 +566,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         dir1 = os.path.join(testdir1,"CaseDocs")
         dir2 = os.path.join(testdir1,"CleanCaseDocs")
-        os.mkdir(dir2);
+        os.mkdir(dir2)
         for _file in os.listdir(dir1):
             if "modelio" in _file:
                 continue
@@ -595,7 +595,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         dir1 = os.path.join(testdir2,"CaseDocs")
         dir2 = os.path.join(testdir2,"CleanCaseDocs")
-        os.mkdir(dir2);
+        os.mkdir(dir2)
         for _file in os.listdir(dir1):
             if "modelio" in _file:
                 continue
