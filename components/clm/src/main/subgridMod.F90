@@ -22,7 +22,7 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine subgrid_get_gcellinfo (gi, &
-       nlunits, ncols, npfts, ncohorts, &
+       ntopounits, nlunits, ncols, npfts, ncohorts, &
        nveg, &
        ncrop, &
        nurban_tbd, &
@@ -49,6 +49,7 @@ contains
     ! !ARGUMENTS
     implicit none
     integer , intent(in)  :: gi                   ! grid cell index
+    integer , optional, intent(out) :: ntopounits ! number of topographic units
     integer , optional, intent(out) :: nlunits    ! number of landunits
     integer , optional, intent(out) :: ncols      ! number of columns 
     integer , optional, intent(out) :: npfts      ! number of pfts 
@@ -65,206 +66,240 @@ contains
     integer , optional, intent(in)  :: glcmask  ! = 1 if glc requires surface mass balance in this gridcell
     !
     ! !LOCAL VARIABLES:
-    integer  :: m                ! loop index
+    integer  :: t, m             ! loop index
     integer  :: n                ! elevation class index
-    integer  :: ipfts            ! number of pfts in gridcell
-    integer  :: icols            ! number of columns in gridcell
+    integer  :: itopounits       ! number of topographic units in gridcell
     integer  :: ilunits          ! number of landunits in gridcell
+    integer  :: icols            ! number of columns in gridcell
+    integer  :: ipfts            ! number of pfts in gridcell
     integer  :: icohorts         ! number of cohorts in gridcell
     integer  :: npfts_per_lunit  ! number of pfts in landunit
+    integer  :: ntopounits_per_gcell  ! number of topounits in this gridcell
     !------------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
-    ! Initialize pfts, columns and landunits counters for gridcell
+    ! Initialize topounits, landunits, pfts, columns and cohorts counters for gridcell
     ! -------------------------------------------------------------------------
 
-    ipfts    = 0
-    icols    = 0
-    ilunits  = 0
-    icohorts = 0
-
+    itopounits = 0
+    ilunits    = 0
+    icols      = 0
+    ipfts      = 0
+    icohorts   = 0
+    
     ! -------------------------------------------------------------------------
-    ! Set naturally vegetated landunit
+    ! Initialize other optional counters for gridcell
     ! -------------------------------------------------------------------------
-
-    ! To support dynamic landunits, we have a naturally vegetated landunit in every grid
-    ! cell, because it might need to come into existence even if its weight is 0 at the
-    ! start of the run. And to support transient pfts or dynamic vegetation, we always
-    ! allocate space for ALL PFTs on this landunit.
-
-    npfts_per_lunit = natpft_size
-
-    ! Assume that the vegetated landunit has one column
-    ilunits = ilunits + 1
-    icols = icols + 1  
-
-    ipfts = ipfts + npfts_per_lunit
-
+    if (present(nveg)) nveg = 0
+    if (present(nurban_tbd)) nurban_tbd = 0
+    if (present(nurban_hd)) nurban_hd = 0
+    if (present(nurban_md)) nurban_md = 0
+    if (present(nlake)) nlake = 0
+    if (present(nwetland)) nwetland = 0
+    if (present(nglacier)) nglacier = 0
+    if (present(nglacier_mec)) nglacier_mec = 0
+    if (present(ncrop)) ncrop = 0
+    
     ! -------------------------------------------------------------------------
-    ! Number of cohorts is set here
-    ! ED cohorts (via FATES) populate all natural vegetation columns.
-    ! Current implementations mostly assume that only one column contains
-    ! natural vegetation, which is synonomous with the soil column. 
-    ! Because of the single natural vegetation paradigm currently in place,
-    ! fates cohort allocations are based off a multiplier on grid-cells.
+    ! Loop through topographic units
     ! -------------------------------------------------------------------------
+    
+    ! as a start, everything that used to be allocated on a gridcell will now be allocated
+    ! for each topographic unit on each gridcell. That will be wasteful in many cases, but 
+    ! is a simple way to make the transition to topounits. We should return to this to see
+    ! if there is a smarter way to allocate space that does not preclude land area transitions
+    ! of interest.
+    ntopounits_per_gcell = 1   ! this will be replaced later with a constant > 1, or with a function call
+                               ! that sets the number of topounits uniquely for each gridcell.
+    do t = 1, ntopounits_per_gcell
+       
+       itopounits = itopounits + 1
 
-    icohorts = fates_maxElementsPerSite
+       ! -------------------------------------------------------------------------
+       ! Set naturally vegetated landunit
+       ! -------------------------------------------------------------------------
 
-    if (present(nveg )) nveg  = npfts_per_lunit
+       ! To support dynamic landunits, we have a naturally vegetated landunit in every grid
+       ! cell, because it might need to come into existence even if its weight is 0 at the
+       ! start of the run. And to support transient pfts or dynamic vegetation, we always
+       ! allocate space for ALL PFTs on this landunit.
 
-    ! -------------------------------------------------------------------------
-    ! Set urban landunits
-    ! -------------------------------------------------------------------------
+       npfts_per_lunit = natpft_size
 
-    ! To support dynamic landunits, we have all urban landunits in every grid cell that
-    ! has valid urban parameters, because they might need to come into existence even if
-    ! their weight is 0 at the start of the run. And for simplicity, we always allocate
-    ! space for ALL columns on the urban landunits.
-
-    ! Set urban tall building district landunit
-
-    npfts_per_lunit = 0
-    if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
+       ! Assume that the vegetated landunit has one column
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       icols = icols + 1  
+
        ipfts = ipfts + npfts_per_lunit
-    end if
-    if (present(nurban_tbd )) nurban_tbd  = npfts_per_lunit
 
-    ! Set urban high density landunit
+       ! -------------------------------------------------------------------------
+       ! Number of cohorts is set here
+       ! ED cohorts (via FATES) populate all natural vegetation columns.
+       ! Current implementations mostly assume that only one column contains
+       ! natural vegetation, which is synonymous with the soil column. 
+       ! Because of the single natural vegetation paradigm currently in place,
+       ! fates cohort allocations are based off a multiplier on grid-cells.
+       ! -------------------------------------------------------------------------
 
-    npfts_per_lunit = 0
-    if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
-    end if
-    if (present(nurban_hd )) nurban_hd  = npfts_per_lunit
+       icohorts = fates_maxElementsPerSite
 
-    ! Set urban medium density landunit
+       if (present(nveg)) nveg = nveg + npfts_per_lunit
 
-    npfts_per_lunit = 0
-    if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
-    end if
-    if (present(nurban_md )) nurban_md  = npfts_per_lunit
+       ! -------------------------------------------------------------------------
+       ! Set urban landunits
+       ! -------------------------------------------------------------------------
 
-    ! -------------------------------------------------------------------------
-    ! Set lake landunit
-    ! -------------------------------------------------------------------------
+       ! To support dynamic landunits, we have all urban landunits in every grid cell that
+       ! has valid urban parameters, because they might need to come into existence even if
+       ! their weight is 0 at the start of the run. And for simplicity, we always allocate
+       ! space for ALL columns on the urban landunits.
 
-    ! We currently do NOT allow the lake landunit to expand via dynamic landunits, so we
-    ! only need to allocate space for it where its weight is currently non-zero.
+       ! Set urban tall building district landunit
 
-    npfts_per_lunit = 0
-    if (wt_lunit(gi, istdlak) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
-    end if
-    if (npfts_per_lunit > 0) then
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-    end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nlake )) nlake  = npfts_per_lunit
+       npfts_per_lunit = 0
+       if (urban_valid(gi)) then
+          npfts_per_lunit = maxpatch_urb
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+          ipfts = ipfts + npfts_per_lunit
+       end if
+       if (present(nurban_tbd)) nurban_tbd = nurban_tbd + npfts_per_lunit
 
-    ! -------------------------------------------------------------------------
-    ! Set wetland landunit
-    ! -------------------------------------------------------------------------
+       ! Set urban high density landunit
 
-    ! We currently do NOT allow the wetland landunit to expand via dynamic landunits, so
-    ! we only need to allocate space for it where its weight is currently non-zero.
+       npfts_per_lunit = 0
+       if (urban_valid(gi)) then
+          npfts_per_lunit = maxpatch_urb
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+          ipfts = ipfts + npfts_per_lunit
+       end if
+       if (present(nurban_hd)) nurban_hd = nurban_hd + npfts_per_lunit
 
-    npfts_per_lunit = 0
-    if (wt_lunit(gi, istwet) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
-    end if
-    if (npfts_per_lunit > 0) then
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-    end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nwetland )) nwetland  = npfts_per_lunit
+       ! Set urban medium density landunit
 
-    ! -------------------------------------------------------------------------
-    ! Set glacier landunit
-    ! -------------------------------------------------------------------------
+       npfts_per_lunit = 0
+       if (urban_valid(gi)) then
+          npfts_per_lunit = maxpatch_urb
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+          ipfts = ipfts + npfts_per_lunit
+       end if
+       if (present(nurban_md)) nurban_md = nurban_md + npfts_per_lunit
 
-    ! We currently do NOT allow the glacier landunit to expand via dynamic landunits, so
-    ! we only need to allocate space for it where its weight is currently non-zero. (If we
-    ! have dynamic glacier area, we will be using glacier_mec landunits rather than
-    ! glacier landunits.)
+       ! -------------------------------------------------------------------------
+       ! Set lake landunit
+       ! -------------------------------------------------------------------------
 
-    npfts_per_lunit = 0
-    if (wt_lunit(gi, istice) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
-    end if
-    if (npfts_per_lunit > 0) then
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-    end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nglacier )) nglacier  = npfts_per_lunit
+       ! We currently do NOT allow the lake landunit to expand via dynamic landunits, so we
+       ! only need to allocate space for it where its weight is currently non-zero.
 
-    ! -------------------------------------------------------------------------
-    ! Set glacier_mec landunit
-    ! -------------------------------------------------------------------------
-
-    ! If glcmask = 1, we create a column for each elevation class even if the weight on
-    ! the grid cell is 0. This is needed for coupling to CISM. In addition, this is
-    ! currently sufficient to ensure that we have glaciers everywhere they might be
-    ! needed with dynamic landunits, since CISM won't be able to create glaciers outside
-    ! of the area specified by glcmask. 
-
-    npfts_per_lunit = 0
-    do m = 1, maxpatch_glcmec
-       ! If the landunit has non-zero weight on the grid cell, and this column has
-       ! non-zero weight on the landunit...
-       if (wt_lunit(gi, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi, m) > 0.0_r8) then
+       npfts_per_lunit = 0
+       if (wt_lunit(gi, istdlak) > 0.0_r8) then
           npfts_per_lunit = npfts_per_lunit + 1
-
-       elseif (present(glcmask)) then
-          if (glcmask == 1) then      ! create a virtual column 
-             npfts_per_lunit = npfts_per_lunit + 1
-          endif  ! glcmask = 1 
-       endif  ! wt > 0
-    enddo   ! maxpatch_glcmec
-    if (npfts_per_lunit > 0) then
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-    end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nglacier_mec )) nglacier_mec  = npfts_per_lunit
-
-    ! -------------------------------------------------------------------------
-    ! Set crop landunit if appropriate
-    ! -------------------------------------------------------------------------
-
-    npfts_per_lunit = 0
-    if (create_crop_landunit) then
-       ! To support dynamic landunits, we have a crop landunit in every grid cell (if
-       ! create_crop_landunit is true), because it might need to come into existence even
-       ! if its weight is 0 at the start of the run.
-       npfts_per_lunit = cft_size
-       ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       end if
+       if (npfts_per_lunit > 0) then
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+       end if
        ipfts = ipfts + npfts_per_lunit
-    end if
-    if (present(ncrop )) ncrop  = npfts_per_lunit
+       if (present(nlake)) nlake = nlake + npfts_per_lunit
+
+       ! -------------------------------------------------------------------------
+       ! Set wetland landunit
+       ! -------------------------------------------------------------------------
+
+       ! We currently do NOT allow the wetland landunit to expand via dynamic landunits, so
+       ! we only need to allocate space for it where its weight is currently non-zero.
+
+       npfts_per_lunit = 0
+       if (wt_lunit(gi, istwet) > 0.0_r8) then
+          npfts_per_lunit = npfts_per_lunit + 1
+       end if
+       if (npfts_per_lunit > 0) then
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+       end if
+       ipfts = ipfts + npfts_per_lunit
+       if (present(nwetland)) nwetland = nwetland + npfts_per_lunit
+
+       ! -------------------------------------------------------------------------
+       ! Set glacier landunit
+       ! -------------------------------------------------------------------------
+
+       ! We currently do NOT allow the glacier landunit to expand via dynamic landunits, so
+       ! we only need to allocate space for it where its weight is currently non-zero. (If we
+       ! have dynamic glacier area, we will be using glacier_mec landunits rather than
+       ! glacier landunits.)
+
+       npfts_per_lunit = 0
+       if (wt_lunit(gi, istice) > 0.0_r8) then
+          npfts_per_lunit = npfts_per_lunit + 1
+       end if
+       if (npfts_per_lunit > 0) then
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+       end if
+       ipfts = ipfts + npfts_per_lunit
+       if (present(nglacier)) nglacier = nglacier + npfts_per_lunit
+
+       ! -------------------------------------------------------------------------
+       ! Set glacier_mec landunit
+       ! -------------------------------------------------------------------------
+
+       ! If glcmask = 1, we create a column for each elevation class even if the weight on
+       ! the grid cell is 0. This is needed for coupling to CISM. In addition, this is
+       ! currently sufficient to ensure that we have glaciers everywhere they might be
+       ! needed with dynamic landunits, since CISM won't be able to create glaciers outside
+       ! of the area specified by glcmask. 
+
+       npfts_per_lunit = 0
+       do m = 1, maxpatch_glcmec
+          ! If the landunit has non-zero weight on the grid cell, and this column has
+          ! non-zero weight on the landunit...
+          if (wt_lunit(gi, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi, m) > 0.0_r8) then
+             npfts_per_lunit = npfts_per_lunit + 1
+
+          elseif (present(glcmask)) then
+             if (glcmask == 1) then      ! create a virtual column 
+                npfts_per_lunit = npfts_per_lunit + 1
+             endif  ! glcmask = 1 
+          endif  ! wt > 0
+       enddo   ! maxpatch_glcmec
+       if (npfts_per_lunit > 0) then
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+       end if
+       ipfts = ipfts + npfts_per_lunit
+       if (present(nglacier_mec)) nglacier_mec = nglacier_mec + npfts_per_lunit
+
+       ! -------------------------------------------------------------------------
+       ! Set crop landunit if appropriate
+       ! -------------------------------------------------------------------------
+
+       npfts_per_lunit = 0
+       if (create_crop_landunit) then
+          ! To support dynamic landunits, we have a crop landunit in every grid cell (if
+          ! create_crop_landunit is true), because it might need to come into existence even
+          ! if its weight is 0 at the start of the run.
+          npfts_per_lunit = cft_size
+          ilunits = ilunits + 1
+          icols   = icols + npfts_per_lunit
+          ipfts = ipfts + npfts_per_lunit
+       end if
+       if (present(ncrop)) ncrop = ncrop + npfts_per_lunit
+    
+    enddo ! end of ntopounits loop
 
     ! -------------------------------------------------------------------------
     ! Determine return arguments
     ! -------------------------------------------------------------------------
 
-    if (present(nlunits)) nlunits  = ilunits
-    if (present(ncols))   ncols    = icols
-    if (present(npfts))   npfts    = ipfts
-    if (present(ncohorts))ncohorts = icohorts
+    if (present(ntopounits)) ntopounits = itopounits
+    if (present(nlunits))       nlunits = ilunits
+    if (present(ncols))           ncols = icols
+    if (present(npfts))           npfts = ipfts
+    if (present(ncohorts))     ncohorts = icohorts
 
   end subroutine subgrid_get_gcellinfo
 

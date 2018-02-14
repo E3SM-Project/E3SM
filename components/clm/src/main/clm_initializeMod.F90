@@ -272,10 +272,10 @@ contains
     ! ------------------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
-       call decompInit_clumps(ns, ni, nj, ldomain%glcmask)
+       call decompInit_clumps(ldomain%glcmask)
        call decompInit_ghosts(ldomain%glcmask)
     else
-       call decompInit_clumps(ns, ni, nj)
+       call decompInit_clumps()
        call decompInit_ghosts()
     endif
 
