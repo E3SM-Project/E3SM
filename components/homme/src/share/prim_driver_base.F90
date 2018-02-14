@@ -909,26 +909,22 @@ contains
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
-!if vsplit == -1 resort to
-!the behaviour as before. if vsplit > 0, new logic
-    if(vsplit == -1)then
-      ! Apply CAM Physics forcing
+    ! Apply CAM Physics forcing
 
-      !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-      !   ftype= 1: forcing was applied time-split in CAM coupling layer
-      !   ftype= 0: apply all forcing here
-      !   ftype=-1: do not apply forcing
-      if (ftype==0) then
-        call t_startf("ApplyCAMForcing")
-        call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-        call t_stopf("ApplyCAMForcing")
+    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+    !   ftype= 1: forcing was applied time-split in CAM coupling layer
+    !   ftype= 0: apply all forcing here
+    !   ftype=-1: do not apply forcing
+    if (ftype==0) then
+      call t_startf("ApplyCAMForcing")
+      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing")
 
-      elseif (ftype==2) then
-        call t_startf("ApplyCAMForcing_dynamics")
-        call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-        call t_stopf("ApplyCAMForcing_dynamics")
-      endif
-    endif !vsplit = -1
+    elseif (ftype==2) then
+      call t_startf("ApplyCAMForcing_dynamics")
+      call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing_dynamics")
+    endif
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -942,6 +938,7 @@ contains
     endif
 
     ! initialize dp3d from ps
+    !for vsplit it needs to be saved somewhere
     do ie=nets,nete
        do k=1,nlev
           elem(ie)%state%dp3d(:,:,k,tl%n0)=&
@@ -971,12 +968,9 @@ contains
         call t_stopf("prim_step_rX")
       enddo
     else
-      !new logic, with vsplit
+      !new logic, with vsplit and ftype=2 only
       do r=1,rsplit
-        if(r == 1) then
-          !apply forcing without remap
-          call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-        else
+        if( r>1 )then
           if( mod((r-1), vsplit) == 0 )then
             !first, remap forcing to homme floating levels
             !call WHAT

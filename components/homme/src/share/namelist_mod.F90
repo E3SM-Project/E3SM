@@ -817,17 +817,18 @@ module namelist_mod
     end if
 
 #ifdef CAM
-!to make vsplit > 0 work, we need: ftype=0 (so that all tendencies are sent to
-!homme from cam), nsplit=1 (nsplit>1 makes sense only for ftype=2?), and 
+!to make vsplit > 0 work, we need: ftype=2 (for now), 
+!nsplit=1, and 
 !rsplit = Factor * ( nsplit * vsplit ), rsplit > 0
     if( vsplit > 0 )then
-       if( (rsplit == 0).OR.(nsplit > 1 ) )then
-         call abortmp('in CAM vsplit > 0 requires rsplit > 0 and nsplit = 1')
+       if((rsplit == 0).OR.(nsplit > 1).OR.(ftype .ne. 2))then
+         call abortmp('in CAM vsplit > 0 requires rsplit > 0, nsplit = 1 and ftype=2')
        else
          if ( mod( rsplit, vsplit )  call abortmp('in CAM vsplit should be multiplier of rsplit')
        endif
     endif
 #else
+!what to do about ftype when no cam?
     if( vsplit > 0 )then
        if( (rsplit == 0) )then
          call abortmp('in homme vsplit > 0 requires rsplit > 0')
