@@ -3337,6 +3337,7 @@ contains
          seed              = seed_leafc_patch (begp:endp)           , &
          seed_addition     = dwt_leafc_seed   (begp:endp))
 
+
     ! 2) LEAFC_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
          bounds                                                     , &
@@ -3364,7 +3365,7 @@ contains
          filterp_with_inactive                                      , &
          var               = this%frootc_patch(begp:endp)             , &
          flux_out_grc_area = dwt_frootc_to_litter(begp:endp))
-
+    
     ! 5) FROOTC_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
          bounds                                                     , &
@@ -3405,139 +3406,7 @@ contains
          var               = this%livestemc_xfer_patch(begp:endp)     , &
          flux_out_grc_area = conv_cflux(begp:endp))
 
-    ! 10) LIVECROOTC_PATCH 
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%livecrootc_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_frootc_to_litter(begp:endp))
-
-    ! 11) LIVECROOTC_STORAGE_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%livecrootc_storage_patch(begp:endp) , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 12) LIVECROOTC_XFER_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%livecrootc_xfer_patch(begp:endp)    , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 13) DEADCROOTC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%deadcrootc_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_frootc_to_litter(begp:endp))
-
-    ! 14) DEADCROOTC_STORAGE_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%deadcrootc_storage_patch(begp:endp) , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 15) DEADCROOT_XFER_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%deadcrootc_xfer_patch(begp:endp)    , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 16) GRESP_STORAGE_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%gresp_storage_patch(begp:endp)      , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 17) GRESP_XFER_STORAGE
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%gresp_xfer_patch(begp:endp)         , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 18) CPOOL_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%cpool_patch(begp:endp)              , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 19) XSMRPOOL_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%xsmrpool_patch(begp:endp)           , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 20) CTRUNC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%ctrunc_patch(begp:endp)             , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 21) DISPVEGC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%dispvegc_patch(begp:endp))
-
-    ! 22) STORVEGC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%storvegc_patch(begp:endp))
-
-    ! 23) TOTVEGC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%totvegc_patch(begp:endp))
-
-    ! 24) TOTPFTC_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%totpftc_patch(begp:endp))
-
-    ! 25) DEADSTEMC_STORAGE_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%deadstemc_storage_patch(begp:endp)  , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 26) DEADSTEMC_XFER_PATCH
-    call patch_state_updater%update_patch_state(                      &
-         bounds                                                     , &
-         num_filterp_with_inactive                                  , &
-         filterp_with_inactive                                      , &
-         var               = this%deadstemc_xfer_patch(begp:endp)     , &
-         flux_out_grc_area = conv_cflux(begp:endp))
-
-    ! 27) PROD10_CFLUX
+    ! 10) PROD10_CFLUX
     wood_product_cflux(begp:endp)      = 0._r8
     deadstemc_patch_temp(begp:endp)    = this%deadstemc_patch(begp:endp)
     call patch_state_updater%update_patch_state_partition_flux_by_type( &
@@ -3550,7 +3419,7 @@ contains
          flux2_out                  = wood_product_cflux      (begp:endp) , &
          seed                       = seed_deadstemc_patch    (begp:endp) )
 
-    ! 28) PROD100_CFLUX
+    ! 11) PROD100_CFLUX
     wood_product_cflux(begp:endp)      = 0._r8
     deadstemc_patch_temp(begp:endp)    = this%deadstemc_patch(begp:endp)
     call patch_state_updater%update_patch_state_partition_flux_by_type( &
@@ -3563,7 +3432,7 @@ contains
          flux2_out                  = wood_product_cflux      (begp:endp) , &
          seed                       = seed_deadstemc_patch    (begp:endp))
 
-    ! 29) DEADSTEMC_PATCH
+    ! 12) DEADSTEMC_PATCH
     wood_product_cflux(begp:endp)      = 0._r8
     call patch_state_updater%update_patch_state_partition_flux_by_type( &
          bounds                                                        , &
@@ -3575,6 +3444,138 @@ contains
          flux2_out                  = wood_product_cflux       (begp:endp) , &
          seed                       = seed_deadstemc_patch    (begp:endp) , &
          seed_addition              = dwt_deadstemc_seed     (begp:endp))
+
+    ! 13) DEADSTEMC_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadstemc_storage_patch(begp:endp)  , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 14) DEADSTEMC_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadstemc_xfer_patch(begp:endp)     , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 15) LIVECROOTC_PATCH 
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecrootc_patch(begp:endp)         , &
+         flux_out_grc_area = dwt_livecrootc_to_litter(begp:endp))
+
+    ! 16) LIVECROOTC_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecrootc_storage_patch(begp:endp) , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 17) LIVECROOTC_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecrootc_xfer_patch(begp:endp)    , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 18) DEADCROOTC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcrootc_patch(begp:endp)         , &
+         flux_out_grc_area = dwt_deadcrootc_to_litter(begp:endp))
+
+    ! 19) DEADCROOTC_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcrootc_storage_patch(begp:endp) , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 20) DEADCROOT_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcrootc_xfer_patch(begp:endp)    , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 21) GRESP_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%gresp_storage_patch(begp:endp)      , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 22) GRESP_XFER_STORAGE
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%gresp_xfer_patch(begp:endp)         , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 23) CPOOL_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%cpool_patch(begp:endp)              , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 24) XSMRPOOL_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%xsmrpool_patch(begp:endp)           , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 25) CTRUNC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%ctrunc_patch(begp:endp)             , &
+         flux_out_grc_area = conv_cflux(begp:endp))
+
+    ! 26) DISPVEGC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%dispvegc_patch(begp:endp))
+
+    ! 27) STORVEGC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%storvegc_patch(begp:endp))
+
+    ! 28) TOTVEGC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%totvegc_patch(begp:endp))
+
+    ! 29) TOTPFTC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%totpftc_patch(begp:endp))
 
     ! These fluxes are computed as negative quantities, but are expected to be positive,
     ! so flip the signs
