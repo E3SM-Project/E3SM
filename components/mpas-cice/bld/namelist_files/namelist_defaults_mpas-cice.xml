@@ -39,7 +39,7 @@
 <config_explicit_proc_decomp>false</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
 <config_use_halo_exch>true</config_use_halo_exch>
-<config_aggregate_halo_exch>false</config_aggregate_halo_exch>
+<config_aggregate_halo_exch>true</config_aggregate_halo_exch>
 <config_reuse_halo_exch>false</config_reuse_halo_exch>
 <config_load_balance_timers>false</config_load_balance_timers>
 
