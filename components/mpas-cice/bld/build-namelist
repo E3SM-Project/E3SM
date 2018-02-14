@@ -45,6 +45,7 @@ OPTIONS
      -casebuild            CASEBUILD directory variable          
      -cimeroot             CIMEROOT directory variable
      -ice_grid             ICE_GRID variable
+     -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPAS-CICE configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
@@ -86,38 +87,40 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help         => 0,
-             test         => 0,
-             verbose      => 0,
-             preview      => 0,
-             caseroot     => undef,
-             casebuild    => undef,
-             cimeroot     => undef,
-             inst_string  => undef,
-             ice_grid     => undef,
-             date_stamp   => undef,
-             ic_mode      => undef,
-             ice_bgc      => undef,
-             surface_mode => undef,
-             cfg_dir      => $cfgdir,
+my %opts = ( help          => 0,
+             test          => 0,
+             verbose       => 0,
+             preview       => 0,
+             caseroot      => undef,
+             casebuild     => undef,
+             cimeroot      => undef,
+             inst_string   => undef,
+             ice_grid      => undef,
+             decomp_prefix => undef,
+             date_stamp    => undef,
+             ic_mode       => undef,
+             ice_bgc       => undef,
+             surface_mode  => undef,
+             cfg_dir       => $cfgdir,
            );
 
 GetOptions(
-    "h|help"         => \$opts{'help'},
-    "infile=s"       => \$opts{'infile'},
-    "namelist=s"     => \$opts{'namelist'},
-    "v|verbose"      => \$opts{'verbose'},
-    "caseroot=s"     => \$opts{'caseroot'},
-    "casebuild=s"    => \$opts{'casebuild'},
-    "cimeroot=s"     => \$opts{'cimeroot'},
-    "inst_string=s"  => \$opts{'inst_string'},	   
-    "ice_grid=s"     => \$opts{'ice_grid'},
-    "date_stamp=s"   => \$opts{'date_stamp'},
-    "ic_mode=s"      => \$opts{'ic_mode'},
-    "ice_bgc=s"      => \$opts{'ice_bgc'},
-    "surface_mode=s" => \$opts{'surface_mode'},
-    "cfg_dir=s"      => \$opts{'cfg_dir'},
-    "preview"        => \$opts{'preview'},
+    "h|help"          => \$opts{'help'},
+    "infile=s"        => \$opts{'infile'},
+    "namelist=s"      => \$opts{'namelist'},
+    "v|verbose"       => \$opts{'verbose'},
+    "caseroot=s"      => \$opts{'caseroot'},
+    "casebuild=s"     => \$opts{'casebuild'},
+    "cimeroot=s"      => \$opts{'cimeroot'},
+    "inst_string=s"   => \$opts{'inst_string'},
+    "ice_grid=s"      => \$opts{'ice_grid'},
+    "decomp_prefix=s" => \$opts{'decomp_prefix'},
+    "date_stamp=s"    => \$opts{'date_stamp'},
+    "ic_mode=s"       => \$opts{'ic_mode'},
+    "ice_bgc=s"       => \$opts{'ice_bgc'},
+    "surface_mode=s"  => \$opts{'surface_mode'},
+    "cfg_dir=s"       => \$opts{'cfg_dir'},
+    "preview"         => \$opts{'preview'},
 )  or usage();
 
 # Give usage message.
@@ -141,16 +144,17 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MPAS-CICE configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT     = $opts{'caseroot'};
-my $CASEBUILD    = $opts{'casebuild'};
-my $CIMEROOT     = $opts{'cimeroot'};
-my $inst_string  = $opts{'inst_string'};
-my $ICE_GRID     = $opts{'ice_grid'};
-my $date_stamp   = $opts{'date_stamp'};
-my $ic_mode      = $opts{'ic_mode'};
-my $ice_bgc      = $opts{'ice_bgc'};
-my $surface_mode = $opts{'surface_mode'};
-$cfgdir          = $opts{'cfg_dir'};
+my $CASEROOT      = $opts{'caseroot'};
+my $CASEBUILD     = $opts{'casebuild'};
+my $CIMEROOT      = $opts{'cimeroot'};
+my $inst_string   = $opts{'inst_string'};
+my $ICE_GRID      = $opts{'ice_grid'};
+my $decomp_prefix = $opts{'decomp_prefix'};
+my $date_stamp    = $opts{'date_stamp'};
+my $ic_mode       = $opts{'ic_mode'};
+my $ice_bgc       = $opts{'ice_bgc'};
+my $surface_mode  = $opts{'surface_mode'};
+$cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
 if ( defined $opts{'cimeroot'} ) {
@@ -169,6 +173,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="ice_grid" value="$ICE_GRID">
+<entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
 EOF
@@ -452,7 +457,7 @@ add_default($nl, 'config_test_case_diag_type');
 # Namelist group: decomposition #
 #################################
 
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/mpas-cice.graph.info.${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
