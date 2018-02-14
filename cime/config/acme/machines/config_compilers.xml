@@ -904,7 +904,7 @@ for mct, etc.
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <ADD_LDFLAGS>-ta=tesla,pinned,cuda7.5,cc35</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-ta=nvidia,cc35,cuda7.5</ADD_LDFLAGS>
 </compiler>
 
 <compiler COMPILER="ibm" OS="AIX">
