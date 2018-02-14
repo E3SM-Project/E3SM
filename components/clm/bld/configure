@@ -677,7 +677,9 @@ sub write_filepath_cesmbld
                      "external_models/sbetr/src/driver/alm",
                      "external_models/sbetr/src/Applications/app_util",
                      "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
-                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
+                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/centPara",
+                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/cent1layer",
+                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/centNlayer",
 		     "utils", 
 		     "cpl" );
 
