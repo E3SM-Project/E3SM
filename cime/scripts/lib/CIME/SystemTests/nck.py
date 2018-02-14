@@ -34,24 +34,24 @@ class NCK(SystemTestsCompareTwo):
         self._comp_classes = self._case.get_values("COMP_CLASSES")
         self._comp_classes.remove("CPL")
         for comp in self._comp_classes:
-            ntasks = self._case.get_value("NTASKS_%s"%comp)
+            ntasks = self._case.get_value("NTASKS_{}".format(comp))
             if ( ntasks > 1 ):
-                self._case.set_value("NTASKS_%s"%comp, int(ntasks/2))
+                self._case.set_value("NTASKS_{}".format(comp), int(ntasks/2))
 
     def _case_one_setup(self):
         for comp in self._comp_classes:
-            self._case.set_value("NINST_%s"%comp, 1)
+            self._case.set_value("NINST_{}".format(comp), 1)
 
         case_setup(self._case, test_mode=True, reset=True)
 
     def _case_two_setup(self):
         for comp in self._comp_classes:
             if (comp == "ESP"):
-                self._case.set_value("NINST_%s"%comp, 1)
+                self._case.set_value("NINST_{}".format(comp), 1)
             else:
-                self._case.set_value("NINST_%s"%comp, 2)
+                self._case.set_value("NINST_{}".format(comp), 2)
 
-            ntasks = self._case.get_value("NTASKS_%s"%comp)
-            self._case.set_value("NTASKS_%s"%comp, ntasks*2)
+            ntasks = self._case.get_value("NTASKS_{}".format(comp))
+            self._case.set_value("NTASKS_{}".format(comp), ntasks*2)
 
         case_setup(self._case, test_mode=True, reset=True)

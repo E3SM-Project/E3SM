@@ -7,6 +7,8 @@
 template to create a case short term archiving script. This should only ever be called
 by case.submit when on batch system. This script only exists as a way of providing
 batch directives. Use case.submit from the command line to run your case.
+
+DO NOT RUN THIS SCRIPT MANUALLY
 """
 
 import sys, os, time
@@ -27,16 +29,14 @@ def parse_command_line(args, description):
 ###############################################################################
 
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n{0} [--verbose]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -80,10 +80,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot, last_date, no_incomplete_logs, copy_only = parse_command_line(sys.argv, description)
 
     if last_date is not None and copy_only is False:

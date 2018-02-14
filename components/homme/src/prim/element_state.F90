@@ -31,8 +31,6 @@ module element_state
 
   end type elem_state_t
 
-  integer(kind=int_kind),public,parameter::StateComponents=7! num prognistics variables (for prim_restart_mod.F90)
-
   !___________________________________________________________________
   type, public :: derived_state_t
 
@@ -90,7 +88,6 @@ module element_state
     ! forcing terms for both CAM and HOMME
     ! FQps for conserving dry mass in the presence of precipitation
 
-    real (kind=real_kind) :: pecnd(np,np,nlev)                        ! pressure perturbation from condensate
     real (kind=real_kind) :: FQps(np,np,timelevels)                   ! forcing of FQ on ps_v
 
   end type derived_state_t

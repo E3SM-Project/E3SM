@@ -13,7 +13,6 @@ runtype       = 0
 tstep         = TSTEP
 integration   = "explicit"
 smooth        = 0.0000
-energy_fixer  = 0
 nu            = NU1
 nu_s          = NU2
 nu_p          = NUP

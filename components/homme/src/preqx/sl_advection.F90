@@ -42,10 +42,9 @@ contains
 
 
 !=================================================================================================!
-  subroutine sl_init1(par, elem, n_domains)
+  subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
-    integer, intent(in) :: n_domains
     type (element_t) :: elem(:)
 
     if  (use_semi_lagrange_transport) then

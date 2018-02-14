@@ -12,7 +12,7 @@
   </entry>
 
   <description>
-    <desc compset="_AQUAP">CAM aquaplanet ocean component</desc>
+    <desc compset="_AQP1">CAM aquaplanet ocean component</desc>
   </description>
 
 </definitions_variables> 

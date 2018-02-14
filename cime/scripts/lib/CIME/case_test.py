@@ -29,7 +29,7 @@ def _signal_handler(signum, _):
             pass
 
     # Throw an exception so SystemTest infrastructure can handle this error
-    expect(False, "Job killed due to receiving signal %d (%s)" % (signum, name))
+    expect(False, "Job killed due to receiving signal {:d} ({})".format(signum, name))
 
 def _set_up_signal_handlers():
     """
@@ -42,12 +42,12 @@ def _set_up_signal_handlers():
         signum = getattr(signal, signame)
         signal.signal(signum, _signal_handler)
 
-def case_test(case, testname=None):
+def case_test(case, testname=None, reset=False):
     if testname is None:
         testname = case.get_value('TESTCASE')
 
     expect(testname is not None, "testname argument not resolved")
-    logging.warn("Running test for %s" % testname)
+    logging.warning("Running test for {}".format(testname))
 
     _set_up_signal_handlers()
 
@@ -64,8 +64,11 @@ def case_test(case, testname=None):
         append_testlog(str(sys.exc_info()[1]))
         return False
 
+    if reset:
+        logger.info("Reset test to initial conditions and exit")
+        # pylint: disable=protected-access
+        test._resetup_case(RUN_PHASE)
+        return True
     success = test.run()
-
-    case.set_value("RUN_WITH_SUBMIT", False)
 
     return success

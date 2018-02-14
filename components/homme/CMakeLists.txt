@@ -2,6 +2,16 @@
 PROJECT(HOMME C Fortran)
 
 ENABLE_LANGUAGE(Fortran) 
+
+# Print the sha of the last commit,
+# useful to double check which version was build in the build folder.
+EXECUTE_PROCESS (COMMAND git rev-parse HEAD
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
+
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
@@ -56,15 +66,14 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
+OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
+OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Cristoph's "standalone" executables
-OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-
 # swim and prim executables require C++ compiler
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM}) 
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
@@ -87,10 +96,6 @@ ENDIF ()
 INCLUDE(SetCompilerFlags)
 
 
-OPTION(ENABLE_PERSISTENT_MPI "Enable persistent MPI" OFF)
-IF (${ENABLE_PERSISTENT_MPI})
-  SET(MPI_PERSISTENT TRUE)
-ENDIF ()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(${HOMME_USE_MKL})
@@ -170,15 +175,16 @@ ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 # Use CIME's FindNETCDF path
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/CMake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
 
 
 #
-# Bug in PIO: PIO1 calls TARGET_LINK_LIBRARIES uses all caps variables, 
-# instead of the mixed case variables computed by PIO's findNetCDF.  
-# 2017/6 PR submitted to pio1
-# workaround until this makes it back into ACME:
+# HOMME uses PIO and does not call netcdf/pnetcdf directly.  So cmake should
+# only configure the PIO library.  But there is a typo when PIO1 sets up 
+# TARGET_LINK_LIBRARIES 
+# Fixed: https://github.com/NCAR/ParallelIO/pull/1067
+# Until this makes it back into ACME, we need to FIND_PACKAGE here...
 #
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
@@ -206,20 +212,27 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
 IF (CPRNC_DIR)
-  # user specifed CPRNC binary - dont build
-  ADD_EXECUTABLE( cprnc IMPORTED)
+  # location of CPRNC binary passed in from CIME or specified in machine file. skip build
   find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
   IF ( CPRNC_BINARY )
+     ADD_EXECUTABLE( cprnc IMPORTED)
      message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
   ELSE()
-     message(WARNING "cprnc not found - cannot check regression test output")
+     message(WARNING "cprnc not found in CPRNC_DIR")
+     SET(CPRNC_DIR "")
   ENDIF ()
-ELSE ()
+ENDIF ()
+
+IF (NOT (CPRNC_DIR))
   # compile CPRNC from CIME source code. Requires CIME support for machine
+  message("-- CPRNC_BINARY = will compile from source")
+  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 ENDIF ()
+
+
 
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
@@ -231,12 +244,16 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA})
+  ADD_SUBDIRECTORY(src/theta)
+ENDIF()
+
 IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
-IF(${BUILD_HOMME_FVM})
-  ADD_SUBDIRECTORY(src/fvm)
+IF(${BUILD_HOMME_PESE})
+  ADD_SUBDIRECTORY(src/pese)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})

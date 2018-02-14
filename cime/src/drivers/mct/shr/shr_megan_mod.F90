@@ -47,7 +47,7 @@ module shr_megan_mod
   endtype shr_megan_megcomp_t
 
   type shr_megan_comp_ptr
-    type(shr_megan_megcomp_t), pointer :: ptr
+     type(shr_megan_megcomp_t), pointer :: ptr
   endtype shr_megan_comp_ptr
 
   ! chemical compound in CAM mechanism that has MEGAN emissions
@@ -202,8 +202,11 @@ contains
              call shr_sys_abort( 'shr_megan_init : duplicate compound names : '//trim(item%name))
           endif
        enddo
-
-       shr_megan_mechcomps(i)%name = item%name
+       if (len_trim(item%name) .le. len(shr_megan_mechcomps(i)%name)) then
+          shr_megan_mechcomps(i)%name = item%name(1:len(shr_megan_mechcomps(i)%name))
+       else
+          call shr_sys_abort( 'shr_megan_init : name too long for data structure : '//trim(item%name))
+       endif
        shr_megan_mechcomps(i)%n_megan_comps = item%n_terms
        allocate(shr_megan_mechcomps(i)%megan_comps(item%n_terms))
 

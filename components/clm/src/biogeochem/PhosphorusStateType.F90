@@ -12,7 +12,7 @@ module PhosphorusStateType
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin
+  use pftvarcon              , only : npcropmin, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -21,8 +21,10 @@ module PhosphorusStateType
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   use clm_varctl             , only : nu_com
-              
-  ! 
+  ! soil phosphorus initialization Qing Z. 2017
+  use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+  use soilorder_varcon       , only : smax, ks_sorption
+                        ! 
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -738,6 +740,9 @@ contains
           this%deadcrootp_xfer_patch(p)    = 0._r8
           this%retransp_patch(p)           = 0._r8
           this%ppool_patch(p)              = 0._r8
+          if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then
+              this%ppool_patch(p)          = 1.0_r8
+          end if
           this%ptrunc_patch(p)             = 0._r8
           this%dispvegp_patch(p)           = 0._r8
           this%storvegp_patch(p)           = 0._r8
@@ -854,7 +859,7 @@ contains
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c
+    integer            :: i,j,k,l,c,a,b,d
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.
@@ -869,11 +874,17 @@ contains
     integer            :: restart_file_spinup_state 
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    real(r8)           :: smax_c, ks_sorption_c
+
     !------------------------------------------------------------------------
 
     !--------------------------------
     ! patch phosphorus state variables
     !--------------------------------
+    associate(&
+         isoilorder     => cnstate_vars%isoilorder &
+         )
+
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -1008,6 +1019,7 @@ contains
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
     else
 
        ptr1d => this%solutionp_vr_col(:,1)
@@ -1216,10 +1228,10 @@ contains
             do j = 1, nlevdecomp
 	       if ( exit_spinup ) then
 		 m = decomp_cascade_con%spinup_factor(k)
-                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c,j)
                else if ( enter_spinup ) then 
                  m = 1. / decomp_cascade_con%spinup_factor(k)
-		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c,j)
                end if 
                this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
              end do
@@ -1236,7 +1248,73 @@ contains
           this%deadcrootp_patch(i) = this%deadcrootp_patch(i) * m_veg
        end do
 
+       ! soil phosphorus initialization when exit AD spinup Qing Z. 2017
+       if ( exit_spinup) then ! AD spinup -> RG spinup
+          if (.not. cnstate_vars%pdatasets_present) then
+              call endrun(msg='ERROR:: P pools are required on surface dataset'//&
+              errMsg(__FILE__, __LINE__))
+          end if
+          do c = bounds%begc, bounds%endc
+             if (use_vertsoilc) then
+                do j = 1, nlevdecomp
+                   ! solve equilibrium between loosely adsorbed and solution
+                   ! phosphorus
+                   ! the P maps used in the initialization are generated for the top 50cm soils
+                   ! assume soil below 50 cm has the same p pool concentration
+                   ! divide 0.5m when convert p pools from g/m2 to g/m3
+                   ! assume p pools evenly distributed at dif layers
+                   if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
+                      a = 1
+                      b = VMAX_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) + &
+                          KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
+                      d = -1.0* cnstate_vars%labp_col(c)/0.5 * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                   else if (nu_com .eq. 'RD') then
+                      a = 1
+                      b = smax(cnstate_vars%isoilorder(c)) + &
+                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
+                      d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+                   end if
+                   this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
+                   this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5 - this%solutionp_vr_col(c,j)
+                   this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
+                   this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
+                   this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
+
+                   if (nu_com .eq. 'RD') then 
+                       smax_c = smax(isoilorder(c))
+                       ks_sorption_c = ks_sorption(isoilorder(c))
+                       this%solutionp_vr_col(c,j) = (cnstate_vars%labp_col(c)/0.5*ks_sorption_c)/&
+                                    (smax_c-cnstate_vars%labp_col(c)/0.5)
+                       this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5
+                       this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
+                       this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
+                       this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
+                   end if
+
+                end do
+             else
+                if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
+                   a = 1
+                   b = VMAX_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) + &
+                       KM_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
+                   d = -1.0* cnstate_vars%labp_col(c)/0.5 * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                else if (nu_com .eq. 'RD') then
+                   a = 1
+                   b = smax(cnstate_vars%isoilorder(c)) + &
+                       ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
+                   d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+                end if
+                this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * 0.5 ! convert to g/m2
+                this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
+                this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
+                this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)
+                this%primp_vr_col(c,1) = cnstate_vars%prip_col(c)
+             end if
+          end do
+       end if
+       
     end if
+    end associate
 
   end subroutine Restart
 

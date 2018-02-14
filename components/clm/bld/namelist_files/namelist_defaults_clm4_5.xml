@@ -96,13 +96,13 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c170828.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c170919.nc</paramfile>
 
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_2troppftclones.c170810.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_2troppftclones.c171010.nc</fates_paramfile>
 
 
 <!-- soil order related parameters (relative to {csmdata}) -->
@@ -118,9 +118,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CRUCLM45SP.0521-01-01.0.9x1.25_g1v6_simyr1850_c140111.nc
 </finidat>
 
-<!-- (works for cent/no-cent; Vertical layers and Nitrification/Denitrification NEED to be on) -->
+<!-- (works for century; Vertical layers and Nitrification/Denitrification NEED to be on) -->
 <finidat hgrid="0.9x1.25"  maxpft="17"  mask="gx1v6" use_cn=".true." use_cndv=".false." ic_ymd="18500101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
-ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.0.9x1.25_g1v6_simyr1850_c140111.nc
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" use_century_decomp=".true." >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.0.9x1.25_g1v6_simyr1850_c140111.nc
 </finidat>
 
 <!-- And for year 2000 from a transient simulation -->
@@ -130,7 +130,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 
 <!-- (works for cent/no-cent; Vertical layers and Nitrification/Denitrification NEED to be on) -->
 <finidat hgrid="0.9x1.25"  maxpft="17"  mask="gx1v6" use_cn=".true." use_cndv=".false." ic_ymd="20000101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I2000CLM45CRUBGC.2000-01-01.0.9x1.25_gx1v6_simyr2000_c140111.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." use_century_decomp=".true.">lnd/clm2/initdata_map/clmi.I2000CLM45CRUBGC.2000-01-01.0.9x1.25_gx1v6_simyr2000_c140111.nc
 </finidat>
 
 
@@ -151,7 +151,7 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2/
 <!-- Initial condition file with CLM45BGC (works for cent/no-cent; Vertical layers and Nitrification/Denitrification NEED to be on) -->
 
 <finidat hgrid="1.9x2.5"   maxpft="17"  mask="gx1v6" use_cn=".true." use_cndv=".false."  ic_ymd="18500101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
-ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.1.9x2.5_g1v6_simyr1850_c140111.nc
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" use_century_decomp=".true." >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.1.9x2.5_g1v6_simyr1850_c140111.nc
 </finidat>
 
 <!-- CRUNCEP half-degree resolution -->
@@ -164,7 +164,7 @@ ic_tod="0" sim_year="1850"  glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2
 
 <!-- Initial condition file with CLM45BGC (works for cent/no-cent; Vertical layers and Nitrification/Denitrification NEED to be on) -->
 <finidat hgrid="360x720cru" maxpft="17"  mask="cruncep" use_cn=".true." use_cndv=".false." ic_ymd="18500101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
-ic_tod="0" sim_year="1850"  glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.360x720cru_hcru_simyr1850_c140111.nc
+ic_tod="0" sim_year="1850"  glc_nec="0" use_crop=".false." nu_com="RD" use_century_decomp=".true.">lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.360x720cru_hcru_simyr1850_c140111.nc
 </finidat>
 
 <!-- HOMME grid ne4 resolution -->
@@ -206,7 +206,7 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 
 <!-- Initial condition file with CLM45BGC (also works for no-cent, Vertical layers and Nitrification/Denitrification NEED to be on) -->
 <finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".true." use_cndv=".false." ic_ymd="18500101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
-ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" >lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.ne30np4_g1v6_simyr1850_c140111.nc
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." nu_com="RD" use_century_decomp=".true.">lnd/clm2/initdata_map/clmi.I1850CRUCLM45BGC.0241-01-01.ne30np4_g1v6_simyr1850_c140111.nc
 </finidat>
 
 <!-- Initial condition file with CLM45SP -->
@@ -231,6 +231,14 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30v3" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_oECv3.1155ba0.clm2.r.nc
+</finidat>
+
+<finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30v3wLI" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne30_oECv3.1155ba0.clm2.r.nc
+</finidat>
+
+<finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30v3wLI" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
 ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_oECv3.1155ba0.clm2.r.nc
 </finidat>
 
@@ -277,6 +285,15 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_oRRS18v3.be55494.clm2.r.nc
 </finidat>
 
+<!-- HOMME grid ne240 resolution -->
+<finidat hgrid="ne240np4"   maxpft="17"  mask="tx0.1v2" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.0521-01-01.ne240np4_tx0.1v2.162cd32_simyr1850_c170910.nc
+</finidat>
+
+<finidat hgrid="ne240np4"   maxpft="17"  mask="tx0.1v2" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.ne240np4_tx0.1v2.162cd32_simyr2000_c170910.nc
+</finidat>
+
 <!-- Initial condition files with CLM45BGCDV -->
 
 <!-- 1 degree resolution -->
@@ -314,7 +331,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c171002.nc</fsurdat>
 <fsurdat hgrid="48x96"     sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_48x96_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="64x128"    sim_year="2000">
@@ -323,16 +340,16 @@ lnd/clm2/surfdata_map/surfdata_64x128_simyr2000_c170111.nc</fsurdat>
 lnd/clm2/surfdata/surfdata_nldas2_0224x0464_c131007.nc</fsurdat>
 
 <fsurdat hgrid="0.9x1.25"  sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c171002.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr2000_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr2000_c171002.nc</fsurdat>
 <fsurdat hgrid="4x5"       sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_4x5_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="10x15"     sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_10x15_simyr2000_c130927.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4"     sim_year="2000" >
-lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c171002.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2000_c160309.nc</fsurdat>
 <fsurdat hgrid="ne16np4"      sim_year="2000" use_crop=".false." >
@@ -373,14 +390,14 @@ lnd/clm2/surfdata_map/surfdata_1x1_urbanc_alpha_simyr2000_c130927.nc</fsurdat>
 
 <!-- for pre-industrial simulations - year 1850 -->
 <fsurdat hgrid="360x720cru"   sim_year="1850" use_crop=".false."                           >
-lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c150626.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c171002.nc</fsurdat>
 <fsurdat hgrid="48x96"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_48x96_simyr1850_c130927.nc</fsurdat>
 
 <fsurdat hgrid="0.9x1.25"     sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c150626.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c171002.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"      sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c150626.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c171002.nc</fsurdat>
 <fsurdat hgrid="10x15"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_10x15_simyr1850_c130927.nc</fsurdat>
 
@@ -391,7 +408,7 @@ lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
 
 
 <fsurdat hgrid="ne30np4"      sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c171002.nc</fsurdat>
 <fsurdat hgrid="ne16np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne16np4_simyr1850_c160108.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="1850" >
@@ -401,7 +418,7 @@ lnd/clm2/surfdata_map/surfdata_ne11np4_simyr1850_c160614.nc</fsurdat>
 <fsurdat hgrid="ne4np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne240np4_simyr18500_c170821.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c170821.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
@@ -1207,7 +1224,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/360x720/map_360x720_cruncep_to_360x720_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="360x720cru"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/360x720/map_1km-merge-10min_HYDRO1K-merge-nomask_to_360x720_nomask_aave_da_c130403.nc</map>
-
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="360x720cru"   to_lmask="nomask" 
+ >lnd/clm2/mappingdata/maps/360x720/map_0.5x0.5_GSDTG2000_to_360x720_nomask_aave_da_c170913.nc</map>
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="512x1024"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/512x1024/map_0.5x0.5_MODIS_to_512x1024_nomask_aave_da_c110920.nc</map>
@@ -1688,6 +1706,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne120np4/map_360x720_cruncep_to_ne120np4_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="ne120np4"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/ne120np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne120np4_nomask_aave_da_c130405.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne120np4"   to_lmask="nomask" 
+>lnd/clm2/mappingdata/maps/ne120np4/map_0.5x0.5_GSDTG2000_to_ne120np4_nomask_aave_da_171213.nc</map>
 
 <!-- mapping files for ne120np4 START added on Wed Sep 19 09:10:57 2012-->
 <!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl--> 

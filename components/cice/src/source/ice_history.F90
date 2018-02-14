@@ -138,8 +138,8 @@
            f_fswabs    = 'mxxxx', f_fswabs_ai  = 'mxxxx', &
            f_alvdr     = 'mxxxx', f_alidr      = 'mxxxx', &
            f_alvdf     = 'mxxxx', f_alidf      = 'mxxxx', &
-           f_albice    = 'mxxxx', f_albsno     = 'mxxxx', &
-           f_albpnd    = 'mxxxx', f_coszen     = 'mxxxx', &
+           f_albice    = 'xxxxx', f_albsno     = 'xxxxx', &
+           f_albpnd    = 'xxxxx', f_coszen     = 'mxxxx', &
            f_flat      = 'mxxxx', f_flat_ai    = 'mxxxx', &
            f_fsens     = 'mxxxx', f_fsens_ai   = 'mxxxx', &
            f_flwup     = 'mxxxx', f_flwup_ai   = 'mxxxx', &

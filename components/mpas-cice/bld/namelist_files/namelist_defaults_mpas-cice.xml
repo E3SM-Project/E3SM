@@ -12,6 +12,7 @@
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30v3">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
+<config_dt ice_grid="oEC60to30v3wLI">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10v3">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
@@ -37,6 +38,10 @@
 <config_number_of_blocks>0</config_number_of_blocks>
 <config_explicit_proc_decomp>false</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
+<config_use_halo_exch>true</config_use_halo_exch>
+<config_aggregate_halo_exch>false</config_aggregate_halo_exch>
+<config_reuse_halo_exch>false</config_reuse_halo_exch>
+<config_load_balance_timers>false</config_load_balance_timers>
 
 <!-- restart -->
 <config_do_restart>false</config_do_restart>
@@ -73,7 +78,6 @@
 <config_forcing_start_time>'2000-01-01_00:00:00'</config_forcing_start_time>
 <config_forcing_cycle_start>'2000-01-01_00:00:00'</config_forcing_cycle_start>
 <config_forcing_cycle_duration>'2-00-00_00:00:00'</config_forcing_cycle_duration>
-<config_forcing_restart_file>'restart_forcing_timestamps'</config_forcing_restart_file>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
@@ -93,6 +97,7 @@
 <config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30v3">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oEC60to30v3wLI">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
@@ -337,6 +342,8 @@
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
+<config_ocean_surface_type>'free'</config_ocean_surface_type>
+<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>
@@ -470,7 +477,7 @@
 <config_AM_timeSeriesStatsMonthly_write_on_startup>false</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
-<config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
+<config_AM_timeSeriesStatsMonthly_restart_stream>'none'</config_AM_timeSeriesStatsMonthly_restart_stream>
 <config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>
 <config_AM_timeSeriesStatsMonthly_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthly_reference_times>
 <config_AM_timeSeriesStatsMonthly_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthly_duration_intervals>

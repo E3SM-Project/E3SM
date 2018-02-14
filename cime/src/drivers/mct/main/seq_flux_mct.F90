@@ -1,8 +1,8 @@
 module seq_flux_mct
-  
+
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
-  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal
+  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
@@ -14,12 +14,12 @@ module seq_flux_mct
   use component_type_mod
 
   implicit none
-  private 	
+  private
   save
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public seq_flux_init_mct
   public seq_flux_initexch_mct
@@ -29,9 +29,9 @@ module seq_flux_mct
   public seq_flux_atmocn_mct
   public seq_flux_atmocnexch_mct
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   real(r8), pointer       :: lats(:)  ! latitudes  (degrees)
   real(r8), pointer       :: lons(:)  ! longitudes (degrees)
@@ -42,20 +42,20 @@ module seq_flux_mct
   real(r8), allocatable ::  vocn (:)  ! ocn velocity, meridional
   real(r8), allocatable ::  tocn (:)  ! ocean temperature
   real(r8), allocatable ::  zbot (:)  ! atm level height
-  real(r8), allocatable ::  ubot (:)  ! atm velocity, zonal     
+  real(r8), allocatable ::  ubot (:)  ! atm velocity, zonal
   real(r8), allocatable ::  vbot (:)  ! atm velocity, meridional
   real(r8), allocatable ::  thbot(:)  ! atm potential T
   real(r8), allocatable ::  shum (:)  ! atm specific humidity
   real(r8), allocatable ::  shum_16O (:)  ! atm H2O tracer
   real(r8), allocatable ::  shum_HDO (:)  ! atm HDO tracer
   real(r8), allocatable ::  shum_18O (:)  ! atm H218O tracer
-  real(r8), allocatable ::  roce_16O (:)  ! ocn H2O ratio 
-  real(r8), allocatable ::  roce_HDO (:)  ! ocn HDO ratio 
-  real(r8), allocatable ::  roce_18O (:)  ! ocn H218O ratio 
+  real(r8), allocatable ::  roce_16O (:)  ! ocn H2O ratio
+  real(r8), allocatable ::  roce_HDO (:)  ! ocn HDO ratio
+  real(r8), allocatable ::  roce_18O (:)  ! ocn H218O ratio
   real(r8), allocatable ::  dens (:)  ! atm density
   real(r8), allocatable ::  tbot (:)  ! atm bottom surface T
-  real(r8), allocatable ::  sen  (:)  ! heat flux: sensible 
-  real(r8), allocatable ::  lat  (:)  ! heat flux: latent   
+  real(r8), allocatable ::  sen  (:)  ! heat flux: sensible
+  real(r8), allocatable ::  lat  (:)  ! heat flux: latent
   real(r8), allocatable ::  lwup (:)  ! lwup over ocean
   real(r8), allocatable ::  evap (:)  ! water flux: evaporation
   real(r8), allocatable ::  evap_16O (:) !H2O flux: evaporation
@@ -77,17 +77,17 @@ module seq_flux_mct
   real(r8), allocatable :: prec_gust (:) ! atm precip for convective gustiness (kg/m^3)
 
   ! Diurnal cycle variables wrt flux
- 
-  real(r8), allocatable :: tbulk      (:) ! diagnostic: ocn bulk T  
-  real(r8), allocatable :: tskin      (:) ! diagnostic: ocn skin T  
-  real(r8), allocatable :: tskin_night(:) ! diagnostic: ocn skin T  
-  real(r8), allocatable :: tskin_day  (:) ! diagnostic: ocn skin T  
-  real(r8), allocatable :: cSkin      (:) ! diagnostic: ocn cool skin  
-  real(r8), allocatable :: cSkin_night(:) ! diagnostic: ocn cool skin  
-  real(r8), allocatable :: warm       (:) ! diagnostic: ocn warming  
-  real(r8), allocatable :: salt       (:) ! diagnostic: ocn salting  
-  real(r8), allocatable :: speed      (:) ! diagnostic: ocn speed    
-  real(r8), allocatable :: regime     (:) ! diagnostic: ocn regime   
+
+  real(r8), allocatable :: tbulk      (:) ! diagnostic: ocn bulk T
+  real(r8), allocatable :: tskin      (:) ! diagnostic: ocn skin T
+  real(r8), allocatable :: tskin_night(:) ! diagnostic: ocn skin T
+  real(r8), allocatable :: tskin_day  (:) ! diagnostic: ocn skin T
+  real(r8), allocatable :: cSkin      (:) ! diagnostic: ocn cool skin
+  real(r8), allocatable :: cSkin_night(:) ! diagnostic: ocn cool skin
+  real(r8), allocatable :: warm       (:) ! diagnostic: ocn warming
+  real(r8), allocatable :: salt       (:) ! diagnostic: ocn salting
+  real(r8), allocatable :: speed      (:) ! diagnostic: ocn speed
+  real(r8), allocatable :: regime     (:) ! diagnostic: ocn regime
   real(r8), allocatable :: warmMax    (:) ! diagnostic: ocn warming, max daily value
   real(r8), allocatable :: windMax    (:) ! diagnostic: ocn wind   , max daily value
   real(r8), allocatable :: QsolAvg    (:) ! diagnostic: ocn Qsol   , daily avg
@@ -109,16 +109,16 @@ module seq_flux_mct
 
   ! Coupler field indices
 
-  integer :: index_a2x_Sa_z    
-  integer :: index_a2x_Sa_u    
-  integer :: index_a2x_Sa_v    
-  integer :: index_a2x_Sa_tbot 
-  integer :: index_a2x_Sa_ptem 
-  integer :: index_a2x_Sa_shum 
+  integer :: index_a2x_Sa_z
+  integer :: index_a2x_Sa_u
+  integer :: index_a2x_Sa_v
+  integer :: index_a2x_Sa_tbot
+  integer :: index_a2x_Sa_ptem
+  integer :: index_a2x_Sa_shum
   integer :: index_a2x_Sa_shum_16O
   integer :: index_a2x_Sa_shum_HDO
   integer :: index_a2x_Sa_shum_18O
-  integer :: index_a2x_Sa_dens 
+  integer :: index_a2x_Sa_dens
   integer :: index_a2x_Faxa_swndr
   integer :: index_a2x_Faxa_swndf
   integer :: index_a2x_Faxa_swvdr
@@ -128,7 +128,7 @@ module seq_flux_mct
   integer :: index_a2x_Faxa_rainl
   integer :: index_a2x_Faxa_snowc
   integer :: index_a2x_Faxa_snowl
-  integer :: index_o2x_So_t      
+  integer :: index_o2x_So_t
   integer :: index_o2x_So_u
   integer :: index_o2x_So_v
   integer :: index_o2x_So_fswpen
@@ -136,17 +136,17 @@ module seq_flux_mct
   integer :: index_o2x_So_roce_16O
   integer :: index_o2x_So_roce_HDO
   integer :: index_o2x_So_roce_18O
-  integer :: index_xao_So_tref    
-  integer :: index_xao_So_qref    
-  integer :: index_xao_So_avsdr   
-  integer :: index_xao_So_avsdf   
-  integer :: index_xao_So_anidr   
-  integer :: index_xao_So_anidf   
-  integer :: index_xao_Faox_taux  
-  integer :: index_xao_Faox_tauy   
-  integer :: index_xao_Faox_lat   
-  integer :: index_xao_Faox_sen   
-  integer :: index_xao_Faox_evap 
+  integer :: index_xao_So_tref
+  integer :: index_xao_So_qref
+  integer :: index_xao_So_avsdr
+  integer :: index_xao_So_avsdf
+  integer :: index_xao_So_anidr
+  integer :: index_xao_So_anidf
+  integer :: index_xao_Faox_taux
+  integer :: index_xao_Faox_tauy
+  integer :: index_xao_Faox_lat
+  integer :: index_xao_Faox_sen
+  integer :: index_xao_Faox_evap
   integer :: index_xao_Faox_evap_16O
   integer :: index_xao_Faox_evap_HDO
   integer :: index_xao_Faox_evap_18O
@@ -154,9 +154,9 @@ module seq_flux_mct
   integer :: index_xao_Faox_swdn
   integer :: index_xao_Faox_swup
   integer :: index_xao_So_ustar
-  integer :: index_xao_So_re   
-  integer :: index_xao_So_ssq  
-  integer :: index_xao_So_duu10n 
+  integer :: index_xao_So_re
+  integer :: index_xao_So_ssq
+  integer :: index_xao_So_duu10n
   integer :: index_xao_So_u10
   integer :: index_xao_So_fswpen
   integer :: index_xao_So_warm_diurn
@@ -185,13 +185,13 @@ module seq_flux_mct
 
   !--- for exchange grid ---
   type(mct_rearr) :: Re_a2e, Re_e2a, Re_o2e, Re_e2o  ! atm/ocn/exch rearrangers
-  type(mct_sMat ) :: sMata2o, sMato2a                ! decomp sMat 
+  type(mct_sMat ) :: sMata2o, sMato2a                ! decomp sMat
   type(mct_gsMap) :: gsmap_ae, gsmap_oe              ! gsmaps for atm/ocn on exch grid
-  integer(in)     :: nloc_a2o,nloc_o2a,nloc_o,nloc_a,nloc_ae,nloc_oe 
+  integer(in)     :: nloc_a2o,nloc_o2a,nloc_o,nloc_a,nloc_ae,nloc_oe
 
-!===============================================================================
+  !===============================================================================
 contains
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_init_mct(comp, fractions)
 
@@ -213,8 +213,8 @@ contains
     character(*),parameter   :: subName =   '(seq_flux_init_mct) '
     !-----------------------------------------------------------------------
 
-    gsmap => component_get_gsmap_cx(comp) 
-    dom   => component_get_dom_cx(comp) 
+    gsmap => component_get_gsmap_cx(comp)
+    dom   => component_get_dom_cx(comp)
 
     nloc = mct_avect_lsize(dom%data)
 
@@ -277,7 +277,7 @@ contains
     if(ier/=0) call mct_die(subName,'allocate roce_18O',ier)
     roce_18O = 0.0_r8
 
-    ! Output fields 
+    ! Output fields
     allocate(sen (nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate sen',ier)
     sen  = 0.0_r8
@@ -414,12 +414,12 @@ contains
     allocate(mask(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate mask',ier)
     mask = 0.0_r8
-    
+
     ! Get lat, lon, mask, which is time-invariant
     allocate(rmask(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate rmask',ier)
-    call mct_gGrid_exportRAttr(dom, 'lat' , lats , nloc) 
-    call mct_gGrid_exportRAttr(dom, 'lon' , lons , nloc) 
+    call mct_gGrid_exportRAttr(dom, 'lat' , lats , nloc)
+    call mct_gGrid_exportRAttr(dom, 'lon' , lons , nloc)
 
     ! setup the compute mask.
     ! prefer to compute just where ocean exists, so setup a mask here.
@@ -434,7 +434,7 @@ contains
 
     ! default compute everywhere, then "turn off" gridcells
     mask = 1
-   
+
     ! use domain mask first
     call mct_gGrid_exportRAttr(dom, 'mask', rmask, nloc)
     where (rmask < 0.5_r8) mask = 0   ! like nint
@@ -451,7 +451,7 @@ contains
 
   end subroutine seq_flux_init_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_initexch_mct(atm, ocn, mpicom_cplid, cplid)
 
@@ -459,7 +459,7 @@ contains
     !
     ! Arguments
     !
-    type(component_type), intent(in) :: atm 
+    type(component_type), intent(in) :: atm
     type(component_type), intent(in) :: ocn
     integer(in)         , intent(in) :: mpicom_cplid
     integer(in)         , intent(in) :: cplid
@@ -470,8 +470,7 @@ contains
     type(mct_gGrid), pointer :: dom_a
     type(mct_gsMap), pointer :: gsmap_o
     type(mct_gGrid), pointer :: dom_o
-    integer(in)              :: kw,ka,ko,iw,ia,io,n
-    character(len=128)       :: strat
+    integer(in)              :: ka,ko,ia,io,n
     integer                  :: ier
     integer                  :: mytask
     integer(in)              :: kmsk            ! field indices
@@ -507,17 +506,17 @@ contains
        endif
 
        call shr_mct_queryConfigFile(mpicom_cplid, ConfigFilename, &
-          trim(MapLabel),fileName,trim(MapTypeLabel),maptype)
+            trim(MapLabel),fileName,trim(MapTypeLabel),maptype)
 
        !--- hardwire decomposition to gsmap_o
        if (n == 1) then
           Smaptype = "src"
           call shr_mct_sMatReaddnc(sMata2o, gsmap_a, gsmap_o, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
+               filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        elseif (n == 2) then
           Smaptype = "dst"
           call shr_mct_sMatReaddnc(sMato2a, gsmap_o, gsmap_a, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
+               filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        else
           call shr_sys_abort(trim(subname)//' do error2')
        endif
@@ -623,7 +622,7 @@ contains
     allocate( tocn(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate tocn',ier)
 
-    ! Output fields 
+    ! Output fields
     allocate(sen (nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate sen',ier)
     allocate(lat (nloc_a2o),stat=ier)
@@ -670,7 +669,7 @@ contains
 
   end subroutine seq_flux_initexch_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_ocnalb_mct( infodata, ocn, a2x_o, fractions_o, xao_o )
 
@@ -687,34 +686,33 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
-    logical		:: flux_albav		! flux avg option
-    integer(in)		:: n,i			! indices
-    real(r8)		:: rlat			! gridcell latitude in radians
-    real(r8)		:: rlon			! gridcell longitude in radians
-    real(r8)		:: cosz			! Cosine of solar zenith angle
-    real(r8)		:: eccen		! Earth orbit eccentricity
-    real(r8)		:: mvelpp		! Earth orbit
-    real(r8)		:: lambm0		! Earth orbit
-    real(r8)		:: obliqr		! Earth orbit
-    real(r8)		:: delta		! Solar declination angle  in radians
-    real(r8)		:: eccf			! Earth orbit eccentricity factor
-    real(r8)		:: calday		! calendar day including fraction, at 0e
-    real(r8)		:: nextsw_cday		! calendar day of next atm shortwave
-    real(r8)		:: anidr		! albedo: near infrared, direct
-    real(r8)		:: avsdr		! albedo: visible      , direct
-    real(r8)		:: anidf		! albedo: near infrared, diffuse
-    real(r8)		:: avsdf		! albedo: visible      , diffuse
-    real(r8)		:: swdnc		! temporary swdn
-    real(r8)		:: swupc		! temporary swup
-    integer(in)		:: ID			! comm ID
-    integer(in)		:: ier			! error code
-    integer(in)		:: kx,kr		! fractions indices
-    integer(in)		:: klat,klon,kmsk	! field indices
-    logical		:: update_alb		! was albedo updated
-    logical,save	:: first_call = .true. 
+    logical             :: flux_albav           ! flux avg option
+    integer(in)         :: n                  ! indices
+    real(r8)            :: rlat                 ! gridcell latitude in radians
+    real(r8)            :: rlon                 ! gridcell longitude in radians
+    real(r8)            :: cosz                 ! Cosine of solar zenith angle
+    real(r8)            :: eccen                ! Earth orbit eccentricity
+    real(r8)            :: mvelpp               ! Earth orbit
+    real(r8)            :: lambm0               ! Earth orbit
+    real(r8)            :: obliqr               ! Earth orbit
+    real(r8)            :: delta                ! Solar declination angle  in radians
+    real(r8)            :: eccf                 ! Earth orbit eccentricity factor
+    real(r8)            :: calday               ! calendar day including fraction, at 0e
+    real(r8)            :: nextsw_cday          ! calendar day of next atm shortwave
+    real(r8)            :: anidr                ! albedo: near infrared, direct
+    real(r8)            :: avsdr                ! albedo: visible      , direct
+    real(r8)            :: anidf                ! albedo: near infrared, diffuse
+    real(r8)            :: avsdf                ! albedo: visible      , diffuse
+    real(r8)            :: swdnc                ! temporary swdn
+    real(r8)            :: swupc                ! temporary swup
+    integer(in)         :: ier                  ! error code
+    integer(in)         :: kx,kr                ! fractions indices
+    integer(in)         :: klat,klon       ! field indices
+    logical             :: update_alb           ! was albedo updated
+    logical,save        :: first_call = .true.
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
-    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct 
+    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
     !-----------------------------------------------------------------------
@@ -757,7 +755,7 @@ contains
 
     if (flux_albav) then
 
-       do n=1,nloc_o   
+       do n=1,nloc_o
           anidr = albdir
           avsdr = albdir
           anidf = albdif
@@ -787,13 +785,13 @@ contains
           avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
           anidf = xao_o%rAttr(index_xao_So_anidf,n)
           swupc = a2x_o%rAttr(index_a2x_Faxa_swndr,n)*(-anidr) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swndf,n)*(-anidf) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n)*(-avsdr) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)*(-avsdf)
+               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n)*(-anidf) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n)*(-avsdr) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)*(-avsdf)
           swdnc = a2x_o%rAttr(index_a2x_Faxa_swndr,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
+               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
           if ( anidr == 1.0_r8 ) then ! dark side of earth
              swupc = 0.0_r8
              swdnc = 0.0_r8
@@ -802,24 +800,24 @@ contains
           xao_o%rAttr(index_xao_Faox_swup,n) = swupc
        end do
 
-       ! Solar declination 
+       ! Solar declination
        ! Will only do albedo calculation if nextsw_cday is not -1.
-       
+
        call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday,orb_eccen=eccen, &
-          orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
+            orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
        if (nextsw_cday >= -0.5_r8) then
           calday = nextsw_cday
           call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
-          ! Compute albedos 
+          ! Compute albedos
           do n=1,nloc_o
              rlat = const_deg2rad * lats(n)
              rlon = const_deg2rad * lons(n)
              cosz = shr_orb_cosz( calday, rlat, rlon, delta )
              if (cosz  >  0.0_r8) then !--- sun hit --
                 anidr = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
-                        (.150_r8*(cosz         - 0.100_r8 ) *   &
-                                 (cosz         - 0.500_r8 ) *   &
-                                 (cosz         - 1.000_r8 )  )
+                     (.150_r8*(cosz         - 0.100_r8 ) *   &
+                     (cosz         - 0.500_r8 ) *   &
+                     (cosz         - 1.000_r8 )  )
                 avsdr = anidr
                 anidf = albdif
                 avsdf = albdif
@@ -850,10 +848,10 @@ contains
        kr = mct_aVect_indexRA(fractions_o,"ofrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
     endif
-       
-    end subroutine seq_flux_ocnalb_mct
 
-!===============================================================================
+  end subroutine seq_flux_ocnalb_mct
+
+  !===============================================================================
 
   subroutine seq_flux_atmocnexch_mct( infodata, atm, ocn, fractions_a, fractions_o, &
        xao_a, xao_o)
@@ -885,33 +883,33 @@ contains
     type(mct_aVect) :: xaop_o
     type(mct_aVect) :: fractions_oe
 
-    integer(in) :: kw,ka,ko,iw,ia,io,kf
-    integer(in) :: n,i          ! indices
+    integer(in) :: kw,ka,ko,ia,io,kf
+    integer(in) :: n          ! indices
     logical     :: dead_comps   ! .true.  => dead components are used
-    integer(in) :: index_tref  
-    integer(in) :: index_qref  
+    integer(in) :: index_tref
+    integer(in) :: index_qref
     integer(in) :: index_duu10n
-    integer(in) :: index_ustar 
-    integer(in) :: index_ssq   
-    integer(in) :: index_re    
-    integer(in) :: index_u10   
-    integer(in) :: index_taux  
-    integer(in) :: index_tauy  
-    integer(in) :: index_lat   
-    integer(in) :: index_sen   
-    integer(in) :: index_evap  
+    integer(in) :: index_ustar
+    integer(in) :: index_ssq
+    integer(in) :: index_re
+    integer(in) :: index_u10
+    integer(in) :: index_taux
+    integer(in) :: index_tauy
+    integer(in) :: index_lat
+    integer(in) :: index_sen
+    integer(in) :: index_evap
     integer(in) :: index_evap_16O
     integer(in) :: index_evap_HDO
     integer(in) :: index_evap_18O
-    integer(in) :: index_lwup  
+    integer(in) :: index_lwup
     integer(in) :: index_sumwt
     integer(in) :: atm_nx,atm_ny,ocn_nx,ocn_ny
     real(r8)    :: wt
     real(r8)    :: gust_fac = huge(1.0_r8) !wind gust factor
     integer(in) :: tod, dt
-    logical,save:: first_call = .true. 
+    logical,save:: first_call = .true.
     logical     :: read_restart    ! .true. => model starting from restart
-    logical     :: ocn_prognostic  ! .true. => ocn is prognostic 
+    logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     character(len=256) :: fldlist  ! subset of xao fields
@@ -920,16 +918,16 @@ contains
     !
     !-----------------------------------------------------------------------
 
-    gsmap_a => component_get_gsmap_cx(atm) 
-    gsmap_o => component_get_gsmap_cx(ocn) 
+    gsmap_a => component_get_gsmap_cx(atm)
+    gsmap_o => component_get_gsmap_cx(ocn)
     a2x     => component_get_c2x_cx(atm)  ! a2x_ax
-    o2x     => component_get_c2x_cx(ocn)  ! o2x_ox 
+    o2x     => component_get_c2x_cx(ocn)  ! o2x_ox
 
     if (trim(fluxsetting) /= trim(fluxsetting_exchange)) then
        call shr_sys_abort(trim(subname)//' ERROR wrong fluxsetting')
     endif
 
-    ! Update ocean surface fluxes 
+    ! Update ocean surface fluxes
     ! Must fabricate "reasonable" data (using dead components)
 
     call seq_infodata_GetData(infodata, &
@@ -945,7 +943,7 @@ contains
 
     if (first_call) then
        if (.not.read_restart) cold_start = .true.
-       first_call = .false. 
+       first_call = .false.
     endif
 
     if (dead_comps) then
@@ -959,15 +957,15 @@ contains
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
           shum_16O(n) = 1.e-2_r8 ! H216O specific humidity    ~ kg/kg
-          shum_HDO(n) = 1.e-2_r8 ! HD16O specificy humidity   ~ kg/kg 
+          shum_HDO(n) = 1.e-2_r8 ! HD16O specificy humidity   ~ kg/kg
           shum_18O(n) = 1.e-2_r8 ! H218O specific humidity    ~ kg/kg
           roce_16O(n) = 1.0_r8 ! H216O ratio ~ mol/mol
-          roce_HDO(n) = 1.0_r8 ! HD16O ratio ~ mol/mol 
+          roce_HDO(n) = 1.0_r8 ! HD16O ratio ~ mol/mol
           roce_18O(n) = 1.0_r8 ! H218O ratio ~ mol/mol
           dens(n) =   1.0_r8 ! atm density                ~ kg/m^3
           tbot(n) = 300.0_r8 ! atm temperature            ~ Kelvin
        enddo
-    else        
+    else
 
        !--- instantiate exchange grid aVects
        call mct_AVect_init(a2x_e, a2x, nloc_ae)
@@ -998,7 +996,7 @@ contains
           shum_18O(n) = a2x_e%rAttr(index_a2x_Sa_shum_18O,ia)
           dens(n) = a2x_e%rAttr(index_a2x_Sa_dens,ia)
           tbot(n) = a2x_e%rAttr(index_a2x_Sa_tbot,ia)
-          tocn(n) = o2x_e%rAttr(index_o2x_So_t   ,io)   
+          tocn(n) = o2x_e%rAttr(index_o2x_So_t   ,io)
           uocn(n) = o2x_e%rAttr(index_o2x_So_u   ,io)
           vocn(n) = o2x_e%rAttr(index_o2x_So_v   ,io)
           roce_16O(n) = o2x_e%rAttr(index_o2x_So_roce_16O, io)
@@ -1011,26 +1009,26 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          uGust, lwdn , swdn , swup, prec, &
-                          fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
-                          lats , lons , warm , salt , speed, regime,      &
-                          warmMax, windMax, qSolAvg, windAvg,             &
-                          warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
-                          tbulk, tskin, tskin_day, tskin_night, &
-                          cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq , missval = 0.0_r8, &
-                          cold_start=cold_start)
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            uGust, lwdn , swdn , swup, prec, &
+            fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
+            lats , lons , warm , salt , speed, regime,      &
+            warmMax, windMax, qSolAvg, windAvg,             &
+            warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
+            tbulk, tskin, tskin_day, tskin_night, &
+            cskin, cskin_night, tod, dt,          &
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    & 
-                          evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
-                          duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
+            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     endif
 
     !--- create temporary aVects on exchange, atm, or ocn decomp as needed
@@ -1086,8 +1084,8 @@ contains
        xaop_oe%rAttr(index_ustar ,io) = xaop_oe%rAttr(index_ustar ,io) + ustar(n)*wt   ! friction velocity
        xaop_oe%rAttr(index_re    ,io) = xaop_oe%rAttr(index_re    ,io) + re(n)  * wt   ! reynolds number
        xaop_oe%rAttr(index_ssq   ,io) = xaop_oe%rAttr(index_ssq   ,io) + ssq(n) * wt   ! s.hum. saturation at Ts
-       xaop_oe%rAttr(index_lwup  ,io) = xaop_oe%rAttr(index_lwup  ,io) + lwup(n)* wt   
-       xaop_oe%rAttr(index_duu10n,io) = xaop_oe%rAttr(index_duu10n,io) + duu10n(n)*wt  
+       xaop_oe%rAttr(index_lwup  ,io) = xaop_oe%rAttr(index_lwup  ,io) + lwup(n)* wt
+       xaop_oe%rAttr(index_duu10n,io) = xaop_oe%rAttr(index_duu10n,io) + duu10n(n)*wt
        xaop_oe%rAttr(index_u10   ,io) = xaop_oe%rAttr(index_u10   ,io) + sqrt(duu10n(n))*wt
        xaop_oe%rAttr(index_sumwt ,io) = xaop_oe%rAttr(index_sumwt ,io) + wt
     enddo
@@ -1105,7 +1103,7 @@ contains
     do n = 1,nloc_o2a
        io = sMato2a%data%iAttr(ko,n)
        ia = sMato2a%data%iAttr(ka,n)
-!tcx   wt = sMato2a%data%rAttr(kw,n)
+       !tcx   wt = sMato2a%data%rAttr(kw,n)
        wt = sMato2a%data%rAttr(kw,n) * fractions_oe%rAttr(kf,io)
        xaop_ae%rAttr(index_sen   ,ia) = xaop_ae%rAttr(index_sen   ,ia) + sen(n) * wt
        xaop_ae%rAttr(index_lat   ,ia) = xaop_ae%rAttr(index_lat   ,ia) + lat(n) * wt
@@ -1120,8 +1118,8 @@ contains
        xaop_ae%rAttr(index_ustar ,ia) = xaop_ae%rAttr(index_ustar ,ia) + ustar(n)*wt   ! friction velocity
        xaop_ae%rAttr(index_re    ,ia) = xaop_ae%rAttr(index_re    ,ia) + re(n)  * wt   ! reynolds number
        xaop_ae%rAttr(index_ssq   ,ia) = xaop_ae%rAttr(index_ssq   ,ia) + ssq(n) * wt   ! s.hum. saturation at Ts
-       xaop_ae%rAttr(index_lwup  ,ia) = xaop_ae%rAttr(index_lwup  ,ia) + lwup(n)* wt   
-       xaop_ae%rAttr(index_duu10n,ia) = xaop_ae%rAttr(index_duu10n,ia) + duu10n(n)*wt  
+       xaop_ae%rAttr(index_lwup  ,ia) = xaop_ae%rAttr(index_lwup  ,ia) + lwup(n)* wt
+       xaop_ae%rAttr(index_duu10n,ia) = xaop_ae%rAttr(index_duu10n,ia) + duu10n(n)*wt
        xaop_ae%rAttr(index_u10   ,ia) = xaop_ae%rAttr(index_u10   ,ia) + sqrt(duu10n(n))*wt
        xaop_ae%rAttr(index_sumwt ,ia) = xaop_ae%rAttr(index_sumwt ,ia) + wt
     enddo
@@ -1139,7 +1137,7 @@ contains
 
     do n = 1,nloc_a
        wt = xaop_a%rAttr(index_sumwt,n)
-       if (wt /= 0.0_r8) then 
+       if (wt /= 0.0_r8) then
           wt = 1.0_r8/wt
        else
           wt = 1.0_r8
@@ -1149,7 +1147,7 @@ contains
 
     do n = 1,nloc_o
        wt = xaop_o%rAttr(index_sumwt,n)
-       if (wt /= 0.0_r8) then 
+       if (wt /= 0.0_r8) then
           wt = 1.0_r8/wt
        else
           wt = 1.0_r8
@@ -1170,7 +1168,7 @@ contains
 
   end subroutine seq_flux_atmocnexch_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_atmocn_mct(infodata, tod, dt, a2x, o2x, xao)
 
@@ -1188,33 +1186,20 @@ contains
     !
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
-    integer(in) :: n,i          ! indices
-    real(r8)    :: rlat         ! gridcell latitude in radians
-    real(r8)    :: rlon         ! gridcell longitude in radians
-    real(r8)    :: cosz         ! Cosine of solar zenith angle
-    real(r8)    :: eccen        ! Earth orbit eccentricity
-    real(r8)    :: mvelpp       ! Earth orbit
-    real(r8)    :: lambm0       ! Earth orbit
-    real(r8)    :: obliqr       ! Earth orbit
-    real(r8)    :: delta        ! Solar declination angle  in radians
-    real(r8)    :: eccf         ! Earth orbit eccentricity factor
-    real(r8)    :: calday       ! calendar day including fraction, at 0e
-    real(r8)    :: nextsw_cday  ! calendar day of next atm shortwave
-    real(r8)    :: anidr        ! albedo: near infrared, direct
-    real(r8)    :: avsdr        ! albedo: visible      , direct
-    real(r8)    :: anidf        ! albedo: near infrared, diffuse
-    real(r8)    :: avsdf        ! albedo: visible      , diffuse
+    integer(in) :: n            ! indices
     real(r8)    :: gust_fac = huge(1.0_r8) !wind gust factor
     integer(in) :: nloc, nloca, nloco    ! number of gridcells
-    integer(in) :: ID           ! comm ID
     logical,save:: first_call = .true.
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     logical     :: read_restart    ! .true. => continue run
-    logical     :: ocn_prognostic  ! .true. => ocn is prognostic 
+    logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
+    integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
+    logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
-    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct 
+    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
     !
     !-----------------------------------------------------------------------
@@ -1222,7 +1207,7 @@ contains
     call seq_infodata_getData(infodata , &
          read_restart=read_restart, &
          flux_albav=flux_albav, &
-         dead_comps=dead_comps, & 
+         dead_comps=dead_comps, &
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal,     &
          gust_fac = gust_fac            )
@@ -1230,23 +1215,28 @@ contains
     cold_start = .false.   ! use restart data or data from last timestep
 
     if (first_call) then
+       call seq_infodata_getData(infodata , &
+         coldair_outbreak_mod=coldair_outbreak_mod,  &
+         flux_convergence=flux_convergence, &
+         flux_max_iteration=flux_max_iteration)
+
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
-       index_xao_So_ustar  = mct_aVect_indexRA(xao,'So_ustar')  
-       index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')  
+       index_xao_So_ustar  = mct_aVect_indexRA(xao,'So_ustar')
+       index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')
        index_xao_So_ssq    = mct_aVect_indexRA(xao,'So_ssq')
        index_xao_So_u10    = mct_aVect_indexRA(xao,'So_u10')
        index_xao_So_duu10n = mct_aVect_indexRA(xao,'So_duu10n')
        index_xao_Faox_taux = mct_aVect_indexRA(xao,'Faox_taux')
-       index_xao_Faox_tauy = mct_aVect_indexRA(xao,'Faox_tauy')  
-       index_xao_Faox_lat  = mct_aVect_indexRA(xao,'Faox_lat')   
-       index_xao_Faox_sen  = mct_aVect_indexRA(xao,'Faox_sen')   
-       index_xao_Faox_evap = mct_aVect_indexRA(xao,'Faox_evap')   
+       index_xao_Faox_tauy = mct_aVect_indexRA(xao,'Faox_tauy')
+       index_xao_Faox_lat  = mct_aVect_indexRA(xao,'Faox_lat')
+       index_xao_Faox_sen  = mct_aVect_indexRA(xao,'Faox_sen')
+       index_xao_Faox_evap = mct_aVect_indexRA(xao,'Faox_evap')
        index_xao_Faox_evap_16O = mct_aVect_indexRA(xao,'Faox_evap_16O', perrWith='quiet')
        index_xao_Faox_evap_HDO = mct_aVect_indexRA(xao,'Faox_evap_HDO', perrWith='quiet')
        index_xao_Faox_evap_18O = mct_aVect_indexRA(xao,'Faox_evap_18O', perrWith='quiet')
-       index_xao_Faox_lwup = mct_aVect_indexRA(xao,'Faox_lwup')  
+       index_xao_Faox_lwup = mct_aVect_indexRA(xao,'Faox_lwup')
        index_xao_Faox_swdn = mct_aVect_indexRA(xao,'Faox_swdn')
        index_xao_Faox_swup = mct_aVect_indexRA(xao,'Faox_swup')
        index_xao_So_fswpen            = mct_aVect_indexRA(xao,'So_fswpen')
@@ -1269,7 +1259,7 @@ contains
        index_xao_So_qsolinc_diurn     = mct_aVect_indexRA(xao,'So_qsolinc_diurn')
        index_xao_So_windinc_diurn     = mct_aVect_indexRA(xao,'So_windinc_diurn')
        index_xao_So_ninc_diurn        = mct_aVect_indexRA(xao,'So_ninc_diurn')
-       
+
        index_a2x_Sa_z      = mct_aVect_indexRA(a2x,'Sa_z')
        index_a2x_Sa_u      = mct_aVect_indexRA(a2x,'Sa_u')
        index_a2x_Sa_v      = mct_aVect_indexRA(a2x,'Sa_v')
@@ -1285,7 +1275,7 @@ contains
        index_a2x_Faxa_rainl= mct_aVect_indexRA(a2x,'Faxa_rainl')
        index_a2x_Faxa_snowc= mct_aVect_indexRA(a2x,'Faxa_snowc')
        index_a2x_Faxa_snowl= mct_aVect_indexRA(a2x,'Faxa_snowl')
-       
+
        index_o2x_So_t      = mct_aVect_indexRA(o2x,'So_t')
        index_o2x_So_u      = mct_aVect_indexRA(o2x,'So_u')
        index_o2x_So_v      = mct_aVect_indexRA(o2x,'So_v')
@@ -1294,9 +1284,12 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
+       call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
+            flux_convergence_max_iteration=flux_max_iteration, &
+            coldair_outbreak_mod=coldair_outbreak_mod)
        first_call = .false.
     end if
-       
+
     if (trim(fluxsetting) /= trim(fluxsetting_atmocn)) then
        call shr_sys_abort(trim(subname)//' ERROR wrong fluxsetting')
     endif
@@ -1309,7 +1302,7 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR nloc sizes do not match')
     endif
 
-    ! Update ocean surface fluxes 
+    ! Update ocean surface fluxes
     ! Must fabricate "reasonable" data (when using dead components)
 
     emask = mask
@@ -1324,13 +1317,13 @@ contains
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
-!wiso note: shum_* should be multiplied by Rstd_* here?
+          !wiso note: shum_* should be multiplied by Rstd_* here?
           shum_16O(n) = 1.e-2_r8 ! H216O specific humidity ~ kg/kg
           shum_HDO(n) = 1.e-2_r8 ! HD16O specific humidity ~ kg/kg
           shum_18O(n) = 1.e-2_r8 ! H218O specific humidity ~ kg/kg
           roce_16O(n) = 1.0_r8   ! H216O surface ratio     ~ mol/mol
-          roce_HDO(n) = 1.0_r8   ! HDO   surface ratio     ~ mol/mol 
-          roce_18O(n) = 1.0_r8   ! H218O surface ratio     ~ mol/mol 
+          roce_HDO(n) = 1.0_r8   ! HDO   surface ratio     ~ mol/mol
+          roce_18O(n) = 1.0_r8   ! H218O surface ratio     ~ mol/mol
           dens(n) =   1.0_r8 ! atm density                ~ kg/m^3
           tbot(n) = 300.0_r8 ! atm temperature            ~ Kelvin
           uGust(n)=   0.0_r8
@@ -1364,8 +1357,8 @@ contains
        enddo
     else
        do n = 1,nloc
-          nInc(n) = 0._r8 ! needed for minval/maxval calculation  
-          if (mask(n) /= 0) then	
+          nInc(n) = 0._r8 ! needed for minval/maxval calculation
+          if (mask(n) /= 0) then
              zbot(n) = a2x%rAttr(index_a2x_Sa_z   ,n)
              ubot(n) = a2x%rAttr(index_a2x_Sa_u   ,n)
              vbot(n) = a2x%rAttr(index_a2x_Sa_v   ,n)
@@ -1376,7 +1369,7 @@ contains
              if ( index_a2x_Sa_shum_18O /= 0 ) shum_18O(n) = a2x%rAttr(index_a2x_Sa_shum_18O,n)
              dens(n) = a2x%rAttr(index_a2x_Sa_dens,n)
              tbot(n) = a2x%rAttr(index_a2x_Sa_tbot,n)
-             tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)   
+             tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
              vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
              if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
@@ -1387,13 +1380,13 @@ contains
                 emask(n) = 0
                 !write(logunit,*) 'aoflux tcx1',n,dens(n),tocn(n)
              endif
-!           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
+             !           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
              uGust(n) = 0.0_r8
              lwdn (n) = a2x%rAttr(index_a2x_Faxa_lwdn ,n)
              prec (n) = a2x%rAttr(index_a2x_Faxa_rainc,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_snowl,n)
+                  & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
+                  & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
+                  & + a2x%rAttr(index_a2x_Faxa_snowl,n)
              prec_gust (n) = a2x%rAttr(index_a2x_Faxa_rainc,n)
              fswpen(n)= o2x%rAttr(index_o2x_So_fswpen ,n)
              ocnsal(n)= o2x%rAttr(index_o2x_So_s      ,n)
@@ -1426,36 +1419,36 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          uGust, lwdn , swdn , swup, prec, &
-                          fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
-                          lats, lons , warm , salt , speed, regime,       &
-                          warmMax, windMax, qSolAvg, windAvg,             &
-                          warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
-                          tbulk, tskin, tskin_day, tskin_night, &
-                          cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq, &
-                          !missval should not be needed if flux calc 
-                          !consistent with mrgx2a fraction
-                          !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-                          cold_start=cold_start)
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            uGust, lwdn , swdn , swup, prec, &
+            fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
+            lats, lons , warm , salt , speed, regime,       &
+            warmMax, windMax, qSolAvg, windAvg,             &
+            warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
+            tbulk, tskin, tskin_day, tskin_night, &
+            cskin, cskin_night, tod, dt,          &
+            duu10n,ustar, re  , ssq, &
+                                !missval should not be needed if flux calc
+                                !consistent with mrgx2a fraction
+                                !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+            cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          duu10n,ustar, re  , ssq)
-                          !missval should not be needed if flux calc 
-                          !consistent with mrgx2a fraction
-                          !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            duu10n,ustar, re  , ssq)
+       !missval should not be needed if flux calc
+       !consistent with mrgx2a fraction
+       !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
     endif
 
     do n = 1,nloc
-       if (mask(n) /= 0) then	
+       if (mask(n) /= 0) then
           xao%rAttr(index_xao_Faox_sen ,n) = sen(n)
           xao%rAttr(index_xao_Faox_lat ,n) = lat(n)
           xao%rAttr(index_xao_Faox_taux,n) = taux(n)
@@ -1465,13 +1458,13 @@ contains
           if ( index_xao_Faox_evap_HDO /= 0 ) xao%rAttr(index_xao_Faox_evap_HDO,n) = evap_HDO(n)
           if ( index_xao_Faox_evap_18O /= 0 ) xao%rAttr(index_xao_Faox_evap_18O,n) = evap_18O(n)
           xao%rAttr(index_xao_So_tref  ,n) = tref(n)
-	  xao%rAttr(index_xao_So_qref  ,n) = qref(n)
+          xao%rAttr(index_xao_So_qref  ,n) = qref(n)
           xao%rAttr(index_xao_So_ustar ,n) = ustar(n)  ! friction velocity
           xao%rAttr(index_xao_So_re    ,n) = re(n)     ! reynolds number
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
-          xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)   
-          xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)  
-          xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))  
+          xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
+          xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
+          xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))
           xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
           xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
           xao%rAttr(index_xao_So_speed_diurn      ,n) = speed(n)
@@ -1497,6 +1490,6 @@ contains
 
   end subroutine seq_flux_atmocn_mct
 
-!===============================================================================
+  !===============================================================================
 
 end module seq_flux_mct

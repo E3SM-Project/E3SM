@@ -10,7 +10,7 @@ program prim_main
 
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
   use hybrid_mod,       only: hybrid_t
-  use thread_mod,       only: nthreads, vthreads, omp_get_thread_num, &
+  use thread_mod,       only: nthreads, hthreads, vthreads, omp_get_thread_num, &
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
@@ -23,6 +23,10 @@ program prim_main
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
+
+#ifdef VERTICAL_INTERPOLATION
+  use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
+#endif
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -60,6 +64,7 @@ program prim_main
   ! =====================================
   ! Set number of threads...
   ! =====================================
+  if(par%masterproc) print *,"Primitive Equation Init1..."
   call t_initf('input.nl',LogPrint=par%masterproc, &
 	Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
@@ -71,9 +76,8 @@ program prim_main
   ! Begin threaded region so each thread can print info
   ! =====================================
 #if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
-   call omp_set_nested(.true.)
 #ifndef __bg__
-   if (.not. omp_get_nested()) then
+   if (vthreads>1 .and. (.not. omp_get_nested())) then
      call haltmp("Nested threading required but not available. Set OMP_NESTED=true")
    endif
 #endif
@@ -83,7 +87,7 @@ program prim_main
   ! Begin threaded region so each thread can print info
   ! =====================================
 #if (defined HORIZ_OPENMP)
-  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
@@ -134,14 +138,15 @@ program prim_main
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
-  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,nthreads)
+  hybrid = hybrid_create(par,ithr,hthreads)
   nets=dom_mt(ithr)%start
   nete=dom_mt(ithr)%end
 
+  if(hybrid%masterthread) print *,"Primitive Equation Init2..."
   call t_startf('prim_init2')
   call prim_init2(elem, hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
@@ -163,7 +168,7 @@ program prim_main
         close(447)
      else
         print *,'Error creating file in directory ',trim(output_dir)
-        call haltmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
+        call abortmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
      end if
   endif
 #if 0
@@ -173,23 +178,27 @@ program prim_main
      if(par%masterproc) print *,'Directory ',output_dir, ' does exist: initialing IO'
   else
      if(par%masterproc) print *,'Directory ',output_dir, ' does not exist: stopping'
-     call haltmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
+     call abortmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
   
-
-#ifdef PIO_INTERP
-  ! initialize history files.  filename constructed with restart time
-  ! so we have to do this after ReadRestart in prim_init2 above
+  if(par%masterproc) print *,"I/O init..."
+! initialize history files.  filename constructed with restart time
+! so we have to do this after ReadRestart in prim_init2 above
+#ifdef VERTICAL_INTERPOLATION
+  call netcdf_interp_init(elem, hybrid, hvcoord)
+#elif defined PIO_INTERP
   call interp_movie_init( elem, par,  hvcoord, tl )
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
 
-
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
-#ifdef PIO_INTERP
+     if(par%masterproc) print *,"Output of initial state..."
+#ifdef VERTICAL_INTERPOLATION
+    call netcdf_interp_write(elem, tl, hybrid, hvcoord)
+#elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -201,11 +210,11 @@ program prim_main
   call t_startf('prim_main_loop')
   do while(tl%nstep < nEndStep)
 #if (defined HORIZ_OPENMP)
-     !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+     !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
      call omp_set_num_threads(vthreads)
 #endif
      ithr=omp_get_thread_num()
-     hybrid = hybrid_create(par,ithr,nthreads)
+     hybrid = hybrid_create(par,ithr,hthreads)
      nets=dom_mt(ithr)%start
      nete=dom_mt(ithr)%end
      
@@ -219,7 +228,9 @@ program prim_main
      !$OMP END PARALLEL
 #endif
 
-#ifdef PIO_INTERP
+#ifdef VERTICAL_INTERPOLATION
+     call netcdf_interp_write(elem, tl, hybrid, hvcoord)
+#elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -237,7 +248,10 @@ program prim_main
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
-#ifdef PIO_INTERP
+
+#ifdef VERTICAL_INTERPOLATION
+  call netcdf_interp_finish
+#elif defined PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish

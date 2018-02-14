@@ -107,14 +107,11 @@ using a fortran linker.
 
 <compiler COMPILER="gnu">
   <CFLAGS>
-    <base> -mcmodel=medium -std=gnu99 </base>
+    <base> -std=gnu99 </base>
     <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
-  <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
@@ -126,9 +123,14 @@ using a fortran linker.
   <FFLAGS>
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-    <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
+    <base>  -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
     <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall </append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -452,9 +454,6 @@ using a fortran linker.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
-  <LDFLAGS>
-    <append MODEL="driver"> -all_load </append>
-  </LDFLAGS>
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">
@@ -716,6 +715,21 @@ using a fortran linker.
   </LDFLAGS>
 </compiler>
 
+<compiler MACH="hobart" COMPILER="gnu">
+  <SLIBS>
+    <append> -lm </append>
+    <append> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="homebrew" COMPILER="gnu">
+  <LDFLAGS>
+    <!-- These LDFLAGS provide lapack and blas support on a Mac. This
+         may require installation of the Apple Developer Tools. -->
+    <append> -framework Accelerate </append>
+  </LDFLAGS>
+</compiler>
+
 <compiler MACH="juqueen" COMPILER="ibm">
   <MPICC> mpixlc_r </MPICC>
   <MPIFC> mpixlf2003_r </MPIFC>
@@ -793,17 +807,32 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="pleiades-has">
+<compiler MACH="pleiades-bro">
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -aCORE-AVX2 -align array32byte </append>
+    <append DEBUG="FALSE"> -O2 -xCORE-AVX2 </append>
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+</compiler>
+
+<compiler MACH="pleiades-has">
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -xCORE-AVX2 </append>
+  </FFLAGS>
+  <MPICC>icc</MPICC>
+  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <SLIBS>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-ivy">
@@ -813,10 +842,11 @@ using a fortran linker.
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-san">
@@ -826,23 +856,11 @@ using a fortran linker.
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="pleiades-wes">
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -xSSE4.2 </append>
-  </FFLAGS>
-  <MPICC>icc</MPICC>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
-  </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="sierra">
@@ -857,7 +875,7 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="skybridge" COMPILER="intel">
+<compiler MACH="sandiatoss3" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -979,10 +997,10 @@ using a fortran linker.
 </compiler>
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
-    <append> -qopt-report </append>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
   </CFLAGS>
   <FFLAGS>
-    <append> -qopt-report </append>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
   </FFLAGS>
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
@@ -1058,6 +1076,48 @@ using a fortran linker.
   </SLIBS>
   <SCC MPILIB="mpi-serial">pgcc</SCC>
   <SFC MPILIB="mpi-serial">pgfortran</SFC>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lbl-lr3">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl </append>
+  </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lbl-lr2">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl </append>
+  </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="modex">
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
 </compiler>
 
 </config_compilers>

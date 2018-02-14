@@ -2,14 +2,12 @@
 Interface to the testreporter xml.  This class inherits from GenericXML.py
 
 """
-
+#pylint: disable=import-error
+from six.moves import urllib
+import six
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.utils import expect,get_model
-
-import urllib
-
-
 
 class TestReporter(GenericXML):
 
@@ -21,93 +19,53 @@ class TestReporter(GenericXML):
         expect(get_model() == 'cesm', "testreport is only meant to populate the CESM test database." )
         self.root = None
 
-        GenericXML.__init__(self)
+        GenericXML.__init__(self, root_name_override="testrecord")
 
     def setup_header(self, tagname,machine,compiler,mpilib,testroot,testtype,baseline):
         #
-        # Create the XML header that the testdb is expecting to recieve 
+        # Create the XML header that the testdb is expecting to recieve
         #
-        tlelem    = ET.Element("testrecord")
-        elem      = ET.Element('tag_name')
-        elem.text = tagname
-        tlelem.append(elem)
-        elem                = ET.Element('mach')
-        elem.text           = machine
-        tlelem.append(elem)
-        elem                = ET.Element('compiler',attrib={"version":""})
-        elem.text           = compiler
-        tlelem.append(elem)
-        elem                = ET.Element('mpilib',attrib={"version":""})
-        elem.text           = mpilib
-        tlelem.append(elem)
-        elem                = ET.Element('testroot')
-        elem.text           = testroot
-        tlelem.append(elem)
-        elem                = ET.Element('testtype')
-        elem.text           = testtype
-        tlelem.append(elem)
-        elem   = ET.Element('baselinetag')
-        elem.text   = baseline
-        tlelem.append(elem)
-    
-        self.root=tlelem
+        for name, text, attribs in [ ("tag_name"   , tagname , None),
+                                     ("mach"       , machine , None),
+                                     ("compiler"   , compiler, {"version":""}),
+                                     ("mpilib"     , mpilib  , {"version":""}),
+                                     ("testroot"   , testroot, None),
+                                     ("testtype"   , testtype, None),
+                                     ("baselinetag", baseline, None) ]:
+            self.make_child(name, attributes=attribs, text=text)
 
-        
     def add_result(self,test_name,test_status):
         #
         # Add a test result to the XML structure.
         #
-        tlelem      = ET.Element('tests',attrib={"testname":test_name})
-        elem=ET.Element('category',attrib={"name":"casestatus"})
-        tlelem.append(elem) 
-        elem=ET.Element('category',attrib={"name":"comment"})
-        elem.text= test_status['COMMENT']
-        tlelem.append(elem) 
+        tlelem = self.make_child("tests", {"testname":test_name})
 
-        elem=ET.Element('category',attrib={"name":"compare"})
-        elem.text= test_status['BASELINE']
-        tlelem.append(elem) 
+        for attrib_name, text in [ ("casestatus", None),
+                                   ("comment",    test_status["COMMENT"]),
+                                   ("compare",    test_status["BASELINE"]),
+                                   ("memcomp",    test_status["MEMCOMP"]),
+                                   ("memleak",    test_status["MEMLEAK"]),
+                                   ("nlcomp",     test_status["NLCOMP"]),
+                                   ("status",     test_status["STATUS"]),
+                                   ("tputcomp",   test_status["TPUTCOMP"]) ]:
 
-        elem=ET.Element('category',attrib={"name":"memcomp"})
-        elem.text= test_status['MEMCOMP']
-        tlelem.append(elem) 
-
-        elem=ET.Element('category',attrib={"name":"memleak"})
-        elem.text= test_status['MEMLEAK']
-        tlelem.append(elem) 
-
-        elem=ET.Element('category',attrib={"name":"nlcomp"})
-        elem.text= test_status['NLCOMP']
-        tlelem.append(elem) 
-
-        elem=ET.Element('category',attrib={"name":"status"})
-        elem.text= test_status['STATUS']
-        tlelem.append(elem) 
-
-        elem=ET.Element('category',attrib={"name":"tputcomp"})
-        elem.text= test_status['TPUTCOMP']
-        tlelem.append(elem) 
-
-        self.root.append(tlelem)
-
-
+            self.make_child("category", attributes={"name": attrib_name}, text=text, root=tlelem)
 
     def push2testdb(self):
         #
         # Post test result XML to CESM test database
         #
-        xmlstr = ET.tostring(self.root,method="xml",encoding="UTF-8")
-        username=raw_input("Username:")
+        xmlstr = self.to_string(self.root,method="xml",encoding="UTF-8")
+        username=six.moves.input("Username:")
         os.system("stty -echo")
-        password=raw_input("Password:")
+        password=six.moves.input("Password:")
         os.system("stty echo")
         params={'username':username,'password':password,'testXML':xmlstr}
         url="https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
-        params = urllib.urlencode(params)
-        f = urllib.urlopen(url, params)
+        params = urllib.parse.urlencode(params)
+        f = urllib.request.urlopen(url, params)
         #
         # Print any messages from the post command
         #
-        print f.read()
-        print f.code
-
+        print(f.read())
+        print(f.code)

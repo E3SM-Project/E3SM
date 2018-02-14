@@ -40,71 +40,83 @@ class PRE(SystemTestsCompareTwo):
     def _case_one_setup(self):
     ###########################################################################
         case_setup(self._case, test_mode=True, reset=True)
-        self._stopopt = self._case.get_value("STOP_OPTION")
-        self._stopn = self._case.get_value("STOP_N")
 
     ###########################################################################
     def _case_two_setup(self):
     ###########################################################################
         # Set up a pause/resume run
-        self._case.set_value("STOP_OPTION", self._stopopt)
-        self._case.set_value("STOP_N", self._stopn)
+        stopopt = self._case1.get_value("STOP_OPTION")
+        stopn = self._case1.get_value("STOP_N")
+        self._case.set_value("STOP_OPTION", stopopt)
+        self._case.set_value("STOP_N", stopn)
         self._case.set_value("ESP_RUN_ON_PAUSE", "TRUE")
-        if self._stopn > 3:
+        if stopn > 3:
             pausen = 2
         else:
             pausen = 1
         # End if
 
-        self._case.set_value("PAUSE_OPTION", self._stopopt)
+        self._case.set_value("PAUSE_OPTION", stopopt)
         self._case.set_value("PAUSE_N", pausen)
-        comps = [ x.lower() for x in self._case.get_values("COMP_CLASSES") ]
-        pcl = self._case.get_value("PAUSE_COMPONENT_LIST")
-        expect(pcl == "all" or set(pcl.split(':')).issubset(comps), 
-               "PRE ERROR: Invalid PAUSE_COMPONENT_LIST, '%s'"%pcl)
+        comps = self._case.get_values("COMP_CLASSES")
+        data_assimilation = []
+        for comp in comps:
+            data_assimilation.append(self._case.get_value("DATA_ASSIMILATION_{}".format(comp)))
+
+        expect(any(data_assimilation), "No Data_Assimilation flag is set")
 
         self._case.flush()
 
     ###########################################################################
-    def run_phase(self):
+    def run_phase(self): # pylint: disable=arguments-differ
     ###########################################################################
-        SystemTestsCompareTwo.run_phase(self)
+        self._activate_case2()
+        should_match = (self._case.get_value("DESP_MODE") == "NOCHANGE")
+        SystemTestsCompareTwo.run_phase(self, success_change=not should_match)
         # Look for expected coupler restart files
         logger = logging.getLogger(__name__)
         self._activate_case1()
         rundir1 = self._case.get_value("RUNDIR")
         self._activate_case2()
         rundir2 = self._case.get_value("RUNDIR")
-        should_match = (self._case.get_value("DESP_MODE") == "NOCHANGE")
         compare_ok = True
-        pause_comps = self._case.get_value("PAUSE_COMPONENT_LIST")
-        expect((pause_comps != 'none'), "Pause/Resume (PRE) test has no pause components")
-        if pause_comps == 'all':
-            pause_comps = self._case.get_values("COMP_CLASSES")
-        else:
-            pause_comps = pause_comps.split(':')
+        multi_driver = self._case.get_value("MULTI_DRIVER")
+        comps = self._case.get_values("COMP_CLASSES")
+        for comp in comps:
+            if not self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+                continue
+            if comp == "CPL":
+                if multi_driver:
+                    ninst = self._case.get_value("NINST_MAX")
+                else:
+                    ninst = 1
+            else:
+                ninst = self._case.get_value("NINST_{}".format(comp))
 
-        for comp in pause_comps:
-            comp_name = self._case.get_value('COMP_%s'%comp.upper())
-            rname = '*.%s.r.*'%comp_name
-            restart_files_1 = glob.glob(os.path.join(rundir1, rname))
-            expect((len(restart_files_1) > 0), "No case1 restart files for %s"%comp)
-            restart_files_2 = glob.glob(os.path.join(rundir2, rname))
-            expect((len(restart_files_2) > len(restart_files_1)),
-                   "No pause (restart) files found in case2 for %s"%comp)
-            # Do cprnc of restart files.
-            rfile1 = restart_files_1[len(restart_files_1) - 1]
-            # rfile2 has to match rfile1 (same time string)
-            parts = os.path.basename(rfile1).split(".")
-            glob_str = "*.%s"%".".join(parts[len(parts)-4:])
-            restart_files_2 = glob.glob(os.path.join(rundir2, glob_str))
-            expect((len(restart_files_2) == 1),
-                   "Missing case2 restart file, %s", glob_str)
-            rfile2 = restart_files_2[0]
-            ok, out = cprnc(comp, rfile1, rfile2, self._case, rundir2) # pylint: disable=unused-variable
-            logger.warning("CPRNC result for %s: %s"%(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
-            compare_ok = compare_ok and (should_match == ok)
+            comp_name = self._case.get_value('COMP_{}'.format(comp))
+            for index in range(1,ninst+1):
+                if ninst == 1:
+                    rname = '*.{}.r.*'.format(comp_name)
+                else:
+                    rname = '*.{}_{:04d}.r.*'.format(comp_name, index)
+
+                restart_files_1 = glob.glob(os.path.join(rundir1, rname))
+                expect((len(restart_files_1) > 0), "No case1 restart files for {}".format(comp))
+                restart_files_2 = glob.glob(os.path.join(rundir2, rname))
+                expect((len(restart_files_2) > len(restart_files_1)),
+                       "No pause (restart) files found in case2 for {}".format(comp))
+                # Do cprnc of restart files.
+                rfile1 = restart_files_1[len(restart_files_1) - 1]
+                # rfile2 has to match rfile1 (same time string)
+                parts = os.path.basename(rfile1).split(".")
+                glob_str = "*.{}".format(".".join(parts[len(parts)-4:]))
+                restart_files_2 = glob.glob(os.path.join(rundir2, glob_str))
+                expect((len(restart_files_2) == 1),
+                       "Missing case2 restart file, {}", glob_str)
+                rfile2 = restart_files_2[0]
+                ok = cprnc(comp, rfile1, rfile2, self._case, rundir2)[0]
+                logger.warning("CPRNC result for {}: {}".format(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
+                compare_ok = compare_ok and (should_match == ok)
 
         expect(compare_ok,
-               "Not all restart files %s"%("matched" if should_match else "failed to match"))
-
+               "Not all restart files {}".format("matched" if should_match else "failed to match"))

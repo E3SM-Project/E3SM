@@ -25,19 +25,4 @@ SET(NC_OUTPUT_FILES
   baro2b-asp_baroclinic1.nc 
   baro2b-asp_baroclinic2.nc)
 
-# replace these slow running thread tests with thread tests in baroCamMoist:
-#SET(OMP_SUB_TESTS true)
-#SET(OMP_NUM_THREADS 4)
-#SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-omp.nl)
-
-
-# compare openMP output vs single threaded output
-#SET(NC_OUTPUT_REF   
-#baro2b-asp_baroclinic1.nc  
-#baro2b-asp_baroclinic2.nc  
-#)
-#SET(NC_OUTPUT_CHECKREF    
-#baro2b-omp-asp_baroclinic1.nc 
-#baro2b-omp-asp_baroclinic2.nc 
-#)
 

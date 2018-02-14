@@ -66,6 +66,7 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
+    logical(kind=log_kind) :: singlethread_copy = .false.
 
     integer        :: i,j
 
@@ -118,22 +119,42 @@ contains
     end do    ! icycle
     
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
-       print *,'size of moveptr: ',size(buffer%moveptr)
-       print *,'active omp threads:  ',omp_get_num_threads()
-       call abortmp('edgebuffer threads does not match number of active threads')
+       if ( omp_get_num_threads().eq.1) then
+          ! if edge buffer was initizled for N threads, and this routine is called with
+          ! M threads, M<>N, then abort, except for special case where M=1, in which
+          ! case we fall back to the original non-threaded copy.
+          ! since there is only 1 thread, it is ok that this is inside an OMP MASTER loop
+          singlethread_copy=.true.
+       else
+          print *,'size of moveptr: ',size(buffer%moveptr)
+          print *,'active omp threads:  ',omp_get_num_threads()
+          call abortmp('edgebuffer threads does not match number of active threads')
+       endif
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
     !$OMP END MASTER
+
 !pw call t_startf('bndry_copy')
-    !JMD ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr   = buffer%moveptr(ithr+1)
-    length = buffer%moveLength(ithr+1)
-    if(length>0) then 
-        buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+    if (singlethread_copy) then 
+       do j=1,size(buffer%moveptr)
+          iptr   = buffer%moveptr(j) 
+          length = buffer%moveLength(j)
+          if(length>0) then 
+             do i=0,length-1
+                buffer%receive(iptr+i) = buffer%buf(iptr+i)
+             enddo
+          endif
+       enddo
+    else
+       iptr   = buffer%moveptr(ithr+1)
+       length = buffer%moveLength(ithr+1)
+       if(length>0) then 
+          buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+       endif
     endif
 !pw call t_stopf('bndry_copy')
 
@@ -160,7 +181,7 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
-
+    logical :: singlethread_copy=.false.
     integer        :: i,j
 
     pSchedule => Schedule(1)
@@ -212,22 +233,37 @@ contains
     end do    ! icycle
     
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
-       call abortmp('edgebuffer threads does not match number of active threads')
+       if ( omp_get_num_threads().eq.1) then
+          singlethread_copy=.true.
+       else
+          call abortmp('edgebuffer threads does not match number of active threads')
+       endif
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
 
     !$OMP END MASTER
-!JMD    ithr = omp_get_thread_num()+1
+
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr   = buffer%moveptr(ithr+1)
-    length = buffer%moveLength(ithr+1)
-    if(length>0) then 
-        buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+    if (singlethread_copy) then 
+       do j=1,size(buffer%moveptr)
+          iptr   = buffer%moveptr(j) 
+          length = buffer%moveLength(j)
+          if(length>0) then 
+             do i=0,length-1
+                buffer%receive(iptr+i) = buffer%buf(iptr+i)
+             enddo
+          endif
+       enddo
+    else
+       iptr   = buffer%moveptr(ithr+1)
+       length = buffer%moveLength(ithr+1)
+       if(length>0) then 
+          buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+       endif
     endif
-
 
   end subroutine bndry_exchangeS_core
 
@@ -327,7 +363,7 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
-
+    logical :: singlethread_copy=.false.
     integer        :: i,j
 
     pSchedule => Schedule(1)
@@ -338,20 +374,37 @@ contains
     nRecvCycles = pSchedule%nRecvCycles
 
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
-       call abortmp('edgebuffer threads does not match number of active threads')
+       if ( omp_get_num_threads().eq.1) then
+          singlethread_copy=.true.
+       else
+          call abortmp('edgebuffer threads does not match number of active threads')
+       endif			   
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
 
     !$OMP END MASTER
-!JMD    ithr = omp_get_thread_num()+1
+
+
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr   = buffer%moveptr(ithr+1)
-    length = buffer%moveLength(ithr+1)
-    if(length>0) then 
-        buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+    if (singlethread_copy) then 
+       do j=1,size(buffer%moveptr)
+          iptr   = buffer%moveptr(j) 
+          length = buffer%moveLength(j)
+          if(length>0) then 
+             do i=0,length-1
+                buffer%receive(iptr+i) = buffer%buf(iptr+i)
+             enddo
+          endif
+       enddo
+    else
+       iptr   = buffer%moveptr(ithr+1)
+       length = buffer%moveLength(ithr+1)
+       if(length>0) then 
+          buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+       endif
     endif
 
 

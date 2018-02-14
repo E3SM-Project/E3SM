@@ -105,6 +105,8 @@ contains
     ! ED cohorts (via FATES) populate all natural vegetation columns.
     ! Current implementations mostly assume that only one column contains
     ! natural vegetation, which is synonomous with the soil column. 
+    ! Because of the single natural vegetation paradigm currently in place,
+    ! fates cohort allocations are based off a multiplier on grid-cells.
     ! -------------------------------------------------------------------------
 
     icohorts = fates_maxElementsPerSite

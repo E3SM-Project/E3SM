@@ -322,13 +322,13 @@ installed.
 
 <p>Download from the <a href="http://www.zlib.net/">zlib
 downloads page</a>. (These instructions were tested using version
-1.2.8). Untar with:
-<pre>tar zxf zlib-1.2.8.tar.gz</pre>
+1.2.11). Untar with:
+<pre>tar zxf zlib-1.2.11.tar.gz</pre>
 
 
 <p>Build with:
-<pre>cd zlib-1.2.8
-CC=mpicc ./configure --prefix=/usr/local
+<pre>cd zlib-1.2.11
+CC=mpicc ./configure --prefix=/usr/local/zlib-1.2.11_mpich-3.2
 make all check
 sudo make install </pre>
 
@@ -342,69 +342,74 @@ with: <pre>tar zxf szip-2.1.tar.gz</pre>
 
 <p>Build with:
 <pre>cd slib-2.1
-CC=mpicc ./configure --prefix=/usr/local
+CC=mpicc ./configure --prefix=/usr/local/szip-2.1_mpich-3.2
 make all check
 sudo make install </pre>
 
 <li>Installing pNetCDF
 
 <p>Download parallel-netcdf from the <a
-href="https://trac.mcs.anl.gov/projects/parallel-netcdf/wiki/Download">parallel-netcdf download
-page</a>. (These instructions were tested using version 1.7.0). Untar
-with: <pre>tar zxf parallel-netcdf-1.7.0.tar.gz</pre>
-
+href="http://cucis.ece.northwestern.edu/projects/PnetCDF/download.html">parallel-netcdf
+download page</a>. (These instructions were tested using version
+1.8.1). Untar with: <pre>tar zxf parallel-netcdf-1.8.1.tar.gz</pre>
 
 <p>Build with:
-<pre>cd parallel-netcdf-1.7.0
-FC=mpifort CC=mpicc CFLAGS=-fPIC ./configure --prefix=/usr/local/pnetcdf-1.7.0
+<pre>cd parallel-netcdf-1.8.1
+FC=mpifort CC=mpicc CFLAGS=-fPIC ./configure --prefix=/usr/local/pnetcdf-1.8.1_mpich-3.2
 make all check
 sudo make install </pre>
-
-(This was also tested with version 1.6.1.)
 
 <li>Installing HDF5
 
 <p>Download HDF5 from the <a
-href="https://www.hdfgroup.org/HDF5/release/obtain5.html">HDF5 download
+href="https://www.hdfgroup.org/downloads/hdf5/source-code/">HDF5 download
 page</a>.
 
-<h3>1.10.0-patch1</h3>
-
-<p>These instructions were tested using version 1.10.0-patch1. Untar
-with: <pre>tar zxf hdf5-1.10.0-patch1.tar.gz</pre>
+<p>These instructions were tested using version 1.10.1. Untar with:
+<pre>tar zxf hdf5-1.10.1.tar.gz</pre>. Note that in my case I need to
+add /usr/local/bin to the PATH for su, because that is where mpicc is
+found.
 
 <p>Build with:
-<pre>cd hdf5-1.10.0-patch1
-CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --enable-parallel
+<pre>cd hdf5-1.10.1
+CC=mpicc ./configure --with-zlib=/usr/local/zlib-1.2.11_mpich-3.2 --with-szlib=/usr/local/szip-2.1_mpich-3.2 --prefix=/usr/local/hdf5-1.10.1_mpich-3.2 --enable-parallel
 make all check
-sudo make install </pre>
+sudo PATH=$PATH:/usr/local/bin make install
 
 <li>Installing NetCDF-4 C Library
 
 <p>Download the netcdf C library from the <a
 href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
-page</a>. (These instructions were tested using version 4.4.0). Untar
-with: <pre>tar zxf netcdf-c-4.4.0.tar.gz</pre>
+page</a>. Untar with: <pre>tar zxf netcdf-c-4.5.0-rc1.tar.gz</pre>
 
 
 <p>Build with:
-<pre>cd netcdf-c-4.4.1
-CC=mpicc ./configure --enable-parallel-tests --prefix=/usr/local/netcdf-c-4.4.1 --with-hdf5=/usr/local --with-zlib=/usr/local --with-szlib=/usr/local
+<pre>cd netcdf-c-4.5.0-rc1
+CPPFLAGS='-I/usr/local/zlib-1.2.11_mpich-3.2 -I/usr/local/szip-2.1_mpich-3.2/include -I/usr/local/hdf5-1.10.1_mpich-3.2/include' LDFLAGS='-L/usr/local/zlib-1.2.11_mpich-3.2/lib -L/usr/local/szip-2.1_mpich-3.2/lib -L/usr/local/hdf5-1.10.1_mpich-3.2/lib' CC=mpicc ./configure --enable-parallel-tests --prefix=/usr/local/netcdf-4.4.1_mpich-3.2
 make all check
 sudo make install </pre>
+
+<p>Note that you may not build netCDF with it's built-in
+parallel-netCDF support, if you are also planning to use the
+parallel-netCDF library with PIO. For PIO, parallel-netCDF must be
+installed independently of netCDF.
 
 <li>Installing NetCDF-4 Fortran Library
 
 <p>Download the netcdf Fortran library from the <a
 href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
-page</a>. (These instructions were tested using version 4.4.3). Untar
-with: <pre>tar zxf netcdf-fortran-4.4.3.tar.gz</pre>
+page</a>. Untar
+with: <pre>tar zxf netcdf-fortran-4.4.4.tar.gz</pre>
 
 
 <p>Build with:
-<pre>cd netcdf-fortran-4.4.3
-make distclean; LD_LIBRARY_PATH=/usr/local/netcdf-c-4.4.1/lib FC=mpifort CPPFLAGS=-I/usr/local/netcdf-c-4.4.1/include LDFLAGS=-L/usr/local/netcdf-c-4.4.1/lib CC=mpicc ./configure --enable-parallel-tests --prefix=/usr/local/netcdf-c-4.4.1 && make check
+<pre>cd netcdf-fortran-4.4.4
+CC=mpicc LD_LIBRARY_PATH=/usr/local/netcdf-4.4.1_mpich-3.2/lib FC=mpifort CPPFLAGS=-I/usr/local/netcdf-4.4.1_mpich-3.2/include LDFLAGS=-L/usr/local/netcdf-4.4.1_mpich-3.2/lib ./configure --enable-parallel-tests --prefix=/usr/local/netcdf-fortran-4.4.4_c_4.4.1_mpich-3.2
+make all
 sudo make install </pre>
+
+<p>Note that make check did not work because of a failure in a
+test. This has been reported to the netCDF team.
 
 <li>Installing ParallelIO Library
 
@@ -415,7 +420,7 @@ sudo make install </pre>
 cd ParallelIO
 mkdir build
 cd build
-CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On ..
+CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local/netcdf-4.4.1_mpich-3.2 -DNetCDF_Fortran_PATH=/usr/local/netcdf-fortran-4.4.4_c_4.4.1_mpich-3.2 -DPnetCDF_PATH=/usr/local/pnetcdf-1.8.1_mpich-3.2 -DPIO_HDF5_LOGGING=On -DPIO_USE_MALLOC=On ..
 make
 make check
 sudo make install
@@ -426,7 +431,13 @@ build from the command line, including tests:
 
 <pre>
 cd build
-rm -rf * && CFLAGS='-Wall -g' FFLAGS=-g CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local/netcdf-4.4.1 -DNetCDF_Fortran_PATH=/usr/local/netcdf-fortran-4.4.4 -DPnetCDF_PATH=/usr/local/pnetcdf-1.8.1 -DPIO_ENABLE_LOGGING=On .. && make VERBOSE=1 all tests check
+rm -rf * && CFLAGS='-Wall -g' FFLAGS=-g CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local/netcdf-4.4.1_mpich-3.2 -DNetCDF_Fortran_PATH=/usr/local/netcdf-fortran-4.4.4_c_4.4.1_mpich-3.2 -DPnetCDF_PATH=/usr/local/pnetcdf-1.8.1_mpich-3.2 -DPIO_HDF5_LOGGING=On -DPIO_USE_MALLOC=On -DPIO_ENABLE_LOGGING=On .. && make VERBOSE=1 all tests check
+</pre>
+
+<p>To build with address sanitizer:
+
+<pre>
+rm -rf * && CFLAGS='-Wall -g  -fsanitize=address -fno-omit-frame-pointer' FFLAGS='-g  -fsanitize=address -fno-omit-frame-pointer' CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local/netcdf-4.4.1_mpich-3.2 -DNetCDF_Fortran_PATH=/usr/local/netcdf-fortran-4.4.4_c_4.4.1_mpich-3.2 -DPnetCDF_PATH=/usr/local/pnetcdf-1.8.1_mpich-3.2 -DPIO_HDF5_LOGGING=On -DPIO_USE_MALLOC=On -DPIO_ENABLE_LOGGING=On .. && make VERBOSE=1 all tests check
 </pre>
 
 <p>Note the optional CFLAGS=-g which allows the use of a debugger
@@ -434,6 +445,20 @@ with this code. Also note the optional VERBOSE=1 provided to make,
 which causes the build commands to be made visible.
 
 <p>Note also the -DPIO_ENABLE_LOGGING=On which is helpful for debugging but should probably not be used in production builds.
+
+<li>Building PIO with autotools.
+
+<p>To build the PIO library with autotools, clone the repo and use a command like this:
+
+<pre>
+autoreconf -i && LD_LIBRARY_PATH=/usr/local/netcdf-4.4.1_mpich-3.2/lib CC=mpicc CFLAGS='-g' CPPFLAGS='-I/usr/local/netcdf-4.4.1_mpich-3.2/include/ -I/usr/local/pnetcdf-1.8.1_mpich-3.2/include' LDFLAGS='-L/usr/local/netcdf-4.4.1_mpich-3.2/lib -L/usr/local/pnetcdf-1.8.1_mpich-3.2/lib' ./configure && make check
+</pre>
+
+<p>To build with debug logging and the address sanitizer for memory checking (debugging builds only!):
+
+<pre>
+autoreconf -i && LD_LIBRARY_PATH=/usr/local/netcdf-4.4.1_mpich-3.2/lib CC=mpicc CFLAGS='-g -fsanitize=address -fno-omit-frame-pointer' CPPFLAGS='-I/usr/local/netcdf-4.4.1_mpich-3.2/include/ -I/usr/local/pnetcdf-1.8.1_mpich-3.2/include' LDFLAGS='-L/usr/local/netcdf-4.4.1_mpich-3.2/lib -L/usr/local/pnetcdf-1.8.1_mpich-3.2/lib' ./configure --enable-logging && make check
+ </pre>
 
 <li>Building and Running Performance Tests
 

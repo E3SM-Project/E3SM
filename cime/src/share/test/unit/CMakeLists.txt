@@ -1,5 +1,7 @@
 add_subdirectory(mock)
 
+add_subdirectory(shr_abort_test)
+
 add_subdirectory(shr_assert_test)
 
 add_subdirectory(shr_spfn_test)
@@ -19,3 +21,5 @@ add_subdirectory(shr_vmath_test)
 add_subdirectory(shr_wv_sat_test)
 
 add_subdirectory(shr_precip_test)
+
+add_subdirectory(shr_cal_test)

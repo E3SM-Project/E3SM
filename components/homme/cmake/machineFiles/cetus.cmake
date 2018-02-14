@@ -21,3 +21,4 @@ SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 SET (ENV{PATH} "/soft/libraries/alcf/current/xl/BLAS/lib:/soft/libraries/alcf/current/xl/LAPACK/lib:$ENV{PATH}")
 SET (ENV{LD_LIBRARY_PATH} "/soft/libraries/alcf/current/xl/BLAS/lib:/soft/libraries/alcf/current/xl/LAPACK/lib:$ENV{LD_LIBRARY_PATH}")
 
+SET (BUILD_HOMME_SWEQX FALSE CACHE BOOL "")

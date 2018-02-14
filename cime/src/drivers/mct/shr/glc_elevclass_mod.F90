@@ -46,6 +46,9 @@ module glc_elevclass_mod
   integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_LOW = 2   ! err_code indicating topo below lowest elevation class
   integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_HIGH = 3  ! err_code indicating topo above highest elevation class
 
+  ! String length for glc elevation classes represented as strings
+  integer, parameter, public :: GLC_ELEVCLASS_STRLEN = 2
+
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
@@ -90,16 +93,16 @@ contains
        topomax = [0._r8,   500._r8,  1000._r8,  1500._r8, 2000._r8, 10000._r8]
     case(10)
        topomax = [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-                          1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
+            1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
     case(36)
        topomax = [  0._r8,   200._r8,   400._r8,   600._r8,   800._r8,  &
-                 1000._r8,  1200._r8,  1400._r8,  1600._r8,  1800._r8,  &
-                 2000._r8,  2200._r8,  2400._r8,  2600._r8,  2800._r8,  &
-                 3000._r8,  3200._r8,  3400._r8,  3600._r8,  3800._r8,  &
-                 4000._r8,  4200._r8,  4400._r8,  4600._r8,  4800._r8,  &
-                 5000._r8,  5200._r8,  5400._r8,  5600._r8,  5800._r8,  &
-                 6000._r8,  6200._r8,  6400._r8,  6600._r8,  6800._r8,  &
-                 7000._r8, 10000._r8]
+            1000._r8,  1200._r8,  1400._r8,  1600._r8,  1800._r8,  &
+            2000._r8,  2200._r8,  2400._r8,  2600._r8,  2800._r8,  &
+            3000._r8,  3200._r8,  3400._r8,  3600._r8,  3800._r8,  &
+            4000._r8,  4200._r8,  4400._r8,  4600._r8,  4800._r8,  &
+            5000._r8,  5200._r8,  5400._r8,  5600._r8,  5800._r8,  &
+            6000._r8,  6200._r8,  6400._r8,  6600._r8,  6800._r8,  &
+            7000._r8, 10000._r8]
     case default
        write(logunit,*) subname,' ERROR: unknown glc_nec: ', glc_nec
        call shr_sys_abort(subname//' ERROR: unknown glc_nec')
@@ -324,38 +327,60 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    character(len=2) :: ec_string  ! function result
+    character(len=GLC_ELEVCLASS_STRLEN) :: ec_string  ! function result
     integer, intent(in) :: elevation_class
     !
     ! !LOCAL VARIABLES:
+    character(len=16) :: format_string
 
     character(len=*), parameter :: subname = 'glc_elevclass_as_string'
     !-----------------------------------------------------------------------
 
-    write(ec_string,'(i2.2)') elevation_class
+    ! e.g., for GLC_ELEVCLASS_STRLEN = 2, format_string will be '(i2.2)'
+    write(format_string,'(a,i0,a,i0,a)') '(i', GLC_ELEVCLASS_STRLEN, '.', GLC_ELEVCLASS_STRLEN, ')'
+
+    write(ec_string,trim(format_string)) elevation_class
   end function glc_elevclass_as_string
 
   !-----------------------------------------------------------------------
-  function glc_all_elevclass_strings() result(ec_strings)
+  function glc_all_elevclass_strings(include_zero) result(ec_strings)
     !
     ! !DESCRIPTION:
     ! Returns an array of strings corresponding to all elevation classes from 1 to glc_nec
+    !
+    ! If include_zero is present and true, then includes elevation class 0 - so goes from
+    ! 0 to glc_nec
     !
     ! These strings can be used as suffixes for fields in MCT attribute vectors.
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    character(len=2), allocatable :: ec_strings(:)  ! function result
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: ec_strings(:)  ! function result
+    logical, intent(in), optional :: include_zero   ! if present and true, include elevation class 0 (default is false)
     !
     ! !LOCAL VARIABLES:
+    logical :: l_include_zero  ! local version of optional include_zero argument
+    integer :: lower_bound
     integer :: i
 
     character(len=*), parameter :: subname = 'glc_all_elevclass_strings'
     !-----------------------------------------------------------------------
 
-    allocate(ec_strings(1:glc_nec))
-    do i = 1, glc_nec
+    if (present(include_zero)) then
+       l_include_zero = include_zero
+    else
+       l_include_zero = .false.
+    end if
+
+    if (l_include_zero) then
+       lower_bound = 0
+    else
+       lower_bound = 1
+    end if
+
+    allocate(ec_strings(lower_bound:glc_nec))
+    do i = lower_bound, glc_nec
        ec_strings(i) = glc_elevclass_as_string(i)
     end do
 
@@ -396,4 +421,3 @@ contains
 
 
 end module glc_elevclass_mod
-

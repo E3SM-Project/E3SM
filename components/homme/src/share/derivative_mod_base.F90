@@ -38,6 +38,7 @@ private
   public :: allocate_subcell_integration_matrix
 
   public :: derivinit
+  public :: get_deriv
 
   public :: gradient
   public :: gradient_wk
@@ -78,9 +79,12 @@ private
   public  :: divergence_sphere_wk
   public  :: laplace_sphere_wk
   public  :: vlaplace_sphere_wk
+!  public  :: laplace_eta
+  public  :: laplace_z
   public  :: element_boundary_integral
   public  :: edge_flux_u_cg
   public  :: limiter_optim_iter_full
+  public  :: limiter_clip_and_sum
 
 contains
 
@@ -148,6 +152,20 @@ contains
 
   end subroutine derivinit
 
+
+  ! initialize and store a deriv structure for easy access
+  subroutine get_deriv(deriv)
+    type (derivative_t), intent(inout) :: deriv
+    type (derivative_t), save :: the_deriv
+    logical :: initialized = .false.
+
+    if(.not. initialized) then
+      call derivinit(the_deriv)
+      initialized = .true.
+    endif
+
+    deriv = the_deriv
+  end subroutine
 
 ! =======================================
 ! dvvinit:
@@ -1331,6 +1349,79 @@ contains
   end function vlaplace_sphere_wk_contra
 
 
+
+#if 0
+  subroutine laplace_eta(v,laplace,ncomp,etam) 
+!
+!   input:  v = scalar 
+!   ouput:  vertical laplace operator in z coordinates
+!   u'(i+1/2) = u(i+1) - u(i) / deta(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
+!   u''(i) = u'(i+1/2) - u'(i-1/2) / deta(i)
+!   
+!   NOTE: some variables in HOMME (dp3d, eta_dot_dpdn) have been scaled by deta(i) and so we remove
+!   the second deta(i) factor below.  But if this routine is used for
+!   variables like u or theta and not multiplied by eta_dot_dpdn, this will need some work
+!
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(in) :: etam(nlev)
+    integer :: ncomp
+
+    ! local
+    integer k,n
+    real(kind=real_kind) :: u_eta(np,np,nlev+1)
+
+    ! no flux b.c.
+    u_eta(:,:,1)=0
+    u_eta(:,:,nlev+1)=0
+    do n=1,ncomp
+       do k=2,nlev
+          u_eta(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / ( etam(k)-etam(k-1) )
+       enddo
+       do k=1,nlev
+          laplace(:,:,n,k) = u_eta(:,:,k+1) - u_eta(:,:,k)
+       enddo
+    enddo
+    end subroutine
+#endif
+
+
+  subroutine laplace_z(v,laplace,ncomp,dz) 
+!
+!   input:  v = scalar 
+!   ouput:  vertical laplace operator in z coordinates
+!   u'(i+1/2) = u(i+1) - u(i) / dz(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
+!   u''(i) = u'(i+1/2) - u'(i-1/2) / dz(i)
+!   
+!   This routine is currently only used for the supercell test, which uses equally spaced
+!   levels ( dz=20km/nlev ) so currently only a constant dz is supported
+!
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(in) :: dz
+    integer :: ncomp
+
+    ! local
+    real(kind=real_kind) :: u_z(np,np,nlev+1)
+    integer :: k,n
+
+    ! no flux b.c.
+    u_z(:,:,1)=0
+    u_z(:,:,nlev+1)=0
+    do n=1,ncomp
+       do k=2,nlev
+          u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)  
+       enddo
+       do k=1,nlev
+          laplace(:,:,n,k) =( u_z(:,:,k+1) - u_z(:,:,k) )/dz    ! dz(k)
+       enddo
+    enddo
+    end subroutine
+
+
+
+
+
   function subcell_dss_fluxes(dss, p, n, metdet, C) result(fluxes)
 
     implicit none
@@ -1770,8 +1861,92 @@ contains
 
   end subroutine limiter_optim_iter_full
 
+  subroutine limiter_clip_and_sum(ptens,sphweights,minp,maxp,dpmass)
+    ! Prototype limiter. This is perhaps the fastest limiter that (i) is assured
+    ! to find x in the constraint set if that set is not empty and (ii) is such
+    ! that the 1-norm of the update, norm(x*c - ptens*sphweights, 1), is
+    ! minimal. It does not require iteration. However, its solution quality is
+    ! not established.
+    use kinds         , only : real_kind
+    use dimensions_mod, only : np, np, nlev
+    implicit none
 
+    real (kind=real_kind), dimension(np,np,nlev), intent(inout) :: ptens
+    real (kind=real_kind), dimension(np,np),      intent(in)    :: sphweights
+    real (kind=real_kind), dimension(nlev),       intent(inout) :: minp, maxp
+    real (kind=real_kind), dimension(np,np,nlev), intent(in), optional :: dpmass
 
+    real (kind=real_kind), parameter :: zero = 0.0d0
 
+    integer :: k1, k, i, j
+    logical :: modified
+    real (kind=real_kind) :: addmass, mass, sumc, den
+    real (kind=real_kind) :: x(np*np),c(np*np),v(np*np)
+
+    do k=1,nlev
+
+       k1 = 1
+       do j = 1, np
+          do i = 1, np
+             c(k1) = sphweights(i,j)*dpmass(i,j,k)
+             x(k1) = ptens(i,j,k)/dpmass(i,j,k)
+             k1 = k1+1
+          enddo
+       enddo
+
+       sumc = sum(c)
+       mass = sum(c*x)
+       ! This should never happen, but if it does, don't limit.
+       if (sumc <= 0) cycle
+       ! Relax constraints to ensure limiter has a solution; this is only needed
+       ! if running with the SSP CFL>1 or due to roundoff errors.
+       if (mass < minp(k)*sumc) then
+          minp(k) = mass / sumc
+       endif
+       if (mass > maxp(k)*sumc) then
+          maxp(k) = mass / sumc
+       endif
+
+       addmass = zero
+
+       ! Clip.
+       modified = .false.
+       do k1 = 1, np*np
+          if (x(k1) > maxp(k)) then
+             modified = .true.
+             addmass = addmass + (x(k1) - maxp(k))*c(k1)
+             x(k1) = maxp(k)
+          elseif (x(k1) < minp(k)) then
+             modified = .true.
+             addmass = addmass + (x(k1) - minp(k))*c(k1)
+             x(k1) = minp(k)
+          end if
+       end do
+       if (.not. modified) cycle
+
+       if (addmass /= zero) then
+          ! Determine weights.
+          if (addmass > zero) then
+             v(:) = maxp(k) - x(:)
+          else
+             v(:) = x(:) - minp(k)
+          end if
+          den = sum(v*c)
+          if (den > zero) then
+             ! Update.
+             x(:) = x(:) + (addmass/den)*v(:)
+          end if
+       end if
+
+       k1 = 1
+       do j = 1,np
+          do i = 1,np
+             ptens(i,j,k) = x(k1)*dpmass(i,j,k)
+             k1 = k1+1
+          end do
+       end do
+
+    enddo
+  end subroutine limiter_clip_and_sum
 
 end module derivative_mod_base

@@ -52,6 +52,9 @@ OPTIONS
      -inst_string          inst_string variable
      -ic_mode              variable for initial condition file mode
                            Options are: spunup, cold_start
+     -ice_bgc              variable for enabling sea ice BGC
+     -surface_mode         variable for surface mode
+                           Options are: free, non-free
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -83,34 +86,38 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help        => 0,
-             test        => 0,
-             verbose     => 0,
-             preview     => 0,
-             caseroot    => undef,
-             casebuild   => undef,
-             cimeroot    => undef,
-             inst_string => undef,
-             ice_grid    => undef,
-             date_stamp  => undef,
-             ic_mode     => undef,
-             cfg_dir     => $cfgdir,
+my %opts = ( help         => 0,
+             test         => 0,
+             verbose      => 0,
+             preview      => 0,
+             caseroot     => undef,
+             casebuild    => undef,
+             cimeroot     => undef,
+             inst_string  => undef,
+             ice_grid     => undef,
+             date_stamp   => undef,
+             ic_mode      => undef,
+             ice_bgc      => undef,
+             surface_mode => undef,
+             cfg_dir      => $cfgdir,
            );
 
 GetOptions(
-    "h|help"        => \$opts{'help'},
-    "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
-    "v|verbose"     => \$opts{'verbose'},
-    "caseroot=s"    => \$opts{'caseroot'},
-    "casebuild=s"   => \$opts{'casebuild'},
-    "cimeroot=s"    => \$opts{'cimeroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
-    "ice_grid=s"    => \$opts{'ice_grid'},
-    "date_stamp=s"  => \$opts{'date_stamp'},
-    "ic_mode=s"     => \$opts{'ic_mode'},
-    "cfg_dir=s"     => \$opts{'cfg_dir'},
-    "preview"       => \$opts{'preview'},
+    "h|help"         => \$opts{'help'},
+    "infile=s"       => \$opts{'infile'},
+    "namelist=s"     => \$opts{'namelist'},
+    "v|verbose"      => \$opts{'verbose'},
+    "caseroot=s"     => \$opts{'caseroot'},
+    "casebuild=s"    => \$opts{'casebuild'},
+    "cimeroot=s"     => \$opts{'cimeroot'},
+    "inst_string=s"  => \$opts{'inst_string'},	   
+    "ice_grid=s"     => \$opts{'ice_grid'},
+    "date_stamp=s"   => \$opts{'date_stamp'},
+    "ic_mode=s"      => \$opts{'ic_mode'},
+    "ice_bgc=s"      => \$opts{'ice_bgc'},
+    "surface_mode=s" => \$opts{'surface_mode'},
+    "cfg_dir=s"      => \$opts{'cfg_dir'},
+    "preview"        => \$opts{'preview'},
 )  or usage();
 
 # Give usage message.
@@ -134,14 +141,16 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MPAS-CICE configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT    = $opts{'caseroot'};
-my $CASEBUILD   = $opts{'casebuild'};
-my $CIMEROOT    = $opts{'cimeroot'};
-my $inst_string = $opts{'inst_string'};
-my $ICE_GRID    = $opts{'ice_grid'};
-my $date_stamp  = $opts{'date_stamp'};
-my $ic_mode     = $opts{'ic_mode'};
-$cfgdir         = $opts{'cfg_dir'};
+my $CASEROOT     = $opts{'caseroot'};
+my $CASEBUILD    = $opts{'casebuild'};
+my $CIMEROOT     = $opts{'cimeroot'};
+my $inst_string  = $opts{'inst_string'};
+my $ICE_GRID     = $opts{'ice_grid'};
+my $date_stamp   = $opts{'date_stamp'};
+my $ic_mode      = $opts{'ic_mode'};
+my $ice_bgc      = $opts{'ice_bgc'};
+my $surface_mode = $opts{'surface_mode'};
+$cfgdir          = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
 if ( defined $opts{'cimeroot'} ) {
@@ -438,7 +447,6 @@ add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
-add_default($nl, 'config_full_abort_write');
 
 #################################
 # Namelist group: decomposition #
@@ -448,6 +456,10 @@ add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
+add_default($nl, 'config_use_halo_exch');
+add_default($nl, 'config_aggregate_halo_exch');
+add_default($nl, 'config_reuse_halo_exch');
+add_default($nl, 'config_load_balance_timers');
 
 ###########################
 # Namelist group: restart #
@@ -513,7 +525,6 @@ add_default($nl, 'config_atmospheric_forcing_type');
 add_default($nl, 'config_forcing_start_time');
 add_default($nl, 'config_forcing_cycle_start');
 add_default($nl, 'config_forcing_cycle_duration');
-add_default($nl, 'config_forcing_restart_file');
 add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
 add_default($nl, 'config_update_ocean_fluxes');
@@ -527,7 +538,6 @@ add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
 add_default($nl, 'config_use_test_ice_shelf');
-add_default($nl, 'config_testing_system_test');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -563,7 +573,11 @@ add_default($nl, 'config_recover_tracer_means_check');
 
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
-add_default($nl, 'config_use_column_biogeochemistry');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
+}
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 
@@ -583,22 +597,39 @@ add_default($nl, 'config_use_aerosols');
 # Namelist group: biogeochemistry #
 ###################################
 
-add_default($nl, 'config_use_brine');
 add_default($nl, 'config_use_vertical_zsalinity');
-add_default($nl, 'config_use_vertical_biochemistry');
 add_default($nl, 'config_use_shortwave_bioabsorption');
-add_default($nl, 'config_use_vertical_tracers');
 add_default($nl, 'config_use_skeletal_biochemistry');
-add_default($nl, 'config_use_nitrate');
-add_default($nl, 'config_use_carbon');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".true.");
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".true.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".true.");
+        add_default($nl, 'config_use_brine', 'val'=>".true.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".true.");
+        add_default($nl, 'config_use_carbon', 'val'=>".true.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".true.");
+        add_default($nl, 'config_use_silicate', 'val'=>".true.");
+        add_default($nl, 'config_use_DMS', 'val'=>".true.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".true.");
+        add_default($nl, 'config_use_humics', 'val'=>".true.");
+        add_default($nl, 'config_use_DON', 'val'=>".true.");
+        add_default($nl, 'config_use_iron', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".false.");
+        add_default($nl, 'config_use_brine', 'val'=>".false.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".false.");
+        add_default($nl, 'config_use_carbon', 'val'=>".false.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".false.");
+        add_default($nl, 'config_use_silicate', 'val'=>".false.");
+        add_default($nl, 'config_use_DMS', 'val'=>".false.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".false.");
+        add_default($nl, 'config_use_humics', 'val'=>".false.");
+        add_default($nl, 'config_use_DON', 'val'=>".false.");
+        add_default($nl, 'config_use_iron', 'val'=>".false.");
+}
 add_default($nl, 'config_use_chlorophyll');
-add_default($nl, 'config_use_ammonium');
-add_default($nl, 'config_use_silicate');
-add_default($nl, 'config_use_DMS');
-add_default($nl, 'config_use_nonreactive');
-add_default($nl, 'config_use_humics');
-add_default($nl, 'config_use_DON');
-add_default($nl, 'config_use_iron');
 add_default($nl, 'config_use_modal_aerosols');
 add_default($nl, 'config_use_zaerosols');
 add_default($nl, 'config_skeletal_bgc_flux_type');
@@ -806,6 +837,12 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+if ($surface_mode eq 'non-free') {
+        add_default($nl, 'config_ocean_surface_type', 'val'=>"non-free");
+} else {
+        add_default($nl, 'config_ocean_surface_type', 'val'=>"free");
+}
+add_default($nl, 'config_couple_biogeochemistry_fields');
 
 ###############################
 # Namelist group: diagnostics #
@@ -1095,8 +1132,23 @@ my $outfile = "./mpas-cice_in";
 $nl->write($outfile, 'groups'=>\@groups);
 if ($print>=2) { print "Writing mpas-cice ice component namelist to $outfile $eol"; }
 
+#--------------------------------------------------------------------
+# Append namelist specified files to input data file
+#     currently just the graph file -- which is complicated because the prefix
+#     is set in the namelist and the suffix comes from the number of tasks
+#--------------------------------------------------------------------
+
+open(my $input_list, ">>", "$CASEBUILD/mpas-cice.input_data_list") or
+     die "** can't open filepath file: mpas-cice.input_data_list\n";
+my $block_decomp_file_prefix = $nl->get_value( 'config_block_decomp_file_prefix' );
+# remove quotes for concatenation
+$block_decomp_file_prefix =~ s/['"]//g;
+my $block_decomp_file = $block_decomp_file_prefix . $NTASKS_ICE;
+print $input_list "graph$NTASKS_ICE = $block_decomp_file\n";
+$input_list->close;
+
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "../mpas-cice.input_data_list");
+check_input_files($DIN_LOC_ROOT, "$CASEBUILD/mpas-cice.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

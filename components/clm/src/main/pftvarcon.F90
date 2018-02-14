@@ -127,6 +127,7 @@ module pftvarcon
   real(r8), allocatable :: fr_fcel(:)      !fine root litter cellulose fraction
   real(r8), allocatable :: fr_flig(:)      !fine root litter lignin fraction
   real(r8), allocatable :: leaf_long(:)    !leaf longevity (yrs)
+  real(r8), allocatable :: froot_long(:)   !fine root longevity(yrs)
   real(r8), allocatable :: evergreen(:)    !binary flag for evergreen leaf habit (0 or 1)
   real(r8), allocatable :: stress_decid(:) !binary flag for stress-deciduous leaf habit (0 or 1)
   real(r8), allocatable :: season_decid(:) !binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -194,7 +195,7 @@ module pftvarcon
   real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
   real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
   real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
-  real(r8), allocatable :: VMAX_PTASE_vr(:)    ! VMAX of biochemical P production
+  real(r8), allocatable :: VMAX_PTASE(:)       ! VMAX of biochemical P production
   real(r8)              :: KM_PTASE            ! KM of biochemical P production
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
@@ -236,6 +237,7 @@ module pftvarcon
   real(r8), allocatable :: bbbopt(:)           !Ball-Berry stomatal conductance intercept
   real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
   real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
+  real(r8), allocatable :: br_xr(:)            !Base rate for excess respiration
   real(r8)              :: tc_stress           !Critial temperature for moisture stress
   real(r8), allocatable :: vcmax_np1(:)        !vcmax~np relationship coefficient
   real(r8), allocatable :: vcmax_np2(:)        !vcmax~np relationship coefficient
@@ -245,6 +247,9 @@ module pftvarcon
   real(r8)              :: jmax_np2            !jmax~np relationship coefficient
   real(r8)              :: jmax_np3            !jmax~np relationship coefficient
   real(r8)              :: laimax
+  ! Hydrology
+  real(r8)              :: rsub_top_globalmax
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -401,6 +406,7 @@ contains
     allocate( fr_fcel       (0:mxpft) )      
     allocate( fr_flig       (0:mxpft) )      
     allocate( leaf_long     (0:mxpft) )   
+    allocate( froot_long    (0:mxpft) )
     allocate( evergreen     (0:mxpft) )    
     allocate( stress_decid  (0:mxpft) ) 
     allocate( season_decid  (0:mxpft) ) 
@@ -444,7 +450,7 @@ contains
     allocate( KM_PLANT_P(0:mxpft) )
     allocate( KM_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
     allocate( decompmicc_patch_vr (1:nlevdecomp_full,0:mxpft))
-    allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
+    allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
     allocate( VMAX_NFIX          (0:mxpft) )
@@ -490,6 +496,7 @@ contains
     allocate( bbbopt             (0:mxpft) )
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
+    allocate( br_xr              (0:mxpft) )
 
     ! Set specific vegetation type values
 
@@ -601,6 +608,9 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('leaf_long',leaf_long, 'read', ncid, readvar=readv, posNOTonfile=.true.)    
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('froot_long',froot_long, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if (.not. readv) froot_long = leaf_long
+    !if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('evergreen',evergreen, 'read', ncid, readvar=readv, posNOTonfile=.true.)    
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('stress_decid',stress_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -766,8 +776,8 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
-        call ncd_io('VMAX_PTASE_vr',VMAX_PTASE_vr, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PTASE',VMAX_PTASE, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_PTASE',KM_PTASE, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('lamda_ptase',lamda_ptase, 'read', ncid, readvar=readv)  
@@ -827,6 +837,9 @@ contains
         call ncd_io('laimax',laimax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in laimax data'//errMsg(__FILE__, __LINE__))
     end if
+    call ncd_io('rsub_top_globalmax', rsub_top_globalmax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if (.not. readv) rsub_top_globalmax = 10._r8
+    !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('fnr', fnr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('act25', act25, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -865,6 +878,9 @@ contains
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('nstor', nstor, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('br_xr', br_xr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    if (.not. readv) br_xr(:) = 0._r8
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
        

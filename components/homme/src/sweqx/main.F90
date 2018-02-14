@@ -12,7 +12,7 @@ program main
   ! -----------------------------------------------
   use parallel_mod, only : parallel_t, initmp, syncmp, haltmp
   ! -----------------------------------------------
-  use thread_mod, only : nthreads, nThreadsHoriz, omp_get_thread_num, omp_set_num_threads
+  use thread_mod, only : nthreads, hthreads, omp_get_thread_num, omp_set_num_threads
   ! -----------------------------------------------
   !      use time_mod
   ! -----------------------------------------------
@@ -63,20 +63,10 @@ program main
   if(par%masterproc) print *,"allocating state variables..."
   !JMD allocate(state(nelemd))
 
-  ! =====================================
-  ! Set number of threads...
-  ! =====================================
-
-  if(par%masterproc) print *,"Main:NThreads=",NThreads
-
-!  call omp_set_num_threads(NThreads)
-
-!  allocate(dom_mt(0:NThreads-1))
-!  do ithr=0,NThreads-1
-!     dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
-!  end do
-!  nThreadsHoriz = NThreads
-!
+  if(par%masterproc) then
+    print *,"Main:nthreads=",nthreads
+    print *,"Main:hthreads=",hthreads
+  endif
 
   ! =====================================
   !  Sync-up to make sure timing is clean
@@ -88,7 +78,7 @@ program main
   ! Begin threaded region...
   ! =====================================
 #if (defined HORIZ_OPENMP)
-  !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
+  !$OMP PARALLEL NUM_THREADS(hthreads) DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
 #endif
   ithr=omp_get_thread_num()
   nets=dom_mt(ithr)%start

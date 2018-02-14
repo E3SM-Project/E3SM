@@ -1267,6 +1267,7 @@
 
 <!-- Control output to history file(s) -->
 <history_amwg>                 .true.   </history_amwg>
+<history_verbose>              .false.  </history_verbose>
 <history_vdiag>                .false.  </history_vdiag>
 <history_aerosol>              .false.  </history_aerosol>
 <history_aero_optics>          .false.  </history_aero_optics>
@@ -1274,7 +1275,7 @@
 <history_budget>               .false.  </history_budget>
 <history_waccm>                .false.  </history_waccm>
 <history_waccm waccm_phys="1"> .true.   </history_waccm>
-<history_clubb>      .true.   </history_clubb>
+<history_clubb>      .false.   </history_clubb>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>

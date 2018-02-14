@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+
 import shutil, glob, re
 from standard_script_setup import *
-from CIME.utils import run_cmd_no_fail, expect
+from CIME.utils import expect, run_bld_cmd_ensure_logging
 from CIME.case import Case
 
 logger = logging.getLogger(__name__)
@@ -9,18 +10,16 @@ logger = logging.getLogger(__name__)
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--debug]
+        usage="""\n{0} [--debug]
 OR
-%s --verbose
+{0} --verbose
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 5),
+    > {0}
+""" .format (os.path.basename(args[0])),
 
 description=description,
 
@@ -42,42 +41,37 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def _main_func(description):
+def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         pio_version = case.get_value("PIO_VERSION")
         mpilib = case.get_value("MPILIB")
         exeroot = case.get_value("EXEROOT")
-        pio_model = "pio%s"% pio_version
+        pio_model = "pio{}".format(pio_version)
         pio_dir = os.path.join(bldroot, pio_model)
         compiler = case.get_value("COMPILER")
         build_threaded = case.get_value("BUILD_THREADED")
         if not os.path.isdir(pio_dir):
             os.makedirs(pio_dir)
-        os.chdir(pio_dir)
         casetools = case.get_value("CASETOOLS")
         cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-        gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
-            "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
-            "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\
-            "USER_CPPDEFS=-DTIMING -f %s/Makefile"\
-            %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
+        gmake_opts = "{}/Makefile -C {} CASEROOT={} MODEL={} USER_CMAKE_OPTS={} "\
+            "PIO_LIBDIR={} CASETOOLS={} PIO_VERSION={} MPILIB={} "\
+            "SHAREDLIBROOT={} EXEROOT={} COMPILER={} BUILD_THREADED={} "\
+            "USER_CPPDEFS=-DTIMING -f {}/Makefile"\
+            .format(pio_dir,pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
               pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
               casetools)
 
         gmake_cmd = case.get_value("GMAKE")
+
         # This runs the pio cmake command from the cime case Makefile
-        cmd = "%s %s"%(gmake_cmd, gmake_opts)
-        output = run_cmd_no_fail(cmd, from_dir=pio_dir)
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_dir)
+
         # This runs the pio make command from the cmake generated Makefile
-        logger.info(output)
-        output = run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
-        logger.info(output)
+        run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, case.get_value("GMAKE_J")), logger, from_dir=pio_dir)
+
         if pio_version == 1:
             installed_lib = os.path.join(installpath,"lib","libpio.a")
             installed_lib_time = 0
@@ -90,7 +84,7 @@ def _main_func(description):
                 shutil.copy2(newlib, installed_lib)
                 for glob_to_copy in ("*.h", "*.mod"):
                     for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
-                        shutil.copy2(item, "%s/include"%installpath)
+                        shutil.copy2(item, "{}/include".format(installpath))
             expect_string = "D_NETCDF;"
             pnetcdf_string = "D_PNETCDF"
             netcdf4_string = "D_NETCDF4"
@@ -137,21 +131,23 @@ def _main_func(description):
             valid_values += ",pnetcdf"
         if netcdf4_parallel_found:
             valid_values += ",netcdf4p,netcdf4c"
-        logger.warn("Updating valid_values for PIO_TYPENAME: %s", valid_values)
+        logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
 
         case.set_valid_values("PIO_TYPENAME",valid_values)
         # nothing means use the general default
         valid_values += ",nothing"
 
         for comp in case.get_values("COMP_CLASSES"):
-            comp_pio_typename = "%s_PIO_TYPENAME"%comp
+            comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
             case.set_valid_values(comp_pio_typename,valid_values)
             current_value = case.get_value(comp_pio_typename)
             if current_value not in valid_values:
-                logger.warn("Resetting PIO_TYPENAME to netcdf for component %s"%comp)
+                logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
                 case.set_value(comp_pio_typename,"netcdf")
 
-
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
 
 if (__name__ == "__main__"):
-    _main_func(__doc__)
+    _main(sys.argv, __doc__)

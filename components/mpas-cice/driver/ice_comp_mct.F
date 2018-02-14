@@ -179,7 +179,7 @@ contains
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
     type (MPAS_TimeInterval_type) :: denInterval, remInterval, zeroInterval
-    integer :: numDivs
+    integer (kind=I8KIND) :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
     logical :: streamsExists
@@ -737,8 +737,9 @@ contains
       type (MPAS_Pool_type), pointer :: &
             shortwave
 
+      real (kind=RKIND) :: current_wallclock_time
       type (MPAS_Time_Type) :: currTime
-      character(len=StrKIND) :: timeStamp, streamName
+      character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
       logical :: streamActive, debugOn
@@ -817,7 +818,9 @@ contains
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
         ! write time stamp on every step
-        call mpas_log_write('Doing timestep ' // trim(timeStamp))
+        call mpas_dmpar_get_time(current_wallclock_time)
+        write (WCstring,'(F18.3)') current_wallclock_time
+        call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
         ! pre-timestep analysis computation
         if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
@@ -1380,8 +1383,9 @@ contains
       config_use_zaerosols,             &
       config_use_column_biogeochemistry
 
-   character(len=strKIND), pointer :: &
-      config_thermodynamics_type
+   character(len=strKIND), pointer ::   &
+      config_thermodynamics_type,       &
+      config_ocean_surface_type
 
    type (field1DReal), pointer ::       &
       seaSurfaceTemperatureField,       &
@@ -1488,6 +1492,7 @@ contains
 
       configs => block_ptr % configs
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
+      call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -1561,14 +1566,23 @@ contains
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
         seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
-        meltingPotential               = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
 
-        ! frazil calculation
-        frazilProduction               = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
-        call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
-                                config_thermodynamics_type)
-        freezingMeltingPotential(i)    = freezingPotential + meltingPotential
+        if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
+           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
+
+           ! frazil calculation
+           frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
+           call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
+                                   config_thermodynamics_type)
+           freezingMeltingPotential(i) = freezingPotential + meltingPotential
+
+        else ! non-free surface (SOM)
+
+           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+
+        endif
+
         airLevelHeight(i)              = x2i_i % rAttr(index_x2i_Sa_z, n)
         airPotentialTemperature(i)     = x2i_i % rAttr(index_x2i_Sa_ptem, n)
         airTemperature(i)              = x2i_i % rAttr(index_x2i_Sa_tbot, n)

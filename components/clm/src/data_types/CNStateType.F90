@@ -17,6 +17,9 @@ module CNStateType
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
   use clm_varctl     , only: forest_fert_exp
+  use clm_varctl          , only : nu_com
+  use clm_varctl   , only:  use_ed,use_crop
+
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -26,9 +29,11 @@ module CNStateType
   ! !PRIVATE MEMBER FUNCTIONS: 
   private :: checkDates
   ! !PUBLIC TYPES:
-  integer(r8), pointer, public :: fert_type         (:)
-  integer(r8), pointer, public :: fert_continue     (:)
+  integer    , pointer, public :: fert_type         (:)
+  integer    , pointer, public :: fert_continue     (:)
   real(r8)   , pointer, public :: fert_dose         (:,:)
+  integer    , pointer, public :: fert_start        (:)
+  integer    , pointer, public :: fert_end          (:)
   ! 
   ! !PUBLIC TYPES:
   type, public :: cnstate_type
@@ -89,7 +94,7 @@ module CNStateType
      real(r8) , pointer :: tempavg_t2m_patch           (:)     ! patch temporary average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_patch            (:)     ! patch annual average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_col              (:)     ! col annual average of 2m air temperature, averaged from pft-level (K)
-     real(r8) , pointer :: scalaravg_col               (:)     ! column average scalar for decompostion (for ad_spinup)
+     real(r8) , pointer :: scalaravg_col               (:,:)   ! column average scalar for decompostion (for ad_spinup)
      real(r8) , pointer :: annsum_counter_col          (:)     ! col seconds since last annual accumulator turnover
 
      ! Fire
@@ -125,6 +130,8 @@ module CNStateType
      real(r8), pointer :: grain_flag_patch             (:)     ! patch 1: grain fill stage; 0: not
      real(r8), pointer :: lgsf_patch                   (:)     ! patch long growing season factor [0-1]
      real(r8), pointer :: bglfr_patch                  (:)     ! patch background litterfall rate (1/s)
+     real(r8), pointer :: bglfr_leaf_patch             (:)     ! patch background leaf litterfall rate (1/s)
+     real(r8), pointer :: bglfr_froot_patch            (:)     ! patch background fine root litterfall rate (1/s)
      real(r8), pointer :: bgtr_patch                   (:)     ! patch background transfer growth rate (1/s)
      real(r8), pointer :: alloc_pnow_patch             (:)     ! patch fraction of current allocation to display as new growth (DIM)
      real(r8), pointer :: c_allometry_patch            (:)     ! patch C allocation index (DIM)
@@ -158,6 +165,16 @@ module CNStateType
 
      real(r8), pointer :: frac_loss_lit_to_fire_col        (:)
      real(r8), pointer :: frac_loss_cwd_to_fire_col        (:)
+
+     ! soil phosphorus pools Qing Z. 2017
+     real(r8), pointer :: labp_col             (:)   ! labile phosphorus g/m2
+     real(r8), pointer :: secp_col             (:)   ! secondary phosphorus g/m2
+     real(r8), pointer :: occp_col             (:)   ! occluded phosphorus g/m2
+     real(r8), pointer :: prip_col             (:)   ! parent material phosphorus g/m2
+     logical           :: pdatasets_present          ! surface dataset has p pools info
+     !!! annual mortality rate dynamically calcaulted at patch
+     real(r8), pointer :: r_mort_cal_patch                 (:)     ! patch annual mortality rate  
+
    contains
 
      procedure, public  :: Init         
@@ -265,7 +282,7 @@ contains
     allocate(this%tempavg_t2m_patch   (begp:endp))                   ; this%tempavg_t2m_patch   (:)   = nan
     allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
     allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
-    allocate(this%scalaravg_col       (begc:endc))                   ; this%scalaravg_col       (:)   = nan
+    allocate(this%scalaravg_col       (begc:endc,1:nlevdecomp_full)) ; this%scalaravg_col       (:,:) = spval
     allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = nan
 
     allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
@@ -303,6 +320,8 @@ contains
     allocate(this%grain_flag_patch            (begp:endp)) ;    this%grain_flag_patch            (:) = nan
     allocate(this%lgsf_patch                  (begp:endp)) ;    this%lgsf_patch                  (:) = nan
     allocate(this%bglfr_patch                 (begp:endp)) ;    this%bglfr_patch                 (:) = nan
+    allocate(this%bglfr_leaf_patch            (begp:endp)) ;    this%bglfr_leaf_patch            (:) = nan
+    allocate(this%bglfr_froot_patch           (begp:endp)) ;    this%bglfr_froot_patch           (:) = nan
     allocate(this%bgtr_patch                  (begp:endp)) ;    this%bgtr_patch                  (:) = nan
     allocate(this%alloc_pnow_patch            (begp:endp)) ;    this%alloc_pnow_patch            (:) = nan
     allocate(this%c_allometry_patch           (begp:endp)) ;    this%c_allometry_patch           (:) = nan
@@ -333,6 +352,17 @@ contains
     allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
     allocate(fert_continue                    (begc:endc))                   ; fert_continue (:) =0
     allocate(fert_dose                        (begc:endc,1:12))              ; fert_dose     (:,:) = nan
+
+    ! soil phosphorus pools Qing Z. 2017
+    allocate(this%labp_col                    (begc:endc))                   ; this%labp_col(:) = nan
+    allocate(this%secp_col                    (begc:endc))                   ; this%secp_col(:) = nan
+    allocate(this%occp_col                    (begc:endc))                   ; this%occp_col(:) = nan
+    allocate(this%prip_col                    (begc:endc))                   ; this%prip_col(:) = nan
+    
+    allocate(fert_start                       (begc:endc))                   ; fert_start    (:) = 0
+    allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
+    allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = nan
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -462,9 +492,9 @@ contains
          avgflag='A', long_name='annual average of 2m air temperature', &
          ptr_col=this%annavg_t2m_col, default='inactive')
 
-    this%scalaravg_col(begc:endc) = spval
-    call hist_addfld1d(fname='SCALARAVG', units='fraction', &
-         avgflag='A', long_name='average of decomposition scalar', &
+    this%scalaravg_col(begc:endc,:) = spval
+    call hist_addfld_decomp(fname='SCALARAVG'//trim(vr_suffix), units='fraction', &
+         type2d='levdcmp', avgflag='A', long_name='average of decomposition scalar',&
          ptr_col=this%scalaravg_col)
 
     this%nfire_col(begc:endc) = spval
@@ -562,10 +592,15 @@ contains
          avgflag='A', long_name='long growing season factor', &
          ptr_patch=this%lgsf_patch, default='inactive')
 
-    this%bglfr_patch(begp:endp) = spval
-    call hist_addfld1d (fname='BGLFR', units='1/s', &
-         avgflag='A', long_name='background litterfall rate', &
-         ptr_patch=this%bglfr_patch, default='inactive')
+    this%bglfr_leaf_patch(begp:endp) = spval
+    call hist_addfld1d (fname='BGLFR_LEAF', units='1/s', &
+         avgflag='A', long_name='background leaf litterfall rate', &
+         ptr_patch=this%bglfr_leaf_patch, default='inactive')
+
+    this%bglfr_froot_patch(begp:endp) = spval
+    call hist_addfld1d (fname='BGLFR_FROOT', units='1/s', &
+         avgflag='A', long_name='background fine root litterfall rate', &
+         ptr_patch=this%bglfr_froot_patch, default='inactive')
 
     this%bgtr_patch(begp:endp) = spval
     call hist_addfld1d (fname='BGTR', units='1/s', &
@@ -639,6 +674,12 @@ contains
        avgflag='A', long_name='P limitation factor', &
        ptr_patch=this%cp_scalar, default='active')
 
+    this%r_mort_cal_patch(begp:endp) = spval
+    call hist_addfld1d (fname='R_MORT_CAL', units='none', &
+         avgflag='A', long_name='calcualted annual mortality rate', &
+         ptr_patch=this%r_mort_cal_patch, default='inactive')
+
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -672,6 +713,13 @@ contains
     integer     ,pointer     :: fert_type_rdin (:)
     integer     ,pointer     :: fert_continue_rdin (:)
     real(r8)    ,pointer     :: fert_dose_rdin (:,:)
+    ! soil phosphorus pool Qing Z. 2017
+    real(r8) ,pointer  :: labp_g (:)                       ! read in - LABILE_P
+    real(r8) ,pointer  :: secp_g (:)                       ! read in - SECONDARY_P
+    real(r8) ,pointer  :: occp_g (:)                       ! read in - OCCLUDED_P
+    real(r8) ,pointer  :: prip_g (:)                       ! read in - APATITE_P
+    integer     ,pointer     :: fert_start_rdin (:)
+    integer     ,pointer     :: fert_end_rdin (:)
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -733,18 +781,24 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    allocate(soilorder_rdin(bounds%begg:bounds%endg))
-    !call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
-    !if (.not. readvar) then
-    !   call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    !end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-!       this%isoilorder(c) = soilorder_rdin(g)
-       this%isoilorder(c) = 12
-    end do
-    deallocate(soilorder_rdin)
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_ed .and. .not. use_crop) )  then 
+       allocate(soilorder_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%isoilorder(c) = soilorder_rdin(g)
+       end do
+       deallocate(soilorder_rdin)
 
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%isoilorder(c) = 12
+       end do 
+    end if
 
     ! --------------------------------------------------------------------
     ! forest fertilization experiments info, Q. Z. 2017
@@ -784,7 +838,31 @@ contains
           end do
        end do
        deallocate(fert_dose_rdin)
+
+       allocate(fert_start_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_startyr', flag='read',data=fert_start_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_start NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_start(c) = fert_start_rdin(g)
+       end do
+       deallocate(fert_start_rdin)
+
+       allocate(fert_end_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_endyr', flag='read',data=fert_end_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_endyr NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_end(c) = fert_end_rdin(g)
+       end do
+       deallocate(fert_end_rdin)
+
     end if
+
     ! --------------------------------------------------------------------
 
     ! --------------------------------------------------------------------
@@ -811,6 +889,63 @@ contains
        write(iulog,*)
     endif
     
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read initial phosphorus pools data .....'
+    end if
+
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
+
+    ! Read soil phosphorus pool Qing Z. 2017 
+    this%pdatasets_present = .true.
+    allocate(labp_g(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='LABILE_P', flag='read', data=labp_g, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%pdatasets_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%labp_col(c) = labp_g(g)
+       end do
+    end if
+    deallocate(labp_g)
+
+    allocate(secp_g(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='SECONDARY_P', flag='read', data=secp_g, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%pdatasets_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%secp_col(c) = secp_g(g)
+       end do
+    end if
+    deallocate(secp_g)
+
+    allocate(occp_g(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='OCCLUDED_P', flag='read', data=occp_g, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%pdatasets_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%occp_col(c) = occp_g(g)
+       end do
+    end if
+    deallocate(occp_g)
+
+    allocate(prip_g(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='APATITE_P', flag='read', data=prip_g, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%pdatasets_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%prip_col(c) = prip_g(g)
+       end do
+    end if
+    deallocate(prip_g)  
+
     ! --------------------------------------------------------------------
     ! Initialize terms needed for dust model
     ! TODO - move these terms to DUSTMod module variables 
@@ -821,7 +956,6 @@ contains
        if (lun_pp%ifspecial(l)) then
           this%annsum_counter_col (c) = spval
           this%annavg_t2m_col     (c) = spval
-          this%scalaravg_col      (c) = spval
           this%nfire_col          (c) = spval
           this%baf_crop_col       (c) = spval
           this%baf_peatf_col      (c) = spval
@@ -835,6 +969,7 @@ contains
           do j = 1,nlevdecomp_full
              this%fpi_vr_col(c,j) = spval
              this%fpi_p_vr_col(c,j) = spval
+             this%scalaravg_col(c,j) = spval
           end do
        end if
 
@@ -856,6 +991,7 @@ contains
           this%fpi_p_vr_col(c,1:nlevdecomp_full)          = 0._r8 
           this%som_adv_coef_col(c,1:nlevdecomp_full)    = 0._r8 
           this%som_diffus_coef_col(c,1:nlevdecomp_full) = 0._r8 
+          !this%scalaravg_col(c,1:nlevdecomp_full)       = 0._r8
 
           ! initialize the profiles for converting to vertically resolved carbon pools
           this%nfixation_prof_col(c,1:nlevdecomp_full)  = 0._r8 
@@ -889,6 +1025,8 @@ contains
           this%grain_flag_patch(p)            = spval
           this%lgsf_patch(p)                  = spval
           this%bglfr_patch(p)                 = spval
+          this%bglfr_leaf_patch(p)            = spval
+          this%bglfr_froot_patch(p)           = spval
           this%bgtr_patch(p)                  = spval
           this%alloc_pnow_patch(p)            = spval
           this%c_allometry_patch(p)           = spval
@@ -902,6 +1040,9 @@ contains
           this%p_allometry_patch(p)           = spval
           this%tempmax_retransp_patch(p)      = spval
           this%annmax_retransp_patch(p)       = spval
+
+          this%r_mort_cal_patch(p)           = spval
+
  
        end if
     end do
@@ -929,6 +1070,8 @@ contains
           this%offset_swi_patch(p)     = 0._r8
           this%lgsf_patch(p)           = 0._r8
           this%bglfr_patch(p)          = 0._r8
+          this%bglfr_leaf_patch(p)     = 0._r8
+          this%bglfr_froot_patch(p)    = 0._r8
           this%bgtr_patch(p)           = 0._r8
           this%annavg_t2m_patch(p)     = 280._r8
           this%tempavg_t2m_patch(p)    = 0._r8
@@ -947,6 +1090,10 @@ contains
           this%p_allometry_patch(p)           = 0._r8
           this%tempmax_retransp_patch(p)      = 0._r8
           this%annmax_retransp_patch(p)       = 0._r8
+
+          this%r_mort_cal_patch(p)           = 0._r8
+
+
        end if
     end do
 
@@ -967,6 +1114,7 @@ contains
     use abortutils , only : endrun
     use restUtilMod
     use ncdio_pio
+    use fileutils  , only : getfil
     !
     ! !ARGUMENTS:
     class(cnstate_type) :: this
@@ -976,7 +1124,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer, pointer :: temp1d(:) ! temporary
-    integer          :: p,j,c,i   ! indices
+    integer          :: p,j,c,i,g   ! indices
     logical          :: readvar   ! determine if variable is on initial file
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
@@ -1050,7 +1198,17 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='bglfr', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%bglfr_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%bglfr_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='bglfr_leaf', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%bglfr_leaf_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='bglfr_froot', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%bglfr_froot_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='bgtr', xtype=ncd_double,  &
          dim1name='pft', &
@@ -1193,10 +1351,11 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_col) 
 
-    call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double, &
-         dim1name='column', &
-         long_name='', units='', &
-         interpinic_flag = 'interp', readvar=readvar, data=this%scalaravg_col)
+    ptr2d => this%scalaravg_col
+    call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='fraction of potential immobilization of phosphorus', units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
     if (crop_prog) then
 

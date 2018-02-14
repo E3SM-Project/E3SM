@@ -48,6 +48,10 @@ module prep_ocn_mod
 
   public :: prep_ocn_get_x2oacc_ox
   public :: prep_ocn_get_x2oacc_ox_cnt
+#ifdef SUMMITDEV_PGI
+  ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
+  public :: dummy_pgibugfix
+#endif
 
   public :: prep_ocn_get_mapper_Sa2o
   public :: prep_ocn_get_mapper_Va2o
@@ -56,7 +60,8 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Rr2o_liq
   public :: prep_ocn_get_mapper_Rr2o_ice
   public :: prep_ocn_get_mapper_SFi2o
-  public :: prep_ocn_get_mapper_Rg2o
+  public :: prep_ocn_get_mapper_Rg2o_liq
+  public :: prep_ocn_get_mapper_Rg2o_ice
   public :: prep_ocn_get_mapper_Sw2o
 
   !--------------------------------------------------------------------------
@@ -77,7 +82,8 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Rr2o_liq
   type(seq_map), pointer :: mapper_Rr2o_ice
   type(seq_map), pointer :: mapper_SFi2o
-  type(seq_map), pointer :: mapper_Rg2o
+  type(seq_map), pointer :: mapper_Rg2o_liq
+  type(seq_map), pointer :: mapper_Rg2o_ice
   type(seq_map), pointer :: mapper_Sw2o
 
   ! attribute vectors
@@ -98,6 +104,10 @@ module prep_ocn_mod
   logical       :: flood_present  ! .true.  => rof is computing flood
   character(CS) :: vect_map       ! vector mapping type
   logical       :: x2o_average    ! logical for x2o averaging to 1 ocean instance from multi instances
+#ifdef SUMMITDEV_PGI
+  ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
+  logical       :: dummy_pgibugfix
+#endif
   !================================================================================================
 
 contains
@@ -133,9 +143,8 @@ contains
     logical                  :: samegrid_ro    ! samegrid runoff and ocean
     integer                  :: atm_nx, atm_ny
     integer                  :: lsize_o
-    integer                  :: eli, egi, eri
+    integer                  :: egi, eri
     integer                  :: ewi, eai, eii, eoi
-    integer                  :: ka,km,k1,k2,k3 ! aVect field indices
     character(CL)            :: ocn_gnam       ! ocn grid
     character(CL)            :: atm_gnam       ! atm grid
     character(CL)            :: rof_gnam       ! rof grid
@@ -160,6 +169,7 @@ contains
          wav_gnam=wav_gnam             , &
          atm_nx=atm_nx                 , &
          atm_ny=atm_ny                 , &
+         glc_gnam=glc_gnam             , &
          esmf_map_flag=esmf_map_flag   )
 
     allocate(mapper_Sa2o)
@@ -169,7 +179,8 @@ contains
     allocate(mapper_Rr2o_liq)
     allocate(mapper_Rr2o_ice)
     allocate(mapper_SFi2o)
-    allocate(mapper_Rg2o)
+    allocate(mapper_Rg2o_liq)
+    allocate(mapper_Rg2o_ice)
     allocate(mapper_Sw2o)
 
     if (ocn_present) then
@@ -321,11 +332,19 @@ contains
        if (glc_c2_ocn) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Rg2o'
+             write(logunit,F00) 'Initializing mapper_Rg2o_liq'
           end if
-          call seq_map_init_rcfile(mapper_Rg2o, glc(1), ocn(1), &
-               'seq_maps.rc', 'glc2ocn_rmapname:', 'glc2ocn_rmaptype:',samegrid_og, &
-               'mapper_Rg2o initialization',esmf_map_flag)
+          call seq_map_init_rcfile(mapper_Rg2o_liq, glc(1), ocn(1), &
+               'seq_maps.rc', 'glc2ocn_liq_rmapname:', 'glc2ocn_liq_rmaptype:',samegrid_og, &
+               'mapper_Rg2o_liq initialization',esmf_map_flag)
+
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Rg2o_ice'
+          end if
+          call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
+               'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
+               'mapper_Rg2o_ice initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -502,7 +521,7 @@ contains
     type(mct_aVect), intent(inout) :: x2o_o
     !
     ! Local variables
-    integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1,ierr
+    integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1
     integer  :: kof,kif
     integer  :: lsize
     integer  :: noflds,naflds,niflds,nrflds,nwflds,nxflds
@@ -585,7 +604,7 @@ contains
     integer, save :: index_x2o_Faxa_prec_HDO
     logical :: iamroot
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
-    integer, save, pointer :: aindx(:), iindx(:), oindx(:), xindx(:)
+    integer, save, pointer :: aindx(:), iindx(:), xindx(:)
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: i2x_sharedindices
@@ -744,19 +763,19 @@ contains
              cycle ! ignore all ocn states that do not have a Sx_ prefix
           end if
           if (trim(field_ocn(ko)) == 'Foxx_swnet' .or. &
-              trim(field_ocn(ko)) == 'Faxa_snow'  .or. &
-              trim(field_ocn(ko)) == 'Faxa_rain'  .or. &
-              trim(field_ocn(ko)) == 'Faxa_prec'  )then
+               trim(field_ocn(ko)) == 'Faxa_snow'  .or. &
+               trim(field_ocn(ko)) == 'Faxa_rain'  .or. &
+               trim(field_ocn(ko)) == 'Faxa_prec'  )then
              cycle ! ignore swnet, snow, rain, prec - treated explicitly above
           end if
           if (index(field_ocn(ko), 'Faxa_snow_' ) == 1 .or. &
-              index(field_ocn(ko), 'Faxa_rain_' ) == 1 .or. &
-              index(field_ocn(ko), 'Faxa_prec_' ) == 1 )then
+               index(field_ocn(ko), 'Faxa_rain_' ) == 1 .or. &
+               index(field_ocn(ko), 'Faxa_prec_' ) == 1 )then
              cycle ! ignore isotope snow, rain, prec - treated explicitly above
           end if
-!          if (trim(field_ocn(ko)(1:5)) == 'Foxx_') then
-!             cycle ! ignore runoff fields from land - treated in coupler
-!          end if
+          !          if (trim(field_ocn(ko)(1:5)) == 'Foxx_') then
+          !             cycle ! ignore runoff fields from land - treated in coupler
+          !          end if
 
           do ka = 1,naflds
              if (trim(itemc_ocn(ko)) == trim(itemc_atm(ka))) then
@@ -859,11 +878,11 @@ contains
        enddo
     endif
 
-!    call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=i2x_o, aVout=x2o_o, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=r2x_o, aVout=x2o_o, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=w2x_o, aVout=x2o_o, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=xao_o, aVout=x2o_o, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=i2x_o, aVout=x2o_o, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=r2x_o, aVout=x2o_o, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=w2x_o, aVout=x2o_o, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=xao_o, aVout=x2o_o, vector=mct_usevector)
     call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=i2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
     call mct_aVect_copy(aVin=r2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
@@ -873,11 +892,11 @@ contains
     !--- document manual merges ---
     if (first_time) then
        mrgstr(index_x2o_Foxx_swnet) = trim(mrgstr(index_x2o_Foxx_swnet))//' = '// &
-          'afracr*(a2x%Faxa_swvdr*(1.0-xao%So_avsdr) + '// &
-          'a2x%Faxa_swvdf*(1.0-xao%So_avsdf) + '// &
-          'a2x%Faxa_swndr*(1.0-xao%So_anidr) + '// &
-          'a2x%Faxa_swndf*(1.0-xao%So_anidf)) + '// &
-          'ifrac*i2x%Fioi_swpen'
+            'afracr*(a2x%Faxa_swvdr*(1.0-xao%So_avsdr) + '// &
+            'a2x%Faxa_swvdf*(1.0-xao%So_avsdf) + '// &
+            'a2x%Faxa_swndr*(1.0-xao%So_anidr) + '// &
+            'a2x%Faxa_swndf*(1.0-xao%So_anidf)) + '// &
+            'ifrac*i2x%Fioi_swpen'
        if (seq_flds_i2o_per_cat) then
           mrgstr(index_x2o_Foxx_swnet_afracr) = trim(mrgstr(index_x2o_Foxx_swnet_afracr))//' = '// &
                'afracr*(a2x%Faxa_swvdr*(1.0-xao%So_avsdr) + '// &
@@ -886,42 +905,42 @@ contains
                'a2x%Faxa_swndf*(1.0-xao%So_anidf))'
        end if
        mrgstr(index_x2o_Faxa_snow) = trim(mrgstr(index_x2o_Faxa_snow))//' = '// &
-          'afrac*(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
+            'afrac*(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
        mrgstr(index_x2o_Faxa_rain) = trim(mrgstr(index_x2o_Faxa_rain))//' = '// &
-          'afrac*(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
+            'afrac*(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
        mrgstr(index_x2o_Faxa_prec) = trim(mrgstr(index_x2o_Faxa_prec))//' = '// &
-          'afrac*(a2x%Faxa_snowc + a2x%Faxa_snowl + a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
+            'afrac*(a2x%Faxa_snowc + a2x%Faxa_snowl + a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
        mrgstr(index_x2o_Foxx_rofl) = trim(mrgstr(index_x2o_Foxx_rofl))//' = '// &
-          '(r2x%Forr_rofl + r2x%Flrr_flood + g2x%Fogg_rofl)*flux_epbalfact'
+            '(r2x%Forr_rofl + r2x%Flrr_flood + g2x%Fogg_rofl)*flux_epbalfact'
        mrgstr(index_x2o_Foxx_rofi) = trim(mrgstr(index_x2o_Foxx_rofi))//' = '// &
-          '(r2x%Forr_rofi + g2x%Fogg_rofi)*flux_epbalfact'
+            '(r2x%Forr_rofi + g2x%Fogg_rofi)*flux_epbalfact'
        ! water isotope snow, rain prec
        if ( index_x2o_Faxa_snow_16O /= 0 )then
           mrgstr(index_x2o_Faxa_snow_16O) = trim(mrgstr(index_x2o_Faxa_snow_16O))//' = '// &
-             'afrac*(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_rain_16O) = trim(mrgstr(index_x2o_Faxa_rain_16O))//' = '// &
-             'afrac*(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_prec_16O) = trim(mrgstr(index_x2o_Faxa_prec_16O))//' = '// &
-             'afrac*(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O + a2x%Faxa_rainc_16O + '// &
-             'a2x%Faxa_rainl_16O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O + a2x%Faxa_rainc_16O + '// &
+               'a2x%Faxa_rainl_16O)*flux_epbalfact'
        end if
        if ( index_x2o_Faxa_snow_18O /= 0 )then
           mrgstr(index_x2o_Faxa_snow_18O) = trim(mrgstr(index_x2o_Faxa_snow_18O))//' = '// &
-             'afrac*(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_rain_18O) = trim(mrgstr(index_x2o_Faxa_rain_18O))//' = '// &
-             'afrac*(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_prec_18O) = trim(mrgstr(index_x2o_Faxa_prec_18O))//' = '// &
-             'afrac*(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O + a2x%Faxa_rainc_18O + '// &
-             'a2x%Faxa_rainl_18O)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O + a2x%Faxa_rainc_18O + '// &
+               'a2x%Faxa_rainl_18O)*flux_epbalfact'
        end if
        if ( index_x2o_Faxa_snow_HDO /= 0 )then
           mrgstr(index_x2o_Faxa_snow_HDO) = trim(mrgstr(index_x2o_Faxa_snow_HDO))//' = '// &
-             'afrac*(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_rain_HDO) = trim(mrgstr(index_x2o_Faxa_rain_HDO))//' = '// &
-             'afrac*(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
+               'afrac*(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
           mrgstr(index_x2o_Faxa_prec_HDO) = trim(mrgstr(index_x2o_Faxa_prec_HDO))//' = '// &
-             'afrac*(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO + a2x%Faxa_rainc_HDO + '// &
-             'a2x%Faxa_rainl_HDO)*flux_epbalfact'
+               'afrac*(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO + a2x%Faxa_rainc_HDO + '// &
+               'a2x%Faxa_rainl_HDO)*flux_epbalfact'
        end if
     endif
 
@@ -956,11 +975,11 @@ contains
        avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
        anidf = xao_o%rAttr(index_xao_So_anidf,n)
        fswabsv  =  a2x_o%rAttr(index_a2x_Faxa_swvdr,n) * (1.0_R8 - avsdr) &
-                 + a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
+            + a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
        fswabsi  =  a2x_o%rAttr(index_a2x_Faxa_swndr,n) * (1.0_R8 - anidr) &
-                 + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
+            + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
        x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
-                                             i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
+            i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
 
        if (seq_flds_i2o_per_cat) then
           x2o_o%rAttr(index_x2o_Sf_afrac,n)          = afrac
@@ -971,80 +990,80 @@ contains
        ! Derived: compute total precipitation - scale total precip and runoff
 
        x2o_o%rAttr(index_x2o_Faxa_snow ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc,n) * afrac + &
-                                             a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
+            a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
        x2o_o%rAttr(index_x2o_Faxa_rain ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc,n) * afrac + &
-                                             a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
+            a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
 
        x2o_o%rAttr(index_x2o_Faxa_snow ,n) = x2o_o%rAttr(index_x2o_Faxa_snow ,n) * flux_epbalfact
        x2o_o%rAttr(index_x2o_Faxa_rain ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) * flux_epbalfact
 
        x2o_o%rAttr(index_x2o_Faxa_prec ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) + &
-                                             x2o_o%rAttr(index_x2o_Faxa_snow ,n)
+            x2o_o%rAttr(index_x2o_Faxa_snow ,n)
 
        x2o_o%rAttr(index_x2o_Foxx_rofl, n) = (r2x_o%rAttr(index_r2x_Forr_rofl , n) + &
-                                              r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
-                                              g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
+            r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
+            g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
        x2o_o%rAttr(index_x2o_Foxx_rofi, n) = (r2x_o%rAttr(index_r2x_Forr_rofi , n) + &
-                                              g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
+            g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
 
 
        if ( index_x2o_Foxx_rofl_16O /= 0 ) then
           x2o_o%rAttr(index_x2o_Foxx_rofl_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_16O, n) + &
-                                                 r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
+               r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
+               g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Foxx_rofi_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_16O , n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
+               g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Foxx_rofl_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_18O, n) + &
-                                                 r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
+               r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
+               g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Foxx_rofi_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_18O , n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
+               g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Foxx_rofl_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_HDO, n) + &
-                                                 r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
+               r2x_o%rAttr(index_r2x_Flrr_flood, n) + &
+               g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Foxx_rofi_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_HDO , n) + &
-                                                 g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
+               g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
        end if
 
        ! Derived: water isotopes total preciptiation and scaling
 
        if ( index_x2o_Faxa_snow_16O /= 0 )then
           x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_16O,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_16O,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
 
           x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) * flux_epbalfact
 
           x2o_o%rAttr(index_x2o_Faxa_prec_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) + &
-                                                    x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
        end if
 
        if ( index_x2o_Faxa_snow_18O /= 0 )then
           x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_18O,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_18O,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
 
           x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) * flux_epbalfact
 
           x2o_o%rAttr(index_x2o_Faxa_prec_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) + &
-                                                    x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
        end if
 
        if ( index_x2o_Faxa_snow_HDO /= 0 )then
           x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_HDO,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_HDO,n) * afrac + &
-                                                    a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
 
           x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) * flux_epbalfact
 
           x2o_o%rAttr(index_x2o_Faxa_prec_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) + &
-                                                    x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
        end if
     end do
 
@@ -1233,7 +1252,11 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
-       call seq_map_map(mapper_Rg2o, g2x_gx, g2x_ox(egi), norm=.true.)
+       call seq_map_map(mapper_Rg2o_liq, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.)
+
+       call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
@@ -1334,10 +1357,15 @@ contains
     prep_ocn_get_mapper_SFi2o => mapper_SFi2o
   end function prep_ocn_get_mapper_SFi2o
 
-  function prep_ocn_get_mapper_Rg2o()
-    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o
-    prep_ocn_get_mapper_Rg2o => mapper_Rg2o
-  end function prep_ocn_get_mapper_Rg2o
+  function prep_ocn_get_mapper_Rg2o_liq()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o_liq
+    prep_ocn_get_mapper_Rg2o_liq => mapper_Rg2o_liq
+  end function prep_ocn_get_mapper_Rg2o_liq
+
+  function prep_ocn_get_mapper_Rg2o_ice()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o_ice
+    prep_ocn_get_mapper_Rg2o_ice => mapper_Rg2o_ice
+  end function prep_ocn_get_mapper_Rg2o_ice
 
   function prep_ocn_get_mapper_Sw2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
@@ -1345,4 +1373,3 @@ contains
   end function prep_ocn_get_mapper_Sw2o
 
 end module prep_ocn_mod
-

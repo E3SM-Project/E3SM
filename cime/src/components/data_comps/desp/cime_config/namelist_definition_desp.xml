@@ -41,23 +41,11 @@
       The mode of operation for the DESP model.
       NOCHANGE: report  status of model 'pause' but make no changes
       DATATEST: make a roundoff change  to the restart files of the
-                components in the 'PAUSE_COMPONENT_LIST' XML variable.
+                components in the 'DATA_ASSIMILATION' XML variable.
       Default: NOCHANGE
     </desc>
     <values>
       <value>$DESP_MODE</value>
-    </values>
-  </entry>
-
-  <entry id="info_debug">
-    <type>integer</type>
-    <category>desp</category>
-    <group>desp_nml</group>
-    <desc>
-      Level of debug output, 0=minimum, 1=normal, 2=more, 3=too much (default: 0)
-    </desc>
-    <values>
-      <value>0</value>
     </values>
   </entry>
 

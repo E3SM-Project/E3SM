@@ -55,7 +55,7 @@ contains
 
     if (smooth_phis_numcycle==0) return
 
-    if(iam > par%nprocs) then
+    if(.not.par%dynproc) then
        ! The special case of npes_se < npes_cam is not worth dealing with here
        call endrun('PHIS topo generation code code requires npes_se==npes_cam')
     end if
@@ -123,7 +123,7 @@ contains
     end do
     
     ! update non-unique points:
-    call initEdgeBuffer(par, edge, elem, 3, numthreads_in=1)
+    call initEdgeBuffer(par, edge, elem, 3)
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, SGH30dyn(:,:,ie),1,kptr,ie)

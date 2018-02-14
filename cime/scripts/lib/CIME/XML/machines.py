@@ -29,7 +29,7 @@ class Machines(GenericXML):
         if infile is None:
             infile = files.get_value("MACHINES_SPEC_FILE")
         schema = files.get_schema("MACHINES_SPEC_FILE")
-        logger.debug("Verifying using schema %s"%schema)
+        logger.debug("Verifying using schema {}".format(schema))
 
         self.machines_dir = os.path.dirname(infile)
 
@@ -38,7 +38,7 @@ class Machines(GenericXML):
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: %s" , local_infile)
+        logger.debug("Infile: {}".format(local_infile))
         if os.path.exists(local_infile):
             GenericXML.read(self, local_infile, schema)
 
@@ -48,8 +48,13 @@ class Machines(GenericXML):
             else:
                 machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
+        expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
+
+    def get_child(self, name=None, attributes=None, root=None, err_msg=None):
+        if root is None:
+            root = self.machine_node
+        return super(Machines, self).get_child(name, attributes, root, err_msg)
 
     def get_machines_dir(self):
         """
@@ -67,17 +72,17 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./")
+        nodes = self.get_children(root=self.machine_node)
         node_names = []
         for node in nodes:
-            node_names.append(node.tag)
+            node_names.append(self.name(node))
         return node_names
 
     def get_first_child_nodes(self, nodename):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./" + nodename)
+        nodes = self.get_children(nodename, root=self.machine_node)
         return nodes
 
     def list_available_machines(self):
@@ -85,13 +90,13 @@ class Machines(GenericXML):
         Return a list of machines defined for a given CIME_MODEL
         """
         machines = []
-        nodes  = self.get_nodes("machine")
+        nodes  = self.get_children("machine")
         for node in nodes:
-            mach = node.get("MACH")
+            mach = self.get(node, "MACH")
             machines.append(mach)
         return machines
 
-    def probe_machine_name(self):
+    def probe_machine_name(self, warn=True):
         """
         Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
@@ -113,7 +118,8 @@ class Machines(GenericXML):
 
                 names_not_found_quoted = ["'" + name + "'" for name in names_not_found]
                 names_not_found_str = ' or '.join(names_not_found_quoted)
-                logger.warning("Could not find machine match for %s" % names_not_found_str)
+                if warn:
+                    logger.warning("Could not find machine match for {}".format(names_not_found_str))
 
         return machine
 
@@ -124,19 +130,19 @@ class Machines(GenericXML):
         """
 
         machine = None
-        nodes = self.get_nodes("machine")
+        nodes = self.get_children("machine")
 
         for node in nodes:
-            machtocheck = node.get("MACH")
+            machtocheck = self.get(node, "MACH")
             logger.debug("machine is " + machtocheck)
-            regex_str_node = self.get_optional_node("NODENAME_REGEX", root=node)
-            regex_str = machtocheck if regex_str_node is None else regex_str_node.text
+            regex_str_node = self.get_optional_child("NODENAME_REGEX", root=node)
+            regex_str = machtocheck if regex_str_node is None else self.text(regex_str_node)
 
             if regex_str is not None:
                 logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if regex.match(nametomatch):
-                    logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.debug("Found machine: {} matches {}".format(machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
@@ -157,12 +163,11 @@ class Machines(GenericXML):
         if machine == "Query":
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
-            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
-            expect(self.machine_node is not None, "No machine %s found" % machine)
+            self.machine_node = super(Machines,self).get_child("machine", {"MACH" : machine}, err_msg="No machine {} found".format(machine))
             self.machine = machine
 
         return machine
-
+    #pylint: disable=arguments-differ
     def get_value(self, name, attributes=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_machines.xml file
@@ -178,9 +183,9 @@ class Machines(GenericXML):
         elif name == "MPILIB":
             value = self.get_default_MPIlib(attributes)
         else:
-            node = self.get_optional_node(name, root=self.machine_node, attributes=attributes)
+            node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
-                value = node.text
+                value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -210,7 +215,7 @@ class Machines(GenericXML):
 
         expect(supported_values is not None,
                "No list found for " + listname + " on machine " + self.machine)
-        supported_values = supported_values.split(",")
+        supported_values = supported_values.split(",") #pylint: disable=no-member
 
         if reqval is None or reqval == "UNSET":
             return supported_values[0]
@@ -239,7 +244,7 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="edison")
         >>> machobj.get_default_compiler()
         'intel'
-        >>> machobj.is_valid_compiler("cray")
+        >>> machobj.is_valid_compiler("gnu")
         True
         >>> machobj.is_valid_compiler("nag")
         False
@@ -256,7 +261,8 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("fake-mpi")
         False
         """
-        return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
+        return mpilib == "mpi-serial" or \
+            self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
     def has_batch_system(self):
         """
@@ -271,37 +277,46 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
+        batch_system = self.get_optional_child("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
-            result = (batch_system.text is not None and batch_system.text != "none")
-        logger.debug("Machine %s has batch: %s" % (self.machine, result))
+            result = (self.text(batch_system) is not None and self.text(batch_system) != "none")
+        logger.debug("Machine {} has batch: {}".format(self.machine, result))
         return result
 
     def get_suffix(self, suffix_type):
-        node = self.get_optional_node("default_run_suffix")
+        node = self.get_optional_child("default_run_suffix")
         if node is not None:
-            suffix_node = self.get_optional_node(suffix_type, root=node)
+            suffix_node = self.get_optional_child(suffix_type, root=node)
             if suffix_node is not None:
-                return suffix_node.text
+                return self.text(suffix_node)
 
         return None
 
+    def set_value(self, vid, value, subgroup=None, ignore_type=True):
+        tmproot = self.root
+        self.root = self.machine_node
+        result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
+                                               ignore_type=ignore_type)
+        self.root = tmproot
+        return result
+
+
     def print_values(self):
         # write out machines
-        machines = self.get_nodes(nodename="machine")
-        print  "Machines"
+        machines = self.get_children("machine")
+        logger.info("Machines")
         for machine in machines:
-            name = machine.get("MACH")
-            desc = machine.find("DESC")
-            os_  = machine.find("OS")
-            compilers = machine.find("COMPILERS")
-            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            pes_per_node = machine.find("PES_PER_NODE")
+            name = self.get(machine, "MACH")
+            desc = self.get_child("DESC", root=machine)
+            os_  = self.get_child("OS", root=machine)
+            compilers = self.get_child("COMPILERS", root=machine)
+            max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
+            max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
 
-            print  "  %s : %s "% (name , desc.text)
-            print  "      os             ", os_.text
-            print  "      compilers      ",compilers.text
-            if pes_per_node is not None:
-                print  "      pes/node       ",pes_per_node.text
+            print( "  {} : {} ".format(name , self.text(desc)))
+            print( "      os             ", self.text(os_))
+            print( "      compilers      ",self.text(compilers))
+            if max_mpitasks_per_node is not None:
+                print("      pes/node       ",self.text(max_mpitasks_per_node))
             if max_tasks_per_node is not None:
-                print  "      max_tasks/node ",max_tasks_per_node.text
+                print("      max_tasks/node ",self.text(max_tasks_per_node))

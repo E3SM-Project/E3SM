@@ -27,6 +27,7 @@
  * @param len the length of the attribute array.
  * @param op a pointer with the attribute data.
  * @return PIO_NOERR for success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
                     PIO_Offset len, nc_type memtype, const void *op)
@@ -233,6 +234,7 @@ int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
  * of type memtype.
  * @param ip a pointer that will get the attribute value.
  * @return PIO_NOERR for success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void *ip)
 {
@@ -479,6 +481,7 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
  * will be used. Use special PIO_LONG_INTERNAL for _long() functions.
  * @param buf pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                      const PIO_Offset *stride, nc_type xtype, void *buf)
@@ -744,6 +747,7 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @param xtype the netcdf type of the variable.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                      void *buf)
@@ -784,6 +788,7 @@ int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  * @param xtype the netcdf type of the variable.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
 {
@@ -792,8 +797,6 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
     PIO_Offset *startp = NULL; /* Pointer to start array. */
     PIO_Offset *countp = NULL; /* Pointer to count array. */
     int ndims;   /* The number of dimensions in the variable. */
-    PIO_Offset my_start[PIO_MAX_DIMS];
-    PIO_Offset dimlen[PIO_MAX_DIMS];
     int ierr;    /* Return code from function calls. */
 
     LOG((1, "PIOc_get_var_tc ncid = %d varid = %d xtype = %d", ncid, varid,
@@ -816,26 +819,33 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
         int dimids[ndims];
         if ((ierr = PIOc_inq_vardimid(ncid, varid, dimids)))
             return pio_err(ios, file, ierr, __FILE__, __LINE__);
+	if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
+	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+	if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
+	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
 
         /* Find the dimension lengths. */
         for (int d = 0; d < ndims; d++)
-            if ((ierr = PIOc_inq_dimlen(ncid, dimids[d], &dimlen[d])))
+            if ((ierr = PIOc_inq_dimlen(ncid, dimids[d], &countp[d])))
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
         /* Set up start array. */
         for (int d = 0; d < ndims; d++)
         {
-            my_start[d] = 0;
-            LOG((3, "my_start[%d] = %d dimlen[%d] = %d", d, my_start[d], d,
-                 dimlen[d]));
+            startp[d] = 0;
+            LOG((3, "startp[%d] = %d countp[%d] = %d", d, startp[d], d,
+                 countp[d]));
         }
 
-        /* Set the start/count arrays. */
-        startp = my_start;
-        countp = dimlen;
     }
 
-    return PIOc_get_vars_tc(ncid, varid, startp, countp, NULL, xtype, buf);
+    ierr = PIOc_get_vars_tc(ncid, varid, startp, countp, NULL, xtype, buf);
+    if(startp != NULL)
+	free(startp);
+    if(countp != NULL)
+	free(countp);
+    return ierr;
+
 }
 
 /**
@@ -872,6 +882,7 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
  * @param buf pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                      const PIO_Offset *stride, nc_type xtype, const void *buf)
@@ -1070,7 +1081,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
                     fake_stride = (PIO_Offset *)stride;
 
                 LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
-                vdesc = &file->varlist[varid];
+                /*vdesc = &file->varlist[varid];*/
+                if ((ierr = get_var_desc(varid, &file->varlist, &vdesc)))
+                    return pio_err(ios, file, ierr, __FILE__, __LINE__);
                 if (vdesc->nreqs % PIO_REQUEST_ALLOC_CHUNK == 0)
                     if (!(vdesc->request = realloc(vdesc->request,
                                                    sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK))))
@@ -1227,6 +1240,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @param op pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                      const void *op)
@@ -1277,6 +1291,7 @@ int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  * @param op pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
 {
@@ -1284,8 +1299,6 @@ int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
     file_desc_t *file;     /* Pointer to file information. */
     PIO_Offset *startp = NULL; /* Pointer to start array. */
     PIO_Offset *countp = NULL; /* Pointer to count array. */
-    PIO_Offset start[PIO_MAX_DIMS];
-    PIO_Offset count[PIO_MAX_DIMS];
     int ndims;   /* The number of dimensions in the variable. */
     int ierr;    /* Return code from function calls. */
 
@@ -1306,10 +1319,14 @@ int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
     if (ndims)
     {
         int dimid[ndims];
+	if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
+	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+	if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
+	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
 
         /* Set up start array. */
         for (int d = 0; d < ndims; d++)
-            start[d] = 0;
+            startp[d] = 0;
 
         /* Get the dimids for this var. */
         if ((ierr = PIOc_inq_vardimid(ncid, varid, dimid)))
@@ -1317,13 +1334,15 @@ int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
 
         /* Count array are the dimlens. */
         for (int d = 0; d < ndims; d++)
-            if ((ierr = PIOc_inq_dimlen(ncid, dimid[d], &count[d])))
+            if ((ierr = PIOc_inq_dimlen(ncid, dimid[d], &countp[d])))
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
-        /* Set the array pointers. */
-        startp = start;
-        countp = count;
     }
 
-    return PIOc_put_vars_tc(ncid, varid, startp, countp, NULL, xtype, op);
+    ierr = PIOc_put_vars_tc(ncid, varid, startp, countp, NULL, xtype, op);
+    if (startp != NULL)
+	free(startp);
+    if (countp != NULL)
+	free(countp);
+    return ierr;
 }

@@ -198,6 +198,7 @@ contains
     integer :: id, l, m, n, nspc
 
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
+    logical  :: history_verbose ! produce verbose history output
 
     character(len=*), parameter :: subrname = 'aero_model_init'
     character(len=20) :: dummy
@@ -209,6 +210,7 @@ contains
     if ( masterproc ) write(iulog,'(a,i5)') 'aero_model_init iflagaa=', iflagaa ! REASTER 08/04/2015
 
     call phys_getopts( history_aerosol_out=history_aerosol, &
+         history_verbose_out=history_verbose, &
          convproc_do_aer_out = convproc_do_aer, & 
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
@@ -526,8 +528,10 @@ contains
 
        if ( history_aerosol ) then 
           call add_default (trim(drydep_list(m))//'DDF', 1, ' ')
-          call add_default (trim(drydep_list(m))//'TBF', 1, ' ')
-          call add_default (trim(drydep_list(m))//'GVF', 1, ' ')
+          if ( history_verbose ) then
+             call add_default (trim(drydep_list(m))//'TBF', 1, ' ')
+             call add_default (trim(drydep_list(m))//'GVF', 1, ' ')
+          endif
        endif
 
     enddo
@@ -582,13 +586,15 @@ contains
        
        if ( history_aerosol ) then          
           call add_default (trim(wetdep_list(m))//'SFWET', 1, ' ')
-          call add_default (trim(wetdep_list(m))//'SFSIC', 1, ' ')
-          call add_default (trim(wetdep_list(m))//'SFSIS', 1, ' ')
-          call add_default (trim(wetdep_list(m))//'SFSBC', 1, ' ')
-          call add_default (trim(wetdep_list(m))//'SFSBS', 1, ' ')
-          if ( history_aero_prevap_resusp ) then
-             call add_default (trim(wetdep_list(m))//'SFSEC', 1, ' ')
-             call add_default (trim(wetdep_list(m))//'SFSES', 1, ' ')
+          if ( history_verbose ) then
+             call add_default (trim(wetdep_list(m))//'SFSIC', 1, ' ')
+             call add_default (trim(wetdep_list(m))//'SFSIS', 1, ' ')
+             call add_default (trim(wetdep_list(m))//'SFSBC', 1, ' ')
+             call add_default (trim(wetdep_list(m))//'SFSBS', 1, ' ')
+             if ( history_aero_prevap_resusp ) then
+                call add_default (trim(wetdep_list(m))//'SFSEC', 1, ' ')
+                call add_default (trim(wetdep_list(m))//'SFSES', 1, ' ')
+             endif
           endif
        endif
 
@@ -607,8 +613,15 @@ contains
        call addfld( 'AQ_'//trim(solsym(m)),horiz_only,  'A', unit_basename//'/m2/s ', &
                     trim(solsym(m))//' aqueous chemistry (for gas species)')
        if ( history_aerosol ) then 
-          call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
-          call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+          if ( history_verbose ) then
+             call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
+             call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+          else
+             select case (trim(solsym(m)))
+             case ('O3','H2O2','H2SO4','SO2','DMS','SOAG')
+                  call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+             end select
+          end if
        endif
        
        call cnst_get_ind(trim(solsym(m)), nspc, abort=.false. ) ! REASTER 08/04/2015
@@ -620,7 +633,7 @@ contains
                   trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, convective) at surface')  !RCE
              call addfld (trim(cnst_name_cw(nspc))//'SFSES',horiz_only,  'A','kg/m2/s', &
                   trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, stratiform) at surface')  !RCE             
-             if(history_aerosol) then
+             if(history_aerosol .and. history_verbose) then
                 call add_default (trim(cnst_name_cw(nspc))//'SFSEC', 1, ' ')  !RCE
                 call add_default (trim(cnst_name_cw(nspc))//'SFSES', 1, ' ')  !RCE
              endif
@@ -659,15 +672,17 @@ contains
                trim(cnst_name_cw(n))//' gravitational dry deposition flux')     
 
           if ( history_aerosol ) then 
-             call add_default( cnst_name_cw(n), 1, ' ' )
-             call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
+             if (history_verbose) then
+                call add_default( cnst_name_cw(n), 1, ' ' )
+                call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
+                call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
+                call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
+                call add_default (trim(cnst_name_cw(n))//'SFSIC', 1, ' ')
+                call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
+                call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
+             endif
              call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
-             call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
              call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
-             call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
-             call add_default (trim(cnst_name_cw(n))//'SFSIC', 1, ' ')
-             call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
-             call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
           endif
        endif
     enddo
@@ -676,7 +691,7 @@ contains
        dgnum_name(n) = ' '
        write(dgnum_name(n),fmt='(a,i1)') 'dgnumwet',n
        call addfld( dgnum_name(n), (/ 'lev' /), 'I', 'm', 'Aerosol mode wet diameter' )
-       if ( history_aerosol ) then 
+       if ( history_aerosol .and. history_verbose ) then 
           call add_default( dgnum_name(n), 1, ' ' )
        endif
     end do

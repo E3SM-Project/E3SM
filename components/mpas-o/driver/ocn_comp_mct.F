@@ -50,6 +50,9 @@ module ocn_comp_mct
    use ocn_frazil_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
+   use ocn_tracer_short_wave_absorption
+   use ocn_tracer_short_wave_absorption_variable
+   use ocn_tracer_ecosys
    use ocn_tracer_surface_restoring
 
 !
@@ -76,17 +79,8 @@ module ocn_comp_mct
 !
 ! !PRIVATE MODULE VARIABLES
 
-  logical :: ldiag_cpl = .false.
-
   integer, private ::   &
-      cpl_write_restart,   &! flag id for write restart
-      cpl_write_history,   &! flag id for write history
-      cpl_write_tavg,      &! flag id for write tavg      
-      cpl_diag_global,     &! flag id for computing diagnostics
-      cpl_diag_transp,     &! flag id for computing diagnostics
       my_task
-
-   real (kind=RKIND) :: tlast_coupled
 
    integer  :: nsend, nrecv
 
@@ -187,7 +181,7 @@ contains
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
     type (MPAS_TimeInterval_type) :: denInterval, remInterval, zeroInterval
-    integer :: numDivs
+    integer (kind=I8KIND) :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
     logical :: streamsExists
@@ -196,6 +190,7 @@ contains
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
 
+    logical, pointer :: config_use_ecosysTracers
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
 
@@ -736,15 +731,28 @@ contains
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
     call mpas_log_write( 'Initial time '//trim(timeStamp))
 
+    ! read initial data required for variable shortwave
+    call mpas_timer_start('io_shortwave',.false.)
+    call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
+    call mpas_timer_stop('io_shortwave')
+
+    ! read initial data required for ecosys forcing
+    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+    if (config_use_ecosysTracers) then
+        call mpas_timer_start('io_ecosys',.false.)
+        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_ecosys')
+    endif
+
     ! read initial data required for monthly surface salinity restoring
     call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
                                                  config_use_activeTracers_surface_restoring)
     call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
                                                  config_use_surface_salinity_monthly_restoring)
     if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-      call mpas_timer_start('io_monthly_surface_salinity',.false.)
-      call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
-      call mpas_timer_stop('io_monthly_surface_salinity')
+        call mpas_timer_start('io_monthly_surface_salinity',.false.)
+        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_monthly_surface_salinity')
     endif
 
     itimestep = 0
@@ -803,22 +811,24 @@ contains
       integer :: ymd, tod, ihour, iminute, isecond
       integer :: iyear, imonth, iday, curr_ymd, curr_tod
       integer :: shrloglev, shrlogunit
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: dt, current_wallclock_time
+
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, forcingPool, averagePool, scratchPool
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
-      character(len=StrKIND) :: timeStamp, streamName
+      character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
       integer :: iam, ierr, streamDirection
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
+      logical, pointer :: config_use_ecosysTracers
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
-      character (len=StrKIND), pointer :: config_forcing_restart_file
+      character (len=StrKIND), pointer :: config_sw_absorption_type
 
       ! Added for coupling interval initialization
       integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -841,7 +851,7 @@ contains
       if (debugOn) call mpas_log_write("=== Beginning ocn_run_mct ===")
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(domain_ptr % configs, 'config_forcing_restart_file', config_forcing_restart_file)
+      call mpas_pool_get_config(domain_ptr % configs, 'config_sw_absorption_type', config_sw_absorption_type)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -888,7 +898,9 @@ contains
          currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          ! write time stamp at every step
-         call mpas_log_write('Doing timestep ' // trim(timeStamp))
+         call mpas_dmpar_get_time(current_wallclock_time)
+         write (WCstring,'(F18.3)') current_wallclock_time
+         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
          ! Build forcing arrays.
          if (debugOn) call mpas_log_write('   Building forcing arrays')
@@ -912,6 +924,41 @@ contains
             block_ptr => block_ptr % next
          end do
          if (debugOn) call mpas_log_write('   Finished building forcing arrays')
+
+         ! Read forcing streams for next timestep
+         if (iam==0.and.debugOn) then
+            call mpas_log_write('   Reading forcing streams')
+         endif
+
+         ! read next time level data required for variable shortwave
+         call mpas_timer_start('io_shortwave',.false.)
+         call ocn_get_shortWaveData(domain % streamManager, domain, domain_ptr % clock, .false.)
+         call mpas_timer_stop('io_shortwave')
+
+         ! read next time level data required for ecosys forcing
+         call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+         if (config_use_ecosysTracers) then
+           call mpas_timer_start('io_ecosys',.false.)
+           call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
+           call mpas_timer_stop('io_ecosys')
+         endif
+
+         ! read next time level data required for monthly surface salinity restoring
+         call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                      config_use_activeTracers_surface_restoring)
+         call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                      config_use_surface_salinity_monthly_restoring)
+         if (config_use_activeTracers_surface_restoring .and.  config_use_surface_salinity_monthly_restoring) then
+             if ( mpas_is_alarm_ringing(domain % clock, 'salinityDataReadAlarm', ierr=ierr) ) then
+                 call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=ierr)
+                 call mpas_timer_start('io_monthly_surface_salinity',.false.)
+                 call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
+                 call mpas_timer_stop('io_monthly_surface_salinity')
+             endif
+         endif
+         if (iam==0.and.debugOn) then
+            call mpas_log_write('   Finished reading forcing streams')
+         endif
 
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
@@ -964,26 +1011,12 @@ contains
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished writing output streams')
-            call mpas_log_write('   Reading forcing streams')
-         endif
-
-         ! read next time level data required for monthly surface salinity restoring
-         call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
-                                                      config_use_activeTracers_surface_restoring)
-         call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                      config_use_surface_salinity_monthly_restoring)
-         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-           call mpas_timer_start('io_monthly_surface_salinity',.false.)
-           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
-           call mpas_timer_stop('io_monthly_surface_salinity')
-         endif
-         if (iam==0.and.debugOn) then
-            call mpas_log_write('   Finished reading forcing streams')
             call mpas_log_write('   Validating ocean state')
          endif
 
          call ocn_validate_state(domain, timeLevel=1)
          if (debugOn) call mpas_log_write('   Completed validating ocean state')
+
          if (debugOn) call mpas_log_write('Completed timestep '//trim(timeStamp))
       end do
 
@@ -1015,6 +1048,12 @@ contains
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
+         if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain_ptr)
+
+         if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
+
+         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
+             call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams')
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
@@ -1033,13 +1072,7 @@ contains
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
-
-            open(22, file=config_forcing_restart_file, form='formatted', status='replace')
-            close(22)
          end if
-
-         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
-             call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
 
          if (debugOn) call mpas_log_write('Finished writing restart streams')
       end if
@@ -1474,6 +1507,11 @@ contains
                        config_use_MacroMoleculesTracers,  &
                        config_use_MacroMoleculesTracers_sea_ice_coupling
 
+   character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
+                                      config_ecosys_atm_alt_co2_option
+
+   real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
+
    real (kind=RKIND), pointer :: config_density0
 
    type (block_type), pointer :: block_ptr
@@ -1498,6 +1536,7 @@ contains
                                   shortWaveHeatFluxField, rainFluxField, &
                                   atmosphericPressureField, iceFractionField, &
                                   seaIcePressureField, windSpeedSquared10mField, &
+                                  atmosphericCO2Field, atmosphericCO2_ALT_CO2Field,  &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -1524,6 +1563,7 @@ contains
                                                shortWaveHeatFlux, rainFlux, &
                                                atmosphericPressure, iceFraction, &
                                                seaIcePressure, windSpeedSquared10m, &
+                                               atmosphericCO2, atmosphericCO2_ALT_CO2,  &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1621,6 +1661,17 @@ contains
 
          call mpas_pool_get_field(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10mField)
          windSpeedSquared10m => windSpeedSquared10mField % array
+         call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2Field)
+         atmosphericCO2 => atmosphericCO2Field % array
+         call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
+         atmosphericCO2_ALT_CO2 => atmosphericCO2_ALT_CO2Field % array
+
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_co2_option',   &
+            config_ecosys_atm_co2_option)
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_alt_co2_option',   &
+            config_ecosys_atm_alt_co2_option)
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_co2_constant_value',   &
+            config_ecosys_atm_co2_constant_value)
 
          if (config_use_ecosysTracers_sea_ice_coupling) then
             call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
@@ -1730,6 +1781,24 @@ contains
            if ( windSpeedSquared10mField % isActive ) then
               windSpeedSquared10m(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
            end if
+           if ( atmosphericCO2Field % isActive ) then
+              if ( config_ecosys_atm_co2_option == 'prognostic') then
+                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
+              else if ( config_ecosys_atm_co2_option == 'diagnostic') then
+                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              end if
+           end if
+           if ( atmosphericCO2_ALT_CO2Field % isActive ) then
+              if ( config_ecosys_atm_alt_co2_option == 'prognostic') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
+              else if ( config_ecosys_atm_alt_co2_option == 'diagnostic') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              end if
+           end if
 
            if (config_use_ecosysTracers_sea_ice_coupling) then
               if ( iceFluxPhytoCField % isActive ) then
@@ -1812,6 +1881,8 @@ contains
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
       call mpas_pool_get_field(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10mField)
+      call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2Field)
+      call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
 
       if (config_use_ecosysTracers_sea_ice_coupling) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
@@ -1896,6 +1967,12 @@ contains
 
       if ( windSpeedSquared10mField % isActive ) then
          call mpas_dmpar_exch_halo_field(windSpeedSquared10mField)
+      end if
+      if ( atmosphericCO2Field % isActive ) then
+         call mpas_dmpar_exch_halo_field(atmosphericCO2Field)
+      end if
+      if ( atmosphericCO2_ALT_CO2Field % isActive ) then
+         call mpas_dmpar_exch_halo_field(atmosphericCO2_ALT_CO2Field)
       end if
 
       if (config_use_ecosysTracers_sea_ice_coupling) then

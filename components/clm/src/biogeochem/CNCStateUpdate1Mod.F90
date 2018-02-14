@@ -272,6 +272,8 @@ contains
             cs%cpool_patch(p) = cs%cpool_patch(p) - cf%livestem_curmr_patch(p)*dt
             cs%cpool_patch(p) = cs%cpool_patch(p) - cf%grain_curmr_patch(p)*dt
          end if
+         ! excess respiration flux from cpool
+         cs%cpool_patch(p) = cs%cpool_patch(p) - cf%xr_patch(p)*dt
 
          ! maintenance respiration fluxes from xsmrpool
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt

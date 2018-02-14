@@ -328,8 +328,6 @@ contains
   subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
     use kinds, only : int_kind
-    use parallel_mod , only : iam, FrameWeight, PartitionForNodes,&
-         PartitionForFrames, FrameCount, numFrames
     use dimensions_mod , only : nmpi_per_node, npart, nnodes, nelem
     !use control_mod, only:  partmethod
     !use params_mod, only : wrecursive

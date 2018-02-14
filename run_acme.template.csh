@@ -22,7 +22,7 @@ set acme_tag       = master
 set tag_name       = default
 
 ### CUSTOM CASE_NAME
-set case_name = ${tag_name}.${job_name}.${resolution}
+set case_name = ${machine}.${tag_name}.${job_name}.${resolution}
 
 ### BUILD OPTIONS
 set debug_compile  = false
@@ -59,7 +59,6 @@ set restart_units    = $stop_units
 set restart_num      = $stop_num
 set num_resubmits    = 0
 set do_short_term_archiving      = false
-set do_long_term_archiving       = false
 
 ### SIMULATION OPTIONS
 set atm_output_freq              = -24
@@ -171,7 +170,6 @@ set cpl_hist_num   = 1
 #    continue the simulation.  num_resubmits is the number of times to submit after initial completion.
 #    After the first submission, the CONTINUE_RUN flage in env_run.xml will be changed to TRUE.
 #do_short_term_archiving: If TRUE, then move simulation output to the archive directory in your scratch directory.
-#do_long_term_archiving : If TRUE, then move simulation output from the short_term_archive to the local mass storage system.
 
 ### SIMULATION OPTIONS (10)
 
@@ -210,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.13
+set script_ver = 3.0.18
 
 #===========================================
 # DEFINE ALIASES
@@ -535,12 +533,11 @@ if ( -f ${create_newcase_exe} ) then
   set acme_exe = acme.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
-  set case_run_exe = $case_scripts_dir/case.run
+  set case_run_exe = $case_scripts_dir/.case.run
   set case_submit_exe = $case_scripts_dir/case.submit
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
-  set shortterm_archive_script = $case_scripts_dir/case.st_archive
-  set longterm_archive_script = $case_scripts_dir/case.lt_archive
+  set shortterm_archive_script = $case_scripts_dir/.case.st_archive
 else                                                                   # No version of create_newcase found
   acme_print 'ERROR: ${create_newcase_exe} not found'
   acme_print '       This is most likely because fetch_code should be true.'
@@ -806,7 +803,6 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
 #NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
 
 if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
@@ -817,7 +813,7 @@ else
   acme_newline
   acme_print 'Configuring ACME to use the COSP simulator.'
   acme_newline
-  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val='-cosp'
 endif
 
 #===========================
@@ -827,7 +823,7 @@ endif
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
-  else if ($machine != skybridge ) then
+  else if ($machine != sandiatoss3 && $machine != bebop && $machine != blues) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
@@ -872,6 +868,7 @@ set run_root_dir = `cd $case_run_dir/..; pwd -P`
 acme_print 'Creating logical links to make navigating easier.'
 acme_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
 
+# Customizations from Chris Golaz
 # Link in this_script_dir case_dir
 set run_dir_link = $this_script_dir/$this_script_name=a_run_link
 
@@ -996,7 +993,7 @@ endif
 
 # Set options for batch scripts (see above for queue and batch time, which are handled separately)
 
-# NOTE: This also modifies the short-term and long-term archiving scripts.
+# NOTE: This also modifies the short-term archiving script.
 # NOTE: We want the batch job log to go into a sub-directory of case_scripts (to avoid it getting clogged up)
 
 # NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
@@ -1019,9 +1016,6 @@ if ( $machine =~ 'cori*' || $machine == edison ) then
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/ST+'${case_name}'.o%j'  $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=LT+${job_name}"                  $longterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $longterm_archive_script
-    sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/LT+'${case_name}'.o%j'  $longterm_archive_script
 
 else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
@@ -1030,8 +1024,6 @@ else if ( $machine == titan || $machine == eos ) then
 
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N LT+${job_name}"                             $longterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else if ( $machine == anvil ) then
 # Priority for Anvil
@@ -1067,18 +1059,13 @@ endif
 #endif
 
 #============================================
-# SETUP SHORT AND LONG TERM ARCHIVING
+# SETUP SHORT TERM ARCHIVING
 #============================================
 
-$xmlchange_exe --id DOUT_S    --val `uppercase $do_short_term_archiving`
+$xmlchange_exe --id DOUT_S --val `uppercase $do_short_term_archiving`
 if ( `lowercase $short_term_archive_root_dir` != default ) then
   $xmlchange_exe --id DOUT_S_ROOT --val $short_term_archive_root_dir
 endif
-
-$xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
-
-# DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
-$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #============================================
 # COUPLER HISTORY OUTPUT
@@ -1086,7 +1073,6 @@ $xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #$xmlchange_exe --id HIST_OPTION --val ndays
 #$xmlchange_exe --id HIST_N      --val 1
-
 
 #=======================================================
 # SETUP SIMULATION LENGTH AND FREQUENCY OF RESTART FILES
@@ -1170,18 +1156,18 @@ else if ( $model_start_type == 'branch' ) then
   acme_print '$restart_prevdate  = '$restart_prevdate
 
   acme_print 'Copying stuff for branch run'
-  cp ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
-  cp ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cam.h0.${restart_prevdate}-*-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.clm2.rh0.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../lnd/hist/${restart_case_name}.clm2.h0.${restart_prevdate}.nc $case_run_dir
   cp ${restart_files_dir}/rpointer* $case_run_dir
 
   $xmlchange_exe --id RUN_TYPE --val "branch"
@@ -1359,6 +1345,11 @@ acme_newline
 # 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
 # 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
 #                        Update the machine check for cori to account for cori-knl (MD)
+# 3.0.14   2017-09-11    Add checks for blues and bebop when trying to use the debug queue. Mostly by Andy Salinger with assist from (MD)
+# 3.0.15   2017-09-18    Removes long term archiving settings, as they no longer exist in CIME (MD)
+# 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
+# 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
+# 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 

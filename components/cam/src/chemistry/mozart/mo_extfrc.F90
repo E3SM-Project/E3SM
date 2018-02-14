@@ -89,10 +89,12 @@ contains
     character(len=1), parameter :: datapath = ''
     logical         , parameter :: rmv_file = .false.
     logical  :: history_aerosol      ! Output the MAM aerosol tendencies
+    logical  :: history_verbose      ! produce verbose history output
 
     !-----------------------------------------------------------------------
  
-    call phys_getopts( history_aerosol_out        = history_aerosol   )
+    call phys_getopts( history_aerosol_out        = history_aerosol, &
+                       history_verbose_out        = history_verbose   )
 
     do i = 1, gas_pcnst
        has_extfrc(i) = .false.
@@ -170,7 +172,7 @@ contains
           call addfld( trim(spc_name)//'_CLXF', horiz_only, 'A',  'molec/cm2/s', &
                        'vertically intergrated external forcing for '//trim(spc_name) )
           if ( history_aerosol ) then 
-             call add_default( trim(spc_name)//'_XFRC', 1, ' ' )
+             if (history_verbose) call add_default( trim(spc_name)//'_XFRC', 1, ' ' )
              call add_default( trim(spc_name)//'_CLXF', 1, ' ' )
           endif
        end if has_forcing

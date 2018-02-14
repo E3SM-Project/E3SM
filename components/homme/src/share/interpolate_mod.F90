@@ -32,7 +32,7 @@ module interpolate_mod
 #endif
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
-  use control_mod,            only : cubed_sphere_map
+  use control_mod,            only : cubed_sphere_map, interp_lon0
 
   implicit none
   private
@@ -1155,7 +1155,7 @@ contains
     call interp_init()
     gweight=0
     do i=1,nlon
-       lon(i)=2*dd_pi*(i-1)/nlon
+       lon(i)= dd_pi*interp_lon0/180 + 2*dd_pi*(i-1)/nlon
     enddo
     if (gridtype==1) then
        do j=1,nlat

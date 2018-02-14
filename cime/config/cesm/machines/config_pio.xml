@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<entries>
+<config_pio version="1.0">
 
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_CONFIG_OPTS">
@@ -20,7 +20,7 @@
 
   <entry id="PIO_STRIDE">
     <values>
-      <value>$PES_PER_NODE</value>
+      <value>$MAX_MPITASKS_PER_NODE</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
     </values>
   </entry>
@@ -341,4 +341,4 @@
   </entry>
   -->
 
-</entries>
+</config_pio>

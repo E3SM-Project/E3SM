@@ -27,6 +27,7 @@ module clubb_intr
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
   use mpishorthand
+  use cam_history_support, only: fillvalue
 
   implicit none
 
@@ -754,8 +755,7 @@ end subroutine clubb_init_cnst
     call addfld ('DPDLFICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained ice from deep convection')  
     call addfld ('DPDLFT', (/ 'lev' /),  'A',        'K/s', 'T-tendency due to deep convective detrainment') 
     call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
-
-
+    call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
     call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
 
@@ -822,7 +822,9 @@ end subroutine clubb_init_cnst
        call add_default('SL',               1, ' ')
        call add_default('QT',               1, ' ')
        call add_default('CONCLD',           1, ' ')
-
+    else 
+       call add_default('CLOUDFRAC_CLUBB',  1, ' ')
+       call add_default('CONCLD',           1, ' ')
     end if
 
     if (history_amwg) then
@@ -1202,7 +1204,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
-
+!PMA
+   real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
    real(r8)  qvtend(pcols,pver)
    real(r8)  qitend(pcols,pver)
@@ -2224,10 +2227,15 @@ end subroutine clubb_init_cnst
 !
 !
 
+   relvarc(:ncol,:pver)=fillvalue
+
    if (deep_scheme .ne. 'CLUBB_SGS') then    
       if (relvar_fix) then    
          where (rcm(:ncol,:pver) > qsmall .and. qclvar(:ncol,:pver) /= 0._r8)  &
               relvar(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
+              cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
+              (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
+              relvarc(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
               cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
               (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
       else
@@ -2441,6 +2449,7 @@ end subroutine clubb_init_cnst
  
    !  Output calls of variables goes here
    call outfld( 'RELVAR',           relvar,                  pcols, lchnk )
+   call outfld( 'RELVARC',          relvarc,                 pcols, lchnk )
    call outfld( 'RHO_CLUBB',        rho,                     pcols, lchnk )
    call outfld( 'WP2_CLUBB',        wp2,                     pcols, lchnk )
    call outfld( 'UP2_CLUBB',        up2,                     pcols, lchnk )

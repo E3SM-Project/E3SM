@@ -146,7 +146,7 @@ override the command provided by Machines."""
         args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output,
+def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output, pfunit_path,
                 cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
     """Run cmake in the current working directory.
 
@@ -178,10 +178,13 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
 
         cmake_command = [
             "cmake",
+            "-C Macros.cmake",
             test_spec_dir,
-            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","externals","CMake")),
+            "-DCIMEROOT="+_CIMEROOT,
+            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
+            "-DPFUNIT_PATH="+pfunit_path
             ]
         if use_mpiserial:
             cmake_command.append("-DUSE_MPI_SERIAL=ON")
@@ -238,9 +241,10 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
 
     pfunit_path = compilerobj.get_optional_compiler_node("PFUNIT_PATH", attributes=attrs)
     expect(pfunit_path is not None,
-           """PFUNIT_PATH not found for this machine and compiler, with MPILIB=%s and compile_threaded=%s.
-You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded."""%(mpilib, attrs['compile_threaded']))
-    logger.info("Using PFUNIT_PATH: %s"%pfunit_path.text)
+           """PFUNIT_PATH not found for this machine and compiler, with MPILIB={} and compile_threaded={}.
+You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded.""".format(mpilib, attrs['compile_threaded']))
+    logger.info("Using PFUNIT_PATH: {}".format(compilerobj.text(pfunit_path)))
+    return compilerobj.text(pfunit_path)
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -298,15 +302,15 @@ def _main():
         mpilib = "mpi-serial"
     elif mpilib is None:
         mpilib = machobj.get_default_MPIlib()
-        logger.info("Using mpilib: %s"%mpilib)
+        logger.info("Using mpilib: {}".format(mpilib))
 
     if compiler is None:
         compiler = machobj.get_default_compiler()
-        logger.info("Compiler is %s"%compiler)
+        logger.info("Compiler is {}".format(compiler))
 
     compilerobj = Compilers(machobj, compiler=compiler, mpilib=mpilib)
 
-    find_pfunit(compilerobj, mpilib=mpilib, use_openmp=use_openmp)
+    pfunit_path = find_pfunit(compilerobj, mpilib=mpilib, use_openmp=use_openmp)
 
     debug = not build_optimized
     os_ = machobj.get_value("OS")
@@ -333,7 +337,7 @@ def _main():
     if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:
         # The CMake Netcdf find utility that we use (from pio2) seems to key off
         # of the environment variable NETCDF, but not NETCDF_PATH
-        logger.info("Setting NETCDF environment variable: %s"%os.environ["NETCDF_PATH"])
+        logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDF_PATH"]))
         os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
 
     if not use_mpi:
@@ -349,7 +353,7 @@ def _main():
         # We can get away with specifying case=None since we're using exe_only=True
         mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
         mpirun_command = machspecific.get_resolved_value(mpirun_command)
-        logger.info("mpirun command is '%s'"%mpirun_command)
+        logger.info("mpirun command is '{}'".format(mpirun_command))
 
 #=================================================
 # Run tests.
@@ -376,7 +380,7 @@ def _main():
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             use_mpiserial = not use_mpi
-            cmake_stage(name, directory, build_optimized, use_mpiserial, mpirun_command, output, verbose=verbose,
+            cmake_stage(name, directory, build_optimized, use_mpiserial, mpirun_command, output, pfunit_path, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
             make_stage(name, output, make_j, clean=clean, verbose=verbose)
 
@@ -398,9 +402,6 @@ def _main():
                 ctest_command.extend(ctest_args.split(" "))
 
             run_cmd_no_fail(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
-
-
-
 
 
 if __name__ == "__main__":

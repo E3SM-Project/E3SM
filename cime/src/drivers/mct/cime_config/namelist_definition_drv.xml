@@ -41,6 +41,23 @@
   -->
 
   <!-- =========================== -->
+  <!-- group cime_driver_inst              -->
+  <!-- =========================== -->
+
+  <entry id="ninst_driver" modify_via_xml="NINST_MAX">
+    <type>integer</type>
+    <category>cime_driver_inst</category>
+    <group>cime_driver_inst</group>
+    <desc>
+      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
+    </desc>
+    <values>
+      <value>1</value>
+      <value MULTI_DRIVER=".true.">$NINST_MAX</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cplflds_inparm    -->
   <!-- =========================== -->
 
@@ -49,15 +66,13 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Previously, new fields that were needed to be passed between components
-      for certain compsets were specified by cpp-variables. This has been
-      modified to now be use cases. This use cases are specified in the
-      namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
-      If CCSM_BGC is set to 'CO2A', then flds_co2a will be set to .true.
+      If set to .true., adds prognostic CO2 and diagnostic CO2 at the lowest
+      model level to be sent from the atmosphere to the land and ocean.
+      If CCSM_BGC is set to 'CO2A', then flds_co2a will be set to .true. by default
     </desc>
     <values>
       <value>.false.</value>
-      <value BGC_MODE="CO2A">.true.</value>
+      <value BGC_MODE="CO2A.*">.true.</value>
     </values>
   </entry>
 
@@ -66,11 +81,11 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Previously, new fields that were needed to be passed between components
-      for certain compsets were specified by cpp-variables. This has been
-      modified to now be use cases. This use cases are specified in the
-      namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
-      If CCSM_BGC is set to 'CO2B', then flds_co2b will be set to .true.
+      If set to .true., adds prognostic CO2 and diagnostic CO2 at the lowest
+      model level to be sent from the atmosphere just to the land, and the
+      surface upward flux of CO2 to be sent from the land back to the
+      atmosphere.
+      If CCSM_BGC is set to 'CO2B', then flds_co2b will be set to .true. by default.
     </desc>
     <values>
       <value>.false.</value>
@@ -83,11 +98,11 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Previously, new fields that were needed to be passed between components
-      for certain compsets were specified by cpp-variables. This has been
-      modified to now be use cases. This use cases are specified in the
-      namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
-      If CCSM_BGC is set to 'CO2C', then flds_co2c will be set to .true.
+      If set to .true., adds prognostic CO2 and diagnostic CO2 at the lowest
+      model level to be sent from the atmosphere to the land and ocean, and the
+      surface upward flux of CO2 to be sent from the land and the open ocean
+      back to the atmosphere.
+      If CCSM_BGC is set to 'CO2C', then flds_co2c will be set to .true. by default.
     </desc>
     <values>
       <value>.false.</value>
@@ -100,11 +115,7 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Previously, new fields that were needed to be passed between components
-      for certain compsets were specified by cpp-variables. This has been
-      modified to now be use cases. This use cases are specified in the
-      namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
-      If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
+      If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true. by default.
     </desc>
     <values>
       <value>.false.</value>
@@ -112,20 +123,17 @@
     </values>
   </entry>
 
-  <entry id="flds_bgc">
+  <entry id="flds_bgc_oi">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Previously, new fields that were needed to be passed between components
-      for certain compsets were specified by cpp-variables. This has been
-      modified to now be use cases. This use cases are specified in the
-      namelist cpl_flds_inparm and are currently triggered by the xml variable ACME_BGC.
-      This is a new master switch for turning ACME BGC off and on, just for testing.
-      If ACME_BGC is set to 'TRUE', then flds_bgc will be set to .true.
+      If set to .true. BGC fields will be passed back and forth between the ocean and seaice
+      via the coupler.
     </desc>
     <values>
       <value>.false.</value>
+      <value BGC_MODE=".*_OI">.true.</value>
     </values>
   </entry>
 
@@ -175,6 +183,19 @@
     </desc>
     <values>
       <value>$CPL_I2O_PER_CAT</value>
+    </values>
+  </entry>
+
+  <entry id="nan_check_component_fields">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      .true. means that all fields passed to coupler are checked for NaN values
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value cime_model='cesm'>.true.</value>
     </values>
   </entry>
 
@@ -572,6 +593,39 @@
     </values>
   </entry>
 
+  <entry id="glc_renormalize_smb">
+    <type>char</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <valid_values>on,off,on_if_glc_coupled_fluxes</valid_values>
+    <desc>
+      Whether to renormalize the surface mass balance (smb) sent from lnd to glc so that the
+      global integral on the glc grid agrees with the global integral on the lnd grid.
+
+      Unlike most fluxes, smb is remapped with bilinear rather than conservative mapping weights,
+      so this option is needed for conservation. However, conservation is not required in many
+      cases, since we often run glc as a diagnostic (one-way-coupled) component.
+
+      Allowable values are:
+      'on': always do this renormalization
+      'off': never do this renormalization (see WARNING below)
+      'on_if_glc_coupled_fluxes': Determine at runtime whether to do this renormalization.
+         Does the renormalization if we're running a two-way-coupled glc that sends fluxes
+         to other components (which is the case where we need conservation).
+         Does NOT do the renormalization if we're running a one-way-coupled glc, or if
+         we're running a glc-only compset (T compsets).
+         (In these cases, conservation is not important.)
+
+      Only used if running with a prognostic GLC component.
+
+      WARNING: Setting this to 'off' will break conservation when running with an
+      evolving, two-way-coupled glc.
+    </desc>
+    <values>
+      <value>on_if_glc_coupled_fluxes</value>
+    </values>
+  </entry>
+
   <entry id="wall_time_limit">
     <type>real</type>
     <category>control</category>
@@ -599,16 +653,56 @@
     </values>
   </entry>
 
-  <entry id="flux_diurnal">
+  <entry id="coldair_outbreak_mod">
     <type>logical</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      If true, turn on diurnal cycle in computing atm/ocn fluxes
-      default: false
+      if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
+      <value cime_model='acme'>.false.</value>
+      <value cime_model='cesm'>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="flux_diurnal">
+     <type>logical</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      If true, turn on diurnal cycle in computing atm/ocn fluxes
+      default: false
+     </desc>
+     <values>
       <value>.false.</value>
+     </values>
+   </entry>
+
+  <entry id="flux_convergence">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation to this % difference
+      Setting this to zero will always do flux_max_iteration
+    </desc>
+    <values>
+      <value cime_model='cesm'>0.0</value>
+      <value cime_model='acme'>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="flux_max_iteration">
+    <type>integer</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation a max of this value
+    </desc>
+    <values>
+      <value cime_model='cesm'>5</value>
+      <value cime_model='acme'>2</value>
     </values>
   </entry>
 
@@ -811,18 +905,6 @@
     </desc>
     <values>
       <value>$CPL_SEQ_OPTION</value>
-    </values>
-  </entry>
-
-  <entry id="cpl_cdf64">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      default: true
-    </desc>
-    <values>
-      <value>.true.</value>
     </values>
   </entry>
 
@@ -1603,13 +1685,13 @@
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <desc>
-      true => ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: true
+      true => ESP component runs after driver 'pause cycle' If any
+      component 'pauses' (see PAUSE_OPTION,
+      PAUSE_N and DATA_ASSIMILATION_XXX XML
+      variables), the ESP component (if present) will be run to
+      process the component 'pause' (restart) files and set any
+      required 'resume' signals.  If true, esp_cpl_dt and
+      esp_cpl_offset settings are ignored.  default: true
     </desc>
     <values>
       <value>.true.</value>
@@ -2016,20 +2098,6 @@
     </desc>
     <values>
       <value>$PAUSE_N</value>
-    </values>
-  </entry>
-
-  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
-    <type>char</type>
-    <category>time</category>
-    <group>seq_timemgr_inparm</group>
-    <desc>
-      A colon-separated list of component types (e.g., ocn,atm) to receive a
-      resume signal after a pause has happened. Special values "all" or "none"
-      may be used in place of a list
-    </desc>
-    <values>
-      <value>$PAUSE_COMPONENT_LIST</value>
     </values>
   </entry>
 
@@ -2646,24 +2714,6 @@
     </desc>
     <values>
       <value>$PSTRID_CPL</value>
-    </values>
-  </entry>
-
-  <entry id="esmf_logging" modify_via_xml="ESMF_LOGFILE_KIND">
-    <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
-    <desc>
-      Determines what ESMF log files (if any) are generated when
-          USE_ESMF_LIB is TRUE. 
-      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
-          all of the PETs. Not supported on some platforms.
-      ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
-      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
-      By default, no ESMF log files are generated.
-    </desc>
-    <values>
-      <value>$ESMF_LOGFILE_KIND</value>
     </values>
   </entry>
 
@@ -3596,20 +3646,20 @@
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmapname"    modify_via_xml="GLC2OCN_RMAPNAME">
+  <entry id="glc2ocn_liq_rmapname"    modify_via_xml="GLC2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      glc to ocn runoff conservative mapping file
+      glc to ocn runoff conservative mapping file for liquid runoff
     </desc>
     <values>
-      <value>$GLC2OCN_RMAPNAME</value>
+      <value>$GLC2OCN_LIQ_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmaptype"    modify_via_xml="GLC2OCN_RMAPTYPE">
+  <entry id="glc2ocn_liq_rmaptype"    modify_via_xml="GLC2OCN_LIQ_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -3621,7 +3671,37 @@
       grid.
     </desc>
     <values>
-      <value>$GLC2OCN_RMAPTYPE</value>
+      <value>$GLC2OCN_LIQ_RMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_ice_rmapname"    modify_via_xml="GLC2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn runoff conservative mapping file for ice runoff
+    </desc>
+    <values>
+      <value>$GLC2OCN_ICE_RMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_ice_rmaptype"    modify_via_xml="GLC2OCN_ICE_RMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_ICE_RMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -3972,5 +4052,100 @@
     </values>
   </entry>
 
-</entry_id>
+  <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component atm
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ATM</value>
+    </values>
+  </entry>
 
+  <entry id="data_assimilation_cpl" modify_via_xml="DATA_ASSIMILATION_CPL">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component CPL
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ocn" modify_via_xml="DATA_ASSIMILATION_OCN">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component ocn
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_OCN</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_wav" modify_via_xml="DATA_ASSIMILATION_WAV">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component wav
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_glc" modify_via_xml="DATA_ASSIMILATION_GLC">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component glc
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_GLC</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_rof" modify_via_xml="DATA_ASSIMILATION_ROF">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component rof
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ROF</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ice" modify_via_xml="DATA_ASSIMILATION_ICE">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component ice
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ICE</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_lnd" modify_via_xml="DATA_ASSIMILATION_LND">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component lnd
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_LND</value>
+    </values>
+  </entry>
+
+</entry_id>

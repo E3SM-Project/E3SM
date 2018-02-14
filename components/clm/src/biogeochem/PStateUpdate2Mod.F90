@@ -98,6 +98,7 @@ contains
          ps%livecrootp_patch(p)         =  ps%livecrootp_patch(p) - pf%m_livecrootp_to_litter_patch(p) * dt
          ps%deadcrootp_patch(p)         =  ps%deadcrootp_patch(p) - pf%m_deadcrootp_to_litter_patch(p) * dt
          ps%retransp_patch(p)           =  ps%retransp_patch(p)   - pf%m_retransp_to_litter_patch(p)   * dt
+         ps%ppool_patch(p)              =  ps%ppool_patch(p)      - pf%m_ppool_to_litter_patch(p)   * dt
 
          ! storage pools
          ps%leafp_storage_patch(p)      =  ps%leafp_storage_patch(p)      - pf%m_leafp_storage_to_litter_patch(p)      * dt
@@ -191,6 +192,7 @@ contains
          ps%livecrootp_patch(p) = ps%livecrootp_patch(p) - pf%hrv_livecrootp_to_litter_patch(p) * dt
          ps%deadcrootp_patch(p) = ps%deadcrootp_patch(p) - pf%hrv_deadcrootp_to_litter_patch(p) * dt
          ps%retransp_patch(p)   = ps%retransp_patch(p)   - pf%hrv_retransp_to_litter_patch(p)   * dt
+         ps%ppool_patch(p)      = ps%ppool_patch(p)      - pf%hrv_ppool_to_litter_patch(p)      * dt
 
        if (ivt(p) >= npcropmin) then ! skip 2 generic crops
            ps%livestemp_patch(p)= ps%livestemp_patch(p)  - pf%hrv_livestemp_to_prod1p_patch(p)  * dt

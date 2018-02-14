@@ -82,7 +82,7 @@ CONTAINS
     nullify(grid_map)
 
     ! For this dycore, interpolated output should be OK
-    interp_ok = (iam < par%nprocs)
+    interp_ok = (par%dynproc)
 
     if (interp_ok) then
       ithr = omp_get_thread_num()
@@ -292,7 +292,7 @@ CONTAINS
           end do
 
           call transpose_chunk_to_block(1, cbuffer, bbuffer)
-          if(iam < par%nprocs) then
+          if(par%dynproc) then
              !$omp parallel do private (ie, bpter, icol)
              do ie=1,nelemd
 
@@ -311,14 +311,14 @@ CONTAINS
 
        end if
        allocate(dest(np,np,numlev,nelemd))
-       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev, numthreads_in=1)
+       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, numlev, fld_dyn(1:ncols,:,ie), dest(:,:,:,ie))
           call edgeVpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
        enddo
-       if(iam < par%nprocs) then
+       if(par%dynproc) then
           call bndry_exchangeV(par, edgebuf)
        end if
        do ie=1,nelemd
@@ -488,7 +488,7 @@ CONTAINS
           end do
 
           call transpose_chunk_to_block(2, cbuffer, bbuffer)
-          if(iam < par%nprocs) then
+          if(par%dynproc) then
              !$omp parallel do private (ie, bpter, icol)
              do ie=1,nelemd
                 
@@ -507,7 +507,7 @@ CONTAINS
           deallocate( cbuffer )
 
        end if
-       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev, numthreads_in=1)
+       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
@@ -515,7 +515,7 @@ CONTAINS
           
           call edgeVpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
        enddo
-       if(iam < par%nprocs) then
+       if(par%dynproc) then
           call bndry_exchangeV(par, edgebuf)
        end if
 

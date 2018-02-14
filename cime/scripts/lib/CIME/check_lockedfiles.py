@@ -7,6 +7,7 @@ from CIME.XML.env_build import EnvBuild
 from CIME.XML.env_case import EnvCase
 from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.env_batch import EnvBatch
+from CIME.XML.generic_xml import GenericXML
 from CIME.utils import run_cmd_no_fail
 
 logger = logging.getLogger(__name__)
@@ -22,8 +23,15 @@ def lock_file(filename, caseroot=None, newname=None):
     fulllockdir = os.path.join(caseroot, LOCKED_DIR)
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
-    logging.debug("Locking file %s to %s"%(filename, newname))
+    logging.debug("Locking file {} to {}".format(filename, newname))
+
+    # JGF: It is extremely dangerous to alter our database (xml files) without
+    # going through the standard API. The copy below invalidates all existing
+    # GenericXML instances that represent this file and all caching that may
+    # have involved this file. We should probably seek a safer way of locking
+    # files.
     shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
+    GenericXML.invalidate_file(os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
     expect("/" not in filename, "Please just provide basename of locked file")
@@ -37,18 +45,6 @@ def is_locked(filename, caseroot=None):
     caseroot = os.getcwd() if caseroot is None else caseroot
     return os.path.exists(os.path.join(caseroot, LOCKED_DIR, filename))
 
-def restore(filename, caseroot=None, newname=None):
-    """
-    Restore the locked version of filename into main case dir
-    """
-    expect("/" not in filename, "Please just provide basename of locked file")
-    caseroot = os.getcwd() if caseroot is None else caseroot
-    newname = filename if newname is None else newname
-    shutil.copyfile(os.path.join(caseroot, LOCKED_DIR, filename), os.path.join(caseroot, newname))
-    # relock the restored file if names diffs
-    if newname != filename:
-        lock_file(newname, caseroot)
-
 def check_pelayouts_require_rebuild(case, models):
     """
     Create if we require a rebuild, expects cwd is caseroot
@@ -59,31 +55,31 @@ def check_pelayouts_require_rebuild(case, models):
         # for any component
         env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
         for comp in models:
-            if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
+            if case.get_value("{}_PE_CHANGE_REQUIRES_REBUILD".format(comp)):
                 # Changing these values in env_mach_pes.xml will force
                 # you to clean the corresponding component
-                old_tasks   = env_mach_pes_locked.get_value("NTASKS_%s" % comp)
-                old_threads = env_mach_pes_locked.get_value("NTHRDS_%s" % comp)
-                old_inst    = env_mach_pes_locked.get_value("NINST_%s" % comp)
+                old_tasks   = env_mach_pes_locked.get_value("NTASKS_{}".format(comp))
+                old_threads = env_mach_pes_locked.get_value("NTHRDS_{}".format(comp))
+                old_inst    = env_mach_pes_locked.get_value("NINST_{}".format(comp))
 
-                new_tasks   = case.get_value("NTASKS_%s" % comp)
-                new_threads = case.get_value("NTHRDS_%s" % comp)
-                new_inst    = case.get_value("NINST_%s" % comp)
+                new_tasks   = case.get_value("NTASKS_{}".format(comp))
+                new_threads = case.get_value("NTHRDS_{}".format(comp))
+                new_inst    = case.get_value("NINST_{}".format(comp))
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logging.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
+                    logging.warning("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
-                    run_cmd_no_fail("./case.build --clean %s" % cleanflag)
+                    run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
 
         unlock_file("env_mach_pes.xml", case.get_value("CASEROOT"))
 
-def check_lockedfiles(caseroot=None):
+def check_lockedfiles(case):
     """
     Check that all lockedfiles match what's in case
 
     If caseroot is not specified, it is set to the current working directory
     """
-    caseroot = os.getcwd() if caseroot is None else caseroot
+    caseroot = case.get_value("CASEROOT")
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
@@ -91,47 +87,51 @@ def check_lockedfiles(caseroot=None):
         if fpart.count('.') > 1:
             continue
         cfile = os.path.join(caseroot, fpart)
+        components = case.get_values("COMP_CLASSES")
         if os.path.isfile(cfile):
             objname = fpart.split('.')[0]
             if objname == "env_build":
-                f1obj = EnvBuild(caseroot, cfile)
+                f1obj = case.get_env('build')
                 f2obj = EnvBuild(caseroot, lfile)
             elif objname == "env_mach_pes":
-                f1obj = EnvMachPes(caseroot, cfile)
-                f2obj = EnvMachPes(caseroot, lfile)
+                f1obj = case.get_env('mach_pes')
+                f2obj = EnvMachPes(caseroot, lfile, components=components)
             elif objname == "env_case":
-                f1obj = EnvCase(caseroot, cfile)
+                f1obj = case.get_env('case')
                 f2obj = EnvCase(caseroot, lfile)
             elif objname == "env_batch":
-                f1obj = EnvBatch(caseroot, cfile)
+                f1obj = case.get_env('batch')
                 f2obj = EnvBatch(caseroot, lfile)
             else:
-                logging.warn("Locked XML file '%s' is not current being handled" % fpart)
+                logging.warning("Locked XML file '{}' is not current being handled".format(fpart))
                 continue
             diffs = f1obj.compare_xml(f2obj)
             if diffs:
-                logging.warn("File %s has been modified"%lfile)
-                for key in diffs.keys():
-                    print("  found difference in %s : case %s locked %s" %
-                          (key, repr(diffs[key][0]), repr(diffs[key][1])))
 
+                logging.warning("File {} has been modified".format(lfile))
+                toggle_build_status = False
+                for key in diffs.keys():
+                    if key != "BUILD_COMPLETE":
+                        print("  found difference in {} : case {} locked {}"
+                              .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                        toggle_build_status = True
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup --reset ")
                 elif objname == "env_case":
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")
                 elif objname == "env_build":
-                    logging.warn("Setting build complete to False")
-                    f1obj.set_value("BUILD_COMPLETE", False)
-                    if "PIO_VERSION" in diffs.keys():
-                        f1obj.set_value("BUILD_STATUS", 2)
-                        f1obj.write()
-                        logging.critical("Changing PIO_VERSION requires running "
-                                         "case.build --clean-all and rebuilding")
-                    else:
-                        f1obj.set_value("BUILD_STATUS", 1)
-                        f1obj.write()
+                    if toggle_build_status:
+                        logging.warning("Setting build complete to False")
+                        case.set_value("BUILD_COMPLETE", False)
+                        if "PIO_VERSION" in diffs:
+                            case.set_value("BUILD_STATUS", 2)
+                            logging.critical("Changing PIO_VERSION requires running "
+                                             "case.build --clean-all and rebuilding")
+                        else:
+                            case.set_value("BUILD_STATUS", 1)
+                        f2obj.set_value("BUILD_COMPLETE", False)
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:
-                    expect(False, "'%s' diff was not handled" % objname)
+                    expect(False, "'{}' diff was not handled".format(objname))

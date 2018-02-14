@@ -7,7 +7,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob, itertools
+import os, shutil, sys, glob, itertools, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -16,9 +16,10 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import run_cmd_no_fail, get_model, get_time_in_seconds
+from CIME.utils import get_model, get_time_in_seconds, get_timestamp
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
+from CIME.XML.grids import Grids
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
+    config['MULTI_DRIVER'] = '.true.' if case.get_value('MULTI_DRIVER') else '.false.'
     config['OS'] = case.get_value('OS')
     config['glc_nec'] = 0 if case.get_value('GLC_NEC') == 0 else case.get_value('GLC_NEC')
     config['single_column'] = 'true' if case.get_value('PTS_MODE') else 'false'
@@ -80,30 +82,29 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         if case.get_value('CALENDAR') == 'NO_LEAP':
             basedt = 3600 * 24 * 365
         else:
-            expect(False, "Invalid CALENDAR for NCPL_BASE_PERIOD %s " %ncpl_base_period)
+            expect(False, "Invalid CALENDAR for NCPL_BASE_PERIOD {} ".format(ncpl_base_period))
     elif ncpl_base_period == 'decade':
         if case.get_value('CALENDAR') == 'NO_LEAP':
             basedt = 3600 * 24 * 365 * 10
         else:
-            expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD %s " %ncpl_base_period)
+            expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD {} ".format(ncpl_base_period))
     else:
-        expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        expect(False, "invalid NCPL_BASE_PERIOD NCPL_BASE_PERIOD {} ".format(ncpl_base_period))
 
     if basedt < 0:
-        expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
+        expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD {} ".format(ncpl_base_period))
 
     comps = case.get_values("COMP_CLASSES")
     mindt = basedt
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
-            cpl_dt = basedt / int(ncpl)
+            cpl_dt = int(basedt / int(ncpl))
             totaldt = cpl_dt * int(ncpl)
             if totaldt != basedt:
-                expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
+                expect(False, " {} ncpl doesn't divide base dt evenly".format(comp))
             nmlgen.add_default(comp.lower() + '_cpl_dt', value=cpl_dt)
             mindt = min(mindt, cpl_dt)
-#        elif comp.lower() is not 'cpl':
 
     #--------------------------------
     # Overwrite: set start_ymd
@@ -143,20 +144,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
-    if pauseo != 'never' and pauseo != 'none':
+    if pauseo is not None and pauseo != 'never' and pauseo != 'none':
         pausen = case.get_value('PAUSE_N')
-        pcl = nmlgen.get_default('pause_component_list')
-        nmlgen.add_default('pause_component_list', pcl)
-        # Check to make sure pause_component_list is valid
-        pcl = nmlgen.get_value('pause_component_list')
-        if pcl != 'none' and pcl != 'all':
-            pause_comps = pcl.split(':')
-            comp_classes = case.get_values("COMP_CLASSES")
-            for comp in pause_comps:
-                expect(comp == 'drv' or comp.upper() in comp_classes,
-                       "Invalid PAUSE_COMPONENT_LIST, %s is not a valid component type"%comp)
-            # End for
-        # End if
         # Set esp interval
         if 'nstep' in pauseo:
             esp_time = mindt
@@ -169,27 +158,82 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
     #--------------------------------
+    write_drv_in_file(case, nmlgen, confdir)
+
+    #--------------------------------
+    # (2) Write out seq_map.rc file
+    #--------------------------------
+    write_seq_maps_file(case, nmlgen, confdir)
+
+    #--------------------------------
+    # (3) Construct and write out drv_flds_in
+    #--------------------------------
+    write_drv_flds_in_file(case, nmlgen, files)
+
+###############################################################################
+def write_drv_in_file(case, nmlgen, confdir):
+###############################################################################
     data_list_path = os.path.join(case.get_case_root(), "Buildconf", "cpl.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
     namelist_file = os.path.join(confdir, "drv_in")
     nmlgen.write_output_file(namelist_file, data_list_path )
 
-    #--------------------------------
-    # (2) Write out seq_map.rc file
-    #--------------------------------
+###############################################################################
+def write_seq_maps_file(case, nmlgen, confdir):
+###############################################################################
+    # first determine if there are invalid idmap settings
+    # if source and destination grid are different, mapping file must not be "idmap"
+    gridvalue = {}
+    ignore_component = {}
+    exclude_list = ["CPL","ESP"]
+    for comp_class in case.get_values("COMP_CLASSES"):
+        if comp_class not in exclude_list:
+            gridvalue[comp_class.lower()] = case.get_value(comp_class + "_GRID" )
+            if case.get_value(comp_class + "_GRID" ) == 'null':
+                ignore_component[comp_class.lower()] = True
+            else:
+                ignore_component[comp_class.lower()] = False
+
+    # Currently, hard-wire values of mapping file names to ignore
+    # TODO: for rof2ocn_fmapname -needs to be resolved since this is currently
+    # used in prep_ocn_mod.F90 if flood_present is True - this is in issue #1908.
+    # The following is only approriate for config_grids.xml version 2.0 or later
+    grid_version = Grids().get_version()
+    if grid_version >= 2.0:
+        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname",
+                         "glc2ocn_liq_rmapname", "glc2ocn_ice_rmapname"]
+        group_variables = nmlgen.get_group_variables("seq_maps")
+        for name in group_variables:
+            value = group_variables[name]
+            if "mapname" in name:
+                value = re.sub('\"', '', value)
+                if 'idmap' == value:
+                    component1 = name[0:3]
+                    component2 = name[4:7]
+                    if not ignore_component[component1]  and not ignore_component[component2]:
+                        if name in ignore_idmaps:
+                            logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
+                        else:
+                            if "rof2ocn_" in name:
+                                if case.get_value("COMP_OCN") == 'docn':
+                                    logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
+                            else:
+                                expect(gridvalue[component1] == gridvalue[component2],
+                                       "Need to provide valid mapping file between {} and {} in xml variable {} ".\
+                                           format(component1, component2, name))
+
+    # now write out the file
     seq_maps_file = os.path.join(confdir, "seq_maps.rc")
     nmlgen.write_seq_maps(seq_maps_file)
 
-    #--------------------------------
-    # (3) Construct and write out drv_flds_in
-    #--------------------------------
+###############################################################################
+def write_drv_flds_in_file(case, nmlgen, files):
+###############################################################################
     # In thte following, all values come simply from the infiles - no default values need to be added
     # FIXME - do want to add the possibility that will use a user definition file for drv_flds_in
 
     caseroot = case.get_value('CASEROOT')
-
-    namelist_file = os.path.join(confdir, "drv_flds_in")
 
     nmlgen.add_default('drv_flds_in_files')
     drvflds_files = nmlgen.get_default('drv_flds_in_files')
@@ -200,7 +244,6 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             infiles.append(infile)
 
     if len(infiles) != 0:
-
         # First read the drv_flds_in files and make sure that
         # for any key there are not two conflicting values
         dicts = {}
@@ -220,7 +263,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
         # Now create drv_flds_in
         config = {}
-        definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv_flds"})]
+        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+        definition_file = [os.path.join(definition_dir, "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True
         nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
@@ -234,8 +278,7 @@ def compare_drv_flds_in(first, second, infile1, infile2):
     for key in sharedKeys:
         if first[key] != second[key]:
             print('Key: {}, \n Value 1: {}, \n Value 2: {}'.format(key, first[key], second[key]))
-            expect(False, "incompatible settings in drv_flds_in from \n %s \n and \n %s"
-                   % (infile1, infile2))
+            expect(False, "incompatible settings in drv_flds_in from \n {} \n and \n {}".format(infile1, infile2))
 
 ###############################################################################
 def _create_component_modelio_namelists(case, files):
@@ -243,36 +286,39 @@ def _create_component_modelio_namelists(case, files):
 
     # will need to create a new namelist generator
     infiles = []
-    definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"modelio"})]
+    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+    definition_file = [os.path.join(definition_dir, "namelist_definition_modelio.xml")]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
-    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
 
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
-    for model in models:
+    #if we are in multi-coupler mode the number of instances of cpl will be the max
+    # of any NINST_* value
+    maxinst = 1
+    if case.get_value("MULTI_DRIVER"):
+        maxinst = case.get_value("NINST_MAX")
+
+    for model in case.get_values("COMP_CLASSES"):
+        model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-
-            if model == 'cpl':
-                inst_count = 1
-            else:
+            if maxinst == 1 and model != 'cpl':
                 inst_count = case.get_value("NINST_" + model.upper())
+            else:
+                inst_count = maxinst
 
+            inst_string = ""
             inst_index = 1
             while inst_index <= inst_count:
-                inst_string = inst_index
-                if inst_index <= 999:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  99:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  9:
-                    inst_string = "0" + str(inst_string)
+                # determine instance string
+                if inst_count > 1:
+                    inst_string = '_{:04d}'.format(inst_index)
 
                 # set default values
                 for entry in entries:
-                    nmlgen.add_default(entry.get("id"))
+                    nmlgen.add_default(entry)
 
                 # overwrite defaults
                 moddiri = case.get_value('EXEROOT') + "/" + model
@@ -281,17 +327,11 @@ def _create_component_modelio_namelists(case, files):
                 moddiro = case.get_value('RUNDIR')
                 nmlgen.set_value('diro', moddiro)
 
-                if inst_count > 1:
-                    logfile = model + "_" + inst_string + ".log." + str(lid)
-                else:
-                    logfile = model + ".log." + str(lid)
+                logfile = model + inst_string + ".log." + str(lid)
                 nmlgen.set_value('logfile', logfile)
 
                 # Write output file
-                if inst_count > 1:
-                    modelio_file = model + "_modelio.nml_" + str(inst_string)
-                else:
-                    modelio_file = model + "_modelio.nml"
+                modelio_file = model + "_modelio.nml" + inst_string
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
 
                 inst_index = inst_index + 1
@@ -311,7 +351,7 @@ def buildnml(case, caseroot, component):
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src.drv")
 
     expect (os.path.isdir(user_xml_dir),
-            "user_xml_dir %s does not exist " %user_xml_dir)
+            "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     files = Files()
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv"})]

@@ -10,6 +10,7 @@ from CIME.BuildTools.macrowriterbase import write_macros_file_v1
 from CIME.BuildTools.makemacroswriter import MakeMacroWriter
 from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
 from CIME.BuildTools.macroconditiontree import merge_optional_trees
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,16 @@ class Compilers(GenericXML):
 
         self.machine  = machobj.get_machine_name()
         self.os = machobj.get_value("OS")
-        if mpilib is None:
-            mpilib = machobj.get_default_MPIlib()
-        self.mpilib = mpilib
         if compiler is None:
             compiler = machobj.get_default_compiler()
         self.compiler       = compiler
+
+        if mpilib is None:
+            if compiler is None:
+                mpilib = machobj.get_default_MPIlib()
+            else:
+                mpilib = machobj.get_default_MPIlib(attributes={'compiler':compiler})
+        self.mpilib = mpilib
 
         self.compiler_nodes = None # Listed from last to first
         #Append the contents of $HOME/.cime/config_compilers.xml if it exists
@@ -54,13 +59,10 @@ class Compilers(GenericXML):
             self.set_compiler(compiler)
 
         if self._version > 1.0:
-            # Run an XPath query to extract the list of flag variable names.
-            ns = {"xs": "http://www.w3.org/2001/XMLSchema"}
-            flag_xpath = ".//xs:group[@name='compilerVars']/xs:choice/xs:element[@type='flagsVar']"
-            flag_elems = ET.parse(schema).getroot().findall(flag_xpath, ns)
-            self.flag_vars = set(elem.get('name') for elem in flag_elems)
-
-
+            schema_db = GenericXML(infile=schema)
+            compiler_vars = schema_db.get_child("{http://www.w3.org/2001/XMLSchema}group", attributes={"name":"compilerVars"})
+            choice  = schema_db.get_child(name="{http://www.w3.org/2001/XMLSchema}choice", root=compiler_vars)
+            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(root=choice, attributes={"type":"flagsVar"}))
 
     def get_compiler(self):
         """
@@ -74,7 +76,7 @@ class Compilers(GenericXML):
         """
         expect(self.compiler_nodes is not None, "Compiler not set, use parent get_node?")
         for compiler_node in self.compiler_nodes:
-            result = self.get_optional_node(nodename, attributes, root=compiler_node)
+            result = self.get_optional_child(name=nodename, attributes=attributes, root=compiler_node)
             if result is not None:
                 return result
 
@@ -82,7 +84,7 @@ class Compilers(GenericXML):
 
     def _is_compatible(self, compiler_node, compiler, machine, os_, mpilib):
         for xmlid, value in [ ("COMPILER", compiler), ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
-            if value is not None and xmlid in compiler_node.attrib and value != compiler_node.get(xmlid):
+            if value is not None and self.has(compiler_node, xmlid) and value != self.get(compiler_node, xmlid):
                 return False
 
         return True
@@ -102,7 +104,7 @@ class Compilers(GenericXML):
 
         if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_nodes is None:
             self.compiler_nodes = []
-            nodes = self.get_nodes("compiler")
+            nodes = self.get_children(name="compiler")
             for node in nodes:
                 if self._is_compatible(node, compiler, machine, os_, mpilib):
                     self.compiler_nodes.append(node)
@@ -114,6 +116,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
@@ -122,9 +125,9 @@ class Compilers(GenericXML):
         expect(subgroup is None, "This class does not support subgroups")
         value = None
 
-        node = self.get_optional_compiler_node(name)
+        node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
-            value = node.text
+            value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -147,7 +150,7 @@ class Compilers(GenericXML):
 
             # Do worst matches first
             for compiler_node in reversed(self.compiler_nodes):
-                _add_to_macros(compiler_node, macros)
+                _add_to_macros(self, compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
                                         self.machine, macros_file=macros_file,
                                         output_format=output_format)
@@ -159,7 +162,7 @@ class Compilers(GenericXML):
             else:
                 format_ = output_format
 
-            if isinstance(macros_file, basestring):
+            if isinstance(macros_file, six.string_types):
                 with open(macros_file, "w") as macros:
                     self._write_macros_file_v2(format_, macros)
             else:
@@ -189,12 +192,14 @@ class Compilers(GenericXML):
         value_lists = dict()
         node_list = []
         if xml is None:
-            node_list = self.get_nodes("compiler")
+            node_list = self.get_children(name="compiler")
         else:
-            node_list = ET.parse(xml).findall("compiler")
+            gen_xml = GenericXML()
+            gen_xml.read_fd(xml)
+            node_list = gen_xml.get_children(name="compiler")
 
         for compiler_elem in node_list:
-            block = CompilerBlock(writer, compiler_elem, self._machobj)
+            block = CompilerBlock(writer, compiler_elem, self._machobj, self)
             # If this block matches machine settings, use it.
             if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
@@ -204,13 +209,13 @@ class Compilers(GenericXML):
         while value_lists:
             # Variables that are ready to be written.
             ready_variables = [
-                var_name for var_name in value_lists.keys()
+                var_name for var_name in value_lists
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The file %s has bad <var> references. "
+                   "The file {} has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined."%self.filename)
+                   "are in a <var> tag but not actually defined.".format(self.filename))
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:
@@ -231,21 +236,19 @@ class Compilers(GenericXML):
             if big_append_tree is not None:
                 big_append_tree.write_out(writer)
 
-
-
-def _add_to_macros(node, macros):
-    for child in node:
-        name = child.tag
-        attrib = child.attrib
-        value = child.text
+def _add_to_macros(db, node, macros):
+    for child in db.get_children(root=node):
+        name = db.name(child)
+        attrib = db.attrib(child)
+        value = db.text(child)
 
         if not attrib:
             if name.startswith("ADD_"):
                 basename = name[4:]
                 if basename in macros:
-                    macros[basename] = "%s %s" % (macros[basename], value)
+                    macros[basename] = "{} {}".format(macros[basename], value)
                 elif name in macros:
-                    macros[name] = "%s %s" % (macros[name], value)
+                    macros[name] = "{} {}".format(macros[name], value)
                 else:
                     macros[name] = value
             else:
@@ -253,7 +256,7 @@ def _add_to_macros(node, macros):
 
         else:
             cond_macros = macros["_COND_"]
-            for key, value2 in attrib.iteritems():
+            for key, value2 in attrib.items():
                 if key not in cond_macros:
                     cond_macros[key] = {}
                 if value2 not in cond_macros[key]:

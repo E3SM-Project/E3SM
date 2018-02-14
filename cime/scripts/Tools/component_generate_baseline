@@ -13,16 +13,14 @@ from CIME.hist_utils import generate_baseline
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<casedir>] [--verbose]
+        usage="""\n{0} [<casedir>] [--verbose]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Generate baselines \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -52,7 +50,7 @@ def _main_func(description):
     with Case(caseroot) as case:
         success, comments = generate_baseline(case, baseline_dir,
                                               allow_baseline_overwrite)
-        print comments
+        print(comments)
 
     sys.exit(0 if success else 1)
 

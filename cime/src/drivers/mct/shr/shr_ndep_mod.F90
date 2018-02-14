@@ -47,7 +47,6 @@ CONTAINS
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
-    character(len=8) :: token   ! dry dep field name to add
     integer :: mpicom           ! MPI communicator
 
     integer, parameter :: maxspc = 100             ! Maximum number of species
@@ -87,10 +86,10 @@ CONTAINS
                    call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
                 endif
              end do
-             close( unitn )
           else
              write(s_logunit,*) 'shr_ndep_readnl:  no ndep_inparm namelist found in ',NLFilename
           endif
+          close( unitn )
           call shr_file_freeUnit( unitn )
        end if
     end if
@@ -100,7 +99,7 @@ CONTAINS
     if (len_trim(ndep_list(1)) == 0) then
        add_ndep_fields = .false.
     else
-       ! Loop over species to fill list of fields to communicate for ndep 
+       ! Loop over species to fill list of fields to communicate for ndep
        add_ndep_fields = .true.
        do i=1,maxspc
           if ( len_trim(ndep_list(i))==0 ) exit

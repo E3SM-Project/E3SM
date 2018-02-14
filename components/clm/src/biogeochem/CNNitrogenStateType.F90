@@ -12,7 +12,7 @@ module CNNitrogenStateType
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin
+  use pftvarcon              , only : npcropmin, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -836,6 +836,9 @@ contains
           this%deadcrootn_xfer_patch(p)    = 0._r8
           this%retransn_patch(p)           = 0._r8
           this%npool_patch(p)              = 0._r8
+          if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then 
+              this%npool_patch(p)          = 10.0_r8
+          end if
           this%ntrunc_patch(p)             = 0._r8
           this%dispvegn_patch(p)           = 0._r8
           this%storvegn_patch(p)           = 0._r8
@@ -1338,10 +1341,10 @@ contains
              do j = 1, nlevdecomp
 	       if ( exit_spinup ) then
 		 m = decomp_cascade_con%spinup_factor(k)
-                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
                else if ( enter_spinup ) then 
                  m = 1. / decomp_cascade_con%spinup_factor(k)
-		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
                end if 
                this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
              end do
