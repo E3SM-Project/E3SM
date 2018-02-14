@@ -14,7 +14,7 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 import six
-from update_acme_tests import get_recommended_test_time
+from update_e3sm_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
 from CIME.XML.machines import Machines
@@ -395,7 +395,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if get_model() == "acme":
+            if get_model() == "e3sm":
                 component = "allactive"
                 modspath = test_mods
             else:
@@ -448,7 +448,7 @@ class TestScheduler(object):
             create_newcase_cmd += " --walltime {}".format(self._walltime)
         else:
             # model specific ways of setting time
-            if get_model() == "acme":
+            if get_model() == "e3sm":
                 recommended_time = get_recommended_test_time_based_on_past(self._baseline_root, test)
 
                 if recommended_time is None:
@@ -575,7 +575,7 @@ class TestScheduler(object):
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
             # if we are running a single test we don't need sharedlibroot
-            if len(self._tests) > 1 and get_model() != "acme":
+            if len(self._tests) > 1 and get_model() != "e3sm":
                 case.set_value("SHAREDLIBROOT",
                                os.path.join(self._output_root,
                                             "sharedlibroot.{}".format(self._test_id)))

@@ -113,7 +113,7 @@ def delete_tag(tag, remote="origin"):
     run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag), verbose=True)
 
 ###############################################################################
-def acme_cime_split(resume):
+def e3sm_cime_split(resume):
 ###############################################################################
     if not resume:
         setup()
@@ -150,7 +150,7 @@ def acme_cime_split(resume):
     delete_tag(old_split_tag)
 
 ###############################################################################
-def acme_cime_merge(resume):
+def e3sm_cime_merge(resume):
 ###############################################################################
     if not resume:
         setup()

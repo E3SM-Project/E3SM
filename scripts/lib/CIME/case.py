@@ -142,7 +142,7 @@ class Case(object):
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
-            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "acme.exe")
+            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "e3sm.exe")
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
         else:
@@ -1044,7 +1044,7 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: {} {} {}".format(str(e), toolfile, destfile))
 
-        if get_model() == "acme":
+        if get_model() == "e3sm":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
                 shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
@@ -1264,7 +1264,7 @@ class Case(object):
                     if m is not None:
                         version = m.group(1)
                         break
-        elif model == "acme":
+        elif model == "e3sm":
             version = get_current_commit(True, srcroot)
         self.set_value("MODEL_VERSION", version)
 
