@@ -3805,23 +3805,6 @@ contains
 
       end do ! end pft loop
 
-      ! QING ZHU 2017
-      ! update CUE for woody/litter decomposition based on NP limitation condition
-      ! Manzoni 2012 DOI: 10.1111/j.1469-8137.2012.04225.x, CUE change from 80% to 10%
-      ! when microbe become more and more nutrient limited
-      !if (nu_com .ne. 'RD') then
-      !   do j = 1, nlevdecomp
-      !      do fc=1,num_soilc
-      !         c = filter_soilc(fc)
-      !         rf_decomp_cascade(c,j,9) = 0.55_r8 !0.8_r8 - 0.7_r8*min(1.0_r8,max(0.0_r8,min(fpi_vr(c,j),fpi_p_vr(c,j))))  ! i_cwdl3
-      !         rf_decomp_cascade(c,j,10) = 0.55_r8 !0.8_r8 - 0.7_r8*min(1.0_r8,max(0.0_r8,min(fpi_vr(c,j),fpi_p_vr(c,j)))) ! i_cwdl3
-      !         !rf_decomp_cascade(c,j,1) = 0.8_r8 - 0.7_r8*min(1.0_r8,max(0.0_r8,min(fpi_vr(c,j),fpi_p_vr(c,j)))) ! i_l1s1
-      !         !rf_decomp_cascade(c,j,2) = 0.8_r8 - 0.7_r8*min(1.0_r8,max(0.0_r8,min(fpi_vr(c,j),fpi_p_vr(c,j)))) ! i_l1s2
-      !         !rf_decomp_cascade(c,j,3) = 0.8_r8 - 0.7_r8*min(1.0_r8,max(0.0_r8,min(fpi_vr(c,j),fpi_p_vr(c,j)))) ! i_l1s3
-      !      end do
-      !   end do
-      !end if
-
       !----------------------------------------------------------------
       ! now use the p2c routine to update column level soil mineral N and P uptake
       ! based on competition between N and P limitation       - XYANG

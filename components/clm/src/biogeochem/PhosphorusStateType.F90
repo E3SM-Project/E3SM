@@ -438,7 +438,7 @@ contains
     this%ppool_patch(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
          avgflag='A', long_name='temporary plant P pool', &
-         ptr_patch=this%ppool_patch, default='active')
+         ptr_patch=this%ppool_patch, default='inactive')
 
     this%ptrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
