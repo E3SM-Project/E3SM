@@ -180,10 +180,10 @@ module seq_comm_mct
   character(*), parameter :: layout_concurrent = 'concurrent'
   character(*), parameter :: layout_sequential = 'sequential'
 
-  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')','(',a,a,')')"
-  character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
-  character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
-  character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
+  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,2i7,i3,'(',a,i7,')',' (',a,i3,')','(',a,a,')')"
+  character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i7,3x,'(',a,i7,')',' (',a,i3,')','(',a,2i6,')')"
+  character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i7,3x,'(',a,i7,')',' (',a,i3,')')"
+  character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    5x,'(',a,i7,')',' (',a,i3,')')"
 
   ! Exposed for use in the esp component, please don't use this elsewhere
   integer, public :: Global_Comm
@@ -710,7 +710,7 @@ contains
     endif
 
     if (seq_comms(ID)%iamroot) then
-       write(logunit,F11) trim(subname),'  initialize ID ',ID,seq_comms(ID)%name, &
+       write(logunit,F11) trim(subname),'  init ID ',ID,seq_comms(ID)%name, &
             ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads,&
             ' suffix =',trim(seq_comms(ID)%suffix)
     endif
@@ -826,12 +826,12 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        if (loglevel > 1) then
-          write(logunit,F12) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F12) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join IDs =',ID1,ID2,' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads, &
                ' cpl/cmp pes =',seq_comms(ID)%cplpe,seq_comms(ID)%cmppe
        else
-          write(logunit,F13) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F13) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join IDs =',ID1,ID2,' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        endif
@@ -949,11 +949,11 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        if (loglevel > 1) then
-          write(logunit,F14) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F14) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join multiple comp IDs',' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        else
-          write(logunit,F14) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F14) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join multiple comp IDs',' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        endif
