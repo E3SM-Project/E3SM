@@ -1462,7 +1462,7 @@
         <arg name="num_tasks" >-n $TOTALPES</arg>
         <arg name="tasks_per_node" >-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTALPES` ];then echo `./xmlquery --value TOTALPES`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
         <arg name="hyperthreading" >--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
-        <arg name="smp_vars">$ENV{SMP_VARS}</arg>
+        <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
       </arguments>
     </mpirun>
     <environment_variables>
@@ -1470,6 +1470,7 @@
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
+      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
       <env name="SMP_VARS"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
