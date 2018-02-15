@@ -450,6 +450,7 @@ contains
 
     ! Initialize MCT
 
+    ! ensure that all driver_comm processes initialized their comms
     call mpi_barrier(DRIVER_COMM,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_barrier driver pre-mct-init')
 
@@ -577,7 +578,7 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
-          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,drv_comm_id=drv_comm_id)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=drv_comm_id)
        else
           call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=n,tinst=num_inst_comp)
        endif
@@ -625,7 +626,7 @@ contains
   end subroutine seq_comm_clean
 
   !---------------------------------------------------------
-  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst,drv_comm_id)
+  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
 
     implicit none
     integer,intent(IN) :: ID
@@ -634,7 +635,6 @@ contains
     character(len=*),intent(IN),optional :: iname  ! name of component
     integer,intent(IN),optional :: inst  ! instance of component
     integer,intent(IN),optional :: tinst ! total number of instances for this component
-    integer, intent(in), optional :: drv_comm_id
 
     integer :: mpigrp_world
     integer :: mpigrp
