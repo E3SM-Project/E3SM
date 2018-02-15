@@ -222,6 +222,7 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, &
@@ -449,12 +450,17 @@ contains
 
     ! Initialize MCT
 
+    call mpi_barrier(DRIVER_COMM,ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_barrier driver pre-mct-init')
+
     ! add up valid comps on local pe
 
+    valid_comps = '*'
     myncomps = 0
     do n = 1,ncomps
        if (seq_comms(n)%mpicom /= MPI_COMM_NULL) then
           myncomps = myncomps + 1
+          valid_comps(n) = seq_comms(n)%name
        endif
     enddo
 
@@ -477,7 +483,7 @@ contains
     enddo
 
     if (myncomps /= size(comps)) then
-       write(logunit,*) trim(subname),' ERROR in myncomps ',myncomps,size(comps)
+       write(logunit,*) trim(subname),' ERROR in myncomps ',myncomps,size(comps),comps,valid_comps
        call shr_sys_abort()
     endif
 
