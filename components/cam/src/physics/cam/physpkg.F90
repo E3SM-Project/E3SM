@@ -17,7 +17,7 @@ module physpkg
   use spmd_utils,       only: masterproc, iam, npes!BSINGH added iam, npes
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
-       physics_ptend, physics_tend_init, physics_update,    &
+       physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update_intr, physics_update_intr_init
@@ -1421,7 +1421,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
     use constituents,       only: cnst_get_ind
-    use physics_types,      only: physics_state, physics_tend, physics_ptend, physics_update,    &
+    use physics_types,      only: physics_state, physics_tend, physics_ptend,    &
          physics_dme_adjust, set_dry_to_wet, physics_state_check
     use majorsp_diffusion,  only: mspd_intr  ! WACCM-X major diffusion
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
@@ -1897,7 +1897,7 @@ subroutine tphysbc (ztodt,               &
     ! Each parameterization should be implemented with this sequence of calls:
     !  1)  Call physics interface
     !  2)  Check energy
-    !  3)  Call physics_update
+    !  3)  Call physics_update_intr
     ! See Interface to Column Physics and Chemistry Packages 
     !   http://www.ccsm.ucar.edu/models/atm-cam/docs/phys-interface/index.html
     ! 
@@ -1915,7 +1915,7 @@ subroutine tphysbc (ztodt,               &
     use microp_driver,   only: microp_driver_tend
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
-    use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_update, &
+    use physics_types,   only: physics_state, physics_tend, physics_ptend, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld, fieldname_len
@@ -2544,7 +2544,7 @@ end if
              flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
              flx_heat(:ncol) = det_s(:ncol)
 
-             ! Unfortunately, physics_update does not know what time period
+             ! Unfortunately, physics_update_intr does not know what time period
              ! "tend" is supposed to cover, and therefore can't update it
              ! with substeps correctly. For now, work around this by scaling
              ! ptend down by the number of substeps, then applying it for
@@ -2585,7 +2585,7 @@ end if
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
 
-                ! Unfortunately, physics_update does not know what time period
+                ! Unfortunately, physics_update_intr does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
                 ! with substeps correctly. For now, work around this by scaling
                 ! ptend down by the number of substeps, then applying it for
@@ -2943,27 +2943,32 @@ subroutine add_fld_default_calls()
   !BSINGH -  For adding addfld and add defualt calls
   use units,        only: getunit, freeunit
   use cam_history,  only: addfld, add_default, fieldname_len
-  use ppgrid,       only: pcols, pver
   implicit none
   
   character(len=fieldname_len) :: str_in(35), str_S,str_Stend,str_QV,str_QVtend, str_T
   character(len=1000) :: str_S_detail,str_Stend_detail,str_QV_detail,str_QVtend_detail,str_T_detail
   
-  integer :: unitn, i, ntot
+  integer :: unitn, istr, ntot, stat
 
   
   if (masterproc) then
      unitn = getunit()
      open( unitn,file='physup_calls.txt',status='old', form='formatted' )
      !Find total number of strings in the input file
-     i = 0
+     istr = 0
      do while(.true.)
-        i = i + 1
-        read(unitn,*,end=100) str_in(i)
+        istr = istr + 1
+        read(unitn,*,iostat=stat) str_in(istr)
+        if( stat > 0 ) then
+           call endrun('Error reading physup_calls.txt file')
+        elseif( stat < 0 ) then
+           !end of file reached...
+           close(unitn)
+           exit
+        endif
      enddo
-100  close(unitn)
      call freeunit(unitn)      
-     ntot = i - 1
+     ntot = istr - 1 !it loops over till EOF, so we subtract 2 from "istr"
   endif
   
 #ifdef SPMD
@@ -2972,32 +2977,32 @@ subroutine add_fld_default_calls()
   call mpibcast(str_in,len(str_in(1))*ntot, mpichar, 0, mpicom)
 #endif
   
-  do i = 1, ntot   
+  do istr = 1, ntot   
 
-     str_S        = 'S_'//trim(adjustl(str_in(i)))
-     str_S_detail = 'Static Energy from '// trim(adjustl(str_in(i)))
+     str_S        = 'S_'//trim(adjustl(str_in(istr)))
+     str_S_detail = 'Static Energy from '// trim(adjustl(str_in(istr)))
 
      call addfld (trim(adjustl(str_S)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_S_detail)),flag_xyfill=.true.)
      call add_default (trim(adjustl(str_S)), 1, ' ')
 
-     str_T        = 'T_'//trim(adjustl(str_in(i)))
-     str_T_detail = 'Temprature from '// trim(adjustl(str_in(i)))
+     str_T        = 'T_'//trim(adjustl(str_in(istr)))
+     str_T_detail = 'Temprature from '// trim(adjustl(str_in(istr)))
      call addfld (trim(adjustl(str_T)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_T_detail)),flag_xyfill=.true.)
      call add_default (trim(adjustl(str_T)), 1, ' ')
      
-     str_QV        = 'QV_'//trim(adjustl(str_in(i)))
-     str_QV_detail = 'water vapor from '// trim(adjustl(str_in(i)))
+     str_QV        = 'QV_'//trim(adjustl(str_in(istr)))
+     str_QV_detail = 'water vapor from '// trim(adjustl(str_in(istr)))
      call addfld (str_QV, (/ 'lev' /), 'A', 'kg/kg',str_QV_detail, flag_xyfill=.true.)
      call add_default (str_QV, 1, ' ')
      
-     if(trim(adjustl(str_in(i))) .NE. 'topphysbc') then
-        !str_Stend        = 'St_'//trim(adjustl(str_in(i)))
-        !str_Stend_detail = 'Static Energy tend from '// trim(adjustl(str_in(i)))
+     if(trim(adjustl(str_in(istr))) .NE. 'topphysbc') then
+        !str_Stend        = 'St_'//trim(adjustl(str_in(istr)))
+        !str_Stend_detail = 'Static Energy tend from '// trim(adjustl(str_in(istr)))
         !call addfld (str_Stend, (/ 'lev' /), 'A', 'K/s', str_Stend_detail,flag_xyfill=.true.)
         !call add_default (str_Stend, 1, ' ')
         
-        !str_QVtend        = 'QVt_'//trim(adjustl(str_in(i)))
-        !str_QVtend_detail = 'water vapor tend from '// trim(adjustl(str_in(i)))
+        !str_QVtend        = 'QVt_'//trim(adjustl(str_in(istr)))
+        !str_QVtend_detail = 'water vapor tend from '// trim(adjustl(str_in(istr)))
         !call addfld (str_QVtend,(/ 'lev' /), 'A', 'kg/kg/s',str_QVtend_detail, flag_xyfill=.true.)
         !call add_default (str_QVtend, 1, ' ')
      endif

@@ -51,27 +51,47 @@ contains
     !optional arguments
     type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies over timestep
     
-    !local vars
-    character(len=fieldname_len)   :: vname
+    !Local vars
+    character(len = fieldname_len)   :: vname
+    character(len = 24)              :: pname 
+    
+    logical                          :: outfld_active
+    integer                          :: lchnk
+    
+    lchnk = state%lchnk
+    
+    !IMPORTANT:Store ptend%name as it will be modified in physics_update call
+    pname = ptend%name
+
+    !if nothing is to be updated in physics update, DO NOT output (using outfld calls) 
+    ! PERGRO variables ("T_...", "S_..." etc.) below
+    !Note: The following logical flag is required as sometimes "pname" is an empty string
+    !      due to some stub routine calls (e.g. "iondrag_calc") where ptend is an 
+    !      intent-out. This causes issues as intent-out will cause ptend%name to become undefined
+    outfld_active = .true.
+    if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) outfld_active = .false.
+
+
     
     call physics_update (state, ptend, dt, tend)
-    if (pergro_test_active) then
+    
+    if (pergro_test_active .and. outfld_active) then
           
        !BSINGH - output fields
-       vname = 'T_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(vname)), state%t, pcols, state%lchnk )
+       vname = 'T_'//trim(adjustl(pname))
+       call outfld( trim(adjustl(vname)), state%t, pcols, lchnk )
        
-       vname = 'S_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(vname)), state%s, pcols, state%lchnk )
+       vname = 'S_'//trim(adjustl(pname))
+       call outfld( trim(adjustl(vname)), state%s, pcols, lchnk )
        
-       !vname = 'St_'//trim(adjustl(ptend%name))
-       !call outfld( trim(adjustl(vname)), ptend%s, pcols, state%lchnk )
+       !vname = 'St_'//trim(adjustl(pname))
+       !call outfld( trim(adjustl(vname)), ptend%s, pcols, lchnk )
        
-       vname = 'QV_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(vname)), state%q(:,:,1), pcols, state%lchnk )
+       vname = 'QV_'//trim(adjustl(pname))
+       call outfld( trim(adjustl(vname)), state%q(:,:,1), pcols, lchnk )
        
-       !vname = 'QVt_'//trim(adjustl(ptend%name))
-       !call outfld( trim(adjustl(vname)), ptend%q(:,:,1), pcols, state%lchnk )
+       !vname = 'QVt_'//trim(adjustl(pname))
+       !call outfld( trim(adjustl(vname)), ptend%q(:,:,1), pcols, lchnk )
     endif
   end subroutine physics_update_intr
       

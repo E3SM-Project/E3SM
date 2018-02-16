@@ -432,7 +432,8 @@ end subroutine convect_shallow_init_cnst
    use physics_buffer,  only : physics_buffer_desc, pbuf_get_field, pbuf_set_field, pbuf_old_tim_idx
    use cam_history,     only : outfld
    use physics_types,   only : physics_state, physics_ptend
-   use physics_types,   only : physics_ptend_init, physics_update
+   use physics_types,   only : physics_ptend_init
+   use physics_update_mod, only: physics_update_intr
    use physics_types,   only : physics_state_copy, physics_state_dealloc
    use physics_types,   only : physics_ptend_dealloc
    use physics_types,   only : physics_ptend_sum
@@ -887,7 +888,7 @@ end subroutine convect_shallow_init_cnst
    ! Update physics state type state1 with ptend_loc ! 
    ! ----------------------------------------------- !
 
-   call physics_update( state1, ptend_loc, ztodt )
+   call physics_update_intr( state1, ptend_loc, ztodt )
 
    ! ----------------------------------------------------------------------------- !
    ! For diagnostic purpose, print out 'QT,SL,SLV,t,RH' just after cumulus scheme  !

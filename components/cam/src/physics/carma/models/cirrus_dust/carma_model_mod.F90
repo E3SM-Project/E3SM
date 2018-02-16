@@ -952,7 +952,7 @@ contains
       
         do k = 1, pver
           
-          ! NOTE: CAM resets cloud ice less than 1e-36 to 0 in physics_update, so ignore values smaller
+          ! NOTE: CAM resets cloud ice less than 1e-36 to 0 in physics_update_intr, so ignore values smaller
           ! than that.
           carma_ice = iceMass(k) + snowMass(k)
           if (carma_ice < 1e-36_r8) then

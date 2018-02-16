@@ -248,7 +248,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
-   use physics_types, only: physics_ptend_init, physics_update
+   use physics_types, only: physics_ptend_init
+   use physics_update_mod, only: physics_update_intr
    use physics_types, only: physics_state_copy, physics_state_dealloc
    use physics_types, only: physics_ptend_sum, physics_ptend_dealloc
 
@@ -485,7 +486,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
   ! update physics state type state1 with ptend_loc 
-  call physics_update(state1, ptend_loc, ztodt)
+  call physics_update_intr(state1, ptend_loc, ztodt)
 
   ! initialize ptend for next process
   lq(:) = .FALSE.
@@ -541,7 +542,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
   ! update physics state type state1 with ptend_loc 
-  call physics_update(state1, ptend_loc, ztodt)
+  call physics_update_intr(state1, ptend_loc, ztodt)
 
 
   ! Momentum Transport (non-cam3 physics)
@@ -571,7 +572,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
      ! update physics state type state1 with ptend_loc 
-     call physics_update(state1, ptend_loc, ztodt)
+     call physics_update_intr(state1, ptend_loc, ztodt)
 
      ftem(:ncol,:pver) = seten(:ncol,:pver)/cpair
      call outfld('ZMMTT', ftem             , pcols, lchnk)

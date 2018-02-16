@@ -905,7 +905,9 @@ end subroutine clubb_init_cnst
 
    use physics_types,  only: physics_state, physics_ptend, &
                              physics_state_copy, physics_ptend_init, &
-                             physics_ptend_sum, physics_update
+                             physics_ptend_sum
+
+   use physics_update_mod, only: physics_update_intr
 
    use physics_buffer, only: pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field, &
                              pbuf_set_field, physics_buffer_desc
@@ -1360,7 +1362,7 @@ end subroutine clubb_init_cnst
      call physics_ptend_sum(ptend_loc, ptend_all, ncol)
 
     ! ptend_loc is reset to zero by this call
-     call physics_update(state1, ptend_loc, hdtime)
+     call physics_update_intr(state1, ptend_loc, hdtime)
 
     !Write output for tendencies:
     !        oufld: QVTENDICE,QITENDICE,NITENDICE
@@ -2149,7 +2151,7 @@ end subroutine clubb_init_cnst
       call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   call physics_update(state1,ptend_loc,hdtime)
+   call physics_update_intr(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ ! 
@@ -2219,7 +2221,7 @@ end subroutine clubb_init_cnst
    call outfld( 'DPDLFT',   ptend_loc%s(:,:)/cpair, pcols, lchnk)
   
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   call physics_update(state1,ptend_loc,hdtime)
+   call physics_update_intr(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------- !
    ! Diagnose relative cloud water variance            !
@@ -2627,7 +2629,7 @@ end subroutine clubb_init_cnst
     call cnst_get_ind('Q',ixq)
     
     lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb', lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
     
     ncol = state%ncol
     

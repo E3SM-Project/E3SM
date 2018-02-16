@@ -75,9 +75,9 @@ use phys_control,   only: phys_getopts, use_hetfrz_classnuc
 
 use physics_types,  only: physics_state, physics_ptend, &
                           physics_ptend_init, physics_state_copy, &
-                          physics_update, physics_state_dealloc, &
+                          physics_state_dealloc, &
                           physics_ptend_sum, physics_ptend_scale
-
+use physics_update_mod, only: physics_update_intr
 use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dyn_time_lvls, &
                           pbuf_old_tim_idx, pbuf_get_index, dtype_r8, dtype_i4, &
                           pbuf_get_field, pbuf_set_field, col_type_subcol, &
@@ -1812,7 +1812,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    end if
 
    ! the name 'cldwat' triggers special tests on cldliq
-   ! and cldice in physics_update
+   ! and cldice in physics_update_intr
    call physics_ptend_init(ptend, psetcols, "cldwat", ls=.true., lq=lq)
 
    select case (micro_mg_version)
@@ -2285,7 +2285,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call physics_ptend_sum(ptend_loc, ptend, ncol)
 
       ! Update local state
-      call physics_update(state_loc, ptend_loc, dtime/num_steps)
+      call physics_update_intr(state_loc, ptend_loc, dtime/num_steps)
 
       ! Sum all outputs for averaging.
       call post_proc%accumulate()
@@ -3126,7 +3126,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call outfld('PRAIO',       praio_grid,       pcols, lchnk)
    call outfld('QIRESO',      qireso_grid,      pcols, lchnk)
 
-   ! ptend_loc is deallocated in physics_update above
+   ! ptend_loc is deallocated in physics_update_intr above
    call physics_state_dealloc(state_loc)
    call t_stopf('micro_mg_cam_tend_fini')
 
