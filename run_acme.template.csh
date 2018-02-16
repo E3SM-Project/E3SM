@@ -676,6 +676,72 @@ set script_provenance_name = $this_script_name.`date +%F_%T_%Z`
 mkdir -p $script_provenance_dir
 cp -f $this_script_path $script_provenance_dir/$script_provenance_name
 
+#============================================================
+# PRINT OUT SOURCE CODE PROVENANCE INFO
+#============================================================
+
+# One config option here control behavior
+# (1) Option to write out diff files for committed and uncommitted changes since github repo
+set WRITE_PROVENANCE_DIFFS=1 # true
+#WRITE_PROVENANCE_DIFFS=0 #false
+#
+
+# Go to source code dir for git commands
+cd $this_script_dir
+
+# Print local commit hash and (redundantly) git describe info to file
+acme_newline
+acme_print 'Capturing code provenance to $script_provenance_dir'
+acme_print "running: git log -n 1 --format=%H"
+set HASH=`git log -n 1 --format=%H`
+echo $HASH > $script_provenance_dir/commit_hash
+
+acme_print "running: git describe --dirty"
+git describe --dirty >> $script_provenance_dir/commit_hash
+
+# Count number of remote (origin) branches contain this hash
+set HASHREMOTES=`git branch -r --contains $HASH | wc -l`
+# Count how many lines of code are different 
+set DIFFLINES=`git diff | wc -l`
+# Local variable to control logic
+set FAILED=0
+
+
+# Check if local commit hash doesn't exist on github repo
+if ( $HASHREMOTES == 0 ) then
+  set FAILED=1
+  acme_newline
+  acme_print "WARNING--Provenance: Code version does not come from remote repo -- must have local commits"
+  if ( $WRITE_PROVENANCE_DIFFS == 1 ) then
+    acme_print "  Most recent commit also on origin/master is:"
+    git merge-base origin/master HEAD > $script_provenance_dir/merge_base_hash
+    acme_print "  Saving diff of commits: git diff origin/master.. > provenance_committed"
+    git diff origin/master.. > $script_provenance_dir/provenance_commits
+  endif
+endif
+
+# Check if local code has uncommited changes
+if ( $DIFFLINES > 0 ) then
+  set FAILED=1
+  acme_newline
+  acme_print "WARNING--Provenance: Local code has uncommited changes. Hash will not give current code state"
+  if ( $WRITE_PROVENANCE_DIFFS == 1 ) then
+    acme_print "  Saving diff of commits: git diff > provenance_uncommitted"
+    acme_print "                          git submodule foreach git diff >> provenance_uncommitted"
+    git diff > $script_provenance_dir/provenance_uncommitted
+    git submodule foreach git diff >> $script_provenance_dir/provenance_uncommitted
+  endif
+endif
+
+# Print success message if provenance is good.
+if ( $FAILED == 0 ) then
+  acme_newline
+  acme_print "NOTE--Provenance: Provenance of local code is simply hash above!"
+endif
+
+# Return to directory where we were before git commands
+cd ${case_scripts_dir}
+
 #=============================================
 # CUSTOMIZE PROCESSOR CONFIGURATION
 # ============================================
