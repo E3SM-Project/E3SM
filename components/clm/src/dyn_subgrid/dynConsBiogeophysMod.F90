@@ -217,11 +217,12 @@ contains
     real(r8) :: liquid_mass_col(bounds%begc:bounds%endc) ! kg m-2
     real(r8) :: ice_mass_col(bounds%begc:bounds%endc)    ! kg m-2
 
+    
     character(len=*), parameter :: subname = 'dyn_water_content'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(liquid_mass) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(ice_mass) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(liquid_mass) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(ice_mass) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
 
     call ComputeLiqIceMassNonLake(bounds, num_nolakec, filter_nolakec, &
          soilhydrology_vars, waterstate_vars, &
@@ -293,8 +294,8 @@ contains
     !-------------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(heat_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(liquid_water_temp_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(heat_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(liquid_water_temp_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
 
     heat_col(bounds%begc:bounds%endc)        = spval
     heat_liquid_col(bounds%begc:bounds%endc) = spval

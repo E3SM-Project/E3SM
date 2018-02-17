@@ -319,6 +319,7 @@ contains
     use decompMod         , only : bounds_type
     use subgridWeightsMod , only : compute_higher_order_weights
     use reweightMod       , only : reweight_wrapup
+    use decompMod         , only : BOUNDS_LEVEL_CLUMP
     !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds_clump ! clump-level bounds
