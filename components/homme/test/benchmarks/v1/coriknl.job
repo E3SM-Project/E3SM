@@ -56,12 +56,12 @@ setenv PER_NODE  64          #  MPI per node
 setenv OMP_NUM_THREADS 2
 #setenv OMP_NUM_THREADS 1
 
-if ( $OMP_NUM_THREADS == 1 ) then
-   setenv KMP_AFFINITY granularity=core,scatter
-   set bind = --cpu_bind=core
-else
+if ( $PER_NODE > 68 ) then
    setenv KMP_AFFINITY granularity=thread,scatter
    set bind = --cpu_bind=thread
+else
+   setenv KMP_AFFINITY granularity=core,scatter
+   set bind = --cpu_bind=core
 endif
 
 # compute number of MPI tasks
@@ -108,6 +108,8 @@ set qsize = 40
 #  BUILD PREQX
 #  rm $bld/CMakeCache.txt to force re-configure
 #
+module unload craype-haswell ; module load craype-mic-knl
+
 mkdir -p $bld
 cd $bld
 set exe = $bld/src/preqx/preqx

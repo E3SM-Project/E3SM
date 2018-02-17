@@ -50,12 +50,12 @@ setenv PER_NODE  64          #  MPI per node
 setenv OMP_NUM_THREADS 4
 #setenv OMP_NUM_THREADS 1
 
-if ( $OMP_NUM_THREADS == 1 ) then
-   setenv KMP_AFFINITY granularity=core,scatter
-   set bind = --cpu_bind=core
-else
+if ( $PER_NODE > 68 ) then
    setenv KMP_AFFINITY granularity=thread,scatter
    set bind = --cpu_bind=thread
+else
+   setenv KMP_AFFINITY granularity=core,scatter
+   set bind = --cpu_bind=core
 endif
 
 
@@ -64,7 +64,6 @@ if (! ${?SLURM_NNODES} ) then
   # not running in batch system.  set some defaults so this script
   # will work on a workstation
   set SLURM_NNODES=1
-  set PER_NODE=64
 endif
 set NNODES =  $SLURM_NNODES
 
@@ -105,6 +104,9 @@ set qsize = 10
 #  BUILD PREQX
 #  rm $bld/CMakeCache.txt to force re-configure
 #
+# default build is haswell.  switch to knl:
+module unload craype-haswell ; module load craype-mic-knl
+
 mkdir -p $bld
 cd $bld
 set exe = $bld/src/preqx/preqx
