@@ -313,7 +313,7 @@ contains
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
-      call elemstate_add(elem,statesave,nets,nete,1,np1,nm1,nm1,1d0,0.d0,0.d0)
+      call elemstate_add(elem,statesave,nets,nete,1,np1,n0,n0,1d0,0d0,0d0) 
       call compute_stage_value_dirk(np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !      print *, 'num iters  ', maxiter
@@ -1700,7 +1700,6 @@ contains
 !===========================================================================================================
 !===========================================================================================================
 !===========================================================================================================
-
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
   !===================================================================================
@@ -1734,6 +1733,8 @@ contains
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: w_n0(np,np,nlevp)    
+  real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
   real (kind=real_kind) :: pnh_i(np,np,nlevp)
@@ -1754,7 +1755,8 @@ contains
 
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
-
+    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+    phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
     itercount=0
 
     ! approximate the initial error of f(x) \approx 0
@@ -1783,11 +1785,8 @@ contains
     kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
 
    ! we first compute the initial Jacobian J0 and residual r0 and their infinity norms
-     Fn(:,:,1:nlev) = phi_np1-elem(ie)%state%phinh_i(:,:,:,np1) &
-       - dt2*g*elem(ie)%state%w_i(:,:,:,np1) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,:))
-
-     elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) - g*dt2 * &
-        (1.0-dpnh_dp_i(:,:,1:nlev))
+     Fn(:,:,1:nlev) = phi_np1(:,:,1:nlev)-phi_n0(:,:,1:nlev) &
+       - dt2*g*w_n0(:,:,1:nlev) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,1:nlev))
 
      norminfr0=0.d0
      norminfJ0=0.d0
@@ -1842,25 +1841,20 @@ contains
         call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
-        ! de-update Fn
-        Fn(i,j,1:nlev) = Fn(i,j,1:nlev) -  phi_np1(i,j,1:nlev) - (dt2*g)**2 * (1.0-dpnh_dp_i(i,j,1:nlev))
         ! update approximate solution of phi
         phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
       end do
-      end do 
-
-
-      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + g*dt2 * &
-        (1.0-dpnh_dp_i(:,:,1:nlev))
+      end do
 
       call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_np1,&
         kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
 
       ! update approximate solution of w
-      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) - g*dt2 * &
+      elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
         (1.0-dpnh_dp_i(:,:,1:nlev))
       ! update right-hand side of phi
-      Fn(:,:,1:nlev) = Fn(:,:,1:nlev) + phi_np1 + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,1:nlev))
+      Fn(:,:,1:nlev) = phi_np1(:,:,1:nlev)-phi_n0(:,:,1:nlev) &
+        - dt2*g*w_n0(:,:,1:nlev) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,1:nlev))
 
       ! compute relative errors
       itererrtemp=0.d0
@@ -1895,6 +1889,8 @@ contains
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
+
+
 
 
 end module prim_advance_mod
