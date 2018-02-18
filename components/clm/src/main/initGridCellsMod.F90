@@ -5,8 +5,7 @@ module initGridCellsMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Initializes sub-grid mapping for each land grid cell. This module handles the high-
-  ! level logic that determines how the subgrid structure is set up in a CLM run. It
-  ! makes use of lower-level routines in initSubgridMod, which contains stuff that is
+  ! level logic that determines how the subgrid structure is set up in an ELM run. 
   !
   ! !USES:
   use shr_kind_mod   , only : r8 => shr_kind_r8

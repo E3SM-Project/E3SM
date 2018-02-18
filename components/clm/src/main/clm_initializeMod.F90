@@ -288,16 +288,25 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
+    ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
-    ! --ALM-v1: add initialization for topographic unit data types. 
-    ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
-    call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
-    call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
-    call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
-    ! --end ALM-v1 block
+    
+    ! Initialize the topographic unit data types
+    call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
+    call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
+    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
+    
+    ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
+    
+    ! Initialize the column data types
     call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+    
+    ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+    
+    ! Initialize the cohort data types (nothing here yet)
+    ! ...to be added later...
 
     ! Determine the number of active external models.
     call EMI_Determine_Active_EMs()
