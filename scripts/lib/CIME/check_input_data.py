@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Should probably be in XML somewhere
 SVN_LOCS = {
-    "acme" : "https://acme-svn2.ornl.gov/acme-repo/acme/inputdata",
+    "e3sm" : "https://acme-svn2.ornl.gov/acme-repo/acme/inputdata",
     "cesm" : "https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata"
 }
 
@@ -190,8 +190,8 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                             if (download):
                                 success = download_if_in_repo(svn_loc, input_data_root, rel_path)
                                 if (not success):
-                                    # If ACME, try CESM repo as backup
-                                    if (get_model() == "acme" and svn_loc != SVN_LOCS["cesm"]):
+                                    # If E3SM, try CESM repo as backup
+                                    if (get_model() == "e3sm" and svn_loc != SVN_LOCS["cesm"]):
                                         success = download_if_in_repo(SVN_LOCS["cesm"], input_data_root, rel_path)
                                         if (not success):
                                             no_files_missing = False

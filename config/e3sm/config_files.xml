@@ -6,7 +6,7 @@
 
   <entry id="MODEL">
     <type>char</type>
-    <default_value>acme</default_value>
+    <default_value>e3sm</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>model system name</desc>
@@ -125,7 +125,7 @@
   <entry id="ARCHIVE_SPEC_FILE">
     <type>char</type>
     <values>
-      <value>$CIMEROOT/config/acme/config_archive.xml</value>
+      <value>$CIMEROOT/config/e3sm/config_archive.xml</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/config_archive.xml</value>

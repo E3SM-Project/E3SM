@@ -3,7 +3,7 @@ from CIME.utils import expect, convert_to_seconds, parse_test_name
 from CIME.XML.machines import Machines
 import six
 
-# Here are the tests belonging to acme suites. Format is
+# Here are the tests belonging to e3sm suites. Format is
 # <test>.<grid>.<compset>.
 # suite_name -> (inherits_from, timelimit, [test [, mods[, machines]]])
 #   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
@@ -61,12 +61,12 @@ _TEST_SUITES = {
     # ACME tests below
     #
 
-    "acme_runoff_developer" : (None, "0:45:00",
+    "e3sm_runoff_developer" : (None, "0:45:00",
                              ("ERS.f19_f19.IM1850CLM45CN",
                               "ERS.f19_f19.IMCLM45")
                              ),
 
-    "acme_land_developer" : ("acme_runoff_developer", "0:45:00",
+    "e3sm_land_developer" : ("e3sm_runoff_developer", "0:45:00",
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "ERS.f19_f19.I20TRCLM45CN",
@@ -84,7 +84,7 @@ _TEST_SUITES = {
                               "ERS.f09_g16.IMCLM45BC")
                              ),
 
-    "acme_atm_developer" : (None, None,
+    "e3sm_atm_developer" : (None, None,
                             ("SMS_D_Ln5.ne4_ne4.FC5",
                              "ERP_Ln9.ne4_ne4.FC5AV1C-L",
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
@@ -93,7 +93,7 @@ _TEST_SUITES = {
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
 
-    "acme_atm_integration" : (None, None,
+    "e3sm_atm_integration" : (None, None,
                               ("ERS_Ln9.ne4_ne4.FC5" ,
                                "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
                                "PET_Ln5.ne4_ne4.FC5AV1C-L",
@@ -102,7 +102,7 @@ _TEST_SUITES = {
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
     #atmopheric tests for extra coverage
-    "acme_atm_extra_coverage" : (None, None,
+    "e3sm_atm_extra_coverage" : (None, None,
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
@@ -111,17 +111,17 @@ _TEST_SUITES = {
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
     #atmopheric tests for hi-res
-    "acme_atm_hi_res" : (None, "01:30:00",
+    "e3sm_atm_hi_res" : (None, "01:30:00",
                          (
                           "SMS.ne120_ne120.FC5AV1C-H01A",
                          )),
     #atmopheric tests to mimic low res production runs
-    "acme_atm_prod" : (None, None,
+    "e3sm_atm_prod" : (None, None,
                        (("SMS_Ln5.ne30_ne30.FC5AV1C-L", "cam-cosplite"),
                         )
                        ),
 
-    "acme_developer" : (("acme_land_developer","acme_atm_developer"), "0:45:00",
+    "e3sm_developer" : (("e3sm_land_developer","e3sm_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",
                          "ERS.ne30_g16_rx1.A",
@@ -142,11 +142,11 @@ _TEST_SUITES = {
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
                         )),
 
-    "acme_test_me" : (None, "01:00:00",
+    "e3sm_test_me" : (None, "01:00:00",
                       ("ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                       )),
 
-    "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
+    "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
@@ -159,18 +159,18 @@ _TEST_SUITES = {
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MPASLIALB")
                           ),
-    #acme tests for extra coverage
-    "acme_extra_coverage" : (("acme_atm_extra_coverage",),None,
+    #e3sm tests for extra coverage
+    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",),None,
                      () ),
 
-    #acme tests for hi-res
-    "acme_hi_res" : (("acme_atm_hi_res",),None,
+    #e3sm tests for hi-res
+    "e3sm_hi_res" : (("e3sm_atm_hi_res",),None,
                      (
                       ("SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS", "cam-cosplite"),
                      )),
 
-    #acme tests to mimic production runs
-    "acme_prod" : (("acme_atm_prod",),None,
+    #e3sm tests to mimic production runs
+    "e3sm_prod" : (("e3sm_atm_prod",),None,
                      () ),
 
     "fates" : (None, None,
@@ -245,7 +245,7 @@ def infer_machine_name_from_tests(testargs):
     >>> infer_machine_name_from_tests(["NCK.f19_g16_rx1.A.melvin_gnu", "NCK.f19_g16_rx1.A.melvin_gnu"])
     'melvin'
     """
-    acme_test_suites = get_test_suites()
+    e3sm_test_suites = get_test_suites()
 
     machine = None
     for testarg in testargs:
@@ -253,7 +253,7 @@ def infer_machine_name_from_tests(testargs):
         if testarg.startswith("^"):
             testarg = testarg[1:]
 
-        if testarg not in acme_test_suites:
+        if testarg not in e3sm_test_suites:
             machine_for_this_test = parse_test_name(testarg)[4]
             if machine_for_this_test is not None:
                 if machine is None:
@@ -287,7 +287,7 @@ def get_full_test_names(testargs, machine, compiler):
     """
     expect(machine is not None, "Must define a machine")
     expect(compiler is not None, "Must define a compiler")
-    acme_test_suites = get_test_suites()
+    e3sm_test_suites = get_test_suites()
 
     tests_to_run = set()
     negations = set()
@@ -297,13 +297,13 @@ def get_full_test_names(testargs, machine, compiler):
         testarg = testarg.strip()
         if (testarg.startswith("^")):
             negations.add(testarg[1:])
-        elif (testarg in acme_test_suites):
+        elif (testarg in e3sm_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
             tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
 
     for negation in negations:
-        if (negation in acme_test_suites):
+        if (negation in e3sm_test_suites):
             tests_to_run -= set(get_test_suite(negation, machine, compiler))
         else:
             fullname = CIME.utils.get_full_test_name(negation, machine=machine, compiler=compiler)

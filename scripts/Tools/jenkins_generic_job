@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Jenkins runs this script to perform a test of an acme
+Jenkins runs this script to perform a test of an e3sm 
 test suite. Essentially, a wrapper around create_test and
 wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
@@ -56,7 +56,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-c", "--cdash-build-name",
                         help="Build name to use for CDash submission. Default will be <TEST_SUITE>_<BRANCH>_<COMPILER>")
 
-    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.ACME_MAIN_CDASH,
+    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.E3SM_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
     parser.add_argument("-b", "--baseline-name", default=CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root()),
@@ -66,10 +66,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Force comparison with these baseines without impacting dashboard or test-id.")
 
     parser.add_argument("-t", "--test-suite",
-                        help="Override default acme test suite that will be run")
+                        help="Override default e3sm test suite that will be run")
 
     parser.add_argument("-r", "--scratch-root",
-                        help="Override default acme scratch root. Use this to avoid conflicting with other jenkins jobs")
+                        help="Override default e3sm scratch root. Use this to avoid conflicting with other jenkins jobs")
 
     parser.add_argument("--cdash-build-group", default=CIME.wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
                         help="The build group to be used to display results on the CDash dashboard.")
@@ -98,7 +98,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
            "Does not make sense to use --generate-baselines and --submit-to-cdash together")
     expect(not (args.cdash_build_name is not None and not args.submit_to_cdash),
            "Does not make sense to use --cdash-build-name without --submit-to-cdash")
-    expect(not (args.cdash_project is not CIME.wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
+    expect(not (args.cdash_project is not CIME.wait_for_tests.E3SM_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use --cdash-project without --submit-to-cdash")
     expect (args.baseline_compare in [None, "yes", "no"],
             "Valid args for --baseline-compare are 'yes' or 'no'")

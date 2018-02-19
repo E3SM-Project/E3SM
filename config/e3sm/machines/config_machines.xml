@@ -58,7 +58,7 @@
 <machine MACH="edison">
   <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>edison</NODENAME_REGEX>
-  <TESTS>acme_developer</TESTS>
+  <TESTS>e3sm_developer</TESTS>
   <COMPILERS>intel,intel18,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
@@ -192,7 +192,7 @@
 <machine MACH="cori-haswell">
   <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
-  <TESTS>acme_developer</TESTS>
+  <TESTS>e3sm_developer</TESTS>
   <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
@@ -329,7 +329,7 @@
 <machine MACH="cori-knl">
   <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
   <NODENAME_REGEX>cori</NODENAME_REGEX>
-  <TESTS>acme_developer</TESTS>
+  <TESTS>e3sm_developer</TESTS>
   <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
@@ -487,7 +487,7 @@
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
@@ -512,7 +512,7 @@
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
     <OS>LINUX</OS>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
@@ -542,7 +542,7 @@
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
@@ -617,7 +617,7 @@
 <machine MACH="anlworkstation">
     <DESC>Linux workstation for ANL</DESC>
     <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
@@ -680,7 +680,7 @@
   <DESC>SNL clust</DESC>
   <NODENAME_REGEX>(skybridge|chama)</NODENAME_REGEX>
   <PROXY>wwwproxy.sandia.gov:80</PROXY>
-  <TESTS>acme_integration</TESTS>
+  <TESTS>e3sm_integration</TESTS>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
@@ -757,7 +757,7 @@
   <DESC>SNL clust</DESC>
   <NODENAME_REGEX>ghost-login</NODENAME_REGEX>
   <PROXY>wwwproxy.sandia.gov:80</PROXY>
-  <TESTS>acme_integration</TESTS>
+  <TESTS>e3sm_integration</TESTS>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
@@ -827,7 +827,7 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
-         <TESTS>acme_integration</TESTS>
+         <TESTS>e3sm_integration</TESTS>
          <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CIME_OUTPUT_ROOT>
@@ -929,7 +929,7 @@
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
-         <TESTS>acme_integration</TESTS>
+         <TESTS>e3sm_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
@@ -945,7 +945,7 @@
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>acme</SUPPORTED_BY>
+         <SUPPORTED_BY>E3SM</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
@@ -1050,7 +1050,7 @@
 <machine MACH="bebop">
     <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
     <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
-    <TESTS>acme_integration</TESTS>
+    <TESTS>e3sm_integration</TESTS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,mpich,mvapich,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/bebop</CIME_OUTPUT_ROOT>
@@ -1064,7 +1064,7 @@
     <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
@@ -1133,7 +1133,7 @@
 <machine MACH="cetus">
          <DESC>ANL IBM BG/Q, os is BGQ, 16 cores/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>cetus</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>e3sm_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
          <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
@@ -1369,7 +1369,7 @@
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGQ, 16 cores/node, batch system is cobalt</DESC>
 	 <NODENAME_REGEX>mira.*</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>e3sm_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
          <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
@@ -1435,7 +1435,7 @@
 <machine MACH="theta">
     <DESC>ALCF Cray XC40 KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
     <NODENAME_REGEX>theta.*</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
@@ -1449,7 +1449,7 @@
     <SAVE_TIMING_DIR_PROJECTS>OceanClimate,ClimateEnergy_2</SAVE_TIMING_DIR_PROJECTS>
     <OS>CNL</OS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
-    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -1783,7 +1783,7 @@
 <machine MACH="oic2">
          <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>oic2</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>e3sm_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
          <MPILIBS>mpich,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
@@ -1831,7 +1831,7 @@
 <machine MACH="oic5">
          <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>oic5</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>e3sm_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
          <MPILIBS>mpich,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
@@ -1864,7 +1864,7 @@
         prefered location). -->
       <DESC> OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
       <NODENAME_REGEX>or-condo</NODENAME_REGEX>
-      <TESTS>acme_developer</TESTS>
+      <TESTS>e3sm_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu,intel</COMPILERS>
       <MPILIBS>openmpi</MPILIBS>
@@ -1935,7 +1935,7 @@
 <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>titan</NODENAME_REGEX>
     <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
     <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
@@ -1954,7 +1954,7 @@
     <ALLOCATE_SPARE_NODES>TRUE</ALLOCATE_SPARE_NODES>
     <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <!-- difference to MAX_TASKS_PER_NODE-->
-    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PCT_SPARE_NODES>10</PCT_SPARE_NODES>
@@ -2117,7 +2117,7 @@
 <machine MACH="eos">
          <DESC>ORNL XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>eos</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>e3sm_developer</TESTS>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
          <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
@@ -2133,7 +2133,7 @@
          <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
          <OS>CNL</OS>
          <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>acme</SUPPORTED_BY>
+         <SUPPORTED_BY>E3SM</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -2210,7 +2210,7 @@
 <machine MACH="grizzly">
 	<DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
         <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
-        <TESTS>acme_developer</TESTS>
+        <TESTS>e3sm_developer</TESTS>
         <COMPILERS>gnu,intel</COMPILERS>
         <MPILIBS>mvapich,openmpi</MPILIBS>
 	<OS>LINUX</OS>
@@ -2294,7 +2294,7 @@
 <machine MACH="wolf">
     <DESC>LANL Linux Cluster, 16 pes/node, batch system slurm</DESC>
     <NODENAME_REGEX>wf-fe.*.lanl.gov</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich</MPILIBS>
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
@@ -2376,7 +2376,7 @@
 </machine>
 
 <machine MACH="caldera">
-  <DESC>NCAR IBM, os is Linux, 16 pes/node, intended for ncar testing of acme cime</DESC>
+  <DESC>NCAR IBM, os is Linux, 16 pes/node, intended for ncar testing of e3sm cime</DESC>
   <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
   <OS>LINUX</OS>
   <COMPILERS>intel,pgi,gnu</COMPILERS>
@@ -2712,7 +2712,7 @@
 <machine MACH="summitdev">
 	 <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
-	 <TESTS>acme_developer</TESTS>
+	 <TESTS>e3sm_developer</TESTS>
 	 <COMPILERS>ibm,pgi,pgiacc</COMPILERS>
 	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
 	 <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
@@ -2837,8 +2837,8 @@
 </machine>
 
 <default_run_suffix>
-  <default_run_exe>${EXEROOT}/acme.exe </default_run_exe>
-  <default_run_misc_suffix> >> acme.log.$LID 2>&amp;1 </default_run_misc_suffix>
+  <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
+  <default_run_misc_suffix> >> e3sm.log.$LID 2>&amp;1 </default_run_misc_suffix>
 </default_run_suffix>
 
 </config_machines>

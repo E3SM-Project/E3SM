@@ -11,7 +11,7 @@ from CIME.test_status import *
 
 
 SIGNAL_RECEIVED           = False
-ACME_MAIN_CDASH           = "ACME_Climate"
+E3SM_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 SLEEP_INTERVAL_SEC        = .1
 
@@ -225,7 +225,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     hostname = Machines().get_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
-        logging.warning("Could not convert hostname '{}' into an ACME machine name".format(hostname))
+        logging.warning("Could not convert hostname '{}' into an E3SM machine name".format(hostname))
 
     dart_config = \
 """
@@ -347,7 +347,7 @@ def wait_for_tests(test_paths,
                    ignore_namelists=False,
                    ignore_memleak=False,
                    cdash_build_name=None,
-                   cdash_project=ACME_MAIN_CDASH,
+                   cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None):
 ###############################################################################
