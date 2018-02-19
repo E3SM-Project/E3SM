@@ -12,11 +12,12 @@
        This file may have lnd desc entries.
   -->
   <description modifier_mode="1">
-    <desc lnd="DLND[%NULL][%SCPL][%LCPL][%LCLMR]">Data land model (DLND) </desc>
+    <desc lnd="DLND[%NULL][%SCPL][%LCPL][%LCLMR][%LCLMRIND]">Data land model (DLND) </desc>
     <desc option="NULL">Null mode </desc>
     <desc option="SCPL">snow coupling mode </desc>
     <desc option="LCPL">non-snow coupling </desc>
     <desc option="LCLMR">runoff coupling</desc>
+    <desc option="LCLMRIND">runoff coupling global</desc>
   </description>
 
   <entry id="COMP_LND">
@@ -30,12 +31,13 @@
 
   <entry id="DLND_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,CLMNLDAS,GLC_CPLHIST,NULL</valid_values>
+    <valid_values>CPLHIST,CLMNLDAS,CLMGLB05,GLC_CPLHIST,NULL</valid_values>
     <default_value>NULL</default_value>
     <values match="last">
       <value compset="DLND%NULL">NULL</value>
       <value compset="DLND%LCPL">CPLHIST</value>
       <value compset="DLND%LCLMR">CLMNLDAS</value>
+      <value compset="DLND%LCLMRIND">CLMGLB05</value>
       <value compset="DLND%SCPL">GLC_CPLHIST</value>
     </values>
     <group>run_component_dlnd</group>
@@ -70,6 +72,7 @@
     <default_value>UNSET</default_value>
     <values match="last">
       <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">$DIN_LOC_ROOT/lnd/dlnd7/NLDAS</value>
+      <value compset="2000.*_DLND%LCLMRIND" grid="l%360x720cru">$DIN_LOC_ROOT/lnd/dlnd7/GLB05</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
@@ -86,6 +89,7 @@
     <default_value>UNSET</default_value>
     <values match="last">
       <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">NLDAS</value>
+      <value compset="2000.*_DLND%LCLMRIND" grid="l%360x720cru">GLB05</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG1850CN.f09_g16.002</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
@@ -102,6 +106,7 @@
     <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
+      <value compset="2000.*_DLND%LCLMRIND" grid="l%360x720cru">1979</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
@@ -130,6 +135,7 @@
     <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
+      <value compset="2000.*_DLND%LCLMRIND" grid="l%360x720cru">1979</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1976</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">26</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
@@ -146,6 +152,7 @@
     <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
+      <value compset="2000.*_DLND%LCLMRIND" grid="l%360x720cru">1999</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">100</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
