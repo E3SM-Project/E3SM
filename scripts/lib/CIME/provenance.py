@@ -85,7 +85,7 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
         out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "README.case"), "a") as fd:
-        if version is not None:
+        if version is not None and version != "unknown":
             fd.write("CESM version is {}\n".format(version))
         if out is not None:
             fd.write("{}\n".format(out))
