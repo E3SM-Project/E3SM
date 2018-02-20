@@ -79,9 +79,16 @@ def _save_build_provenance_e3sm(case, lid):
 def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
+    srcroot = case.get_value("SRCROOT")
+    manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    if os.path.exists(manic):
+        out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "README.case"), "a") as fd:
-        fd.write("CESM version is {}\n".format(version))
+        if version is not None:
+            fd.write("CESM version is {}\n".format(version))
+        if out is not None:
+            fd.write("{}\n".format(out))
 
 def save_build_provenance(case, lid=None):
     with SharedArea():
