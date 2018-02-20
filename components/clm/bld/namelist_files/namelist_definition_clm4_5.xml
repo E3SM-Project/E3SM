@@ -288,7 +288,7 @@ Full pathname datafile with fates parameters
 </entry>
        
 <entry id="flanduse_timeseries" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="dynamic_subgrid" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of
 the initial surface dataset to vary over time.
 </entry>

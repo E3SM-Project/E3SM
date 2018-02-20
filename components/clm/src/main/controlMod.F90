@@ -142,7 +142,7 @@ contains
 
     namelist /clm_inparm/  &
          fsurdat, fatmtopo, flndtopo, &
-         paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging,fsoilordercon
+         paramfile, fsnowoptics, fsnowaging,fsoilordercon
 
 
     ! History, restart options
@@ -385,11 +385,6 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
        
-       if (use_crop .and. flanduse_timeseries /= ' ') then
-          call endrun(msg=' ERROR: prognostic crop is incompatible with transient landuse'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-       
        if (.not. use_crop .and. irrigate) then
           call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
             errMsg(__FILE__, __LINE__))
@@ -457,15 +452,6 @@ contains
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
-
-    if (flanduse_timeseries /= ' ' .and. create_crop_landunit) then
-       call endrun(msg=' ERROR:: dynamic landuse is currently not supported with create_crop_landunit option'//&
-            errMsg(__FILE__, __LINE__))
-    end if
-    if (flanduse_timeseries /= ' ' .and. use_cndv) then
-       call endrun(msg=' ERROR:: dynamic landuse is currently not supported with CNDV option'//&
-            errMsg(__FILE__, __LINE__))
-    end if
 
     ! Consistency settings for co2 type
     if (co2_type /= 'constant' .and. co2_type /= 'prognostic' .and. co2_type /= 'diagnostic') then
@@ -607,7 +593,6 @@ contains
     call mpi_bcast (flndtopo, len(flndtopo) ,MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (paramfile, len(paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (flanduse_timeseries , len(flanduse_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
 

@@ -10,6 +10,7 @@ module WaterfluxType
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
+  use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   !
   implicit none
   save
@@ -126,6 +127,11 @@ module WaterfluxType
      real(r8), pointer :: mflx_et_col              (:,:) ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
+
+     ! Objects that help convert once-per-year dynamic land cover changes into fluxes
+     ! that are dribbled throughout the year
+     type(annual_flux_dribbler_type) :: qflx_liq_dynbal_dribbler
+     type(annual_flux_dribbler_type) :: qflx_ice_dynbal_dribbler
 
    contains
  
@@ -287,6 +293,16 @@ contains
     allocate(this%mflx_drain_col         (begc:endc,1:nlevgrnd))     ; this%mflx_drain_col           (:,:) = nan
     allocate(this%mflx_sub_snow_col      (begc:endc))                ; this%mflx_sub_snow_col        (:)   = nan
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
+
+    this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
+         bounds = bounds, &
+         name = 'qflx_liq_dynbal', &
+         units = 'mm H2O')
+
+    this%qflx_ice_dynbal_dribbler = annual_flux_dribbler_gridcell( &
+         bounds = bounds, &
+         name = 'qflx_ice_dynbal', &
+         units = 'mm H2O')
 
   end subroutine InitAllocate
 
@@ -675,7 +691,10 @@ contains
          long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
          interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
 
-end subroutine Restart
+    call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
+    call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
+
+  end subroutine Restart
 
   
   subroutine Reset(this, bounds, numf, filter)

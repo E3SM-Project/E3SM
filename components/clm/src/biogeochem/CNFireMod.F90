@@ -123,12 +123,13 @@ contains
     ! Computes column-level burned area 
     !
     ! !USES:
-    use clm_time_manager, only: get_step_size, get_days_per_year, get_curr_date, get_nstep
-    use clm_varpar      , only: max_patch_per_col
-    use clm_varcon      , only: secspday
-    use clm_varctl      , only: flanduse_timeseries, use_nofire, spinup_state, spinup_mortality_factor
-    use pftvarcon       , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
-    use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
+    use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
+    use clm_varpar           , only: max_patch_per_col
+    use clm_varcon           , only: secspday
+    use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
+    use dynSubgridControlMod , only: run_has_transient_landcover
+    use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
+    use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds 
@@ -179,6 +180,7 @@ contains
     real(r8) :: ig       ! total ignitions (count/km2/hr)
     real(r8) :: hdmlf    ! human density
     real(r8) :: btran_col(bounds%begc:bounds%endc)
+    logical  :: transient_landcover  ! whether this run has any prescribed transient landcover
     real(r8), target  :: prec60_col_target(bounds%begc:bounds%endc)
     real(r8), target  :: prec10_col_target(bounds%begc:bounds%endc)
     real(r8), pointer :: prec60_col(:)
@@ -257,6 +259,8 @@ contains
          fuelc_crop         =>    carbonstate_vars%fuelc_crop_col             & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
          )
  
+      transient_landcover = run_has_transient_landcover()
+
       !pft to column average 
       prec10_col => prec10_col_target
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -363,7 +367,7 @@ contains
         wtlf(c)      = 0._r8
         trotr1_col(c)= 0._r8
         trotr2_col(c)= 0._r8
-        if (flanduse_timeseries /= ' ') then    !true when landuse data is used
+        if (transient_landcover) then    !true when landuse data is used
            dtrotr_col(c)=0._r8
         end if
      end do
@@ -388,7 +392,7 @@ contains
                  if( veg_pp%itype(p) == nbrdlf_dcd_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
                     trotr2_col(c)=trotr2_col(c)+veg_pp%wtcol(p)*col_pp%wtgcell(c)
                  end if
-                 if ( flanduse_timeseries /= ' ' ) then    !true when landuse data is used
+                 if (transient_landcover) then    !true when landuse data is used
                     if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
                        if(lfpftd(p) > 0._r8)then
                           dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wtgcell(c)
@@ -459,7 +463,7 @@ contains
      ! estimate annual decreased fractional coverage of BET+BDT
      ! land cover conversion in CLM4.5 is the same for each timestep except for the beginning  
 
-     if (flanduse_timeseries /= ' ') then    !true when landuse data is used
+     if (transient_landcover) then    !true when landuse data is used
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            if( dtrotr_col(c)  >  0._r8 )then
@@ -603,7 +607,7 @@ contains
            ! if landuse change data is used, calculate deforestation fires and 
            ! add it in the total of burned area fraction
            !
-           if (flanduse_timeseries /= ' ') then    !true when landuse change data is used
+           if (transient_landcover) then    !true when landuse change data is used
               if( trotr1_col(c)+trotr2_col(c) > 0.6_r8 )then
                  if(( kmo == 1 .and. kda == 1 .and. mcsec == 0) .or. &
                       dtrotr_col(c) <=0._r8 )then
@@ -664,13 +668,14 @@ contains
    ! seconds_per_year is the number of seconds in a year.
    !
    ! !USES:
-   use pftvarcon        , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
-   use pftvarcon        , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
-   use clm_time_manager , only: get_step_size,get_days_per_year,get_curr_date
-   use clm_varpar       , only: max_patch_per_col
-   use clm_varctl       , only: flanduse_timeseries, use_cndv, spinup_state, spinup_mortality_factor
-
-   use clm_varcon       , only: secspday
+   use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
+   use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
+   use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
+   use clm_varpar           , only: max_patch_per_col
+   use clm_varctl           , only: use_cndv, spinup_state, spinup_mortality_factor
+   use dynSubgridControlMod , only: get_flanduse_timeseries
+   use clm_varcon           , only: secspday
+   use dynSubgridControlMod , only: run_has_transient_landcover
    !
    ! !ARGUMENTS:
    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -749,6 +754,8 @@ contains
    real(r8), pointer :: m_p_to_litr_met_fire                    (:,:)
    real(r8), pointer :: m_p_to_litr_cel_fire                    (:,:)
    real(r8), pointer :: m_p_to_litr_lig_fire                    (:,:)
+
+   logical           :: transient_landcover  ! whether this run has any prescribed transient landcover
 
    !-----------------------------------------------------------------------
 
@@ -1014,6 +1021,8 @@ contains
      m_p_to_litr_cel_fire                =>    phosphorusflux_vars%m_p_to_litr_cel_fire_col                  
      m_p_to_litr_lig_fire                =>    phosphorusflux_vars%m_p_to_litr_lig_fire_col                  
 
+     transient_landcover = run_has_transient_landcover()
+
      ! Get model step size
      ! calculate burned area fraction per sec
      dt = real( get_step_size(), r8 )
@@ -1028,7 +1037,7 @@ contains
 
         if( veg_pp%itype(p) < nc3crop .and. cropf_col(c) < 1.0_r8)then
            ! For non-crop (bare-soil and natural vegetation)
-           if (flanduse_timeseries /= ' ') then    !true when landuse data is used
+           if (transient_landcover) then    !true when landuse data is used
               f = (fbac(c)-baf_crop(c))/(1.0_r8-cropf_col(c))
            else
               f = (farea_burned(c)-baf_crop(c))/(1.0_r8-cropf_col(c))
@@ -1488,7 +1497,7 @@ contains
 
      ! carbon loss due to deforestation fires
 
-     if (flanduse_timeseries /= ' ') then    !true when landuse data is used
+     if (transient_landcover) then    !true when landuse data is used
         call get_curr_date (kyr, kmo, kda, mcsec)
         do fc = 1,num_soilc
            c = filter_soilc(fc)

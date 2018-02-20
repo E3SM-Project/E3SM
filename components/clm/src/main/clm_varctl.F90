@@ -93,12 +93,10 @@ module clm_varctl
   character(len=fname_len), public :: fatmlndfrc = ' '        ! lnd frac file on atm grid
   character(len=fname_len), public :: fatmtopo   = ' '        ! topography on atm grid
   character(len=fname_len), public :: flndtopo   = ' '        ! topography on lnd grid
-  character(len=fname_len), public :: flanduse_timeseries    = ' '        ! dynamic landuse dataset
   character(len=fname_len), public :: paramfile  = ' '        ! ASCII data file with PFT physiological constants
   character(len=fname_len), public :: nrevsn     = ' '        ! restart data file name for branch run
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
- !! X. YANG  : add soil order dependent parameter file
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
 
   !----------------------------------------------------------

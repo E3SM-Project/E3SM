@@ -345,7 +345,7 @@ contains
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,         &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
-       phosphorusstate_vars,phosphorusflux_vars)
+       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     call t_stopf('dyn_subgrid')
 
     ! ============================================================================
@@ -1041,7 +1041,7 @@ contains
                canopystate_vars, soilstate_vars, temperature_vars, &
                ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
                phosphorusstate_vars, phosphorusflux_vars,          &
-               alm_fates)
+               alm_fates, crop_vars)
           
        end if
        
@@ -1072,7 +1072,7 @@ contains
              if (doalb) then   
                 call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                      waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
-                     carbonstate_vars, canopystate_vars)
+                     carbonstate_vars, canopystate_vars, crop_vars)
              end if
                
           end if
@@ -1221,7 +1221,7 @@ contains
        end if
        
        if (crop_prog) then
-          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars, cnstate_vars)
+          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
        end if
        
        call t_stopf('accum')
@@ -1313,7 +1313,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr, alm_fates, rdate=rdate )
+               ep_betr, alm_fates, crop_vars, rdate=rdate )
 
          !----------------------------------------------
          ! pflotran (off now)

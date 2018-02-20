@@ -44,7 +44,6 @@ module CNStateType
      ! Prognostic crop model -  Note that cropplant and harvdate could be 2D to facilitate rotation
      real(r8) , pointer :: hdidx_patch                 (:)     ! patch cold hardening index?
      real(r8) , pointer :: cumvd_patch                 (:)     ! patch cumulative vernalization d?ependence?
-     real(r8) , pointer :: vf_patch                    (:)     ! patch vernalization factor for cereal
      real(r8) , pointer :: gddmaturity_patch           (:)     ! patch growing degree days (gdd) needed to harvest (ddays)
      real(r8) , pointer :: huileaf_patch               (:)     ! patch heat unit index needed from planting to leaf emergence
      real(r8) , pointer :: huigrain_patch              (:)     ! patch heat unit index needed to reach vegetative maturity
@@ -52,9 +51,6 @@ module CNStateType
      real(r8) , pointer :: astemi_patch                (:)     ! patch saved stem allocation coefficient from phase 2
      real(r8) , pointer :: aleaf_patch                 (:)     ! patch leaf allocation coefficient
      real(r8) , pointer :: astem_patch                 (:)     ! patch stem allocation coefficient
-     logical  , pointer :: croplive_patch              (:)     ! patch Flag, true if planted, not harvested
-     logical  , pointer :: cropplant_patch             (:)     ! patch Flag, true if planted
-     integer  , pointer :: harvdate_patch              (:)     ! patch harvest date
      real(r8) , pointer :: htmx_patch                  (:)     ! patch max hgt attained by a crop during yr (m)
      integer  , pointer :: peaklai_patch               (:)     ! patch 1: max allowed lai; 0: not at max
 
@@ -229,7 +225,6 @@ contains
 
     allocate(this%hdidx_patch         (begp:endp))                   ; this%hdidx_patch         (:)   = nan
     allocate(this%cumvd_patch         (begp:endp))                   ; this%cumvd_patch         (:)   = nan
-    allocate(this%vf_patch            (begp:endp))                   ; this%vf_patch            (:)   = 0.0_r8
     allocate(this%gddmaturity_patch   (begp:endp))                   ; this%gddmaturity_patch   (:)   = spval
     allocate(this%huileaf_patch       (begp:endp))                   ; this%huileaf_patch       (:)   = nan
     allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = 0.0_r8
@@ -237,9 +232,6 @@ contains
     allocate(this%astemi_patch        (begp:endp))                   ; this%astemi_patch        (:)   = nan
     allocate(this%aleaf_patch         (begp:endp))                   ; this%aleaf_patch         (:)   = nan
     allocate(this%astem_patch         (begp:endp))                   ; this%astem_patch         (:)   = nan
-    allocate(this%croplive_patch      (begp:endp))                   ; this%croplive_patch      (:)   = .false.
-    allocate(this%cropplant_patch     (begp:endp))                   ; this%cropplant_patch     (:)   = .false.
-    allocate(this%harvdate_patch      (begp:endp))                   ; this%harvdate_patch      (:)   = huge(1) 
     allocate(this%htmx_patch          (begp:endp))                   ; this%htmx_patch          (:)   = 0.0_r8
     allocate(this%peaklai_patch       (begp:endp))                   ; this%peaklai_patch       (:)   = 0
 
@@ -1400,67 +1392,9 @@ contains
             dim1name='pft', long_name='cold hardening index', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%hdidx_patch)
 
-       call restartvar(ncid=ncid, flag=flag,  varname='vf', xtype=ncd_double,  &
-            dim1name='pft', long_name='vernalization factor', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%vf_patch)
-
        call restartvar(ncid=ncid, flag=flag,  varname='cumvd', xtype=ncd_double,  &
             dim1name='pft', long_name='cumulative vernalization d', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%cumvd_patch)
-
-       allocate(temp1d(bounds%begp:bounds%endp))
-       if (flag == 'write') then 
-          do p= bounds%begp,bounds%endp
-             if (this%croplive_patch(p)) then
-                temp1d(p) = 1
-             else
-                temp1d(p) = 0
-             end if
-          end do
-       end if
-       call restartvar(ncid=ncid, flag=flag,  varname='croplive', xtype=ncd_log,  &
-            dim1name='pft', &
-            long_name='Flag that crop is alive, but not harvested', &
-            interpinic_flag='interp', readvar=readvar, data=temp1d)
-       if (flag == 'read') then 
-          do p= bounds%begp,bounds%endp
-             if (temp1d(p) == 1) then
-                this%croplive_patch(p) = .true.
-             else
-                this%croplive_patch(p) = .false.
-             end if
-          end do
-       end if
-       deallocate(temp1d)
-
-       allocate(temp1d(bounds%begp:bounds%endp))
-       if (flag == 'write') then 
-          do p= bounds%begp,bounds%endp
-             if (this%cropplant_patch(p)) then
-                temp1d(p) = 1
-             else
-                temp1d(p) = 0
-             end if
-          end do
-       end if
-       call restartvar(ncid=ncid, flag=flag,  varname='cropplant', xtype=ncd_log,  &
-            dim1name='pft', &
-            long_name='Flag that crop is planted, but not harvested' , &
-            interpinic_flag='interp', readvar=readvar, data=temp1d)
-       if (flag == 'read') then 
-          do p= bounds%begp,bounds%endp
-             if (temp1d(p) == 1) then
-                this%cropplant_patch(p) = .true.
-             else
-                this%cropplant_patch(p) = .false.
-             end if
-          end do
-       end if
-       deallocate(temp1d)
-
-       call restartvar(ncid=ncid, flag=flag,  varname='harvdate', xtype=ncd_int,  &
-            dim1name='pft', long_name='harvest date', units='jday', nvalid_range=(/1,366/), & 
-            interpinic_flag='interp', readvar=readvar, data=this%harvdate_patch)
 
       call restartvar(ncid=ncid, flag=flag,  varname='gddmaturity', xtype=ncd_double,  &
             dim1name='pft', long_name='Growing degree days needed to harvest', units='ddays', &

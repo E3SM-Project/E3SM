@@ -9,7 +9,7 @@ module pftvarcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use clm_varpar  , only : mxpft, numrad, ivis, inir
+  use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
   use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
   use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
@@ -48,6 +48,12 @@ module pftvarcon
   integer :: npcropmax              !value for last prognostic crop in list
   integer :: nc3crop                !value for generic crop (rf)
   integer :: nc3irrig               !value for irrigated generic crop (ir)
+
+  ! Number of crop functional types actually used in the model. This includes each CFT for
+  ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
+  ! irrigation is turned off in this run: it just excludes crop types that aren't handled
+  ! at all, as given by the mergetoclmpft list.
+  integer :: num_cfts_known_to_model
 
   real(r8), allocatable :: dleaf(:)       !characteristic leaf dimension (m)
   real(r8), allocatable :: c3psn(:)       !photosynthetic pathway: 0. = c4, 1. = c3
@@ -88,6 +94,16 @@ module pftvarcon
   real(r8), allocatable :: deadwdcp(:)    !dead wood (xylem and heartwood) C:P (gC/gP)
 
   ! for crop
+
+  ! These arrays give information about the merge of unused crop types to the types CLM
+  ! knows about. mergetoclmpft(m) gives the crop type that CLM uses to simulate input
+  ! type m (and mergetoclmpft(m) == m implies that CLM simulates crop type m
+  ! directly). is_pft_known_to_model(m) is true if CLM simulates crop type m, and false
+  ! otherwise. Note that these do NOT relate to whether irrigation is on or off in a
+  ! given simulation - that is handled separately.
+  integer , allocatable :: mergetoclmpft         (:)
+  logical , allocatable :: is_pft_known_to_model (:)
+
   real(r8), allocatable :: graincn(:)      !grain C:N (gC/gN)
   real(r8), allocatable :: graincp(:)      !grain C:N (gC/gN)
   real(r8), allocatable :: mxtmp(:)        !parameter used in accFlds
@@ -367,6 +383,10 @@ contains
     allocate( grperc        (0:mxpft) )       
     allocate( grpnow        (0:mxpft) )       
     allocate( rootprof_beta (0:mxpft) )
+
+    allocate( mergetoclmpft (0:mxpft) )
+    allocate( is_pft_known_to_model  (0:mxpft) )
+
     allocate( graincn       (0:mxpft) )      
     allocate( graincp       (0:mxpft) )      
     allocate( mxtmp         (0:mxpft) )        
@@ -884,6 +904,13 @@ contains
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
        
+    call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)  
+    if ( .not. readv ) then
+       do i = 0, mxpft
+          mergetoclmpft(i) = i
+       end do
+    end if
+
     call ncd_pio_closefile(ncid)
 
 
@@ -931,6 +958,9 @@ contains
     npcropmin            = ncorn                ! first prognostic crop
     npcropmax            = nsoybeanirrig        ! last prognostic crop in list
 
+    call set_is_pft_known_to_model()
+    call set_num_cfts_known_to_model()
+
     if (use_cndv) then
        fcur(:) = fcurdv(:)
     end if
@@ -974,6 +1004,60 @@ contains
     end if
 
   end subroutine pftconrd
+
+  !-----------------------------------------------------------------------
+  subroutine set_is_pft_known_to_model()
+    !
+    ! !DESCRIPTION:
+    ! Set is_pft_known_to_model based on mergetoclmpft
+    !
+    ! !USES:
+    !
+    ! !LOCAL VARIABLES:
+    integer :: m, merge_type
+
+    character(len=*), parameter :: subname = 'set_is_pft_known_to_model'
+    !-----------------------------------------------------------------------
+
+    is_pft_known_to_model(:) = .false.
+
+    ! NOTE(wjs, 2015-10-04) Currently, type 0 has mergetoclmpft = _FillValue in the file,
+    ! so we can't handle it in the general loop below. But CLM always uses type 0, so
+    ! handle it specially here.
+    is_pft_known_to_model(0) = .true.
+
+    ! NOTE(wjs, 2015-10-04) Currently, mergetoclmpft is only used for crop types.
+    ! However, we handle it more generally here (treating ALL pft types), in case its use
+    ! is ever extended to work with non-crop types as well.
+    do m = 1, mxpft
+       merge_type                        = mergetoclmpft(m)
+       is_pft_known_to_model(merge_type) = .true.
+    end do
+
+  end subroutine set_is_pft_known_to_model
+
+  !-----------------------------------------------------------------------
+  subroutine set_num_cfts_known_to_model()
+    !
+    ! !DESCRIPTION:
+    ! Set the module-level variable, num_cfts_known_to_model
+    !
+    ! !USES:
+    !
+    ! !LOCAL VARIABLES:
+    integer :: m
+
+    character(len=*), parameter :: subname = 'set_num_cfts_known_to_model'
+    !-----------------------------------------------------------------------
+
+    num_cfts_known_to_model = 0
+    do m = cft_lb, cft_ub
+       if (is_pft_known_to_model(m)) then
+          num_cfts_known_to_model = num_cfts_known_to_model + 1
+       end if
+    end do
+
+  end subroutine set_num_cfts_known_to_model
 
 end module pftvarcon
 

@@ -7,12 +7,13 @@ module clm_initializeMod
   use spmdMod          , only : masterproc, iam
   use shr_sys_mod      , only : shr_sys_flush
   use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use decompMod        , only : bounds_type, get_proc_bounds 
+  use decompMod        , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
   use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
+  use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -46,28 +47,31 @@ contains
     ! CLM initialization first phase 
     !
     ! !USES:
-    use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
-    use clm_varcon       , only: clm_varcon_init
-    use landunit_varcon  , only: landunit_varcon_init, max_lunit, istice_mec
-    use column_varcon    , only: col_itype_to_icemec_class
-    use clm_varctl       , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
-    use pftvarcon        , only: pftconrd
-    use soilorder_varcon , only: soilorder_conrd
-    use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
-    use domainMod        , only: domain_check, ldomain, domain_init
-    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
-    use controlMod       , only: control_init, control_print
-    use ncdio_pio        , only: ncd_pio_init
-    use initGridCellsMod , only: initGridCells, initGhostGridCells
-    use ch4varcon        , only: ch4conrd
-    use UrbanParamsType  , only: UrbanInput
-    use CLMFatesParamInterfaceMod, only : FatesReadPFTs
-    use surfrdMod        , only: surfrd_get_grid_conn
-    use clm_varctl       , only: lateral_connectivity, domain_decomp_type
-    use decompInitMod    , only: decompInit_lnd_using_gp, decompInit_ghosts
-    use domainLateralMod , only: ldomain_lateral, domainlateral_init
-    use SoilTemperatureMod, only : init_soil_temperature
-    use ExternalModelInterfaceMod, only : EMI_Determine_Active_EMs
+    use clm_varpar                , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use clm_varcon                , only: clm_varcon_init
+    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
+    use column_varcon             , only: col_itype_to_icemec_class
+    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use pftvarcon                 , only: pftconrd
+    use soilorder_varcon          , only: soilorder_conrd
+    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
+    use domainMod                 , only: domain_check, ldomain, domain_init
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use controlMod                , only: control_init, control_print, NLFilename
+    use ncdio_pio                 , only: ncd_pio_init
+    use initGridCellsMod          , only: initGridCells, initGhostGridCells
+    use ch4varcon                 , only: ch4conrd
+    use UrbanParamsType           , only: UrbanInput
+    use CLMFatesParamInterfaceMod , only: FatesReadPFTs
+    use surfrdMod                 , only: surfrd_get_grid_conn
+    use clm_varctl                , only: lateral_connectivity, domain_decomp_type
+    use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use domainLateralMod          , only: ldomain_lateral, domainlateral_init
+    use SoilTemperatureMod        , only: init_soil_temperature
+    use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
+    use dynSubgridControlMod      , only: dynSubgridControl_init
+    use filterMod                 , only: allocFilters
+    use reweightMod               , only: reweight_wrapup
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -77,6 +81,7 @@ contains
     integer           :: begg, endg              ! processor bounds
     integer           :: icemec_class            ! current icemec class (1..maxpatch_glcmec)
     type(bounds_type) :: bounds_proc             
+    type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
     integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
     integer ,pointer  :: edgesOnCell(:,:)        ! index to determine distance between neighbors from dcEdge
@@ -87,6 +92,8 @@ contains
     integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
     integer           :: nEdges_loc              ! number of edge length saved locally
     integer           :: maxEdges                ! max number of edges/neighbors
+    integer           :: nclumps                 ! number of clumps on this processor
+    integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -113,6 +120,8 @@ contains
     call init_soil_temperature()
 
     if (masterproc) call control_print()
+
+    call dynSubgridControl_init(NLFilename)
 
     ! ------------------------------------------------------------------------
     ! Read in global land grid and land mask (amask)- needed to set decomposition
@@ -216,6 +225,7 @@ contains
     allocate (urban_valid  (begg:endg                      ))
     allocate (wt_nat_patch (begg:endg, natpft_lb:natpft_ub ))
     allocate (wt_cft       (begg:endg, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg, maxpatch_glcmec))
@@ -305,6 +315,21 @@ contains
        call decompInit_glcp(ns, ni, nj)
     endif
 
+    ! Set filters
+
+    call t_startf('init_filters')
+    call allocFilters()
+    call t_stopf('init_filters')
+
+    nclumps = get_proc_clumps()
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    do nc = 1, nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call reweight_wrapup(bounds_clump, &
+            ldomain%glcmask(bounds_clump%begg:bounds_clump%endg)*1._r8)
+    end do
+    !$OMP END PARALLEL DO
+
     ! ------------------------------------------------------------------------
     ! Remainder of initialization1
     ! ------------------------------------------------------------------------
@@ -372,7 +397,7 @@ contains
     use initInterpMod         , only : initInterp
     use DaylengthMod          , only : InitDaylength, daylength
     use fileutils             , only : getfil
-    use filterMod             , only : allocFilters, filter
+    use filterMod             , only : filter
     use dynSubgridDriverMod   , only : dynSubgrid_init
     use reweightMod           , only : reweight_wrapup
     use subgridWeightsMod     , only : init_subgrid_weights_mod
@@ -606,7 +631,7 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, dgvs_vars)
+    call dynSubgrid_init(bounds_proc, dgvs_vars, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
@@ -667,7 +692,7 @@ contains
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr,                                                                       &
-               alm_fates)
+               alm_fates, glc2lnd_vars, crop_vars)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -683,18 +708,10 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates)
+            alm_fates, glc2lnd_vars, crop_vars)
 
     end if
        
-    ! ------------------------------------------------------------------------
-    ! Initialize filters and weights
-    ! ------------------------------------------------------------------------
-    
-    call t_startf('init_filters')
-    call allocFilters()
-    call t_stopf('init_filters')
-
     ! ------------------------------------------------------------------------
     ! If appropriate, create interpolated initial conditions
     ! ------------------------------------------------------------------------
@@ -727,7 +744,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates)
+            alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -743,7 +760,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates)
+            alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
