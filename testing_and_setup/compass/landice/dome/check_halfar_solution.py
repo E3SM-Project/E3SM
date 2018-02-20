@@ -59,6 +59,7 @@ def halfar(t,x,y, A, n, rho):
       inside = max(0.0, 1.0 - (r / t**beta)**((n+1.0) / n))
 
       H[i] = H0 * inside**(n / (2.0*n+1.0)) / t**alpha
+  #print "max r=", x[H>0.0].max(), y[H>0.0].max()
   return H
 
 # Define a function to convert xtime character array to numeric time values using datetime objects
@@ -85,6 +86,7 @@ filein = netCDF4.Dataset(options.filename,'r')
 xCell = filein.variables['xCell'][:]
 yCell = filein.variables['yCell'][:]
 xtime = filein.variables['xtime'][:]
+areaCell = filein.variables['areaCell'][:]
 
 thk = filein.variables['thickness'][:]
 xtime = filein.variables['xtime'][:] 
@@ -116,14 +118,20 @@ if filein.config_calendar_type != "gregorian_noleap":
 # Call the halfar function
 thkHalfar = halfar(numtime[timelev]-numtime[0], xCell, yCell, flowA, flow_n, rhoi)
 
+iceCells = np.where( thk[timelev,:] > 0.0)
+print "# ice cells=", len(iceCells[0])
 thkDiff = (thk[timelev, :] - thkHalfar) 
-thkDiffIce = thkDiff[ np.where( thk[timelev,:] > 0.0) ]  # Restrict to cells modeled to have ice
+thkDiffIce = thkDiff[iceCells]  # Restrict to cells modeled to have ice
 RMS = ( (thkDiffIce**2).sum() / float(len(thkDiffIce)) )**0.5
+#RMSwtd = ( ((thkDiffIce * areaCell[iceCells] / areaCell[iceCells].sum())**2).sum() / float(len(thkDiffIce)) )**0.5
+#RMSwtd = ( ((thkDiffIce * areaCell[iceCells])**2 ).sum() / areaCell[iceCells]**0.5.sum()
+RMSwtd = ( (thkDiffIce**2 * areaCell[iceCells] / (areaCell[iceCells]).sum() ).sum() )**0.5
 
 
 # Print some stats about the error
 print 'Error statistics for cells modeled to have ice:'
 print '* RMS error = ' + str( RMS )
+print '* RMS error (area weighted) = ' + str( RMSwtd )
 print '* Minimum error = ' + str( thkDiffIce.min() )
 print '* Maximum error = ' + str( thkDiffIce.max() )
 print '* Mean error = ' + str( thkDiffIce.mean() )
