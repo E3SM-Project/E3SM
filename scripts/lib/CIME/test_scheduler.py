@@ -126,8 +126,6 @@ class TestScheduler(object):
                 self._project = self._machobj.get_value("PROJECT")
         else:
             self._project = project
-            # Needed in case default root depends on PROJECT
-            self._machobj.set_value("PROJECT", project)
 
         # We will not use batch system if user asked for no_batch or if current
         # machine is not a batch machine
