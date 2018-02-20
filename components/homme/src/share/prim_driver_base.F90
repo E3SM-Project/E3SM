@@ -874,6 +874,9 @@ contains
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
+
+    real(kind=real_kind) :: saved_ps(np,np,nets:nete)
+
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -937,16 +940,27 @@ contains
       call t_stopf("prim_diag_scalars")
     endif
 
-    ! initialize dp3d from ps
+    !initialize dp3d from ps
     !for vsplit it needs to be saved somewhere
-    do ie=nets,nete
-       do k=1,nlev
+    if(vsplit > 0)then !trying to not rely on branching much, so, if-st is outside
+      do ie=nets,nete
+        do k=1,nlev
           elem(ie)%state%dp3d(:,:,k,tl%n0)=&
                ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-       enddo
-    enddo
-
+          saved_ps(:,:,ie) = sum(elem(ie)%state%dp3d(:,:,k),3)
+        enddo
+      enddo
+    else
+      !orig code
+      do ie=nets,nete
+        do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+        enddo
+      enddo
+    endif !end of if-st for vsplit
 
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -968,17 +982,18 @@ contains
         call t_stopf("prim_step_rX")
       enddo
     else
-      !new logic, with vsplit and ftype=2 only
+      !new logic, with vsplit and ftype=2 only for now
       do r=1,rsplit
         if( r>1 )then
           if( mod((r-1), vsplit) == 0 )then
-            !first, remap forcing to homme floating levels
-            !call WHAT
+            ! the check that mod(rsplit,vsplit)=0 is already in namelist mod
+            ! that is, rsplit/vsplit=integer
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,saved_ps,dt*(rsplit/vsplit),np1,nets,nete)
             !second, apply forcing
-            call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+            !call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
-        endif !if-statement r == 1
+        endif !if-statement r > 1
         call t_startf("prim_step_rX")
         call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
         call t_stopf("prim_step_rX")

@@ -150,6 +150,81 @@ contains
   end subroutine vertical_remap
 
 
+  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,ps_forcing,dt,np1,nets,nete)
+  ! input:
+  !     ps_forcing(:,:,nets,nete) is ps for levels at which forcing is obtained
+  !     originally
+  !     
+  use kinds,          only: real_kind
+  use hybvcoord_mod,  only: hvcoord_t
+  use control_mod,    only: rsplit
+  use hybrid_mod,     only: hybrid_t
+  type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
+  type (element_t), intent(inout) :: elem(:)
+  type (hvcoord_t)                :: hvcoord
+  real (kind=real_kind)           :: dt 
+  integer :: ie,i,j,k,np1,nets,nete,np1_qdp 
+    
+  real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
+  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+    
+  call t_startf('remap_vsplit_dyn')
+   do ie=nets,nete
+     do k=1,nlev
+        !obtain dp for forcing
+        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:,ie)
+        dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
+     enddo
+     ! for a quick solnone can use homme's remap. it requires that
+     ! sum(dp_old)=sum(dp_new), which cannot be the case here. so, we stretch
+     ! the grid to make sum of dp_forcing match sum of dp_star.
+     ! next, we will implement the 'true' interpolation (one way or another) 
+     ! using lim9 to force monotonicity.
+     
+     ! not using divbyzero check since that is unlikely?
+     dp_forcing = dp_forcing*(sum(dp_star(:,:,:),3)/sum(dp_forcing(:,:,3)))
+
+     if (minval(dp_star)<0) then
+        do k=1,nlev
+        do i=1,np
+        do j=1,np
+           if (dp_star(i,j,k ) < 0) then
+              print *,"In remap_vsplit_dyn: level = ",k
+              print *,"In remap_vsplit_dyn: column location lat,lon(radians):",&
+                      elem(ie)%spherep(i,j)%lat,elem(ie)%spherep(i,j)%lon
+           endif
+        enddo
+        enddo
+        enddo
+        call abortmp('In remap_vsplit_dyn: negative layer thickness. timestep or remap time too large')
+     endif
+
+     ! remap forcing T
+     ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
+
+     call t_startf('vertical_remap1_1')
+     !remap from dp_forcing to dp_star
+     call remap1(ttmp,np,1,dp_forcing,dp_star)
+     call t_stopf('vertical_remap1_1')
+     !add forcing to temperature
+     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)
+
+     !remap forcing V
+     ttmp(:,:,:,1)=elem(ie)%derived%v(:,:,1,:,np1)*dp_forcing
+     ttmp(:,:,:,2)=elem(ie)%derived%v(:,:,2,:,np1)*dp_forcing
+
+     call t_startf('vertical_remap1_2')
+     !remap from dp_forcing to dp_star
+     call remap1(ttmp,np,2,dp_forcing,dp_star)
+     call t_stopf('vertical_remap1_2')
+     !add forcing back
+     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)
+     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)/dp_star(:,:,:)
+  enddo
+  call t_stopf('remap_vsplit_dyn')
+  end subroutine remap_vsplit_dyn
+
 end module 
 
 
