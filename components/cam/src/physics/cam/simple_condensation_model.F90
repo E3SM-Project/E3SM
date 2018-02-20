@@ -52,7 +52,8 @@ contains
     call addfld ('RKZ_ql',  (/'lev'/), 'I','kg/kg','grid-box mean ql used in the simple RKZ scheme')
     call addfld ('RKZ_qv',  (/'lev'/), 'I','kg/kg','grid-box mean qv used in the simple RKZ scheme')
 
-    call addfld ('RKZ_qsat',(/'lev'/), 'I','kg/kg','saturation specific humidity used in the simple RKZ scheme')
+    call addfld ('RKZ_qsat',    (/'lev'/), 'I', 'kg/kg',   'saturation specific humidity used in the simple RKZ scheme')
+    call addfld ('RKZ_dqsatdT', (/'lev'/), 'I', 'kg/kg/K', 'derivative of saturation specific humidity wrt temperature used in the simple RKZ scheme')
 
     call addfld ('RKZ_RH',   (/'lev'/), 'I','1','grid-box mean relative humidity')
     call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
@@ -66,9 +67,12 @@ contains
     call addfld ('RKZ_term_B',(/'lev'/), 'I','kg/kg/s','grid-box mean condensation rate, term B')
     call addfld ('RKZ_term_C',(/'lev'/), 'I','kg/kg/s','grid-box mean condensation rate, term C')
 
-    call addfld ('RKZ_Al',(/'lev'/), 'I','kg/kg/s','grid-box mean ql tendency caused by other processes')
-    call addfld ('RKZ_Av',(/'lev'/), 'I','kg/kg/s','grid-box mean qv tendency caused by other processes')
-    call addfld ('RKZ_AT',(/'lev'/), 'I','kg/kg/s','grid-box mean temperature tendency caused by other processes')
+    call addfld ('RKZ_Al',(/'lev'/), 'I','kg/kg/s', 'grid-box mean ql tendency caused by other processes')
+    call addfld ('RKZ_Av',(/'lev'/), 'I','kg/kg/s', 'grid-box mean qv tendency caused by other processes')
+    call addfld ('RKZ_AT',(/'lev'/), 'I','K/s',     'grid-box mean temperature tendency caused by other processes')
+
+    call addfld ('RKZ_zqme', (/'lev'/), 'I', 'kg/kg/s', 'condensation rate before limiters in the simple RKZ scheme')
+    call addfld ('RKZ_qme',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate after limiters in the simple RKZ scheme')
 
   end subroutine simple_RKZ_init
 
@@ -184,7 +188,8 @@ contains
      call qsat_water( state%t(i,k), state%pmid(i,k), esl(i,k), qsat(i,k), gam(i,k), dqsatdT(i,k) )
   end do
   end do
-  call outfld('RKZ_qsat', qsat, pcols, lchnk)
+  call outfld('RKZ_qsat',    qsat,    pcols, lchnk)
+  call outfld('RKZ_dqsatdT', dqsatdT, pcols, lchnk)
 
   ! Calculate the grid-box-mean relative humidity (rhgbm)
 
@@ -358,6 +363,7 @@ contains
      !------------------------------------------------------------------
      ! Send diagnostics to output
      !------------------------------------------------------------------
+     call outfld('RKZ_zqme',   qme,    pcols, lchnk)
      call outfld('RKZ_term_A', term_A, pcols, lchnk)
      call outfld('RKZ_term_B', term_B, pcols, lchnk)
      call outfld('RKZ_term_C', term_C, pcols, lchnk)
@@ -440,6 +446,9 @@ contains
         end where
 
      end if
+
+     ! Send limited condensation rate to output
+     call outfld('RKZ_qme', qme, pcols, lchnk)
 
   else
 
