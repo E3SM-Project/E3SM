@@ -14,7 +14,7 @@ import traceback
 import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
-from acme_diags.driver.utils import get_set_name
+from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
 def _get_default_diags(set_num, dataset):
@@ -57,6 +57,7 @@ def run_diag(parameters):
             module = importlib.import_module(mod_str)
             print('Starting to run ACME Diagnostics.')
             single_result = module.run_diag(parameters)
+            print('')
             results.append(single_result)
         except Exception as e:
             print('Error in {}'.format(mod_str))
@@ -76,8 +77,7 @@ if __name__ == '__main__':
         original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
 
         if not hasattr(original_parameter, 'sets'):
-            original_parameter.sets = [
-                'lat_lon', 'polar', 'zonal_mean_xy', 'zonal_mean_2d', 'cosp_histogram']
+            original_parameter.sets = SET_NAMES
 
         # load the default jsons
         default_jsons_paths = []
