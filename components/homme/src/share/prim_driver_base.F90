@@ -875,8 +875,6 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
 
-    real(kind=real_kind) :: saved_ps(np,np,nets:nete)
-
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -948,7 +946,6 @@ contains
           elem(ie)%state%dp3d(:,:,k,tl%n0)=&
                ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-          saved_ps(:,:,ie) = sum(elem(ie)%state%dp3d(:,:,k),3)
         enddo
       enddo
     else
@@ -988,7 +985,7 @@ contains
           if( mod((r-1), vsplit) == 0 )then
             ! the check that mod(rsplit,vsplit)=0 is already in namelist mod
             ! that is, rsplit/vsplit=integer
-            call remap_vsplit_dyn(hybrid,elem,hvcoord,saved_ps,dt*(rsplit/vsplit),np1,nets,nete)
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt*(rsplit/vsplit),np1,nets,nete)
             !second, apply forcing
             !call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
           endif

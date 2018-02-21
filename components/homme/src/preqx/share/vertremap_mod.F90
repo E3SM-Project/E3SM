@@ -150,7 +150,7 @@ contains
   end subroutine vertical_remap
 
 
-  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,ps_forcing,dt,np1,nets,nete)
+  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,dt,np1,nets,nete)
   ! input:
   !     ps_forcing(:,:,nets,nete) is ps for levels at which forcing is obtained
   !     originally
@@ -167,24 +167,29 @@ contains
     
   real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+  real (kind=real_kind) :: ps_forcing(np,np)
     
   call t_startf('remap_vsplit_dyn')
    do ie=nets,nete
+     ps_forcing(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,np1),3)
      do k=1,nlev
         !obtain dp for forcing
         dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:,ie)
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:)
         dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
      enddo
-     ! for a quick solnone can use homme's remap. it requires that
-     ! sum(dp_old)=sum(dp_new), which cannot be the case here. so, we stretch
-     ! the grid to make sum of dp_forcing match sum of dp_star.
-     ! next, we will implement the 'true' interpolation (one way or another) 
-     ! using lim9 to force monotonicity.
-     
-     ! not using divbyzero check since that is unlikely?
-     dp_forcing = dp_forcing*(sum(dp_star(:,:,:),3)/sum(dp_forcing(:,:,3)))
+     !since forcing was received from physics when pressure levels were
+     !different from the current ones, there is a question how to treat the
+     !forcing. for now we adopt the same approach as in the original code,
+     !namely, assume that the forcing is for pressure levels that are based on
+     !eta coordinate and *current* surface pressure. this way we do not need to
+     !stretch the old pressure grid (to match sum(dp_old)=sum(dp_new) or develop
+     !a special monotone and conservative mapping procedure.
+ 
+     !scaling idea, abandoned
+     !dp_forcing = dp_forcing*(sum(dp_star(:,:,:),3)/sum(dp_forcing(:,:,3)))
 
+     !not sure whether to check both dp_star and dp_forcing?
      if (minval(dp_star)<0) then
         do k=1,nlev
         do i=1,np
@@ -199,6 +204,8 @@ contains
         enddo
         call abortmp('In remap_vsplit_dyn: negative layer thickness. timestep or remap time too large')
      endif
+
+     !we don't support REMAP_TE since it is off by default
 
      ! remap forcing T
      ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
