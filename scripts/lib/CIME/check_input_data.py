@@ -74,6 +74,8 @@ def check_all_input_data(case, input_data_root=None, data_list_dir="Buildconf", 
         if protocal == 'svn':
             success = check_input_data(case=case, svn_loc=address, download=download,
                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
+        else:
+            expect(False,"Unknown inputdata server protocal {}".format(protocal))
 
     stage_refcase(case)
 
