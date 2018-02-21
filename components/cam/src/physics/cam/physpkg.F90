@@ -2033,7 +2033,7 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rkz_lmt_2
     logical :: l_rkz_lmt_3
     logical :: l_rkz_lmt_4
-
+    logical :: l_rkz_lmt_5
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2056,6 +2056,7 @@ subroutine tphysbc (ztodt,               &
                       ,l_rkz_lmt_2_out        = l_rkz_lmt_2 &
                       ,l_rkz_lmt_3_out        = l_rkz_lmt_3 &
                       ,l_rkz_lmt_4_out        = l_rkz_lmt_4 &
+                      ,l_rkz_lmt_5_out        = l_rkz_lmt_5 &
                       )
     
     !-----------------------------------------------------------------------
@@ -2488,7 +2489,8 @@ end if
                                      rkz_term_C_fmin, &
                                      l_rkz_lmt_2, &
                                      l_rkz_lmt_3, &
-                                     l_rkz_lmt_4  &
+                                     l_rkz_lmt_4, &
+                                     l_rkz_lmt_5  &
                                      )
 
                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          

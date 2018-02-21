@@ -74,6 +74,9 @@ contains
     call addfld ('RKZ_zqme', (/'lev'/), 'I', 'kg/kg/s', 'condensation rate before limiters in the simple RKZ scheme')
     call addfld ('RKZ_qme',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate after limiters in the simple RKZ scheme')
 
+    call addfld ('RKZ_qme_lm4',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 4 in the simple RKZ scheme')
+    call addfld ('RKZ_qme_lm5',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 in the simple RKZ scheme')
+
   end subroutine simple_RKZ_init
 
   !------------------------------------------------------------------------
@@ -90,7 +93,8 @@ contains
                              rkz_term_C_fmin,   & 
                              l_rkz_lmt_2, &
                              l_rkz_lmt_3, &
-                             l_rkz_lmt_4  &
+                             l_rkz_lmt_4, &
+                             l_rkz_lmt_5  &
                              )
 
   use shr_kind_mod, only: r8=>shr_kind_r8
@@ -129,6 +133,7 @@ contains
   logical,  intent(in) :: l_rkz_lmt_2
   logical,  intent(in) :: l_rkz_lmt_3
   logical,  intent(in) :: l_rkz_lmt_4
+  logical,  intent(in) :: l_rkz_lmt_5
 
   ! tmp work arrays
 
@@ -141,22 +146,25 @@ contains
   logical  :: lq(pcnst)              ! logical array used when calling subroutine physics_ptend_init indicating 
                                      ! which tracers are affected by this parameterization
 
-  real(r8) ::     ast_old(pcols,pver)! cloud fraction of previous time step
+  real(r8) :: ast_old(pcols,pver)! cloud fraction of previous time step
 
-  real(r8) ::        qsat(pcols,pver)! saturation specific humidity
-  real(r8) ::         esl(pcols,pver)! saturation vapor pressure (output from subroutine qsat_water, not used)
-  real(r8) ::     dqsatdT(pcols,pver)! dqsat/dT
-  real(r8) ::         gam(pcols,pver)! L/cpair * dqsat/dT
+  real(r8) :: qsat(pcols,pver)! saturation specific humidity
+  real(r8) :: esl(pcols,pver)! saturation vapor pressure (output from subroutine qsat_water, not used)
+  real(r8) :: dqsatdT(pcols,pver)! dqsat/dT
+  real(r8) :: gam(pcols,pver)! L/cpair * dqsat/dT
 
   real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
   real(r8) :: rhgbm(pcols,pver)      ! grid box mean relative humidity
-  real(r8) ::     dastdRH(pcols,pver)! df/dRH where f is the cloud fraction and RH the relative humidity
+  real(r8) :: dastdRH(pcols,pver)    ! df/dRH where f is the cloud fraction and RH the relative humidity
 
   real(r8) :: qtend(pcols,pver)      ! Moisture tendency caused by other processes
   real(r8) :: ltend(pcols,pver)      ! liquid condensate tendency caused by other processes
   real(r8) :: ttend(pcols,pver)      ! Temperature tendency caused by other processes
 
   real(r8) :: qme   (pcols,pver)     ! total condensation rate
+
+  real(r8) :: qmebf   (pcols,pver)   ! total condensation rate before appling limiter 
+  real(r8) :: qmedf   (pcols,pver)   ! difference of total condensation rate before and after limiter application
 
   real(r8) :: term_A (pcols,pver)
   real(r8) :: term_B (pcols,pver)
@@ -165,8 +173,8 @@ contains
                                      ! when option 2 is used for term C. Note that in this case, 1/denominator will be 
                                      ! multipled to all three terms (A, B, and C).
 
-  real(r8) ::  ql_incld(pcols,pver)  ! in-cloud liquid concentration
-  real(r8) ::  dfdt    (pcols,pver)  ! df/dt where f is the cloud fraction
+  real(r8) :: ql_incld(pcols,pver)  ! in-cloud liquid concentration
+  real(r8) :: dfdt    (pcols,pver)  ! df/dt where f is the cloud fraction
   real(r8) :: zforcing (pcols,pver)
   real(r8) :: zc3      (pcols,pver)
 
@@ -174,6 +182,7 @@ contains
   real(r8) :: zqlnew(pcols,pver)     ! ql at new time step if total condenation rate is not limited. Might be negative.
   real(r8) :: zlim (pcols,pver)
   real(r8),parameter :: zsmall = 1e-12_r8
+
 
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
@@ -443,6 +452,8 @@ contains
      !---------------------------------------------------------------------------
      if (l_rkz_lmt_4) then
 
+        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
+
         ! Avoid negative qv
 
         zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
@@ -456,6 +467,44 @@ contains
         where( zqlnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
         end where
+
+        qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
+        call outfld('RKZ_qme_lm4',   qmedf,    pcols, lchnk)
+
+     end if
+
+     !---------------------------------------------------------------------------
+     ! Limit condensation/evaporation rate to avoid negative water
+     ! concentrations. Also, let qme=0 when f=0 and df/dt=0.
+     ! (say, without any changes in cloud fraction and its tendency, the
+     ! condensation does not play any roles, we think qme should be zero, thus,
+     ! we add this limiter to avoid nonzero qme with f=0 and df/dt=0) . 
+     !---------------------------------------------------------------------------
+     if (l_rkz_lmt_5) then
+
+        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
+
+        ! Avoid negative qv
+
+        zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
+        where( zqvnew(:ncol,:pver).lt.zsmall )
+           qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
+        end where
+
+        ! Avoid negative ql (note that qme could be negative, which would mean
+        ! evaporation)
+
+        zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
+        where( zqlnew(:ncol,:pver).lt.zsmall )
+           qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
+        end where
+
+        where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8))
+          qme(:ncol,:pver) = 0._r8
+        end where
+
+        qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
+        call outfld('RKZ_qme_lm5',   qmedf,    pcols, lchnk)
 
      end if
 
