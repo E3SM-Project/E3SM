@@ -4,16 +4,11 @@ API for checking input for testcase
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import get_model, SharedArea
+from CIME.XML.inputdata import Inputdata
 
 import fnmatch, glob, shutil
 
 logger = logging.getLogger(__name__)
-
-# Should probably be in XML somewhere
-SVN_LOCS = {
-    "e3sm" : "https://acme-svn2.ornl.gov/acme-repo/acme/inputdata",
-    "cesm" : "https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata"
-}
 
 def find_files(rootdir, pattern):
     """
@@ -33,7 +28,7 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
     """
     rel_path = rel_path.strip('/')
     full_url = os.path.join(svn_loc, rel_path)
-
+    logger.info("full url {}".format(full_url))
     err = run_cmd("svn --non-interactive --trust-server-cert ls {}".format(svn_loc))[0]
     if err != 0:
         logging.warning(
@@ -67,11 +62,18 @@ To check connection and store your credential run 'svn ls {0}' and permanently s
                 return True
 
 ###############################################################################
-def check_all_input_data(case):
+def check_all_input_data(case, input_data_root=None, data_list_dir="Buildconf", download=True):
 ###############################################################################
+    success = False
+    inputdata = Inputdata()
 
-    success = check_input_data(case=case, download=True)
-    expect(success, "Failed to download input data")
+    while not success:
+        protocal, address = inputdata.get_next_server()
+        expect(protocal is not None, "Failed to find input data")
+        logger.info("Checking server {} with protocal {}".format(address, protocal))
+        if protocal == 'svn':
+            success = check_input_data(case=case, svn_loc=address, download=download,
+                                       input_data_root=input_data_root, data_list_dir=data_list_dir)
 
     stage_refcase(case)
 
@@ -138,7 +140,6 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
     Return True if no files missing
     """
     # Fill in defaults as needed
-    svn_loc = SVN_LOCS[get_model()] if svn_loc is None else svn_loc
 
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
@@ -189,14 +190,6 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
 
                             if (download):
                                 success = download_if_in_repo(svn_loc, input_data_root, rel_path)
-                                if (not success):
-                                    # If E3SM, try CESM repo as backup
-                                    if (get_model() == "e3sm" and svn_loc != SVN_LOCS["cesm"]):
-                                        success = download_if_in_repo(SVN_LOCS["cesm"], input_data_root, rel_path)
-                                        if (not success):
-                                            no_files_missing = False
-                                    else:
-                                        no_files_missing = False
                             # if not download
                             else:
                                 no_files_missing = False
