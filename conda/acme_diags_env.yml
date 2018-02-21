@@ -5,7 +5,7 @@ channels:
 - uvcdat
 - defaults
 dependencies:
-- acme_diags=1.2.0
+- acme_diags=1.2.1
 - asn1crypto=0.22.0
 - backports=1.0
 - backports.functools_lru_cache=1.4
