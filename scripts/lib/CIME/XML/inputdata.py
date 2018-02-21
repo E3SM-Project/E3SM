@@ -21,6 +21,7 @@ class Inputdata(GenericXML):
         schema = files.get_schema("INPUTDATA_SPEC_FILE")
         logger.debug("DEBUG: infile is {}".format(infile))
         GenericXML.__init__(self, infile, schema=schema)
+
         self._servernode = None
 
     def get_next_server(self):

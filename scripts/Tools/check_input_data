@@ -33,7 +33,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--svn-loc", default=None,
+    parser.add_argument("--protocal", default=None,
+                        help="The input data protocal to download data.")
+
+    parser.add_argument("--server", default=None,
                         help="The input data repository from which to download data.")
 
 
@@ -50,25 +53,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
+    return args.protocal, args.server, args.input_data_root, args.data_list_dir, args.download
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
+    protocal, server, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
     with Case() as case:
-        if svn_loc is not None:
-            sys.exit(0 if check_input_data(case,
-                                           svn_loc=svn_loc,
-                                           input_data_root=input_data_root,
-                                           data_list_dir=data_list_dir,
-                                           download=download) else 1)
-        else:
-            sys.exit(0 if check_all_input_data(case,
-                                           input_data_root=input_data_root,
-                                           data_list_dir=data_list_dir,
-                                           download=download) else 1)
+        sys.exit(0 if check_all_input_data(case,
+                                       protocal=protocal,
+                                       server=server,
+                                       input_data_root=input_data_root,
+                                       data_list_dir=data_list_dir,
+                                       download=download) else 1)
 
 ###############################################################################
 
