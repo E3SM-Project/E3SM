@@ -15,9 +15,6 @@ import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name
-import json
-import collections
-import csv
 
 
 def _get_default_diags(set_num, dataset):
