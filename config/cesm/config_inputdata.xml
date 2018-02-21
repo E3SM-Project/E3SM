@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<inputdata>
+<!-- server precidence is order in this file.  Highest preference at top -->
+  <server>
+    <protocal>svn</protocal>
+    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
+  </server>
+  <server>
+    <protocal>svn</protocal>
+    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata2</address>
+  </server>
+<!--
+  <server>
+    <protocal>grid-ftp</protocal>
+    <address>ftp://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
+  </server>
+-->
+</inputdata>
