@@ -271,6 +271,10 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    if ( allocated(londimnames) ) deallocate(londimnames)
    if ( allocated(vars)        ) deallocate( vars )
 
+   if (nlat .eq. nlon) then !-- Enforce for SE grids
+     closelatidx = 1
+   endif
+
    return
 
 end subroutine shr_scam_getCloseLatLonNC
@@ -326,7 +330,7 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    integer(IN)                      ::  ndimid
    integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
    integer(IN)                      ::  nlon = 0, nlat = 0
-   logical                          ::  lfound        ! local version of found
+   logical                          ::  lfound, islatitude        ! local version of found
    integer(IN), dimension(nf90_max_var_dims) :: dimids
    character(len=80), allocatable   ::  vars(:)
    character(len=80), allocatable   ::  latdimnames(:)
@@ -416,6 +420,14 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    nlon=0
    nvarid=0
 
+   if (latlen .eq. 1 .and. lonlen .gt. 1) then
+     latlen=lonlen
+     islatitude=.false. ! if spectral element lat and lon 
+                        !   are on same array structure
+   else
+     islatitude=.true.
+   endif
+
    !--- Loop through all variables until we find lat and lon ---
 
    do while (nvarid < nvars .and.(nlon.eq.0 .or. nlat.eq.0))
@@ -425,8 +437,9 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
 
       if ( is_latlon( vars(nvarid), latitude=.true., varnotdim=.true. ) )then
 
-         call get_latlonindices( latitude=.true., ndims=nlatdims, dimnames=latdimnames, &
+         call get_latlonindices( latitude=islatitude, ndims=nlatdims, dimnames=latdimnames, &
                                  nlen=latlen, strt=strt, cnt=cnt )
+
          nlat = latlen
          allocate(lats(nlat))
          rcode= pio_get_var(pioid, nvarid ,strt(:nlatdims), cnt(:nlatdims), lats)
@@ -479,6 +492,11 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    if ( allocated(lats) ) deallocate(lats)
    if ( allocated(lons) ) deallocate(lons)
    deallocate( vars )
+
+   !--- If dealing with SE grids, set this to 1
+   if (nlat .eq. nlon) then
+     closelatidx = 1
+   endif
 
    return
 end subroutine shr_scam_getCloseLatLonPIO
@@ -763,7 +781,8 @@ logical function is_latlon( var_name, latitude, varnotdim )
            trim(var_name) == trim(xyvar)    .or. trim(var_name) == 'lsmlat'    .or. &
            trim(var_name) == trim(gcvar)    .or.                                    &
            trim(var_name) == 'LAT'          .or. trim(var_name) == 'LATIXY'    .or. &
-           trim(var_name) == trim(Capxyvar) .or. trim(var_name) == 'LSMLAT' )  then
+           trim(var_name) == trim(Capxyvar) .or. trim(var_name) == 'LSMLAT'    .or. &
+           trim(var_name) == 'ncol')  then
            is_latlon = .true.
       else
            is_latlon = .false.
@@ -782,7 +801,8 @@ logical function is_latlon( var_name, latitude, varnotdim )
            trim(var_name) == trim(xyvar)    .or. trim(var_name) == 'lsmlon'    .or. &
            trim(var_name) == trim(gcvar)    .or.                                    &
            trim(var_name) == 'LON'          .or. trim(var_name) == 'LONGXY'    .or. &
-           trim(var_name) == trim(Capxyvar) .or. trim(var_name) == 'LSMLON' )  then
+           trim(var_name) == trim(Capxyvar) .or. trim(var_name) == 'LSMLON'    .or. &
+           trim(var_name) == 'ncol')  then
            is_latlon = .true.
       else
            is_latlon = .false.
@@ -887,6 +907,8 @@ subroutine get_close( targetlon, targetlat, nlon, lons, nlat, lats, closelonidx,
    real   (R8),allocatable  :: poslons(:)
    real   (R8)              :: postargetlon
    character(*),parameter :: subname = "(shr_scam_getclose) "
+   real   (R8) :: minpoint, testpoint 
+   integer :: n
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
@@ -935,8 +957,26 @@ subroutine get_close( targetlon, targetlat, nlon, lons, nlat, lats, closelonidx,
 
    !--- find index of value closest to 0 and set returned values ---
 
-   closelonidx=(MINLOC(abs(poslons-postargetlon),dim=1))
-   closelatidx=(MINLOC(abs(lats-targetlat),dim=1))
+   !--- if SCM uses Eulerian grids
+   if (nlat .ne. nlon) then
+
+     closelonidx=(MINLOC(abs(poslons-postargetlon),dim=1))
+     closelatidx=(MINLOC(abs(lats-targetlat),dim=1))
+
+   else !--- if SCM uses SE grids
+
+     minpoint=1000.0
+     do n = 1, nlon
+       testpoint=abs(poslons(n)-postargetlon)+abs(lats(n)-targetlat)
+       if (testpoint .lt. minpoint) then
+         minpoint=testpoint
+         closelonidx=n
+       endif
+     enddo
+     closelatidx=closelonidx ! yes these are set equal since in SE files
+                             !  lat/lon are on same array
+
+   endif
 
    !--- if it gets here we need to clean up after ourselves ---
 
@@ -947,3 +987,4 @@ end subroutine get_close
 !===============================================================================
 
 end module shr_scam_mod
+
