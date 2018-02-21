@@ -233,11 +233,28 @@ class EnvMachSpecific(EnvBase):
         last_action = None
         last_cmd    = None
 
+        # Normally, we will try to combine or batch module commands together...
+        #
+        # module load X
+        # module load Y
+        # module load Z
+        #
+        # is the same as ...
+        #
+        # module load X Y Z
+        #
+        # ... except the latter is significatly faster due to performing 1/3 as
+        # many forks.
+        #
+        # Not all module commands support batching though and we enurmerate those
+        # here.
+        actions_that_cannot_be_batched = ["swap"]
+
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
 
-            if action == last_action:
+            if action == last_action and action not in actions_that_cannot_be_batched:
                 last_cmd = "{} {}".format(last_cmd, argument)
             else:
                 if last_cmd is not None:
