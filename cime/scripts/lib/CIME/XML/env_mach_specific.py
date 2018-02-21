@@ -232,12 +232,13 @@ class EnvMachSpecific(EnvBase):
         cmds = []
         last_action = None
         last_cmd    = None
+        actions_that_cannot_be_batched = ["swap"]
 
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
 
-            if action == last_action:
+            if action == last_action and action not in actions_that_cannot_be_batched:
                 last_cmd = "{} {}".format(last_cmd, argument)
             else:
                 if last_cmd is not None:
