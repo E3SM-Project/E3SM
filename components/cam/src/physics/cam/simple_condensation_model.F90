@@ -90,7 +90,8 @@ contains
                              rkz_term_B_opt, &
                              rkz_term_C_opt, &
                              rkz_term_C_ql_opt, & 
-                             rkz_term_C_fmin,   & 
+                             rkz_term_C_fmin, & 
+                             rkz_zsmall_opt, &
                              l_rkz_lmt_2, &
                              l_rkz_lmt_3, &
                              l_rkz_lmt_4, &
@@ -130,6 +131,8 @@ contains
   integer,  intent(in) :: rkz_term_C_ql_opt
   real(r8), intent(in) :: rkz_term_C_fmin
 
+  integer,  intent(in) :: rkz_zsmall_opt       
+
   logical,  intent(in) :: l_rkz_lmt_2
   logical,  intent(in) :: l_rkz_lmt_3
   logical,  intent(in) :: l_rkz_lmt_4
@@ -146,12 +149,12 @@ contains
   logical  :: lq(pcnst)              ! logical array used when calling subroutine physics_ptend_init indicating 
                                      ! which tracers are affected by this parameterization
 
-  real(r8) :: ast_old(pcols,pver)! cloud fraction of previous time step
+  real(r8) :: ast_old(pcols,pver)    ! cloud fraction of previous time step
 
-  real(r8) :: qsat(pcols,pver)! saturation specific humidity
-  real(r8) :: esl(pcols,pver)! saturation vapor pressure (output from subroutine qsat_water, not used)
-  real(r8) :: dqsatdT(pcols,pver)! dqsat/dT
-  real(r8) :: gam(pcols,pver)! L/cpair * dqsat/dT
+  real(r8) :: qsat(pcols,pver)       ! saturation specific humidity
+  real(r8) :: esl(pcols,pver)        ! saturation vapor pressure (output from subroutine qsat_water, not used)
+  real(r8) :: dqsatdT(pcols,pver)    ! dqsat/dT
+  real(r8) :: gam(pcols,pver)        ! L/cpair * dqsat/dT
 
   real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
   real(r8) :: rhgbm(pcols,pver)      ! grid box mean relative humidity
@@ -173,15 +176,15 @@ contains
                                      ! when option 2 is used for term C. Note that in this case, 1/denominator will be 
                                      ! multipled to all three terms (A, B, and C).
 
-  real(r8) :: ql_incld(pcols,pver)  ! in-cloud liquid concentration
-  real(r8) :: dfdt    (pcols,pver)  ! df/dt where f is the cloud fraction
+  real(r8) :: ql_incld(pcols,pver)   ! in-cloud liquid concentration
+  real(r8) :: dfdt    (pcols,pver)   ! df/dt where f is the cloud fraction
   real(r8) :: zforcing (pcols,pver)
   real(r8) :: zc3      (pcols,pver)
 
   real(r8) :: zqvnew(pcols,pver)     ! qv at new time step if total condenation rate is not limited. Might be negative.
   real(r8) :: zqlnew(pcols,pver)     ! ql at new time step if total condenation rate is not limited. Might be negative.
   real(r8) :: zlim (pcols,pver)
-  real(r8),parameter :: zsmall = 1e-12_r8
+  real(r8) :: zsmall                 ! bottom boundary for ql and qv used in limiter 4 and 5
 
 
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -406,6 +409,23 @@ contains
 
      end select
      call outfld('RKZ_dfdt', dfdt, pcols, lchnk)
+
+
+     !------------------------------------------------------------------
+     !set up choices of q and ql bottom boundaries to apply limiters
+     !------------------------------------------------------------------
+
+     select case (rkz_zsmall_opt)
+     case(0) 
+        zsmall = 0._r8
+
+     case(1)
+        zsmall = 1e-12_r8
+
+     case default
+         write(iulog,*) "Unrecognized value of rkz_zsmall_opt:",rkz_zsmall_opt,". Abort."
+         call endrun
+     end select
 
      !-----------
      ! limiters

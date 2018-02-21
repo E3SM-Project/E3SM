@@ -2659,6 +2659,13 @@ in the RKZ simple macrophysics scheme
 Default: 1E-3 
 </entry>
 
+<entry id="rkz_zsmall_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of min. water vapor and cloud liquid water as a safegurd for limiter 4/5
+in the RKZ simple macrophysics scheme
+Default: 1
+</entry>
+
 <entry id="l_rkz_lmt_2" type="logical" category="physc_test"
        group="phys_ctl_nl" valid_values="" >
 Turn on limiter 2 for condensation
