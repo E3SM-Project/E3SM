@@ -504,20 +504,7 @@ contains
 
         qmebf(:ncol,:pver)  = qme(:ncol,:pver)
 
-        ! Avoid negative qv
-
-        zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
-        where( zqvnew(:ncol,:pver).lt.zsmall )
-           qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
-        end where
-
-        ! Avoid negative ql (note that qme could be negative, which would mean
-        ! evaporation)
-
-        zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
-        where( zqlnew(:ncol,:pver).lt.zsmall )
-           qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
-        end where
+        ! Avoid nonzero qme if f=0 and df/dt=0 
 
         where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8))
           qme(:ncol,:pver) = 0._r8
