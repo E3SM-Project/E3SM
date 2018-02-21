@@ -261,6 +261,18 @@ contains
 
         term_B(:ncol,:pver) = - 0.5_r8*ltend(:ncol,:pver)
 
+
+     case(3)
+     ! For testing only: Following Zhang et al. (2003), assume the in-cloud A_l
+     ! equals the grid-box mean A_l.! Hence, - (\overline{A_l} - f \hat{A_l}) =
+     ! - (1-f)\overline{A_l}.However, if overline{A_l} <0, term_B=0.0
+
+        term_B(:ncol,:pver) = - (1._r8 - ast(:ncol,:pver))*ltend(:ncol,:pver)
+  
+        where( ltend(:ncol,:pver) .lt. 0._r8)
+          term_B(:ncol,:pver) = 0._r8
+        end where
+
      case default
          write(iulog,*) "Unrecognized value of rkz_term_B_opt:",rkz_term_B_opt,". Abort."
          call endrun
