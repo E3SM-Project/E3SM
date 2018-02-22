@@ -30,6 +30,7 @@ module control_mod
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
+  integer, public :: vsplit = -1           ! OG dont the best way to init it yet
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
