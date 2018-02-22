@@ -28,6 +28,7 @@ def _get_datenames(case):
     Note we are assuming that the coupler restart files exist and are consistent with other component datenames
     Not doc-testable due to filesystem dependence
     """
+    casename = case.get_value("CASE")
     rundir = case.get_value("RUNDIR")
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
 
@@ -36,7 +37,6 @@ def _get_datenames(case):
     multidriver = case.get_value('MULTI_DRIVER')
     logger.debug("_get_datenames:  multidriver = {} ".format(multidriver))
 
-    casename = case.get_value("CASE")
     if multidriver :
        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
     else:
