@@ -1,10 +1,9 @@
 """
 FTP Server class.  Interact with a server using FTP protocal
 """
+# pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
-from socket import _GLOBAL_DEFAULT_TIMEOUT
-__metaclass__ = type
 from ftplib import FTP as FTPpy
 
 logger = logging.getLogger(__name__)

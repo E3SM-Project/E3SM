@@ -1,6 +1,7 @@
 """
 WGET Server class.  Interact with a server using WGET protocal
 """
+# pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
 
@@ -15,13 +16,7 @@ class WGET(GenericServer):
             self._args += "--password {}".format(passwd)
 
         err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
-        if err != 0:
-            logging.warning(
-"""
-Could not connect to repo '{0}'
-This is most likely either a proxy, or network issue .
-""")
-            return False
+        expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
         self._server_loc = address
 
     def fileexists(self, rel_path):

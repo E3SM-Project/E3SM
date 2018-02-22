@@ -1,6 +1,7 @@
 """
 SVN Server class.  Interact with a server using SVN protocal
 """
+# pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
 
@@ -20,7 +21,7 @@ class SVN(GenericServer):
 """
 Could not connect to svn repo '{0}'
 This is most likely either a credential, proxy, or network issue .
-To check connection and store your credential run 'svn ls {0}' and permanently store your password""".format(svn_loc))
+To check connection and store your credential run 'svn ls {0}' and permanently store your password""".format(address))
             return None
         self._svn_loc = address
 

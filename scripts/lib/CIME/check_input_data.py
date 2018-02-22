@@ -43,18 +43,16 @@ def find_files(rootdir, pattern):
     return result
 
 ###############################################################################
-def check_all_input_data(case, protocal, server, input_data_root=None, data_list_dir="Buildconf", download=True):
+def check_all_input_data(case, protocal=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
 ###############################################################################
     success = False
-    if protocal is not None and server is not None:
+    if protocal is not None and address is not None:
         success = check_input_data(case=case, protocal=protocal, address=address, download=download,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
         inputdata = Inputdata()
 
         while not success:
-            protocal = None
-            address = None
             if download:
                 protocal, address = inputdata.get_next_server()
                 expect(protocal is not None, "Failed to find input data")
