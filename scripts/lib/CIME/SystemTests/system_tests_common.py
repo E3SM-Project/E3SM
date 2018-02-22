@@ -170,7 +170,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
 
-        if success and get_model() == "acme":
+        if success and get_model() == "e3sm":
             save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
         # We return success if the run phase worked; memleaks, diffs will not be taken into account

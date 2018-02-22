@@ -28,7 +28,7 @@ def _get_batch_job_id_for_syslog(case):
 
     return None
 
-def _save_build_provenance_acme(case, lid):
+def _save_build_provenance_e3sm(case, lid):
     cimeroot = case.get_value("CIMEROOT")
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
@@ -79,21 +79,28 @@ def _save_build_provenance_acme(case, lid):
 def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
+    srcroot = case.get_value("SRCROOT")
+    manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    if os.path.exists(manic):
+        out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "README.case"), "a") as fd:
-        fd.write("CESM version is {}\n".format(version))
+        if version is not None and version != "unknown":
+            fd.write("CESM version is {}\n".format(version))
+        if out is not None:
+            fd.write("{}\n".format(out))
 
 def save_build_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
         lid = os.environ["LID"] if lid is None else lid
 
-        if model == "acme":
-            _save_build_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_build_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_build_provenance_cesm(case, lid)
 
-def _save_prerun_timing_acme(case, lid):
+def _save_prerun_timing_e3sm(case, lid):
     project = case.get_value("PROJECT", subgroup="case.run")
     if not case.is_save_timing_dir_project(project):
         return
@@ -230,15 +237,15 @@ def _save_prerun_timing_acme(case, lid):
         if sample_interval > 0:
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
             os.mkdir(archive_checkpoints)
-            touch("{}/acme.log.{}".format(rundir, lid))
+            touch("{}/e3sm.log.{}".format(rundir, lid))
             syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!".format(sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))
 
-def _save_prerun_provenance_acme(case, lid):
+def _save_prerun_provenance_e3sm(case, lid):
     if case.get_value("SAVE_TIMING"):
-        _save_prerun_timing_acme(case, lid)
+        _save_prerun_timing_e3sm(case, lid)
 
 def _save_prerun_provenance_cesm(case, lid): # pylint: disable=unused-argument
     pass
@@ -254,8 +261,8 @@ def save_prerun_provenance(case, lid=None):
         env_module.save_all_env_info(os.path.join(logdir, "run_environment.txt.{}".format(lid)))
 
         model = case.get_value("MODEL")
-        if model == "acme":
-            _save_prerun_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_prerun_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_prerun_provenance_cesm(case, lid)
 
@@ -267,7 +274,7 @@ def _save_postrun_provenance_cesm(case, lid):
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
 
-def _save_postrun_timing_acme(case, lid):
+def _save_postrun_timing_e3sm(case, lid):
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
 
@@ -279,7 +286,7 @@ def _save_postrun_timing_acme(case, lid):
 
     shutil.rmtree(rundir_timing_dir)
 
-    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
+    gzip_existing_file(os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid))
 
     # JGF: not sure why we do this
     timing_saved_file = "timing.%s.saved" % lid
@@ -334,7 +341,7 @@ def _save_postrun_timing_acme(case, lid):
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
-    globs_to_copy.append("logs/acme.log.{}.gz".format(lid))
+    globs_to_copy.append("logs/e3sm.log.{}.gz".format(lid))
     globs_to_copy.append("logs/cpl.log.{}.gz".format(lid))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
@@ -354,17 +361,17 @@ def _save_postrun_timing_acme(case, lid):
             if not filename.endswith(".gz"):
                 gzip_existing_file(os.path.join(root, filename))
 
-def _save_postrun_provenance_acme(case, lid):
+def _save_postrun_provenance_e3sm(case, lid):
     if case.get_value("SAVE_TIMING"):
-        _save_postrun_timing_acme(case, lid)
+        _save_postrun_timing_e3sm(case, lid)
 
 def save_postrun_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
         lid = os.environ["LID"] if lid is None else lid
 
-        if model == "acme":
-            _save_postrun_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_postrun_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_postrun_provenance_cesm(case, lid)
 
