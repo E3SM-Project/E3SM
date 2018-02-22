@@ -9,6 +9,7 @@ module dp_coupling
   use dof_mod,        only: UniquePoints, PutUniquePoints
   use dyn_comp,       only: dyn_export_t, dyn_import_t, TimeLevel
   use dyn_grid,       only: get_gcol_block_d
+  use pmgrid,         only: plev
   use element_mod,    only: element_t
   use kinds,          only: real_kind, int_kind
   use shr_kind_mod,   only: r8=>shr_kind_r8
@@ -24,6 +25,7 @@ module dp_coupling
   use spmd_utils,   only: mpicom, iam
   use perf_mod,    only : t_startf, t_stopf, t_barrierf
   use parallel_mod, only : par
+  use scamMod,        only: single_column
   private
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
@@ -274,14 +276,16 @@ CONTAINS
     call t_stopf('derived_phys')
 
 !$omp parallel do private (lchnk, ncols, ilyr, icol)
-    do lchnk=begchunk,endchunk
-       ncols=get_ncols_p(lchnk)
-       do ilyr=1,pver
+    if (.not. single_column) then 
+      do lchnk=begchunk,endchunk
+        ncols=get_ncols_p(lchnk)
+        do ilyr=1,pver
           do icol=1,ncols
              phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
           end do
-       end do
-    end do
+        end do
+      end do
+    endif
 
 
    if (write_inithist() ) then

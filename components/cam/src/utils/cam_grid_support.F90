@@ -1986,7 +1986,7 @@ contains
         if (ierr /= PIO_NOERR) then
           ! Time to define the attribute
           ierr = pio_put_att(File, PIO_GLOBAL, trim(attr%name), attr%ival)
-          call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_int')
+!          call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_int')
         end if
       end if
     end if
@@ -2114,7 +2114,7 @@ contains
            attr%vardesc, existOK=.false.)
       ! long_name
       ierr = pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
-      call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_r8')
+!      call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_r8')
     end if
 
   end subroutine write_cam_grid_attr_1d_r8
@@ -2351,7 +2351,7 @@ contains
         ! This is a local variable, pio_put_var should work fine
         ierr = pio_put_var(File, attr%vardesc, attr%values)
       end if
-      call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_r8')
+!      call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_r8')
       deallocate(attr%vardesc)
       nullify(attr%vardesc)
     end if

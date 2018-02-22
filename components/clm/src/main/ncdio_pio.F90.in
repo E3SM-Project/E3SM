@@ -24,7 +24,7 @@ module ncdio_pio
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
   use fileutils      , only : getavu, relavu
-  use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints 
+  use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints
   use pio            , only : file_desc_t, io_desc_t, iosystem_desc_t, pio_64bit_offset
   use pio            , only : pio_bcast_error, pio_char, pio_clobber, pio_closefile, pio_createfile, pio_def_dim
   use pio            , only : pio_def_var, pio_double, pio_enddef, pio_get_att, pio_get_var, pio_global, pio_initdecomp
@@ -1179,6 +1179,7 @@ contains
     integer           :: idata
     integer, pointer  :: idata1d(:)         ! Temporary integer data to send to file
     character(len=32) :: vname              ! variable error checking
+    character(len=1)  :: tmpString(128)     ! temp for manipulating output string
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_log_glob'
     !-----------------------------------------------------------------------
@@ -1274,6 +1275,7 @@ contains
     logical           :: varpresent         ! if true, variable is on tape
     logical           :: found              ! if true, found lat/lon dims on file
     character(len=32) :: vname              ! variable error checking
+    character(len=1)  :: tmpString(max_string_len)     ! temp for manipulating output string
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     {VTYPE} :: temp(1)
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
@@ -1372,7 +1374,7 @@ contains
     integer           :: start(4), count(4) ! output bounds
     integer           :: status             ! error code
     logical           :: varpresent         ! if true, variable is on tape
-    character(len=1)  :: tmpString(max_string_len)     ! temp for manipulating output string
+    character(len=1)  :: tmpString(128)     ! temp for manipulating output string
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
     !-----------------------------------------------------------------------
@@ -1497,15 +1499,12 @@ contains
           if (single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,clmlevel,vardesc,start,count)
-             if (trim(clmlevel) == grlnd) then
-                if (present(nt)) then
-                   start(3) = nt ; count(3) = 1
-                end if
-             else
-                if (present(nt)) then
-                   start(2) = nt ; count(2) = 1
-                end if
-             end if
+             if (present(nt)) then
+               n=3
+               if (start(3) .eq. 0) n=2
+               start(n) = nt ; count(n) = 1
+             endif
+
 #if ({ITYPE}==TYPELOGICAL)
              allocate(idata(size(data))) 
              status = pio_get_var(ncid, varid, start, count, idata)
@@ -1689,17 +1688,11 @@ contains
           if (single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
-             if (trim(clmlevel) == grlnd) then
-                count(3) = size(data,dim=2)
                 if (present(nt)) then
-                   start(4) = nt; count(4) = 1
+                   n=4
+                   if (start(4) .eq. 0) n=3
+                   start(n) = nt; count(n) = 1
                 end if
-             else
-                count(2) = size(data,dim=2)
-                if (present(nt)) then
-                   start(3) = nt ; count(3) = 1
-                end if
-             end if
              if (present(switchdim)) then
                 status = pio_get_var(ncid, vardesc, start, count, temp)
                 do j = lb2,ub2
@@ -1887,21 +1880,12 @@ contains
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
-             if (trim(clmlevel) == grlnd) then
-                count(3) = size(data,dim=2); 
-                count(4) = size(data,dim=3)
-                if (present(nt)) then
-                   start(5) = nt
-                   count(5) = 1
-                end if
-             else
-                count(2) = size(data,dim=2)
-                count(3) = size(data,dim=3)
-                if (present(nt)) then
-                   start(4) = nt
-                   count(4) = 1
-                end if
-             end if
+             if (present(nt)) then
+               n=5
+               if (start(5) .eq. 0) n=4
+               start(n) = nt ; count(n) = 1
+             endif
+             
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -2047,7 +2031,7 @@ contains
        if ( trim(dimname)=='nj'.or. trim(dimname)=='lat'.or. trim(dimname)=='lsmlat') then
           start(i)=latidx
           count(i)=1
-       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon') then
+       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell') then
           start(i)=lonidx
           count(i)=1
        else if ( trim(dimname)=='column') then
@@ -2162,6 +2146,7 @@ contains
           count(i)=dimlen
        end if
     enddo
+
     deallocate(dids)
 
   end subroutine scam_field_offsets

@@ -9,7 +9,6 @@ module getinterpnetcdfdata
 !
   use cam_abortutils,    only: endrun
   use pmgrid,        only: plev
-  use scamMod,       only: scm_crm_mode
   use cam_logfile,   only: iulog
   implicit none
   private
@@ -21,8 +20,8 @@ module getinterpnetcdfdata
 contains
 
 subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
-   varName, have_surfdat, surfdat, fill_ends, &
-   press, npress, ps, outData, STATUS )
+   varName, have_surfdat, surfdat, fill_ends, scm_crm_mode, &
+   press, npress, ps, hyam, hybm, outData, STATUS )
 
 !     getinterpncdata: extracts the entire level dimension for a 
 !     particular lat,lon,time from a netCDF file
@@ -43,9 +42,11 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    real(r8), intent(in) :: camlat,camlon ! target lat and lon to be extracted  
    logical, intent(in)  :: have_surfdat  ! is surfdat provided
    logical, intent(in)  :: fill_ends ! extrapolate the end values
+   logical, intent(in)  :: scm_crm_mode
    integer, intent(in)  :: npress        ! number of dataset pressure levels
    real(r8), intent(in) :: press(npress) ! dataset pressure levels
    real(r8), intent(in) :: ps ! dataset pressure levels
+   real(r8), intent(in) :: hyam(plev), hybm(plev)
 
 !     ---------- outputs ----------
 
@@ -196,6 +197,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     add the surface data if available, else
 !     fill in missing surface data by extrapolation
 !
+
       if(.not.scm_crm_mode) then
          if ( have_surfdat ) then
             tmp(npress) = surfdat
@@ -235,7 +237,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       enddo
 #endif
 !
-      call interplevs( tmp(:npress), press, npress, ps, fill_ends,outdata )
+      call interplevs( tmp(:npress), press, npress, ps, fill_ends, hyam, hybm, outdata )
 
    endif
 
@@ -244,10 +246,10 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
  end subroutine getinterpncdata
 
 subroutine interplevs( inputdata,   dplevs,   nlev, &
-                       ps, fill_ends,   outdata)
+                       ps, fill_ends, hyam, hybm, outdata)
 
    use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
-   use hycoef, only: hyam, hybm
+!   use hycoef, only: hyam, hybm
    use interpolate_data, only: lininterp
    implicit none
 
@@ -266,6 +268,7 @@ subroutine interplevs( inputdata,   dplevs,   nlev, &
    real(r8), intent(in) :: ps     ! surface pressure
    real(r8), intent(in) :: inputdata(nlev)     ! data from netcdf dataset
    real(r8), intent(in) :: dplevs(nlev)         ! input data pressure levels 
+   real(r8), intent(in) :: hyam(plev), hybm(plev)
 
    logical, intent(in) :: fill_ends            ! fill in missing end values(used for
                                             ! global model datasets)

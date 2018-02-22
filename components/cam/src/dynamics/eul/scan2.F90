@@ -69,7 +69,9 @@ subroutine scan2run (ztodt, cwava, etamid,t2      ,fu      ,fv    )
    use mpishorthand, only: mpicom, mpir8
 #endif
    use physconst,    only: cpair
-   use scamMod,      only: fixmascam,alphacam,betacam,use_iop, single_column
+   use scamMod,      only: fixmascam,alphacam,betacam,use_iop,&
+                           single_column
+   use eul_single_column_mod, only: eul_post_forecast
    use pspect,       only: pnmax
    use tfilt_massfix, only: tfilt_massfixrun
    use massfix,      only: hw1,hw2,hw3,alpha
@@ -291,11 +293,14 @@ else
 		      t3(1,1,j,n3),t3(1,1,j,n3m1), t3(1,1,j,n3m2), &
                       q3(1,1,1,j,n3), q3(1,1,1,j,n3m1), q3(1,1,1,j,n3m2), &
 	   	      ztodt, t2(1,1,lat), &
-		      fu(1,1,lat), fv(1,1,lat), qfcst(1,1,1,lat), etamid,cwava(lat), &
-                      qminus(1,1,1,j), hw2al(1,lat), hw2bl(1,lat), &
+		      fu(1,1,lat), fv(1,1,lat), qfcst(1,1,1,lat), etamid,&
+                      qminus(1,1,1,j),nlon(lat)) 
+
+      call eul_post_forecast(lat, ps(1,lat,n3m1),qfcst(1,1,1,lat),cwava(lat),&
+                      etamid, qminus(1,1,1,j), hw2al(1,lat), hw2bl(1,lat), &
                       hw3al(1,lat), hw3bl(1,lat), hwxal(1,1,lat), &
                       hwxbl(1,1,lat), &
-                      nlon(lat)) 
+                      nlon(lat))
 
    end do
 
