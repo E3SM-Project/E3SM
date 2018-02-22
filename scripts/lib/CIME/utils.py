@@ -604,14 +604,17 @@ def get_current_branch(repo=None):
         else:
             return output.replace("refs/heads/", "")
 
-def get_current_commit(short=False, repo=None):
+def get_current_commit(short=False, repo=None, tag=False):
     """
     Return the sha1 of the current HEAD commit
 
     >>> get_current_commit() is not None
     True
     """
-    rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
+    if tag:
+        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
+    else:
+        rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
     if rc == 0:
         return output
     else:

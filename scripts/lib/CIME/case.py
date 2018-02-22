@@ -638,7 +638,7 @@ class Case(object):
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
             # For files following version 3 schema this also checks the compsetname validity
-            
+
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
@@ -1256,16 +1256,8 @@ class Case(object):
     def set_model_version(self, model):
         version = "unknown"
         srcroot = self.get_value("SRCROOT")
-        if model == "cesm":
-            changelog = os.path.join(srcroot,"ChangeLog")
-            if os.path.isfile(changelog):
-                for line in open(changelog, "r"):
-                    m = re.search("Tag name: (cesm.*)$", line)
-                    if m is not None:
-                        version = m.group(1)
-                        break
-        elif model == "e3sm":
-            version = get_current_commit(True, srcroot)
+        version = get_current_commit(True, srcroot, tag=(model=="cesm"))
+
         self.set_value("MODEL_VERSION", version)
 
         if version != "unknown":
