@@ -1,15 +1,34 @@
 """
 API for checking input for testcase
 """
-
 from CIME.XML.standard_module_setup import *
-from CIME.utils import get_model, SharedArea
+from CIME.utils import SharedArea
 from CIME.XML.inputdata import Inputdata
-from ftplib import FTP
+from CIME.Servers.ftp import FTP
+from CIME.Servers.svn import SVN
+from CIME.Servers.wget import WGET
 
 import fnmatch, glob, shutil
 
 logger = logging.getLogger(__name__)
+
+def _download_if_in_repo(server, input_data_root, rel_path):
+    """
+    Return True if successfully downloaded
+    """
+    if not server.fileexists(rel_path):
+        return False
+
+    full_path = os.path.join(input_data_root, rel_path)
+    logging.info("Trying to download file: '{}' to path '{}'".format(rel_path, full_path))
+    # Make sure local path exists, create if it does not
+    if(not os.path.exists(os.path.dirname(full_path))):
+        os.makedirs(os.path.dirname(full_path))
+
+    # Use umask to make sure files are group read/writable. As long as parent directories
+    # have +s, then everything should work.
+    with SharedArea():
+        return server.getfile(rel_path, full_path)
 
 def find_files(rootdir, pattern):
     """
@@ -23,137 +42,6 @@ def find_files(rootdir, pattern):
 
     return result
 
-def _download_if_in_svn_repo(svn_loc, input_data_root, rel_path):
-    """
-    Return True if successfully downloaded
-    """
-    rel_path = rel_path.strip('/')
-    full_url = os.path.join(svn_loc, rel_path)
-    logger.info("full url {}".format(full_url))
-    err = run_cmd("svn --non-interactive --trust-server-cert ls {}".format(svn_loc))[0]
-    if err != 0:
-        logging.warning(
-"""
-Could not connect to svn repo '{0}'
-This is most likely either a credential, proxy, or network issue .
-To check connection and store your credential run 'svn ls {0}' and permanently store your password""".format(svn_loc))
-        return False
-
-    full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}'".format(full_url, full_path))
-    # Make sure local path exists, create if it does not
-    if(not os.path.exists(os.path.dirname(full_path))):
-        os.makedirs(os.path.dirname(full_path))
-
-    stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls {}".format(full_url))
-    if (stat != 0):
-        logging.warning("FAIL: SVN repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(svn_loc, full_url, out, err))
-        return False
-    else:
-        # Use umask to make sure files are group read/writable. As long as parent directories
-        # have +s, then everything should work.
-        with SharedArea():
-            stat, output, errput = \
-                run_cmd("svn --non-interactive --trust-server-cert export {} {}".format(full_url, full_path))
-            if (stat != 0):
-                logging.warning("svn export failed with output: {} and errput {}\n".format(output, errput))
-                return False
-            else:
-                logging.info("SUCCESS\n")
-                return True
-
-def _download_if_in_wget_repo(server_loc, input_data_root, rel_path):
-    """
-    Return True if successfully downloaded
-    """
-    rel_path = rel_path.strip('/')
-    full_url = os.path.join(server_loc, rel_path)
-    logger.info("full url {}".format(full_url))
-    err = run_cmd("wget --spider {}".format(server_loc))[0]
-    if err != 0:
-        logging.warning(
-"""
-Could not connect to repo '{0}'
-This is most likely either a proxy, or network issue .
-""")
-        return False
-
-    full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}'".format(full_url, full_path))
-    # Make sure local path exists, create if it does not
-    if(not os.path.exists(os.path.dirname(full_path))):
-        os.makedirs(os.path.dirname(full_path))
-
-    stat, out, err = run_cmd("wget --spider {}".format(full_url))
-    if (stat != 0):
-        logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(server_loc, full_url, out, err))
-        return False
-    else:
-        # Use umask to make sure files are group read/writable. As long as parent directories
-        # have +s, then everything should work.
-        with SharedArea():
-            stat, output, errput = \
-                run_cmd("wget {} -nc --output-document {}".format(full_url, full_path))
-            if (stat != 0):
-                logging.warning("wget failed with output: {} and errput {}\n".format(output, errput))
-                # wget puts an empty file if it fails.
-                try:
-                    os.remove(full_path)
-                except OSError:
-                    pass
-                return False
-            else:
-                logging.info("SUCCESS\n")
-                return True
-
-def _download_if_in_ftp_repo(ftp_loc, input_data_root, rel_path):
-    """
-    Return True if successfully downloaded
-    """
-    ftp_server, root_address = ftp_loc.split('/', 1)
-    rel_path = rel_path.strip('/')
-
-    ftp = FTP(ftp_server)
-
-    stat = ftp.login()
-    if "Login successful" not in stat:
-        logging.warning("FAIL: Could not login to ftp server {}\n error {}".format(ftp_server, stat))
-        return False
-    stat = ftp.cwd(root_address)
-    if "Directory successfully changed" not in stat:
-        logging.warning("FAIL: Could not cd to server root directory {}\n error {}".format(root_address, stat))
-        return False
-
-    full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}'".format(os.path.join(root_address,rel_path), full_path))
-    # Make sure local path exists, create if it does not
-    if(not os.path.exists(os.path.dirname(full_path))):
-        os.makedirs(os.path.dirname(full_path))
-
-    stat = ftp.nlst(rel_path)
-
-    if rel_path not in stat:
-        logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
-        return False
-
-    stat = ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
-
-    if (stat != 0):
-        logging.warning("FAIL: FTP repo '{}' does not have file '{}'\n".format(ftp_server,
-                                                                                              os.path.join(root_address, rel_path)))
-        return False
-    else:
-        # Use umask to make sure files are group read/writable. As long as parent directories
-        # have +s, then everything should work.
-        with SharedArea():
-            ftp.retrbinary('RETR {}'.format(os.path.filename(rel_path)), open(full_path, "wb").write)
-            if (stat != 0):
-                logging.warning("ftp failed with output: {} and errput {}\n".format(output, errput))
-                return False
-            else:
-                logging.info("SUCCESS\n")
-                return True
-
 ###############################################################################
 def check_all_input_data(case, protocal, server, input_data_root=None, data_list_dir="Buildconf", download=True):
 ###############################################################################
@@ -165,9 +53,12 @@ def check_all_input_data(case, protocal, server, input_data_root=None, data_list
         inputdata = Inputdata()
 
         while not success:
-            protocal, address = inputdata.get_next_server()
-            expect(protocal is not None, "Failed to find input data")
-            logger.info("Checking server {} with protocal {}".format(address, protocal))
+            protocal = None
+            address = None
+            if download:
+                protocal, address = inputdata.get_next_server()
+                expect(protocal is not None, "Failed to find input data")
+                logger.info("Checking server {} with protocal {}".format(address, protocal))
             success = check_input_data(case=case, protocal=protocal, address=address, download=download,
                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
 
@@ -245,6 +136,16 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
     expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
+    if download:
+        if protocal == "svn":
+            server = SVN(address)
+        elif protocal == "ftp":
+            server = FTP(address)
+        elif protocal == "wget":
+            server = WGET(address)
+        else:
+            expect(False, "Unsupported inputdata protocal: {}".format(protocal))
+
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
         with open(data_list_file, "r") as fd:
@@ -284,14 +185,7 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                             logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
 
                             if (download):
-                                if protocal == "svn":
-                                    success = _download_if_in_svn_repo(address, input_data_root, rel_path)
-                                elif protocal == "wget":
-                                    success = _download_if_in_wget_repo(address, input_data_root, rel_path)
-                                elif protocal == "ftp":
-                                    success = _download_if_in_ftp_repo(address, input_data_root, rel_path)
-                                else:
-                                    expect(False, "Unsupported inputdata protocal: {}".format(protocal))
+                                success = _download_if_in_repo(server, input_data_root, rel_path.strip('/'))
                                 if not success:
                                     no_files_missing = False
                         else:
