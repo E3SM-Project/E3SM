@@ -1221,7 +1221,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_num_leftovers(self):
+    def assert_num_leftovers(self, test_id=None):
     ###########################################################################
         # There should only be two directories matching the test_id in both
         # the testroot (bld/run dump area) and jenkins root
