@@ -236,11 +236,11 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>acme,cesm</valid_values>
+    <valid_values>e3sm,cesm</valid_values>
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
-      <value cime_model='acme'>acme</value>
+      <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
 
@@ -661,7 +661,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='acme'>.false.</value>
+      <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
     </values>
   </entry>
@@ -689,7 +689,7 @@
     </desc>
     <values>
       <value cime_model='cesm'>0.0</value>
-      <value cime_model='acme'>0.0</value>
+      <value cime_model='e3sm'>0.0</value>
     </values>
   </entry>
 
@@ -702,7 +702,7 @@
     </desc>
     <values>
       <value cime_model='cesm'>5</value>
-      <value cime_model='acme'>2</value>
+      <value cime_model='e3sm'>2</value>
     </values>
   </entry>
 
