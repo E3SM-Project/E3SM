@@ -8,37 +8,43 @@ def get_all_files_in_dir(directory, pattern):
     return glob.glob(os.path.join(directory, pattern))
 
 
+zonal_mean_xy_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'zonal_mean_xy*')
+zonal_mean_xy_files.append('acme_diags/plot/vcs/plot_set_3.json')
+
+zonal_mean_2d_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'zonal_mean_2d*')
+zonal_mean_2d_files.append('acme_diags/plot/vcs/plot_set_4.json')
+zonal_mean_2d_files.append('acme_diags/plot/vcs/plot_set_4_new.json')
+
+lat_lon_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'lat_lon*')
+lat_lon_files.append('acme_diags/plot/vcs/plot_set_5.json')
+lat_lon_files.append('acme_diags/plot/vcs/plot_set_5_new.json')
+
+polar_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'polar*')
+polar_files.append('acme_diags/plot/vcs/plot_set_7.json')
+polar_files.append('acme_diags/plot/vcs/plot_set_7_new.json')
+
+cosp_histogram_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'cosp_histogram*')
+
 rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
 control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
 
+
 data_files = [
     (sys.prefix + '/share/acme_diags/zonal_mean_xy',
-     ['acme_diags/driver/default_diags/zonal_mean_xy_AMWG.json',
-      'acme_diags/driver/default_diags/zonal_mean_xy_ACME.json',
-      'acme_diags/plot/vcs/plot_set_3.json'
-      ]),
+     zonal_mean_xy_files
+     ),
     (sys.prefix + '/share/acme_diags/zonal_mean_2d',
-     ['acme_diags/driver/default_diags/zonal_mean_2d_AMWG.json',
-      'acme_diags/driver/default_diags/zonal_mean_2d_ACME.json',
-      'acme_diags/plot/vcs/plot_set_4.json',
-      'acme_diags/plot/vcs/plot_set_4_new.json'
-      ]),
+     zonal_mean_2d_files
+     ),
     (sys.prefix + '/share/acme_diags/lat_lon',
-     ['acme_diags/driver/default_diags/lat_lon_AMWG.json',
-      'acme_diags/driver/default_diags/lat_lon_ACME.json',
-      'acme_diags/plot/vcs/plot_set_5_new.json',
-      'acme_diags/plot/vcs/plot_set_5.json'
-      ]),
+     lat_lon_files
+     ),
     (sys.prefix + '/share/acme_diags/polar',
-     ['acme_diags/driver/default_diags/polar_AMWG.json',
-      'acme_diags/driver/default_diags/polar_ACME.json',
-      'acme_diags/plot/vcs/plot_set_7_new.json',
-      'acme_diags/plot/vcs/plot_set_7.json'
-      ]),
+     polar_files
+     ),
     (sys.prefix + '/share/acme_diags/cosp_histogram',
-     ['acme_diags/driver/default_diags/cosp_histogram_AMWG.json',
-      'acme_diags/driver/default_diags/cosp_histogram_ACME.json'
-      ]),
+     cosp_histogram_files
+     ),
     (sys.prefix + '/share/acme_diags',
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
       'misc/ACME_Logo.png'

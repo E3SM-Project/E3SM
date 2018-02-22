@@ -17,11 +17,16 @@ from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
-def _get_default_diags(set_num, dataset):
+def _get_default_diags(set_num, dataset, run_type):
     """Returns the path for the default diags corresponding to set_num"""
     set_num = get_set_name(set_num)
+
+    if dataset and run_type in ['model_vs_obs', 'obs_vs_model']:  # either 'ACME' or 'AMWG', use the jsons
+        fnm = '{}_{}.json'.format(set_num, dataset)
+    else:  # use the cfgs
+        fnm = '{}_{}.cfg'.format(set_num, run_type)
+
     folder = '{}'.format(set_num)
-    fnm = '{}_{}.json'.format(set_num, dataset)
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
     print('Using {} for {}'.format(pth, set_num))
     if not os.path.exists(pth):
@@ -83,13 +88,13 @@ if __name__ == '__main__':
         default_diags_paths = []
 
         for set_num in original_parameter.sets:
-            dataset = 'ACME'
             run_type = 'model_vs_obs'
+            dataset = ''
             if hasattr(original_parameter, 'dataset'):
-                run_type = original_parameter.dataset
+                dataset = original_parameter.dataset
             if hasattr(original_parameter, 'run_type'):
-                dataset = original_parameter.run_type
-            default_diags_paths.append(_get_default_diags(set_num, dataset))
+                run_type = original_parameter.run_type
+            default_diags_paths.append(_get_default_diags(set_num, dataset, run_type))
         other_parameters = parser.get_other_parameters(
             files_to_open=default_diags_paths, check_values=False, cmd_default_vars=False)
         # Don't put the sets from the Python parameters to each of the parameters.
