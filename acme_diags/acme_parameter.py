@@ -12,7 +12,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.viewer_descr = {}
 
         self.sets = []
-        self.datasets = ['ACME']
+        self.dataset = ''
+        self.run_type = 'model_vs_obs'
         self.variables = []
         self.seasons = []
         self.regions = ['global']

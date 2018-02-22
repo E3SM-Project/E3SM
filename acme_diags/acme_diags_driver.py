@@ -18,7 +18,7 @@ from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
 def _get_default_diags(set_num, dataset):
-    """Returns the path from the json corresponding to set_num"""
+    """Returns the path for the default diags corresponding to set_num"""
     set_num = get_set_name(set_num)
     folder = '{}'.format(set_num)
     fnm = '{}_{}.json'.format(set_num, dataset)
@@ -80,16 +80,18 @@ if __name__ == '__main__':
             original_parameter.sets = SET_NAMES
 
         # load the default jsons
-        default_jsons_paths = []
+        default_diags_paths = []
 
         for set_num in original_parameter.sets:
-            datasets = ['ACME']
-            if hasattr(original_parameter, 'datasets'):
-                datasets = original_parameter.datasets
-            for ds in datasets:
-                default_jsons_paths.append(_get_default_diags(set_num, ds))
+            dataset = 'ACME'
+            run_type = 'model_vs_obs'
+            if hasattr(original_parameter, 'dataset'):
+                run_type = original_parameter.dataset
+            if hasattr(original_parameter, 'run_type'):
+                dataset = original_parameter.run_type
+            default_diags_paths.append(_get_default_diags(set_num, dataset))
         other_parameters = parser.get_other_parameters(
-            files_to_open=default_jsons_paths, check_values=False, cmd_default_vars=False)
+            files_to_open=default_diags_paths, check_values=False, cmd_default_vars=False)
         # Don't put the sets from the Python parameters to each of the parameters.
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
         # default jsons like lat_lon_ACME_default.json

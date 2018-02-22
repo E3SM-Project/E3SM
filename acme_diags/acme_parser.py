@@ -72,10 +72,16 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
-            '-D', '--datasets',
-            nargs='+',
-            dest='datasets',
-            help='Datasets to use. Ex: ACME or AMWG',
+            '-D', '--dataset',
+            dest='dataset',
+            help="Dataset to use. Ex: 'ACME' or 'AMWG'",
+            required=False)
+
+        self.add_argument(
+            '--run_type',
+            dest='run_type',
+            help="What comparison to do. One of three options: "
+            + "'model_vs_obs'/'obs_vs_model', 'model_vs_model', or 'obs_vs_obs'",
             required=False)
 
         self.add_argument(
