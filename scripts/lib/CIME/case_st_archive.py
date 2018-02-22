@@ -333,10 +333,10 @@ def _archive_history_files(case, archive, archive_entry,
                                "history file {} does not exist ".format(srcfile))
                         destfile = join(archive_histdir, histfile)
                         if histfile in histfiles_savein_rundir:
-                            logger.info("histfiles_savein_rundir; copying \n  {} to \n  {} ".format(srcfile, destfile))
+                            logger.debug("histfiles_savein_rundir; copying \n  {} to \n  {} ".format(srcfile, destfile))
                             shutil.copy(srcfile, destfile)
                         else:
-                            logger.info("_archive_history_files; moving \n  {} to \n  {} ".format(srcfile, destfile))
+                            logger.debug("_archive_history_files; moving \n  {} to \n  {} ".format(srcfile, destfile))
                             archive_file_fn(srcfile, destfile)
 
 ###############################################################################
@@ -395,7 +395,7 @@ def _archive_restarts_date(case, archive,
     histfiles_savein_rundir_by_compname = {}
 
     for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
-        logger.info('Archiving restarts for {} ({})'.format(compname, compclass))
+        logger.debug('Archiving restarts for {} ({})'.format(compname, compclass))
 
         # archive restarts
         histfiles_savein_rundir = _archive_restarts_date_comp(case, archive, archive_entry,
@@ -500,7 +500,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     last_restart_file_fn(srcfile, destfile)
-                    logger.info("{} {} \n  {} to \n  {}".format(
+                    logger.debug("{} {} \n  {} to \n  {}".format(
                         "datename_is_last", last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
@@ -508,7 +508,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                         expect(os.path.isfile(srcfile),
                                "history restart file {} for last date does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
-                        logger.info("datename_is_last + histfiles_for_restart copying \n  {} to \n  {}".format(srcfile, destfile))
+                        logger.debug("datename_is_last + histfiles_for_restart copying \n  {} to \n  {}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
@@ -517,7 +517,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
-                        logger.info("_archive_restarts_date_comp; moving \n   {} to \n   {}".format(srcfile, destfile))
+                        logger.debug("_archive_restarts_date_comp; moving \n   {} to \n   {}".format(srcfile, destfile))
 
                         # need to copy the history files needed for interim restarts - since
                         # have not archived all of the history files yet
@@ -527,10 +527,10 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                             expect(os.path.isfile(srcfile),
                                    "hist file {} does not exist ".format(srcfile))
                             shutil.copy(srcfile, destfile)
-                            logger.info("interim_restarts: copying \n  {} to \n  {}".format(srcfile, destfile))
+                            logger.debug("interim_restarts: copying \n  {} to \n  {}".format(srcfile, destfile))
                     else:
                         srcfile = os.path.join(rundir, restfile)
-                        logger.info("removing interim restart file {}".format(srcfile))
+                        logger.debug("removing interim restart file {}".format(srcfile))
                         if (os.path.isfile(srcfile)):
                             try:
                                 os.remove(srcfile)
@@ -577,7 +577,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
     for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
         logger.info('Archiving history files for {} ({})'.format(compname, compclass))
         histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
-        logger.info("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
+        logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
         _archive_history_files(case, archive, archive_entry,
                                compclass, compname, histfiles_savein_rundir,
                                last_date, archive_file_fn)
