@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to test run_e3sm.template.csh
-#   Absolute path to RUN_ACME_DIR is supplied by CMake configuration
+#   Absolute path to RUN_E3SM_DIR is supplied by CMake configuration
 #   Includes Batch-system specific method for checking queue
 #      Supports:  pbs, slurm, none
 #

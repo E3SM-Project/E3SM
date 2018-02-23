@@ -74,8 +74,7 @@ _TEST_SUITES = {
                              ("ERS.f19_g16.I1850CNECACNTBC" ,"clm-eca"),
                              ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),
                              ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
-                             ("SMS_Ld4.f45_f45.ICLM45ED","clm-fates"),
-                             ("ERP_Ld3.f45_f45.ICLM45ED","clm-fates"),
+                             ("ERS_Ld3.f45_f45.ICLM45ED","clm-fates"),
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
                              ("ERS.f19_g16.I1850CLM45","clm-vst"),
                              ("ERS.f09_g16.I1850CLM45CN","clm-bgcinterface"),
@@ -141,10 +140,6 @@ _TEST_SUITES = {
                          "SMS.f09_g16_a.IGCLM45_MLI"
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
                         )),
-
-    "e3sm_test_me" : (None, "01:00:00",
-                      ("ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
-                      )),
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",

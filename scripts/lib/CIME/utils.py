@@ -757,7 +757,7 @@ def find_proc_id(proc_name=None,
 
 def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
     """
-    Get a string representing the current UTC time in format: YYMMDD_HHMMSS
+    Get a string representing the current UTC time in format: YYYYMMDD_HHMMSS
 
     The format can be changed if needed.
     """

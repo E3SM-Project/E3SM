@@ -379,6 +379,7 @@ def save_postrun_provenance(case, lid=None):
 _WALLTIME_BASELINE_NAME = "walltimes"
 _WALLTIME_FILE_NAME     = "walltimes"
 _GLOBAL_MINUMUM_TIME    = 900
+_GLOBAL_WIGGLE          = 1000
 _WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
 def get_recommended_test_time_based_on_past(baseline_root, test):
@@ -395,6 +396,8 @@ def get_recommended_test_time_based_on_past(baseline_root, test):
 
                 if best_walltime < _GLOBAL_MINUMUM_TIME:
                     best_walltime = _GLOBAL_MINUMUM_TIME
+
+                best_walltime += _GLOBAL_WIGGLE
 
                 return convert_to_babylonian_time(best_walltime)
         except:
