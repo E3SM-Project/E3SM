@@ -81,6 +81,7 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     # version has already been recorded
     srcroot = case.get_value("SRCROOT")
     manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    out = None
     if os.path.exists(manic):
         out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
