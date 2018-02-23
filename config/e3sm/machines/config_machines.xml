@@ -571,7 +571,7 @@
         <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="false">
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>

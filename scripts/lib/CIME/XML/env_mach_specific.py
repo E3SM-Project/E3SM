@@ -273,7 +273,7 @@ class EnvMachSpecific(EnvBase):
         for cmd in self._get_module_commands(modules_to_load, "python"):
             logger.debug("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
-            expect(stat==0 and len(errout) == 0,
+            expect(stat==0 and (len(errout) == 0 or self.allow_error()),
                    "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
@@ -353,6 +353,17 @@ class EnvMachSpecific(EnvBase):
         """
         module_system = self.get_child("module_system")
         return self.get(module_system, "type")
+
+    def allow_error(self):
+        """
+        Return True if stderr output from module commands should be assumed
+        to be an error. Default False. This is necessary since implementations
+        of environment modules are highlty variable and some systems produce
+        stderr output even when things are working fine.
+        """
+        module_system = self.get_child("module_system")
+        value = self.get(module_system, "allow_error")
+        return value.upper() == "TRUE" if value is not None else False
 
     def get_module_system_init_path(self, lang):
         init_nodes = self.get_optional_child("init_path", attributes={"lang":lang}, root=self.get_child("module_system"))
