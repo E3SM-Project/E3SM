@@ -20,7 +20,7 @@ class EnvMachPes(EnvBase):
 
     def add_comment(self, comment):
         if comment is not None:
-            tmp = GenericXML(root_name_override="comment",infile="stupid.file",read_only=False)
+            tmp = GenericXML(root_name_override="comment", infile="fake", read_only=False)
             tmp.set_text(tmp.root, comment)
             self.add_child(tmp.root, position=1)
 

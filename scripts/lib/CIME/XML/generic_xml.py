@@ -44,10 +44,7 @@ class GenericXML(object):
         self.root = None
         self.locked = False
         self.read_only = read_only
-
-        if infile == None:
-            # if file is not defined just return
-            self.filename = None
+        if infile is None:
             return
 
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
@@ -57,13 +54,13 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
-            expect(not read_only, "Makes no sense to have empty read-only file")
-
+            expect(not self.read_only, "Makes no sense to have empty read-only file")
             logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
-
             self.filename = infile
+
             root = _Element(ET.Element("xml"))
+
             if root_name_override:
                 self.root = self.make_child(root_name_override, root=root, attributes=root_attrib_override)
             else:
@@ -201,10 +198,6 @@ class GenericXML(object):
             self.set_text(node, text)
 
         return node
-
-    def make_node(self, name):
-        return _Element(ET.Element("name"))
-
 
     def get_children(self, name=None, attributes=None, root=None):
         """
