@@ -3,6 +3,7 @@ Interface to the env_mach_pes.xml file.  This class inherits from EntryID
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
+from CIME.XML.generic_xml import GenericXML
 import math
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,12 @@ class EnvMachPes(EnvBase):
         self._components = components
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
+
+    def add_comment(self, comment):
+        if comment is not None:
+            tmp = GenericXML(root_name_override="comment",infile="stupid.file",read_only=False)
+            tmp.set_text(tmp.root, comment)
+            self.add_child(tmp.root, position=1)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, max_mpitasks_per_node=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of

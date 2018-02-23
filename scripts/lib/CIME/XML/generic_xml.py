@@ -170,13 +170,16 @@ class GenericXML(object):
     def text(self, node):
         return node.xml_element.text
 
-    def add_child(self, node, root=None):
+    def add_child(self, node, root=None, position=0):
         """
         Add element node to self at root
         """
         expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
-        root.xml_element.append(node.xml_element)
+        if position > 0:
+            root.xml_element.insert(position, node.xml_element)
+        else:
+            root.xml_element.append(node.xml_element)
 
     def copy(self, node):
         return deepcopy(node)
@@ -198,6 +201,10 @@ class GenericXML(object):
             self.set_text(node, text)
 
         return node
+
+    def make_node(self, name):
+        return _Element(ET.Element("name"))
+
 
     def get_children(self, name=None, attributes=None, root=None):
         """
