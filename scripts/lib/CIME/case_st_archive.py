@@ -38,13 +38,15 @@ def _get_datenames(case):
     logger.debug("_get_datenames:  multidriver = {} ".format(multidriver))
 
     if multidriver :
-       files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
+        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
     else:
-       files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
+        files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
+
     logger.debug("  cpl files : {} ".format(files))
 
     if not files:
         expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
+
     datenames = []
     for filename in files:
         date = get_file_date(filename)
