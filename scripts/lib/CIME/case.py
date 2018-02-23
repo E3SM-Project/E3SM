@@ -671,7 +671,7 @@ class Case(object):
         pes_rootpe = {}
         pes_pstrid = {}
         other      = {}
-
+        comment = None
         force_tasks = None
         force_thrds = None
 
@@ -687,7 +687,7 @@ class Case(object):
             force_tasks = int(match2.group(1))
             pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
         else:
-            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other, comment = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                                machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         if match1 or match2:
@@ -705,6 +705,7 @@ class Case(object):
                 pes_rootpe[string_] = 0
 
         mach_pes_obj = self.get_env("mach_pes")
+        mach_pes_obj.add_comment(comment)
 
         if other is not None:
             for key, value in other.items():
