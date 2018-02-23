@@ -1,11 +1,11 @@
 module phys_grid
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Definition of physics computational horizontal grid.
 !
 ! Method: Variables are private; interface routines used to extract
 !         information for use in user code.
-! 
+!
 ! Entry points:
 !      phys_grid_init       initialize chunk'ed data structure
 !      phys_grid_initialized    get physgrid_set flag
@@ -50,7 +50,7 @@ module phys_grid
 !                          for decomposed chunk data structures should
 !                          be copied from
 !      transpose_block_to_chunk
-!                          transpose buffer containing decomposed 
+!                          transpose buffer containing decomposed
 !                          fields to buffer
 !                          containing decomposed chunk data structures
 !
@@ -71,7 +71,7 @@ module phys_grid
 !                          a chunk
 !
 ! Author: Patrick Worley and John Drake
-! 
+!
 !-----------------------------------------------------------------------
    use shr_kind_mod,     only: r8 => shr_kind_r8, r4 => shr_kind_r4
    use shr_sys_mod,      only: shr_sys_flush
@@ -134,7 +134,7 @@ module phys_grid
 #if ( ! defined SPMD )
    integer :: block_buf_nrecs
    integer :: chunk_buf_nrecs
-   logical :: local_dp_map=.true. 
+   logical :: local_dp_map=.true.
 #endif
 
 ! The identifier for the physics grid
@@ -147,7 +147,7 @@ module phys_grid
 
 ! physics field data structures
    integer, public :: ngcols           ! global column count in physics grid (all)
-   integer, public :: ngcols_p         ! global column count in physics grid 
+   integer, public :: ngcols_p         ! global column count in physics grid
                                        ! (without holes)
    integer         :: num_grid_columns = 0 ! Number of PE-local physics columns
 
@@ -164,14 +164,14 @@ module phys_grid
 
    integer, dimension(:), allocatable :: clat_p_cnt ! number of repeats for each latitude
    integer, dimension(:), allocatable :: clat_p_idx ! index in latlon ordering for first occurence
-                                                    ! of latitude corresponding to given 
+                                                    ! of latitude corresponding to given
                                                     ! latitude index
    real(r8), public, dimension(:), allocatable :: clat_p  ! unique latitudes (radians, increasing)
 
 
    integer, dimension(:), allocatable :: clon_p_cnt ! number of repeats for each longitude
-   integer, dimension(:), allocatable :: clon_p_idx ! index in lonlat ordering for first 
-                                                             ! occurrence of longitude corresponding to 
+   integer, dimension(:), allocatable :: clon_p_idx ! index in lonlat ordering for first
+                                                             ! occurrence of longitude corresponding to
                                                              ! given latitude index
    real(r8), public, dimension(:), allocatable :: clon_p  ! unique longitudes (radians, increasing)
 
@@ -196,7 +196,7 @@ module phys_grid
 #endif
 !!XXgoldyXX: ^ not needed?
 
-   integer, dimension(:), allocatable :: npchunks 
+   integer, dimension(:), allocatable :: npchunks
                                        ! number of chunks assigned to each process
 
    type lchunk
@@ -265,7 +265,7 @@ module phys_grid
    end type btofc_pters
 
    type (btofc_pters), dimension(:), allocatable :: btofc_blk_offset
-                                       ! offset in btoc send array (-1) where 
+                                       ! offset in btoc send array (-1) where
                                        ! (blockid, bcid, k) column should be packed in
                                        ! block_to_chunk alltoallv, AND
                                        ! offset in ctob receive array (-1) from which
@@ -283,11 +283,11 @@ module phys_grid
 ! miscellaneous phys_grid data
    integer          :: dp_coup_steps   ! number of swaps in transpose algorithm
    integer, dimension(:), allocatable :: dp_coup_proc
-                                       ! swap partner in each step of 
+                                       ! swap partner in each step of
                                        !  transpose algorithm
    logical :: physgrid_set = .false. ! flag indicates physics grid has been set
    integer :: max_nproc_smpx  ! maximum number of processes assigned to a
-                                       !  single virtual SMP used to define physics 
+                                       !  single virtual SMP used to define physics
                                        !  load balancing
    integer :: nproc_busy_d    ! number of processes active during the dynamics
                                        !  (assigned a dynamics block)
@@ -297,7 +297,7 @@ module phys_grid
    integer, public, protected :: grid_chunk_s = -1 ! Start grid-scale chunk
    integer, public, protected :: grid_chunk_e = -1 ! End grid-scale chunk
 
-! Physics grid decomposition options:  
+! Physics grid decomposition options:
 ! -1: each chunk is a dynamics block
 !  0: chunk definitions and assignments do not require interprocess comm.
 !  1: chunk definitions and assignments do not require internode comm.
@@ -309,9 +309,9 @@ module phys_grid
    integer, parameter :: def_lbal_opt = 2               ! default
    integer :: lbal_opt = def_lbal_opt
 
-! Physics grid load balancing options:  
+! Physics grid load balancing options:
 !  0: assign columns to chunks as single columns, wrap mapped across chunks
-!  1: use (day/night; north/south) twin algorithm to determine load-balanced pairs of 
+!  1: use (day/night; north/south) twin algorithm to determine load-balanced pairs of
 !       columns and assign columns to chunks in pairs, wrap mapped
    integer, parameter :: min_twin_alg = 0
    integer, parameter :: max_twin_alg = 1
@@ -328,9 +328,9 @@ module phys_grid
 ! -1: use "0" if max_nproc_smpx and nproc_busy_d are both > npes/2; otherwise use "1"
 !  0: use mpi_alltoallv
 !  1: use point-to-point MPI-1 two-sided implementation
-!  2: use point-to-point MPI-2 one-sided implementation if supported, 
+!  2: use point-to-point MPI-2 one-sided implementation if supported,
 !       otherwise use MPI-1 implementation
-!  3: use Co-Array Fortran implementation if supported, 
+!  3: use Co-Array Fortran implementation if supported,
 !       otherwise use MPI-1 implementation
 !  11-13: use mod_comm, choosing any of several methods internal to mod_comm.
 !      The method within mod_comm (denoted mod_method) has possible values 0,1,2 and
@@ -352,14 +352,14 @@ contains
   end function get_nlcols_p
 
   subroutine phys_grid_init( )
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: Physics mapping initialization routine:  
-    ! 
-    ! Method: 
-    ! 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose: Physics mapping initialization routine:
+    !
+    ! Method:
+    !
     ! Author: John Drake and Patrick Worley
-    ! 
+    !
     !-----------------------------------------------------------------------
      use pio,              only: PIO_OFFSET_KIND
      use pmgrid,           only: plev
@@ -398,7 +398,7 @@ contains
     integer :: curp                       ! current process id
     integer :: block_cnt                  ! number of blocks containing data
     ! for a given vertical column
-    integer :: numlvl                     ! number of vertical levels in block 
+    integer :: numlvl                     ! number of vertical levels in block
     ! column
     integer :: levels(plev+1)             ! vertical level indices
     integer :: owner_d                    ! process owning given block column
@@ -546,9 +546,9 @@ contains
 if (masterproc) then
    write(iulog, *) 'XXG: ', epsilon(0.0_r8), tiny(0.0_r8), huge(0.0_r8), -huge(0.0_r8)
    write(iulog, *) 'XXG: lgr = ', MINVAL(lon_global_rank), MINVAL(lat_global_rank)
+   write(iulog, *) 'XXG: lbal_opt = ',lbal_opt,', ec_active = ',ec_active
    call shr_sys_flush(iulog)
 end if
-call mpi_barrier(mpicom, ierr)
 call shr_sys_flush(iulog)
 !!XXgoldyXX: ^ debug only
 
@@ -624,7 +624,19 @@ call shr_sys_flush(iulog)
        if (ANY(ldof < 0)) then
           call endrun(subname//': EC ldof not filled out')
        end if
+!!XXgoldyXX: v debug only
+if (masterproc) then
+   write(iulog, *) 'XXG: ',__LINE__
+   call shr_sys_flush(iulog)
+end if
+!!XXgoldyXX: ^ debug only
        call elevation_classes_init(ldof, num_subgrids, subgrid_area, subgrid_elev)
+!!XXgoldyXX: v debug only
+if (masterproc) then
+   write(iulog, *) 'XXG: ',__LINE__
+   call shr_sys_flush(iulog)
+end if
+!!XXgoldyXX: ^ debug only
        ! We can't support all the load balancing options with elevation classes
        if ((lbal_opt == -1) .or. (lbal_opt == 4)) then
           if (masterproc) then
@@ -727,7 +739,7 @@ call shr_sys_flush(iulog)
         (lbal_opt .eq. -1)) deallocate( clat_p_cnt)
 
     ! save "longitude within latitude" column ordering
-    ! and determine mapping from unsorted global column index to 
+    ! and determine mapping from unsorted global column index to
     ! unique latitude/longitude indices
     allocate( lat_p(1:ngcols) )
     allocate( lon_p(1:ngcols) )
@@ -790,6 +802,12 @@ call shr_sys_flush(iulog)
     ! Determine (global) block index bounds
     !
     call get_block_bounds_d(firstblock, lastblock)
+!!XXgoldyXX: v debug only
+if (masterproc) then
+   write(iulog, *) 'XXG: ',__LINE__
+   call shr_sys_flush(iulog)
+end if
+!!XXgoldyXX: ^ debug only
 
 !!XXgoldyXX: v not needed?
 #if 0
@@ -805,7 +823,7 @@ call shr_sys_flush(iulog)
 
     !
     ! Option -1: each dynamics block is a single chunk
-    !            
+    !
     if (lbal_opt == -1) then
        !
        ! Check that pcols >= maxblksiz
@@ -916,7 +934,7 @@ call shr_sys_flush(iulog)
        deallocate( lon_p )
 
        !
-       ! Specify parallel decomposition 
+       ! Specify parallel decomposition
        !
        do cid=1,nchunks
 #if (defined SPMD)
@@ -931,10 +949,10 @@ call shr_sys_flush(iulog)
 #endif
 !!XXgoldyXX: ^ not needed?
        !
-       ! Set flag indicating columns in physics and dynamics 
+       ! Set flag indicating columns in physics and dynamics
        ! decompositions reside on the same processes
        !
-       local_dp_map = .true. 
+       local_dp_map = .true.
        !
 !!XXgoldyXX: v not needed?
      end if
@@ -949,11 +967,11 @@ call shr_sys_flush(iulog)
        !               while attempting to create load-balanced chunks.
        !               Does not work with vertically decomposed blocks.
        ! Option == 2: load balance chunks with respect to diurnal and
-       !               seaonsal cycles and wth respect to latitude, 
+       !               seaonsal cycles and wth respect to latitude,
        !               and assign chunks to processes
        !               in a way that attempts to minimize communication costs
-       ! Option == 3: divide processes into pairs and split 
-       !               blocks assigned to these pairs into 
+       ! Option == 3: divide processes into pairs and split
+       !               blocks assigned to these pairs into
        !               chunks, attempting to create load-balanced chunks.
        !               The process pairs are chosen to maximize load balancing
        !               opportunities.
@@ -969,7 +987,7 @@ call shr_sys_flush(iulog)
        ! assign chunks to processes.
        !
        if  (twin_alg .eq. 1) then
-          ! precompute clon_p_idx: index in lonlat ordering for first 
+          ! precompute clon_p_idx: index in lonlat ordering for first
           ! occurrence of longitude corresponding to given latitude index,
           ! used in twin option in create_chunks; used in create_chunks
           allocate( clon_p_idx(1:clon_p_tot) )
@@ -994,16 +1012,16 @@ call shr_sys_flush(iulog)
        ! Determine whether dynamics and physics decompositions
        ! are colocated, not requiring any interprocess communication
        ! in the coupling.
-       local_dp_map = .true.   
+       local_dp_map = .true.
        do cid=1,nchunks
           do i=1,chunks(cid)%ncols
              curgcol_d = chunks(cid)%gcol(i)
              block_cnt = get_gcol_block_cnt_d(curgcol_d)
              call get_gcol_block_d(curgcol_d,block_cnt,blockids,bcids)
              do jb=1,block_cnt
-                owner_d = get_block_owner_d(blockids(jb)) 
+                owner_d = get_block_owner_d(blockids(jb))
                 if (owner_d .ne. chunks(cid)%owner) then
-                   local_dp_map = .false.   
+                   local_dp_map = .false.
                 endif
              enddo
           enddo
@@ -1011,12 +1029,12 @@ call shr_sys_flush(iulog)
     endif
     !
     ! Allocate and initialize data structures for gather/scatter
-    !  
+    !
     allocate( pgcols(1:ngcols_p) )
     allocate( gs_col_offset(0:npes) )
     allocate( pchunkid(0:npes) )
 
-    ! Initialize pchunkid and gs_col_offset by summing 
+    ! Initialize pchunkid and gs_col_offset by summing
     ! number of chunks and columns per process, respectively
     pchunkid(0) = 0
     gs_col_offset(0) = 0
@@ -1024,7 +1042,7 @@ call shr_sys_flush(iulog)
        pchunkid(p)      = pchunkid(p-1)      + npchunks(p-1)
        gs_col_offset(p) = gs_col_offset(p-1) + gs_col_num(p-1)
     enddo
-    
+
     ! Determine local ordering via "process id" bin sort
     do cid=1,nchunks
        p = chunks(cid)%owner
@@ -1052,9 +1070,9 @@ call shr_sys_flush(iulog)
     gs_col_offset(npes) = gs_col_offset(npes-1) + gs_col_num(npes-1)
 
     ! Save local information
-    ! (Local chunk index range chosen so that it does not overlap 
+    ! (Local chunk index range chosen so that it does not overlap
     !  {begblock,...,endblock})
-    ! 
+    !
     nlcols   = gs_col_num(iam)
     nlchunks = npchunks(iam)
     begchunk = pchunkid(iam)   + lastblock
@@ -1117,7 +1135,7 @@ call shr_sys_flush(iulog)
     if (.not. local_dp_map) then
        !
        ! allocate and initialize data structures for transposes
-       !  
+       !
        allocate( btofc_blk_num(0:npes-1) )
        btofc_blk_num = 0
        allocate( btofc_blk_offset(firstblock:lastblock) )
@@ -1160,7 +1178,7 @@ call shr_sys_flush(iulog)
        enddo
        btofc_blk_num(curp) = curcnt
        block_buf_nrecs = glbcnt
-       !  
+       !
        allocate( btofc_chk_num(0:npes-1) )
        btofc_chk_num = 0
        allocate( btofc_chk_offset(begchunk:endchunk) )
@@ -1293,6 +1311,12 @@ call shr_sys_flush(iulog)
     ! Note that if the dycore is using the same points as the physics grid,
     !      it will have already set up 'lat' and 'lon' axes for the physics grid
     !      However, these will be in the dynamics decomposition
+!!XXgoldyXX: v debug only
+if (masterproc) then
+   write(iulog, *) 'XXG: ',__LINE__
+   call shr_sys_flush(iulog)
+end if
+!!XXgoldyXX: ^ debug only
 
     if (unstructured) then
       coord_map => grid_map(3,:)
@@ -1364,14 +1388,14 @@ call shr_sys_flush(iulog)
 subroutine phys_grid_find_col(lat, lon, owner, lcid, icol)
    use spmd_utils, only: mpicom, iam, MPI_REAL8, MPI_INTEGER, MPI_MIN, MPI_MAX
 
-   !----------------------------------------------------------------------- 
-   ! 
+   !-----------------------------------------------------------------------
+   !
    ! Purpose: Find the global column closest to the point specified by lat
-   !          and lon.  Return indices of owning process, local chunk, and 
+   !          and lon.  Return indices of owning process, local chunk, and
    !          column.
-   ! 
+   !
    ! Authors: Phil Rasch / Patrick Worley / B. Eaton
-   ! 
+   !
    !-----------------------------------------------------------------------
 
    real(r8), intent(in) :: lat, lon ! requested location in degrees
@@ -1440,14 +1464,14 @@ end subroutine phys_grid_find_col
 !========================================================================
 
 logical function phys_grid_initialized ()
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Identify whether phys_grid has been called yet or not
-! 
+!
 ! Method: Return physgrid_set
-! 
+!
 ! Author: Pat Worley
-! 
+!
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !
@@ -1463,7 +1487,7 @@ logical function phys_grid_initialized ()
                                     phys_twin_algorithm_out, &
                                     phys_alltoall_out, &
                                     phys_chnk_per_thd_out )
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! Purpose: Return default runtime options
 ! Author: Tom Henderson
 !-----------------------------------------------------------------------
@@ -1502,7 +1526,7 @@ logical function phys_grid_initialized ()
                                 phys_twin_algorithm_in, &
                                 phys_alltoall_in,    &
                                 phys_chnk_per_thd_in )
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! Purpose: Set runtime options
 ! Author: Tom Henderson
 !-----------------------------------------------------------------------
@@ -1597,14 +1621,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_gcol_all_p(lcid, latdim, gcols)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all global column indices for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
      integer, intent(in)  :: lcid        ! local chunk id
@@ -1613,7 +1637,7 @@ logical function phys_grid_initialized ()
      integer, intent(out) :: gcols(:)    ! array of global latitude indices
 !---------------------------Local workspace-----------------------------
      integer :: i                        ! loop index
-     
+
 !-----------------------------------------------------------------------
      gcols=-1
      do i=1,lchunks(lcid)%ncols
@@ -1626,14 +1650,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    integer function get_gcol_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return global physics column index for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Jim Edwards / Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in)  :: lcid          ! local chunk id
@@ -1641,7 +1665,7 @@ logical function phys_grid_initialized ()
 
 !-----------------------------------------------------------------------
    get_gcol_p = lchunks(lcid)%gcol(col)
-   
+
    return
    end function get_gcol_p
 
@@ -1649,14 +1673,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    integer function get_ncols_p(lcid)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return number of columns in chunk given the local chunk id.
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in)  :: lcid      ! local chunk id
@@ -1673,14 +1697,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_lat_all_p(lcid, latdim, lats)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all global latitude indices for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1703,14 +1727,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 
    integer function get_lat_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return global latitude index for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1727,22 +1751,22 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_lon_all_p(lcid, londim, lons)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 !  Return all global longitude indices for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
    integer, intent(in)  :: lcid          ! local chunk id
    integer, intent(in)  :: londim        ! declared size of output array
 
-   integer, intent(out) :: lons(londim)  ! array of global longitude 
+   integer, intent(out) :: lons(londim)  ! array of global longitude
                                          !  indices
 
 !---------------------------Local workspace-----------------------------
@@ -1760,15 +1784,15 @@ logical function phys_grid_initialized ()
 !========================================================================
 
    integer function get_lon_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 !  Return global longitude index for chunk column.
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1786,14 +1810,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_rlat_all_p(lcid, rlatdim, rlats)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all latitudes (in radians) for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1816,14 +1840,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_area_all_p(lcid, rdim, area)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all areas for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1846,14 +1870,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    real(r8) function get_area_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return area for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1869,14 +1893,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_wght_all_p(lcid, rdim, wght)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all integration weights for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1899,14 +1923,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    real(r8) function get_wght_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return integration weight for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1923,14 +1947,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 
    real(r8) function get_rlat_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return latitude (in radians) for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1946,14 +1970,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine get_rlon_all_p(lcid, rlondim, rlons)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return all longitudes (in radians) for chunk
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 
 !------------------------------Arguments--------------------------------
@@ -1977,14 +2001,14 @@ logical function phys_grid_initialized ()
 !========================================================================
 
    real(r8) function get_rlon_p(lcid, col)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return longitude (in radians) for chunk column
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
    use ppgrid
 !------------------------------Arguments--------------------------------
@@ -2001,27 +2025,27 @@ logical function phys_grid_initialized ()
 !========================================================================
    subroutine scatter_field_to_chunk(fdim, mdim, ldim,             &
                                      hdim1d, globalfield, localchunks)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Distribute field
 !          to decomposed chunk data structure
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: fdim      ! declared length of first dimension
    integer, intent(in) :: mdim      ! declared length of middle dimension
    integer, intent(in) :: ldim      ! declared length of last dimension
-   integer, intent(in) :: hdim1d    ! declared first horizontal index 
+   integer, intent(in) :: hdim1d    ! declared first horizontal index
                                     ! dimension
-   real(r8), intent(in) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim) 
+   real(r8), intent(in) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim)
                                     ! global field
 
    real(r8), intent(out):: localchunks(fdim,pcols,mdim, &
-                                       begchunk:endchunk,ldim) 
+                                       begchunk:endchunk,ldim)
                                     ! local chunks
 
 !---------------------------Local workspace-----------------------------
@@ -2034,7 +2058,7 @@ logical function phys_grid_initialized ()
    integer :: h2                         ! second horizontal dimension index
 
 #if ( defined SPMD )
-   real(r8) gfield_p(fdim,mdim,ldim,ngcols) 
+   real(r8) gfield_p(fdim,mdim,ldim,ngcols)
                                          ! vector to be scattered
    real(r8) lfield_p(fdim,mdim,ldim,num_grid_columns)
                                          ! local component of scattered
@@ -2094,7 +2118,7 @@ call endrun("SCATTER_FIELD_TO_CHUNK not supported")
    endif
 
 ! scatter to other processes
-! (pgcols ordering consistent with begchunk:endchunk 
+! (pgcols ordering consistent with begchunk:endchunk
 ! local ordering)
 
    call t_barrierf('sync_scat_ftoc', mpicom)
@@ -2122,7 +2146,7 @@ call endrun("SCATTER_FIELD_TO_CHUNK not supported")
 #else
 
 ! copy field into chunked data structure
-! (pgcol ordering chosen to reflect begchunk:endchunk 
+! (pgcol ordering chosen to reflect begchunk:endchunk
 !  local ordering)
 
    do l=1,ldim
@@ -2158,15 +2182,15 @@ call endrun("SCATTER_FIELD_TO_CHUNK not supported")
    subroutine gather_chunk_to_field(fdim,mdim,ldim, &
                                      hdim1d,localchunks,globalfield)
 
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Reconstruct field
 !          from decomposed chunk data structure
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 #if ( defined SPMD )
    use spmd_utils,    only: fc_gatherv
@@ -2175,13 +2199,13 @@ call endrun("SCATTER_FIELD_TO_CHUNK not supported")
    integer, intent(in) :: fdim      ! declared length of first dimension
    integer, intent(in) :: mdim      ! declared length of middle dimension
    integer, intent(in) :: ldim      ! declared length of last dimension
-   integer, intent(in) :: hdim1d    ! declared first horizontal index 
+   integer, intent(in) :: hdim1d    ! declared first horizontal index
                                     ! dimension
    real(r8), intent(in):: localchunks(fdim,pcols,mdim, &
-                                      begchunk:endchunk,ldim) 
+                                      begchunk:endchunk,ldim)
                                     ! local chunks
 
-   real(r8), intent(out) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim) 
+   real(r8), intent(out) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim)
                                     ! global field
 
 !---------------------------Local workspace-----------------------------
@@ -2194,9 +2218,9 @@ call endrun("SCATTER_FIELD_TO_CHUNK not supported")
    integer :: h2                         ! second horizontal dimension index
 
 #if ( defined SPMD )
-   real(r8) gfield_p(fdim,mdim,ldim,ngcols) 
+   real(r8) gfield_p(fdim,mdim,ldim,ngcols)
                                          ! vector to be gathered
-   real(r8) lfield_p(fdim,mdim,ldim,num_grid_columns) 
+   real(r8) lfield_p(fdim,mdim,ldim,num_grid_columns)
                                          ! local component of gather
                                          !  vector
    integer :: displs(0:npes-1)           ! gather displacements
@@ -2277,7 +2301,7 @@ call endrun("GATHER_CHUNK_TO_FIELD not supported")
 #else
 
    ! copy chunked data structure into dynamics field
-   ! (pgcol ordering chosen to reflect begchunk:endchunk 
+   ! (pgcol ordering chosen to reflect begchunk:endchunk
    !  local ordering)
    do l=1,ldim
 !DIR$ PREFERVECTOR, PREFERSTREAM
@@ -2311,16 +2335,16 @@ call endrun("GATHER_CHUNK_TO_FIELD not supported")
 !
    subroutine write_field_from_chunk(iu,fdim,mdim,ldim,localchunks)
 
-!----------------------------------------------------------------------- 
-! 
-!                          
-! Purpose: Write field from decomposed chunk data 
+!-----------------------------------------------------------------------
+!
+!
+! Purpose: Write field from decomposed chunk data
 !          structure
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: iu        ! logical unit
    integer, intent(in) :: fdim      ! declared length of first dimension
@@ -2343,7 +2367,7 @@ call endrun("WRITE_FIELD_FROM_CHUNK not supported")
    allocate(globalfield(fdim,hdim1_d,mdim,hdim2_d,ldim))
 
    call gather_chunk_to_field (fdim,mdim,ldim,hdim1_d,localchunks,globalfield)
-                               
+
    if (masterproc) then
       write (iu,iostat=ioerr) globalfield
       if (ioerr /= 0 ) then
@@ -2365,16 +2389,16 @@ call endrun("WRITE_FIELD_FROM_CHUNK not supported")
 !
    subroutine read_chunk_from_field(iu,fdim,mdim,ldim,localchunks)
 
-!----------------------------------------------------------------------- 
-! 
-!                          
-! Purpose: Write field from decomposed chunk data 
+!-----------------------------------------------------------------------
+!
+!
+! Purpose: Write field from decomposed chunk data
 !          structure
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: iu        ! logical unit
    integer, intent(in) :: fdim      ! declared length of first dimension
@@ -2419,18 +2443,18 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine transpose_block_to_chunk(record_size, block_buffer, &
                                        chunk_buffer, window)
-                                       
-!----------------------------------------------------------------------- 
-! 
-! Purpose: Transpose buffer containing decomposed 
+
+!-----------------------------------------------------------------------
+!
+! Purpose: Transpose buffer containing decomposed
 !          fields to buffer
 !          containing decomposed chunk data structures
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
 ! Modified: Art Mirin, Jan 04, to add support for mod_comm
-! 
+!
 !-----------------------------------------------------------------------
 #if ( defined SPMD )
 # if defined(MODCM_DP_TRANSPOSE)
@@ -2443,12 +2467,12 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !
   integer, parameter :: msgtag  = 6000
 !------------------------------Arguments--------------------------------
-   integer, intent(in) :: record_size  ! per column amount of data 
+   integer, intent(in) :: record_size  ! per column amount of data
    real(r8), intent(in) :: block_buffer(record_size*block_buf_nrecs)
                                        ! buffer of block data to be
                                        ! transposed
    real(r8), intent(out):: chunk_buffer(record_size*chunk_buf_nrecs)
-                                       ! buffer of chunk data 
+                                       ! buffer of chunk data
                                        ! transposed into
    integer, intent(in), optional :: window
                                        ! MPI-2 window id for
@@ -2481,11 +2505,11 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       allocate(pdispls(0:npes-1))
 !
 # if defined(MODCM_DP_TRANSPOSE)
-! This branch uses mod_comm. Admissable values of phys_alltoall are 
-! 11,12 and 13. Each value corresponds to a different option 
+! This branch uses mod_comm. Admissable values of phys_alltoall are
+! 11,12 and 13. Each value corresponds to a different option
 ! within mod_comm of implementing the communication. That option is expressed
-! internally to mod_comm using the variable mod_method defined below; 
-! mod_method will have values 0,1 or 2 and is defined as 
+! internally to mod_comm using the variable mod_method defined below;
+! mod_method will have values 0,1 or 2 and is defined as
 ! phys_alltoall - modmin_alltoall, where modmin_alltoall equals 11.
 ! Also, sendbl and recvbl must have exactly npes elements, to match
 ! this size of the communicator, or the transpose will fail.
@@ -2646,21 +2670,21 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine block_to_chunk_send_pters(blockid, fdim, ldim, &
                                         record_size, pter)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: Return pointers into send buffer where column from decomposed 
+!-----------------------------------------------------------------------
+!
+! Purpose: Return pointers into send buffer where column from decomposed
 !          fields should be copied to
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: blockid      ! block index
    integer, intent(in) :: fdim         ! first dimension of pter array
    integer, intent(in) :: ldim         ! last dimension of pter array
-   integer, intent(in) :: record_size  ! per coordinate amount of data 
+   integer, intent(in) :: record_size  ! per coordinate amount of data
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
 !---------------------------Local workspace-----------------------------
@@ -2698,21 +2722,21 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine block_to_chunk_recv_pters(lcid, fdim, ldim, &
                                         record_size, pter)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return pointers into receive buffer where data for
 !          decomposed chunk data structures should be copied from
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: lcid         ! local chunk id
    integer, intent(in) :: fdim         ! first dimension of pter array
    integer, intent(in) :: ldim         ! last dimension of pter array
-   integer, intent(in) :: record_size  ! per coordinate amount of data 
+   integer, intent(in) :: record_size  ! per coordinate amount of data
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offset
 !---------------------------Local workspace-----------------------------
@@ -2750,16 +2774,16 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine transpose_chunk_to_block(record_size, chunk_buffer, &
                                        block_buffer, window)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: Transpose buffer containing decomposed 
+!-----------------------------------------------------------------------
+!
+! Purpose: Transpose buffer containing decomposed
 !          chunk data structures to buffer
-!          containing decomposed fields 
-! 
-! Method: 
-! 
+!          containing decomposed fields
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 #if ( defined SPMD )
 # if defined(MODCM_DP_TRANSPOSE)
@@ -2772,7 +2796,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !
   integer, parameter :: msgtag  = 7000
 !------------------------------Arguments--------------------------------
-   integer, intent(in) :: record_size  ! per column amount of data 
+   integer, intent(in) :: record_size  ! per column amount of data
    real(r8), intent(in):: chunk_buffer(record_size*chunk_buf_nrecs)
                                        ! buffer of chunk data to be
                                        ! transposed
@@ -2810,11 +2834,11 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       allocate(pdispls(0:npes-1))
 !
 # if defined(MODCM_DP_TRANSPOSE)
-! This branch uses mod_comm. Admissable values of phys_alltoall are 
-! 11,12 and 13. Each value corresponds to a differerent option 
+! This branch uses mod_comm. Admissable values of phys_alltoall are
+! 11,12 and 13. Each value corresponds to a differerent option
 ! within mod_comm of implementing the communication. That option is expressed
-! internally to mod_comm using the variable mod_method defined below; 
-! mod_method will have values 0,1 or 2 and is defined as 
+! internally to mod_comm using the variable mod_method defined below;
+! mod_method will have values 0,1 or 2 and is defined as
 ! phys_alltoall - modmin_alltoall, where modmin_alltoall equals 11.
 ! Also, sendbl and recvbl must have exactly npes elements, to match
 ! this size of the communicator, or the transpose will fail.
@@ -2975,21 +2999,21 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine chunk_to_block_send_pters(lcid, fdim, ldim, &
                                         record_size, pter)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Return pointers into send buffer where data for
 !          decomposed chunk data structures should be copied to
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: lcid         ! local chunk id
    integer, intent(in) :: fdim         ! first dimension of pter array
    integer, intent(in) :: ldim         ! last dimension of pter array
-   integer, intent(in) :: record_size  ! per coordinate amount of data 
+   integer, intent(in) :: record_size  ! per coordinate amount of data
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offset
 !---------------------------Local workspace-----------------------------
@@ -3027,21 +3051,21 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine chunk_to_block_recv_pters(blockid, fdim, ldim, &
                                         record_size, pter)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: Return pointers into receive buffer where column from decomposed 
+!-----------------------------------------------------------------------
+!
+! Purpose: Return pointers into receive buffer where column from decomposed
 !          fields should be copied from
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: blockid      ! block index
    integer, intent(in) :: fdim         ! first dimension of pter array
    integer, intent(in) :: ldim         ! last dimension of pter array
-   integer, intent(in) :: record_size  ! per coordinate amount of data 
+   integer, intent(in) :: record_size  ! per coordinate amount of data
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
 !---------------------------Local workspace-----------------------------
@@ -3080,15 +3104,15 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !!XXgoldyXX: v not needed?
 #if 0
    subroutine create_chunks(opt, chunks_per_thread)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Decompose physics computational grid into chunks, for
 !          improved serial efficiency and parallel load balance.
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
    use pmgrid, only: plev
    use dyn_grid, only: get_block_bounds_d, get_block_gcol_cnt_d, &
@@ -3105,7 +3129,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       !     as day/night pairs.  Columns (or pairs) are wrap-mapped.
       !     May not work with vertically decomposed blocks.
       !  2: 2-column day/night and season column pairs wrap-mapped
-      !     to chunks to also balance assignment of polar, mid-latitude, 
+      !     to chunks to also balance assignment of polar, mid-latitude,
       !     and equatorial columns across  chunks.
       !  3: same as 1 except that SMP defined to be pairs of consecutive
       !     processes
@@ -3114,7 +3138,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       !     in block ordering.
       !     May not work with vertically decomposed blocks.
       !  5: Chunks do not cross latitude boundaries, and are block-mapped.
-   integer, intent(in)  :: chunks_per_thread 
+   integer, intent(in)  :: chunks_per_thread
                                          ! target number of chunks per
                                          !  thread
 !---------------------------Local workspace-----------------------------
@@ -3137,22 +3161,22 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer :: ntmp1, ntmp2, nlchunks     ! work variables
    integer :: max_ncols                  ! upper bound on number of columns in a block
    integer :: ncols                      ! number of columns in current chunk
-   logical :: error                      ! error flag 
+   logical :: error                      ! error flag
 
    ! indices for dynamics columns in given block
    integer, dimension(:), allocatable :: cols
 
    ! number of MPI processes per virtual SMP node (0:nsmpx-1)
-   integer, dimension(:), allocatable :: nsmpprocs      
+   integer, dimension(:), allocatable :: nsmpprocs
 
    ! flag indicating whether a process is busy or idle during the dynamics (0:npes-1)
    logical, dimension(:), allocatable :: proc_busy_d
 
-   ! flag indicating whether any of the processes assigned to an SMP node are busy 
+   ! flag indicating whether any of the processes assigned to an SMP node are busy
    ! during the dynamics, or whether all of them are idle (0:nsmps-1)
    logical, dimension(:), allocatable :: smp_busy_d
 
-   ! actual SMP node/virtual SMP node map (0:nsmps-1)    
+   ! actual SMP node/virtual SMP node map (0:nsmps-1)
    integer, dimension(:), allocatable :: smp_smp_mapx
 
    ! column/virtual SMP node map (ngcols)
@@ -3166,11 +3190,11 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    ! number of chunks assigned to a given virtual SMP node (0:nsmpx-1)
    integer, dimension(:), allocatable :: nsmpchunks
-                                         
+
    ! maximum number of columns assigned to a chunk in a given virtual SMP node (0:nsmpx-1)
    integer, dimension(:), allocatable :: maxcol_chk
-                                         
-   ! number of chunks in given virtual SMP node receiving maximum number of columns 
+
+   ! number of chunks in given virtual SMP node receiving maximum number of columns
    ! (0:nsmpx-1)
    integer, dimension(:), allocatable :: maxcol_chks
 
@@ -3231,17 +3255,17 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
 !
 ! Determine virtual SMP count and processes/virtual SMP map.
-!  If option 0 or >3, pretend that each SMP has only one process. 
+!  If option 0 or >3, pretend that each SMP has only one process.
 !  If option 1, use SMP information.
-!  If option 2, pretend that all processes are in one SMP node. 
+!  If option 2, pretend that all processes are in one SMP node.
 !  If option 3, pretend that each SMP node is made up of two
 !     processes, chosen to maximize load-balancing opportunities.
 !
-!  For all options < 5, if there are "idle" dynamics processes, 
+!  For all options < 5, if there are "idle" dynamics processes,
 !     assign them to the virtual SMP nodes in wrap fashion.
-!     Communication between the active and idle dynamics 
-!     processes is scatter/gather (no communications between 
-!     idle dynamics processes) so there is no advantage to 
+!     Communication between the active and idle dynamics
+!     processes is scatter/gather (no communications between
+!     idle dynamics processes) so there is no advantage to
 !     blocking the idle processes in these assignments.
 !
    if ((opt <= 0) .or. (opt == 4)) then
@@ -3254,7 +3278,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
             nsmpx = nsmpx + 1
          endif
       enddo
-! 
+!
 !     assign idle dynamics processes to virtual SMP nodes (wrap map)
       nsmpy = 0
       do p=0,npes-1
@@ -3296,7 +3320,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
             proc_smp_mapx(p) = smp_smp_mapx(smp)
          endif
       enddo
-! 
+!
 !     assign processes in idle dynamics SMP nodes to virtual SMP nodes (wrap map)
       nsmpy = 0
       do p=0,npes-1
@@ -3322,8 +3346,8 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !     find active process partners
       proc_smp_mapx = -1
       call find_partners(opt,proc_busy_d,nsmpx,proc_smp_mapx)
-! 
-!     assign unassigned (idle dynamics) processes to virtual SMP nodes 
+!
+!     assign unassigned (idle dynamics) processes to virtual SMP nodes
 !     (wrap map)
       nsmpy = 0
       do p=0,npes-1
@@ -3345,7 +3369,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    deallocate( proc_busy_d )
 
 !
-! Determine maximum number of processes assigned to a single 
+! Determine maximum number of processes assigned to a single
 ! virtual SMP node
 !
    allocate( nsmpprocs(0:nsmpx-1) )
@@ -3373,7 +3397,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       block_cnt = get_gcol_block_cnt_d(curgcol)
       call get_gcol_block_d(curgcol,block_cnt,blockids,bcids)
       do jb=1,block_cnt
-         p = get_block_owner_d(blockids(jb)) 
+         p = get_block_owner_d(blockids(jb))
          if (col_smp_mapx(i) .eq. -1) then
             col_smp_mapx(i) = proc_smp_mapx(p)
          elseif (col_smp_mapx(i) .ne. proc_smp_mapx(p)) then
@@ -3420,10 +3444,10 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !            process.
 ! Option 4: split local dynamics blocks into chunks,
 !           using block-map assignment of columns
-!             
+!
    if ((opt >= 0) .and. (opt <= 4)) then
 !
-! Calculate number of threads available in each SMP node. 
+! Calculate number of threads available in each SMP node.
 !
       nsmpthreads(:) = 0
       do p=0,npes-1
@@ -3580,7 +3604,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
             nlchunks = nlchunks + 1
          endif
          nchunks = nchunks + nlchunks
-         p = get_block_owner_d(j) 
+         p = get_block_owner_d(j)
          nsmpchunks(p) = nsmpchunks(p) + nlchunks
       enddo
 !
@@ -3637,7 +3661,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
          enddo
       enddo
 !
-! Set number of threads available in each "SMP node". 
+! Set number of threads available in each "SMP node".
 !
       do p=0,npes-1
          nsmpthreads(p) = npthreads(p)
@@ -3668,17 +3692,17 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !========================================================================
 
    subroutine find_partners(opt, proc_busy_d, nsmpx, proc_smp_mapx)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Divide processes into pairs, attempting to maximize the
-!          the number of columns in one process whose twins are in the 
+!          the number of columns in one process whose twins are in the
 !          other process.
-! 
+!
 ! Method: The day/night and north/south hemisphere complement is defined
 !         to be the column twin.
-! 
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
    use dyn_grid, only: get_gcol_block_cnt_d, get_gcol_block_d, &
                        get_block_owner_d
@@ -3687,7 +3711,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer, intent(in)  :: opt           ! chunking option
    logical, intent(in)  :: proc_busy_d(0:npes-1)
                                          ! active/idle dynamics process flags
-   integer, intent(out) :: nsmpx         ! calculated number of virtual 
+   integer, intent(out) :: nsmpx         ! calculated number of virtual
                                          !  SMP nodes
    integer, intent(out) :: proc_smp_mapx(0:npes-1)
                                          ! process/virtual smp map
@@ -3704,18 +3728,18 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer :: bcids(plev+1)              ! block column indices
    integer :: jb                         ! block index
    integer :: p, twp                     ! process indices
-   integer :: col_proc_mapx(ngcols)      ! location of columns in 
+   integer :: col_proc_mapx(ngcols)      ! location of columns in
                                          !  dynamics decomposition
-   integer :: twin_proc_mapx(ngcols)     ! location of column twins in 
+   integer :: twin_proc_mapx(ngcols)     ! location of column twins in
                                          !  dynamics decomposition
-   integer :: twin_cnt(0:npes-1)         ! for each process, number of twins 
+   integer :: twin_cnt(0:npes-1)         ! for each process, number of twins
                                          !  in each of the other processes
    logical :: assigned(0:npes-1)         ! flag indicating whether process
                                          !  assigned to an SMP node yet
-   integer :: maxpartner, maxcnt         ! process with maximum number of 
+   integer :: maxpartner, maxcnt         ! process with maximum number of
                                          !  twins and this count
 
-   logical :: error                      ! error flag 
+   logical :: error                      ! error flag
 !-----------------------------------------------------------------------
 !
 ! Determine process location of column and its twin in dynamics decomposition
@@ -3739,7 +3763,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       block_cnt = get_gcol_block_cnt_d(gcol)
       call get_gcol_block_d(gcol,block_cnt,blockids,bcids)
       do jb=1,block_cnt
-         p = get_block_owner_d(blockids(jb)) 
+         p = get_block_owner_d(blockids(jb))
          if (col_proc_mapx(gcol) .eq. -1) then
             col_proc_mapx(gcol) = p
          elseif (col_proc_mapx(gcol) .ne. p) then
@@ -3750,7 +3774,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
       block_cnt = get_gcol_block_cnt_d(twingcol)
       call get_gcol_block_d(twingcol,block_cnt,blockids,bcids)
       do jb=1,block_cnt
-         p = get_block_owner_d(blockids(jb)) 
+         p = get_block_owner_d(blockids(jb))
          if (twin_proc_mapx(gcol) .eq. -1) then
             twin_proc_mapx(gcol) = p
          elseif (twin_proc_mapx(gcol) .ne. p) then
@@ -3820,7 +3844,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
          endif
 !
       endif
-!      
+!
    enddo
 !
    return
@@ -3829,27 +3853,27 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 !========================================================================
 
    subroutine find_twin(gcol, smp, proc_smp_mapx, twingcol_f)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Find column that when paired with gcol in a chunk
 !          balances the load. A column is a candidate to be paired with
 !          gcol if it is in the same SMP node as gcol as defined
 !          by proc_smp_mapx.
-! 
+!
 ! Method: The day/night and north/south hemisphere complement is
 !         tried first. If it is not a candidate or if it has already been
 !         assigned, then the day/night complement is tried next. If that
 !         also is not available, then nothing is returned.
-! 
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
    use dyn_grid, only: get_gcol_block_d, get_block_owner_d
 
 !------------------------------Arguments--------------------------------
    integer, intent(in)  :: gcol          ! global column index for column
                                          ! seeking a twin for
-   integer, intent(in)  :: smp           ! index of SMP node 
+   integer, intent(in)  :: smp           ! index of SMP node
                                          ! currently assigned to
    integer, intent(in)  :: proc_smp_mapx(0:npes-1)
                                          ! process/virtual smp map
@@ -4039,21 +4063,21 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
 
    subroutine assign_chunks(npthreads, nsmpx, proc_smp_mapx, &
                             nsmpthreads, nsmpchunks)
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Assign chunks to processes, balancing the number of
 !          chunks per thread and minimizing the communication costs
 !          in dp_coupling subject to the restraint that columns
 !          do not migrate outside of the current SMP node.
-! 
-! Method: 
-! 
+!
+! Method:
+!
 ! Author: Patrick Worley
-! 
+!
 !-----------------------------------------------------------------------
    use pmgrid, only: plev
    use dyn_grid, only: get_gcol_block_cnt_d, get_gcol_block_d,&
-                       get_block_owner_d 
+                       get_block_owner_d
 !------------------------------Arguments--------------------------------
    integer, intent(in)  :: npthreads(0:npes-1)
                                          ! number of OpenMP threads per process
@@ -4061,10 +4085,10 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer, intent(in)  :: proc_smp_mapx(0:npes-1)
                                          ! process/virtual smp map
    integer, intent(in)  :: nsmpthreads(0:nsmpx-1)
-                                         ! number of OpenMP threads 
+                                         ! number of OpenMP threads
                                          ! per virtual SMP
    integer, intent(in)  :: nsmpchunks(0:nsmpx-1)
-                                         ! number of chunks assigned 
+                                         ! number of chunks assigned
                                          ! to a given virtual SMP
 !---------------------------Local workspace-----------------------------
    integer :: i, jb, p                   ! loop indices
@@ -4076,7 +4100,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer :: blockids(plev+1)           ! block indices
    integer :: bcids(plev+1)              ! block column indices
    integer :: ntsks_smpx(0:nsmpx-1)      ! number of processes per virtual SMP
-   integer :: smp_proc_mapx(0:nsmpx-1,max_nproc_smpx)   
+   integer :: smp_proc_mapx(0:nsmpx-1,max_nproc_smpx)
                                          ! virtual smp to process id map
    integer :: cid_offset(0:nsmpx)        ! chunk id virtual smp offset
    integer :: ntmp1_smp(0:nsmpx-1)       ! minimum number of chunks per thread
@@ -4091,7 +4115,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    integer :: ntmp1, ntmp2               ! work variables
 !  integer :: npchunks(0:npes-1)         ! number of chunks to be assigned to
 !                                        !  a given process
-   integer :: cur_npchunks(0:npes-1)     ! current number of chunks assigned 
+   integer :: cur_npchunks(0:npes-1)     ! current number of chunks assigned
                                          !  to a given process
    integer :: column_count(0:npes-1)     ! number of columns from current chunk
                                          !  assigned to each process in dynamics
@@ -4161,7 +4185,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
    enddo
 
 !
-! Assign chunks to processes: 
+! Assign chunks to processes:
 !
    cur_npchunks(:) = 0
 !
@@ -4180,7 +4204,7 @@ call endrun("READ_CHUNK_FROM_FIELD not supported")
             block_cnt = get_gcol_block_cnt_d(curgcol)
             call get_gcol_block_d(curgcol,block_cnt,blockids,bcids)
             do jb=1,block_cnt
-               p = get_block_owner_d(blockids(jb)) 
+               p = get_block_owner_d(blockids(jb))
                column_count(p) = column_count(p) + 1
             enddo
          enddo

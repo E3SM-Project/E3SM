@@ -1,9 +1,9 @@
 module cam_control_mod
-!----------------------------------------------------------------------- 
-! 
+!-----------------------------------------------------------------------
+!
 ! Purpose: Model control variables
 ! replaces comctl.h
-! 
+!
 !-----------------------------------------------------------------------
   use shr_kind_mod, only : r8=>shr_kind_r8
   public
@@ -20,12 +20,12 @@ module cam_control_mod
   logical :: indirect          ! True => include indirect radiative effects of sulfate aerosols
 
 ! Earth's orbital characteristics
-!	
+!
 ! Orbital information after processed by orbit_params
 !
       real(r8) :: eccen       ! Earth's eccentricity factor (unitless) (typically 0 to 0.1)
       real(r8) :: obliqr      ! Earth's obliquity in radians
-      real(r8) :: lambm0      ! Mean longitude of perihelion at the 
+      real(r8) :: lambm0      ! Mean longitude of perihelion at the
                               ! vernal equinox (radians)
       real(r8) :: mvelpp      ! Earth's moving vernal equinox longitude
 !                             ! of perihelion plus pi (radians)
@@ -58,6 +58,7 @@ contains
 subroutine cam_ctrl_set_physics_type(phys_package)
   use cam_abortutils, only : endrun
   use spmd_utils,     only: masterproc
+  use cam_logfile,    only: iulog
 
   ! Dummy argument
   character(len=*), intent(in) :: phys_package
