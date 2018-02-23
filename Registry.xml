@@ -73,6 +73,10 @@
 			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field."
 			possible_values="'constant', 'PB1982', 'CP2010'"
 		/>
+		<nml_option name="config_enhancementFactor_method" type="character" default_value="scalar" units="unitless"
+			description="Source of enhancement factor value.  'scalar' will take the value from the config option 'config_enhancementFactor'.  'data' will take a 3d field from the input variable 'flowEnhancementFactor'"
+			possible_values="'scalar', 'data'"
+		/>
 		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
 		            description="By default, external, higher-order dycores return the uReconstructX and uReconstructY fields (which are the native locations of their FEM solution).  If this option is set to .true., uReconstructX and uReconstructY will be calculated by MPAS using framework's vector reconstruction routines based on the values of normalVelocity supplied by the external dycore.  This provides a way to test the calculation of normalVelocity in the interface."
 		            possible_values=".true. or .false."

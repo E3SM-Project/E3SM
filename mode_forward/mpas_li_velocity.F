@@ -180,6 +180,10 @@ contains
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: config_velocity_solver
+      character (len=StrKIND), pointer :: config_enhancementFactor_method
+      real (kind=RKIND), pointer :: config_enhancementFactor
+      type (mpas_pool_type), pointer :: velocityPool
+      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
 
       err = 0
 
@@ -196,6 +200,23 @@ contains
           call li_velocity_external_block_init(block, err)
       case default
           call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
+          err = 1
+      end select
+
+      ! Initialize enhancement factor
+      ! Note: enhancement factor is assumed to be constant in time, so it is only set on initialization
+      call mpas_pool_get_config(liConfigs, 'config_enhancementFactor_method', config_enhancementFactor_method)
+      select case (trim(config_enhancementFactor_method))
+      case ('scalar')
+         call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
+         flowEnhancementFactor(:,:) = config_enhancementFactor
+      case ('data')
+         ! do nothing - use field read from file
+      case default
+          call mpas_log_write(trim(config_enhancementFactor_method) // &
+             ' is not a valid option for config_enhancementFactor_method.', MPAS_LOG_ERR)
           err = 1
       end select
 
