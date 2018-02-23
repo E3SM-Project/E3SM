@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+Script containing CIME python regression test suite. This suite should be run
+to confirm overall CIME correctness.
+"""
+
 import glob, os, re, shutil, signal, sys, tempfile, \
     threading, time, logging, unittest, getpass, \
     filecmp
@@ -9,7 +14,7 @@ from xml.etree.ElementTree import ParseError
 LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","lib")
 sys.path.append(LIB_DIR)
 # Remove all pyc files to ensure we're testing the right things
-import subprocess
+import subprocess, argparse
 subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 from six import assertRaisesRegex
 import six
@@ -2654,7 +2659,7 @@ def write_provenance_info():
         logging.info("Testing mpilib = %s"% TEST_MPILIB)
     logging.info("Test root: %s\n" % TEST_ROOT)
 
-def _main_func():
+def _main_func(description):
     global MACHINE
     global NO_CMAKE
     global FAST_ONLY
@@ -2665,25 +2670,65 @@ def _main_func():
     global GLOBAL_TIMEOUT
     config = CIME.utils.get_cime_config()
 
-    if "--fast" in sys.argv:
-        sys.argv.remove("--fast")
-        FAST_ONLY = True
+    help_str = \
+"""
+{0} [TEST] [TEST]
+OR
+{0} --help
 
-    if "--no-batch" in sys.argv:
-        sys.argv.remove("--no-batch")
-        NO_BATCH = True
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run the full suite \033[0m
+    > {0}
 
-    if "--no-cmake" in sys.argv:
-        sys.argv.remove("--no-cmake")
-        NO_CMAKE = True
+    \033[1;32m# Run all code checker tests \033[0m
+    > {0} B_CheckCode
 
-    if "--machine" in sys.argv:
-        midx = sys.argv.index("--machine")
-        mach_name = sys.argv[midx + 1]
-        MACHINE = Machines(machine=mach_name)
-        del sys.argv[midx + 1]
-        del sys.argv[midx]
-        os.environ["CIME_MACHINE"] = mach_name
+    \033[1;32m# Run test test_wait_for_test_all_pass from class M_TestWaitForTests \033[0m
+    > {0} M_TestWaitForTests.test_wait_for_test_all_pass
+"""
+
+    parser = argparse.ArgumentParser(usage=help_str,
+                                     description=description,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("--fast", action="store_true",
+                        help="Skip full system tests, which saves a lot of time")
+
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not submit jobs to batch system, run locally."
+                        " If false, will default to machine setting.")
+
+    parser.add_argument("--no-cmake", action="store_true",
+                        help="Do not run cmake tests")
+
+    parser.add_argument("--machine",
+                        help="Select a specific machine setting for cime")
+
+    parser.add_argument("--compiler",
+                        help="Select a specific compiler setting for cime")
+
+    parser.add_argument( "--mpilib",
+                        help="Select a specific compiler setting for cime")
+
+    parser.add_argument( "--test-root",
+                        help="Select a specific test root for all cases created by the testing")
+
+    parser.add_argument("--timeout", type=int,
+                        help="Select a specific timeout for all tests")
+
+    ns, args = parser.parse_known_args()
+
+    # Now set the sys.argv to the unittest_args (leaving sys.argv[0] alone)
+    sys.argv[1:] = args
+
+    FAST_ONLY      = ns.fast
+    NO_BATCH       = ns.no_batch
+    NO_CMAKE       = ns.no_cmake
+    GLOBAL_TIMEOUT = ns.timeout
+
+    if ns.machine is not None:
+        MACHINE = Machines(machine=ns.machine)
+        os.environ["CIME_MACHINE"] = ns.machine
     elif "CIME_MACHINE" in os.environ:
         mach_name = os.environ["CIME_MACHINE"]
         MACHINE = Machines(machine=mach_name)
@@ -2694,40 +2739,27 @@ def _main_func():
     else:
         MACHINE = Machines()
 
-    if "--compiler" in sys.argv:
-        midx = sys.argv.index("--compiler")
-        TEST_COMPILER = sys.argv[midx + 1]
-        del sys.argv[midx + 1]
-        del sys.argv[midx]
+    if ns.compiler is not None:
+        TEST_COMPILER = ns.compiler
     elif config.has_option("create_test", "COMPILER"):
         TEST_COMPILER = config.get("create_test", "COMPILER")
     elif config.has_option("main", "COMPILER"):
         TEST_COMPILER = config.get("main", "COMPILER")
 
-    if "--mpilib" in sys.argv:
-        midx = sys.argv.index("--mpilib")
-        TEST_MPILIB = sys.argv[midx + 1]
-        del sys.argv[midx + 1]
-        del sys.argv[midx]
+    if ns.mpilib is not None:
+        TEST_MPILIB = ns.mpilib
     elif config.has_option("create_test", "MPILIB"):
         TEST_MPILIB = config.get("create_test", "MPILIB")
     elif config.has_option("main", "MPILIB"):
         TEST_MPILIB = config.get("main", "MPILIB")
 
-    if "--test-root" in sys.argv:
-        trindex = sys.argv.index("--test-root")
-        TEST_ROOT = sys.argv[trindex +1]
-        del sys.argv[trindex+1]
-        del sys.argv[trindex]
+    if ns.test_root is not None:
+        TEST_ROOT = ns.test_root
     elif config.has_option("create_test", "TEST_ROOT"):
         TEST_ROOT = config.get("create_test", "TEST_ROOT")
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
-
-    if "--timeout" in sys.argv:
-        tidx = sys.argv.index("--machine")
-        GLOBAL_TIMEOUT = int(sys.argv[tidx + 1])
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:
@@ -2765,4 +2797,4 @@ def _main_func():
         raise
 
 if (__name__ == "__main__"):
-    _main_func()
+    _main_func(__doc__)
