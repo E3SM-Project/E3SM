@@ -20,9 +20,11 @@ class EnvMachPes(EnvBase):
 
     def add_comment(self, comment):
         if comment is not None:
-            tmp = GenericXML(root_name_override="comment", infile="fake", read_only=False)
-            tmp.set_text(tmp.root, comment)
-            self.add_child(tmp.root, position=1)
+            node = self.make_child("comment", text=comment)
+            # make_child adds to the end of the file but we want it to follow the header
+            # so we need to remove it and add it in the correct position
+            self.remove_child(node)
+            self.add_child(node, position=1)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, max_mpitasks_per_node=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of
