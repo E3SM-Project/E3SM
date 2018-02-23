@@ -76,8 +76,8 @@ def get_branch_from_tag(tag):
 def do_subtree_split(old_split_tag, new_split_tag, merge_tag):
 ###############################################################################
     subtree_branch = get_branch_from_tag(new_split_tag)
-    run_cmd_no_fail("git subtree split {}.. --prefix=cime --squash --onto={} -b {}".\
-                        format(old_split_tag, merge_tag, subtree_branch), verbose=True)
+    run_cmd_no_fail("git subtree split --prefix=cime --onto={} -b {}".\
+                        format(merge_tag, subtree_branch), verbose=True)
     return subtree_branch
 
 ###############################################################################
