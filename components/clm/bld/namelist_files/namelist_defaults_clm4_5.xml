@@ -22,6 +22,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <co2_ppmv sim_year="1000"      >379.0</co2_ppmv>
 <co2_ppmv sim_year="2000"      >379.0</co2_ppmv>
 <co2_ppmv sim_year="1850"      >284.7</co2_ppmv>
+<co2_ppmv sim_year="1950"      >284.7</co2_ppmv>
 
 <!-- CO2 type -->
 <co2_type>constant</co2_type>
@@ -199,6 +200,10 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 
 <!-- HOMME grid ne30 resolution -->
 
+<finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30v3" use_cn=".false." ic_ymd="19500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1950" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_oECv3.1155ba0.clm2.r.nc
+</finidat>
+
 <!-- Initial condition file with CLM45BGC -->
 <finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
 ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_g16.e61c667.clm2.r.0021-01-01-00000.nc
@@ -261,6 +266,10 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 <!-- HOMME grid ne120 resolution -->
 
 <!-- Initial condition file with CLM45SP -->
+<finidat hgrid="ne120np4"   maxpft="17"  mask="oRRS18to6v3" use_cn=".false." ic_ymd="19500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1950" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.0521-01-01.ne120_oRRS18v3.be55494_simyr1850_c170509.nc
+</finidat>
+
 <finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
 ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne120_g16.c7cfd71.clm2.r.0021-01-01-00000.nc
 </finidat>
@@ -445,6 +454,12 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
 <fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" irrig=".false.">
 lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
+
+!-- for year 1950 control -->
+<fsurdat hgrid="ne120np4"     sim_year="1950" >
+lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1850_c160211.nc</fsurdat>
+<fsurdat hgrid="ne30np4"     sim_year="1950" >
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c171002.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
 

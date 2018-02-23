@@ -14,6 +14,19 @@ module ExternalModelPTMMod
   use mpp_varctl                   , only : iulog
   use ExternalModelBaseType        , only : em_base_type
   use MultiPhysicsProbThermal      , only : mpp_thermal_type
+  use ExternalModelConstants
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ColumnType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_Filter_Constants
+  use EMI_Landunit_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
+  !
   !
   implicit none
   !
@@ -94,21 +107,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables needed by PTM from ALM
     !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_INITIALIZATION_STAGE
-    use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
-    use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
-    use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
-    use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use ExternalModelConstants    , only : L2E_PARAMETER_WATSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_CSOL
-    use ExternalModelConstants    , only : L2E_PARAMETER_TKMG
-    use ExternalModelConstants    , only : L2E_PARAMETER_TKDRY
-    !
     implicit none
     !
     ! !ARGUMENTS:
@@ -182,35 +180,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Create a list of all variables needed by PETSc-based Thermal Model (PTM) from ALM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_PTM_TBASED_SOLVE_STAGE
-    use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
-    use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_SNOW_EFFECTIVE
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_H2OSFC
-    use ExternalModelConstants    , only : L2E_STATE_H2OSNOW
-    use ExternalModelConstants    , only : L2E_STATE_H2OSFC
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVSNOW
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVSNOW
-    use ExternalModelConstants    , only : L2E_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_TSNOW
-    use ExternalModelConstants    , only : L2E_STATE_TH2OSFC
-    use ExternalModelConstants    , only : L2E_FLUX_ABSORBED_SOLAR_RADIATION
-    use ExternalModelConstants    , only : L2E_FLUX_SOIL_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_H2OSFC_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
-    use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC_AND_NOURBANC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC
     !
     implicit none
     !
@@ -343,12 +312,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Create a list of all variables to be returned by PTM from ALM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_PTM_TBASED_SOLVE_STAGE
-    use ExternalModelConstants    , only : E2L_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants    , only : E2L_STATE_TSNOW_NLEVSNOW
-    use ExternalModelConstants    , only : E2L_STATE_TH2OSFC
     !
     implicit none
     !
@@ -1217,9 +1180,6 @@ contains
     ! !DESCRIPTION:
     ! The PTM dirver subroutine
     !
-    ! !USES:
-    use ExternalModelConstants , only : EM_PTM_TBASED_SOLVE_STAGE
-    !
     implicit none
     !
     ! !ARGUMENTS:
@@ -1251,8 +1211,6 @@ contains
     !
 #include <petsc/finclude/petsc.h>
     !
-    ! !USES:
-    use ExternalModelConstants    , only : EM_PTM_TBASED_SOLVE_STAGE
     use mpp_varpar                , only : nlevgrnd, nlevsno
     use mpp_varcon                , only : capr
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
