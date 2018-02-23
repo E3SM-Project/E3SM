@@ -44,12 +44,12 @@ class GenericXML(object):
         self.root = None
         self.locked = False
         self.read_only = read_only
+        self.filename = infile
         if infile is None:
             return
 
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
-            self.filename = infile
             self.read(infile, schema)
         else:
             # if file does not exist create a root xml element
@@ -57,7 +57,6 @@ class GenericXML(object):
             expect(not self.read_only, "Makes no sense to have empty read-only file")
             logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
-            self.filename = infile
 
             root = _Element(ET.Element("xml"))
 
