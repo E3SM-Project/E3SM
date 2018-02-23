@@ -939,7 +939,6 @@ contains
     endif
 
     !initialize dp3d from ps
-    !for vsplit it needs to be saved somewhere
     if(vsplit > 0)then !trying to not rely on branching much, so, if-st is outside
       do ie=nets,nete
         do k=1,nlev

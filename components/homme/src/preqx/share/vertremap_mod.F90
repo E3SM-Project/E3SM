@@ -152,10 +152,6 @@ contains
 !routine to apply external forcing to homme on Lagrangian levels
 !that is, unrelated to whether remap stage was done or not
   subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,dt,np1,nets,nete)
-  ! input:
-  !     ps_forcing(:,:,nets,nete) is ps for levels at which forcing is obtained
-  !     originally
-  !     
   use kinds,          only: real_kind
   use hybvcoord_mod,  only: hvcoord_t
   use control_mod,    only: rsplit
@@ -179,16 +175,9 @@ contains
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:)
         dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
      enddo
-     !since forcing was received from physics when pressure levels were
-     !different from the current ones, there is a question how to treat the
-     !forcing. for now we adopt the same approach as in the original code,
-     !namely, assume that the forcing is for pressure levels that are based on
-     !eta coordinate and *current* surface pressure. this way we do not need to
-     !stretch the old pressure grid (to match sum(dp_old)=sum(dp_new) or develop
-     !a special monotone and conservative mapping procedure.
 
-     !scaling idea, abandoned
-     !dp_forcing = dp_forcing*(sum(dp_star(:,:,:),3)/sum(dp_forcing(:,:,3)))
+     !consider forcing is for pressure levels that are based on
+     !eta coordinate and current surface pressure.
 
      !not sure whether to check both dp_star and dp_forcing?
 
