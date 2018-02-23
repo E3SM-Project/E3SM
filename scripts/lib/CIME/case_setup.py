@@ -37,10 +37,6 @@ def _build_usernl_files(case, model, comp):
     multi_driver = case.get_value("MULTI_DRIVER")
     if multi_driver:
         ninst_max = case.get_value("NINST_MAX")
-# KDR added ESP so that I can build with 1,
-#     which will make st_archive work with .dart.$string files,
-#     which have no instance number.
-#     Should ESP be considered a data component?
         if model not in ("DRV","CPL","ESP"):
             ninst_model = case.get_value("NINST_{}".format(model))
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
