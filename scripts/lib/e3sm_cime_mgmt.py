@@ -73,7 +73,7 @@ def get_branch_from_tag(tag):
     return branch
 
 ###############################################################################
-def do_subtree_split(old_split_tag, new_split_tag, merge_tag):
+def do_subtree_split(new_split_tag, merge_tag):
 ###############################################################################
     subtree_branch = get_branch_from_tag(new_split_tag)
     run_cmd_no_fail("git subtree split --prefix=cime --onto={} -b {}".\
@@ -125,7 +125,7 @@ def e3sm_cime_split(resume):
 
             merge_tag = get_merge_tag()
 
-            pr_branch = do_subtree_split(old_split_tag, new_split_tag, merge_tag)
+            pr_branch = do_subtree_split(new_split_tag, merge_tag)
 
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
         except:
