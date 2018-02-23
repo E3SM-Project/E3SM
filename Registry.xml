@@ -470,6 +470,7 @@
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
                         <var name="eigencalvingParameter"/>
+                        <var name="flowEnhancementFactor"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -534,6 +535,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="eigencalvingParameter"/>
+                        <var name="flowEnhancementFactor"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
@@ -901,6 +903,9 @@ is the value of that variable from the *previous* time level!
 	<var_struct name="velocity" time_levs="1">
 		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
 		     description="flow law parameter, A"
+		/>
+		<var name="flowEnhancementFactor" type="real" dimensions="nVertLevels nCells Time" units="none" default_value="1.0"
+		     description="enhancement factor applied to flowParamA"
 		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge, layer interface"
