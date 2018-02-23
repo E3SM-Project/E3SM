@@ -171,6 +171,9 @@ OR
         parser.add_argument("--xml-testlist",
                             help="Use this testlist to lookup tests, default specified in config_files.xml")
 
+        parser.add_argument("--supported-only", action="store_true",default=False,
+                            help="Only run tests which are marked supported in the testlist xml file")
+
         parser.add_argument("testargs", nargs="*",
                             help="Tests to run."
                             " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
@@ -396,7 +399,7 @@ OR
 
             test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
                                                            args.xml_compiler, args.xml_testlist,
-                                                           machine_name, args.compiler)
+                                                           machine_name, args.compiler, supported_only=args.supported_only)
             test_names = [item["name"] for item in test_data]
             for test_datum in test_data:
                 test_extra_data[test_datum["name"]] = test_datum

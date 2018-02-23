@@ -11,7 +11,7 @@ import CIME.utils
 logger = logging.getLogger(__name__)
 
 def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
-                       machine=None, compiler=None):
+                       machine=None, compiler=None, supported_only=False):
     """
     Parse testlists for a list of tests
     """
@@ -37,7 +37,7 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
         thistestlistfile = Testlist(testlistfile)
         logger.debug("Testlist file is "+testlistfile)
         logger.debug("xml_machine {} xml_category {} xml_compiler {}".format(xml_machine, xml_category, xml_compiler))
-        newtests =  thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
+        newtests =  thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler, supported_only=supported_only)
         for test in newtests:
             if(machine is None):
                 thismach = test["machine"]
