@@ -10,6 +10,18 @@ module ExternalModelFATESMod
   use decompMod                    , only : bounds_type
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
   use ExternalModelBaseType        , only : em_base_type
+  use ExternalModelConstants
+  use EMI_Atm2LndType_Constants
+  use EMI_CanopyStateType_Constants
+  use EMI_ColumnType_Constants
+  use EMI_EnergyFluxType_Constants
+  use EMI_Filter_Constants
+  use EMI_Landunit_Constants
+  use EMI_SoilHydrologyType_Constants
+  use EMI_SoilStateType_Constants
+  use EMI_TemperatureType_Constants
+  use EMI_WaterFluxType_Constants
+  use EMI_WaterStateType_Constants
   !
   implicit none
   !
@@ -38,13 +50,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables needed by FATES from ALM
     !
-    ! !USES:
-    use ExternalModelConstants, only : EM_FATES_SUNFRAC_STAGE
-    use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
-    use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
-    use ExternalModelConstants, only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants, only : L2E_COLUMN_PATCH_INDEX
-    !
     implicit none
     !
     ! !ARGUMENTS:
@@ -63,12 +68,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables to be returned by FATES from ALM
     !
-    ! !USES:
-    use ExternalModelConstants, only : EM_FATES_SUNFRAC_STAGE
-    use ExternalModelConstants, only : E2L_STATE_FSUN
-    use ExternalModelConstants, only : E2L_STATE_LAISUN
-    use ExternalModelConstants, only : E2L_STATE_LAISHA
-    !
     implicit none
     !
     ! !ARGUMENTS:
@@ -85,13 +84,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables needed by FATES from ALM for
     ! SUNFRAC computation
-    !
-    ! !USES:
-    use ExternalModelConstants, only : EM_FATES_SUNFRAC_STAGE
-    use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
-    use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
-    use ExternalModelConstants, only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants, only : L2E_COLUMN_PATCH_INDEX
     !
     implicit none
     !
@@ -122,7 +114,7 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_gridcell_index = index
 
-    id                                = L2E_COLUMN_PATCH_INDEX
+    id                                = L2E_COLUMN_PATCH_INDEX_BEGIN
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_patch_index    = index
 
@@ -136,12 +128,6 @@ contains
     ! !DESCRIPTION:
     ! Create a list of all variables to be returned by FATES from ALM
     ! after SUNFRAC computation
-    !
-    ! !USES:
-    use ExternalModelConstants, only : EM_FATES_SUNFRAC_STAGE
-    use ExternalModelConstants, only : E2L_STATE_FSUN
-    use ExternalModelConstants, only : E2L_STATE_LAISUN
-    use ExternalModelConstants, only : E2L_STATE_LAISHA
     !
     implicit none
     !
@@ -185,7 +171,6 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use ExternalModelConstants    , only : EM_FATES_SUNFRAC_STAGE
     use clm_varctl                , only : iulog
     !
     implicit none
