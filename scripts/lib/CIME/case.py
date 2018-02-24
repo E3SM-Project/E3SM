@@ -1298,8 +1298,10 @@ class Case(object):
             # It's important that we not try to find matching tests if
             # compset_alias is None, since compset=None tells get_tests to find
             # tests of all compsets!
+            # Only collect supported tests as this _check_testlists is only
+            #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
-            testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
+            testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
             for test in testlist:
                 if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                     testcnt += 1
