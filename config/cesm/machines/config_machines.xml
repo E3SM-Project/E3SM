@@ -788,10 +788,10 @@
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-O</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel17.0-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel17.0-mpiuni-O</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
