@@ -65,10 +65,6 @@ def parse_command_line(args, description):
                         help="Path to testlist file from which tests are gathered; "
                         "default is all files specified in config_files.xml")
 
-    parser.add_argument("--run-unsupported", action="store_true",default=False,
-                        help="Include tests which are marked unsupported in the testlist xml file")
-
-
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     _check_argument_compatibility(args)
@@ -208,8 +204,7 @@ def _main_func(description):
         xml_machine = args.xml_machine,
         xml_category = args.xml_category,
         xml_compiler = args.xml_compiler,
-        xml_testlist = args.xml_testlist,
-        supported_only = not args.run_unsupported)
+        xml_testlist = args.xml_testlist)
 
     expect(test_data, "No tests found with the following options (where 'None' means no subsetting on that attribute):\n"
            "\tMachine = %s\n\tCategory = %s\n\tCompiler = %s\n\tTestlist = %s"%
