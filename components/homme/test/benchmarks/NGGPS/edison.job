@@ -99,7 +99,7 @@ echo $mpirun
 set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
 set vdir = $HOMME/test/vcoord               # vertical coordinate files
 set bld = $wdir/bld
-set run = $wdir/run
+set run = $wdir/run-$NNODES-$OMP_NUM_THREADS-$$
 set nlev = 128
 set qsize = 10
 
@@ -151,8 +151,8 @@ $mpirun $exe  < input.nl
 date
 if (-f  HommeTime  ) then
    # save timings from run
-   set timingfile = $name.nodes${NNODES}.HommeTime.$$
-   set summary    = $name.nodes${NNODES}.summary.$$
+   set timingfile = $name.nodes${NNODES}.HommeTime
+   set summary    = $name.nodes${NNODES}.summary
    mv HommeTime $timingfile
    # total run time (not counting init)
    grep -a prim_main_loop $timingfile | head -1 | tee $summary

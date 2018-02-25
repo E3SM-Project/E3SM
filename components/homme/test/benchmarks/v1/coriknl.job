@@ -56,6 +56,10 @@ setenv PER_NODE  64          #  MPI per node
 setenv OMP_NUM_THREADS 2
 #setenv OMP_NUM_THREADS 1
 
+# number of virtual cores per MPI task
+set VC_PER_MPI = 256  # Set this to 272 if using PER_NODE divides 272 instead of 256
+@ VC_PER_MPI /= $PER_NODE
+
 if ( $PER_NODE > 68 ) then
    setenv KMP_AFFINITY granularity=thread,scatter
    set bind = --cpu_bind=thread
@@ -83,10 +87,6 @@ set NMPI = $NNODES
 if ( $NMPI > 393216 ) set NMPI = 393216  # max number of elements in NE=256 mesh
 
 
-# number of virtual cores per MPI task
-set VC_PER_MPI = 272
-@ VC_PER_MPI /= $PER_NODE
-
 echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
@@ -100,7 +100,7 @@ echo $mpirun
 set input = $HOMME/test/benchmarks/v1  # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld
-set run = $wdir/run
+set run = $wdir/run-$NNODES-$OMP_NUM_THREADS-$$
 set nlev = 72
 set qsize = 40
 
@@ -155,8 +155,8 @@ date
 
 if (-f  HommeTime  ) then
    # save timings from run
-   set timingfile = $name.nodes${NNODES}.HommeTime.$$
-   set summary    = $name.nodes${NNODES}.summary.$$
+   set timingfile = $name.nodes${NNODES}.HommeTime
+   set summary    = $name.nodes${NNODES}.summary
    mv HommeTime $timingfile
    # total run time (not counting init)
    grep -a prim_main_loop $timingfile | head -1 | tee $summary
