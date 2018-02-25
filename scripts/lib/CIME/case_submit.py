@@ -48,10 +48,12 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
     if not resubmit:
         if case.get_value("TEST"):
             case.set_value("IS_FIRST_RUN", True)
+
         if no_batch:
             batch_system = "none"
         else:
             batch_system = env_batch.get_batch_system_type()
+
         case.set_value("BATCH_SYSTEM", batch_system)
     else:
         if env_batch.get_batch_system_type() == "none":
@@ -60,6 +62,10 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
         # This is a resubmission, do not reinitialize test values
         if case.get_value("TEST"):
             case.set_value("IS_FIRST_RUN", False)
+
+    if env_batch.get_batch_system_type() != "none":
+        # May need to regen batch files if user made walltime changes
+        env_batch.make_all_batch_files(case)
 
     #Load Modules
     case.load_env()
