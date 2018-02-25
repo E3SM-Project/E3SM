@@ -580,37 +580,6 @@
     <desc>Perl 5 library directory</desc>
   </entry>
 
-  <entry id="mpirun">
-    <type>char</type>
-    <default_value></default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The mpi run command associated with the machine configured batch system</desc>
-  </entry>
-
-  <entry id="module_system">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module system type defined for this machine</desc>
-  </entry>
-
-  <entry id="module_init_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module initialization path for module system defined for this machine</desc>
-  </entry>
-
-  <entry id="module_cmd_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module command path for module system defined for this machine</desc>
-  </entry>
 
 
   <!-- ===================================================================== -->
