@@ -848,17 +848,20 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
+    use control_mod,        only: statefreq, ftype, qsplit, rsplit, vsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use vertremap_mod,      only: vertical_remap
+    use vertremap_mod,      only: vertical_remap, remap_vsplit_dyn
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
+
+!is this needed?
+    implicit none
 
     type (element_t) ,    intent(inout) :: elem(:)
     type (hybrid_t),      intent(in)    :: hybrid                       ! distributed parallel structure (shared)
@@ -916,15 +919,20 @@ contains
     !   ftype= 1: forcing was applied time-split in CAM coupling layer
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
+
     if (ftype==0) then
+      ! no vsplit for ftype=0 yet
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
 
+! sorf out, no vsplit is vsplit=-1 or 0 or either?
     elseif (ftype==2) then
-      call t_startf("ApplyCAMForcing_dynamics")
-      call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-      call t_stopf("ApplyCAMForcing_dynamics")
+      if( vsplit < 1 )then
+        call t_startf("ApplyCAMForcing_dynamics")
+        call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+        call t_stopf("ApplyCAMForcing_dynamics")
+      endif
     endif
 
     if (compute_diagnostics) then
@@ -939,24 +947,14 @@ contains
     endif
 
     !initialize dp3d from ps
-    if(vsplit > 0)then !trying to not rely on branching much, so, if-st is outside
-      do ie=nets,nete
-        do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-        enddo
+    !orig code
+    do ie=nets,nete
+      do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
       enddo
-    else
-      !orig code
-      do ie=nets,nete
-        do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-        enddo
-      enddo
-    endif !end of if-st for vsplit
+    enddo
 
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -965,7 +963,7 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
-    if(vsplit == -1) then
+    if(vsplit < 1) then
       ! Loop over rsplit vertically lagrangian timesiteps
       call t_startf("prim_step_rX")
       call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
@@ -978,18 +976,23 @@ contains
         call t_stopf("prim_step_rX")
       enddo
     else
+
+!PUT in namelist check that vsplit neq 0?
       !new logic, with vsplit and ftype=2 only for now
       do r=1,rsplit
-        if( r>1 )then
+        if( r == 1 )then
+          !no need to recompute ps_, so, smaller call
+          call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
+        else
+          !example: default for ne30 rsplit=6, vsplit=3 then mod(r-1,3) will
+          !return : 0, 1, 2, 0, 1, 2 and remap happens for r=1, r=4
           if( mod((r-1), vsplit) == 0 )then
-            ! the check that mod(rsplit,vsplit)=0 is already in namelist mod
-            ! that is, rsplit/vsplit=integer
-            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt*(rsplit/vsplit),np1,nets,nete)
-            !second, apply forcing
-            !call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+            !remap + forcing, no need to check rsplit, loop wont start with
+            !rsplit==0
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
-        endif !if-statement r > 1
+        endif !if-statement r == 1
         call t_startf("prim_step_rX")
         call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
         call t_stopf("prim_step_rX")
