@@ -73,7 +73,7 @@ class Testlist(GenericXML):
 
 
         for tnode in testnodes:
-            if supported_only and self.has(tnode, "supported") and not self.get(tnode, "support"):
+            if supported_only and self.has(tnode, "supported") and self.get(tnode, "supported") == 'false':
                 continue
 
             machnode = self.get_optional_child("machines", root=tnode)
