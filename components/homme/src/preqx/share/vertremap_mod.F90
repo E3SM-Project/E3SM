@@ -15,7 +15,7 @@ module vertremap_mod
 
   implicit none
   private
-  public :: vertical_remap
+  public :: vertical_remap, remap_vsplit_dyn
 
 contains
 
@@ -158,9 +158,10 @@ contains
   use hybrid_mod,     only: hybrid_t
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)
+  integer, intent(in) :: np1, nets, nete
   type (hvcoord_t)                :: hvcoord
   real (kind=real_kind)           :: dt
-  integer :: ie,i,j,k,np1,nets,nete,np1_qdp
+  integer :: ie,i,j,k
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
@@ -209,8 +210,8 @@ contains
      elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)
 
      !remap forcing V
-     ttmp(:,:,:,1)=elem(ie)%derived%v(:,:,1,:,np1)*dp_forcing
-     ttmp(:,:,:,2)=elem(ie)%derived%v(:,:,2,:,np1)*dp_forcing
+     ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_forcing
+     ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_forcing
 
      call t_startf('vertical_remap1_2')
      !remap from dp_forcing to dp_star

@@ -824,7 +824,7 @@ module namelist_mod
        if((rsplit == 0).OR.(nsplit > 1).OR.(ftype .ne. 2))then
          call abortmp('in CAM vsplit > 0 requires rsplit > 0, nsplit = 1 and ftype=2')
        else
-         if ( mod( rsplit, vsplit )  call abortmp('in CAM vsplit should be multiplier of rsplit')
+         if ( mod( rsplit, vsplit ) > 0 ) call abortmp('in CAM vsplit should be multiplier of rsplit')
        endif
     endif
 #else
@@ -833,7 +833,7 @@ module namelist_mod
        if( (rsplit == 0) )then
          call abortmp('in homme vsplit > 0 requires rsplit > 0')
        else
-         if ( mod( rsplit, vsplit )  call abortmp('in homme vsplit should be multiplier of rsplit')
+         if ( mod( rsplit, vsplit ) > 0 ) call abortmp('in homme vsplit should be multiplier of rsplit')
        endif
     endif
 #endif
