@@ -987,8 +987,7 @@ contains
           !example: default for ne30 rsplit=6, vsplit=3 then mod(r-1,3) will
           !return : 0, 1, 2, 0, 1, 2 and remap happens for r=1, r=4
           if( mod((r-1), vsplit) == 0 )then
-            !remap + forcing, no need to check rsplit, loop wont start with
-            !rsplit==0
+            !remap + forcing
             call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
