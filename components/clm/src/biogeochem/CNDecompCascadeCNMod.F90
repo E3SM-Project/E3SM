@@ -785,6 +785,11 @@ contains
           if (.not.use_fates) k_frag = k_frag * CNDecompCnParamsInst%spinup_vector(8)
        endif
 
+       ! initializing the following to zeros (because of only updating to 'nlevdecomp' below)
+       t_scalar(bounds%begc:bounds%endc,1:nlevgrnd) = 0._r8
+       w_scalar(bounds%begc:bounds%endc,1:nlevgrnd) = 0._r8
+       o_scalar(bounds%begc:bounds%endc,1:nlevgrnd) = 0._r8
+
        !--- time dependent coefficients-----!
        if ( nlevdecomp .eq. 1 ) then
 
