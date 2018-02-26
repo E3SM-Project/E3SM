@@ -175,16 +175,11 @@ class EnvBatch(EnvBase):
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
         output_name = get_batch_script_for_job(job)
 
-        # make writable so we can modify here
-        if os.path.exists(output_name):
-            os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IWUSR)
-
         with open(output_name, "w") as fd:
             fd.write(output_text)
 
-        # make it exectuble but remove write access. Users should never edit these
-        # files directly because those changes are too easily lost.
-        os.chmod(output_name, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+        # make sure batch script is exectuble
+        os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def set_job_defaults(self, batch_jobs, case):
         if self._batchtype is None:
