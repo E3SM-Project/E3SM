@@ -2635,6 +2635,7 @@ def make_pylint_test(pyfile, all_files):
     return test
 
 def check_for_pylint():
+    #pylint: disable=import-error
     from distutils.spawn import find_executable
     pylint = find_executable("pylint")
     if pylint is not None:

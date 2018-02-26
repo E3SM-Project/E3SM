@@ -1,6 +1,8 @@
 #pylint: disable=import-error
 from six.moves import queue
-import os, time, threading, socket, signal, distutils.spawn, shutil, glob
+import os, time, threading, socket, signal, shutil, glob
+#pylint: disable=import-error
+from distutils.spawn import find_executable
 import logging
 import xml.etree.ElementTree as xmlet
 
@@ -254,7 +256,7 @@ ScpCommand: {4}
 # Dashboard start time
 NightlyStartTime: {5} UTC
 """.format(os.getcwd(), hostname, cdash_build_name, cdash_project,
-           distutils.spawn.find_executable("scp"), cdash_timestamp)
+           find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
         dart_fd.write(dart_config)
