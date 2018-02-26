@@ -2,4 +2,4 @@ language: python
 python:
   - '2.7'
   - '3.6'
-script: scripts/tests/scripts_regression_tests.py A_RunUnitTests B_CheckCode
+script: cd scripts/tests; ./scripts_regression_tests.py A_RunUnitTests B_CheckCode
