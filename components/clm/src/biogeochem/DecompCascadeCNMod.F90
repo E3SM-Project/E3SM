@@ -11,11 +11,11 @@ module DecompCascadeCNMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
+  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates, use_pflotran
   use clm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
-  use SharedParamsMod      , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
+  use SharedParamsMod        , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use CNCarbonFluxType       , only : carbonflux_type
@@ -1077,6 +1077,15 @@ contains
            end do
          end do
        end if    
+
+       ! pflotran BGC will be operating on whole soil profile (i.e. from layer 1:nlevgrnd)
+       ! here it assumes that no reaction below layer nlevdecomp
+       if(use_pflotran) then
+         t_scalar(bounds%begc:bounds%endc,nlevdecomp+1:nlevgrnd) = 0._r8
+         w_scalar(bounds%begc:bounds%endc,nlevdecomp+1:nlevgrnd) = 0._r8
+         o_scalar(bounds%begc:bounds%endc,nlevdecomp+1:nlevgrnd) = 0._r8
+       end if
+
      end associate
    end subroutine decomp_rate_constants_cn
 
