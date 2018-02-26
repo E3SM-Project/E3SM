@@ -4,6 +4,7 @@ be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
 import xml.etree.ElementTree as ET
+#pylint disable=import-error
 from distutils.spawn import find_executable
 import getpass, shutil
 import six
