@@ -1694,6 +1694,7 @@ contains
 
     use clm_varpar              , only : nlevgrnd, ndecomp_pools, ndecomp_cascade_transitions
     use CNDecompCascadeConType  , only : decomp_cascade_con
+    use clm_varctl              , only : spinup_state
 
     ! pflotran
     !
@@ -1785,7 +1786,11 @@ contains
 
       ! note: the following 'kd' and ad-factors for each pool are separated
       clm_pf_idata%ck_decomp_c = kd_decomp_pools(1:ndecomp_pools)
-      clm_pf_idata%adfactor_ck_c = kd_adfactor_pools(1:ndecomp_pools)
+      if (spinup_state == 1) then
+         clm_pf_idata%adfactor_ck_c = kd_adfactor_pools(1:ndecomp_pools)
+      else
+         clm_pf_idata%adfactor_ck_c = 1.0_r8
+      endif
 
       ! find the first active SOIL Column to pick up the decomposition constants
       ! NOTE: this only is good for CLM-CN reaction-network;
