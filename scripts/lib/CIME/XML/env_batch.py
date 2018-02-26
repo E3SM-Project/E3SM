@@ -632,6 +632,7 @@ class EnvBatch(EnvBase):
             for node in f1batchnodes:
                 name = self.name(node)
                 text1 = self.text(node)
+                text2 = ""
                 attribs = self.attrib(node)
                 f2matches = other.scan_children(name, attributes=attribs, root=f2bnode)
                 foundmatch=False
