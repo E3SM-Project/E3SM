@@ -43,5 +43,10 @@
     <alias>RM</alias>
     <lname>2000_SATM_DLND%LCLMR_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
+  
+  <compset>
+    <alias>RMGLB05</alias>
+    <lname>2000_SATM_DLND%LCLMRIND_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
 
 </compsets>
