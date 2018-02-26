@@ -1,5 +1,5 @@
 language: python
-install: "pip install pylint distutils"
+install: "pip install pylint spawn"
 python:
   - '2.7'
   - '3.6'
