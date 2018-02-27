@@ -24,7 +24,7 @@
   <xs:element name="batch_mail_default" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:integer"/>
-  <xs:element name="walltime" type="xs:integer"/>
+  <xs:element name="walltime" type="xs:string"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
 

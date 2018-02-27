@@ -39,26 +39,31 @@ OR
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
+    parser.add_argument("-j", "--job", default=None,
+                        help="The job you want to print")
+
     args = parser.parse_args(args[1:])
 
-    return args.caseroot
+    return args.caseroot, args.job
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot = parse_command_line(sys.argv, description)
+    caseroot, job = parse_command_line(sys.argv, description)
 
     logging.disable(logging.CRITICAL)
 
     with Case(caseroot, read_only=False) as case:
         print("BATCH SUBMIT: (nodes {})".format(case.num_nodes))
         case.load_env()
-        job = "case.test" if case.get_value("TEST") else "case.run"
+        if job is None:
+            job = "case.test" if case.get_value("TEST") else "case.run"
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
         for job_id, cmd in job_id_to_cmd:
             print("    {} -> {}".format(job_id, case.get_resolved_value(cmd)))
         print("")
-        print("MPIRUN: {}".format(case.get_resolved_value(case.get_mpirun_cmd())))
+        if job in ["case.test", "case.run"]:
+            print("MPIRUN: {}".format(case.get_resolved_value(case.get_mpirun_cmd())))
 
 if __name__ == "__main__":
     _main_func(__doc__)

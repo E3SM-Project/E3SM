@@ -112,7 +112,7 @@ class EnvBatch(EnvBase):
 
         childnodes = []
         for child in reversed(orig_group_children):
-            childnodes.append(self.copy(child))
+            childnodes.append(child)
 
         self.remove_child(orig_group)
 
@@ -124,7 +124,7 @@ class EnvBatch(EnvBase):
                 self.make_child("type", root=node, text="char")
 
             for child in childnodes:
-                self.add_child(child, root=new_job_group)
+                self.add_child(self.copy(child), root=new_job_group)
 
     def cleanupnode(self, node):
         if self.get(node, "id") == "batch_system":
@@ -192,7 +192,7 @@ class EnvBatch(EnvBase):
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
             logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
             task_count = jsect["task_count"] if "task_count" in jsect else None
-            walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else None
+            walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else walltime
             if task_count is None:
                 node_count = case.num_nodes
             else:
