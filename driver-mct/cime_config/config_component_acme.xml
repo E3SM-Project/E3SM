@@ -193,6 +193,9 @@
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
+      <value compset="_BGC%BCRD">CO2C</value>
+      <value compset="_BGC%BDRC">CO2C</value>
+      <value compset="_BGC%BCRC">CO2C</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -766,6 +769,9 @@
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
+    <desc compset="BGC%BCRD">BGC CO2=cons, rad CO2=diag:</desc>
+    <desc compset="BGC%BDRC">BGC CO2=diag, rad CO2=cons:</desc>
+    <desc compset="BGC%BCRC">BGC CO2=cons, rad CO2=cons:</desc>
     <desc compset="POP2%ECO">ECO in POP:</desc>
     <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
     <desc compset="1850_">pre-industrial:</desc>
