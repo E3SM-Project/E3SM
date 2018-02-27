@@ -5,7 +5,9 @@
         <add_link source_path="script_resolution_dir" source="periodic_hex.namelist.input" dest="namelist.input"/>
         <add_executable source="periodic_hex" dest="periodic_grid"/>
         <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
         <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
+        <add_executable source="periodic_hex_periodicity_cull" dest="mark_periodic_boundaries_for_culling.py"/>
         <add_link source_path="script_configuration_dir" source="setup_initial_conditions_EISMINT1-MovingMargin-1.py" dest="."/>
 
 
@@ -21,9 +23,18 @@
                         <argument flag="">mpas_grid.nc</argument>
                 </step>
 
+                <step executable="./mark_periodic_boundaries_for_culling.py">
+                        <argument flag="-f">mpas_grid.nc</argument>
+                </step>
+
+                <step executable="./MpasCellCuller.x">
+                        <argument flag="">mpas_grid.nc</argument>
+                        <argument flag="">culled.nc</argument>
+                </step>
+
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
                 <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
-                        <argument flag="-i">mpas_grid.nc</argument>
+                        <argument flag="-i">culled.nc</argument>
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
                         <argument flag="--thermal"></argument>

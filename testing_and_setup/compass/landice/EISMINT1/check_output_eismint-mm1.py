@@ -56,8 +56,10 @@ xCell = filein.variables['xCell'][:]
 yCell = filein.variables['yCell'][:]
 xtime = filein.variables['xtime'][:]
 
-thk = filein.variables['thickness'][:]
-xtime = filein.variables['xtime'][:] 
+thk = filein.variables['thickness'][timelev, :]
+basalPmpTemp = filein.variables['basalPmpTemperature'][timelev, :]
+basalTemp = filein.variables['basalTemperature'][timelev, :]
+xtime = filein.variables['xtime'][:]
 #numtime = xtime2numtime(xtime)
 
 # Find out what the ice density and flowA values for this run were.
@@ -74,6 +76,8 @@ print 'Dynamic thickness for this run = ' + str(dynamicThickness)
 
 print 'Using model time of ' + xtime[timelev,:].tostring().strip() + '\n'
 
+# find divide
+ind = np.where(thk == thk.max())
 
 # Print some stats about the error
 print '===================================='
@@ -83,13 +87,20 @@ print '  3d models (10 of them): 2978.0 +/- 19.3'
 print '  2d models (3 of them):  2982.2 +/- 26.4'
 print '===================================='
 print ''
+print '===================================='
+print 'Basal homologous temperature at divide (deg C) = {}'.format(basalTemp[ind][0]-basalPmpTemp[ind][0])
+print 'EISMINT models basal temperature at divide (m):'
+print '  3d models (6 of them): -13.34 +/- 0.56'
+print '===================================='
+print ''
+
 
 # Plot the results
 fig = plt.figure(1, facecolor='w')
 markersize = 30.0
 
 fig.add_subplot(1,1,1)
-plt.scatter(xCell,yCell,markersize,thk[timelev,:], marker='h', edgecolors='none')
+plt.scatter(xCell,yCell,markersize,thk[:], marker='h', edgecolors='none')
 plt.colorbar()
 plt.axis('equal')
 plt.title('Modeled thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() ) 
