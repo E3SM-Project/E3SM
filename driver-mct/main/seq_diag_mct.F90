@@ -272,7 +272,7 @@ module seq_diag_mct
   integer :: index_x2r_Flrl_rofi
   integer :: index_x2r_Flrl_irrig
 
-  integer :: index_o2x_Fioo_frazil ! currently used by acme
+  integer :: index_o2x_Fioo_frazil ! currently used by e3sm
   integer :: index_o2x_Fioo_q      ! currently used by cesm
 
   integer :: index_xao_Faox_lwup
@@ -307,7 +307,7 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_lwdn
   integer :: index_x2i_Faxa_rain
   integer :: index_x2i_Faxa_snow
-  integer :: index_x2i_Fioo_frazil !currently used by acme
+  integer :: index_x2i_Fioo_frazil !currently used by e3sm
   integer :: index_x2i_Fioo_q      !currently used by cesm
   integer :: index_x2i_Fixx_rofi
 
@@ -1331,7 +1331,7 @@ contains
 
     if (present(do_o2x)) then
        if (first_time) then
-          if (trim(cime_model) == 'acme') then
+          if (trim(cime_model) == 'e3sm') then
              index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
           else if (trim(cime_model) == 'cesm') then
              index_o2x_Fioo_q = mct_aVect_indexRA(o2x_o,'Fioo_q')
@@ -1344,13 +1344,13 @@ contains
           ca_o =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
-          if (trim(cime_model) == 'acme') then
+          if (trim(cime_model) == 'e3sm') then
              nf = f_wfrz; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
           else if (trim(cime_model) == 'cesm') then
              nf = f_hfrz; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
           end if
        end do
-       if (trim(cime_model) == 'acme') then
+       if (trim(cime_model) == 'e3sm') then
           budg_dataL(f_hfrz,ic,ip) = -budg_dataL(f_wfrz,ic,ip) * shr_const_latice
        else if (trim(cime_model) == 'cesm') then
           budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
@@ -1651,7 +1651,7 @@ contains
           index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn')
           index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
           index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
-          if (trim(cime_model) == 'acme') then
+          if (trim(cime_model) == 'e3sm') then
              index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
           else if (trim(cime_model) == 'cesm') then
              index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')
@@ -1685,7 +1685,7 @@ contains
           nf = f_wsnow; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*x2i_i%rAttr(index_x2i_Faxa_snow,n)
           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
-          if (trim(cime_model) == 'acme') then
+          if (trim(cime_model) == 'e3sm') then
              nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                   (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
           else if (trim(cime_model) == 'cesm') then
@@ -1717,7 +1717,7 @@ contains
        ic = c_inh_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       if (trim(cime_model) == 'acme') then
+       if (trim(cime_model) == 'e3sm') then
           budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
        else if (trim(cime_model) == 'cesm') then
           budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
@@ -1726,7 +1726,7 @@ contains
        ic = c_ish_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       if (trim(cime_model) == 'acme') then
+       if (trim(cime_model) == 'e3sm') then
           budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
        else if (trim(cime_model) == 'cesm') then
           budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
