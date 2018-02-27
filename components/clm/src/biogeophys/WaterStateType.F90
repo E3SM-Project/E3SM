@@ -657,7 +657,6 @@ contains
       this%h2osoi_vol_col(bounds%begc:bounds%endc,         1:) = spval
       this%h2osoi_liq_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
       this%h2osoi_ice_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
-
       do c = bounds%begc,bounds%endc
          l = col_pp%landunit(c)
          if (.not. lun_pp%lakpoi(l)) then  !not lake
@@ -723,11 +722,15 @@ contains
                   this%h2osoi_ice_col(c,j) = 0._r8
                   this%h2osoi_liq_col(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
                endif
+               this%h2osoi_liqvol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o)
+               this%h2osoi_icevol_col(c,j) = this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
             end do
             do j = -nlevsno+1, 0
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*250._r8
                   this%h2osoi_liq_col(c,j) = 0._r8
+                  this%h2osoi_liqvol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o)
+                  this%h2osoi_icevol_col(c,j) = this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
                end if
             end do
          end if
