@@ -945,9 +945,9 @@ class Case(object):
         # batch system (must come after initialize_derived_attributes)
         #--------------------------------------------
         if walltime:
-            self.set_value("USER_REQUESTED_WALLTIME", walltime)
+            self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=("case.test" if test else "case.run"))
         if queue:
-            self.set_value("USER_REQUESTED_QUEUE", queue)
+            self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=("case.test" if test else "case.run"))
 
         env_batch = self.get_env("batch")
 

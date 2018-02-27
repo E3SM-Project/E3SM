@@ -24,6 +24,7 @@
   <xs:element name="batch_mail_default" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:integer"/>
+  <xs:element name="walltime" type="xs:integer"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
 
@@ -180,6 +181,7 @@
       <xs:sequence>
         <xs:element ref="template"/>
         <xs:element minOccurs="0" ref="task_count"/>
+        <xs:element minOccurs="0" ref="walltime"/>
         <xs:element minOccurs="0" ref="dependency"/>
         <xs:element ref="prereq"/>
       </xs:sequence>

@@ -164,7 +164,6 @@ class EnvBatch(EnvBase):
             overrides["total_tasks"] = int(task_count)
             overrides["num_nodes"]   = int(math.ceil(float(task_count)/float(case.tasks_per_node)))
 
-        overrides["pedocumentation"] = "" # TODO?
         overrides["job_id"] = case.get_value("CASE") + os.path.splitext(job)[1]
         if "pleiades" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
@@ -193,6 +192,7 @@ class EnvBatch(EnvBase):
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
             logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
             task_count = jsect["task_count"] if "task_count" in jsect else None
+            walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else None
             if task_count is None:
                 node_count = case.num_nodes
             else:
