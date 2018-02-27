@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Wait for a queued set of ACME tests to finish by watching the
+Wait for a queued set of E3SM tests to finish by watching the
 TestStatus files.  If all tests pass, 0 is returned, otherwise a
 non-zero error code is returned. Note that this program waits
 for the RUN phase specifically and will not terminate if the
@@ -58,7 +58,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--cdash-build-name",
                         help="Build name, implies you want results send to Cdash")
 
-    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.ACME_MAIN_CDASH,
+    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.E3SM_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
     parser.add_argument("-g", "--cdash-build-group", default=CIME.wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,

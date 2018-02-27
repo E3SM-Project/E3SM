@@ -77,7 +77,7 @@ class HOMME(SystemTestsCommon):
 
         expect(stat == 0, "RUN FAIL for HOMME")
 
-    # Homme is a bit of an oddball test since it's not really running the ACME model
+    # Homme is a bit of an oddball test since it's not really running the E3SM model
     # We need to override some methods to make the core infrastructure work.
 
     def _generate_baseline(self):

@@ -28,11 +28,14 @@ class Pes(GenericXML):
         oother_settings = {}
         other_settings = {}
         o_grid_nodes = []
+        comments = None
         # Get any override nodes
         overrides = self.get_optional_child("overrides")
+        ocomments = None
         if overrides is not None:
             o_grid_nodes = self.get_children("grid", root = overrides)
-            opes_ntasks, opes_nthrds, opes_rootpe, opes_pstrid, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
+            opes_ntasks, opes_nthrds, opes_rootpe, opes_pstrid, oother_settings, ocomments = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
+
         # Get all the nodes
         grid_nodes = self.get_children("grid")
         if o_grid_nodes:
@@ -42,12 +45,15 @@ class Pes(GenericXML):
             grid_nodes = list(gn_set)
 
 
-        pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings = self._find_matches(grid_nodes, grid, compset, machine, pesize_opts, False)
+        pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings, comments = self._find_matches(grid_nodes, grid, compset, machine, pesize_opts, False)
         pes_ntasks.update(opes_ntasks)
         pes_nthrds.update(opes_nthrds)
         pes_rootpe.update(opes_rootpe)
         pes_pstrid.update(opes_pstrid)
         other_settings.update(oother_settings)
+        if ocomments is not None:
+            comments = ocomments
+
 
         if mpilib == "mpi-serial":
             for i in iter(pes_ntasks):
@@ -64,7 +70,10 @@ class Pes(GenericXML):
         logger.info("Pes setting: rootpe      is {} ".format(pes_rootpe))
         logger.info("Pes setting: pstrid      is {} ".format(pes_pstrid))
         logger.info("Pes other settings: {}".format(other_settings))
-        return pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings
+        if comments is not None:
+            logger.info("Pes comments: {}".format(comments))
+
+        return pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings, comments
 
     def _find_matches(self, grid_nodes, grid, compset, machine, pesize_opts, override=False):
         grid_choice = None
@@ -74,6 +83,7 @@ class Pes(GenericXML):
         max_points = -1
         pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings = {}, {}, {}, {}, {}
         pe_select = None
+        comment = None
         for grid_node in grid_nodes:
             grid_match = self.get(grid_node, "name")
             if grid_match == "any" or  re.search(grid_match,grid):
@@ -96,7 +106,9 @@ class Pes(GenericXML):
                                     for node in self.get_children(root=pes_node):
                                         vid = self.name(node)
                                         logger.info("vid is {}".format(vid))
-                                        if "ntasks" in vid:
+                                        if "comment" in vid:
+                                            comment = self.text(node)
+                                        elif "ntasks" in vid:
                                             for child in self.get_children(root=node):
                                                 pes_ntasks[self.name(child).upper()] = int(self.text(child))
                                         elif "nthrds" in vid:
@@ -131,7 +143,9 @@ class Pes(GenericXML):
             for node in self.get_children(root=pe_select):
                 vid = self.name(node)
                 logger.debug("vid is {}".format(vid))
-                if "ntasks" in vid:
+                if "comment" in vid:
+                    comment = self.text(node)
+                elif "ntasks" in vid:
                     for child in self.get_children(root=node):
                         pes_ntasks[self.name(child).upper()] = int(self.text(child))
                 elif "nthrds" in vid:
@@ -144,7 +158,7 @@ class Pes(GenericXML):
                     for child in self.get_children(root=node):
                         pes_pstrid[self.name(child).upper()] = int(self.text(child))
             # if the value is already upper case its something else we are trying to set
-                elif vid == self.name(node) and vid != "comment":
+                elif vid == self.name(node):
                     other_settings[vid] = self.text(node)
             if grid_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
                 logger.info("Pes setting: grid match    is {} ".format(grid_choice ))
@@ -155,4 +169,4 @@ class Pes(GenericXML):
             if pesize_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
                 logger.info("Pes setting: pesize match  is {} ".format(pesize_choice))
 
-        return pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings
+        return pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other_settings, comment

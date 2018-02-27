@@ -142,7 +142,7 @@ class Case(object):
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
-            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "acme.exe")
+            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "e3sm.exe")
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
         else:
@@ -638,7 +638,7 @@ class Case(object):
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
             # For files following version 3 schema this also checks the compsetname validity
-            
+
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
@@ -671,7 +671,7 @@ class Case(object):
         pes_rootpe = {}
         pes_pstrid = {}
         other      = {}
-
+        comment = None
         force_tasks = None
         force_thrds = None
 
@@ -687,7 +687,7 @@ class Case(object):
             force_tasks = int(match2.group(1))
             pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
         else:
-            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+            pes_ntasks, pes_nthrds, pes_rootpe, pes_pstrid, other, comment = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                                machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         if match1 or match2:
@@ -705,6 +705,7 @@ class Case(object):
                 pes_rootpe[string_] = 0
 
         mach_pes_obj = self.get_env("mach_pes")
+        mach_pes_obj.add_comment(comment)
 
         if other is not None:
             for key, value in other.items():
@@ -1044,7 +1045,7 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: {} {} {}".format(str(e), toolfile, destfile))
 
-        if get_model() == "acme":
+        if get_model() == "e3sm":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
                 shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
@@ -1256,16 +1257,8 @@ class Case(object):
     def set_model_version(self, model):
         version = "unknown"
         srcroot = self.get_value("SRCROOT")
-        if model == "cesm":
-            changelog = os.path.join(srcroot,"ChangeLog")
-            if os.path.isfile(changelog):
-                for line in open(changelog, "r"):
-                    m = re.search("Tag name: (cesm.*)$", line)
-                    if m is not None:
-                        version = m.group(1)
-                        break
-        elif model == "acme":
-            version = get_current_commit(True, srcroot)
+        version = get_current_commit(True, srcroot, tag=(model=="cesm"))
+
         self.set_value("MODEL_VERSION", version)
 
         if version != "unknown":
@@ -1305,8 +1298,10 @@ class Case(object):
             # It's important that we not try to find matching tests if
             # compset_alias is None, since compset=None tells get_tests to find
             # tests of all compsets!
+            # Only collect supported tests as this _check_testlists is only
+            #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
-            testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
+            testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
             for test in testlist:
                 if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                     testcnt += 1

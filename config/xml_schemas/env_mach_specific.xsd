@@ -73,6 +73,7 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
       <xs:attribute name="type" use="required" type="xs:NCName"/>
+      <xs:attribute name="allow_error" type="xs:boolean"/>
     </xs:complexType>
   </xs:element>
 
