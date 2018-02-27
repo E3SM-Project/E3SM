@@ -2031,6 +2031,7 @@ subroutine tphysbc (ztodt,               &
     integer :: rkz_term_C_ql_opt
     real(r8):: rkz_term_C_fmin
     integer :: rkz_zsmall_opt
+    integer :: rkz_lmt5_opt
     logical :: l_rkz_lmt_2
     logical :: l_rkz_lmt_3
     logical :: l_rkz_lmt_4
@@ -2055,6 +2056,7 @@ subroutine tphysbc (ztodt,               &
                       ,rkz_term_C_ql_opt_out  = rkz_term_C_ql_opt &
                       ,rkz_term_C_fmin_out    = rkz_term_C_fmin &
                       ,rkz_zsmall_opt_out     = rkz_zsmall_opt &
+                      ,rkz_lmt5_opt_out       = rkz_lmt5_opt &
                       ,l_rkz_lmt_2_out        = l_rkz_lmt_2 &
                       ,l_rkz_lmt_3_out        = l_rkz_lmt_3 &
                       ,l_rkz_lmt_4_out        = l_rkz_lmt_4 &
@@ -2490,6 +2492,7 @@ end if
                                      rkz_term_C_ql_opt, &
                                      rkz_term_C_fmin, &
                                      rkz_zsmall_opt, &
+                                     rkz_lmt5_opt, &
                                      l_rkz_lmt_2, &
                                      l_rkz_lmt_3, &
                                      l_rkz_lmt_4, &

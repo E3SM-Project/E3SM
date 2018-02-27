@@ -2666,6 +2666,13 @@ in the RKZ simple macrophysics scheme
 Default: 1
 </entry>
 
+<entry id="rkz_lmt5_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of implementation for limiter 5 for different conditions
+in the RKZ simple macrophysics scheme
+Default: 1
+</entry>
+
 <entry id="l_rkz_lmt_2" type="logical" category="physc_test"
        group="phys_ctl_nl" valid_values="" >
 Turn on limiter 2 for condensation

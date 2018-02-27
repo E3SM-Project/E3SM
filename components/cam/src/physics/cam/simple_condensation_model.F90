@@ -92,6 +92,7 @@ contains
                              rkz_term_C_ql_opt, & 
                              rkz_term_C_fmin, & 
                              rkz_zsmall_opt, &
+                             rkz_lmt5_opt, &
                              l_rkz_lmt_2, &
                              l_rkz_lmt_3, &
                              l_rkz_lmt_4, &
@@ -132,6 +133,7 @@ contains
   real(r8), intent(in) :: rkz_term_C_fmin
 
   integer,  intent(in) :: rkz_zsmall_opt       
+  integer,  intent(in) :: rkz_lmt5_opt
 
   logical,  intent(in) :: l_rkz_lmt_2
   logical,  intent(in) :: l_rkz_lmt_3
@@ -506,9 +508,23 @@ contains
 
         ! Avoid nonzero qme if f=0 and df/dt=0 
 
-        where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8))
-          qme(:ncol,:pver) = 0._r8
-        end where
+        select case (rkz_lmt5_opt)
+        case(0)
+           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8))
+             qme(:ncol,:pver) = 0._r8
+           end where
+        case(1)
+           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8).and.(ltend(:ncol,:pver).lt.0._r8))
+             qme(:ncol,:pver) = 0._r8
+           end where
+        case(2)
+           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8).and.(ltend(:ncol,:pver).gt.0._r8))
+             qme(:ncol,:pver) = 0._r8
+           end where
+        case default
+           write(iulog,*) "Unrecognized value of rkz_lmt5_opt:",rkz_lmt5_opt,". Abort."
+           call endrun
+        end select
 
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
         call outfld('RKZ_qme_lm5',   qmedf,    pcols, lchnk)
