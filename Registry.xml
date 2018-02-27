@@ -150,12 +150,16 @@
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
-		            description="Selection of the method for setting the surface air temperature."
-		            possible_values="'constant', 'file'  'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler."
+		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate."
+		            possible_values="'constant', 'file', 'lapse'"
 		/>
 		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
 		            description="Constant value of the surface air temperature."
 		            possible_values="Any positive real value"
+                />
+                <nml_option name="config_surface_air_temperature_lapse_rate" type="real" default_value="0.01" units="K m^{-1}"
+		            description="Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations."
+		            possible_values="Any real value"
 		/>
 		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
