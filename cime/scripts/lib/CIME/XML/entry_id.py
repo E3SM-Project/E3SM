@@ -435,7 +435,11 @@ class EntryID(GenericXML):
             if len(samenodes) > 1:
                 expect(len(samenodes) == 2, "Too many matchs for id {} in file {}".format(vid, self.filename))
                 logger.debug("Overwriting node {}".format(vid))
+                read_only = self.read_only
+                if read_only:
+                    self.read_only = False
                 self.remove_child(samenodes[0])
+                self.read_only = read_only
 
     def __iter__(self):
         for node in self.scan_children("entry"):

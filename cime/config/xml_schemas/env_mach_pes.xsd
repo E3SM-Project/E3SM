@@ -6,6 +6,7 @@
   <xs:attribute name="version" type="xs:decimal"/>
 
   <!-- simple elements -->
+  <xs:element name="comment" type="xs:string"/>
   <xs:element name="header" type="xs:string"/>
   <xs:element name="type" type="xs:NCName"/>
   <xs:element name="valid_values" type="xs:string"/>
@@ -16,6 +17,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="header"/>
+	<xs:element ref="comment" minOccurs="0" maxOccurs="1"/>
         <xs:element maxOccurs="unbounded" ref="group"/>
       </xs:sequence>
       <xs:attribute ref="id" use="required" />

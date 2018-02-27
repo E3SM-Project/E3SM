@@ -174,8 +174,11 @@ class EnvBatch(EnvBase):
 
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
         output_name = get_batch_script_for_job(job)
+
         with open(output_name, "w") as fd:
             fd.write(output_text)
+
+        # make sure batch script is exectuble
         os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def set_job_defaults(self, batch_jobs, case):
@@ -625,10 +628,11 @@ class EnvBatch(EnvBase):
             f2bnode=None
             if len(f2bnodes):
                 f2bnode = f2bnodes[0]
-            f1batchnodes = self.get_children(root=bnode)            
+            f1batchnodes = self.get_children(root=bnode)
             for node in f1batchnodes:
                 name = self.name(node)
                 text1 = self.text(node)
+                text2 = ""
                 attribs = self.attrib(node)
                 f2matches = other.scan_children(name, attributes=attribs, root=f2bnode)
                 foundmatch=False
@@ -649,3 +653,16 @@ class EnvBatch(EnvBase):
             xmldiffs.update(super(EnvBatch, self).compare_xml(other,
                                               root=node, otherroot=f2group))
         return xmldiffs
+
+    def make_all_batch_files(self, case, test_mode=False):
+        testcase = case.get_value("TESTCASE")
+        machdir  = case.get_value("MACHDIR")
+        logger.info("Creating batch script case.run")
+        for job in self.get_jobs():
+            input_batch_script = os.path.join(machdir,self.get_value('template', subgroup=job))
+            if job == "case.test" and testcase is not None and not test_mode:
+                logger.info("Writing {} script".format(job))
+                self.make_batch_script(input_batch_script, job, case)
+            elif job != "case.test":
+                logger.info("Writing {} script from input template {}".format(job, input_batch_script))
+                self.make_batch_script(input_batch_script, job, case)

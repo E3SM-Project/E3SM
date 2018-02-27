@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-This script recreates and acme suite within the CESM testlist.xml
+This script recreates and e3sm suite within the CESM testlist.xml
 file, which should be given as the only argument. It deletes any
 existing category from the XML file, draws from information within
 this file to create new test entries, and then inserts these entries
@@ -10,7 +10,7 @@ into the XML file.
 
 from standard_script_setup import *
 from CIME.utils import expect
-from update_acme_tests import get_test_suites, update_acme_tests
+from update_e3sm_tests import get_test_suites, update_e3sm_tests
 
 import sys, argparse, os
 
@@ -23,12 +23,12 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Update all acme test suites for all platforms \033[0m
-    > {0} ../config/acme/allactive/testlist_allactive.xml
-    \033[1;32m# Update acme_developer tests for all platforms \033[0m
-    > {0} ../config/acme/allactive/testlist_allactive.xml acme_developer
-    \033[1;32m# Add acme_developer tests for a new platform \033[0m
-    > {0} ../config/acme/allactive/testlist_allactive.xml acme_developer -p machine,compiler
+    \033[1;32m# Update all e3sm test suites for all platforms \033[0m
+    > {0} ../config/e3sm/allactive/testlist_allactive.xml
+    \033[1;32m# Update e3sm_developer tests for all platforms \033[0m
+    > {0} ../config/e3sm/allactive/testlist_allactive.xml e3sm_developer
+    \033[1;32m# Add e3sm_developer tests for a new platform \033[0m
+    > {0} ../config/e3sm/allactive/testlist_allactive.xml e3sm_developer -p machine,compiler
 """.format(os.path.basename(args[0])),
 
 description=description,
@@ -64,7 +64,7 @@ def _main_func(description):
 ###############################################################################
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
-    update_acme_tests(test_list_path, categories, platform)
+    update_e3sm_tests(test_list_path, categories, platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)

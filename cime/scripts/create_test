@@ -10,7 +10,7 @@ If this tool is missing any feature that you need, please notify jgfouca@sandia.
 """
 from Tools.standard_script_setup import *
 
-import update_acme_tests
+import update_e3sm_tests
 from CIME.test_scheduler import TestScheduler, RUN_PHASE
 from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail, get_cime_config
 from CIME.XML.machines import Machines
@@ -386,7 +386,7 @@ OR
         mach_obj = Machines(machine=machine_name)
         if args.testargs:
             args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
-            test_names = update_acme_tests.get_full_test_names(args.testargs,
+            test_names = update_e3sm_tests.get_full_test_names(args.testargs,
                                                                mach_obj.get_machine_name(), args.compiler)
         else:
             expect(not (args.xml_machine is None and args.xml_compiler
@@ -404,12 +404,12 @@ OR
         logger.info("Testnames: %s" % test_names)
     else:
         if args.machine is None:
-            args.machine = update_acme_tests.infer_machine_name_from_tests(args.testargs)
+            args.machine = update_e3sm_tests.infer_machine_name_from_tests(args.testargs)
 
         mach_obj = Machines(machine=args.machine)
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
-        test_names = update_acme_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
+        test_names = update_e3sm_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
 
     expect(mach_obj.is_valid_compiler(args.compiler),
            "Compiler %s not valid for machine %s" % (args.compiler, mach_obj.get_machine_name()))
@@ -446,10 +446,10 @@ OR
         dot_count = name.count('.')
         expect(dot_count > 1 and dot_count <= 4, "Invalid test Name, '{}'".format(name))
 
-    # for acme, sort by walltime
-    if model == "acme":
+    # for e3sm, sort by walltime
+    if model == "e3sm":
         if args.walltime is None:
-            test_names.sort(cmp=update_acme_tests.sort_by_time)
+            test_names.sort(cmp=update_e3sm_tests.sort_by_time)
         else:
             test_names.sort()
 
