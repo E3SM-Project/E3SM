@@ -23,7 +23,7 @@ def lock_file(filename, caseroot=None, newname=None):
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
 
-    logging.info("Locking file {}".format(filename))
+    logging.debug("Locking file {}".format(filename))
 
     # JGF: It is extremely dangerous to alter our database (xml files) without
     # going through the standard API. The copy below invalidates all existing
@@ -39,7 +39,7 @@ def unlock_file(filename, caseroot=None):
     if os.path.exists(locked_path):
         os.remove(locked_path)
 
-    logging.info("Unlocking file {}".format(filename))
+    logging.debug("Unlocking file {}".format(filename))
 
 def is_locked(filename, caseroot=None):
     expect("/" not in filename, "Please just provide basename of locked file")
