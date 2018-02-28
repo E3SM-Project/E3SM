@@ -722,7 +722,7 @@ contains
        ! Early clean-up, to minimize memory high water mark
        deallocate( lat_p )
        deallocate( lon_p )
-       !deallocate( latlon_to_dyn_gcol_map )
+       !deallocate( latlon_to_dyn_gcol_map ) !BSINGH -  do not deallocate as it is being used in physpkg
        if  (twin_alg .eq. 1) deallocate( lonlat_to_dyn_gcol_map )
        if  (twin_alg .eq. 1) deallocate( clon_p_cnt )
        if  (twin_alg .eq. 1) deallocate( clon_p_idx )

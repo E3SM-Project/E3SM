@@ -249,7 +249,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
    use physics_types, only: physics_ptend_init
-   use physics_update_mod, only: physics_update_intr
+   use physics_update_mod, only: physics_update
    use physics_types, only: physics_state_copy, physics_state_dealloc
    use physics_types, only: physics_ptend_sum, physics_ptend_dealloc
 
@@ -480,18 +480,18 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     call outfld('PCONVT  ',pcont          ,pcols   ,lchnk   )
     call outfld('PCONVB  ',pconb          ,pcols   ,lchnk   )
 
-  call physics_ptend_init(ptend_all, state%psetcols, 'zm_convt')
+  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
 
   ! add tendency from this process to tendencies from other processes
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
   ! update physics state type state1 with ptend_loc 
-  call physics_update_intr(state1, ptend_loc, ztodt)
+  call physics_update(state1, ptend_loc, ztodt)
 
   ! initialize ptend for next process
   lq(:) = .FALSE.
   lq(1) = .TRUE.
-  call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conve', ls=.true., lq=lq)
+  call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
 
 !
 ! Determine the phase of the precipitation produced and add latent heat of fusion
@@ -542,7 +542,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
   ! update physics state type state1 with ptend_loc 
-  call physics_update_intr(state1, ptend_loc, ztodt)
+  call physics_update(state1, ptend_loc, ztodt)
 
 
   ! Momentum Transport (non-cam3 physics)
@@ -572,7 +572,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      call physics_ptend_sum(ptend_loc,ptend_all, ncol)
 
      ! update physics state type state1 with ptend_loc 
-     call physics_update_intr(state1, ptend_loc, ztodt)
+     call physics_update(state1, ptend_loc, ztodt)
 
      ftem(:ncol,:pver) = seten(:ncol,:pver)/cpair
      call outfld('ZMMTT', ftem             , pcols, lchnk)
@@ -683,7 +683,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
 !
   lq(:) = .FALSE.
   lq(:) = .not. cnst_is_convtran1(:)
-  call physics_ptend_init(ptend, state%psetcols, 'conv2', lq=lq )
+  call physics_ptend_init(ptend, state%psetcols, 'convtran2', lq=lq )
 
 !
 ! Associate pointers with physics buffer fields

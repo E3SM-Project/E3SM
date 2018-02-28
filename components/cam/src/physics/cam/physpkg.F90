@@ -14,13 +14,13 @@ module physpkg
 
 
   use shr_kind_mod,     only: r8 => shr_kind_r8, i8 => shr_kind_i8
-  use spmd_utils,       only: masterproc, iam, npes!BSINGH added iam, npes
+  use spmd_utils,       only: masterproc, iam, npes
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
-  use physics_update_mod,  only: physics_update_intr, physics_update_intr_init
+  use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map !BSINGH-added  chunks
   use cam_abortutils,     only: endrun
   use phys_gmean,       only: gmean_mass
@@ -103,6 +103,7 @@ module physpkg
   logical           :: prog_modal_aero     ! Prognostic modal aerosols present
   logical           :: micro_do_icesupersat
   logical           :: pergro_test_active= .false.
+  logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
   !======================================================================= 
@@ -181,7 +182,8 @@ subroutine phys_register
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
-                      pergro_test_active_out   = pergro_test_active )
+                      pergro_test_active_out   = pergro_test_active, &
+                      pergro_mods_out          = pergro_mods)
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -750,88 +752,91 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
 
-    !BSINGH - Build lat lon relationship to chunk and column
-    nchunks = size(chunks)
     allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )          
     if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_run1: failed to allocate tot_chnk_till_this_prc ; error = ',astat
+       write(iulog,*) 'physpkg-phys_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
        call endrun
     end if
-    !Compute maximum number of chunks for a processor
-    if(masterproc) then
-       max_chnks_in_blk = maxval(npchunks(:)) 
-       tot_chnk_till_this_prc(0:npes-1) = huge(1)
-       do ipes = 0, npes - 1
-          tot_chnk_till_this_prc(ipes) = 0
-          do ipes_tmp = 0, ipes-1
-             tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
+    tot_chnk_till_this_prc (:) = 0 !Initialize to zero and only assign valid values if pergro_mods flags is true
+
+    if (pergro_mods) then !if pergro mods are active, compute variables needed for computing random numbers for RRTMG codes
+       !BSINGH - Build lat lon relationship to chunk and column
+       nchunks = size(chunks)
+       !Compute maximum number of chunks each processor have
+       if(masterproc) then
+          max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
+          tot_chnk_till_this_prc(0:npes-1) = huge(1)
+          do ipes = 0, npes - 1
+             tot_chnk_till_this_prc(ipes) = 0
+             do ipes_tmp = 0, ipes-1
+                tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
+             enddo
           enddo
-       enddo
-    endif
+       endif
 #ifdef SPMD
-    call mpibcast(max_chnks_in_blk,1, mpi_integer, 0, mpicom)
-    !BSINGH - Ideally we should use mpi_scatter but we are using this variable
-    !in "if(masterproc)" below in phys_run1, so I am using broadcast
-    call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
+       call mpibcast(max_chnks_in_blk,1, mpi_integer, 0, mpicom)
+       !BSINGH - Ideally we should use mpi_scatter but we are using this variable
+       !in "if(masterproc)" below in phys_run1, so I am using broadcast
+       call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
 #endif
-    call get_block_bounds_d(firstblock,lastblock)
-    
-    !Allocate arrays
-    if(masterproc) then
-      !Initialize seeds to fixed values for both LW and SW at first time step
-      s1 = 1
-      s2 = 2
-      s3 = 3
-      s4 = 4
-   endif
-   !BSINGH-ENDS
-    
+       call get_block_bounds_d(firstblock,lastblock)
+       
+       !Allocate arrays
+       if(masterproc) then
+          !Initialize seeds to fixed values for both LW and SW at first time step
+          s1 = 1
+          s2 = 2
+          s3 = 3
+          s4 = 4
+       endif
+       !BSINGH-ENDS
+    end if
+
     do lchnk = begchunk, endchunk
        call physics_state_set_grid(lchnk, phys_state(lchnk))
     end do
 
-    !---NEW CODE
-    allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
-    if( astat /= 0 ) then
-       write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
-       call endrun
-    end if
-
+    !clm_id is passed on to radiation, so allocate this variable here and assign it 
+    !so that code crashes if it is used inappropriately
     allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
     if( astat /= 0 ) then
        write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id; error = ',astat
        call endrun
     end if
-    
-    if(masterproc) then
-       do igcol = 1, ngcols_p
-          i = latlon_to_dyn_gcol_map(igcol)
-          chunkid  = knuhcs(i)%chunkid
-          icol = knuhcs(i)%col
-          iown  = chunks(chunkid)%owner
-          ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-          clm_id_mstr(icol,ilchnk,iown+1) = igcol
-       enddo
-    endif
-    
+    clm_id(:,:) = huge(1)
+
+    if (pergro_mods) then !BSINGH - compute unique column id for each column for generating seeds for RNG
+       allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
+       if( astat /= 0 ) then
+          write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
+          call endrun
+       end if
+              
+       if(masterproc) then
+          do igcol = 1, ngcols_p
+             i = latlon_to_dyn_gcol_map(igcol)
+             chunkid  = knuhcs(i)%chunkid
+             icol = knuhcs(i)%col
+             iown  = chunks(chunkid)%owner
+             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+             clm_id_mstr(icol,ilchnk,iown+1) = igcol
+          enddo
+       endif
+       
 #ifdef SPMD
-    !Scatter
-    tot_cols = pcols*max_chnks_in_blk
-    call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
-         clm_id,    tot_cols,  mpi_integer, 0,             &
-         MPI_COMM_WORLD,ierr)
+       !Scatter
+       tot_cols = pcols*max_chnks_in_blk
+       call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
+            clm_id,    tot_cols,  mpi_integer, 0,             &
+            MPI_COMM_WORLD,ierr)
 #else
-    !BSINGH - Havn't tested it.....               
-    call endrun('BSINGH: PHYSPKG.F90: I havent tested it yet')
-    rnglw = rnglw_mstr(:,:,:,1)
-    rngsw = rngsw_mstr(:,:,:,1)
-#endif
-    
-    !BSINGH - ENDS
-    
-    call t_barrierf('sync_bc_physics', mpicom)
-    call t_startf ('bc_physics')
-    !--- NEW CODE ENDS
+       !BSINGH - Haven't tested it.....               
+       call endrun('physpkg.F90-phys_init: non-mpi compiles are not tested yet for pergro test...')
+       rnglw = rnglw_mstr(:,:,:,1)
+       rngsw = rngsw_mstr(:,:,:,1)
+#endif       
+    end if !pergro_mods
+
     !-------------------------------------------------------------------------------------------
     ! Initialize any variables in physconst which are not temporally and/or spatially constant
     !------------------------------------------------------------------------------------------- 
@@ -843,7 +848,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call pbuf_initialize(pbuf2d)
 
     !initialize physics update interface routine
-    call physics_update_intr_init()
+    call physics_update_init()
     ! Initialize subcol scheme
     call subcol_init(pbuf2d)
 
@@ -1126,6 +1131,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_startf ('diag_physvar_ic')
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
+
+          !note: tot_chnk_till_this_prc variable will have valid values only if pergro mods are 
+          !turned on, otherwise it will have zeros
+
           ilchnk = (c - lastblock) - tot_chnk_till_this_prc(iam)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
@@ -1207,7 +1216,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
        if (dycore_is('LR') .or. dycore_is('SE') ) then
           call check_energy_fix(phys_state(c), ptend(c), nstep, flx_heat)
-          call physics_update_intr(phys_state(c), ptend(c), ztodt, phys_tend(c))
+          call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
           call check_energy_chng(phys_state(c), phys_tend(c), "chkengyfix", nstep, ztodt, &
                zero, zero, zero, flx_heat)
           call physics_ptend_dealloc(ptend(c))
@@ -1585,7 +1594,7 @@ if (l_tracer_aero) then
     if (carma_do_emission) then
        ! carma emissions
        call carma_emission_tend (state, ptend, cam_in, ztodt)
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
     end if
 
 end if ! l_tracer_aero
@@ -1624,12 +1633,12 @@ if (l_tracer_aero) then
     ! Test tracers
 
     call tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)      
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
     call aoa_tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)      
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
@@ -1638,7 +1647,7 @@ if (l_tracer_aero) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
 
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
             cam_in%cflx)
@@ -1661,7 +1670,7 @@ if (l_vdiff) then
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
        
        ! Update surface flux constituents 
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
 
     else
 
@@ -1678,7 +1687,7 @@ if (l_vdiff) then
        call mspd_intr (ztodt    ,state    ,ptend)
     endif
 
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
     
     endif
@@ -1691,7 +1700,7 @@ if (l_rayleigh) then
     !===================================================
     call t_startf('rayleigh_friction')
     call rayleigh_friction_tend( ztodt, state, ptend)
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     call t_stopf('rayleigh_friction')
 
     if (do_clubb_sgs) then
@@ -1710,7 +1719,7 @@ if (l_tracer_aero) then
     !  aerosol dry deposition processes
     call t_startf('aero_drydep')
     call aero_model_drydep( state, pbuf, obklen, surfric, cam_in, ztodt, cam_out, ptend )
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
 
    ! CARMA microphysics
@@ -1723,7 +1732,7 @@ if (l_tracer_aero) then
    if (carma_do_aerosol) then
      call t_startf('carma_timestep_tend')
      call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, obklen=obklen, ustar=surfric)
-     call physics_update_intr(state, ptend, ztodt, tend)
+     call physics_update(state, ptend, ztodt, tend)
    
      call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, zero, zero, zero)
      call t_stopf('carma_timestep_tend')
@@ -1744,14 +1753,14 @@ if (l_gw_drag) then
 
     call gw_tend(state, sgh, pbuf, ztodt, ptend, cam_in)
 
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf('gw_tend')
 
     ! QBO relaxation
     call qbo_relax(state, pbuf, ptend)
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
     call check_energy_chng(state, tend, "qborelax", nstep, ztodt, zero, zero, zero, zero)
 
@@ -1770,7 +1779,7 @@ if (l_gw_drag) then
        call ionos_intr(state, ptend, pbuf, ztodt)
     endif
 
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
     call check_energy_chng(state, tend, "iondrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf  ( 'iondrag' )
@@ -1847,7 +1856,7 @@ end if ! l_ac_energy_chk
     !===================================================
     if((Nudge_Model).and.(Nudge_ON)) then
       call nudging_timestep_tend(state,ptend)
-      call physics_update_intr(state,ptend,ztodt,tend)
+      call physics_update(state,ptend,ztodt,tend)
     endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
@@ -1897,7 +1906,7 @@ subroutine tphysbc (ztodt,               &
     ! Each parameterization should be implemented with this sequence of calls:
     !  1)  Call physics interface
     !  2)  Check energy
-    !  3)  Call physics_update_intr
+    !  3)  Call physics_update
     ! See Interface to Column Physics and Chemistry Packages 
     !   http://www.ccsm.ucar.edu/models/atm-cam/docs/phys-interface/index.html
     ! 
@@ -2001,7 +2010,7 @@ subroutine tphysbc (ztodt,               &
     integer ncol                               ! number of atmospheric columns
     integer ierr
 
-    integer  i,k,m                             ! Longitude, level, constituent indices
+    integer  i,k,m,ihist                       ! Longitude, level, constituent indices
     integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
@@ -2071,8 +2080,7 @@ subroutine tphysbc (ztodt,               &
 
     logical   :: lq(pcnst)
 
-    !BSINGH - variables need for pergrow
-    character(len=fieldname_len)   :: str_S,str_QV, str_T
+    character(len=fieldname_len)   :: varname, vsuffix
     integer :: mpicom=0
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
     ! by aero_model_wetdep subroutine. 
@@ -2131,18 +2139,6 @@ subroutine tphysbc (ztodt,               &
     !-----------------------------------------------------------------------
     call t_startf('bc_init')
 
-    if (pergro_test_active) then
-       !BSINGH - Call outfld calls
-       str_S = 'S_topphysbc'
-       call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
-       
-       str_T = 'T_topphysbc'
-       call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
-       
-       str_QV = 'QV_topphysbc'
-       call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )  
-    endif
-
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
     zero_sc(:) = 0._r8
@@ -2154,6 +2150,14 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
+    if (pergro_test_active) then 
+       !call outfld calls
+       do ihist = 1 , nvars_prtrb_hist
+          vsuffix  = trim(adjustl(hist_vars(ihist)))
+          varname  = trim(adjustl(vsuffix))//'_topphysbc' ! form variable name
+          call outfld( trim(adjustl(varname)),get_var(state,vsuffix), pcols , lchnk )
+       enddo
+    endif
 
     static_ener_ac_idx = pbuf_get_index('static_ener_ac')
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
@@ -2318,7 +2322,7 @@ if (l_bc_energy_fix) then
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
        call check_energy_fix(state, ptend, nstep, flx_heat)
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chkengyfix", nstep, ztodt, zero, zero, zero, flx_heat)
     end if
     ! Save state for convective tendency calculations.
@@ -2368,7 +2372,7 @@ if (l_dry_adj) then
          ptend%s, ptend%q(1,1,1))
     ptend%s(:ncol,:)   = (ptend%s(:ncol,:)   - state%t(:ncol,:)  )/ztodt * cpair
     ptend%q(:ncol,:,1) = (ptend%q(:ncol,:,1) - state%q(:ncol,:,1))/ztodt
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
 
     call t_stopf('dry_adjustment')
 
@@ -2392,7 +2396,7 @@ end if
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2424,7 +2428,7 @@ end if
          state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
     call t_stopf ('convect_shallow_tend')
 
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
 
     flx_cnd(:ncol) = prec_sh(:ncol) + rliq2(:ncol)
     call check_energy_chng(state, tend, "convect_shallow", nstep, ztodt, zero, flx_cnd, snow_sh, zero)
@@ -2456,7 +2460,7 @@ if (l_tracer_aero) then
     if (carma_do_cldice .or. carma_do_cldliq) then
        call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, dlf=dlf, rliq=rliq, &
             prec_str=prec_str, snow_str=snow_str, prec_sed=prec_sed_carma, snow_sed=snow_sed_carma)
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
 
        ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
        ! detrainment, then the reserved condensate is snow.
@@ -2488,7 +2492,7 @@ end if
             cmfmc,   cmfmc2, &
             cam_in%ts,      cam_in%sst,        zdu)
 
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "cldwat_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
 
        call t_stopf('stratiform_tend')
@@ -2517,7 +2521,7 @@ end if
 
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
-            call physics_update_intr(state, ptend, ztodt, tend)
+            call physics_update(state, ptend, ztodt, tend)
             call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)      
 
           endif
@@ -2544,13 +2548,13 @@ end if
              flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
              flx_heat(:ncol) = det_s(:ncol)
 
-             ! Unfortunately, physics_update_intr does not know what time period
+             ! Unfortunately, physics_update does not know what time period
              ! "tend" is supposed to cover, and therefore can't update it
              ! with substeps correctly. For now, work around this by scaling
              ! ptend down by the number of substeps, then applying it for
              ! the full time (ztodt).
              call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
-             call physics_update_intr(state, ptend, ztodt, tend)
+             call physics_update(state, ptend, ztodt, tend)
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2585,7 +2589,7 @@ end if
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
 
-                ! Unfortunately, physics_update_intr does not know what time period
+                ! Unfortunately, physics_update does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
                 ! with substeps correctly. For now, work around this by scaling
                 ! ptend down by the number of substeps, then applying it for
@@ -2593,7 +2597,7 @@ end if
                 call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
-                call physics_update_intr(state, ptend, ztodt, tend)
+                call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2644,7 +2648,7 @@ end if
              ! (see above note for macrophysics).
              call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
 
-             call physics_update_intr (state_sc, ptend_sc, ztodt, tend_sc)
+             call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
              call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
                   nstep, ztodt, zero_sc, prec_str_sc(:ncol)/cld_macmic_num_steps, &
                   snow_str_sc(:ncol)/cld_macmic_num_steps, zero_sc)
@@ -2665,7 +2669,7 @@ end if
           ! (see above note for macrophysics).
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
-          call physics_update_intr (state, ptend, ztodt, tend)
+          call physics_update (state, ptend, ztodt, tend)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
                snow_str(:ncol)/cld_macmic_num_steps, zero)
@@ -2722,7 +2726,7 @@ if (l_tracer_aero) then
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
        
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
 
 
        if (carma_do_wetdep) then
@@ -2733,7 +2737,7 @@ if (l_tracer_aero) then
           ! to for CARMA aerosols.
           call t_startf ('carma_wetdep_tend')
           call carma_wetdep_tend(state, ptend, ztodt, pbuf, dlf, cam_out)
-          call physics_update_intr(state, ptend, ztodt, tend)
+          call physics_update(state, ptend, ztodt, tend)
           call t_stopf ('carma_wetdep_tend')
        end if
 
@@ -2742,7 +2746,7 @@ if (l_tracer_aero) then
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
 
-       call physics_update_intr(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
 
        ! check tracer integrals
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
@@ -2799,7 +2803,7 @@ if (l_rad) then
     do i=1,ncol
        tend%flx_net(i) = net_flx(i)
     end do
-    call physics_update_intr(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend)
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
@@ -2941,73 +2945,37 @@ end subroutine phys_timestep_init
 
 subroutine add_fld_default_calls()
   !BSINGH -  For adding addfld and add defualt calls
-  use units,        only: getunit, freeunit
-  use cam_history,  only: addfld, add_default, fieldname_len
+  use cam_history,        only: addfld, add_default, fieldname_len
+
   implicit none
-  
-  character(len=fieldname_len) :: str_in(35), str_S,str_Stend,str_QV,str_QVtend, str_T
-  character(len=1000) :: str_S_detail,str_Stend_detail,str_QV_detail,str_QVtend_detail,str_T_detail
-  
-  integer :: unitn, istr, ntot, stat
 
-  
-  if (masterproc) then
-     unitn = getunit()
-     open( unitn,file='physup_calls.txt',status='old', form='formatted' )
-     !Find total number of strings in the input file
-     istr = 0
-     do while(.true.)
-        istr = istr + 1
-        read(unitn,*,iostat=stat) str_in(istr)
-        if( stat > 0 ) then
-           call endrun('Error reading physup_calls.txt file')
-        elseif( stat < 0 ) then
-           !end of file reached...
-           close(unitn)
-           exit
-        endif
-     enddo
-     call freeunit(unitn)      
-     ntot = istr - 1 !it loops over till EOF, so we subtract 2 from "istr"
-  endif
-  
-#ifdef SPMD
-  !Broadcast 
-  call mpibcast(ntot, 1, mpiint,  0, mpicom)
-  call mpibcast(str_in,len(str_in(1))*ntot, mpichar, 0, mpicom)
-#endif
-  
-  do istr = 1, ntot   
+  !Add all existing ptend names for the addfld calls
+  character(len=fieldname_len), parameter :: vlist(27) = (/ 'topphysbc', &
+       'chkenergyfix'  ,'dadadj'              ,'zm_convr'         ,'zm_conv_evap'        , &
+       'momtran'       ,'zm_conv_tend'        ,'UWSHCU'           ,'convect_shallow'     , &
+       'pcwdetrain_mac','macro_park'          ,'macrop'           ,'micro_mg'            , &
+       'cldwat_mic'    ,'aero_model_wetdep_ma','convtran2'        ,'cam_radheat'         , &
+       'chemistry'     ,'vdiff'               ,'rayleigh_friction','aero_model_drydep_ma', &
+       'Grav_wave_drag','convect_shallow_off' ,'clubb_ice1'       ,'clubb_det'           , &
+       'clubb_ice4'    ,'clubb_srf' /)
 
-     str_S        = 'S_'//trim(adjustl(str_in(istr)))
-     str_S_detail = 'Static Energy from '// trim(adjustl(str_in(istr)))
 
-     call addfld (trim(adjustl(str_S)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_S_detail)),flag_xyfill=.true.)
-     call add_default (trim(adjustl(str_S)), 1, ' ')
 
-     str_T        = 'T_'//trim(adjustl(str_in(istr)))
-     str_T_detail = 'Temprature from '// trim(adjustl(str_in(istr)))
-     call addfld (trim(adjustl(str_T)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_T_detail)),flag_xyfill=.true.)
-     call add_default (trim(adjustl(str_T)), 1, ' ')
-     
-     str_QV        = 'QV_'//trim(adjustl(str_in(istr)))
-     str_QV_detail = 'water vapor from '// trim(adjustl(str_in(istr)))
-     call addfld (str_QV, (/ 'lev' /), 'A', 'kg/kg',str_QV_detail, flag_xyfill=.true.)
-     call add_default (str_QV, 1, ' ')
-     
-     if(trim(adjustl(str_in(istr))) .NE. 'topphysbc') then
-        !str_Stend        = 'St_'//trim(adjustl(str_in(istr)))
-        !str_Stend_detail = 'Static Energy tend from '// trim(adjustl(str_in(istr)))
-        !call addfld (str_Stend, (/ 'lev' /), 'A', 'K/s', str_Stend_detail,flag_xyfill=.true.)
-        !call add_default (str_Stend, 1, ' ')
+  character(len=fieldname_len) :: varname
+  character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
+  
+  integer :: iv, ntot, ihist
+
+  ntot = size(vlist)
+
+  do ihist = 1 , nvars_prtrb_hist
+     do iv = 1, ntot   
         
-        !str_QVtend        = 'QVt_'//trim(adjustl(str_in(istr)))
-        !str_QVtend_detail = 'water vapor tend from '// trim(adjustl(str_in(istr)))
-        !call addfld (str_QVtend,(/ 'lev' /), 'A', 'kg/kg/s',str_QVtend_detail, flag_xyfill=.true.)
-        !call add_default (str_QVtend, 1, ' ')
-     endif
-     
-     
+        varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
+
+        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
+        call add_default (trim(adjustl(varname)), 1, ' ')        
+     enddo
   enddo
 
 end subroutine add_fld_default_calls

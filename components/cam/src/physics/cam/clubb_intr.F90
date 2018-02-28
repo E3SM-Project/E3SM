@@ -907,7 +907,7 @@ end subroutine clubb_init_cnst
                              physics_state_copy, physics_ptend_init, &
                              physics_ptend_sum
 
-   use physics_update_mod, only: physics_update_intr
+   use physics_update_mod, only: physics_update
 
    use physics_buffer, only: pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field, &
                              pbuf_set_field, physics_buffer_desc
@@ -1255,7 +1255,7 @@ end subroutine clubb_init_cnst
  !  Initialize physics tendency arrays, copy the state to state1 array to use in this routine
 
    if (.not. micro_do_icesupersat) then    
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice1', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    call physics_state_copy(state,state1)
@@ -1263,7 +1263,7 @@ end subroutine clubb_init_cnst
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')
      call pbuf_get_field(pbuf, naai_idx, naai)
-     call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+     call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice2')
    endif
 
    !  Determine number of columns and which chunk computation is to be performed on
@@ -1362,7 +1362,7 @@ end subroutine clubb_init_cnst
      call physics_ptend_sum(ptend_loc, ptend_all, ncol)
 
     ! ptend_loc is reset to zero by this call
-     call physics_update_intr(state1, ptend_loc, hdtime)
+     call physics_update(state1, ptend_loc, hdtime)
 
     !Write output for tendencies:
     !        oufld: QVTENDICE,QITENDICE,NITENDICE
@@ -1536,7 +1536,7 @@ end subroutine clubb_init_cnst
     endif
    
    if (micro_do_icesupersat) then
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    ! ------------------------------------------------- !
@@ -2148,10 +2148,10 @@ end subroutine clubb_init_cnst
 
    !  Update physics tendencies     
    if (.not. micro_do_icesupersat) then
-      call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+      call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice4')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   call physics_update_intr(state1,ptend_loc,hdtime)
+   call physics_update(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ ! 
@@ -2177,7 +2177,7 @@ end subroutine clubb_init_cnst
    lqice(ixnumliq) = .true.
    lqice(ixnumice) = .true.
     
-   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lq=lqice)
+   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_det', ls=.true., lq=lqice)
    
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
@@ -2221,7 +2221,7 @@ end subroutine clubb_init_cnst
    call outfld( 'DPDLFT',   ptend_loc%s(:,:)/cpair, pcols, lchnk)
   
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   call physics_update_intr(state1,ptend_loc,hdtime)
+   call physics_update(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------- !
    ! Diagnose relative cloud water variance            !

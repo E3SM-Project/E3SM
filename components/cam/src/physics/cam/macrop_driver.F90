@@ -440,7 +440,7 @@ end subroutine macrop_driver_readnl
   use cloud_fraction,   only: cldfrc, cldfrc_fice
   use physics_types,    only: physics_state, physics_ptend
   use physics_types,    only: physics_ptend_init
-  use physics_update_mod, only: physics_update_intr
+  use physics_update_mod, only: physics_update
   use physics_types,    only: physics_ptend_sum,  physics_state_copy
   use physics_types,    only: physics_state_dealloc
   use cam_history,      only: outfld
@@ -713,7 +713,7 @@ end subroutine macrop_driver_readnl
    lq(ixcldice) = .TRUE.
    lq(ixnumliq) = .TRUE.
    lq(ixnumice) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdet', ls=.true., lq=lq)   ! Initialize local physics_ptend object
+   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdetrain_mac', ls=.true., lq=lq)   ! Initialize local physics_ptend object
 
      ! Procedures :
      ! (1) Partition detrained convective cloud water into liquid and ice based on T.
@@ -887,7 +887,7 @@ end subroutine macrop_driver_readnl
 
    ! update local copy of state with the detrainment tendency
    ! ptend_loc is reset to zero by this call
-   call physics_update_intr(state_loc, ptend_loc, dtime)
+   call physics_update(state_loc, ptend_loc, dtime)
 
    if (micro_do_icesupersat) then 
 
@@ -903,7 +903,7 @@ end subroutine macrop_driver_readnl
 
       latsub = latvap + latice
 
-      call physics_ptend_init(ptend_loc, state%psetcols, 'iceadj', ls=.true., lq=lq)
+      call physics_ptend_init(ptend_loc, state%psetcols, 'iceadj_mac', ls=.true., lq=lq)
 
       stend(:ncol,:)=0._r8
       qvtend(:ncol,:)=0._r8
@@ -926,7 +926,7 @@ end subroutine macrop_driver_readnl
       call physics_ptend_sum(ptend_loc, ptend, ncol)
  
       ! ptend_loc is reset to zero by this call
-      call physics_update_intr(state_loc, ptend_loc, dtime)
+      call physics_update(state_loc, ptend_loc, dtime)
 
       ! Write output for tendencies:
       call outfld( 'TTENDICE',  stend/cpair, pcols, lchnk )
@@ -1029,7 +1029,7 @@ end subroutine macrop_driver_readnl
    lq(ixnumice) = .true.
 
    ! Initialize local physics_ptend object again
-   call physics_ptend_init(ptend_loc, state%psetcols, 'macropk', &
+   call physics_ptend_init(ptend_loc, state%psetcols, 'macro_park', &
         ls=.true., lq=lq )  
 
  ! --------------------------------- !
@@ -1179,7 +1179,7 @@ end subroutine macrop_driver_readnl
    call physics_ptend_sum(ptend_loc, ptend, ncol)
 
    ! state_loc is the equlibrium state after macrophysics
-   call physics_update_intr(state_loc, ptend_loc, dtime)
+   call physics_update(state_loc, ptend_loc, dtime)
 
    call outfld('CLR_LIQ', clrw_old,  pcols, lchnk)
    call outfld('CLR_ICE', clri_old,  pcols, lchnk)
@@ -1248,7 +1248,7 @@ end subroutine macrop_driver_readnl
 
    call outfld( 'CLDSICE'    , cldsice,   pcols, lchnk )
 
-   ! ptend_loc is deallocated in physics_update_intr above
+   ! ptend_loc is deallocated in physics_update above
    call physics_state_dealloc(state_loc)
 
 end subroutine macrop_driver_tend

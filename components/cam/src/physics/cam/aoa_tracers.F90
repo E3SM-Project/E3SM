@@ -278,7 +278,7 @@ contains
 
 
     if (.not. aoa_tracers_flag) then
-       call physics_ptend_init(ptend,state%psetcols,'none_trc1') !Initialize an empty ptend for use with physics_update_intr
+       call physics_ptend_init(ptend,state%psetcols,'aoa_trc_ts') !Initialize an empty ptend for use with physics_update
        return
     end if
 

@@ -3000,7 +3000,7 @@ end subroutine print_active_fldlst
          hbuf_accum_add00z, hbuf_accum_max, hbuf_accum_min,          &
          hbuf_accum_addlcltime
     use cam_history_support, only: dim_index_2d
-    use subcol_utils,        only: subcol_unpack!BSINGH - commented out due to circular dependency, see below
+    use subcol_utils,        only: subcol_unpack
     use cam_grid_support,    only: cam_grid_id
 
     interface
@@ -3146,11 +3146,10 @@ end subroutine print_active_fldlst
             afield(idim+1:pcols*psubcols, :) = 0.0_r8
           end if
         end if
-        !call endrun('BSINGH- this causes circular dependency[physics_type<-cam_history<-subcol_utils<-physics_types]')
         if (flag_xyfill) then
-           call subcol_unpack(c, afield, ufield, fillvalue) !BSINGH- commented out
+          call subcol_unpack(c, afield, ufield, fillvalue)
         else
-           call subcol_unpack(c, afield, ufield) !BSINGH- commented out
+          call subcol_unpack(c, afield, ufield)
         end if
         deallocate(afield)
         select case (avgflag)

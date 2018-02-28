@@ -92,6 +92,9 @@ integer :: ihirsfq = 1      ! frequency (timesteps) of brightness temperature ca
 integer, allocatable :: clm_rand_seed(:,:,:)
 
 real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true !BSINGH - Added for solar insolation calc.
+
+logical :: pergro_mods = .false. ! for activating pergro mods
+
 !===============================================================================
 contains
 !===============================================================================
@@ -333,8 +336,8 @@ end function radiation_nextsw_cday
     use rrtmg_state,   only: rrtmg_state_init
     use time_manager,   only: get_step_size
 
-    type(physics_state), optional, intent(in):: phys_state(begchunk:endchunk)
-    integer, optional, intent(in) :: clm_id(pcols, max_chnks_in_blk)
+    type(physics_state), intent(in) :: phys_state(begchunk:endchunk)
+    integer,             intent(in) :: clm_id(pcols, max_chnks_in_blk)
     
     integer :: icall, nmodes
     logical :: active_calls(0:N_DIAG)
@@ -367,7 +370,8 @@ end function radiation_nextsw_cday
     call phys_getopts(history_amwg_out   = history_amwg,    &
                       history_vdiag_out  = history_vdiag,   &
                       history_budget_out = history_budget,  &
-                      history_budget_histfile_num_out = history_budget_histfile_num)
+                      history_budget_histfile_num_out = history_budget_histfile_num, &
+                      pergro_mods_out    = pergro_mods)
 
     ! Determine whether modal aerosols are affecting the climate, and if so
     ! then initialize the modal aerosol optics module
@@ -390,51 +394,56 @@ end function radiation_nextsw_cday
 
     
     allocate(cosp_cnt(begchunk:endchunk))
-    
+
     allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
     if( astat /= 0 ) then
        write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
        call endrun
     end if
+    clm_rand_seed (:,:,:) = huge(1)! Assign a number so that it crashes if used inappropriately
 
     if (is_first_restart_step()) then
        cosp_cnt(begchunk:endchunk)=cosp_cnt_init
-       !--------------------------------------
-       !Read seeds from restart file
-       !--------------------------------------
-       !For restart runs, rad_randn_seedrst array  will already be allocated in the restart_physics.F90
-       
-       do ilchnk = 1, max_chnks_in_blk
-          lchnk = begchunk + (ilchnk -1)
-          ncol = phys_state(lchnk)%ncol
-          do iseed = 1, kiss_seed_num
-             do icol = 1, ncol                
-                clm_rand_seed(icol,iseed,ilchnk) = rad_randn_seedrst(icol,iseed,lchnk)
+       if (pergro_mods) then
+          !--------------------------------------
+          !Read seeds from restart file
+          !--------------------------------------
+          !For restart runs, rad_randn_seedrst array  will already be allocated in the restart_physics.F90
+          
+          do ilchnk = 1, max_chnks_in_blk
+             lchnk = begchunk + (ilchnk -1)
+             ncol = phys_state(lchnk)%ncol
+             do iseed = 1, kiss_seed_num
+                do icol = 1, ncol                
+                   clm_rand_seed(icol,iseed,ilchnk) = rad_randn_seedrst(icol,iseed,lchnk)
+                enddo
              enddo
           enddo
-       enddo
+       endif
     else
        cosp_cnt(begchunk:endchunk)=0           
-       !---------------------------------------
-       !create seeds based off of column ids
-       !---------------------------------------
-       !allocate array rad_randn_seedrst for initial run for  maintaining exact restarts
-       !For restart runs, it will already be allocated in the restart_physics.F90
-       allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
-       if( astat /= 0 ) then
-          write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate rad_randn_seedrst; error = ',astat
-          call endrun
-       end if
-       do ilchnk = 1, max_chnks_in_blk
-          lchnk = begchunk + (ilchnk -1)
-          ncol = phys_state(lchnk)%ncol
-          do iseed = 1, kiss_seed_num
-             do icol = 1, ncol
-                id = clm_id(icol,ilchnk)
-                clm_rand_seed(icol,iseed,ilchnk) = id + (iseed -1)
+       if (pergro_mods) then
+          !---------------------------------------
+          !create seeds based off of column ids
+          !---------------------------------------
+          !allocate array rad_randn_seedrst for initial run for  maintaining exact restarts
+          !For restart runs, it will already be allocated in the restart_physics.F90
+          allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
+          if( astat /= 0 ) then
+             write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate rad_randn_seedrst; error = ',astat
+             call endrun
+          end if
+          do ilchnk = 1, max_chnks_in_blk
+             lchnk = begchunk + (ilchnk -1)
+             ncol = phys_state(lchnk)%ncol
+             do iseed = 1, kiss_seed_num
+                do icol = 1, ncol
+                   id = clm_id(icol,ilchnk)
+                   clm_rand_seed(icol,iseed,ilchnk) = id + (iseed -1)
+                enddo
              enddo
           enddo
-       enddo
+       endif
     end if
 
 
@@ -1141,7 +1150,7 @@ end function radiation_nextsw_cday
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
                        cam_out%solsd,cam_out%solld,fns,          fcns,                         &
-                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_rand_seed (:,:,ilchnk),  &!BSINGH - added rngsw
+                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_rand_seed (:,:,ilchnk),  &
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
@@ -1289,7 +1298,7 @@ end function radiation_nextsw_cday
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
-                       clm_rand_seed(:,:,ilchnk),                                                 & !BSINGH - added rnglw
+                       clm_rand_seed(:,:,ilchnk),                                                & 
                        lu,           ld)
                   call t_stopf ('rad_rrtmg_lw')
 
@@ -1477,13 +1486,14 @@ end function radiation_nextsw_cday
     end if
  
     cam_out%netsw(:ncol) = fsns(:ncol)
-
-    !write kissvec seeds for random numbers
-    do iseed = 1, kiss_seed_num    
-       do i = 1, ncol          
-          rad_randn_seedrst(i,iseed,lchnk) = clm_rand_seed(i,iseed,ilchnk)
+    if (pergro_mods) then
+       !write kissvec seeds for random numbers
+       do iseed = 1, kiss_seed_num    
+          do i = 1, ncol          
+             rad_randn_seedrst(i,iseed,lchnk) = clm_rand_seed(i,iseed,ilchnk)
+          enddo
        enddo
-    enddo
+    endif
 
  end subroutine radiation_tend
 

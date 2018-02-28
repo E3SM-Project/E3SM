@@ -104,7 +104,7 @@ logical           :: rrtmg_temp_fix       = .false.
 logical           :: do_tms
 logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
-                                                       ! in physics_update_intr.
+                                                       ! in physics_update.
 logical, public, protected :: use_mass_borrower    = .false.     ! switch on tracer borrower, instead of using the QNEG3 clipping
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file

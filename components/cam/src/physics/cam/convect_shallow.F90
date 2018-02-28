@@ -433,7 +433,7 @@ end subroutine convect_shallow_init_cnst
    use cam_history,     only : outfld
    use physics_types,   only : physics_state, physics_ptend
    use physics_types,   only : physics_ptend_init
-   use physics_update_mod, only: physics_update_intr
+   use physics_update_mod, only: physics_update
    use physics_types,   only : physics_state_copy, physics_state_dealloc
    use physics_types,   only : physics_ptend_dealloc
    use physics_types,   only : physics_ptend_sum
@@ -611,7 +611,7 @@ end subroutine convect_shallow_init_cnst
    case('off', 'CLUBB_SGS') ! None
 
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'conv_sof', ls=.true., lq=lq ) ! Initialize local ptend type
+      call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
 
       cmfmc2      = 0._r8
       ptend_loc%q = 0._r8
@@ -855,7 +855,7 @@ end subroutine convect_shallow_init_cnst
    ! Add tendency from this process to tend from other processes here !
    ! ---------------------------------------------------------------- !
 
-   call physics_ptend_init(ptend_all, state1%psetcols, 'conv_s')
+   call physics_ptend_init(ptend_all, state1%psetcols, 'convect_shallow')
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
 
    ! ----------------------------------------------------------------------------- !
@@ -888,7 +888,7 @@ end subroutine convect_shallow_init_cnst
    ! Update physics state type state1 with ptend_loc ! 
    ! ----------------------------------------------- !
 
-   call physics_update_intr( state1, ptend_loc, ztodt )
+   call physics_update( state1, ptend_loc, ztodt )
 
    ! ----------------------------------------------------------------------------- !
    ! For diagnostic purpose, print out 'QT,SL,SLV,t,RH' just after cumulus scheme  !
@@ -943,7 +943,7 @@ end subroutine convect_shallow_init_cnst
 
     lq(1) = .TRUE.
     lq(2:) = .FALSE.
-    call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conve', ls=.true., lq=lq)
+    call physics_ptend_init(ptend_loc, state1%psetcols, 'shallow_hack', ls=.true., lq=lq)
 
     call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec    )
     call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow    )

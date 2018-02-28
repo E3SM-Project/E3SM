@@ -360,7 +360,7 @@ subroutine stratiform_tend( &
    use cloud_fraction,   only: cldfrc, cldfrc_fice
    use physics_types,    only: physics_state, physics_ptend
    use physics_types,    only: physics_ptend_init
-   use physics_update_mod, only: physics_update_intr
+   use physics_update_mod, only: physics_update
    use physics_types,    only: physics_ptend_sum,  physics_state_copy
    use physics_types,    only: physics_state_dealloc
    use cam_history,      only: outfld
@@ -585,7 +585,7 @@ subroutine stratiform_tend( &
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
 
    ! Update physics state type state1 with ptend_loc 
-   call physics_update_intr( state1, ptend_loc, dtime )
+   call physics_update( state1, ptend_loc, dtime )
 
    call t_stopf('stratiform_sediment')
 
@@ -604,7 +604,7 @@ subroutine stratiform_tend( &
 
    lq(:)        = .FALSE.
    lq(ixcldliq) = .TRUE.
-   call physics_ptend_init( ptend_loc, state1%psetcols, 'pcwdet', lq=lq)
+   call physics_ptend_init( ptend_loc, state1%psetcols, 'pcwdetrain', lq=lq)
    
    do k = 1, pver
       do i = 1, state1%ncol
@@ -618,7 +618,7 @@ subroutine stratiform_tend( &
    ! Add hie detrainment tendency to tend from the other prior processes
 
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
-   call physics_update_intr( state1, ptend_loc, dtime )
+   call physics_update( state1, ptend_loc, dtime )
 
    ! Accumulate prec and snow, reserved liquid has now been used.
 
@@ -728,7 +728,7 @@ subroutine stratiform_tend( &
    call outfld( 'REPARTLIQ', ptend_loc%q(:,:,ixcldliq), pcols, lchnk )
 
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
-   call physics_update_intr( state1, ptend_loc, dtime )
+   call physics_update( state1, ptend_loc, dtime )
 
    ! Determine repartition heating from change in cloud ice.
 
@@ -852,7 +852,7 @@ subroutine stratiform_tend( &
    ! ------------------------------- !
 
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
-   call physics_update_intr( state1, ptend_loc, dtime )
+   call physics_update( state1, ptend_loc, dtime )
 
    if (.not. cam_physpkg_is('cam3')) then
 

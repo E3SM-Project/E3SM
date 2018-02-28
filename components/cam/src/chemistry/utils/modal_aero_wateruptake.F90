@@ -195,7 +195,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    real(r8) :: es(pcols)             ! saturation vapor pressure
    real(r8) :: qs(pcols)             ! saturation specific humidity
-   real(r8) :: cldn_thresh = huge(1.0_r8)
+   real(r8) :: cldn_thresh
    real(r8) :: aerosol_water(pcols,pver) !sum of aerosol water (wat_a1 + wat_a2 + wat_a3 + wat_a4)
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output

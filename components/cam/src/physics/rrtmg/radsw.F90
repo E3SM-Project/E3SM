@@ -346,9 +346,11 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call CmpDayNite(r_state%ch4vmr, ch4vmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%o2vmr,  o2vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%n2ovmr, n2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
-   !BSINGH - rearrange random numbers
-   call CmpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
 
+   if (pergro_mods) then
+      !BSINGH - rearrange random numbers, only needs to be done for pergro mods
+      call CmpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
+   endif
    ! These fields are no longer input by CAM.
    cicewp = 0.0_r8
    cliqwp = 0.0_r8
@@ -634,7 +636,9 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call ExpDayNite(fsnirtoa,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnrtoac,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnrtoaq,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
-   call ExpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
+   if (pergro_mods) then
+      call ExpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
+   endif
 
    if (associated(su)) then
       call ExpDayNite(su,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)

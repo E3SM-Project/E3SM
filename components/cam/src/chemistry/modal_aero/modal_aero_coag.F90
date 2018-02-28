@@ -293,7 +293,7 @@
 !   integrate coagulation changes over deltat = nfreqcoag*deltat_main
 !   then compute tendencies as
 !      dqdt = (q(t+deltat) - q(t))/deltat_main
-!   because tendencies are applied (in physics_update_intr) over deltat_main
+!   because tendencies are applied (in physics_update) over deltat_main
 !
 	deltat = nfreqcoag*deltat_main
 	deltatinv_main = 1.0_r8/(deltat_main*(1.0_r8 + 1.0e-15_r8))
