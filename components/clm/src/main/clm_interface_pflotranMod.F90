@@ -1063,19 +1063,21 @@ contains
     endif
 
     ! coupled module controls betweeen PFLOTRAN and CLM45
-    if(pflotran_m%option%iflowmode==RICHARDS_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .false.
-      pf_frzmode = .false.
+    if(pflotran_m%option%iflowmode/=NULL_MODE) then
+       pf_hmode = .true.
+       if (pflotran_m%option%use_isothermal) then
+         pf_tmode = .false.
+      else
+         pf_tmode = .true.
+      endif
 
-    elseif(pflotran_m%option%iflowmode==TH_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .true.
       if (pflotran_m%option%use_th_freezing) then
          pf_frzmode = .true.
       else
          pf_frzmode = .false.
       endif
+    else
+      pf_hmode = .false.
     endif
 
     if(pflotran_m%option%ntrandof.gt.0) then
@@ -1184,6 +1186,7 @@ contains
 
     endif
 
+#if 0
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
         call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
@@ -1198,6 +1201,7 @@ contains
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
         call pflotranModelSetSoilHbcsFromCLM( pflotran_m )  ! H bc
     end if
+#endif
 
     ! (4)
     if (pf_cmode) then
@@ -1239,7 +1243,7 @@ contains
     call mpi_barrier(mpicom, ierr)
 
     ! (6) update CLM variables from PFLOTRAN
-
+#if 0
     if (pf_hmode) then
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
         call update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
@@ -1255,6 +1259,7 @@ contains
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
         call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
     endif
+#endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables
@@ -2385,6 +2390,7 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
+#if 0
     ! (1) pass the clm_qflx to the vecs
     ! NOTE the following unit conversions:
     ! qflx_soil_top and qflx_tran_veg are in [mm/sec] from CLM;
@@ -2658,6 +2664,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%press_maxponding_clmp, press_maxponding_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
   end associate
   end subroutine get_clm_bcwflx
@@ -2742,6 +2749,7 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
+#if 0
     ! (1) pass the clm_gflux/gtemp to the vec
 
     call VecGetArrayF90(clm_pf_idata%eflux_subsurf_clmp, geflx_subsurf_clmp_loc, ierr)
@@ -2859,6 +2867,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
   end associate
   end subroutine get_clm_bceflx
@@ -3552,6 +3561,7 @@ contains
     dtime = get_step_size()
     nstep = get_nstep()
 
+#if 0
     ! from PF==>CLM
     call VecGetArrayReadF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -3608,6 +3618,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayReadF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
     end associate
   end subroutine update_bcflow_pf2clm
