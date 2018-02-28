@@ -944,11 +944,6 @@ class Case(object):
         #--------------------------------------------
         # batch system (must come after initialize_derived_attributes)
         #--------------------------------------------
-        if walltime:
-            self.set_value("USER_REQUESTED_WALLTIME", walltime)
-        if queue:
-            self.set_value("USER_REQUESTED_QUEUE", queue)
-
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
@@ -957,6 +952,12 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
+
+        if walltime:
+            self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=("case.test" if test else "case.run"))
+        if queue:
+            self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=("case.test" if test else "case.run"))
+
         env_batch.set_job_defaults(bjobs, self)
         self.schedule_rewrite(env_batch)
 
