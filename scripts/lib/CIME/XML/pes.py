@@ -96,7 +96,7 @@ class Pes(GenericXML):
                             pesize_match = self.get(pes_node, "pesize")
                             compset_match = self.get(pes_node, "compset")
                             if (pesize_match == "any" or (pesize_opts is not None and \
-                                                          re.search(pesize_match, pesize_opts))) and \
+                                                          pesize_match == pesize_opts)) and \
                                                           (compset_match == "any" or \
                                                            re.search(compset_match,compset)):
 
