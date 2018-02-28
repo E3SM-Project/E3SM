@@ -554,7 +554,7 @@ end subroutine uwshcu_readnl
     !
     ! Internal Output Variables
     !
-    real(r8) :: gam_fac !BSINGH - declared this var based on Sungsu suggestion
+    real(r8)                   gam_fac !BSINGH - declared this var based on Sungsu suggestion
     real(r8)                   qtten_out(mix,mkx)             !  Tendency of qt [ kg/kg/s ]
     real(r8)                   slten_out(mix,mkx)             !  Tendency of sl [ J/kg/s ]
     real(r8)                   ufrc_out(mix,0:mkx)            !  Updraft fractional area at the interfaces [ fraction ]

@@ -82,7 +82,6 @@ module vertical_diffusion
   logical, parameter   :: wstarent = .true.            ! Use wstar (.true.) or TKE (.false.) entrainment closure
                                                        ! ( when 'diag_TKE' scheme is selected )
   logical              :: do_pseudocon_diff = .false.  ! If .true., do pseudo-conservative variables diffusion
-  logical              :: pergro_mods                  !logical to tun on/off perturbation grwoth test mods
 
   character(len=16)    :: shallow_scheme               ! For checking compatibility between eddy diffusion
                                                        ! and shallow convection schemes
@@ -295,7 +294,7 @@ contains
     endif
 
     ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
-    call phys_getopts(prog_modal_aero_out=prog_modal_aero,pergro_mods_out = pergro_mods)
+    call phys_getopts(prog_modal_aero_out=prog_modal_aero)
     if (prog_modal_aero) then
 
        ! Get the constituent indices of the number and mass mixing ratios of the modal 
@@ -816,9 +815,6 @@ contains
     real(r8) :: v_tmp(pcols,pver)
     real(r8) :: q_tmp(pcols,pver,pcnst)
 
-    !Temporary arrays for pergro test
-    real(r8) :: taux_tmp(pcols), tauy_tmp(pcols),shflx_tmp(pcols),cflx_tmp(pcols,pcnst)
-
     logical  :: lq(pcnst)
 
     ! ----------------------- !
@@ -828,23 +824,6 @@ contains
     rztodt = 1._r8 / ztodt
     lchnk  = state%lchnk
     ncol   = state%ncol
-
-    !BSINGH - Modifications for pergro test:
-    !For pergro test, we would like to zero out all contributions from the land model
-    !Therefore, we are storing the flux variables into temporary variables
-    !Note that fluxes are intent-in variables whose values will stay the same in this routine
-
-    taux_tmp(1:ncol)          =  taux(1:ncol)         
-    tauy_tmp(1:ncol)          =  tauy(1:ncol)         
-    shflx_tmp(1:ncol)         =  shflx(1:ncol)        
-    cflx_tmp (1:ncol,1:pcnst) =  cflx(1:ncol,1:pcnst)
-
-    if(pergro_mods) then
-       taux_tmp (1:ncol  ) = 0.0_r8
-       tauy_tmp (1:ncol  ) = 0.0_r8
-       shflx_tmp(1:ncol  ) = 0.0_r8       
-       cflx_tmp (1:ncol,1) = 0.0_r8
-    endif
 
     call pbuf_get_field(pbuf, tauresx_idx,  tauresx)
     call pbuf_get_field(pbuf, tauresy_idx,  tauresy)
@@ -866,18 +845,18 @@ contains
                           state%u    , state%v  , state%t , state%pmid , & 
                           state%exner, state%zm , sgh     , ksrftms    , & 
                           tautmsx    , tautmsy  , landfrac )
-      ! Here, both 'taux_tmp, tautmsx' are explicit surface stresses.        
+      ! Here, both 'taux, tautmsx' are explicit surface stresses.        
       ! Note that this 'tautotx, tautoty' are different from the total stress
       ! that has been actually added into the atmosphere. This is because both
-      ! taux_tmp and tautmsx are fully implicitly treated within compute_vdiff.
+      ! taux and tautmsx are fully implicitly treated within compute_vdiff.
       ! However, 'tautotx, tautoty' are not used in the actual numerical
       ! computation in this module.   
-        tautotx(:ncol) = taux_tmp(:ncol) + tautmsx(:ncol)
-        tautoty(:ncol) = tauy_tmp(:ncol) + tautmsy(:ncol)
+        tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
+        tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
     else
         ksrftms(:ncol) = 0._r8
-        tautotx(:ncol) = taux_tmp(:ncol)
-        tautoty(:ncol) = tauy_tmp(:ncol)
+        tautotx(:ncol) = taux(:ncol)
+        tautoty(:ncol) = tauy(:ncol)
     endif
 
     !----------------------------------------------------------------------- !
@@ -925,25 +904,25 @@ contains
        ! Retrieve eddy diffusivities for heat and momentum from physics buffer
        ! from last timestep ( if first timestep, has been initialized by inidat.F90 )
 
-       call compute_eddy_diff( lchnk    ,                                                                      &
-                               pcols    , pver        , ncol       , state%t      , state%q(:,:,1) , ztodt   , &
-                               state%q(:,:,ixcldliq)  , state%q(:,:,ixcldice)     ,                            &
-                               state%s  , state%rpdel , cldn       , qrl          , wsedl          ,           &
-                               state%zm , state%zi    , state%pmid , state%pint   , state%u        , state%v , &
-                               taux_tmp , tauy_tmp    , shflx_tmp  , cflx_tmp(:,1), wstarent       , nturb   , &
-                               rrho     , ustar       , pblh       , kvm_in       , kvh_in         , kvm     , &
-                               kvh      , kvq         , cgh        ,                                           &
-                               cgs      , tpert       , qpert      , wpert        , tke            , bprod   , &
-                               sprod    , sfi         , kvinit     ,                                           &
-                               tauresx  , tauresy     , ksrftms    ,                                           &
-                               ipbl     , kpblh       , wstarPBL   , tkes         , went           , turbtype, &
+       call compute_eddy_diff( lchnk    ,                                                                    &
+                               pcols    , pver        , ncol       , state%t    , state%q(:,:,1) , ztodt   , &
+                               state%q(:,:,ixcldliq)  , state%q(:,:,ixcldice)   ,                            &
+                               state%s  , state%rpdel , cldn       , qrl        , wsedl          ,           &
+                               state%zm , state%zi    , state%pmid , state%pint , state%u        , state%v , &
+                               taux     , tauy        , shflx      , cflx(:,1)  , wstarent       , nturb   , &
+                               rrho     , ustar       , pblh       , kvm_in     , kvh_in         , kvm     , &
+                               kvh      , kvq         , cgh        ,                                         &
+                               cgs      , tpert       , qpert      , wpert      , tke            , bprod   , &
+                               sprod    , sfi         , kvinit     ,                                         &
+                               tauresx  , tauresy     , ksrftms    ,                                         &
+                               ipbl     , kpblh       , wstarPBL   , tkes       , went           , turbtype, &
                                smaw )
 
        ! The diag_TKE scheme does not calculate the Monin-Obukhov length, which is used in dry deposition calculations.
        ! Use the routines from pbl_utils to accomplish this. Assumes ustar and rrho have been set.
        th(:ncol,pver) = state%t(:ncol,pver) * state%exner(:ncol,pver)
        thvs(:ncol) = virtem(th(:ncol,pver),state%q(:ncol,pver,1))
-       call calc_obklen(th(:ncol,pver), thvs(:ncol), cflx_tmp(:ncol,1), shflx_tmp(:ncol), rrho(:ncol), ustar(:ncol), &
+       call calc_obklen(th(:ncol,pver), thvs(:ncol), cflx(:ncol,1), shflx(:ncol), rrho(:ncol), ustar(:ncol), &
                         khfs(:ncol),    kqfs(:ncol), kbfs(:ncol),   obklen(:ncol))
 
        ! ----------------------------------------------- !       
@@ -998,17 +977,17 @@ contains
 
     case ( 'HB', 'HBR' )
 
-       ! Modification : We may need to use 'taux_tmp' instead of 'tautotx' here, for
+       ! Modification : We may need to use 'taux' instead of 'tautotx' here, for
        !                consistency with the previous HB scheme.
 
        th(:ncol,:pver) = state%t(:ncol,:pver) * state%exner(:ncol,:pver)
 
-       call compute_hb_diff( lchnk     , ncol         ,                                &
-                             th        , state%t      , state%q , state%zm , state%zi, &
-                             state%pmid, state%u      , state%v , tautotx  , tautoty , &
-                             shflx_tmp , cflx_tmp(:,1), obklen  , ustar    , pblh    , &
-                             kvm       , kvh          , kvq     , cgh      , cgs     , &
-                             tpert     , qpert        , cldn    , ocnfrac  , tke     , &
+       call compute_hb_diff( lchnk     , ncol     ,                                &
+                             th        , state%t  , state%q , state%zm , state%zi, &
+                             state%pmid, state%u  , state%v , tautotx  , tautoty , &
+                             shflx     , cflx(:,1), obklen  , ustar    , pblh    , &
+                             kvm       , kvh      , kvq     , cgh      , cgs     , &
+                             tpert     , qpert    , cldn    , ocnfrac  , tke     , &
                              ri        , &
                              eddy_scheme )
     
@@ -1098,8 +1077,8 @@ contains
 
         call compute_vdiff( state%lchnk   ,                                                                     &
                             pcols         , pver               , pcnst        , ncol          , state%pmid    , &
-                            state%pint    , state%rpdel        , state%t      , ztodt         , taux_tmp      , &
-                            tauy_tmp      , shflx_tmp          , cflx_tmp     , ntop          , nbot          , &
+                            state%pint    , state%rpdel        , state%t      , ztodt         , taux          , &
+                            tauy          , shflx              , cflx         , ntop          , nbot          , &
                             kvh           , kvm                , kvq          , cgs           , cgh           , &
                             state%zi      , ksrftms            , qmincg       , fieldlist_wet , fieldlist_molec,&
                             u_tmp         , v_tmp              , q_tmp        , s_tmp         ,                 &
@@ -1121,8 +1100,8 @@ contains
 
         call compute_vdiff( state%lchnk   ,                                                                     &
                             pcols         , pver               , pcnst        , ncol          , state%pmiddry , &
-                            state%pintdry , state%rpdeldry     , state%t      , ztodt         , taux_tmp      , &       
-                            tauy_tmp      , shflx_tmp          , cflx_tmp     , ntop          , nbot          , &       
+                            state%pintdry , state%rpdeldry     , state%t      , ztodt         , taux          , &       
+                            tauy          , shflx              , cflx         , ntop          , nbot          , &       
                             kvh           , kvm                , kvq          , cgs           , cgh           , &   
                             state%zi      , ksrftms            , qmincg       , fieldlist_dry , fieldlist_molec,&
                             u_tmp         , v_tmp              , q_tmp        , s_tmp         ,                 &
@@ -1143,7 +1122,7 @@ contains
     tmp1(:ncol) = ztodt * gravit * state%rpdel(:ncol,pver)
        do m = 1, pmam_ncnst
           l = pmam_cnst_idx(m)
-          q_tmp(:ncol,pver,l) = q_tmp(:ncol,pver,l) + tmp1(:ncol) * cflx_tmp(:ncol,l)
+          q_tmp(:ncol,pver,l) = q_tmp(:ncol,pver,l) + tmp1(:ncol) * cflx(:ncol,l)
        enddo
     end if
 
@@ -1184,8 +1163,8 @@ contains
        end do
        do i = 1, ncol
           rhoair = state%pint(i,pverp)/(rair*((slv(i,pver)-gravit*state%zi(i,pverp))/cpair))
-          qtl_flx(i,pverp) = cflx_tmp(i,1)/rhoair
-          qti_flx(i,pverp) = cflx_tmp(i,1)/rhoair
+          qtl_flx(i,pverp) = cflx(i,1)/rhoair
+          qti_flx(i,pverp) = cflx(i,1)/rhoair
        end do
     end if
 
@@ -1197,13 +1176,13 @@ contains
                             + cgh(i,k) ) 
           qtflx(i,k) = kvh(i,k) * &
                           ( - rhoair*(qt(i,k-1)-qt(i,k))/(state%zm(i,k-1)-state%zm(i,k)) &
-                            + rhoair*(cflx_tmp(i,1)+cflx_tmp(i,ixcldliq)+cflx_tmp(i,ixcldice))*cgs(i,k) )
+                            + rhoair*(cflx(i,1)+cflx(i,ixcldliq)+cflx(i,ixcldice))*cgs(i,k) )
           uflx(i,k)  = kvm(i,k) * &
                           ( - rhoair*(u_tmp(i,k-1)-u_tmp(i,k))/(state%zm(i,k-1)-state%zm(i,k)))
           vflx(i,k)  = kvm(i,k) * &
                           ( - rhoair*(v_tmp(i,k-1)-v_tmp(i,k))/(state%zm(i,k-1)-state%zm(i,k)))
           slflx_cg(i,k) = kvh(i,k) * cgh(i,k)
-          qtflx_cg(i,k) = kvh(i,k) * rhoair * ( cflx_tmp(i,1) + cflx_tmp(i,ixcldliq) + cflx_tmp(i,ixcldice) ) * cgs(i,k)
+          qtflx_cg(i,k) = kvh(i,k) * rhoair * ( cflx(i,1) + cflx(i,ixcldliq) + cflx(i,ixcldice) ) * cgs(i,k)
           uflx_cg(i,k)  = 0._r8
           vflx_cg(i,k)  = 0._r8
        end do
@@ -1213,8 +1192,8 @@ contains
   !                Note also that 'tautotx' is explicit total stress, different from
   !                the ones that have been actually added into the atmosphere.
 
-    slflx(:ncol,pverp) = shflx_tmp(:ncol)
-    qtflx(:ncol,pverp) = cflx_tmp(:ncol,1)
+    slflx(:ncol,pverp) = shflx(:ncol)
+    qtflx(:ncol,pverp) = cflx(:ncol,1)
     uflx(:ncol,pverp)  = tautotx(:ncol)
     vflx(:ncol,pverp)  = tautoty(:ncol)
 
@@ -1231,7 +1210,7 @@ contains
     ! All variables are modified by vertical diffusion
 
     lq(:) = .TRUE.
-    call physics_ptend_init(ptend,state%psetcols, "vdiff", &
+    call physics_ptend_init(ptend,state%psetcols, "vertical diffusion", &
          ls=.true., lu=.true., lv=.true., lq=lq)
 
     ptend%s(:ncol,:)       = ( s_tmp(:ncol,:) - state%s(:ncol,:) ) * rztodt
@@ -1324,8 +1303,8 @@ contains
                    sum2 = sum2 +(state%q(i,k,m)+ptend%q(i,k,m)*ztodt)*pdelx/ gravit   ! total column after tendancy is applied
                    sum3 = sum3 +(               ptend%q(i,k,m)*ztodt)*pdelx/ gravit   ! rate of change in column
                 enddo
-                sum1 = sum1 + (cflx_tmp(i,m) * ztodt) ! add in surface flux (kg/m2)
-                sflx = (cflx_tmp(i,m) * ztodt) 
+                sum1 = sum1 + (cflx(i,m) * ztodt) ! add in surface flux (kg/m2)
+                sflx = (cflx(i,m) * ztodt) 
                 if (sum1>1.e-36_r8) then
                    if( abs((sum2-sum1)/sum1) .gt. 1.e-12_r8  ) then
                       write(iulog,'(a,a8,a,I4,2f8.3,5e25.16)') &

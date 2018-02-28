@@ -294,7 +294,7 @@ module conv_water
 
       end if
       
-      !BSINGH - Logic by Phil to account for insignificant condensate in large scale clouds
+      !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
          if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice
             wrk1 = 1._r8  

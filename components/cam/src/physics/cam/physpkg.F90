@@ -70,13 +70,12 @@ module physpkg
   integer ::  rice2_idx          = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
   
-  !BSINGH - (For fixing random number generation-perturbation growth test)
+  !BSINGH - (For fixing random number generation in RRTMG-perturbation growth test)
   !Seeds for random number generator
-  integer :: s1,s2,s3,s4 !BSINGH
+  integer :: s1,s2,s3,s4
   integer :: nchunks
   integer :: firstblock, lastblock      ! global block indices
   integer, allocatable,dimension(:) :: tot_chnk_till_this_prc !total number of chunks till this processor
-  !BSINGH -Ends
 
 
 
@@ -743,7 +742,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! local variables
     integer :: lchnk,i
-    integer :: astat,ipes, ipes_tmp, igcol, chunkid,icol, iown,ilchnk, tot_cols, ierr    !BSINGH-  added for fixing random number generation
+    integer :: astat,ipes, ipes_tmp, igcol, chunkid,icol, iown,ilchnk, tot_cols, ierr    !BSINGH-  added for fixing RNG in RRTMG
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
     integer, allocatable, dimension(:,:) :: clm_id
     real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
