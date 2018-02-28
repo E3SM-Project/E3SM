@@ -117,7 +117,8 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2,ahat3,ahat4,ahat5,ahat6,dhat1,dhat2
+    real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
+    real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3
     real (kind=real_kind) :: statesave(nets:nete,np,np,nlevp,6)
     real (kind=real_kind) :: statesave0(nets:nete,np,np,nlevp,6)
     real (kind=real_kind) :: statesave2(nets:nete,np,np,nlevp,6)
@@ -356,7 +357,7 @@ contains
       a1 = 0.5
       a2 = 0.5
       a3 = 1.0
-      dhat2 = 2.0
+      dhat2 = 2.25
       dhat1 = (0.5-dhat2)/(1.0-dhat2)
       ahat2 = 0.5-dhat2
       ahat3 = 1.0
@@ -396,7 +397,7 @@ contains
       a2 = 1d0/3d0
       a3 = 0.5
       a4 = 1.0
-      dhat2 = 2.0
+      dhat2 = 2.25
       dhat1 = (0.5-dhat2)/(1.0-dhat2)
       ahat3= 0.5-dhat2
       ahat4 = 1.0
@@ -449,7 +450,7 @@ contains
      a3 = 3.0/8.0
      a4 = .5
      a5 = 1.0
-     dhat2 = 2.0
+     dhat2 = 2.25
      ahat4 = 0.5-dhat2
      dhat1 = (0.5-dhat2)/(1-dhat2)
 
@@ -503,7 +504,7 @@ contains
      a4 = 1./3.
      a5 = .5
      a6 = 1.0
-     dhat2 = 2.0
+     dhat2 = 2.25
      ahat5 = 0.5-dhat2
      ahat6 = 1.
      dhat1 = (0.5-dhat2)/(1-dhat2)
@@ -540,7 +541,108 @@ contains
 
       call t_stopf("KGS272_timestep")
 !==============================================================================================
-    elseif (tstep_type == 12) then
+    elseif (tstep_type == 12) then 
+      call t_startf("KGS242-3_timestep")
+      dhat1 = 1.
+      dhat2 = 1.
+      ahat2 = 2.
+      dhat3 = (ahat2/2. + dhat2 - 1.0)/(ahat2-dhat1**2)
+      ahat3 = 0.5-dhat3
+      ahat4 = 1.
+      a4 = 1.
+      a3 = 1./2. 
+      a2 = 1./3.
+      a1 = 1./4.
+
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+ !     print *, maxiter
+ !     print *, itertol
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w*a2,1d0,ahat2/a2,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+ !     print *, maxiter
+ !     print *, itertol
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w*a3,1d0,ahat3/a3,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+ !     print *, maxiter
+ !     print *, itertol
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
+
+      call t_stopf("KGS242-3_timestep")
+!==============================================================================================
+    elseif (tstep_type == 13) then 
+      call t_startf("KGS252-3_timestep")
+     a1 = .25
+     a2 = 1.0/6.0
+     a3 = 3.0/8.0
+     a4 = .5
+     a5 = 1.0
+     dhat1 = 1.
+     dhat2 = 1.
+     ahat3 = 2.
+     dhat3 = (ahat3/2. + dhat2 - 1.0)/(ahat3-dhat1**2)
+     ahat4 = 0.5-dhat3
+     ahat5 = 1.
+
+    ! ======== first two stages are pure explicit  =============
+     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,0d0,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+ !     print *, maxiter
+ !     print *, itertol
+
+    ! compute u(n)+dt*a4*n(k3) and store at np1
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,ahat3/a3,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+!      print *, maxiter
+!      print *, itertol
+
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
+       deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+!      print *, maxiter
+!      print *, itertol
+
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
+       deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat5/a5,1d0)
+
+      call t_stopf("KGS252-3_timestep")
+!==============================================================================================
+    elseif (tstep_type == 14) then
       call t_startf("KGS242_explicit_timestep")
       a1 = 0.5
       a2 = 0.5
@@ -553,7 +655,7 @@ contains
         deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
       call t_stopf("KGS242_explicit_timestep")
 !===============================================================================================
-    elseif (tstep_type == 13) then 
+    elseif (tstep_type == 15) then 
       call t_startf("KGS252_explicit_timestep")
      ! denote the stages as k1,...,k4 and note that k1 = un0
       a1 = 0.25
@@ -570,7 +672,7 @@ contains
      deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
       call t_stopf("KGS252_explicit_timestep")  
 !=================================================================================================
-    elseif (tstep_type == 14) then
+    elseif (tstep_type == 16) then
       call t_startf("KGS262_explicit_timestep")
      a1 = 1./4.
      a2 = 1.0/6.0
@@ -589,7 +691,7 @@ contains
        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,1d0,1d0)
       call t_stopf("KGS262_explicit_timestep")
 !=================================================================================================
-    elseif (tstep_type == 15) then
+    elseif (tstep_type == 17) then
      call t_startf("KGS272_explicit_timestep")
      a1 = 1./6.
      a2 = 2./15.
