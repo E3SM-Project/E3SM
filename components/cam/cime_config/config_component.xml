@@ -173,6 +173,7 @@
       <value compset="1950_CAM5.*CMIP6-LR"  >1950_cam5_CMIP6-LR</value>
       <value compset="1950_CAM5.*CMIP6-HR"  >1950_cam5_CMIP6-HR</value>
       <value compset="1950_CAM5.*CMIP6-LRtunedHR"  >1950_cam5_CMIP6-LRtunedHR</value>
+      <value compset="1850_CAM5.*CMIP6*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
@@ -180,6 +181,7 @@
       <value compset="2000_CAM5.*AV1C-04P">2000_cam5_av1c-04p</value>
       <value compset="2000_CAM5.*AV1C-04P2">2000_cam5_av1c-04p2</value>
       <value compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-04p2</value>
+      <value compset="2000_CAM5.*AV1C-L.*_BGC%B" >2000_cam5_av1c-04p2_bgc</value>
       <value compset="2000_CAM5.*AV1C-H01A">2000_cam5_av1c-h01a</value>
       <value compset="2000_CAM5.*AV1C-H01B">2000_cam5_av1c-h01b</value>
       <value compset="2000_CAM5.*AV1F"   >2000_cam5_av1f</value>
@@ -190,6 +192,7 @@
       <value compset="20TR_CAM5.*AV1C-04P">20TR_cam5_av1c-04p</value>
       <value compset="20TR_CAM5.*AV1C-04P2">20TR_cam5_av1c-04p2</value>
       <value compset="20TR_CAM5.*AV1C-L">20TR_cam5_av1c-04p2</value>
+      <value compset="20TR_CAM5.*AV1C-L.*_BGC%B">20TR_cam5_av1c-04p2_bgc</value>
       <value compset="20TR_CAM5.*AV1C-H01A">20TR_cam5_av1c-h01a</value>
       <value compset="20TR_CAM5.*AV1C-H01B">20TR_cam5_av1c-h01b</value>
       <value compset="20TR_CAM5.*CMIP6"  >20TR_cam5_CMIP6</value>
@@ -249,6 +252,9 @@
     <values>
       <value compset="_CAM.*%RCO2"> scenario_ghg=&apos;RAMP_CO2_ONLY&apos;ramp_co2_annual_rate=1 </value> 
       <value compset="_BGC%BDRD"> co2_cycle_rad_passive=.true. </value>
+      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6  </value>
+      <value compset="_BGC%BCRD"> co2_cycle_rad_passive=.true. </value>
+      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6 </value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -326,7 +332,7 @@
     <desc compset="AQP1">CAM atmosphere in aquaplanet mode: </desc>
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
-    <desc compset="CAM4.*_BGC%B"></desc>
+    <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
   </description>
 
   <help>

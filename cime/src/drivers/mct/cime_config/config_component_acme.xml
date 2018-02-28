@@ -102,22 +102,6 @@
     </desc>
   </entry>
 
-  <entry id="CO2_TYPE_COSTANT_VALUE">
-    <type>real</type>
-    <valid_values></valid_values>
-    <default_value>284.7</default_value>
-    <values match="last">
-      <value compset="^2000">367.0</value>
-      <value compset="^4804">367.0</value>
-    </values>
-    <group>run_co2</group>
-    <file>env_run.xml</file>
-    <desc>
-      Mechanism for setting the CO2 value in ppmv for CLM if
-      CLM_CO2_TYPE is constant POP if OCN_CO2_TYPE is constant.
-    </desc>
-  </entry>
-
   <entry id="FLDS_WISO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -193,6 +177,10 @@
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
+      <value compset="_DATM%IAF_SLND_MPASCICE%BGC_MPASO%TOIECO_" >CO2A</value>
+      <value compset="_BGC%BCRD">CO2C</value>
+      <value compset="_BGC%BDRC">CO2C</value>
+      <value compset="_BGC%BCRC">CO2C</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -766,6 +754,9 @@
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
+    <desc compset="BGC%BCRD">BGC CO2=cons, rad CO2=diag:</desc>
+    <desc compset="BGC%BDRC">BGC CO2=diag, rad CO2=cons:</desc>
+    <desc compset="BGC%BCRC">BGC CO2=cons, rad CO2=cons:</desc>
     <desc compset="POP2%ECO">ECO in POP:</desc>
     <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
     <desc compset="1850_">pre-industrial:</desc>
