@@ -89,6 +89,17 @@ def convert_units(var, target_units):
     elif not hasattr(var, 'units') and var.id == 'ICEFRAC':
         var.units = target_units
         var = 100.0 * var
+    elif not hasattr(var, 'units') and var.id == 'AODVIS':
+        dir(var)
+        var.units = target_units
+    elif var.id == 'AOD_550_ann':
+        var.units =target_units
+    elif var.units == 'C' and target_units == 'DegC':
+        var.units = target_units
+    elif var.units == 'N/m2' and target_units == 'N/m^2':
+        var.units = target_units
+    elif var.id == 'AODVIS' or var.id == 'AOD_550_ann': 
+        var.units = target_units
     elif var.units == 'fraction':
         var = 100.0 * var
         var.units = target_units
@@ -153,6 +164,12 @@ def prect(precc, precl):
     var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
 
+def tauxy(taux, tauy):
+    """tauxy = (taux^2 + tauy^2)sqrt"""
+    var = (taux**2 + tauy**2)**0.5
+    var = convert_units(var, "N/m^2")
+    var.long_name = "Total surface wind stress"
+    return var
 
 def albedo(rsdt, rsut):
     """TOA (top-of-atmosphere) albedo, rsut / rsdt, unit is nondimension"""
@@ -578,7 +595,8 @@ derived_variables = {
         (('V'), lambda u: convert_units(u, target_units="m/s"))
     ]),
     'TREFHT': OrderedDict([
-        (('TREFHT'), lambda t: convert_units(t, target_units="K"))
+        (('TREFHT'), lambda t: convert_units(t, target_units="DegC")),
+        (('tas'), lambda t: convert_units(t, target_units="DegC"))
     ]),
     'QFLX': OrderedDict([
         (('QFLX'), lambda qflx: qflxconvert_units(qflx))
@@ -738,5 +756,13 @@ derived_variables = {
     'SHUM': OrderedDict([
         (('Q'), lambda q: convert_units(rename(q), target_units="g/kg")),
         (('SHUM'), lambda shum: convert_units(shum, target_units="g/kg"))
+    ]),
+    'TAUXY': OrderedDict([
+        (('TAUX','TAUY'), lambda taux, tauy: tauxy(taux, tauy)),
+        (('tauu','tauv'), lambda taux, tauy: tauxy(taux, tauy))
+    ]),
+    'AODVIS': OrderedDict([
+        (('AODVIS'), lambda aod: convert_units(rename(aod), target_units = "dimensionless")),
+        (('AOD_550_ann'), lambda aod: convert_units(rename(aod), target_units = "dimensionless"))
     ])
 }
