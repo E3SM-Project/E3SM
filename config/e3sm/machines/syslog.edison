@@ -11,12 +11,12 @@ set dir = $6
 
 # Try to wait until job mapping information is output before saving output file. Since number of MPI tasks
 #  is not known, at least wait until file length is greater than the number of nodes.
-# (Note that calling script 'touch'es the acme log file before spawning this script, so that 'wc' does not fail.)
+# (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
 set nnodes = `sqs -f $jid | grep -F NumCPUs | sed 's/^ *NumNodes= *\([0-9]*\) *NumCPUs=*\([0-9]*\).*/\1/' `
 set outlth = 0
 while ($outlth < $nnodes)
   sleep 10
-  set outlth = `wc \-l $run/acme.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+  set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
 
 set TimeLimit   = `sqs -f $jid | grep -F TimeLimit | sed 's/^ *RunTime=.*TimeLimit=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
@@ -41,7 +41,7 @@ if ("X$runt_secs" == "X")  set runt_secs  = 0
 cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
-/bin/cp --preserve=timestamps $run/acme.log.$lid $dir/acme.log.$lid.$remaining
+/bin/cp --preserve=timestamps $run/e3sm.log.$lid $dir/e3sm.log.$lid.$remaining
 squeue -t R -o  "%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l" > $dir/squeuef.$lid.$remaining
 squeue -s | grep -v -F extern > $dir/squeues.$lid.$remaining
 # squeue -t R -o  "%.10i %R" > $dir/squeueR.$lid.$remaining
