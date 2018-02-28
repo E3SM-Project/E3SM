@@ -160,6 +160,8 @@
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="nodemax" type="xs:integer"/>
           <xs:attribute name="nodemin" type="xs:integer"/>
+          <xs:attribute name="jobmax" type="xs:integer"/>
+          <xs:attribute name="jobmin" type="xs:integer"/>
           <xs:attribute name="jobname" type="xs:NCName"/>
           <xs:attribute name="walltimemax"/>
           <xs:attribute name="walltimemin"/>
