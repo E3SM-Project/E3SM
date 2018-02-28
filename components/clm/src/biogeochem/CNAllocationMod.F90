@@ -1432,8 +1432,10 @@ contains
                         if (cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only()) then
                             cn_scalar(p) = 0.0_r8 
                         else
-                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                               (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                                                   max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                                                   leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                                                   (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
                         endif
                         plant_ndemand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
                              froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j) *  compet_plant_n(p) 
@@ -1609,8 +1611,10 @@ contains
                         if (cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only()) then
                             cp_scalar(p) = 0.0_r8
                         else
-                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                               (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                                                  leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                                                  (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
                         endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
@@ -2139,8 +2143,10 @@ contains
                         if (cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only()) then
                             cn_scalar(p) = 0.0_r8
                         else
-                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                               (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                                                  leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                                                  (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
                         endif
 
                         plant_nh4demand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
@@ -2435,8 +2441,10 @@ contains
                         if (cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only()) then
                             cp_scalar(p) = 0.0_r8
                         else
-                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                               (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                                                  leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                                                  (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
                         endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &

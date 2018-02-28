@@ -338,6 +338,10 @@ module clm_varctl
   ! forest N/P fertilization
   logical, public :: forest_fert_exp = .false. 
 
+  !-----------------------------------------------------------------------
+  ! ECA regular spinup with P on, keep labile, secondary, occluded, parent 
+  ! material P being constant or not
+  logical, public :: ECA_Pconst_RGspin = .false.
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity

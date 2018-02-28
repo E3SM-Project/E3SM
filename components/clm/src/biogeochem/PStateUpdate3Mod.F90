@@ -21,6 +21,7 @@ module PStateUpdate3Mod
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
+  use clm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp 
   !
   implicit none
@@ -239,7 +240,7 @@ contains
          ! rationale: observed P pools should be our best representation of present-day soil P conditions
          ! If we use observed P to initialize regular spinup, soil P pools will dramatically deplete during the spinup
          ! Then, the transient simulation will start with a much lower soil phosphorus availability that is inconsistent with obs 
-         if ((nu_com .ne. 'RD') .and. ps%RG_spinup) then
+         if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin ) then
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)

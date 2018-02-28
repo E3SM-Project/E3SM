@@ -107,7 +107,6 @@ module PhosphorusStateType
      real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
      real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
 
-     logical :: RG_spinup = .false.
      real(r8), pointer :: solutionp_vr_col_cur         (:,:)
      real(r8), pointer :: solutionp_vr_col_prev        (:,:)
      real(r8), pointer :: labilep_vr_col_cur           (:,:)
@@ -1237,7 +1236,6 @@ contains
        if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
           if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools out of AD spinup mode'
           exit_spinup = .true.
-          this%RG_spinup = .true.
        else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
           if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools into AD spinup mode'
           enter_spinup = .true.
@@ -1304,60 +1302,60 @@ contains
                    ! assume p pools evenly distributed at dif layers
                    ! Prescribe P initial profile based on exponential rooting profile [need to improve]
                    if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
-                      a = 1
+                      a = 1.0_r8
                       b = VMAX_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) + &
                           KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)*pinit_prof(j)
-                      d = -1.0* cnstate_vars%labp_col(c)*pinit_prof(j) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                      d = -1.0_r8* cnstate_vars%labp_col(c)*pinit_prof(j) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
 
-                      this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
+                      this%solutionp_vr_col(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
                       this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)*pinit_prof(j) - this%solutionp_vr_col(c,j)
                       this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)*pinit_prof(j)
                       this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)*pinit_prof(j)
                       this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)*pinit_prof(j)
                    else if (nu_com .eq. 'RD') then
-                      a = 1
+                      a = 1.0_r8
                       b = smax(cnstate_vars%isoilorder(c)) + &
-                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
-                      d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
+                      d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
 
-                      this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
-                      this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5 - this%solutionp_vr_col(c,j)
-                      this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
-                      this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
-                      this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
+                      this%solutionp_vr_col(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
+                      this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5_r8 - this%solutionp_vr_col(c,j)
+                      this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5_r8
+                      this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5_r8
+                      this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5_r8
                    end if
 
                    if (nu_com .eq. 'RD') then 
                        smax_c = smax(isoilorder(c))
                        ks_sorption_c = ks_sorption(isoilorder(c))
-                       this%solutionp_vr_col(c,j) = (cnstate_vars%labp_col(c)/0.5*ks_sorption_c)/&
-                                    (smax_c-cnstate_vars%labp_col(c)/0.5)
-                       this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5
-                       this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
-                       this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
-                       this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
+                       this%solutionp_vr_col(c,j) = (cnstate_vars%labp_col(c)/0.5_r8*ks_sorption_c)/&
+                                    (smax_c-cnstate_vars%labp_col(c)/0.5_r8)
+                       this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5_r8
+                       this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5_r8
+                       this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5_r8
+                       this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5_r8
                    end if
 
                 end do
              else
                 if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
-                   a = 1
+                   a = 1.0_r8
                    b = VMAX_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) + &
                        KM_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/zisoi(nlevdecomp)
-                   d = -1.0* cnstate_vars%labp_col(c)/zisoi(nlevdecomp) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                   d = -1.0_r8* cnstate_vars%labp_col(c)/zisoi(nlevdecomp) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
 
-                   this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * zisoi(nlevdecomp) ! convert to g/m2
+                   this%solutionp_vr_col(c,1) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a) * zisoi(nlevdecomp) ! convert to g/m2
                    this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
                    this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
                    this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)
                    this%primp_vr_col(c,1) = cnstate_vars%prip_col(c)
                 else if (nu_com .eq. 'RD') then
-                   a = 1
+                   a = 1.0_r8
                    b = smax(cnstate_vars%isoilorder(c)) + &
-                       ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
-                   d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+                       ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
+                   d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
 
-                   this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * 0.5 ! convert to g/m2
+                   this%solutionp_vr_col(c,1) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a) * 0.5_r8 ! convert to g/m2
                    this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
                    this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
                    this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)

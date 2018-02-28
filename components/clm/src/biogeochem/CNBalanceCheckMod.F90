@@ -22,6 +22,7 @@ module CNBalanceCheckMod
   use clm_varpar          , only : nlevdecomp
   use clm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : nu_com
+  use clm_varctl          , only : ECA_Pconst_RGspin
 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
@@ -591,7 +592,7 @@ contains
              end if
          end if
 
-         if ((nu_com .ne. 'RD') .and. ps%RG_spinup) then
+         if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
             col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
             do j = 1, nlevdecomp               
                col_poutputs(c) = col_poutputs(c) + &

@@ -602,7 +602,8 @@ contains
     use pftvarcon              , only : noveg
     use clm_varpar             , only : ndecomp_pools
     use clm_time_manager       , only : get_step_size
-    
+    use CNDecompCascadeConType , only : decomp_cascade_con
+ 
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
@@ -630,7 +631,8 @@ contains
          decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
-         cp_scalar             => cnstate_vars%cp_scalar                 &
+         cp_scalar             => cnstate_vars%cp_scalar               , &
+         is_soil               => decomp_cascade_con%is_soil             &
          )
 
     dt = real( get_step_size(), r8 )
@@ -659,18 +661,20 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             sop_tot = 0._r8
-            do l = 5,ndecomp_pools
+            do l = 1,ndecomp_pools
                 sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
             end do
-            do l = 5,ndecomp_pools
+            do l = 1,ndecomp_pools
                 if (sop_tot > 1e-12) then 
                     sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                 else
                     sop_profile(l) = 0._r8
                 end if
             end do
-            do l = 5,ndecomp_pools
-                biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)/dt),0._r8)
+            do l = 1,ndecomp_pools
+                if (is_soil(l)) then
+                   biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)/dt),0._r8)
+                end if
             end do
         end do
     end do
@@ -679,9 +683,11 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j)=0._r8
-            do l = 5, ndecomp_pools
-               biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
+            do l = 1, ndecomp_pools
+               if (is_soil(l)) then
+                  biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
                                           biochem_pmin_ppools_vr_col(c,j,l)
+               end if
             enddo
         enddo
     end do
