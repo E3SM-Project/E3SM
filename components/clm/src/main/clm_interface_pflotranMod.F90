@@ -946,8 +946,8 @@ contains
     ! -----------------------------------------------------------------
 
     ! (4) Create PFLOTRAN model
-    !call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
-    call pflotranModelCreate(mpicom, pflotran_prefix, pflotran_m)
+    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
+    !call pflotranModelCreate(mpicom, pflotran_prefix, pflotran_m)
 
     ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
     !restart_stamp = ""
