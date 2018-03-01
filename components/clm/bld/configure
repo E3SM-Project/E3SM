@@ -680,6 +680,9 @@ sub write_filepath_cesmbld
                      "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/centPara",
                      "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/cent1layer",
                      "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/centNlayer",
+                     "external_models/sbetr/src/Applications/soil-farm/cdom_ecacnp/cdomPara",
+                     "external_models/sbetr/src/Applications/soil-farm/cdom_ecacnp/cdom1layer",
+                     "external_models/sbetr/src/Applications/soil-farm/cdom_ecacnp/cdomNlayer",
 		     "utils", 
 		     "cpl" );
 
