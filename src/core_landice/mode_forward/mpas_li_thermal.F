@@ -2710,6 +2710,7 @@ module li_thermal
       ! local variables
       !-----------------------------------------------------------------
 
+      logical, pointer :: config_thermal_calculate_bmb
       integer :: k, iCell
 
       real(kind=RKIND), dimension(nVertLevels) :: &
@@ -2857,6 +2858,18 @@ module li_thermal
          groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) * rhoi
 
       enddo   ! iCell
+
+      ! Check if we want thermal calculation to apply to BMB
+      !   In some idealized configurations, we want to evolve temperature (and possibly have it
+      !   coupled to velocity), but we do not want the geometry to evolve based on the temeprature
+      !   evolution.  In this case, we zero groundedBasalMassBal.  This is cleaner than avoiding
+      !   its calculation in the lines above, because in this situation we still want the various
+      !   temperature fields to be "set back" to appropriate values as if melt had occurred.
+      !   This violates conservation of energy but is desired for some tests.
+      call mpas_pool_get_config(liConfigs, 'config_thermal_calculate_bmb', config_thermal_calculate_bmb)
+      if (.not. config_thermal_calculate_bmb) then
+         groundedBasalMassBal(:) = 0.0_RKIND
+      endif
 
     end subroutine basal_melt_grounded_ice
 
