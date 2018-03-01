@@ -648,7 +648,7 @@ def case_st_archive(case, last_date_str=None, archive_incomplete_logs=True, copy
     Create archive object and perform short term archiving
     """
     caseroot = case.get_value("CASEROOT")
-
+    case.load_env(job="case.st_archive")
     if last_date_str is not None:
         try:
             last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d')

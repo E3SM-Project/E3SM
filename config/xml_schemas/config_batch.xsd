@@ -5,6 +5,7 @@
    version="2.0">
   <!-- attributes -->
   <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="type"  type="xs:NCName"/>
 
@@ -92,7 +93,7 @@
 
   <!-- directives: A list of fields to provide in the script directives section,
        be careful that these do not conflict with submit_args above -->
-        <xs:element minOccurs="0" ref="directives"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="directives"/>
 
   <!-- queues: The list of queue options for this machine, not all system queues need be listed
        attributes of this field include walltimemin, walltimemax, nodemin and nodemax and strict
@@ -134,6 +135,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="directive"/>
       </xs:sequence>
+      <xs:attribute ref="queue"/>
     </xs:complexType>
   </xs:element>
 
@@ -192,4 +194,3 @@
   </xs:element>
 
 </xs:schema>
-

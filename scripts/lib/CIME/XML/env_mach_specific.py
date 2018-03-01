@@ -50,24 +50,24 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-    def _get_modules_for_case(self, case):
+    def _get_modules_for_case(self, case, job=None):
         module_nodes = self.get_children("modules", root=self.get_child("module_system"))
         modules_to_load = None
         if module_nodes is not None:
-            modules_to_load = self._compute_module_actions(module_nodes, case)
+            modules_to_load = self._compute_module_actions(module_nodes, case, job=job)
 
         return modules_to_load
 
-    def _get_envs_for_case(self, case):
+    def _get_envs_for_case(self, case, job=None):
         env_nodes = self.get_children("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
-            envs_to_set = self._compute_env_actions(env_nodes, case)
+            envs_to_set = self._compute_env_actions(env_nodes, case, job=job)
 
         return envs_to_set
 
-    def load_env(self, case, force_method=None):
+    def load_env(self, case, force_method=None, job=None):
         """
         Should only be called by case.load_env
         """
@@ -77,7 +77,7 @@ class EnvMachSpecific(EnvBase):
         if (modules_to_load is not None):
             self._load_modules(modules_to_load, force_method=force_method)
 
-        envs_to_set = self._get_envs_for_case(case)
+        envs_to_set = self._get_envs_for_case(case, job=job)
         if (envs_to_set is not None):
             self._load_envs(envs_to_set)
 
@@ -166,24 +166,24 @@ class EnvMachSpecific(EnvBase):
 
     # Private API
 
-    def _compute_module_actions(self, module_nodes, case):
-        return self._compute_actions(module_nodes, "command", case)
+    def _compute_module_actions(self, module_nodes, case, job=None):
+        return self._compute_actions(module_nodes, "command", case, job=job)
 
-    def _compute_env_actions(self, env_nodes, case):
-        return self._compute_actions(env_nodes, "env", case)
+    def _compute_env_actions(self, env_nodes, case, job=None):
+        return self._compute_actions(env_nodes, "env", case, job=job)
 
-    def _compute_resource_actions(self, resource_nodes, case):
-        return self._compute_actions(resource_nodes, "resource", case)
+    def _compute_resource_actions(self, resource_nodes, case, job=None):
+        return self._compute_actions(resource_nodes, "resource", case, job=job)
 
-    def _compute_actions(self, nodes, child_tag, case):
+    def _compute_actions(self, nodes, child_tag, case, job=None):
         result = [] # list of tuples ("name", "argument")
         compiler, mpilib = case.get_value("COMPILER"), case.get_value("MPILIB")
 
         for node in nodes:
-            if (self._match_attribs(self.attrib(node), case)):
+            if (self._match_attribs(self.attrib(node), case, job=job)):
                 for child in self.get_children(root=node):
                     expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
-                    if (self._match_attribs(self.attrib(child), case)):
+                    if (self._match_attribs(self.attrib(child), case, job=job)):
                         val = self.text(child)
                         if val is not None:
                             # We allow a couple special substitutions for these fields
@@ -198,12 +198,18 @@ class EnvMachSpecific(EnvBase):
 
         return result
 
-    def _match_attribs(self, attribs, case):
+    def _match_attribs(self, attribs, case, job=None):
         # check for matches with case-vars
         for attrib in attribs:
             if attrib == "unit_testing": # special case
                 if not self._match(self._unit_testing, attribs["unit_testing"].upper()):
                     return False
+            elif attrib == "queue":
+                if job is not None:
+                    val = case.get_value("JOB_QUEUE", subgroup=job)
+                    expect(val is not None, "Cannot match attrib '%s', case has no value for it" % attrib.upper())
+                    if not self._match(val, attribs[attrib]):
+                        return False
             elif attrib == "name":
                 pass
             else:

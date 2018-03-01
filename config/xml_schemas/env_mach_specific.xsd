@@ -10,6 +10,7 @@
 <xs:attribute name="SMP_PRESENT" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
 <xs:attribute name="unit_testing" type="xs:boolean"/>
+<xs:attribute name="queue" type="xs:string"/>
 
 <!-- simple elements -->
 <xs:element name="header" type="xs:string"/>
@@ -151,6 +152,7 @@
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute name="threaded" type="xs:boolean"/>
+      <xs:attribute ref="queue"/>
       <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
