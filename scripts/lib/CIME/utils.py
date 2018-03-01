@@ -147,7 +147,7 @@ def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
-    CIME_MODEL=acme,cesm
+    CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
 
@@ -238,7 +238,7 @@ def get_model():
            or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
         else:
-            model = 'acme'
+            model = 'e3sm'
         # This message interfers with the correct operation of xmlquery
         # logger.debug("Guessing CIME_MODEL={}, set environment variable if this is incorrect".format(model))
 
@@ -604,14 +604,17 @@ def get_current_branch(repo=None):
         else:
             return output.replace("refs/heads/", "")
 
-def get_current_commit(short=False, repo=None):
+def get_current_commit(short=False, repo=None, tag=False):
     """
     Return the sha1 of the current HEAD commit
 
     >>> get_current_commit() is not None
     True
     """
-    rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
+    if tag:
+        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
+    else:
+        rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
     if rc == 0:
         return output
     else:
@@ -623,9 +626,9 @@ def get_scripts_location_within_cime():
     """
     return "scripts"
 
-def get_cime_location_within_acme():
+def get_cime_location_within_e3sm():
     """
-    From within acme, return subdirectory where CIME lives.
+    From within e3sm, return subdirectory where CIME lives.
     """
     return "cime"
 
@@ -633,13 +636,13 @@ def get_model_config_location_within_cime(model=None):
     model = get_model() if model is None else model
     return os.path.join("config", model)
 
-def get_acme_root():
+def get_e3sm_root():
     """
-    Return the absolute path to the root of ACME that contains this script
+    Return the absolute path to the root of E3SM that contains this script
     """
     cime_absdir = get_cime_root()
-    assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
-    return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_acme())])
+    assert cime_absdir.endswith(get_cime_location_within_e3sm()), cime_absdir
+    return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_e3sm())])
 
 def get_scripts_root():
     """
@@ -1377,7 +1380,7 @@ def find_system_test(testname, case):
 
 def _get_most_recent_lid_impl(files):
     """
-    >>> files = ['/foo/bar/acme.log.20160905_111212', '/foo/bar/acme.log.20160906_111212.gz']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
     """
@@ -1502,7 +1505,7 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
     return rv
 
 def _check_for_invalid_args(args):
-    if get_model() != "acme":
+    if get_model() != "e3sm":
         for arg in args:
             # if arg contains a space then it was originally quoted and we can ignore it here.
             if " " in arg or arg.startswith("--"):

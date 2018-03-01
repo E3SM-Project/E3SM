@@ -185,8 +185,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # Although we're doing separate builds, it still makes sense
             # to share the sharedlibroot area with case1 so we can reuse
             # pieces of the build from there.
-            if get_model() != "acme":
-                # We need to turn off this change for ACME because it breaks
+            if get_model() != "e3sm":
+                # We need to turn off this change for E3SM because it breaks
                 # the MPAS build system
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))

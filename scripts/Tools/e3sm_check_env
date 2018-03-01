@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A script to verify that the environment is compliant with ACME's software requirements.
+A script to verify that the environment is compliant with E3SM's software requirements.
 
 Be sure to source your env_mach_specific file before running this check.
 """
@@ -53,15 +53,15 @@ def check_perl_module(module_name):
 ###############################################################################
     stat = run_cmd('perl -e "require {};"'.format(module_name)[0])
     if stat != 0:
-        LOG.append('* ACME requires the Perl module {}, but it is not available.'.format(module_name))
+        LOG.append('* E3SM requires the Perl module {}, but it is not available.'.format(module_name))
         LOG.append('  Please make sure that it exists in your @INC.')
 
 ###############################################################################
 def check_perl():
 ###############################################################################
     # First, make sure we have the right version of Perl.
-    acme_perl_major_version = 5
-    acme_perl_minor_version = 16
+    e3sm_perl_major_version = 5
+    e3sm_perl_minor_version = 16
 
     stat, output, _ = run_cmd("perl -e 'print $^V;'")
     if stat != 0:
@@ -71,8 +71,8 @@ def check_perl():
 
     output = output[1:] # get rid of leading 'v' character
     major_version, minor_version, _ = [int(item) for item in output.split('.')]
-    if major_version != acme_perl_major_version or minor_version < acme_perl_minor_version:
-        LOG.append('* ACME requires Perl version {:d}.{:d}+. You appear to be using {:d}.{:d}.'.format(acme_perl_major_version, acme_perl_minor_version, major_version, minor_version))
+    if major_version != e3sm_perl_major_version or minor_version < e3sm_perl_minor_version:
+        LOG.append('* E3SM requires Perl version {:d}.{:d}+. You appear to be using {:d}.{:d}.'.format(e3sm_perl_major_version, e3sm_perl_minor_version, major_version, minor_version))
         LOG.append('  Please check to see whether an appropriate version exists on this machine,')
         LOG.append('  possibly via a loadable module.')
 
@@ -85,8 +85,8 @@ def check_perl():
 ###############################################################################
 def check_git():
 ###############################################################################
-    acme_git_major_version = 2
-    acme_git_minor_version = 0
+    e3sm_git_major_version = 2
+    e3sm_git_minor_version = 0
 
     stat, output, _ = run_cmd('git --version')
     if stat != 0:
@@ -104,15 +104,15 @@ def check_git():
         LOG.append('* Unparseable git version string: "{}"'.format(output))
         return
 
-    if major_version != acme_git_major_version or minor_version < acme_git_minor_version:
-        LOG.append('* ACME requires Git version {:d}.{:d}+. You appear to be using version {:d}.{:d}.'.format(acme_git_major_version, acme_git_minor_version, major_version, minor_version))
+    if major_version != e3sm_git_major_version or minor_version < e3sm_git_minor_version:
+        LOG.append('* E3SM requires Git version {:d}.{:d}+. You appear to be using version {:d}.{:d}.'.format(e3sm_git_major_version, e3sm_git_minor_version, major_version, minor_version))
 
 ###############################################################################
 def check_svn():
 ###############################################################################
-    acme_svn_major_version = 1
-    acme_svn_minor_version = 4
-    acme_svn_patch_version = 2
+    e3sm_svn_major_version = 1
+    e3sm_svn_minor_version = 4
+    e3sm_svn_patch_version = 2
 
     stat, output, _ = run_cmd('svn --version --quiet')
     if stat != 0:
@@ -121,8 +121,8 @@ def check_svn():
         return
 
     major_version, minor_version, patch_version = [int(s) for s in output.split('.')]
-    if major_version < acme_svn_major_version or minor_version < acme_svn_minor_version or patch_version < acme_svn_patch_version:
-        LOG.append('* ACME requires Subversion version {:d}.{:d}.{:d}+. You appear to be using version {:d}.{:d}.{:d}.'.format(acme_svn_major_version, acme_svn_minor_version, acme_svn_patch_version, major_version, minor_version, patch_version))
+    if major_version < e3sm_svn_major_version or minor_version < e3sm_svn_minor_version or patch_version < e3sm_svn_patch_version:
+        LOG.append('* E3SM requires Subversion version {:d}.{:d}.{:d}+. You appear to be using version {:d}.{:d}.{:d}.'.format(e3sm_svn_major_version, e3sm_svn_minor_version, e3sm_svn_patch_version, major_version, minor_version, patch_version))
 
 ###############################################################################
 def _main_func(description):
@@ -136,13 +136,13 @@ def _main_func(description):
     check_svn()
 
     if len(LOG) > 0:
-        print('acme_check_env found problems with your ACME development environment:\n')
+        print('e3sm_check_env found problems with your E3SM development environment:\n')
         for line in LOG:
             print(line)
 
         sys.exit(1)
     else:
-        print('acme_check_env found no problems with your ACME development environment.')
+        print('e3sm_check_env found no problems with your E3SM development environment.')
         sys.exit(0)
 
 ###############################################################################

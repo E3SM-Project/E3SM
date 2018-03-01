@@ -32,8 +32,8 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 
         # special case for clm
         # clm 4_0 is not a shared (as in sharedlibs, shared by all tests) library and must be built here
-        # clm 4_5 and newer is a shared library (but not in ACME) and should be built in build_libraries
-        if get_model() != "acme":
+        # clm 4_5 and newer is a shared library (but not in E3SM) and should be built in build_libraries
+        if get_model() != "e3sm":
             if comp == "clm":
                 if "clm4_0" in clm_config_opts:
                     logger.info("         - Building clm4_0 Library ")
@@ -252,8 +252,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                 if re.search("Current setting for", line):
                     logger.warning(line)
 
-    # clm not a shared lib for ACME
-    if get_model() != "acme" and (buildlist is None or "lnd" in buildlist):
+    # clm not a shared lib for E3SM
+    if get_model() != "e3sm" and (buildlist is None or "lnd" in buildlist):
         comp_lnd = case.get_value("COMP_LND")
         clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
         if comp_lnd == "clm" and "clm4_0" not in clm_config_opts:
@@ -467,7 +467,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
     os.environ["USE_MOAB"]             = stringify_bool(use_moab)
 
-    if get_model() == "acme" and mach == "titan" and compiler == "pgiacc":
+    if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
     # This is a timestamp for the build , not the same as the testid,

@@ -37,7 +37,7 @@ def _build_usernl_files(case, model, comp):
     multi_driver = case.get_value("MULTI_DRIVER")
     if multi_driver:
         ninst_max = case.get_value("NINST_MAX")
-        if model not in ("DRV","CPL"):
+        if model not in ("DRV","CPL","ESP"):
             ninst_model = case.get_value("NINST_{}".format(model))
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
@@ -164,16 +164,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
-            logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            for job in env_batch.get_jobs():
-                input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
-                if job == "case.test" and testcase is not None and not test_mode:
-                    logger.info("Writing {} script".format(job))
-                    env_batch.make_batch_script(input_batch_script, job, case)
-                elif job != "case.test":
-                    logger.info("Writing {} script from input template {}".format(job, input_batch_script))
-                    env_batch.make_batch_script(input_batch_script, job, case)
+            env_batch.make_all_batch_files(case, test_mode=test_mode)
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
@@ -181,8 +173,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
-            logger.info("Locking file env_mach_pes.xml")
-            logger.info("Locking file env_batch.xml")
             case.flush()
             logger.debug("at copy TOTALPES = {}".format(case.get_value("TOTALPES")))
             lock_file("env_mach_pes.xml")
@@ -209,7 +199,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Some tests need namelists created here (ERP) - so do this if we are in test mode
-        if test_mode or get_model() == "acme":
+        if test_mode or get_model() == "e3sm":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 

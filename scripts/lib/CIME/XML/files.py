@@ -67,7 +67,7 @@ class Files(EntryID):
                 self.COMP_ROOT_DIR[vid+subgroup["component"]] = value
             else:
                 self.COMP_ROOT_DIR[vid] = value
-                
+
         else:
             expect(False, "Attempt to set a nonmutable variable {}".format(vid))
         return value
@@ -82,10 +82,13 @@ class Files(EntryID):
         return None
 
     def get_components(self, nodename):
-        node = self.get_child("entry", {"id":nodename})
-        valnodes = self.get_children("value", root=self.get_child("values", root=node))
-        values = []
-        for valnode in valnodes:
-            value = self.get(valnode, "component")
-            values.append(value)
-        return values
+        node = self.get_optional_child("entry", {"id":nodename})
+        if node is not None:
+            valnodes = self.get_children("value", root=self.get_child("values", root=node))
+            values = []
+            for valnode in valnodes:
+                value = self.get(valnode, "component")
+                values.append(value)
+            return values
+
+        return None
