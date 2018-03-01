@@ -149,7 +149,8 @@ void interface_redirect_stdout(int const* iTimestep);
 
 void interface_reset_stdout();
 
-void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
+void write_ascii_mesh(int const* indexToCellID_F,
+    double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
@@ -271,9 +272,12 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
             double const * bmb_F, double const * bmbUncertainty_F,
             double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
             double const * observedSurfaceVelocityUncertainty_F,
-            double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F);
+            double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F,
+            int const * indexToCellID_F);
  
 void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenamebase);
+
+void write_ascii_mesh_field_int(std::vector<int> fieldData, std::string filenamebase);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 
