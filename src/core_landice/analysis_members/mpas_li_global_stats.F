@@ -219,7 +219,7 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
       real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
-      real (kind=RKIND) ::  blockSUmGroundedBasalMassBal, blockSumFloatingBasalMassBal
+      real (kind=RKIND) ::  blockSumGroundedBasalMassBal, blockSumFloatingBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
@@ -433,8 +433,6 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
-         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
-         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
          call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgNetAccumulation', avgNetAccumulation)
