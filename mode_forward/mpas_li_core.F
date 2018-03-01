@@ -730,22 +730,30 @@ module li_core
          call mpas_timer_stop("compute_statistics")
       endif
 
-      ! compute analysis members on startup if option activated
-      call mpas_timer_start("analysis member startup calculations")
+      ! compute analysis members on startup if option activated (checked inside routine)
+      ! If we are doing a restart, any required output from this time level should already be written, so don't recalculate/rewrite
+      ! Note: for debugging inexact restarts, it can be useful to enable this write on a restart
+      if (.not. config_do_restart) then
+          call mpas_timer_start("analysis member startup calculations")
           call li_analysis_compute_startup(domain, err_tmp)
           err = ior(err, err_tmp)
-      call mpas_timer_stop("analysis member startup calculations")
+          call mpas_timer_stop("analysis member startup calculations")
+      endif
 
       ! ===
       ! === Write Initial Output
       ! ===
-      call mpas_timer_start("write output")
 
-      if (config_write_output_on_startup .and. (.not. config_do_restart)) then
-         call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
+      if (config_write_output_on_startup) then
+         ! If we are doing a restart, any required output from this time level should already be written, so don't rewrite
+         ! Note: for debugging inexact restarts, it can be useful to enable this write on a restart
+         if (.not. config_do_restart) then
+            call mpas_timer_start("write output")
+            call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
+            call mpas_timer_stop("write output")
+         endif
       endif
 
-      call mpas_timer_stop("write output")
 
       ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
       ! (for those fields with multiple time levels)
