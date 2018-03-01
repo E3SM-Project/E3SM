@@ -730,15 +730,7 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
             mach_pes_obj.set_value(pstrid_str, pstrid)
 
-        pesize = 1
-        max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
-        for val in totaltasks:
-            if val < 0:
-                val = -1*val*max_mpitasks_per_node
-            if val > pesize:
-                pesize = val
         if multi_driver:
-            pesize *= int(ninst)
             mach_pes_obj.set_value("MULTI_DRIVER", True)
 
         # Make sure that every component has been accounted for
@@ -755,8 +747,6 @@ class Case(object):
             key = "NTHRDS_{}".format(compclass)
             if compclass not in pes_nthrds:
                 mach_pes_obj.set_value(compclass,1)
-
-        return pesize
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
