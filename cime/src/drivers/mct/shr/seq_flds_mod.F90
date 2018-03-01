@@ -643,7 +643,7 @@ contains
     call seq_flds_add(a2x_states,"Sa_pbot")
     call seq_flds_add(x2l_states,"Sa_pbot")
     call seq_flds_add(x2i_states,"Sa_pbot")
-    if (trim(cime_model) == 'acme') then
+    if (trim(cime_model) == 'e3sm') then
        call seq_flds_add(x2o_states,"Sa_pbot")
     end if
     longname = 'Pressure at the lowest model level'
@@ -1353,7 +1353,7 @@ contains
     attname  = 'Si_ifrac'
     call metadata_set(attname, longname, stdname, units)
 
-    if (trim(cime_model) == 'acme') then
+    if (trim(cime_model) == 'e3sm') then
        ! Sea ice basal pressure
        call seq_flds_add(i2x_states,"Si_bpress")
        call seq_flds_add(x2o_states,"Si_bpress")
@@ -1373,7 +1373,7 @@ contains
     attname  = 'Fioo_q'
     call metadata_set(attname, longname, stdname, units)
 
-    if (trim(cime_model) == 'acme') then
+    if (trim(cime_model) == 'e3sm') then
        ! Ocean melt (q<0) potential
        call seq_flds_add(o2x_fluxes,"Fioo_meltp")
        call seq_flds_add(x2i_fluxes,"Fioo_meltp")
@@ -1384,7 +1384,7 @@ contains
        call metadata_set(attname, longname, stdname, units)
     end if
 
-    if (trim(cime_model) == 'acme') then
+    if (trim(cime_model) == 'e3sm') then
        ! Ocean frazil production
        call seq_flds_add(o2x_fluxes,"Fioo_frazil")
        call seq_flds_add(x2i_fluxes,"Fioo_frazil")
@@ -1520,7 +1520,7 @@ contains
     !------------------------------
     ! ice<->ocn only exchange - BGC
     !------------------------------
-    if (trim(cime_model) == 'acme' .and. flds_bgc_oi) then
+    if (trim(cime_model) == 'e3sm' .and. flds_bgc_oi) then
 
        ! Ocean algae concentration 1 - diatoms?
        call seq_flds_add(o2x_states,"So_algae1")
@@ -1967,11 +1967,11 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     ! Currently only the CESM land and runoff models treat irrigation as a separate
-    ! field: in ACME, this field is folded in to the other runoff fields. Eventually,
-    ! ACME may want to update its land and runoff models to map irrigation specially, as
+    ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
+    ! E3SM may want to update its land and runoff models to map irrigation specially, as
     ! CESM does.
     !
-    ! (Once ACME is using this irrigation field, all that needs to be done is to remove
+    ! (Once E3SM is using this irrigation field, all that needs to be done is to remove
     ! this conditional: Code in other places in the coupler is written to trigger off of
     ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
     ! conditional is removed.)

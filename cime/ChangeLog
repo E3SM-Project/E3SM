@@ -1,6 +1,115 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 2-13-2018
+Tag: cime5.4.0-alpha.24
+Answer Changes: None
+Tests: scripts_regression_tests, code_checker
+Dependencies:
+
+Brief Summary:
+    - Query_config parsing fix to find correct component.
+    - Leverage env command options to assist parsing.
+    - Add a test that compares a case created using the compset alias to
+      one created using the longname for the same compset.
+    - Disable caching withing the main test_scheduler process. 
+    - Upgrade cime_bisect.
+    - Another exception for read only in config files.
+    - Add pstrid to pes.
+    - Fix issues with read only xml.
+    - Separate post-DA from pause/resume and add resume signal at init.
+    - Restore case.st_archive.
+    - Allow merge of xml files without extra child level.
+    - Fix unused import.
+    - Reinstate xml file caching, but only for read-only files.
+    - Backout gnu changes.
+    - Update modules and mod paths for cheyenne.
+    - Jgfouca/branch for acme split 2018-01-30.
+    - Fix bug in generic env load.
+    - Improve python interface to environment modules.
+    
+
+User interface changes: 
+    - cime_bisect changes.
+    - New XML variables, PAUSE_ACTIVE_XXX.
+    - module_lmod no longer a support module type.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b4eae37 Merge pull request #2293 from jedwards4b/query_config_fix
+c20690e Merge pull request #2292 from ESMCI/jgfouca/fix_soft_env_handling
+efcd17f Merge pull request #2288 from jedwards4b/test_compset_vs_alias
+51fbde3 Merge pull request #2287 from ESMCI/jgfouca/disable_caching_in_test_sched
+0ea9941 Merge pull request #2286 from ESMCI/jgfouca/upgrade_cime_bisect
+76a5b5e Merge pull request #2281 from jedwards4b/another_read_only_exception
+877250b Merge pull request #2279 from jedwards4b/add_pstrid_to_pes
+29b7ccf Merge pull request #2278 from jedwards4b/fix_query_config
+b9a79dc Merge pull request #2267 from gold2718/da_support
+9706e13 Merge pull request #2273 from ESMCI/jgfouca/restore_case_st_archive
+7cfb8ac Merge pull request #2272 from jedwards4b/xmlmerge_fix
+964fd19 Fix unused import
+4441ff3 Merge pull request #2269 from ESMCI/jgfouca/reinstate_xml_file_caching
+4e41375 Merge pull request #2271 from jedwards4b/cheyenne_updates
+4ab197e Merge pull request #2270 from jedwards4b/cheyenne_updates
+d3740b3 Jgfouca/branch for acme split 2018 01 30 (#2264)
+939613e Merge pull request #2265 from ESMCI/jgfouca/fix_env_setup_bug
+1e57bf0 Merge pull request #2260 from ESMCI/jgfouca/improve_env_module_interface
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_compsets.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/machines/Depends.intel
+D	config/acme/machines/Depends.intel18
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+D	scripts/Tools/case.st_archive
+M	scripts/Tools/cime_bisect
+M	scripts/data_assimilation/da_no_data_mod.sh
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/pes.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/acme_cime_mgmt.py
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/desp/cime_config/namelist_definition_desp.xml
+M	src/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml
+M	src/components/data_comps/dwav/dwav_comp_mod.F90
+M	src/components/data_comps/dwav/mct/wav_comp_mct.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_compsets.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/component_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 01-27-2018
 Tag: cime5.4.0-alpha.23
 Answer Changes: None

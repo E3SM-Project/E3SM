@@ -65,8 +65,8 @@ class NamelistDefinition(EntryID):
         default_nodes = []
         for node in self.get_children("entry"):
             name = self.get(node, "id")
-            skip_default_entry = self.get(node, "skip_default_entry")
-            per_stream_entry = self.get(node, "per_stream_entry")
+            skip_default_entry = self.get(node, "skip_default_entry") == "true"
+            per_stream_entry = self.get(node, "per_stream_entry") == "true"
             set_node_values = False
             if skip_groups:
                 group_name = self._get_group_name(node)
@@ -131,7 +131,7 @@ class NamelistDefinition(EntryID):
         entries = []
         nodes = self.get_children("entry")
         for node in nodes:
-            per_stream_entry = self.get(node, "per_stream_entry")
+            per_stream_entry = self.get(node, "per_stream_entry") == "true"
             if per_stream_entry:
                 entries.append(self.get(node, "id"))
         return entries

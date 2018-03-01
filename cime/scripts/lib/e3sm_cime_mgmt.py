@@ -73,11 +73,11 @@ def get_branch_from_tag(tag):
     return branch
 
 ###############################################################################
-def do_subtree_split(old_split_tag, new_split_tag, merge_tag):
+def do_subtree_split(new_split_tag, merge_tag):
 ###############################################################################
     subtree_branch = get_branch_from_tag(new_split_tag)
-    run_cmd_no_fail("git subtree split {}.. --prefix=cime --squash --onto={} -b {}".\
-                        format(old_split_tag, merge_tag, subtree_branch), verbose=True)
+    run_cmd_no_fail("git subtree split --prefix=cime --onto={} -b {}".\
+                        format(merge_tag, subtree_branch), verbose=True)
     return subtree_branch
 
 ###############################################################################
@@ -113,7 +113,7 @@ def delete_tag(tag, remote="origin"):
     run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag), verbose=True)
 
 ###############################################################################
-def acme_cime_split(resume):
+def e3sm_cime_split(resume):
 ###############################################################################
     if not resume:
         setup()
@@ -125,7 +125,7 @@ def acme_cime_split(resume):
 
             merge_tag = get_merge_tag()
 
-            pr_branch = do_subtree_split(old_split_tag, new_split_tag, merge_tag)
+            pr_branch = do_subtree_split(new_split_tag, merge_tag)
 
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
         except:
@@ -150,7 +150,7 @@ def acme_cime_split(resume):
     delete_tag(old_split_tag)
 
 ###############################################################################
-def acme_cime_merge(resume):
+def e3sm_cime_merge(resume):
 ###############################################################################
     if not resume:
         setup()

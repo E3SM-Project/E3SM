@@ -32,6 +32,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #--------------------------------
     config = {}
     config['cime_model'] = get_model()
+    config['iyear'] = case.get_value('COMPSET').split('_')[0]
     config['BGC_MODE'] = case.get_value("CCSM_BGC")
     config['CPL_I2O_PER_CAT'] = case.get_value('CPL_I2O_PER_CAT')
     config['COMP_RUN_BARRIERS'] = case.get_value('COMP_RUN_BARRIERS')

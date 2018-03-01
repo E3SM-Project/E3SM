@@ -10,6 +10,7 @@ from standard_script_setup import *
 from CIME.code_checker import check_code, expect
 
 import argparse, sys, os
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 
 logger = logging.getLogger(__name__)

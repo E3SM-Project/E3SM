@@ -322,7 +322,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
             last_line = open(bless_log, "r").readlines()[-1]
@@ -425,7 +425,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                 # We tried. Not worth hard failure here.
                 pass
 
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
         with open(bless_log, "a") as fd:
             fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),

@@ -4,6 +4,7 @@ be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
 import xml.etree.ElementTree as ET
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 import getpass, shutil
 import six
@@ -44,26 +45,22 @@ class GenericXML(object):
         self.root = None
         self.locked = False
         self.read_only = read_only
-
-        if infile == None:
-            # if file is not defined just return
-            self.filename = None
+        self.filename = infile
+        if infile is None:
             return
 
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
-            self.filename = infile
             self.read(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
-            expect(not read_only, "Makes no sense to have empty read-only file")
-
+            expect(not self.read_only, "Makes no sense to have empty read-only file")
             logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
 
-            self.filename = infile
             root = _Element(ET.Element("xml"))
+
             if root_name_override:
                 self.root = self.make_child(root_name_override, root=root, attributes=root_attrib_override)
             else:
@@ -170,13 +167,16 @@ class GenericXML(object):
     def text(self, node):
         return node.xml_element.text
 
-    def add_child(self, node, root=None):
+    def add_child(self, node, root=None, position=None):
         """
         Add element node to self at root
         """
         expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
-        root.xml_element.append(node.xml_element)
+        if position is not None:
+            root.xml_element.insert(position, node.xml_element)
+        else:
+            root.xml_element.append(node.xml_element)
 
     def copy(self, node):
         return deepcopy(node)

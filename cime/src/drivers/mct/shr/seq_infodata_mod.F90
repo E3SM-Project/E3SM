@@ -78,7 +78,7 @@ MODULE seq_infodata_mod
      private     ! This type is opaque
 
      !--- set via namelist and held fixed ----
-     character(SHR_KIND_CS)  :: cime_model      ! acme or cesm
+     character(SHR_KIND_CS)  :: cime_model      ! e3sm or cesm
      character(SHR_KIND_CL)  :: start_type      ! Type of startup
      character(SHR_KIND_CL)  :: case_name       ! Short case identification
      character(SHR_KIND_CL)  :: case_desc       ! Long description of this case
@@ -312,7 +312,7 @@ CONTAINS
     integer :: unitn              ! Namelist unit number to read
 
     !------ namelist -----
-    character(SHR_KIND_CS) :: cime_model         ! acme or cesm
+    character(SHR_KIND_CS) :: cime_model         ! e3sm or cesm
     character(SHR_KIND_CL) :: case_desc          ! Case long description
     character(SHR_KIND_CL) :: case_name          ! Case short name
     character(SHR_KIND_CL) :: model_version      ! Model version
@@ -979,7 +979,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(seq_infodata_type),          intent(IN)  :: infodata                ! Input CCSM structure
-    character(len=*),       optional, intent(OUT) :: cime_model              ! CIME model (acme or cesm)
+    character(len=*),       optional, intent(OUT) :: cime_model              ! CIME model (e3sm or cesm)
     character(len=*),       optional, intent(OUT) :: start_type              ! Start type
     character(len=*),       optional, intent(OUT) :: case_name               ! Short case identification
     character(len=*),       optional, intent(OUT) :: case_desc               ! Long case description
@@ -1551,7 +1551,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(seq_infodata_type),          intent(INOUT) :: infodata                ! Input CCSM structure
-    character(len=*),       optional, intent(IN)    :: cime_model              ! CIME model (acme or cesm)
+    character(len=*),       optional, intent(IN)    :: cime_model              ! CIME model (e3sm or cesm)
     character(len=*),       optional, intent(IN)    :: start_type              ! Start type
     character(len=*),       optional, intent(IN)    :: case_name               ! Short case identification
     character(len=*),       optional, intent(IN)    :: case_desc               ! Long case description
@@ -2670,8 +2670,8 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     ! --- CIME model ------
-    if ( trim(infodata%cime_model) /= 'acme' .and. trim(infodata%cime_model) /= 'cesm') then
-       call shr_sys_abort( subname//': cime_model must be set to acme or cesm, aborting')
+    if ( trim(infodata%cime_model) /= 'e3sm' .and. trim(infodata%cime_model) /= 'cesm') then
+       call shr_sys_abort( subname//': cime_model must be set to e3sm or cesm, aborting')
     end if
 
     ! --- Case name ------
