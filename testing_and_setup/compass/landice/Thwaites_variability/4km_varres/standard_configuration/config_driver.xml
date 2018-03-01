@@ -1,0 +1,6 @@
+<driver_script name="setup_thwaites_testcase.py">
+        <case name="setup_model">
+                <step executable="./setup_model.py" quiet="false" pre_message=" * Running setup_model step" post_message="     Complete"/>
+        </case>
+</driver_script>
+

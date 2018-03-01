@@ -1461,9 +1461,12 @@ module li_thermal
            lowerSurface,             & ! lower surface elevation (m)
            bedTopography               ! bed topography (m; negative below sea level)
 
+      real(kind=RKIND), pointer :: daysSinceStart
+
       integer :: iCell, err_tmp
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
@@ -1515,6 +1518,7 @@ module li_thermal
 
          ! get fields from the mesh pool
          call mpas_pool_get_array(meshPool, 'xCell', xCell)
+         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
 
          ! get fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -1547,6 +1551,7 @@ module li_thermal
               config_basal_mass_bal_float,  &
               nCellsSolve,                  &
               xCell,                        &
+              daysSinceStart,               &
               thermalCellMask,              &
               li_mask_is_floating_ice_int(cellMask), &
               lowerSurface,                 &
@@ -1554,7 +1559,9 @@ module li_thermal
               config_sea_level,             &
               config_bmlt_float_flux,       &
               config_bmlt_float_xlimit,     &
-              floatingBasalMassBal)
+              floatingBasalMassBal,         &
+              err_tmp)
+         err = ior(err, err_tmp)
 
          !WHL - debug
          ! write(stdoutUnit,*) 'Computed basal melt for floating ice'
@@ -2888,6 +2895,7 @@ module li_thermal
          config_basal_mass_bal_float,   &
          nCellsSolve,                   &
          xCell,                         &
+         daysSinceStart,                &
          iceMask,                       &
          floatingMask,                  &
          lowerSurface,                  &
@@ -2895,7 +2903,8 @@ module li_thermal
          config_sea_level,              &
          config_bmlt_float_flux,        &
          config_bmlt_float_xlimit,      &
-         floatingBasalMassBal)
+         floatingBasalMassBal,          &
+         err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -2909,6 +2918,8 @@ module li_thermal
 
       real(kind=RKIND), dimension(:), intent(in) :: &
            xCell                    !< Input: x coordinate for each cell
+
+      real(kind=RKIND), pointer, intent(in) :: daysSinceStart
 
       real(kind=RKIND), dimension(:), intent(in) :: &
            lowerSurface,          & !< Input: lower surface elevation (m)
@@ -2936,6 +2947,8 @@ module li_thermal
       real(kind=RKIND), dimension(:), intent(out):: &
            floatingBasalMassBal     !< Output: basal mass balance for floating ice
 
+      integer, intent(out) :: err
+
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -2959,7 +2972,18 @@ module li_thermal
            bmlt_float_z0 = -100._RKIND              ! scale for ice draft (m)
                                                     ! MISMIP+ default value = -100 m
 
+      ! basal melt parameters for Seroussi param.
+      real (kind=RKIND) :: slopeSer  ! slope of relation between depth and melt rate
+      real (kind=RKIND) :: interceptSer  ! depth at which melting goes to 0
+      real (kind=RKIND) :: maxMeltSer  ! maximum allowable melt rate
+      real (kind=RKIND) :: sillDepth  ! depth below which melt rate no longer increases
+      real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_amplitude
+      real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_period
+      real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_phase
+
+
       ! Compute melt rate for floating ice
+      err = 0
 
       ! initialize to zero melt
       floatingBasalMassBal(:) = 0.0_RKIND
@@ -3030,10 +3054,59 @@ module li_thermal
          ! change units from m/s to kg/m2/s
          floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
 
+      elseif (trim(config_basal_mass_bal_float) == 'seroussi') then
+
+         ! Melt rate parameterization from:
+         ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017), Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation, Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
+         ! for Thwaites Glacier.
+         ! Specifically, this is a linear fit of melt with shelf draft from the Supplemental Information, Figure S1.
+         ! The linear relation is modified by a:
+         !   * depth above which there is no melt (Antarctic Surface Water saturation)
+         !   * a maximum melt rate (Circumpolar Deep Water saturation)
+         !   * a depth below which melt stops increasing (minimum sill height)
+
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', config_basal_mass_bal_seroussi_amplitude) ! meters
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', config_basal_mass_bal_seroussi_period) ! years
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', config_basal_mass_bal_seroussi_phase) ! cycles
+
+         slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate (melt (m/yr) per depth (m))
+         interceptSer = -100.0_RKIND  ! depth (m) at which melting goes to 0 (negative meaning below sea level)
+         maxMeltSer = 50.0_RKIND ! maximum allowable melt rate (m/yr) (positive meaning melting)
+         sillDepth = -650.0_RKIND ! depth below which melt stops increasing (m) (negative meaning below sea level)
+
+         if (config_basal_mass_bal_seroussi_period <= 0.0_RKIND) then
+            call mpas_log_write("Value for config_basal_mass_bal_seroussi_period has to be a positive real value.", MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+
+         ! Modify intercept height for variability parameters
+         interceptSer = interceptSer + config_basal_mass_bal_seroussi_amplitude * &
+                 sin( (2.0_RKIND * pii / config_basal_mass_bal_seroussi_period) * (daysSinceStart/365.0_RKIND) &
+                     + 2.0_RKIND * pii * config_basal_mass_bal_seroussi_phase)
+
+         ! Initialize before computing
+         floatingBasalMassBal(:) = 0.0_RKIND
+
+         do iCell = 1, nCellsSolve
+
+            ! Shut off melt at an arbitrary shallow depth to discourage ice from disappearing.
+            if ( (floatingMask(iCell) == 1) .and. (lowerSurface(iCell) < -10.0_RKIND) ) then
+               ! ice is present and floating
+
+               zDraft = lowerSurface(iCell) - config_sea_level
+               ! Coefficients for m/yr melt rate (in units of Seroussi figure but without negative meaning melting)
+               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * (max(zDraft, sillDepth) - interceptSer)))
+
+            endif   ! ice is present
+         enddo   ! iCell
+
+         ! change units from m/yr to kg/m2/s
+         floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi / scyr
+
       else
 
-         call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // trim(config_basal_mass_bal_float), MPAS_LOG_CRIT)
-         ! TODO: pass back error code to calling routine
+         call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // trim(config_basal_mass_bal_float), MPAS_LOG_ERR)
+         err = ior(err, 1)
 
       endif   ! config_basal_mass_bal_float
 

@@ -168,6 +168,7 @@ contains
       real (kind=RKIND), pointer ::  config_ice_density
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
+      real (kind=RKIND), dimension(:), pointer ::  dvEdge
       real (kind=RKIND), dimension(:), pointer ::  thickness
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
@@ -177,8 +178,14 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
+      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity 
+      real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: edgeMask
+      integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCellsSolve
+      integer, pointer :: nEdgesSolve
+      integer, pointer :: nVertLevels
 
       ! config options needed
       real (kind=RKIND), pointer :: config_sea_level
@@ -186,7 +193,8 @@ contains
       real (kind=RKIND), pointer :: rhow ! config_ocean_density
 
       ! Local counters
-      integer :: k, iCell
+      integer :: k, iCell, iEdge
+      integer :: iCell1, iCell2
 
       ! scalars to be calculated here from global reductions
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
@@ -200,6 +208,7 @@ contains
       real (kind=RKIND), pointer ::  avgGroundedBasalMelt
       real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
+      real (kind=RKIND), pointer ::  groundingLineFlux
       real (kind=RKIND), pointer ::  surfaceSpeedMax
       real (kind=RKIND), pointer ::  basalSpeedMax
 
@@ -214,6 +223,10 @@ contains
       real (kind=RKIND) ::  blockSumCalvingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
+      real (kind=RKIND) ::  blockGLflux
+
+      ! Local variables for calculations
+      real (kind=RKIND) :: fluxSign
 
       ! variables for processing stats
       integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
@@ -237,6 +250,7 @@ contains
       blockSumGroundedBasalMassBal = 0.0_RKIND
       blockSumFloatingBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
+      blockGLflux = 0.0_RKIND
 
       ! initialize max to 0, min to large number
       blockThickMin = 100000.0_RKIND
@@ -262,18 +276,25 @@ contains
          ! get values and arrays from standard pools
          call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
+         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -332,6 +353,29 @@ contains
 
          end do ! end loop over cells
 
+         ! Loop over edges
+         do iEdge = 1, nEdgesSolve
+            if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+               ! Determine sign of this edge relative to GL
+               ! (+=grounded to floating, -=floating to grounded)
+               iCell1 = cellsOnEdge(1,iEdge)
+               iCell2 = cellsOnEdge(2,iEdge)
+               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
+                  fluxSign = 1.0_RKIND
+               else
+                  fluxSign = -1.0_RKIND
+               endif
+
+               ! Loop over levels
+               do k = 1, nVertLevels
+                  ! Flux across GL, units = kg/yr
+                  blockGLflux = blockGLflux + fluxSign * layerNormalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge) &
+                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
+               end do ! end loop over levels
+            end if ! if GL
+
+         end do ! end loop over edges
+
          block => block % next
       end do    ! end loop over blocks
 
@@ -373,7 +417,8 @@ contains
       sums(10) = blockSumFloatingBasalMassBal
       sums(11) = blockSumCalvingFlux
       sums(12) = blockSumVAF
-      nVars = 12
+      sums(13) = blockGLflux
+      nVars = 13
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -399,6 +444,7 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'totalFloatingBasalMassBal', totalFloatingBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgSubshelfMelt', avgSubshelfMelt)
          call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundingLineFlux', groundingLineFlux)
 
          totalIceArea = reductions(1)
          totalIceVolume = reductions(2)
@@ -412,6 +458,7 @@ contains
          totalFloatingBasalMassBal = reductions(10)
          totalCalvingFlux = reductions(11)
          volumeAboveFloatation = reductions(12)
+         groundingLineFlux = reductions(13)
 
          iceThicknessMean = totalIceVolume / totalIceArea
          avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
