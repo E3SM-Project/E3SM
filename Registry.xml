@@ -140,6 +140,10 @@
 		<nml_option name="config_thermal_solver" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for the vertical thermal solver."
 		            possible_values="'none', 'temperature', 'enthalpy'"
+                />
+                <nml_option name="config_thermal_calculate_bmb" type="logical" default_value=".true." units="unitless"
+			description="Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_temperature_init" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for initializing the ice temperature."
