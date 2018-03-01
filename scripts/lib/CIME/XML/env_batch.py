@@ -191,7 +191,7 @@ class EnvBatch(EnvBase):
             walltime    = case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) if case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) else None
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
             logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
-            task_count = jsect["task_count"] if "task_count" in jsect else case.total_tasks
+            task_count = int(jsect["task_count"]) if "task_count" in jsect else case.total_tasks
             walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else walltime
             if "task_count" in jsect:
                 # job is using custom task_count, need to compute a node_count based on this
