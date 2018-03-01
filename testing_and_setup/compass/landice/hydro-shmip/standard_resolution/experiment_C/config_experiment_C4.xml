@@ -8,6 +8,7 @@
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
                 <option name="config_SGH_shmip_forcing">'C4'</option>
+                <option name="config_SGH_englacial_porosity">1.0e-4</option>
                 <option name="config_dt">'0000-00-00_01:00:00'</option>
         </namelist>
 
