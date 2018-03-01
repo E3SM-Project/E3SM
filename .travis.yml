@@ -6,3 +6,9 @@ python:
 env:
   - CIME_MODEL=cesm
 script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode
+
+# In addition to building PRs, also run the build on master whenever
+# it's pushed
+branches:
+  only:
+  - master
