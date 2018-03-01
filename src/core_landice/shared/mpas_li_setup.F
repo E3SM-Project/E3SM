@@ -101,6 +101,8 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      character(len=StrKIND), pointer :: config_thermal_solver
+      character(len=StrKIND), pointer :: config_tracer_advection
 
       err = 0
 
@@ -108,18 +110,31 @@ contains
       liConfigs => domain % configs
       liPackages => domain % packages
 
+      ! ---
+      ! Config-specific setup occurs here
+      ! ---
 
-      ! Print this run's configs to the err log file
+      ! If thermal evolution is enabled, force tracer advection to be on
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
+      if (( (trim(config_thermal_solver) == 'temperature') .or. &
+            (trim(config_thermal_solver) == 'enthalpy') ) .and. &
+            (trim(config_tracer_advection) /= 'fo') )then
+         call mpas_log_write("Setting config_tracer_advection='fo' because a thermal solver has been selected. " // &
+            "(config_tracer_advection was set to: " // trim(config_tracer_advection) // ")", MPAS_LOG_WARN)
+         config_tracer_advection = 'fo'
+      endif
+
+
+      ! ---
+      ! Print this run's configs to the log file
+      ! ---
+      call mpas_log_write("")
       call mpas_log_write("MPASLI is using the following configuration:")
       call mpas_log_write("============================================")
       call mpas_pool_print_summary(liConfigs, MPAS_POOL_CONFIG)
       call mpas_log_write("============================================")
       call mpas_log_write("")
-
-      ! ---
-      ! Config-specific setup occurs below
-      ! ---
-
 
    !--------------------------------------------------------------------
    end subroutine li_setup_config_options
