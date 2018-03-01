@@ -1,6 +1,7 @@
 name: acme_diags_env
 channels:
 - acme
+- anaconda
 - conda-forge
 - uvcdat
 - defaults
