@@ -16,6 +16,13 @@ outfname = 'globalStats.nc'
 runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
 print "Original run list:", runs
 
+
+# get just the 0 phase for each amp/per
+#runs[:] = [r for r in runs if 'pha0.00' in r]
+# get all the phase for one amp/per
+#runs[:] = [r for r in runs if 'amp300_per70' in r]
+#runs.append('steady')
+
 # reorder to put the 'control' runs at the beginning
 special_runs = ('steady', 'no-melt')
 for r in special_runs:
@@ -103,7 +110,7 @@ class modelRun:
       # resampled version of time array - needed for filtering.
       # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
       resampEndtime = self.yrs.max()
-      resampEndtime = 264.0
+      resampEndtime = 300.0
       self.resampYrs = np.linspace(0.0, resampEndtime, num=resampEndtime*12*2)
       self.dresampYrs = self.resampYrs[1:] - self.resampYrs[0:-1]
    
@@ -350,10 +357,10 @@ axTimes.set_yticklabels(axTimesYlabels)
 
 
 # ===================  for figure 2
-handles, labels = ax2VAF.get_legend_handles_labels()
-l1 = ax2VAF.legend(handles[0:2], labels[0:2], loc='lower left', ncol=1)  # control runs
-#l2 = ax2VAF.legend(handles[2:], labels[2:], loc='lower center', ncol=2)  # variability runs
-ax2VAF.add_artist(l1)
+#handles, labels = ax2VAF.get_legend_handles_labels()
+#l1 = ax2VAF.legend(handles[0:1], labels[0:1], loc='lower left', ncol=1)  # control runs
+#l2 = ax2VAF.legend(handles[1:], labels[1:], loc='lower center', ncol=2)  # variability runs
+#ax2VAF.add_artist(l1)
 
 ax2SLR=ax2VAF.twinx()
 y1, y2=ax2VAF.get_ylim()
@@ -423,6 +430,12 @@ colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
 # ref value
 steadyVAF = runData['steady'].VAFsmooth
 
+# add control run
+if 'steady' in runData:
+   ax3MeanMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', label='steady')
+   ax3VAF.plot(runData['steady'].resampYrs, runData['steady'].VAFsmooth, 'k', label='steady')
+   ax3VAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:], 'k', label='steady')
+
 groupNumber = 0
 for groupName in sorted(groups):  # sorted puts them in alpha order
    print "Plotting group: " + groupName
@@ -477,14 +490,14 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
 
    groupNumber += 1
 
-# add control run
-if 'steady' in runData:
-   ax3MeanMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', label='steady')
-   ax3VAF.plot(runData['steady'].resampYrs, runData['steady'].VAFsmooth, 'k', label='steady')
-   ax3VAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:], 'k', label='steady')
-
 # show legend   
-legend = ax3VAF.legend(loc='lower left')
+#legend = ax3VAF.legend(loc='lower left')
+# or as multiple columns
+handles, labels = ax3VAF.get_legend_handles_labels()
+l1 = ax3VAF.legend(handles[0:1], labels[0:1], loc='lower left', ncol=1)  # control runs
+l2 = ax3VAF.legend(handles[1:], labels[1:], loc='lower center', ncol=2)  # variability runs
+ax3VAF.add_artist(l1)
+
 
 axSLR=ax3VAF.twinx()
 y1, y2=ax3VAF.get_ylim()
