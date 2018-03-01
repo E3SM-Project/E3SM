@@ -1,0 +1,66 @@
+#
+## Sample trilinos configuration script, that works on Jaguar.
+## Note 1: The "../Trilinos" at the end assumes that this is run in a 
+#  sister directory to Trilinos. This relative path can be changed.
+## Note 2: The PREFIX is set to "$PWD/install". This is the Trilinos install 
+##   path that you need to use in the glimmer configuration script after
+##   --with-trilinos=<CMAKE_INSTALL_PREFIX>.
+## Note 3: After running this script, you can run:
+##    make -j 6
+##    ctest    # On compute nodes, a handful of Piro tests on 4 procs should pass
+##    make install  
+## 
+#
+
+#module remove cmake
+#module load cmake/2.8.0 subversion netcdf
+
+rm CMakeCache.txt
+
+cmake -D CMAKE_INSTALL_PREFIX:PATH=$PWD/install \
+      -D TPL_ENABLE_MPI:BOOL=ON \
+      -D CMAKE_BUILD_TYPE:STRING=RELEASE \
+      -D Trilinos_WARNINGS_AS_ERRORS_FLAGS:STRING="" \
+      -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
+      -D Trilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=OFF \
+\
+      -D Trilinos_ENABLE_Teuchos:BOOL=ON \
+      -D Trilinos_ENABLE_Epetra:BOOL=ON \
+      -D Trilinos_ENABLE_EpetraExt:BOOL=ON \
+      -D Trilinos_ENABLE_Ifpack:BOOL=ON \
+      -D Trilinos_ENABLE_AztecOO:BOOL=ON \
+      -D Trilinos_ENABLE_Amesos:BOOL=ON \
+      -D Trilinos_ENABLE_Anasazi:BOOL=ON \
+      -D Trilinos_ENABLE_Belos:BOOL=ON \
+      -D Trilinos_ENABLE_ML:BOOL=ON \
+      -D Trilinos_ENABLE_NOX:BOOL=ON \
+      -D Trilinos_ENABLE_Stratimikos:BOOL=ON \
+      -D Trilinos_ENABLE_Thyra:BOOL=ON \
+      -D Trilinos_ENABLE_Zoltan:BOOL=ON \
+      -D Trilinos_ENABLE_Piro:BOOL=ON \
+\
+      -D Belos_ENABLE_TEUCHOS_TIME_MONITOR:BOOL=ON \
+      -D Stratimikos_ENABLE_TEUCHOS_TIME_MONITOR:BOOL=ON \
+\
+      -D Trilinos_ENABLE_TESTS:BOOL=OFF \
+      -D Trilinos_ENABLE_EXAMPLES:BOOL=OFF \
+      -D Piro_ENABLE_TESTS:BOOL=ON \
+      -D CMAKE_CXX_FLAGS:STRING="-fast -Kieee  --diag_suppress 554,111,611" \
+      -D CMAKE_Fortran_FLAGS:STRING="-fast -Kieee" \
+      -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
+      -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+      -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \
+\
+     -D CMAKE_C_COMPILER:FILEPATH="cc" \
+     -D CMAKE_CXX_COMPILER:FILEPATH="CC" \
+     -D CMAKE_Fortran_COMPILER:FILEPATH="ftn" \
+     -D TPL_BLAS_LIBRARIES:STRING="sci" \
+     -D TPL_LAPACK_LIBRARIES:STRING="sci" \
+\
+    -D MPI_EXEC:FILEPATH=aprun \
+    -D MPI_EXEC_MAX_NUMPROCS:STRING=4 \
+    -D MPI_EXEC_NUMPROCS_FLAG:STRING=-n \
+\
+ ../Trilinos
+
+

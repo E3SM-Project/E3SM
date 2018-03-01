@@ -1,0 +1,22 @@
+This document summarizes the steps that are required to add a new diagnostic
+to MPAS-Atmosphere. The "tempate" files may be used as a guide for what is
+generally required to implement a diagnostic.
+
+1) Define namelist options, dimensions, packages, and fields needed by 
+   the diagnostic in a new Registry_<your_diagnostic>.xml file. 
+
+   Add a #include statement for this new Registry file in 
+   Registry_diagnostics.xml.
+
+2) Create a new module for the diagnostic; the "mpas_atm_diagnostic_template.F" 
+   module file may be used as a template.
+
+3) Add calls to the diagnostic's "setup", "update", "compute", "reset", and 
+   "cleanup" routines in the main diagnostic driver. Note that some diagnostics
+   may not require all of these routines, in which case they can simply be
+   omitted.
+
+3) Add the object file for the new diagnostic module to the definition of 
+   DIAGNOSTIC_MODULES in the Makefile, and add a dependency on the new module 
+   for the diagnostic driver. If the diagnostic has any other dependencies
+   within the diagnostics/ subdirectory, specify those as well in the Makefile.

@@ -1,0 +1,50 @@
+<streamstemplate>
+      <general_comment>
+      This is a streams file to pass historical CO2 from datm8 to the other
+      surface models. It reads in a historical dataset derived from data used
+      by CAM. The getco2_historical.ncl script in models/lnd/clm2/tools/ncl_scripts
+      was used to convert the CAM file to a streams compatible format (adding domain
+      information and making CO2 have latitude/longitude even if only for a single 
+      point.
+      </general_comment>
+<stream>
+      <comment>
+        Input stream description file for historical CO2 reconstruction data
+
+        04 March 2010: Converted to form that can be used by datm8 by Erik Kluzek
+        18 December 2009: Prepared by B. Eaton using data provided by 
+        Jean-Francois Lamarque. All variables except f11 are directly from
+        PRE2005_MIDYR_CONC.DAT. Data from 1765 to 2007 with 2006/2007 just
+        a repeat of 2005.
+      </comment>
+      <dataSource>
+         CLMNCEP
+      </dataSource>
+      <domainInfo>
+         <variableNames>
+            time    time
+            lonc    lon
+            latc    lat
+            area    area
+            mask    mask
+         </variableNames>
+         <filePath>
+            /fis/cgd/cseg/csm/inputdata/atm/datm7/CO2
+         </filePath>
+         <fileNames>
+            fco2_datm_1765-2007_c100614.nc
+         </fileNames>
+      </domainInfo>
+      <fieldInfo>
+         <variableNames>
+            CO2        co2diag
+         </variableNames>
+         <filePath>
+            /fis/cgd/cseg/csm/inputdata/atm/datm7/CO2
+         </filePath>
+         <fileNames>
+            fco2_datm_1765-2007_c100614.nc
+         </fileNames>
+      </fieldInfo>
+</stream>
+</streamstemplate>

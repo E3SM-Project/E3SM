@@ -1,0 +1,132 @@
+
+
+
+
+
+      module m_spc_id
+
+      implicit none
+
+      integer, parameter :: id_O3 = 1
+      integer, parameter :: id_O = 2
+      integer, parameter :: id_O1D = 3
+      integer, parameter :: id_N2O = 4
+      integer, parameter :: id_NO = 5
+      integer, parameter :: id_NO2 = 6
+      integer, parameter :: id_NO3 = 7
+      integer, parameter :: id_HNO3 = 8
+      integer, parameter :: id_HO2NO2 = 9
+      integer, parameter :: id_N2O5 = 10
+      integer, parameter :: id_H2 = 11
+      integer, parameter :: id_OH = 12
+      integer, parameter :: id_HO2 = 13
+      integer, parameter :: id_H2O2 = 14
+      integer, parameter :: id_H = 15
+      integer, parameter :: id_CH4 = 16
+      integer, parameter :: id_CO = 17
+      integer, parameter :: id_CH3O2 = 18
+      integer, parameter :: id_CH3OOH = 19
+      integer, parameter :: id_CH2O = 20
+      integer, parameter :: id_CH3OH = 21
+      integer, parameter :: id_C2H5OH = 22
+      integer, parameter :: id_C2H4 = 23
+      integer, parameter :: id_EO = 24
+      integer, parameter :: id_EO2 = 25
+      integer, parameter :: id_CH3COOH = 26
+      integer, parameter :: id_GLYALD = 27
+      integer, parameter :: id_EOOH = 28
+      integer, parameter :: id_C2H6 = 29
+      integer, parameter :: id_C2H5O2 = 30
+      integer, parameter :: id_C2H5OOH = 31
+      integer, parameter :: id_CH3CHO = 32
+      integer, parameter :: id_CH3CO3 = 33
+      integer, parameter :: id_CH3COOOH = 34
+      integer, parameter :: id_C3H6 = 35
+      integer, parameter :: id_C3H8 = 36
+      integer, parameter :: id_C3H7O2 = 37
+      integer, parameter :: id_C3H7OOH = 38
+      integer, parameter :: id_PO2 = 39
+      integer, parameter :: id_POOH = 40
+      integer, parameter :: id_CH3COCH3 = 41
+      integer, parameter :: id_RO2 = 42
+      integer, parameter :: id_ROOH = 43
+      integer, parameter :: id_BIGENE = 44
+      integer, parameter :: id_ENEO2 = 45
+      integer, parameter :: id_MEK = 46
+      integer, parameter :: id_MEKO2 = 47
+      integer, parameter :: id_MEKOOH = 48
+      integer, parameter :: id_BIGALK = 49
+      integer, parameter :: id_ALKO2 = 50
+      integer, parameter :: id_ALKOOH = 51
+      integer, parameter :: id_ISOP = 52
+      integer, parameter :: id_ISOPO2 = 53
+      integer, parameter :: id_ISOPOOH = 54
+      integer, parameter :: id_MVK = 55
+      integer, parameter :: id_MACR = 56
+      integer, parameter :: id_MACRO2 = 57
+      integer, parameter :: id_MACROOH = 58
+      integer, parameter :: id_MCO3 = 59
+      integer, parameter :: id_HYDRALD = 60
+      integer, parameter :: id_HYAC = 61
+      integer, parameter :: id_CH3COCHO = 62
+      integer, parameter :: id_XO2 = 63
+      integer, parameter :: id_XOOH = 64
+      integer, parameter :: id_C10H16 = 65
+      integer, parameter :: id_TERPO2 = 66
+      integer, parameter :: id_TERPOOH = 67
+      integer, parameter :: id_TOLUENE = 68
+      integer, parameter :: id_CRESOL = 69
+      integer, parameter :: id_TOLO2 = 70
+      integer, parameter :: id_TOLOOH = 71
+      integer, parameter :: id_BENZENE = 72
+      integer, parameter :: id_BENO2 = 73
+      integer, parameter :: id_BENOOH = 74
+      integer, parameter :: id_XYLENE = 75
+      integer, parameter :: id_XYLO2 = 76
+      integer, parameter :: id_XYLOOH = 77
+      integer, parameter :: id_XOH = 78
+      integer, parameter :: id_BIGALD = 79
+      integer, parameter :: id_GLYOXAL = 80
+      integer, parameter :: id_PAN = 81
+      integer, parameter :: id_ONIT = 82
+      integer, parameter :: id_MPAN = 83
+      integer, parameter :: id_ISOPNO3 = 84
+      integer, parameter :: id_ONITR = 85
+      integer, parameter :: id_CB1 = 86
+      integer, parameter :: id_CB2 = 87
+      integer, parameter :: id_OC1 = 88
+      integer, parameter :: id_OC2 = 89
+      integer, parameter :: id_SOAM = 90
+      integer, parameter :: id_SOAI = 91
+      integer, parameter :: id_SOAT = 92
+      integer, parameter :: id_SOAB = 93
+      integer, parameter :: id_SOAX = 94
+      integer, parameter :: id_SOGM = 95
+      integer, parameter :: id_SOGI = 96
+      integer, parameter :: id_SOGT = 97
+      integer, parameter :: id_SOGB = 98
+      integer, parameter :: id_SOGX = 99
+      integer, parameter :: id_SO2 = 100
+      integer, parameter :: id_DMS = 101
+      integer, parameter :: id_SO4 = 102
+      integer, parameter :: id_NH3 = 103
+      integer, parameter :: id_NH4 = 104
+      integer, parameter :: id_NH4NO3 = 105
+      integer, parameter :: id_SSLT01 = 106
+      integer, parameter :: id_SSLT02 = 107
+      integer, parameter :: id_SSLT03 = 108
+      integer, parameter :: id_SSLT04 = 109
+      integer, parameter :: id_DST01 = 110
+      integer, parameter :: id_DST02 = 111
+      integer, parameter :: id_DST03 = 112
+      integer, parameter :: id_DST04 = 113
+      integer, parameter :: id_Rn = 114
+      integer, parameter :: id_Pb = 115
+      integer, parameter :: id_HCN = 116
+      integer, parameter :: id_CH3CN = 117
+      integer, parameter :: id_C2H2 = 118
+      integer, parameter :: id_HCOOH = 119
+      integer, parameter :: id_HOCH2OO = 120
+
+
+      end module m_spc_id

@@ -1,0 +1,47 @@
+\hypertarget{ice__domain_8F90}{
+\section{ice\_\-domain.F90 File Reference}
+\label{ice__domain_8F90}\index{ice\_\-domain.F90@{ice\_\-domain.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__domain}{ice\_\-domain}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__domain_a110521a564e05165f28b634bd881455c}{ice\_\-domain::init\_\-domain\_\-blocks}
+\item 
+subroutine \hyperlink{namespaceice__domain_a1beac4cd1574f731cb07cd1f7d20f724}{ice\_\-domain::init\_\-domain\_\-distribution} (KMTG, ULATG, work\_\-per\_\-block, prob\_\-per\_\-block, blockType, bStats)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__domain_aae3d2de717ee7a743c9635b3a9e35a95}{ice\_\-domain::nblocks}
+\item 
+integer(int\_\-kind), dimension(:), pointer \hyperlink{namespaceice__domain_a152cf5087ce1dccce8f5e147306320ae}{ice\_\-domain::blocks\_\-ice}
+\item 
+type(\hyperlink{typeice__distribution_1_1distrb}{distrb}) \hyperlink{namespaceice__domain_af84e6e4ee8c3c2d04326e26048f003b1}{ice\_\-domain::distrb\_\-info}
+\item 
+type(ice\_\-halo) \hyperlink{namespaceice__domain_a06df1ee3a618bfdd4e7f6445a5376604}{ice\_\-domain::halo\_\-info}
+\item 
+logical(log\_\-kind) \hyperlink{namespaceice__domain_aec6b06cf3394cb064898a46434391258}{ice\_\-domain::ltripole\_\-grid}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__domain_a56566cef9f35bb56cb7a97e73ce17acc}{ice\_\-domain::ew\_\-boundary\_\-type}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__domain_a50e350eed39ec93fdfef517e4b45b5a5}{ice\_\-domain::ns\_\-boundary\_\-type}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__domain_a9c80809a4e6a48707a7ef1f2eb795ea5}{ice\_\-domain::distribution\_\-type}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__domain_a89743a68c52b19112e09ab35a820ff26}{ice\_\-domain::distribution\_\-wght}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__domain_a010eb9c42e0d853d313f922f3ddecf93}{ice\_\-domain::distribution\_\-wght\_\-file}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__domain_afcc67a62427b0b7620d366168d6a42ff}{ice\_\-domain::nprocs}
+\item 
+logical(log\_\-kind) \hyperlink{namespaceice__domain_a8f4a0f7b5e1a37ba6e8e8e64dd040267}{ice\_\-domain::profile\_\-barrier}
+\item 
+logical(log\_\-kind) \hyperlink{namespaceice__domain_a2d52e3f832101d05076304dedcbfd465}{ice\_\-domain::FixMaxBlock}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__domain_ae245e03a7c30b2d04cbd99256514fe65}{ice\_\-domain::maxBlock}
+\end{DoxyCompactItemize}

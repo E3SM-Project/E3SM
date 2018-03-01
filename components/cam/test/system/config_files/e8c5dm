@@ -1,0 +1,6 @@
+-spmd -nosmp
+-dyn eul
+-res 8x16
+-phys cam5
+-debug
+-s

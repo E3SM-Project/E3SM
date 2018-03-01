@@ -1,0 +1,181 @@
+#!/bin/tcsh -f 
+#PBS -l nodes=20:ppn=2
+#PBS -l walltime=4:00:00
+#PBS -j oe
+#PBS -A 109710/1
+
+set NCPU = 1
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+    echo using NCPU = $NCPU
+endif
+#set NCPU = 2
+
+set nlev=20
+
+
+# E-E0/E0   2 hour run
+#           dt= 720      180       45         10         5       2
+# ORIGINAL    .59e-7    .30e-7    .29e-7     .29e-7
+# ORIG + BOOTSTRAP
+#             .29e-7    .29e-7    .29e-7     .29e-7    .29e-7    
+#
+# NEW        .16e-7    .95e-9     .59e-10    .30e-11   .78e-12  .23e-12
+# NEW+BOOTSTRAP:
+#           -.49e-9   -.40e-10   -.26e-11   -.10e-12   .15e-13  .11e-12
+#
+
+# standard test case:  ne=2  tstep=180 NPTS=4
+#set ne = 2
+#set tstep = 180
+#set NPTS = 4
+
+set ne = 3
+set tstep = 240
+set NPTS = 8
+
+
+#set ne = 5
+#set tstep = 120  
+#set NPTS = 8
+
+#set ne = 9
+#set tstep = 60
+#set NPTS = 8
+
+
+#set ne = 21
+#set tstep = 240
+#set NPTS = 4
+
+# set number of hours
+set nmax = 2
+@ nmax *= 3600
+@ nmax /= $tstep
+set nmax = 1
+
+# number of min between calls to prim_printstate
+set sfreq = 15
+@ sfreq *= 60
+@ sfreq /= $tstep
+set sfreq = 1
+
+# hypervis = 0   then use -nu${nu} for name.  strong form viscosity
+# hypervis = 1   then use -wnu${nu} for name.  weak form viscosity
+# hypervis = 2   then use -hnu${nu} for name.  hyper viscosity
+
+#set nu = 7e5
+#set nu_s = 7e5
+#set hypervis = 0
+#set subcycle = 1
+
+
+#set nu = 7e5
+#set nu_s = 7e5
+#set hypervis = 1
+#set subcycle = 1
+
+
+#set nu = 8e16
+#set nu_s = 8e16
+#set hypervis = 2
+#set subcycle = 100
+
+set nu = 0
+set nu_s = 0
+set hypervis = 2
+set subcycle = 100
+
+
+
+
+set src = ~/homme/build.Linux
+set input = ~/homme/test/baroclinic
+if ( $NPTS == 8 ) then
+   set namelist = Params${nlev}.inc
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+   set namelist = Params${nlev}-${NPTS}.inc
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+
+if ( $hypervis == 0 ) then
+   set name = baro-${mesh}-nu${nu}
+endif
+if ( $hypervis == 1 ) then
+   set name = baro-${mesh}-wnu${nu}-$subcycle
+endif
+if ( $hypervis == 2 ) then
+   set name = baro-${mesh}-hnu${nu}-$subcycle
+endif
+
+echo $name
+
+
+# setup directories
+if ( dosadi == `hostname` || nostromo == `hostname` ) then
+   set src = ~/codes/homme/build.Linux
+   set input = ~/codes/homme/test/baroclinic
+   set wdir = /tmp/preqx
+   set vdir = ~/codes/homme/test/vcoord
+else if ( Darwin == `uname` ) then
+   set src = ~/homme/build.Darwin
+   set input = ~/homme/test/baroclinic
+   set wdir = /tmp/preqx
+   set vdir = /Users/mataylo/homme/test/vcoord
+else
+   set src = ~/homme/build.Linux
+   set input = ~/homme/test/baroclinic
+   set wdir = ~/scratch3/preqx
+   set vdir = /home/mataylo/homme/test/vcoord
+endif
+
+
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+ln -s $vdir $wdir/vcoord
+
+
+
+
+# copy Params.inc into output directory to archive it
+sed s/MOVIE.\*/"MOVIE = _NETCDF"/ $input/$namelist > $wdir/Params.inc
+
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/explicit.nl
+
+
+
+
+diff  $wdir/Params.inc $src/../Params.inc
+if ($status != 0) then
+   echo "replacing Params.inc"
+   cp $wdir/Params.inc $src/../Params.inc
+endif
+
+
+cd $src
+make preqx
+sleep 1
+cd $wdir
+
+mpirun -np $NCPU $src/preqx < $wdir/explicit.nl
+
+exit
+
+ nstep= 100  time= 0.1388888888888889  [day]
+     u =   -0.311645269563532E+00   0.455376314590129E+02   0.720595200506637E+06
+     v =   -0.241599753432971E+01   0.276911853882132E+01  -0.140255707847069E+04
+     t =    0.206599576612205E+03   0.292529189950314E+03   0.482809026658146E+08
+     qv=    0.100000000000000E-11   0.100000000000002E-11   0.192000000000004E-06
+     ps=    0.998541358034879E+03   0.100071958085354E+04   0.959996618066851E+07
+    Mass=   0.100000000002702E+04
+KE,IE,PE=   0.402652818684547E+05   0.252682215681265E+09   0.000000000000000E+00
+KE,IE,PE=   0.402652818684545E+05   0.252682215681267E+09   0.000000000000000E+00
+
+  2-norm relative vorticity =    0.248652113678260E-06
+

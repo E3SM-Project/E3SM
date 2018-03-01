@@ -1,0 +1,56 @@
+
+/*!
+
+\mainpage pFUnit 3 - Documentation - Version 3.1 development 2015-0420-1701-58-UTC MLR
+
+Quick links to the <a href="https://sourceforge.net/p/pfunit/code/ci/master/tree/">code</a> or the project's <a href="http://sourceforge.net/projects/pfunit">SourceForge site</a>.
+
+\section sec_Overview Overview
+
+pFUnit is a unit testing framework enabling JUnit-like testing of
+serial and MPI-parallel software written in Fortran.  Initial support
+for OPENMP has been implemented.  pFUnit makes use of modern Fortran
+programming techniques, including object oriented programming,
+offering a convenient, lightweight mechanism for Fortran developers to
+create and run software tests that specify the desired behavior for a
+given piece of code.  The framework was originally created by
+developers from NASA and NGC TASC.  The project is hosted at <a
+href="http://sourceforge.net/projects/pfunit">sourceforge/projects/pfunit</a>.
+
+If you are using pFUnit, please leave a note/topic at <a href="https://sourceforge.net/p/pfunit/discussion/pfunitinaction/">Applications of pFUnit</a>, or send a note to <a href="mailto:Thomas.L.Clune@nasa.gov">Tom Clune</a>, Ph.D., Advanced Software Technology Group, NASA Goddard Space Flight Center.
+
+Please refer revisions and comments about the documentation to <a href="mailto:mike@rilee.net">Mike Rilee</a>, Ph.D., Rilee Systems Technologies.
+
+\section sec_Contents Contents
+
+\li \ref page_Installation
+<ul>
+<li>\ref sec_ObtainingPFUNIT</li>
+</ul>
+\li \ref page_Usage
+\li \ref page_Development
+\li \ref page_FeedbackAndSupport
+\li \ref page_FAQAndTips
+\li \ref page_PlatformSpecific
+\li \ref page_Acknowledgments
+\li \ref page_KnownInstallationsAndVersions
+\li \ref page_TODO
+\li \ref page_pFUnitParser
+\li \ref page_RevisionNotes
+
+\section sec_SeeAlso See Also
+
+\li <a href="http://sourceforge.net/projects/pfunit">sourceforge/projects/pfunit</a>
+\li <a href="https://modelingguru.nasa.gov/index.jspa">NASA Modeling Guru</a>
+\li <a href="http://JUnit.org">JUnit.org</a>
+
+\section sec_License LICENSE
+
+Rights of use for GSC-15,137-1 F-UNIT, also known as pFUnit, are defined by the NASA Open Source Agreement (version 1.3).  The LICENSE document may be found in the head directory of the pFUnit distribution.
+
+\section sec_Copyright Copyright
+Copyright 2005,2013 United States Government as represented by the Administrator of the National Aeronautics and Space Administration.  All Rights Reserved.
+
+
+
+*/

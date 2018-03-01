@@ -1,0 +1,58 @@
+CCSM Version 3.0
+Copyright Notice and Disclaimer
+
+The Community Climate System Model (CCSM) was developed in cooperation with 
+the National Science Foundation, the Department of Energy, 
+the National Aeronautics and Space Administration, and the University Corporation 
+for Atmospheric Research's National Center for Atmospheric Research.
+
+Except for the segregable components listed below, CCSM is public domain software.
+
+The following components are copyrighted and may only be used, modified, or 
+redistributed under the terms indicated below.
+
+Code    Institution(s)    Copyright    
+------------------------------------------------------------------------------            
+ESMF    UCAR and other    Copyright 2002-2003, University Corporation for
+                          Atmospheric Research, Massachusetts Institute of
+                          Technology, Geophysical Fluid Dynamics Laboratory, 
+                          University of Michigan, National Centers for 
+                          Environmental Prediction, Los Alamos National 
+                          Laboratory, Argonne National Laboratory, NASA Goddard 
+                          Space Center
+Terms of Use/Disclaimer:  http://www.gnu.org/copyleft/gpl.html
+
+Code    Institution(s)    Copyright    
+--------------------------------------------------------------------------------            
+POP,    Los Alamos        Copyright 2002, 2004, The Regents of the University of 
+SCRIP,  National          California.  All Rights Reserved.
+CICE    Laboratory
+Terms of Use/Disclaimer:  http://www.ccsm.ucar.edu/management/UofCAcopyright.ccsm3.html
+
+Code    Institution(s)    Copyright                
+--------------------------------------------------------------------------------
+MPH,    Lawrence          Copyright 2003, The Regents of the University of
+Ziolib  Berkeley          California.  All Rights Reserved.  Authors:  Yun
+        National          (Helen) He, Lawrence Berkeley National Laboratory, 
+        Laboratory        yhe@lbl.gov, and Chris H.Q. Ding, Lawrence Berkeley 
+                          National Laboratory, chqding@lbl.gov.
+Terms of Use/Disclaimer:  http://old-www.nersc.gov/research/SCG/acpi/MPH/MPH4/copyright
+
+Code    Institution(s)    Copyright                
+--------------------------------------------------------------------------------
+MCT     Argonne National  Copyright 2000, University of Chicago.             
+        Laboratory        Chicago.
+Terms of Use/Disclaimer:  http://www.ccsm.ucar.edu/management/MCTcopyright.html
+
+Code    Institution(s)    Copyright                
+--------------------------------------------------------------------------------
+ICSSP   N/A               Copyright 2003, Steve Klein and Mark Webb
+Terms of Use/Disclaimer:  http://gcss-dime.giss.nasa.gov/simulator.html
+
+Code    Institution(s)    Copyright 
+--------------------------------------------------------------------------------               
+QT      Trolltech (r)     Copyright 2003, Trolltech. 
+Free
+Editions
+Terms of Use/Disclaimer:  http://www.trolltech.com/licenses/qpl-annotated.html
+

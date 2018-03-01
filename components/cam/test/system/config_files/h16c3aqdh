@@ -1,0 +1,9 @@
+-spmd -smp
+-dyn se
+-hgrid ne16np4
+-phys cam3
+-ice sice
+-lnd slnd
+-debug
+-ocn aquaplanet
+-s

@@ -1,0 +1,1 @@
+EXTRA_DIST = tut.tex intro.tex gex.tex gtest.tex glint.tex

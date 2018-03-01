@@ -1,0 +1,51 @@
+# install script for Jaguar system with Trilinos:  AGS 05/2011
+# build instructions for top level directory KJE 8/2011
+# don't bootstrap
+# find . -exec touch -r configure {} +
+# configure-scripts/jaguar-config (this file)
+# make
+#
+./configure \
+  FC=ftn   F77=ftn   \
+  CC=cc  CXX=CC \
+  CXXFLAGS="-O2 --diag_suppress 554,111,611" \
+  CPPFLAGS="-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK" \
+  FCFLAGS="-Mfree -O2" \
+  F77FLAGS="-Mfixed" \
+  CFLAGS="-O2" \
+  --disable-python \
+  --disable-shared \
+  --with-netcdf=$NETCDF_DIR \
+  EXTRA_LDLIBS="/opt/pgi/10.3.0/linux86-64/10.3/lib/f90main.o" \
+  --with-trilinos=/ccs/proj/cli043/trilinos/NOX_BUILD-FAST \
+  --enable-mpi="yes"
+
+
+# These no longer appear to be needed.
+#LDFLAGS="-pgcpplibs -L/opt/cray/hdf5/1.8.3.1/hdf5-pgi/lib -L/sw/xt5/parmetis/3.1.1/cnl2.2_pgi9.0.4/lib" \
+#--with-lapack=-lsci --with-blas=-lsci
+#NETCDF_LIBS="-lnetcdff -lnetcdf" \
+#LIBS="-lhdf5_hl -lhdf5 -lz" \
+
+#worked with the following environment on 8/19/2011:
+#Currently Loaded Modulefiles from these commands:
+# module load subversion netcdf/3.6.2 python autoconf
+# module swap xt-asyncpe xt-asyncpe/3.7 
+# module swap xt-mpt xt-mpt/3.5.1 
+#
+#  1) modules/3.1.6                                           15) cray/projdb/1.0.0-1.0202.19483.52.1
+#  2) DefApps                                                 16) Base-opts/2.2.73
+#  3) torque/2.4.1b1-snap.200905191614                        17) pgi/10.9.0
+#  4) moab/5.3.6                                              18) xt-libsci/10.5.0
+#  5) /opt/cray/xt-asyncpe/default/modulefiles/xtpe-istanbul  19) xt-mpt/3.5.1
+#  6) cray/MySQL/5.0.64-1.0000.2342.16.1                      20) xt-pe/2.2.73
+#  7) xtpe-target-cnl                                         21) xt-asyncpe/3.7
+#  8) xt-service/2.2.73                                       22) PrgEnv-pgi/2.2.73
+#  9) xt-os/2.2.73                                            23) subversion/1.5.0
+# 10) xt-boot/2.2.73                                          24) python/2.5.2-netcdf
+# 11) xt-lustre-ss/2.2_1.6.5                                  25) netcdf/3.6.2
+# 12) cray/job/1.5.5-0.1_2.0202.21413.56.6                    26) m4/1.4.11
+# 13) cray/csa/3.0.0-1_2.0202.21426.77.6                      27) autoconf/2.63
+# 14) cray/account/1.0.0-2.0202.19482.49.17
+
+

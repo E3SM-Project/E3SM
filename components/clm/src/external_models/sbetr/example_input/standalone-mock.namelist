@@ -1,0 +1,15 @@
+&sbetr_driver
+  simulator_name = 'standalone'
+/
+
+&betr_parameters
+  reaction_method = 'mock_run'
+/
+
+&forcing_inparm
+  forcing_filename = 'sierra_halfhour_full_year_clmforc.nc'
+/
+
+&betr_grid
+  grid_data_filename = "sierra_grid.nc"
+/

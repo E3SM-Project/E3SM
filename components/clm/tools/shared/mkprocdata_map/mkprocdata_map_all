@@ -1,0 +1,202 @@
+#!/bin/bash
+
+# This script runs mkprocdata_map_wrap on all files matching a given
+# pattern within a directory.
+
+# Created by Bill Sacks, 5-26-11
+
+# ----------------------------------------------------------------------
+# LOCAL FUNCTIONS DEFINED HERE
+# ----------------------------------------------------------------------
+
+function Usage {
+    script_name=`basename $0`
+    echo "Usage: $script_name -p prefix -m map_file -t template_file [-d] [-e executable-path] [-h] [-i] [-l] [-o output_suffix] [-r diRectory] [-s suffix]"
+    echo ""
+    echo "This script runs mkprocdata_map_wrap on all files matching a"
+    echo "given pattern within a directory."
+    echo ""
+    echo "'prefix' gives the prefix of the files on which"
+    echo "mkprocdata_map_wrap should be run; 'prefix' should NOT contain"
+    echo "wildcard characters. The prefix is also used to translate"
+    echo "from input to output file names (see examples below)"
+    echo ""
+    echo "'map_file' gives the name (and full path if not in the current"
+    echo "directory) of the mapping file"
+    echo ""
+    echo "'template_file' gives the name (and full path if not in the"
+    echo "current directory) of the template file, from which we read"
+    echo "lats, lons and some other variables"
+    echo ""
+    echo "The following are optional arguments:"
+    echo ""
+    echo "[-d]: Do a test (Dry run): do all error-checking on"
+    echo "      arguments and print commands that would be run, but"
+    echo "      don't actually run commands"
+    echo ""
+    echo "[-e executable-path]: Gives the path of the mkprocdata_map executable."
+    echo "                      If not specified, the path is determined by the"
+    echo "                      default value in mkprocdata_map_wrap."
+    echo ""
+    echo "[-h]: Print this help message and exit"
+    echo ""
+    echo "[-i]: Ignore (skip) existing output files; if this option is"
+    echo "      not specified, then the script dies with an error if"
+    echo "      any of the desired output files already exist"
+    echo ""
+    echo "[-l]: Option passed to mkprocdata_map_wrap: rather than computing"
+    echo "      landfrac and related variables by regridding the input file,"
+    echo "      instead copy these variables directly from the template file."
+    echo ""
+    echo "[-o output_suffix]: suffix to append to the end of the prefix"
+    echo "                    on the output files"
+    echo "                    If not specified, '_2d' is used"
+    echo ""
+    echo "[-r diRectory]: Do the processing in the given directory."
+    echo "                If not specified, processing is done in the"
+    echo "                current working directory."
+    echo ""
+    echo "[-s suffix]: Run mkprocdata_map_wrap on all files matching the"
+    echo "             pattern '\${prefix}\${suffix}'. The suffix can -"
+    echo "             and often will - contain wildcards; but"
+    echo "             remember to enclose 'suffix' in quotes to"
+    echo "             prevent shell expansion."
+    echo "             If not specified, run mkprocdata_map_wrap on all"
+    echo "             files matching '\${prefix}*'"
+    echo ""
+    echo ""
+    echo "Example: $script_name -p Ib14_ne30np4_gx1v6 -m map_ne30np4_to_fv1.9x2.5_aave_da_091230.nc -t Ib19_1.9x2.5_gx1v6.clm2.h0.0001-01.nc"
+    echo "This will run mkprocdata_map_wrap on all files whose names begin"
+    echo "with 'Ib14_ne30np4_gx1v6' in the current directory, using the"
+    echo "mapping file named 'map_ne30np4_to_fv1.9x2.5_aave_da_091230.nc'"
+    echo "and the template file named 'Ib19_1.9x2.5_gx1v6.clm2.h0.0001-01.nc'"
+    echo "For an input file named:"
+    echo "  Ib14_ne30np4_gx1v6.clm2.h0.0001-01-06-00000.nc"
+    echo "The output file will be named:"
+    echo "  Ib14_ne30np4_gx1v6_2d.clm2.h0.0001-01-06-00000.nc"
+    echo ""
+    echo "Example: $script_name -o '_remap' -s '*.h0.0001*.nc' -p Ib14_ne30np4_gx1v6 -m map_ne30np4_to_fv1.9x2.5_aave_da_091230.nc -t Ib19_1.9x2.5_gx1v6.clm2.h0.0001-01.nc"
+    echo "This will run mkprocdata_map_wrap on all files whose names match"
+    echo "the pattern 'Ib14_ne30np4_gx1v6*.h0.0001*.nc', in the"
+    echo "current directory, using the mapping file named"
+    echo "'map_ne30np4_to_fv1.9x2.5_aave_da_091230.nc' and the"
+    echo "template file named Ib19_1.9x2.5_gx1v6.clm2.h0.0001-01.nc"
+    echo "For an input file named:"
+    echo "  Ib14_ne30np4_gx1v6.clm2.h0.0001-01-06-00000.nc"
+    echo "The output file will be named:"
+    echo "  Ib14_ne30np4_gx1v6_remap.clm2.h0.0001-01-06-00000.nc"
+    echo ""
+}
+
+# ----------------------------------------------------------------------
+# BEGIN MAIN SCRIPT
+# ----------------------------------------------------------------------
+
+script_dir=`dirname $0`
+source $script_dir/mkprocdata_map_functions.bash
+
+# ----------------------------------------------------------------------
+# Handle command-line arguments
+# ----------------------------------------------------------------------
+
+# define default values:
+# required arguments:
+prefix=""
+map_file=""
+template_file=""
+# optional arguments:
+directory="."
+ignore_existing=0
+output_suffix="_2d"
+suffix="*"
+dryrun=0
+extra_args=""
+
+while getopts de:hilm:o:p:r:s:t: opt; do
+    case $opt in
+	d) dryrun=1;;
+	e) extra_args="$extra_args -e $OPTARG";;
+	h) Usage; exit;;
+	i) ignore_existing=1;;
+	l) extra_args="$extra_args -l";;
+	m) map_file=$OPTARG;;
+	o) output_suffix=$OPTARG;;
+	p) prefix=$OPTARG;;
+	r) directory=$OPTARG;;
+	s) suffix=$OPTARG;;
+	t) template_file=$OPTARG;;
+	\?) Usage; exit 1
+    esac
+done
+
+# ----------------------------------------------------------------------
+# Error checking on arguments
+# ----------------------------------------------------------------------
+
+if [ -z "$prefix" ]; then
+    echo "Must specify a prefix"
+    Usage
+    exit 1
+fi
+
+check_file_arg "$map_file" "map"
+check_file_arg "$template_file" "template"
+
+# Make sure directory is really a directory
+if [ ! -d $directory ]; then
+    echo "ERROR: $directory is not a directory"
+    echo ""
+    Usage
+    exit 1
+fi
+
+
+# ----------------------------------------------------------------------
+# Change to desired directory
+# ----------------------------------------------------------------------
+
+olddir=`pwd`
+cd $directory
+
+# ----------------------------------------------------------------------
+# Get list of files matching the given pattern; make sure there really
+# are some matching files
+# ----------------------------------------------------------------------
+
+files=`ls ${prefix}${suffix}`
+if [ $? -ne 0 ]; then
+    echo "ERROR trying to find files matching: ${prefix}${suffix}"
+    echo ""
+    Usage
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Loop through files matching the given pattern; run mkprocdata_map_wrap for each
+# ----------------------------------------------------------------------
+
+for infile in $files; do
+    outfile=${infile/$prefix/${prefix}${output_suffix}}
+    if [ -e $outfile ]; then
+	if [ $ignore_existing -eq 0 ]; then
+	    echo ""
+	    echo "ERROR: output file $outfile already exists"
+	    exit 1
+	else
+	    echo ""
+	    echo "WARNING: output file $outfile already exists: skipping"
+	    echo ""
+	fi
+    
+    else  # outfile does not exist
+	echo ""
+	do_cmd "${script_dir}/mkprocdata_map_wrap -i $infile -o $outfile -m $map_file -t $template_file $extra_args" $dryrun
+    fi
+done
+
+# ----------------------------------------------------------------------
+# Clean up
+# ----------------------------------------------------------------------
+
+cd $olddir
+

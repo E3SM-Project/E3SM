@@ -1,0 +1,13 @@
+include_directories(${BETR_INCLUDE_DIRS})
+add_subdirectory(shr)
+add_subdirectory(esmf_wrf_timemgr)
+add_subdirectory(stub_clm)
+add_subdirectory(betr)
+if (BETR_BGC)
+  add_subdirectory(Applications)
+  message("betr user defined bgc is on")    
+else()
+  message("betr user defined bgc is off")
+endif()
+
+add_subdirectory(driver)

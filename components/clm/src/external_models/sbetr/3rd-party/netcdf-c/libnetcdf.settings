@@ -1,0 +1,35 @@
+# NetCDF C Configuration Summary
+==============================
+
+# General
+-------
+NetCDF Version:		4.4.0
+Configured On:		Tue Jul 19 14:55:43 PDT 2016
+Host System:		x86_64-apple-darwin15.5.0
+Build Directory: 	/Users/jinyuntang/work/github_repo/sbetr/3rd-party/netcdf-c
+Install Prefix:         /Users/jinyuntang/work/sbetr/build/Darwin-x86_64-static-double-cc-Debug/3rd-party
+
+# Compiling Options
+-----------------
+C Compiler:		/usr/bin/gcc
+CFLAGS:			-g -O2
+CPPFLAGS:		
+LDFLAGS:		
+AM_CFLAGS:		
+AM_CPPFLAGS:		
+AM_LDFLAGS:		
+Shared Library:		yes
+Static Library:		yes
+Extra libraries:	-lm -lz -lcurl 
+
+# Features
+--------
+NetCDF-2 API:		yes
+HDF4 Support:		no
+NetCDF-4 API:		no
+NC-4 Parallel Support:	no
+PNetCDF Support:	no
+DAP Support:		yes
+Diskless Support:	yes
+MMap Support:		no
+JNA Support:		no

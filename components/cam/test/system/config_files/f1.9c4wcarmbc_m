@@ -1,0 +1,7 @@
+-spmd -nosmp
+-dyn fv
+-res 1.9x2.5
+-phys cam4
+-chem waccm_mozart
+-carma bc_strat
+-s

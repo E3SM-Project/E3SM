@@ -1,0 +1,131 @@
+  
+  
+     Solution species
+      (  1)  O3              
+      (  2)  OH                 (HO)
+      (  3)  HO2             
+      (  4)  H2O2            
+      (  5)  NO              
+      (  6)  NO2             
+      (  7)  HNO3            
+      (  8)  CO              
+      (  9)  CH2O            
+      ( 10)  CH3O2           
+      ( 11)  CH3OOH             (CH4O2)
+      ( 12)  DMS                (C2H6S)
+      ( 13)  SO2                (O2S)
+      ( 14)  SO4             
+      ( 15)  ISOP               (C5H8)
+  
+  
+     Invariant species
+      (  1)  M               
+      (  2)  N2              
+      (  3)  O2              
+      (  4)  H2O             
+      (  5)  CH4             
+  
+  
+     Column integrals
+   ( 1)  O3               -  0.000E+00
+   ( 2)  O2               -  0.000E+00
+  
+Class List
+==========
+ Explicit  
+ --------
+      (  1)  CO              
+  
+ Implicit  
+ --------
+      (  1)  O3              
+      (  2)  OH              
+      (  3)  HO2             
+      (  4)  H2O2            
+      (  5)  NO              
+      (  6)  NO2             
+      (  7)  HNO3            
+      (  8)  CH2O            
+      (  9)  CH3O2           
+      ( 10)  CH3OOH          
+      ( 11)  DMS             
+      ( 12)  SO2             
+      ( 13)  SO4             
+      ( 14)  ISOP            
+  
+     Photolysis
+  j2oh             (  1)   O3 + hv ->  2*OH                                                     rate = ** User defined **         (  1)
+  jh2o2            (  2)   H2O2 + hv ->  2*OH                                                   rate = ** User defined **         (  2)
+  jno2             (  3)   NO2 + hv ->  NO + O3                                                 rate = ** User defined **         (  3)
+  jch2o_a          (  4)   CH2O + hv ->  CO + 2*HO2                                             rate = ** User defined **         (  4)
+  jch2o_b          (  5)   CH2O + hv ->  CO                                                     rate = ** User defined **         (  5)
+  jch3ooh          (  6)   CH3OOH + hv ->  CH2O + HO2 + OH                                      rate = ** User defined **         (  6)
+  
+     Reactions
+                   (  1)   O3 + OH ->  HO2 + O2                                                 rate = 1.70E-12*exp(   -940./t)   (  7)
+  out6             (  2)   HO2 + O3 ->  2*O2 + OH                                               rate = 1.00E-14*exp(   -490./t)   (  8)
+                   (  3)   HO2 + OH ->  H2O + O2                                                rate = 4.80E-11*exp(    250./t)   (  9)
+  usr_HO2_HO2      (  4)   HO2 + HO2 ->  H2O2 + O2                                              rate = ** User defined **         ( 10)
+                   (  5)   H2O2 + OH ->  H2O + HO2                                              rate = 1.80E-12                   ( 11)
+                   (  6)   NO + O3 ->  NO2 + O2                                                 rate = 3.00E-12*exp(  -1500./t)   ( 12)
+                   (  7)   HO2 + NO ->  NO2 + OH                                                rate = 3.50E-12*exp(    250./t)   ( 13)
+                   (  8)   NO2 + OH + M ->  HNO3                                                troe : ko=1.80E-30*(300/t)**3.00  ( 14)
+                                                                                                       ki=2.80E-11                
+                                                                                                        f=0.60                    
+                   (  9)   CH4 + OH ->  CH3O2 + H2O                                             rate = 2.45E-12*exp(  -1775./t)   ( 15)
+  usr_oh_co        ( 10)   CO + OH ->  HO2                                                      rate = ** User defined **         ( 16)
+                   ( 11)   CH2O + OH ->  CO + H2O + HO2                                         rate = 5.50E-12*exp(    125./t)   ( 17)
+                   ( 12)   CH3O2 + HO2 ->  CH3OOH + O2                                          rate = 4.10E-13*exp(    750./t)   ( 18)
+                   ( 13)   CH3OOH + OH ->  CH3O2 + H2O                                          rate = 2.70E-12*exp(    200./t)   ( 19)
+                   ( 14)   CH3OOH + OH ->  CH2O + H2O + OH                                      rate = 1.10E-12*exp(    200./t)   ( 20)
+                   ( 15)   CH3O2 + NO ->  CH2O + HO2 + NO2                                      rate = 2.80E-12*exp(    300./t)   ( 21)
+                   ( 16)   CH3O2 + CH3O2 ->  2*CH2O + 0.80*HO2                                  rate = 9.50E-14*exp(    390./t)   ( 22)
+  het_no2_h2o      ( 17)   H2O + NO2 ->  0.50*HNO3                                              rate = ** User defined **         ( 23)
+                   ( 18)   DMS + OH ->  SO2                                                     rate = 1.10E-11*exp(   -240./t)   ( 24)
+  usr_oh_dms       ( 19)   DMS + OH ->  0.75*SO2                                                rate = ** User defined **         ( 25)
+  tag_so2_oh_m     ( 20)   OH + SO2 + M ->  SO4                                                 troe : ko=3.30E-31*(300/t)**4.30  ( 26)
+                                                                                                       ki=1.60E-12                
+                                                                                                        f=0.60                    
+  aq_so2_h2o2      ( 21)   H2O2 + SO2 ->  SO4                                                   rate = ** User defined **         ( 27)
+  aq_so2_o3        ( 22)   O3 + SO2 ->  SO4                                                     rate = ** User defined **         ( 28)
+  isop_oh          ( 23)   ISOP + OH ->  2*{CH3O2-1.5*OH}                                       rate = 2.70E-11*exp(    390./t)   ( 29)
+  isop_o3          ( 24)   ISOP + O3 ->  0.87*CH2O + 1.86*CH3O2 + 0.06*HO2 + 0.05*CO            rate = 5.59E-15*exp(  -1814./t)   ( 30)
+  
+Extraneous prod/loss species
+ ( 1)   NO   (dataset)
+ ( 2)   NO2   (dataset)
+ ( 3)   CO   (dataset)
+ ( 4)   SO2   (dataset)
+ ( 5)   SO4   (dataset)
+  
+  
+ Equation Report
+  
+    d(O3)/dt = j3*NO2                                                                                                   
+                - j1*O3  - r1*OH*O3  - r2*HO2*O3  - r6*NO*O3  - r22*SO2*O3  - r24*ISOP*O3                               
+    d(OH)/dt = 2*j1*O3  + 2*j2*H2O2  + j6*CH3OOH  + r2*HO2*O3  + r7*HO2*NO                                              
+                - r9*CH4*OH  - r1*O3*OH  - r3*HO2*OH  - r5*H2O2*OH  - r8*M*NO2*OH  - r10*CO*OH  - r11*CH2O*OH           
+                - r13*CH3OOH*OH  - r18*DMS*OH  - r19*DMS*OH  - r20*M*SO2*OH  - r23*ISOP*OH                              
+    d(HO2)/dt = 2*j4*CH2O  + j6*CH3OOH  + r1*O3*OH  + r5*H2O2*OH  + r10*CO*OH  + r11*CH2O*OH  + r15*CH3O2*NO            
+                 + .8*r16*CH3O2*CH3O2  + .06*r24*ISOP*O3                                                                
+                 - r2*O3*HO2  - r3*OH*HO2  - 2*r4*HO2*HO2  - r7*NO*HO2  - r12*CH3O2*HO2                                 
+    d(H2O2)/dt = r4*HO2*HO2                                                                                             
+                  - j2*H2O2  - r5*OH*H2O2  - r21*SO2*H2O2                                                               
+    d(NO)/dt = j3*NO2                                                                                                   
+                - r6*O3*NO  - r7*HO2*NO  - r15*CH3O2*NO                                                                 
+    d(NO2)/dt = r6*NO*O3  + r7*HO2*NO  + r15*CH3O2*NO                                                                   
+                 - j3*NO2  - r17*H2O*NO2  - r8*M*OH*NO2                                                                 
+    d(HNO3)/dt = .5*r17*H2O*NO2  + r8*M*NO2*OH                                                                          
+    d(CO)/dt = j4*CH2O  + j5*CH2O  + r11*CH2O*OH  + .05*r24*ISOP*O3                                                     
+                - r10*OH*CO                                                                                             
+    d(CH2O)/dt = j6*CH3OOH  + r14*CH3OOH*OH  + r15*CH3O2*NO  + 2*r16*CH3O2*CH3O2  + .87*r24*ISOP*O3                     
+                  - j4*CH2O  - j5*CH2O  - r11*OH*CH2O                                                                   
+    d(CH3O2)/dt = r9*CH4*OH  + r13*CH3OOH*OH  + 1.86*r24*ISOP*O3                                                        
+                   - r12*HO2*CH3O2  - r15*NO*CH3O2  - 2*r16*CH3O2*CH3O2                                                 
+    d(CH3OOH)/dt = r12*CH3O2*HO2                                                                                        
+                    - j6*CH3OOH  - r13*OH*CH3OOH  - r14*OH*CH3OOH                                                       
+    d(DMS)/dt =  - r18*OH*DMS  - r19*OH*DMS                                                                             
+    d(SO2)/dt = r18*DMS*OH  + .75*r19*DMS*OH                                                                            
+                 - r20*M*OH*SO2  - r21*H2O2*SO2  - r22*O3*SO2                                                           
+    d(SO4)/dt = r20*M*OH*SO2  + r21*H2O2*SO2  + r22*O3*SO2                                                              
+    d(ISOP)/dt =  - r23*OH*ISOP  - r24*O3*ISOP                                                                          

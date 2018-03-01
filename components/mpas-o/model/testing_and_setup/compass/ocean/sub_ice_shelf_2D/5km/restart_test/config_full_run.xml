@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<config case="full_run">
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../adjust_ssh/init.nc" dest="init.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
+		<option name="config_use_frazil_ice_formation">.true.</option>
+		<option name="config_frazil_maximum_depth">2000.0</option>
+		<option name="config_freezing_temperature_coeff_0">-1.8</option>
+		<option name="config_freezing_temperature_coeff_S">0.0</option>
+		<option name="config_freezing_temperature_coeff_p">6.64670038e-08</option>
+		<option name="config_freezing_temperature_coeff_pS">-4.44655526e-09</option>
+		<option name="config_freezing_temperature_reference_pressure">1e5</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="frazil.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

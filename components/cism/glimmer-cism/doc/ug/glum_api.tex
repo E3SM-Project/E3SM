@@ -1,0 +1,135 @@
+\section{GLUM}
+GLUM provides some utility subroutines which are shared by all components of GLIMMER.
+
+\subsection{Subroutine \texttt{open\_log}}
+\paragraph{Purpose} open and initialise log file
+
+\paragraph{Name and mandatory arguments}
+\begin{verbatim}
+subroutine open_log
+\end{verbatim}
+
+\paragraph{Arguments}
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+    \hline
+    \hline
+    \multicolumn{4}{|l|}{{\bf Optional}}\\
+    \hline
+    \texttt{unit} & \texttt{integer} & \texttt{intent(in)} & file unit to use (defualt: 6) \\
+    \texttt{fname}& \texttt{character(len=*)} & \texttt{intent(in)} & name of log file (default: \texttt{glide.log})\\ 
+  \end{supertabular*}
+\end{center}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Subroutine \texttt{ConfigRead}}
+\paragraph{Purpose} Read configuration file and store config options.
+
+\paragraph{Name and mandatory arguments}
+\begin{verbatim}
+subroutine ConfigRead(fname,config)
+\end{verbatim}
+
+\paragraph{Arguments}
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+    \hline
+    %%
+    \texttt{fname} & \texttt{character(len=*)} & \texttt{intent(in)} & name of configuration file to be read\\
+    \texttt{config} & \texttt{type(ConfigSection), pointer} & & pointer to first element of linked list containing configuration\\    
+  \end{supertabular*}
+\end{center}
+\paragraph{Additional Notes}
+Each section within the configuration file is stored as an element of a linked list. These elements contain another linked list storing the key--value pairs.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Subroutine \texttt{CheckSections}}
+\paragraph{Purpose} To check if all sections within a configuration file were subsequently used. Report unused sections to the log.
+
+\paragraph{Name and mandatory arguments}
+\begin{verbatim}
+subroutine CheckSections(config)
+\end{verbatim}
+\paragraph{Arguments}
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+    \hline
+    %%
+    \texttt{config} & \texttt{type(ConfigSection), pointer} & & pointer to first element of linked list containing configuration\\ 
+  \end{supertabular*}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{Subroutine \texttt{}}
+%\paragraph{Purpose} 
+%\paragraph{Name and mandatory arguments}
+%\begin{verbatim}
+%
+%\end{verbatim}
+%\paragraph{Arguments}
+%\begin{center}
+%  \tablefirsthead{%
+%    \hline
+%  }
+%  \tablehead{%
+%    \hline
+%    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+%    \hline
+%  }
+%  \tabletail{%
+%    \hline
+%    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+%    \hline}
+%  \tablelasttail{\hline}
+%  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+%    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+%    \hline
+%    %%
+%    \hline
+%    \multicolumn{4}{|l|}{{\bf Optional}}\\
+%    \hline
+%    %%
+%  \end{supertabular*}
+%\end{center}
+

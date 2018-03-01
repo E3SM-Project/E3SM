@@ -1,0 +1,8 @@
+-spmd -nosmp
+-dyn eul
+-res 48x96
+-phys cam4
+-debug
+-pergro
+-ocn aquaplanet
+-s

@@ -1,0 +1,62 @@
+\hypertarget{namespaceice__FY}{
+\section{ice\_\-FY Module Reference}
+\label{namespaceice__FY}\index{ice\_\-FY@{ice\_\-FY}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__FY_a91a650e4ced6612c0ab978f8b8a0c5b7}{init\_\-FY}
+\item 
+subroutine \hyperlink{namespaceice__FY_a4f6f4b6c28b7204e48d62a0383b1497c}{update\_\-FYarea} (nx\_\-block, ny\_\-block, dt, icells, indxi, indxj, nhmask, shmask, FYarea)
+\item 
+subroutine \hyperlink{namespaceice__FY_af12be2c743dc7e04389c68e276903b94}{write\_\-restart\_\-FY} (filename\_\-spec)
+\item 
+subroutine \hyperlink{namespaceice__FY_a5befdd0bd7ac80faa33cfc53cff646a7}{read\_\-restart\_\-FY} (filename\_\-spec)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__FY_a883caa24304b985bea44b09d23c22068}{restart\_\-FY}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__FY_a91a650e4ced6612c0ab978f8b8a0c5b7}{
+\index{ice\_\-FY@{ice\_\-FY}!init\_\-FY@{init\_\-FY}}
+\index{init\_\-FY@{init\_\-FY}!ice_FY@{ice\_\-FY}}
+\subsubsection[{init\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-FY::init\_\-FY ()}}
+\label{namespaceice__FY_a91a650e4ced6612c0ab978f8b8a0c5b7}
+
+
+Definition at line 54 of file ice\_\-FY.F90.\hypertarget{namespaceice__FY_a5befdd0bd7ac80faa33cfc53cff646a7}{
+\index{ice\_\-FY@{ice\_\-FY}!read\_\-restart\_\-FY@{read\_\-restart\_\-FY}}
+\index{read\_\-restart\_\-FY@{read\_\-restart\_\-FY}!ice_FY@{ice\_\-FY}}
+\subsubsection[{read\_\-restart\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-FY::read\_\-restart\_\-FY (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__FY_a5befdd0bd7ac80faa33cfc53cff646a7}
+
+
+Definition at line 235 of file ice\_\-FY.F90.\hypertarget{namespaceice__FY_a4f6f4b6c28b7204e48d62a0383b1497c}{
+\index{ice\_\-FY@{ice\_\-FY}!update\_\-FYarea@{update\_\-FYarea}}
+\index{update\_\-FYarea@{update\_\-FYarea}!ice_FY@{ice\_\-FY}}
+\subsubsection[{update\_\-FYarea}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-FY::update\_\-FYarea (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  logical (kind=log\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em nhmask}, \/  logical (kind=log\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em shmask}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em FYarea})}}
+\label{namespaceice__FY_a4f6f4b6c28b7204e48d62a0383b1497c}
+
+
+Definition at line 94 of file ice\_\-FY.F90.\hypertarget{namespaceice__FY_af12be2c743dc7e04389c68e276903b94}{
+\index{ice\_\-FY@{ice\_\-FY}!write\_\-restart\_\-FY@{write\_\-restart\_\-FY}}
+\index{write\_\-restart\_\-FY@{write\_\-restart\_\-FY}!ice_FY@{ice\_\-FY}}
+\subsubsection[{write\_\-restart\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-FY::write\_\-restart\_\-FY (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__FY_af12be2c743dc7e04389c68e276903b94}
+
+
+Definition at line 161 of file ice\_\-FY.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__FY_a883caa24304b985bea44b09d23c22068}{
+\index{ice\_\-FY@{ice\_\-FY}!restart\_\-FY@{restart\_\-FY}}
+\index{restart\_\-FY@{restart\_\-FY}!ice_FY@{ice\_\-FY}}
+\subsubsection[{restart\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-FY::restart\_\-FY}}}
+\label{namespaceice__FY_a883caa24304b985bea44b09d23c22068}
+
+
+Definition at line 34 of file ice\_\-FY.F90.

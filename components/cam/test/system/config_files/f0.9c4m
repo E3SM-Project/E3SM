@@ -1,0 +1,5 @@
+-spmd -nosmp
+-dyn fv
+-res 0.9x1.25
+-phys cam4
+-s

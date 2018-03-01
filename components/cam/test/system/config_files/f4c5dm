@@ -1,0 +1,6 @@
+-spmd -nosmp
+-dyn fv
+-res 4x5
+-debug
+-phys cam5
+-s

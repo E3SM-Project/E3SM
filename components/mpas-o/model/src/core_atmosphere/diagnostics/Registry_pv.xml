@@ -1,0 +1,66 @@
+<!-- ***************************************** -->
+<!-- PV diagnostics from Nicholas Szapiro (OU) -->
+<!-- Note that 1 PVU = 10^6 K kg^{−1} m^2 s^{−1} -->
+<!-- ***************************************** -->
+
+<var_struct name="diag" time_levs="1">
+
+        <var name="ertel_pv" type="real" dimensions="nVertLevels nCells Time" units="PVU"
+             description="Ertel's potential vorticity"/>
+
+        <var name="u_pv" type="real" dimensions="nCells Time" units="m s^{-1}"
+             description="Zonal wind on dynamic tropopause"/>
+
+        <var name="v_pv" type="real" dimensions="nCells Time" units="m s^{-1}"
+             description="Meridional wind on dynamic tropopause"/>
+
+        <var name="theta_pv" type="real" dimensions="nCells Time" units="K"
+             description="Potential temperature on dynamic tropopause"/>
+
+        <var name="vort_pv" type="real" dimensions="nCells Time" units="s^{-1}"
+             description="Relative vertical vorticity on dynamic tropopause"/>
+
+        <var name="depv_dt_lw" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from longwave radiation"/>
+
+        <var name="depv_dt_sw" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from shortwave radiation"/>
+
+        <var name="depv_dt_bl" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from PBL"/>
+
+        <var name="depv_dt_cu" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from convection"/>
+
+        <var name="dtheta_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+             description="Potential temperature heating rate from microphysics"/>
+
+        <var name="depv_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from microphysics"/>
+
+        <var name="dtheta_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+             description="Potential temperature heating rate from explicit numerical mixing"/>
+
+        <var name="depv_dt_mix" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency from explicit numerical mixing"/>
+
+        <var name="depv_dt_diab" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Sum of calculated EPV tendencies from diabatic processes"/>
+
+        <var name="depv_dt_fric" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
+             description="Sum of calculated EPV tendencies from frictional processes"/>
+
+        <var name="tend_u_phys" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
+             description="Normal wind tendencies from physics parameterizations"/>
+
+        <var name="depv_dt_diab_pv" type="real" dimensions="nCells Time" units="PVU s^{-1}"
+             description="Diabatic EPV tendency on dynamic tropopause"/>
+
+        <var name="depv_dt_fric_pv" type="real" dimensions="nCells Time" units="PVU s^{-1}"
+             description="Frictional EPV tendency on dynamic tropopause"/>
+
+        <var name="iLev_DT" type="integer" dimensions="nCells Time" units="-"
+             description="Lowest vertical level at or above dynamic tropopause (.lt.1 if 2 PVU below column; .gt.nLevels if 2PVU above column)"/>
+
+</var_struct>
+

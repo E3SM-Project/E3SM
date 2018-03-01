@@ -1,0 +1,57 @@
+AGS:08/04/2010
+AGS:05/11/2011
+
+GLIMMER with TRILINOS:
+The libglimmer-trilinos  directory contains code to interface 
+to the Trilinos linear solvers. These files are only compiled
+when glimmer is configured  --with-trilinos. A library
+called   libglimmertrilinos.a  is the result, and is linked
+into simple_glide.
+
+LINKING AGAINST TRILINOS:
+The list of the few dozen Trilinos libraries needed on the 
+link line is automatically picked up through the logic
+in  Makefile.Trilinos.export.in. This grabs makefile
+variables defined during the trilinos build, and 
+installed with trilinos in include/Makefile.export.Trilinos.
+Blas and Lapack should be picked up this way as well.
+
+Glimmer is now linked with the C++ compiler. The autoconf
+system picks up a variable called FCLIBS that should
+contain all the fortran libraries needed to link fortran
+code with C++ linker. This is not always complete. 
+Configure scripts for glimmer are being archived in
+../configure-scripts.
+
+BUILDING TRILINOS:
+Sample cmake configuration scripts for Trilinos on various 
+platforms are commited in cmake-scrips directory. More
+examples are in Trilinos/sample-scripts.
+
+USING TRILINOS IN GLIMMER:
+The trilinos solvers are accessed by selecting
+*  which_ho_sparse = 4
+This uses trilinosLinearSolver.cpp (and matrixInterface.cpp)
+The entries in the matrix, if owned by this processor,
+are loaded directly into the Trilinos (Epetra_CrsMatrix)
+format. The hook to this is in putpcgc in glam_strs2.F90.
+
+SELECTING TRILINOS SOLVER OPTIONS:
+The options that control the linear solver methods are 
+read from an input file called trilinosOptions.xml in
+a sublist call "Stratimikos". Stratimikos is the Linear
+Solver Strategies package in trilinos that provides a
+single interface to all the preconditioners and linear
+solvers in Trilinos (Belos, Aztec, Ifpack, ML, Amesos, ...).
+The full list of options is documented on the Trilinos
+web pages. Click on the Stratimikos package, documentation
+of the Trilinos version that you are using, and then the
+link to Stratimikos::DefaultLinearSolverBuilder.
+
+http://trilinos.sandia.gov/packages/docs/r10.6/packages/stratimikos/doc/html/classStratimikos_1_1DefaultLinearSolverBuilder.html
+
+
+NONLINEAR SOLVERS:
+An interface to Trilinos Nonliner solvers (NOX) is progressing 
+in a different svn branch. The C++ interface code will appear 
+in this directory.

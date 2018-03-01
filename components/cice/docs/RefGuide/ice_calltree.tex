@@ -1,0 +1,123 @@
+%=======================================================================
+% CVS: $Id: ice_calltree.tex 5 2005-12-12 17:41:05Z mvr $
+% CVS: $Source$
+% CVS: $Name$
+%=======================================================================
+
+{\scriptsize
+\begin{verbatim}
+ICEMODEL
+|
++-SETUP_MPI-+-ICE_COUPLING_SETUP
++-SHR_MSG_CHDIR 
++-SHR_MSG_DIRIO 
++-INIT_CONSTANTS
++-INPUT_DATA
++-INIT_GRID
+| +-POPGRID
+| +-COLUMNGRID
+| +-RECTGRID
+| +-TLATLON
+| +-MAKEMASK
++-INIT_REMAP
++-INIT_CALENDAR
++-INIT_HIST
++-INIT_EVP
++-INIT_FLUX-+-INIT_FLUX_ATM
+|           +-INIT_FLUX_OCN
++-INIT_THERMO_VERTICAL
++-INIT_ITD
++-INIT_MECHRED--COMP_MATRICES
++-INIT_STATE-+-AGGREGATE
+|            +-BOUND_AGGREGATE
++-RESTARTFILE-+-AGGREGATE
+|             +-BOUND_AGGREGATE
++-ALBEDOS
++-CALENDAR
++-[INIT_OCEANMIXED_ICE]
++-INIT_CPL
++-INIT_DIAGS
++-ICE_WRITE_HIST-+-PRINCIPAL_STRESS
+|                +-ICECDF - write IC to netCDF file
+|-----------------------------------------------
+| BEGIN TIMESTEP LOOP
+|-----------------------------------------------
++-FROM_COUPLER
++-[SET_OCEANMIXED_ICE]
++-INIT_MASS_DIAGS
++-THERMO_VERTICAL
+| +-INIT_FLUX_ATM
+| +-INIT_DIAGNOSTICS
+| +-FRZMLT_BOTTOM_LATERAL
+|----------------------------
+| Loop through categories
+|----------------------------
+| +-INIT_COUPLING_VARS
+| +-ATMO_BOUNDARY_LAYER
+| +-INIT_VERTICAL_PROFILE
+| +-ADD_NEW_SNOW
+| +-TEMPERATURE_CHANGES-+-CONDUCTIVITY
+| |                     +-ABSORBED_SOLAR
+| |                     +-SURFACE_FLUXES
+| |                     +-TRIDIAG_SOLVER
+| +-THICKNESS_CHANGES
+| +-MERGE_FLUXES
+| +-UPDATE_STATE_VTHERMO
+|----------------------------
+| End loop through categories
+|----------------------------
++-SCALE_FLUXES
++-TO_COUPLER
++-[TIME_INTRPLT_OCEAN_FORCING-+-OCNHEAT-+-ATMO_BOUNDARY_LAYER]
++-THERMO_ITD-+-AGGREGATE
+|            +-BOUND_AGGREGATE
+|            +-INIT_FLUX_OCN
+|            +-REDUCE_AREA
+|            +-REBIN-+-SHIFT_ICE
+|            +-ZAP_SMALL_AREAS-+-NORMALIZE_STATE-+-AGGREGATE
+|            +-LINEAR_ITD-+-AGGREGATE_AREA
+|            |            +-COLUMN_SUM
+|            |            +-COLUMN_CONSERVATION_CHECK
+|            |            +-SHIFT_ICE
+|            |            +-FIT_LINE
+|            +-ADD_NEW_ICE-+-COLUMN_SUM
+|            |             +-COLUMN_CONSERVATION_CHECK
+|            +-LATERAL_MELT
+|            +-FREEBOARD
++-EVP-+-EVP_PREP
+|     +-STRESS
+|     +-STEPU
+|     +-EVP_FINISH
++-TRANSPORT_REMAP-+-DEPARTURE_POINTS
+|                 +-LOCATE_TRIANGLES
+|                 +-TRIANGLE_COORDINATES
+|                 +-MAKE_MASKS
+|                 +-CONSERVED_SUMS
+|                 +-CONSTRUCT_FIELDS--LIMITED_GRADIENT
+|                 +-FLUX_INTEGRALS
+|                 +-UPDATE_FIELDS
+|                 +-GLOBAL_CONSERVATION
+|                 +-LOAD_TRACERS
+|                 +-LOCAL_MAX_MIN
+|                 +-CHECK_MONOTONICITY
+|                 +-UNLOAD_TRACERS
++-TRANSPORT_MPDATA-+-CHECK_STATE
+|                  +-MPDATA
++-RIDGE-+-RIDGE_MATRICES--COMP_MATRICES
+|       +-RIDGING_MODE
++-ZAP_SMALL_AREAS
++-REBIN
++-AGGREGATE
++-BOUND_AGGREGATE
++-ALBEDOS
++-SCALE_HIST_FLUXES
++-RUNTIME_DIAGS
++-ICE_WRITE_HIST-+-PRINCIPAL_STRESS
+|                +-ICECDF
++-DUMPFILE
+|-----------------------------------------------
+| END TIMESTEP LOOP
+|-----------------------------------------------
++-EXIT_COUPLER
+\end{verbatim}
+}

@@ -1,0 +1,81 @@
+<ParameterList>
+  <ParameterList name="LOCA">
+    <ParameterList name="Predictor">
+      <Parameter name="Method" type="string" value="Constant"/>
+    </ParameterList>
+    <ParameterList name="Step Size">
+      <Parameter name="Initial Step Size" type="double" value="0.1"/>
+    </ParameterList>
+    <ParameterList name="Stepper">
+      <Parameter name="Continuation Method" type="string" value="Natural"/>
+      <Parameter name="Initial Value" type="double" value="0.0"/>
+      <Parameter name="Max Nonlinear Iterations" type="int" value="15"/>
+      <Parameter name="Max Steps" type="int" value="0"/>
+      <Parameter name="Max Value" type="double" value="100"/>
+      <Parameter name="Min Value" type="double" value="0.05"/>
+      <Parameter name="Compute Eigenvalues" type="bool" value="0"/>
+    </ParameterList>
+  </ParameterList>
+  <ParameterList name="NOX">
+    <Parameter name="Convergence Tolerance" type="double" value="1.0e-10"/>
+    <ParameterList name="Direction">
+      <ParameterList name="Newton">
+        <ParameterList name="Stratimikos Linear Solver">
+          <ParameterList name="Stratimikos">
+            <Parameter name="Preconditioner Type" type="string" value="None"/>
+            <Parameter name="Linear Solver Type" type="string" value="Belos"/>
+            <ParameterList name="Linear Solver Types">
+              <ParameterList name="Belos">
+                <Parameter name="Solver Type" type="string" value="Block GMRES"/>
+                <ParameterList name="VerboseObject">
+                  <Parameter name="Verbosity Level" type="string" value="low"/>
+                </ParameterList>
+                <ParameterList name="Solver Types">
+                  <ParameterList name="Block GMRES">
+                    <Parameter name="Convergence Tolerance" type="double" value="1e-2"/>
+                    <Parameter name="Output Frequency" type="int" value="1"/>
+                    <Parameter name="Verbosity" type="int" value="0"/>
+                    <Parameter name="Maximum Iterations" type="int" value="10"/>
+                    <Parameter name="Block Size" type="int" value="1"/>
+                    <Parameter name="Num Blocks" type="int" value="10"/>
+                    <Parameter name="Flexible Gmres" type="bool" value="0"/>
+                  </ParameterList> 
+                </ParameterList> 
+              </ParameterList> 
+            </ParameterList>  
+          </ParameterList>  
+        </ParameterList>  
+      </ParameterList> 
+    </ParameterList> 
+    <ParameterList name="Printing">
+      <ParameterList name="Output Information">
+       <Parameter name="Error" type="bool" value="1"/>
+       <Parameter name="Warning" type="bool" value="1"/>
+       <Parameter name="Outer Iteration" type="bool" value="1"/>
+       <Parameter name="Parameters" type="bool" value="0"/>
+       <Parameter name="Details" type="bool" value="0"/>
+       <Parameter name="Linear Solver Details" type="bool" value="1"/>
+      </ParameterList>
+    </ParameterList>
+    <ParameterList name="Status Tests">
+      <Parameter name="Test Type" type="string" value="Combo"/>
+      <Parameter name="Combo Type" type="string" value="OR"/>
+      <Parameter name="Number of Tests" type="int" value="3"/>
+      <ParameterList name="Test 0">
+        <Parameter name="Test Type" type="string" value="NormF"/>
+        <Parameter name="Tolerance" type="double" value="1.0e-15"/>
+      </ParameterList>
+      <ParameterList name="Test 1">
+        <Parameter name="Test Type" type="string" value="MaxIters"/>
+        <Parameter name="Maximum Iterations" type="int" value="10"/>
+      </ParameterList>
+      <ParameterList name="Test 2">
+        <Parameter name="Test Type" type="string" value="FiniteValue"/>
+      </ParameterList>
+    </ParameterList>
+    <ParameterList name="Solver Options">
+      <Parameter name="Status Test Check Type" type="string" value="Minimal"/>
+    </ParameterList>
+  </ParameterList> 
+</ParameterList>
+

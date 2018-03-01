@@ -1,0 +1,11 @@
+<template>
+	<namelist>
+		<option name="config_dt">'00:30:00'</option>
+		<option name="config_btr_dt">'00:01:00'</option>
+		<option name="config_run_duration">'0000_01:30:00'</option>
+		<option name="config_mom_del4">4.0e11</option>
+		<option name="config_hmix_scaleWithMesh">.true.</option>
+		<option name="config_use_standardGM">.true.</option>
+		<option name="config_standardGM_tracer_kappa">600.0</option>
+	</namelist>
+</template>

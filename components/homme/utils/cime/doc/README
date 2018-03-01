@@ -1,0 +1,6 @@
+Use the following commands to auto-build the html documentation from the main
+cime/doc directory:
+
+>make clean
+>make api
+>make html

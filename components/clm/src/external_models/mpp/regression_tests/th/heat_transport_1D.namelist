@@ -1,0 +1,10 @@
+&mpp_driver
+  problem_type = 'heat_transport_1D'
+/
+
+&regression_test
+  write_regression_output = .true.
+  num_cells = 4
+/
+
+

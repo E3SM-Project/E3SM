@@ -1,0 +1,103 @@
+%========================================================================
+%Beginning of Introduction
+%========================================================================
+
+\section{INTRODUCTION}\label{ch:intro}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Introduction}\label{sec:chp1intro}
+
+There are many issues to be addressed within any modeling and simulation environment.  Each of these areas must be carefully studied in order to make good decisions that will ensure the simulation is correct within the established error margin.  Within glacial modeling these issues must be considered on a grand scale with huge landmasses, a global climate, and massive oceans. These large scale problems mean that making an incorrect modeling decision at that smallest level could make the entire simulation far from the expected results.
+
+Due to the complex nature of the equations that govern not only the ice-sheets, but the other large scale related climate factors, the tools necessary to simulate and understand the interactions and physical properties of these systems are extremely complicated and difficult to create.  The need to have sophisticated software tools means that a lot of time must be spent implementing them, approximations and shortcuts must be taken, or existing tools must be integrated together.  All of these methods are used to some degree within ice-sheet modeling, but moving forward it is important to choose the correct one for each task.
+
+Approximations and shortcuts work for certain situations, but can also lead to erroneous results if not managed careful, and even when done correctly, usually some workarounds and fixes must be put in place to correct artifacts that appear.  This is evident within certain ice-sheet models due to the way in which the glaciers are represented and how data is stored:  finite difference grids. Using a set spaced grid is a generally accepted practice because of the many benefits that ease in generation, computation, and traceability.  These benefits, however, are also accompanied by a host of problems that must be addressed by the model.  These issues are exacerbated by the sheer scale and complexity of the problem domain.
+%quote pattyn grounding line(other finite element papers)(quadrature?)
+
+Roundoff errors and approximations are inherent in the nature of finite difference grids over large areas.  Thus the idea is to alleviate some of these errors by mapping to a finite element grid, solving the fields in question, and then bringing the interpolated data back onto the discrete grid to be viewed at each time-step.  This allows the model to gain some of the benefits in solving PDEs with finite element analysis while still keeping the majority of the finite difference benefits.
+
+Another reason for using a separate finite element PDE solver is the complexity of the equations to be solved for the glacier.  Currently, either the shallow ice approximation (SIA) or a 1st order model must be used in order to handle calculations of this magnitude.  Processing power and computational time can be very large even when using the simplest approximations when simulating an ice mass as large as Antarctica.  The equations are also computationally demanding when doing anything more than the SIA-such as a first order model.  The number of extra libraries and general complexity of the equations make the code difficult to follow, prone to errors, and cumbersome.  Being able to use one external library whose functionality can be modularized for specific calculations is very appealing and would allow for the model to be more cohesive, easier to follow, and extensible. 
+
+
+Integrating existing libraries to increase functionality may be the best option for a few reasons: the functionality can be used or improved without having to reimplement everything saving a lot of time and effort, the workload is spread out between the developer of each tool so that each of them can be improved independently of the other, and there is increased standardization with datatypes, input, and output.  There is also the possibility that an available tool has more features and options than might be developed when focused on ice-sheets.
+
+By integrating PHAML into GLIMMER-CISM all the benefits mentioned have been gained.  PHAML is an hp-adaptive FEM PDE solver that is very feature rich and extendible with a number of options that make it useful for nearly any situation.  PHAML also allows solving in parallel across many machines and processors to alleviate some of the time taken for simulations by distributing the problem into many small ones.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Motivation}\label{sec:chp1motivation}
+
+Awareness of the impact glaciers have on the global climate has increased dramatically over the last couple of decades, and the need to understand the possible impact and repercussions increased human activity may be having on the glaciers is of the utmost importance.  Glacial modeling is therefore extremely important in order to understanding these things.
+
+The IPCC (Intergovernmental Panel on Climate Change) excluded glacial contributions from the sea rise predictions within the 2007 report due to the perceived inability of current glacial models to correctly model the ice-sheet dynamics within the time frame of the forecast.  The estimates in the report for sea-level rise are between .18 and .59 meters by the year 2100. \citep{IPCC2007}
+
+Different model simulations put sea level rise anywhere between .09 and 2 meters with a most plausible rise of 0.8 meters within this century.\citep{Pfeffer:2008}  Given that about 634 million people live within 9.1 m of sea level, even small changes can have a dramatic impact.  In fact, even a small change of .2 meters would displace between 7-10 million people in the Bay of Bengal alone.  \citep{McGranahan:2007}  It is therefore dire that we not only have an idea of what will happen, but that we also know with enough accuracy in order to prepare for the consequences of those changes.
+
+Glacial simulations and their outcomes have been noted extensively in literature and there seems to be little consensus on exactly what will happen, when, or why.  The point is that glaciers are changing and it is necessary that we have answers to these questions.  The reason for the disagreements are largely due to what has already been addressed: different modeling assumptions.  The focus should be on what a model has assumed, why those assumptions were made, and what the direct consequences are of the assumptions before the results of a simulation are considered.
+
+
+The accuracy of a glacial model is always a point of contention and something that demands constant verification.  The complexity of the physics and the inability to capture the infinite number of climate forcers mean that there may never be a `correct' model that is able to give very detailed results year by year.  However, it is possible to make an accurate ice-sheet simulation for a long period of time.  The hope is that the threshold for accuracy can be brought down to between 50-100 year intervals rather than simply thousand year intervals.  
+
+%Having new powerful tools aid in this goal.
+%Finding new ways to make problems easier
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Goals}\label{sec:chp1goal}
+
+There are several goals from the work presented within this thesis.  Some of these goals can be obtained now and some are obtainable in future research that uses the infrastructure presented here.  By integrating PHAML as a library the goal is that many of the features PHAML has will be advantageous to ice-sheet modeling.  This includes a method by which finite difference issues within glacial modeling can be reduced by using finite element methods at each time step, increase the flexibility of the model by introducing more parallel methods for distributed computation, increase the accuracy of the solutions without as much cumbersome code, and to provide a new mechanism within the ice-sheet model to solve certain fields. 
+
+This will allow for larger grids to be used because the FEM mesh will recursively increase the resolution of the boundary areas without increasing the resolution of the larger portions of the glacier.  Hopefully, this new library model will allow progress in certain areas to be made faster and easier.
+
+The majority of this work focuses on the intermediate code making it possible to use PHAML from GLIMMER-CISM.  The goal is for the interface to be straightforward, isolated, and to provide utility functions making the library easier to use.  The interface should also conform to the same conventions other libraries in GLIMMER-CISM use so that the library is easy to use and set up quickly.
+
+PHAML is a very versatile and customizable tool, and it is important that the same functionality be available from within the GLIMMER-CISM modules.  The PHAML solution should be held by GLIMMER-CISM, but all calls to PHAML should be explicit within each module, allowing the needs of a particular solution to be tweaked based on the simulation run.  This flexibility comes with complexity in using the PHAML libraries directly, but also simplicity in understanding the design.
+
+%Overall
+%easy to create modules, call modules, compile, call functions, use utility functions, change phaml settings, change pde types, debug
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Benefits}\label{sec:chp1benefits}
+
+There are many benefits of the method presented here in relation to ice-sheet modeling.  PHAML is a very powerful and sophisticated piece of software that goes well beyond that of just a PDE solver for general use.  A few of its features that GLIMMER-CISM will be able to take advantage of are an excellent hp-adaptive finite element PDE solver, finite element grids, parallel processing of the solution, an excellent OpenGL based graphics suite for viewing the solutions, and an independent code base.%i.e. phaml is independent
+
+Many new ideas can come to fruition within the ice-sheet model with the library used in this way.  Because of the versatility and depth of PHAML a more accurate system can be developed and tested with a lot less effort.  The code is also much less cumbersome since the more complicated code lies within the library itself and not within the ice-sheet model.
+
+The isolation of the callbacks into the individual modules creates the ability to prototype and build many different systems using the same powerful tools with very little effort.  All of the support functions aid in making calls to PHAML easy by taking care of any data formatting necessary to receive the desired data from the solution.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%           
+
+\subsection{Thesis Organization}\label{sec:chp1organization}
+
+The rest of this thesis is organized as follows:
+
+\begin{itemize}
+
+%background
+\item \textbf{Chapter \ref{ch:overview}} gives an overview of the ice sheet model, the PDE library, the mesh generator, and the changes made to them.
+
+%work done
+\item \textbf{Chapter \ref{ch:modelinput}} deals with the ice sheet model input, the data structures used to build the mesh, and the mapping techniques involved between the two.     
+
+\item \textbf{Chapter \ref{ch:softintegration}} presents the format of the new modules and how they are integrated together.
+
+\item \textbf{Chapter \ref{ch:verification}} discusses verification of the software components and the mapping between them.
+
+%conclusions/future work
+\item \textbf{Chapter \ref{ch:conclusion}} presents the conclusions from this work and suggests future research directions.
+
+\item \textbf{Appendix \ref{ch:setup}} demonstrates how all the software components are set up and compiled together.
+
+\item \textbf{Appendix \ref{ch:usage}} gives examples of how the PHAML modules are used from within GLIMMER-CISM.
+
+\item \textbf{Appendix \ref{ch:addingmods}} shows how new PHAML modules and drivers can be created and added to the build system.  
+
+\item \textbf{Appendix \ref{ch:phamlvars}} lists the variables within the `phaml' custom type in GLIMMER-CISM.
+
+\item \textbf{Appendix \ref{ch:libphamlfunc}} provides a brief explanation of the functions in the different modules.
+\end{itemize}
+
+
+%========================================================================
+%End of Introduction
+%========================================================================

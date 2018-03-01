@@ -1,0 +1,10 @@
+&periodic_grid
+   dc = 500.,
+! Domain is 800 km wide, standard hex mesh has dx=dc. so nx=3200     Double to get both halves.  +2 for stripping off periodicity.  Add a few more to be sure we go past 800 km.
+   nx = 3216,
+! Want an odd number of cells, minimal = 3.    + 2 for stripping off periodicity + 1 for stripping off a non-symmetric cell.
+   ny = 6,
+   nVertLevels = 1,
+! The mesh will need culling to remove periodicity, so no need to build decomps now.
+   nproc = 1
+/

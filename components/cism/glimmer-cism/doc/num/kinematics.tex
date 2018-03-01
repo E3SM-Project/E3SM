@@ -1,0 +1,219 @@
+\section{Ice Thickness Evolution}
+The evolution of the ice thickness, $H$, stems from the continuity equation and can be expressed as
+\begin{equation}
+  \label{kin.eq.ice_thickness}
+  \frac{\pd H}{\pd t} = -\vec\nabla\cdot(\overline{\vec{u}} H) + B,
+\end{equation}
+where $\overline{\vec{u}}$ is the vertically averaged ice velocity, $B$ is the surface mass balance and $\vec\nabla$ is the horizontal gradient operator \citep{Payne1997}. 
+
+For large--scale ice sheet models, the \emph{shallow ice approximation} is generally used. This approximation states that bedrock and ice surface slopes are assumed sufficiently small so that the normal stress components can be neglected \citep{Hutter1983}. The horizontal shear stresses ($\tau_{xz}$ and $\tau_{yz}$) can thus be approximated by
+\begin{equation}
+  \label{kin.eq.horiz_shear}
+  \begin{split}
+    \tau_{xz}(z)&=-\rho g(s-z)\frac{\pd s}{\pd x},\\
+    \tau_{yz}(z)&=-\rho g(s-z)\frac{\pd s}{\pd y},
+  \end{split}
+\end{equation}
+where $\rho$ is the density of ice, $g$ the acceleration due to gravity and $s=H+h$ the ice surface.
+
+Strain rates $\dot{\epsilon}_{ij}$ of polycrystalline ice are related to the stress tensor by the non--linear flow law:
+\begin{equation}
+  \label{kin.eq.flowlaw}
+  \dot{\epsilon}_{iz}=\frac12\left(\frac{\pd u_i}{\pd z}+\frac{\pd u_z}{\pd i}\right)=A(T^\ast)\tau_\ast^{(n-1)}\tau_{iz}\qquad i=x,y,
+\end{equation}
+where $\tau_\ast$ is the effective shear stress defined by the second invariant of the stress tensor, $n$ the flow law exponent and $A$ the temperature--dependent flow law coefficient. $T^\ast$ is the absolute temperature corrected for the dependence of the melting point on pressure \cite[$T^\ast=T+8.7\cdot10^{-4}(H+h-z)$, $T$ in Kelvin,][]{Huybrechts1986}. The parameters $A$ and $n$ have to be found by experiment. $n$ is usually taken to be 3. $A$ depends on factors such as temperature, crystal size and orientation, and ice impurities. Experiments suggest that $A$ follows the Arrhenius relationship:
+\begin{equation}
+  \label{kin.eq.arrhenius}
+  A(T^\ast)=fae^{-Q/RT^\ast},
+\end{equation}where $a$ is a temperature--independent material constant, $Q$ is the activation energy for creep and $R$ is the universal gas constant \citep{Paterson1994}. $f$ is a tuning parameter used to `speed--up' ice flow and accounts for ice impurities and the development of anisotropic ice fabrics \citep{Payne1999,Tarasov1999,Tarasov2000,Peltier2000}.
+
+Integrating \eqref{kin.eq.arrhenius} with respect to $z$ gives the horizontal velocity profile:
+\begin{equation}
+  \label{kin.eq.horiz_velo}
+  \vec u(z)-\vec u(h) = -2(\rho g)^n|\vec\nabla s|^{n-1}\vec\nabla s\int_h^zA(s-z)^ndz,
+\end{equation}
+where $\vec u(h)$ is the basal velocity (sliding velocity). Integrating \eqref{kin.eq.horiz_velo} again with respect to $z$ gives an expression for the vertically averaged ice velocity:
+\begin{equation}
+  \label{kin.eq.avg_velo}
+  \overline{\vec u}H=-2(\rho g)^n|\vec\nabla s|^{n-1}\vec\nabla s\int_h^s\int_h^zA(s-z)^ndzdz'.
+\end{equation}
+
+The vertical ice velocity stems from the conservation of mass for an incompressible material:
+\begin{equation}
+  \label{kin.eq.incompress}
+  \frac{\pd u_x}{\pd x} + \frac{\pd u_y}{\pd y} + \frac{\pd u_z}{\pd z} = 0.
+\end{equation}
+Integrating \eqref{kin.eq.incompress} with respect to $z$ gives the vertical velocity distribution of each ice column:
+\begin{equation}
+  \label{kin.eq.vert_velo}
+  w(z)=-\int_h^z\vec\nabla\cdot\vec u(z)dz+w(h),
+\end{equation}
+with lower, kinematic boundary condition
+\begin{equation}
+  w(h)=\frac{\pd h}{\pd t}+\vec u(h)\cdot\vec\nabla h+S,
+\end{equation}
+where $S$ is the melt rate at the ice base given by Equation \eqref{temp.eq.meltrate}. The upper kinematic boundary is given by the surface mass balance and must satisfy:
+\begin{equation}
+  \label{kin.eq.upper_bc}
+  w(s)=\frac{\pd s}{\pd t}+\vec u(s)\cdot\vec\nabla s+B.
+\end{equation}
+
+\input{\dir/grid.tex}
+
+\subsection{Ice Sheet Equations in $\sigma$--Coordinates}
+The horizontal velocity, Equation \eqref{kin.eq.horiz_velo}, becomes in the $\sigma$--coordinate system
+\begin{equation}
+  \label{kin.eq.vert_velo_sigma}
+  \vec u(\sigma) = -2(\rho g)^nH^{n+1}|\vec\nabla s|^{n-1}\vec\nabla s\int_1^\sigma A\sigma^nd\sigma+\vec u(1)
+\end{equation}
+and the vertically averaged velocity
+\begin{equation}
+  \label{kin.eq.avg_velo_scaled}
+  \overline{\vec u} H=H\int_0^1\vec ud\sigma+\vec u(1)H
+\end{equation}
+The vertical velocity, Equation \eqref{kin.eq.vert_velo}, becomes
+\begin{equation}
+  \label{kin.eq.vert_velo_scaled}
+  w(\sigma)=-\int_1^\sigma\left(\frac{\pd\vec u}{\pd\sigma}\cdot(\vec\nabla s-\sigma\vec\nabla H)+H\vec\nabla\cdot\vec u\right)d\sigma+w(1)
+\end{equation}
+and lower boundary condition
+\begin{equation}
+  w(1)=\frac{\pd h}{\pd t}+\vec u(1)\cdot\vec\nabla h+S.
+\end{equation}
+
+\subsection{Calculating the Horizontal Velocity and the Diffusivity}
+Horizontal velocity and diffusivity calculations are split up into two parts:
+\begin{subequations}
+  \begin{align}
+    \vec u(\sigma)&=c\vec\nabla s+\vec u(1)\\
+    D &=H\int_0^1cd\sigma\\
+    \vec q&=D\vec\nabla s+H\vec u(1)\\
+    \intertext{with}
+    c(\sigma)&=-2(\rho g)^nH^{n+1}|\vec\nabla s|^{n-1}\int_1^\sigma A\sigma^nd\sigma
+  \end{align}
+\end{subequations}
+
+Quantities $\vec u$ and $D$ are found on the velocity grid. Integrating from the ice base ($k=N-1$), the discretised quantities become
+\begin{subequations}
+  \begin{equation}
+    \tilde{c}_{r,s,N}=0
+  \end{equation}
+  \begin{multline}
+    \tilde{c}_{r,s,k}=-2(\rho g)^nH_{r,s}^{n+1}\left(({\tilde{s}^x_{r,s}})^2+({\tilde{s}^y_{r,s}})^2\right)^{\frac{n-1}{2}}\\
+    \sum_{\kappa=N-1}^k\frac{A_{r,s,\kappa}+A_{r,s,\kappa+1}}2 \left(\frac{\sigma_{\kappa+1}+\sigma_\kappa}2\right)^n(\sigma_{\kappa+1}-\sigma_\kappa)
+  \end{multline}
+  \begin{equation}
+    \tilde{D}_{r,s}=H_{r,s}\sum_{k=0}^{N-1}\frac{\tilde{c}_{r,s,k}+\tilde{c}_{r,s,k+1}}2(\sigma_{k+1}-\sigma_k)
+  \end{equation}
+\end{subequations}
+Expressions for $\vec{u}_{i,j,k}$ and $\vec{q}_{i,j}$ are straight forward.
+
+\subsection{Solving the Ice Thickness Evolution Equation}
+Equation \eqref{kin.eq.ice_thickness} can be rewritten as a diffusion equation, with non--linear diffusion coefficient $D$:
+\begin{equation}
+  \label{kin.eq.ice_evo}
+  \frac{\pd H}{\pd t}=-\vec\nabla\cdot D\vec\nabla s+B=-\vec\nabla\cdot\vec q+B
+\end{equation}
+This non--linear partial differential equation can be linearised by using the diffusion coefficient from the previous time step. The diffusion coefficient is calculated on the $(r,s)$--grid, i.e. staggered in both $x$ and $y$ direction. Figure \ref{kin.fig.staggered_grid} illustrates the staggered grid. Using finite differences, the fluxes in $x$ direction, $q^x$ become
+\begin{subequations}
+\begin{align}
+  q^x_{i+\frac12,j}&=-\frac12(\tilde{D}_{r,s}+\tilde{D}_{r,s-1})\frac{s_{i+1,j}-s_{i,j}}{\Delta x}\\
+  q^x_{i-\frac12,j}&=-\frac12(\tilde{D}_{r-1,s}+\tilde{D}_{r-1,s-1})\frac{s_{i,j}-s_{i-1,j}}{\Delta x}\\
+  \intertext{and the fluxes in $y$ direction}
+  q^y_{i,j+\frac12}&=-\frac12(\tilde{D}_{r,s}+\tilde{D}_{r-1,s})\frac{s_{i,j+1}-s_{i,j}}{\Delta y}\\
+  q^y_{i,j-\frac12}&=-\frac12(\tilde{D}_{r,s-1}+\tilde{D}_{r-1,s-1})\frac{s_{i,j}-s_{i,j-1}}{\Delta y}.
+\end{align}  
+\end{subequations}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics{\dir/figs/staggered_grid.eps}
+  \caption{Illustration of the staggered grid used to calculate ice thicknesses, diffusivities and mass fluxes.}
+  \label{kin.fig.staggered_grid}
+\end{figure}
+
+\subsubsection{ADI Scheme}
+The alternating--direction implicit method (ADI) uses the concept of operator splitting where Equation \eqref{kin.eq.ice_evo} is first solved in the $x$--direction and then in the $y$--direction, \citep{Press1992}. The time step $\Delta t$ is devided into two time steps $\Delta t/2$. The descretised version of Equation \eqref{kin.eq.ice_evo} becomes \citep{Huybrechts1986}:
+\begin{subequations}
+\begin{align}
+  \label{kin.eq.adi_1}
+  2\frac{H_{i,j}^{t+\frac12}-H_{i,j}^{t}}{\Delta t} &= -\frac{q_{i+\frac12,j}^{x,t+\frac12}-q_{i-\frac12,j}^{x,t+\frac12}}{\Delta x} - \frac{q_{i,j+\frac12}^{y,t}-q_{i,j-\frac12}^{y,t}}{\Delta y} + B_{i,j} \\
+  \label{kin.eq.adi_2}
+  2\frac{H_{i,j}^{t+1}-H_{i,j}^{t+\frac12}}{\Delta t} &= -\frac{q_{i+\frac12,j}^{x,t+\frac12}-q_{i-\frac12,j}^{x,t+\frac12}}{\Delta x} - \frac{q_{i,j+\frac12}^{y,t+1}-q_{i,j-\frac12}^{y,t+1}}{\Delta y} + B_{i,j}
+\end{align}
+\end{subequations}
+Gathering all $t+\frac12$ terms on the left side, Equation \eqref{kin.eq.adi_1} can be expressed as a tri--diagonal set of equations for each row $j$:
+\begin{equation}
+  -\alpha_{i,j}H_{i-1,j}^{t+\frac12} + (1-\beta_{i,j})H_{i,j}^{t+\frac12} - \gamma_{i,j}H_{i+1,j}^{t+\frac12} = \delta_{i,j}
+\end{equation}
+with
+\begin{subequations}
+  \begin{align}
+  \alpha_{i,j} &=\frac{\tilde{D}_{r-1,s}+\tilde{D}_{r-1,s-1}}{4\Delta x^2}\Delta t\\
+  \beta_{i,j}  &=-\frac{\tilde{D}_{r,s}+2\tilde{D}_{r-1,s}+\tilde{D}_{r-1,s-1}}{4\Delta x^2}\Delta t = -(\alpha_{i,j}+\gamma_{i,j})\\
+  \gamma_{i,j} &=\frac{\tilde{D}_{r,s}+\tilde{D}_{r,s-1}}{4\Delta x^2}\Delta t    
+  \end{align}
+and the RHS,
+\begin{equation}
+  \delta_{i,j} = H_{i,j}^t-\frac{\Delta t}{2\Delta y}\left(q_{i,j+\frac12}^{y,t}-q_{i,j-\frac12}^{y,t}\right) + \frac{\Delta t}2B_{i,j} + \alpha_{i,j}h_{i-1,j} -\beta_{i,j}h_{i,j} + \gamma_{i,j}h_{i+1,j}.
+\end{equation}
+\end{subequations}
+
+A similar tri--diagonal system is found for each column, $i$ of Equation \eqref{kin.eq.adi_2}.
+
+\subsubsection{Linearised Semi--Implicit Scheme}
+Using the Crank--Nicolson scheme, the semi--implicit temporal discretisation of \eqref{kin.eq.ice_evo} is then:
+\begin{multline}
+\label{kin.eq.ice_evo_disc1}
+  \frac{H^{t+1}_{i,j}-H^t_{i,j}}{\Delta t}=\frac{q^{x,t+1}_{i+\frac12,j}-q^{x,t+1}_{i-\frac12,j}}{2\Delta x}+\frac{q^{y,t+1}_{i,j+\frac12}-q^{y,t+1}_{i,j-\frac12}}{2\Delta y} \\
+  +\frac{q^{x,t}_{i+\frac12,j}-q^{x,t}_{i-\frac12,j}}{2\Delta x}+\frac{q^{y,t}_{i,j+\frac12}-q^{y,t}_{i,j-\frac12}}{2\Delta y}+ B_{i,j}
+\end{multline}
+The superscripts $^t$ and $^{t+1}$ indicate at what time the ice thickness $H$ is evaluated. Collecting all $H^{t+1}$ terms of \eqref{kin.eq.ice_evo_disc1} on the LHS and moving all other terms to the RHS we can rewrite \eqref{kin.eq.ice_evo_disc1} as
+\begin{equation}
+  \label{kin.eq.evo_matrix}
+  -\alpha_{i,j}H^{t+1}_{i-1,j} - \beta_{i,j}H^{t+1}_{i+1,j} - \gamma_{i,j}H^{t+1}_{i,j-1} - \delta_{i,j}H^{t+1}_{i,j+1}+ (1-\epsilon_{i,j})H^{t+1}_{i,j} = \zeta_{i,j}
+\end{equation}
+with the RHS,
+\begin{multline}
+  \zeta_{i,j} = \alpha_{i,j}H^{t}_{i-1,j} + \beta_{i,j}H^{t}_{i+1,j} + \gamma_{i,j}H^{t}_{i,j-1} + \delta_{i,j}H^{t}_{i,j+1} + (1+\epsilon_{i,j})H^{t}_{i,j} \\
+  + 2(\alpha_{i,j}h_{i-1,j} + \beta_{i,j}h_{i+1,j} + \gamma_{i,j}h_{i,j-1} + \delta_{i,j}h_{i,j+1}+ \epsilon_{i,j}h_{i,j}) + B_{i,j}\Delta t
+\end{multline}
+with the elements of the sparse matrix
+\begin{subequations}
+  \begin{align}
+    \alpha_{i,j} &=\frac{\tilde{D}_{r-1,s}+\tilde{D}_{r-1,s-1}}{4\Delta x^2}\Delta t\\
+    \beta_{i,j} &=\frac{\tilde{D}_{r,s}+\tilde{D}_{r,s-1}}{4\Delta x^2}\Delta t\\
+    \gamma_{i,j} &=\frac{\tilde{D}_{r,s-1}+\tilde{D}_{r-1,s-1}}{4\Delta y^2}\Delta t\\
+    \delta_{i,j} &=\frac{\tilde{D}_{r,s}+\tilde{D}_{r-1,s}}{4\Delta y^2}\Delta t\\
+    \epsilon_{i,j} &=-(\alpha_{i,j}+\beta_{i,j}+\gamma_{i,j}+\delta_{i,j})
+  \end{align}
+\end{subequations}
+
+This matrix equation is solved using an iterative matrix solver for non-symmetric sparse matrices. The solver used here is the bi--conjugate gradient method with incomplete LU decomposition preconditioning provided by the SLAP package.
+
+\subsubsection{Non--Linear Scheme}
+The non--linearity of Equation \eqref{kin.eq.ice_evo} arises from the dependance of $D$ on $s$. A non--linear scheme for \eqref{kin.eq.ice_evo} can be formulated using Picard iteration, which consists of two iterations: an outer, non--linear and an inner, linear equation. The scheme is started off with the diffusivity from the previous time step, i.e.
+\begin{subequations}
+  \begin{equation}
+    D^{(0),t+1}=D^{t}
+  \end{equation}
+and Equation \eqref{kin.eq.evo_matrix} becomes
+\begin{multline}
+  \label{kin.eq.evo_matrix_nonlin}
+  -\alpha^{(\xi),t+1}_{i,j}H^{t+1}_{i-1,j} - \beta^{(\xi),t+1}_{i,j}H^{(\xi+1),t+1}_{i+1,j} - \gamma^{(\xi),t+1}_{i,j}H^{(\xi+1),t+1}_{i,j-1} \\
+  - \delta^{(\xi),t+1}_{i,j}H^{(\xi+1),t+1}_{i,j+1}+ (1-\epsilon^{(\xi),t+1}_{i,j})H^{(\xi+1),t+1}_{i,j} = \zeta^{(0),t}_{i,j}
+\end{multline}
+\end{subequations}
+Equation \eqref{kin.eq.evo_matrix_nonlin} is iterated over $\xi$ until the maximum ice thickness residual is smaller than some threshold:
+\begin{equation}
+  \max\left(\left|H^{(\xi+1),t+1}-H^{(\xi),t+1}\right|\right)<H_{\text{res}}
+\end{equation}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\textwidth]{\dir/figs/thick_evo.eps}
+  \caption{Flow diagram showing how the linearised solver (on the left) and the non--linear solver work. The inner, linear iteration is contained within the box labeled ``calculate new ice distribution''.}
+  \label{kin.fig.solvers}
+\end{figure}
+
+\input{\dir/vert_velo.tex}

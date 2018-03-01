@@ -1,0 +1,17 @@
+\input{\dir/selected_ext.tex}
+
+\let\olddir\dir
+
+\ifthenelse{\boolean{have_ext}} {\part{Glimmer-CISM Extensions}}
+
+\ifthenelse{\boolean{have_erosion}} {
+      \renewcommand{\dir}{\olddir/erosion}
+      \input{\dir/erosion.tex}
+    }{}
+
+\ifthenelse{\boolean{have_libphaml}} {
+      \renewcommand{\dir}{\olddir/libphaml}
+      \input{\dir/libphaml.tex}
+    }{}
+
+\renewcommand{\dir}{\olddir}

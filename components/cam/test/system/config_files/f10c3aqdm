@@ -1,0 +1,7 @@
+-spmd -nosmp
+-dyn fv
+-res 10x15
+-debug
+-ocn aquaplanet
+-phys cam3
+-s

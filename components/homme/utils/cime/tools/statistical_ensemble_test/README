@@ -1,0 +1,72 @@
+CESM-ECT (CESM Ensemble Consistency Test) determines whether a new
+simulation set up (new machine, compiler, etc.) is statistically
+distinguishable from an accepted ensemble.  The verification tools in
+the CESM-ECT suite are:
+
+CAM-ECT - detects issues in CAM and CLM (12 month runs)
+UF-CAM-ECT - detects issues in CAM and CLM (9 time step runs)
+POP-ECT - detects issues in POP and CICE (12 month runs)
+
+(1) The ECT process involves comparing several runs (3) generated with
+the new scenario to an ensemble built on a trusted machine (currently
+yellowstone). The python ECT tools are located in the pyCECT
+subdirectory or https://github.com/NCAR/PyCECT/releases.
+
+Before the test can be run, a summary file is needed of the ensemble
+runs to which the comparison will be made. Ensemble summary files
+(NetCDF) for existing tags for CAM-ECT, UF-CAM-ECT and POP-ECT that
+were created by CSEG are located (respectively) in the CESM input data
+directories:
+
+$CESMDATAROOT/inputdata/validation/ensembles
+$CESMDATAROOT/inputdata/validation/uf_ensembles
+$CESMDATAROOT/inputdata/validation/pop_ensembles
+
+(2) If a new ensemble (and summary file) needs to be created, the
+ensemble.sh script in this directory can first be used (see
+'ensemble.sh -h' for additional details) to create the ensemble. This
+script creates and compiles a case, then creates clones of the
+original case, with the pertlim in user_nl_cam is slightly modified
+for each ensemble member.  At this time, cime includes functionality
+to create ensembles for CAM-ECT and UF-CAM-ECT (UF-POP-ECT coming
+soon).
+
+For example, for CAM-ECT:
+
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/ensemble/ensemble.cesm_tag.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --ensemble 151
+
+For example, for UF-CAM-ECT:
+
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/uf_ensemble/ensemble.cesm_tag.uf.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --ensemble 350 --uf
+
+Notes: -case name must end in ".000"
+       -ensemble size must be specified, suggested defaults are 151 
+       for CAM-ECT and 350 for UF-CAM-ECT. Note that the ensemble size
+       needs to be larger than the number of variables that ECT will
+       evaluate.	    	
+
+Once all ensemble simulations have run successfully, copy every cam.h0
+history file from each ensemble run directory into a separate directory. Next
+create the ensemble summary using the pyCECT tool pyEnsSum.py (see
+README_pyEnsSum.rst).
+
+(3) Once an ensemble summary file has been created or chosen to
+use from $CESMDATAROOT/inputdata/validation, the three simulation
+runs to be verified by ECT must be created via script ensemble.sh.
+
+It is important that the same resolution and compset be used in the
+individual runs as in the ensemble.  The NetCDF ensemble summary file global
+attributes give this information.
+	   	
+For example, for CAM-ECT:
+
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel 
+
+For example, for UF-CAM-ECT:
+
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.uf.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --uf
+
+Once all three simulations have run successfully, copy the cam.h0
+history file from each run directory into a separate directory. Next
+verify the new simulations with the pyCECT tool pyCECT.py (see
+README_pyCECT.rst).

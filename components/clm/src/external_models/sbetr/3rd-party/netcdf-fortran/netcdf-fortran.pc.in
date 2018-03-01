@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+ccompiler=@CC@
+fcompiler=@FC@
+
+Name: @PACKAGE@
+Description: NetCDF Client Library for Fortran
+URL: http://www.unidata.ucar.edu/netcdf
+Version: @PACKAGE_VERSION@
+Requires.private: netcdf > 4.1.1
+Libs: -L${libdir} -lnetcdff
+Libs.private: -L${libdir} -lnetcdff -lnetcdf
+Cflags: -I${includedir}

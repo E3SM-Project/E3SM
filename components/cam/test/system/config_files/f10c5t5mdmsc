@@ -1,0 +1,9 @@
+-spmd -nosmp
+-dyn fv
+-res 10x15
+-debug
+-nadv_tt 5
+-cppdefs -DTRACER_CHECK
+-phys cam5
+-s
+-psubcols 3

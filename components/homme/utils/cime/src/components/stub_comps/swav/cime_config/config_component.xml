@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id version="3.0">
+
+  <description>
+    <desc wav="SWAV">Stub wave component</desc>
+  </description>
+
+  <entry id="COMP_WAV">
+    <type>char</type>
+    <valid_values>swav</valid_values>
+    <default_value>swav</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of wave component</desc>
+  </entry>
+
+  <help>
+    =========================================
+    SWAV naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>

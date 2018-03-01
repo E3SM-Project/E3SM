@@ -1,0 +1,28 @@
+<template>
+	<namelist>
+		<option name="config_run_duration">'0000_01:00:00'</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
+		<option name="config_use_activeTracers_interior_restoring">.false.</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
+		<option name="config_use_bulk_thickness_flux">.false.</option>
+		<option name="config_AM_globalStats_enable">.false.</option>
+	</namelist>
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="output_ssh">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output_ssh.nc</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="ssh" type="var"/>
+				<member name="density" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

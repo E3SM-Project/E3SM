@@ -1,0 +1,142 @@
+#! /bin/sh
+
+# configuring glimmer for a CVS build. If you compile from a released tar-ball 
+# you don't need to run this script. Just run ./configure directly.
+
+# this script originates from the GIMP project.
+# most of this is lifted from autogen.sh from gimp
+
+ACLOCAL=${ACLOCAL-aclocal}
+AUTOCONF=${AUTOCONF-autoconf}
+AUTOHEADER=${AUTOHEADER-autoheader}
+AUTOMAKE=${AUTOMAKE-automake}
+LIBTOOLIZE=${LIBTOOLIZE-libtoolize}
+
+AUTOCONF_REQUIRED_VERSION=2.54
+AUTOMAKE_REQUIRED_VERSION=1.9.6
+LIBTOOL_REQUIRED_VERSION=1.5
+
+check_version ()
+{
+    VERSION_A=$1
+    VERSION_B=$2
+
+    save_ifs="$IFS"
+    IFS=.
+    set dummy $VERSION_A 0 0 0
+    MAJOR_A=$2
+    MINOR_A=$3
+    MICRO_A=$4
+    set dummy $VERSION_B 0 0 0
+    MAJOR_B=$2
+    MINOR_B=$3
+    MICRO_B=$4
+    IFS="$save_ifs"
+
+    if expr "$MAJOR_A" = "$MAJOR_B" > /dev/null; then
+        if expr "$MINOR_A" \> "$MINOR_B" > /dev/null; then
+           echo "yes (version $VERSION_A)"
+        elif expr "$MINOR_A" = "$MINOR_B" > /dev/null; then
+            if expr "$MICRO_A" \>= "$MICRO_B" > /dev/null; then
+               echo "yes (version $VERSION_A)"
+            else
+                echo "Too old (version $VERSION_A)"
+                DIE=1
+            fi
+        else
+            echo "Too old (version $VERSION_A)"
+            DIE=1
+        fi
+    elif expr "$MAJOR_A" \> "$MAJOR_B" > /dev/null; then
+	echo "Major version might be too new ($VERSION_A)"
+    else
+	echo "Too old (version $VERSION_A)"
+	DIE=1
+    fi
+}
+
+echo -n "checking for libtool >= $LIBTOOL_REQUIRED_VERSION ... "
+if ($LIBTOOLIZE --version) < /dev/null > /dev/null 2>&1; then
+   LIBTOOLIZE=$LIBTOOLIZE
+elif (glibtoolize --version) < /dev/null > /dev/null 2>&1; then
+   LIBTOOLIZE=glibtoolize
+else
+    echo
+    echo "  You must have libtool installed to compile $PROJECT."
+    echo "  Install the appropriate package for your distribution,"
+    echo "  or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
+    echo
+    DIE=1
+fi
+
+if test x$LIBTOOLIZE != x; then
+    VER=`$LIBTOOLIZE --version \
+         | grep libtool | sed "s/.* \([0-9.]*\)[-a-z0-9]*$/\1/"`
+    check_version $VER $LIBTOOL_REQUIRED_VERSION
+fi
+
+echo Checking if required version of automake is installed
+
+DIE=0
+
+echo -n "checking for autoconf >= $AUTOCONF_REQUIRED_VERSION ... "
+if ($AUTOCONF --version) < /dev/null > /dev/null 2>&1; then
+    VER=`$AUTOCONF --version | head -n 1 \
+         | grep -iw autoconf | sed "s/.* \([0-9.]*\)[-a-z0-9]*$/\1/"`
+    check_version $VER $AUTOCONF_REQUIRED_VERSION
+else
+    echo
+    echo "  You must have autoconf installed to compile $PROJECT."
+    echo "  Download the appropriate package for your distribution,"
+    echo "  or get the source tarball at ftp://ftp.gnu.org/pub/gnu/autoconf/"
+    echo
+    DIE=1;
+fi
+
+
+echo -n "checking for automake >= $AUTOMAKE_REQUIRED_VERSION ... "
+if ($AUTOMAKE --version) < /dev/null > /dev/null 2>&1; then
+   AUTOMAKE=$AUTOMAKE
+   ACLOCAL=$ACLOCAL
+elif (automake-1.10 --version) < /dev/null > /dev/null 2>&1; then
+   AUTOMAKE=automake-1.10
+   ACLOCAL=aclocal-1.10
+elif (automake-1.9 --version) < /dev/null > /dev/null 2>&1; then
+   AUTOMAKE=automake-1.9
+   ACLOCAL=aclocal-1.9
+else
+    echo
+    echo "  You must have automake $AUTOMAKE_REQUIRED_VERSION or newer installed to compile $PROJECT."
+    echo "  Download the appropriate package for your distribution,"
+    echo "  or get the source tarball at ftp://ftp.gnu.org/pub/gnu/automake/"
+    echo
+    DIE=1
+fi
+
+if test x$AUTOMAKE != x; then
+    VER=`$AUTOMAKE --version \
+         | grep automake | sed "s/.* \([0-9.]*\)[-a-z0-9]*$/\1/"`
+    check_version $VER $AUTOMAKE_REQUIRED_VERSION
+fi
+
+if test "$DIE" -eq 1; then
+    echo
+    echo "Please install/upgrade the missing tools and call me again."
+    echo	
+    exit 1
+fi
+
+rm -rf autom4te.cache
+
+$ACLOCAL -I m4macros
+RC=$?
+if test $RC -ne 0; then
+   echo "$ACLOCAL gave errors. Please fix the error conditions and try again."
+   exit $RC
+fi
+
+$LIBTOOLIZE --force || exit $?
+$AUTOHEADER || exit $?
+$AUTOMAKE -a -c --foreign --add-missing || exit $?
+$AUTOCONF || exit $?
+

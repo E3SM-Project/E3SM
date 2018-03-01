@@ -1,0 +1,12 @@
+<!-- ******************************* -->
+<!-- Soundings                       -->
+<!-- ******************************* -->
+
+<nml_record name="soundings" in_defaults="true">
+
+        <nml_option name="config_sounding_interval" type="character" default_value="none" in_defaults="true"
+             units="-"
+             description="Interval between writing of soundings. A value of 'none' disables writing of soundings."
+             possible_values="'[DDD_]hh:mm:ss' or 'none'"/>
+
+</nml_record>

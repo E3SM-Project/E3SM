@@ -1,0 +1,317 @@
+%
+\section{GLINT}
+This appendix details the subroutine calls provided by GLINT, and their
+arguments. Note that where a type is given as \texttt{real(rk)}, this
+indicates that the kind of the real type is specified by the value of
+the parameter \texttt{rk}, which may be altered at compile-time (see appropriate
+other documentation for details).
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INITIALISE_GLINT                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\subsection{Subroutine \texttt{initialise\_glint}}
+%
+\paragraph{Purpose} To initialise the ice model, and load in all relevant parameter files.
+%
+\paragraph{Name and mandatory arguments}
+%
+\begin{verbatim}
+  subroutine initialise_glint(params,lats,longs,paramfile,time_step)
+\end{verbatim}
+%
+\paragraph{Arguments}
+%
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+    \hline
+    \texttt{params}    & \texttt{type(glint\_params)} & \texttt{intent(inout)} &
+    Ice model to be configured \\
+    \texttt{lats(:)}   & \texttt{real(rk)} & \texttt{intent(in)} & latitudinal
+    location of grid-points in global data (given in $^{\circ}\mathrm{N}$)\\ 
+    \texttt{longs(:)}  & \texttt{real(rk)} & \texttt{intent(in)} & longitudinal
+    location of grid-points in global data (given in $^{\circ}\mathrm{E}$)\\ 
+    \texttt{paramfile} & \texttt{character(*)} & \texttt{intent(in)} & name of
+    top-level parameter file \\
+    \texttt{time\_step} & \texttt{integer} & \texttt{intent(in)} & Intended
+    calling time-step (hours) \\
+    \hline
+    \multicolumn{4}{|l|}{{\bf Optional}}\\
+    \hline
+    \texttt{latb(:)} & \texttt{real(rk)} & \texttt{intent(in)} & Latiudinal
+    locations of grid-box boundaries (degrees). This array has one more
+    element than \texttt{lats}. \\ 
+    \texttt{lonb(:)} & \texttt{real(rk)} & \texttt{intent(in)} & Longitudinal
+    locations of grid-box boundaries (degrees). This array has one more
+    element than \texttt{longs}. \\
+    \texttt{orog(:,:)} & \texttt{real(rk)} & \texttt{intent(out)} & The
+    initial orography (m). \\
+    \texttt{albedo} & \texttt{real(rk)} & \texttt{intent(out)} & The initial
+    ice albedo field \\
+    \texttt{ice\_frac} & \texttt{real(rk)} & \texttt{intent(out)} & The initial
+    ice fraction \\
+    \texttt{orog\_lats} & \texttt{real(rk)} & \texttt{intent(in)} &
+    Latitudinal location of gridpoints for global orography output\\
+    \texttt{orog\_longs} & \texttt{real(rk)} & \texttt{intent(in)} &
+    Longitudinal location of gridpoints for global orography output\\
+    \texttt{orog\_latb} & \texttt{real(rk)} & \texttt{intent(in)} & Locations
+    of the latitudinal boundaries of the grid-boxes (orography)\\
+    \texttt{orog\_lonb} & \texttt{real(rk)} & \texttt{intent(in)} & Locations
+    of the longitudinal boundaries of the grid-boxes (orography)\\
+    \texttt{output\_flag} & \texttt{logical} & \texttt{intent(out)} & Set to
+    show outputs have been updated (provided for consistency with main
+    \texttt{glint} subroutine).\\
+  \end{supertabular*}
+\end{center}
+%
+\paragraph{Additional notes}
+%
+\begin{itemize}
+\item The ice model determines the size of the global domain from the sizes of
+  the arrays \texttt{lats} and \texttt{longs}.
+\item The latitudes contained in \texttt{lats} must be in descending order, so
+  that $\mathtt{lats(i)}>\mathtt{lats(i+1)}$ for $1\leq \mathtt{i} \leq
+  \mathtt{size(lats)}$.
+\item The optional arguments \texttt{orog\_lats}, \texttt{orog\_longs},
+  \texttt{orog\_latb}, and \texttt{orog\_lonb} may be used to define the frid
+  on which the orography is output from GLINT. This is useful if the global
+  model has spectral dynamics, and thus a higher-resolution orography is
+  needed for greater accuracy when transforming to spectral space. These
+  arguments may not be present in arbitrary combinations - only
+  \texttt{orog\_lats}+\texttt{orog\_longs},
+  \texttt{orog\_lats}+\texttt{orog\_longs}+\texttt{orog\_latb},
+  \texttt{orog\_lats}+\texttt{orog\_longs}+\texttt{orog\_lonb}, and
+  \texttt{orog\_lats}+\texttt{orog\_longs}+\texttt{orog\_latb}+\texttt{orog\_lonb}
+  are permitted. Other combinations will generate a fatal error.
+\end{itemize}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GLINT                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\subsection{Subroutine \texttt{glint}}
+%
+\paragraph{Purpose}
+%
+To perform temporal averaging of input fields, and, if necessary, down-scale
+those fields onto local projections and perform an ice model time-step. Output
+files may be appended to, and if optional arguments used, fields made
+available for feedback.
+%
+\paragraph{Name and mandatory arguments}
+%
+\begin{verbatim}
+  subroutine glint(params,time,temp,precip,orog)
+\end{verbatim}
+%
+\paragraph{Arguments}
+%
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+    \multicolumn{4}{|l|}{{\bf Mandatory}}\\
+    \hline
+    \texttt{params} & \texttt{type(glint\_params)} & \texttt{intent(inout)} &
+    parameters for this run \\
+    \texttt{time} & \texttt{integer} & \texttt{intent(in)} & Current model time
+    (hours) \\
+    \texttt{temp(:,:)} & \texttt{real(rk)} & \texttt{intent(in)} & Surface
+    temperature field ($^{\circ}\mathrm{C}$) \\
+    \texttt{precip(:,:)} & \texttt{real(rk)} & \texttt{intent(in)} & Precipitation field (mm/s) \\
+    \texttt{orog(:,:)} & \texttt{real(rk)} & \texttt{intent(in)} & Global orography (m) \\
+    \hline
+    \multicolumn{4}{|l|}{{\bf Optional}}\\
+    \hline
+    \texttt{zonwind(:,:)} & \texttt{real(rk)} & \texttt{intent(in)} & Zonal
+    component of the wind field ($\mathrm{ms}^{-1}$) \\
+    \texttt{merwind(:,:)} & \texttt{real(rk)} & \texttt{intent(in)} & Meridional 
+    component of the wind field ($\mathrm{ms}^{-1}$) \\
+    \texttt{output\_flag} & \texttt{logical} & \texttt{intent(out)} & Set to show
+    new output fields have been calculated after an ice-model time-step. If this
+    flag is not set, the output fields retain their values at input. \\ 
+    \texttt{orog\_out(:,:)} & \texttt{real(rk)} & \texttt{intent(inout)} & Output
+    orography (m)\\ 
+    \texttt{albedo(:,:)} & \texttt{real(rk)} & \texttt{intent(inout)} & Surface
+    albedo \\
+    \texttt{ice\_frac(:,:)} & \texttt{real(rk)} & \texttt{intent(inout)} &
+    Fractional ice coverage \\
+    \texttt{water\_in(:,:)} & \texttt{real(rk)} & \texttt{intent(inout)} & The
+    input fresh-water flux (mm, over ice time-step). Essentially precip, but
+    provided for consistency.\\
+    \texttt{water\_out(:,:)} & \texttt{real(rk)} & \texttt{intent(inout)} & The
+    output fresh-water flux (mm, over ice time-step). This is simply the ablation calculated by
+    the model, scaled up to the global grid. It is up to the global model to
+    then  deal with it (route it to the oceans, land scheme, etc.) Note that
+    the precipitation fed to the model but which doesn't get incorporated into
+    the ice sheet because it falls over the sea is returned in this field. \\ 
+    \texttt{total\_water\_in} & \texttt{real(rk)} & \texttt{intent(inout)} &
+    Area-integrated water flux in (kg)\\ 
+    \texttt{total\_water\_out} & \texttt{real(rk)} & \texttt{intent(inout)} &
+    Area-integrated water flux out (kg)\\
+    \texttt{ice\_volume} & \texttt{real(rk)} & \texttt{intent(inout)} & Total ice volume (m$^3$)\\
+  \end{supertabular*}
+\end{center}
+\paragraph{Additional notes}
+%
+\begin{itemize}
+\item The sizes of all two-dimensional fields passed as arguments must be the
+  same as that implied by the sizes of the arrays used to pass latitude and
+  longitude information when the model was initialised using
+  \texttt{initialise\_glint}. There is
+  currently no checking mechanism in place for this, so using fields of the wrong size
+  will lead to unpredictable results.
+\item Zonal and meridional components of the wind are only required if the
+  small-scale precipitation parameterization is being used (with
+  \texttt{whichprecip} set to 2).
+\item The output field arguments only return data relevant to the parts of the globe
+  covered by the ice model instances. The fraction of each global
+  grid-box covered by ice model instances may be obtained using the
+  \texttt{glint\_coverage\_map} subroutine below. 
+\item The output orography field is given as a mean calculated over the part
+  of the grid-box covered by ice  model instances. Thus, to calculate the
+  grid-box mean, the output fields should be multiplied point-wise by the
+  coverage fraction. 
+\item Albedo is currently fixed at 0.4 for ice-covered ground, and set to zero
+  elsewhere. The albedo is given for the part of the global grid box covered
+  by ice, not as an average of the part covered by the ice model. No attempt
+  is made to guess the albedo of the parts of the ice model domain \emph{not}
+  covered by ice.
+\end{itemize}
+%
+\paragraph{Example interpretation of output fields}
+%
+Consider a particular point, $(i,j)$ in the global domain. Suppose value
+returned by \texttt{glint\_coverage\_map} for this point is 0.7, and the
+output fields have these values:
+\begin{verbatim}
+  orog_out(i,j)  = 200.0
+  albedo(i,j)    =   0.4
+  ice_frac(i,j)  =   0.5
+\end{verbatim}
+%
+What does this mean? Well, the ice model covers 70\% of the grid-box, and in
+that part the mean surface elevation is 200\,m. Of the part covered by the ice
+model, half is actually covered by ice. Thus, 35\% ($0.5\times 0.7$) of the global grid-box is
+covered by ice, and the ice has an mean albedo of 40\%. The model makes no suggestion for the
+albedo or elevation of the other 65\% of the grid-box. Currently, ice albedo
+is a constant that may be changed in the appropriate configuration file, but
+this output field is provided against the possibility that the model may be
+extended at some point to include a model of ice albedo.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END_GLINT                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\subsection{Subroutine \texttt{end\_glint}}
+%
+\paragraph{Purpose} To perform general tidying-up operations, close files, etc.
+%
+\paragraph{Name and mandatory arguments}
+%
+\begin{verbatim}
+  subroutine end_glint(params)
+\end{verbatim}
+%
+\paragraph{Arguments}
+%
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  } 
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  } 
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+      \tablelasttail{\hline}
+        \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+          \texttt{params} & \texttt{type(glint\_params)} & \texttt{intent(inout)} & Ice model paramters \\
+\end{supertabular*}
+\end{center}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GLINT_COVERAGE_MAP                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\subsection{Function \texttt{glint\_coverage\_map}}
+%
+\paragraph{Purpose} To obtain a map of fractional coverage of global
+grid-boxes by the ice model instances. The function returns a value
+indicating success, or giving error information.
+%
+\paragraph{Type, name and mandatory arguments}
+%
+\begin{verbatim}
+  integer function glint_coverage_map(params,coverage,cov_orog)
+\end{verbatim}
+%
+\paragraph{Arguments}
+%
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  } 
+  \tablehead{%
+    \hline
+    \multicolumn{4}{|p{\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  } 
+  \tabletail{%
+    \hline
+    \multicolumn{4}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+      \tablelasttail{\hline}
+        \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{5.5cm}}
+        \texttt{params} & \texttt{type(glint\_params)} & \texttt{intent(in)} & Ice model parameters \\
+\texttt{coverage(:,:)} & \texttt{real(rk)} & \texttt{intent(out)} & Coverage
+map (all fields except orography) \\
+\texttt{cov\_orog(:,:)} & \texttt{real(rk)} & \texttt{intent(out)} & Coverage
+map (orography) \\
+\end{supertabular*}
+\end{center}
+%
+\paragraph{Returned value}
+%
+\begin{center}
+\begin{tabular}{cl}
+\hline
+Value & Meaning \\
+\hline
+\hline
+0 & Coverage maps have been returned successfully \\
+1 & Coverage maps not yet calculated; must call \texttt{initialise\_glint}
+first \\
+2 & Arrays \texttt{coverage} or \texttt{cov\_orog} are the wrong size \\
+\hline
+\end{tabular}
+\end{center}

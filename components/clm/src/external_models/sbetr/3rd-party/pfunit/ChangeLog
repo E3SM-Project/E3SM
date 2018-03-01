@@ -1,0 +1,64 @@
+3.1.1
+	- PGI 15.7 appears to be working robustly
+	  . some previously necessary workarounds have been removed
+	- Additional documentation for XML printer
+	- Improved compliance with JUnit for XML printer
+	- Bug fix for RemoteProxyTestCase
+	- CMake workaround for OpenMPI 1.8.8 which otherwise complains about nested
+	  MPI programs in self tests.
+	- Fixed KEEP_ALL option in AssertEqual for zero-length strings.
+	  Because "" == " " in Fortran, AssertEqual(""," ",whitespace=KEEP_ALL),
+	  which should throw an exception, failed silently for zero-length arrays.
+	- Fixed the make clean bug in Example code.
+	- Added time out command line arguments.
+	- Added PFUNIT_EXTRA_USAGE in include/driver.F90 for suite-wide fixture use.
+	- Cray workarounds on a separate branch (hope for a release in November).
+
+3.1	March 20, 2015
+	- PGI 15.1 now supported.
+	- Asserts over integer arrays now supported. INT32 and INT64 support added.
+	- Consolidated assertAssociated directives to:
+	    @assertAssociated
+	    @assertNotAssociated
+	- Added ifndef option to preprocessor directives.
+	- Fixes: Name length checking, unbalanced allocate, python 3 basestring.
+
+3.0.2	December 12, 2014
+	- Corrected lack of PRESENT check on some optional arguments.
+	- Brought integer array version of assertEqual up to level of other numbers.
+	- Directives added:
+	    @assertEquivalent(...)
+	    @assertEqual(a,b)
+	    @assertAssociated(...), @assertUnAssociated(...)
+	    @assertAssociatedWith(...), @assertUnAssociatedWith(...)
+	- Added code to parse brackets in directive arguments,
+	    allowing @assertEquivalent([...],[...]).
+	    Needed for directives that must parse arguments to construct other calls.
+	- Extended assertTrue and assertFalse to cover arrays of logical.
+	- Removed dependency on CPP stringification in the REFLECT macro simplifying build.
+	- Improved portability of build, fixing problem with OUTPUT_FLAG, i.e. "-o".
+	- Fixed build problem on NAG, cmake/gmake, and OS X.
+	- Replaced explicit invocations of python with $(PYTHON), set in GNUmakefile,
+	    to aid specification.
+	- Removed an extraneous allocate (Patch 5).
+
+3.0.1	September 15, 2014
+	- Fixed parser bug that was not recognizing user-provided procedures
+ 	  annotated with @before/@after for MPI tests.
+	- Corrected end-of-run logic in include/driver.F90.
+	- Minor corrections & simplifications to build process.
+	- Improved compilation time by refactoring automatically generated code.
+	- Added compile-time configuration parameter to control maximum rank
+	  supported by assertions over arrays, e.g. AssertReal.
+	- Added "whitespace=IGNORE_DIFFERENCES" and similar options to AssertEqual.
+
+
+3.0.0	April 04, 2014
+	- Design improvement that unfortunately breaks GFortran prior to
+	  4.8.3 and 4.9.0 (main reason for major release)
+	- Default driver now produces useful return code in serial (and some MPI)
+	- New assertions for floating point:  <, <=, >, >=
+	- Various improvements to parser
+
+
+

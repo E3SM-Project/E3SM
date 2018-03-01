@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Writing Output</TITLE>
+<META NAME="description" CONTENT="Writing Output">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node11.html">
+<LINK REL="previous" HREF="node9.html">
+<LINK REL="up" HREF="node8.html">
+<LINK REL="next" HREF="node11.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html214"
+  HREF="node11.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html210"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html204"
+  HREF="node9.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html212"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html215"
+  HREF="node11.html">Model Physics</A>
+<B>Up:</B> <A NAME="tex2html211"
+  HREF="node8.html">Namelist Variables</A>
+<B> Previous:</B> <A NAME="tex2html205"
+  HREF="node9.html">Changing the timestep</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00042000000000000000">
+Writing Output</A>
+</H2>
+
+<P>
+The namelist variables that control the frequency of the model diagnostics, 
+netCDF history, and restart files are shown in Table <A HREF="node8.html#table:setup_nml">1</A>.  By 
+default, diagnostics are written out once every 48 timesteps to the ascii file
+<B>ice.log.$LID</B> (see section <A HREF="node26.html#stdout">9.1</A>). <TT>$LID</TT> is a time stamp 
+that is set in the main script.   
+
+<P>
+The namelist variable <TT>histfreq</TT> controls the output frequency of the 
+netCDF history files; writing monthly averages is the default.  The content of 
+the history files is described in section <A HREF="node29.html#history">9.3</A>.  The value of 
+<TT>hist_avg</TT> determines if instantaneous or averaged variables are written 
+at the frequency set by <TT>histfreq</TT>.  If <TT>histfreq</TT> is set to '1' for 
+instantaneous output, <TT>hist_avg</TT> is set to <TT>.false.</TT> within the source 
+code to avoid conflicts.  The latest version of CICE allows for multiple
+history streams, currently set to a maximum of 5.  The namelist variables, 
+<TT>histfreq</TT> and <TT>histfreq_n</TT> are now arrays which allow for different
+frequency history file sets.  More detail on this is available in <A HREF="node29.html#history">9.3</A>.
+
+<P>
+The namelist variable <TT>pointer_file</TT> is set to the name of the pointer file
+containing the restart file name that will be read when model execution
+begins.  The pointer file resides in the scripts directory and is created 
+initially by the ice setup script but is overwritten every time a new restart 
+file is created.  It will contain the name of the latest restart file.  The 
+default filename <I>ice.restart_file</I> shown in Table 
+<A HREF="node8.html#table:setup_nml">1</A> will not work unless some modifications are made to 
+the ice setup script and a file is created with this name and contains the name 
+of a valid restart file; this variable must be set in the namelist.  More 
+information on restart pointer files can be found in section <A HREF="node28.html#pointer_files">9.2</A>.
+
+<P>
+The variables <TT>dumpfreq</TT> and <TT>dumpfreq_n</TT> control the 
+output frequency of the netCDF restart files; writing one restart file per 
+year is the default and is set by the CESM driver. The default format for
+restart files is now netCDF, but this can be changed to binary through
+the namelist variable, <TT>restart_format</TT>.
+
+<P>
+If <TT>print_points</TT> is <TT>.true.</TT>, diagnostic data is printed out for two
+grid points, one near the north pole and one near the Weddell Sea.  The points
+are set via namelist variables <TT>latpnt</TT> and <TT>lonpnt</TT>.  This option can 
+be helpful for debugging.
+
+<P>
+<TT>incond_dir</TT>, <TT>restart_dir</TT> and <TT>history_dir</TT> are the directories
+where the initial condition file, the restart files and the history files will
+be written, respectively.  These values are set at the top of the setup script
+and have been modified from the default values to meet the requirements of the
+CESM filenaming convention.  This allows each type of output file to be written
+to a separate directory.  If the default values are used, all of the output
+files will be written to the executable directory.
+
+<P>
+<TT>incond_file</TT>, <TT>dump_file</TT> and <TT>history_file</TT> are the root
+filenames for the initial condition file, the restart files and the history 
+files, respectively.  These strings have been determined by the requirements 
+of the CESM filenaming convention, so the default values are set by the CESM
+driver.  See <A HREF="node27.html#restart_files">9.2</A> and <A HREF="node29.html#history_files">9.3</A> for an explanation 
+of how the rest of the filename is created.
+
+<P>
+<HR>
+<A NAME="tex2html214"
+  HREF="node11.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html210"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html204"
+  HREF="node9.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html212"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html215"
+  HREF="node11.html">Model Physics</A>
+<B>Up:</B> <A NAME="tex2html211"
+  HREF="node8.html">Namelist Variables</A>
+<B> Previous:</B> <A NAME="tex2html205"
+  HREF="node9.html">Changing the timestep</A>
+
+<!--End of Navigation Panel-->
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,149 @@
+#! /usr/bin/env python
+
+# Copyright (C) 2010
+# Glimmer-CISM contributors - see AUTHORS file for list of contributors
+#
+# This file is part of Glimmer-CISM.
+#
+# Glimmer-CISM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or (at
+# your option) any later version.
+#
+# Glimmer-CISM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Glimmer-CISM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Glimmer-CISM is hosted on BerliOS.de:
+# https://developer.berlios.de/projects/glimmer-cism/
+
+"""A plot of CF profiles."""
+
+import PyGC
+import matplotlib.pyplot
+from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
+
+# creating option parser
+parser = PyGC.GCOptParser()
+parser.width=15.
+parser.profile()
+parser.time()
+parser.region1d(onlyx=True)
+parser.plot()
+opts = PyGC.GCOptions(parser,-1)
+
+
+fig = matplotlib.pyplot.figure(figsize=opts.plotsize)
+
+if opts.nfiles>1:
+    COLS='bgrcnyk'
+else:
+    COLS='k'
+
+if opts.options.level == None:
+    level = 0
+else:
+    level = opts.options.level
+
+# create axes
+if opts.nvars > 1:
+    naxes = opts.nvars
+    sharey = False
+else:
+    naxes = opts.ntimes
+    sharey = True
+totalheight=0.9
+if opts.nfiles > 1:
+    # make room for legend
+    totalheight = totalheight - 0.075
+plotheight = totalheight/naxes
+sep = 0.05
+axprops = {}
+axes = []
+for i in range(1,naxes+1):
+    axes.append( fig.add_axes([0.15,1-i*plotheight,0.8,plotheight-sep],  **axprops))
+    if i==0:
+        axprops['sharex'] = axes[0]
+        if sharey:
+            axprops['sharey'] = axes[0]
+        
+
+if opts.ntimes>1:
+    infile = opts.cfprofile()
+    for t in range(0,opts.ntimes):
+        if opts.ntimes>1:
+            time = opts.times(infile,t)
+            axes[t].add_artist(AnchoredText('%.2fka'%infile.time(time),loc=4))
+
+    for f in range(0,opts.nfiles):
+        infile = opts.cfprofile(f)
+        for t in range(0,opts.ntimes):
+            profile = opts.profs(infile)
+            time = opts.times(infile,t)
+
+            if opts.options.vars[0] == 'is':
+                topo = infile.getprofile('topg').getProfile(time)
+                axes[t].plot(infile.xvalues, topo,color=COLS[f])
+                axes[t].set_ylabel('elevation [%s]'%profile.units)
+            else:
+                axes[t].set_ylabel('%s [%s]'%(profile.long_name,profile.units))
+            axes[t].plot(infile.xvalues, profile.getProfile(time,level=level),color=COLS[f],label=infile.title )
+else:
+    for f in range(0,opts.nfiles):
+        infile = opts.cfprofile(f)
+        time = opts.times(infile,0)
+        for i in range(0,opts.nvars):
+            profile = opts.profs(infile,i)
+
+            if profile.is3d and opts.options.level == None:
+                norm,cmap,title = opts.colourmap(infile,i)
+                
+                vextent,data2d = profile.getProfile2D(time)
+                im = axes[i].imshow(data2d,origin='lower',cmap=cmap,extent=[infile.xvalues[0],infile.xvalues[-1]]+vextent,aspect='auto')
+
+                topo = infile.getprofile('topg').getProfile(time)
+                surf = infile.getprofile('is').getProfile(time)
+                axes[i].plot(infile.xvalues, topo,'k')
+                axes[i].plot(infile.xvalues, surf,'k')
+                axes[i].set_ylabel('elevation [meter]')
+
+                if opts.options.dolegend:
+                    cb = fig.colorbar(im, extend='both', spacing='uniform',ax=axes[i])
+                    cb.set_label(title)
+            else:
+                if opts.options.vars[i] == 'is':
+                    topo = infile.getprofile('topg').getProfile(time)
+                    axes[i].plot(infile.xvalues, topo,color=COLS[f])
+                    axes[i].set_ylabel('elevation [%s]'%profile.units)
+                else:
+                    axes[i].set_ylabel('%s [%s]'%(profile.long_name,profile.units))
+
+                axes[i].plot(infile.xvalues, profile.getProfile(time,level=level),color=COLS[f],label=infile.title )
+
+# get minimum size of axes
+min_width = 10
+for i in range(0,len(axes)):
+    min_width = min( axes[i].get_position().width, min_width )
+for i in range(0,len(axes)):
+    pos = axes[i].get_position().get_points()
+    pos = [pos[0,0],pos[0,1],min_width,pos[1,1]-pos[0,1]]
+    axes[i].set_position(pos)
+
+axes[-1].set_xlabel('distance along profile [km]')
+axes[0].autoscale_view(tight=True,scaley=False)
+handles, labels = axes[-1].get_legend_handles_labels()
+if opts.nfiles > 1:
+    matplotlib.pyplot.figlegend(handles,labels,'lower center',ncol=2, mode="expand")
+
+# display title
+if opts.options.title:
+    matplotlib.pyplot.title(infile.title)
+
+if opts.options.output==None:
+    matplotlib.pyplot.show()
+else:
+    matplotlib.pyplot.savefig(opts.options.output)

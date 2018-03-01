@@ -1,0 +1,79 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Introduction}\label{sec:addintro}
+
+The build system for GLIMMER-CISM is extensive and great care needs to be taken in order to ensure that everything is compiled correctly.  This appendix demonstrates how a new phaml\_module.F90 file and phaml\_module\_pde.F90 file can be added to the build system after they have been created.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Adding Modules}\label{sec:addmod}
+
+When adding a module the file `Makefile.am' in the libphaml directory will need to be edited in order to add the new file to the build process and tell the system the necessary dependencies the module requires.  We'll assume the file to be edited is named `phaml\_module.F90'.  The first things that will have to happen is adding the library to be created to the `lib\_LTLIBRARIES' variable at the top of the `Makefile.am' file.  It will look like:
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+lib_LTLIBRARIES = ......... libphaml_module.la
+
+\end{verbatim}
+\end{framecode}
+
+The next thing that must be added is the compile instructions for the new library.  Add a block under the other existing library instructions like this:
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+#new phaml library xxxx to be used by glimmer
+libphaml_module_la_SOURCES = phaml_module.F90 
+libphaml_module_la_LIBADD = libphaml_user_mod.la libphaml_support.la \
+    #add additional libraries needed here
+
+\end{verbatim}
+\end{framecode}
+
+Make sure libraries are not being added multiple times.  If another library uses this module not all libraries will need to be added again.  If the new library uses any GLIMMER or GLIDE libraries those don't need to be added here because they are included when the binary is built.
+
+
+And finally in order for the pde callbacks to be available the file phaml\_module\_pde.F90 will need to be added to the phaml\_slave\_SOURCES variable as well.  The module will also need to be added to the \href{http://svn.berlios.de/svnroot/repos/glimmer-cism/glimmer-cism2/libphaml/phaml\_pde.F90}{phaml\_pde.F90}
+ functions for the module to be used.  This requires adding a `use' statement in each subroutine like so: 
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+use phaml_module_pde
+
+\end{verbatim}
+\end{framecode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Adding Drivers}\label{sec:adddrive}
+
+Sometimes it might be desired to add a driver as a very simplistic version of the GLIMMER-CISM model where only certain portions of the model are used in order to test a new PHAML module.  This process is outlined by the `simple\_phaml' binary that is built.  Like the libraries, the binary must first be added to the list of binaries to create.  The assumption is made that there exists a file phaml\_driver.F90 being used for this program.
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+bin_PROGRAMS = ........ phaml_driver
+
+\end{verbatim}
+\end{framecode}
+
+Now the binary can be defined by what source files as well as what libraries it needs in order to compile.  The order in which the libraries are listed is important.  If library A is needed by library B, then the order must be A,B in the library listing.
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+phaml_driver_SOURCES = phaml_driver.F90 
+phaml_driver_LDADD = $(ac_cv_phaml_prefix)/lib/libphaml.a \
+    $(top_builddir)/libglide/libglide.la \
+    $(top_builddir)/libglimmer-solve/libglimmer-solve.la \
+    $(top_builddir)/libglimmer/libglimmer-IO.la \
+    $(top_builddir)/libglimmer/libglimmer.la \
+    $(NETCDF_LDFLAGS) $(NETCDF_LIBS) $(MPILIBS) \
+    libphaml_user_mod.la libphaml_example.la libphaml_pde.la \
+    libphaml_module.la
+    #add additional libraries needed here
+
+\end{verbatim}
+\end{framecode}
+
+That is everything needed in the Makefile.am file.  Now CISM must be rebuilt starting with the bootstrap and configured with the ``--with-phaml" option.
+

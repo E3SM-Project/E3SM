@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="config_archive.xsd"/>
+  <xs:attribute name="id" type="xs:string"/>
+
+  <xs:element name="header" type="xs:string"/>
+<!-- complex elements -->
+  <xs:element name="file">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="header" />
+	<xs:element ref="components" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute ref="id"/>
+      <xs:attribute ref="version"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

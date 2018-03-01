@@ -1,0 +1,10 @@
+&camexp
+ restart_option='nsteps'
+ restart_n=3
+ mfilt=1,1,1,1,1,1
+ ndens=1,1,1,1,1,1
+ nhtfrq=3,3,3,3,3,3
+ start_tod=82800 
+ start_ymd=1231 
+ divdampn=1
+ /

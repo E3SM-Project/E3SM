@@ -1,0 +1,10 @@
+&mpp_driver
+  problem_type = 'vsfm_vchannel'
+/
+
+&regression_test
+  write_regression_output = .true.
+  num_cells = 5
+/
+
+

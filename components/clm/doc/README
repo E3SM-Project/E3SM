@@ -1,0 +1,122 @@
+clm/README                                          05/15/2013
+
+Community Land Surface Model (CLM) version 4.5.06 -- source code, tools, 
+offline-build and test scripts. This gives you everything you need
+to run CLM with CESM with datm8 to provide Qian or CRU NCEP forcing data in 
+place of a modeled atmosphere.
+
+What is new in this version of CLM (compared to previous CESM and CCSM releases)?
+
+See the ChangeLog file for a summary description of the most recent major
+version changes leading up to clm4_0_00, from CLM4.0.00 to CLM4.0.14, 
+from CLM4.0.14 to CLM4.0.32, and then from CLM4.0.32 to CLM4.0.53.  
+The User's Guide also has a section on this as well.
+
+General directory structure:
+
+models/lnd/clm/doc ---- Documentation of CLM.
+models/lnd/clm/bld ---- Template, configure and build-namelist scripts for clm.
+models/lnd/clm/src ---- CLM Source code.
+models/lnd/clm/test --- CLM Testing scripts for CLM offline tools.
+models/lnd/clm/tools -- CLM Offline tools to prepare input datasets and process output.
+
+scripts --------------- CPL7 scripts
+
+models/drv/driver ----- CESM top level driver source code.
+models/drv/shr -------- CESM top level driver shared code.
+models/drv/shr_esmf --- CESM top level driver shared code for ESMF.
+models/atm/datm ------- CESM Data model version 8 source code.
+models/glc/cism ------- CESM Community land Ice Sheet Model.
+models/rof/rtm -------- CESM River Transport Model.
+models/ice/sice ------- CESM stub sea-ice model source code.
+models/ocn/socn ------- CESM stub ocean model source code.
+models/glc/sglc ------- CESM stub glacier model source code.
+models/utils ---------- CESM utility codes 
+                        (Model Coupling Toolkit (MCT)
+                        (Earth System Model Framework)
+                        (timing -- code timing utility)
+                        (pio -- Parallel Input/Output)
+
+Top level documentation:
+
+README ------------------- This file
+README_EXTERNALS --------- Information on how to work with subversion externals for clm
+SVN_EXTERNAL_DIRECTORIES - Subversions externals to use
+Copyright ---------------- CESM Copyright file
+UpDateChangeLog.pl ------- Script to add documentation on a tag to the
+                           ChangeLog/ChangeSum files
+ChangeLog ---------------- Documents different CLM versions
+ChangeSum ---------------- Summary documentation of different CLM versions
+ChangeLog/ChangeSum ------ Also copied to models/lnd/clm/doc
+
+Documentation of Namelist Items: (view the following in a web browser)
+
+models/lnd/clm/bld/namelist_files/namelist_definition.xml --- Definition of all namelist items
+models/lnd/clm/bld/namelist_files/namelist_defaults_clm.xml - Default values
+
+=============================================================================================
+Important files in main directories:
+=============================================================================================
+
+models/lnd/clm/doc/Quickstart.GUIDE -------- Quick guide to using cpl7 scripts.
+models/lnd/clm/doc/Quickstart.userdatasets - Quick guide to using your own datasets.
+models/lnd/clm/doc/IMPORTANT_NOTES --------- Some important notes about this version of 
+                                             clm, configuration modes and namelist items 
+                                             that are not validated or functional.
+models/lnd/clm/doc/KnownBugs --------------- List of known bugs.
+models/lnd/clm/doc/KnownLimitations -------- List of known limitations and workarounds.
+models/lnd/clm/doc/ChangeLog --------------- Detailed list of changes for each model version.
+models/lnd/clm/doc/ChangeSum --------------- Summary one-line list of changes for each 
+                                             model version.
+models/lnd/clm/doc/README ------------------ Documentation similar to this file
+models/lnd/clm/doc/UsersGuide -------------- CLM Users Guide
+models/lnd/clm/doc/CodeReference ----------- CLM Code Reference Guide
+
+models/lnd/clm/bld/configure --------------- Script to prepare CLM to be built.
+
+models/lnd/clm/test/tools/test_driver.sh -- Script for general software testing of 
+                                             CLM's offline tools.
+
+models/lnd/clm/tools/clm4_5/mksurfdata_map --- Directory to build program to create surface dataset 
+                                        at any resolution.
+models/lnd/clm/tools/clm4_5/interpinic ------- Directory to build program to interpolate initial 
+                                        conditions to any resolution.
+models/lnd/clm/tools/shared/mkdatadomain ----- Directory to build program to create datm7 or docn7 
+                                        domain files from clm files.
+models/lnd/clm/tools/shared/mkprocdata_map --- Process history data from unstructed grids to a gridded 
+                                        format.
+models/lnd/clm/tools/shared/ncl_scripts  ----- Directory of NCL and perl scripts to do various
+                                        tasks. Most notably to plot perturbation error growth
+                                        testing and to extract regional information from
+                                        global datasets for single-point/regional simulations.
+
+models/lnd/clm/bld/README ------------- Description of how to use the configure and
+                                        build-namelist scripts.
+
+=============================================================================================
+Source code directory structure:
+=============================================================================================
+
+models/lnd/clm/src/clm4_5/biogeochem -- Biogeochemisty
+models/lnd/clm/src/clm4_5/main -------- Main control and high level code
+models/lnd/clm/src/cpl_mct ------------ Land model high level MCT driver
+models/lnd/clm/src/cpl_esmf ----------- Land model high level ESMF driver
+models/lnd/clm/src/cpl_share ---------- Land model high level driver code shared between MCT/ESMF
+models/lnd/clm/src/clm4_5/biogeophys -- Biogeophysics (Hydrology)
+
+=============================================================================================
+    QUICKSTART: using the CPL7 scripts:
+=============================================================================================
+
+         cd scripts
+         ./create_newcase            # get help on how to run create_newcase
+         ./create_newcase -case testI -mach bluefire -res f19_g16 -compset I
+                                     # create new "I" case for bluefire at 1.9x2.5_gx1v6 res
+                                     # "I" case is clm active, datm8, and inactive ice/ocn
+         cd testI
+         ./cesm_setup                # create the $CASE.run file
+         ./testI.bluefire.build      # build model and create namelists
+         ./testI.bluefire.submit     # submit script
+                                     # (NOTE: ./xmlchange RESUBMIT=10 to set RESUBMIT to number
+                                     # #  of times to automatically resubmit -- 10 in this example)
+

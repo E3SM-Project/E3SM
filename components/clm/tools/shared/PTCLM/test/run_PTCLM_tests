@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+#########################################################################################
+#
+# run_PTCLM_tests
+#
+#    Run the list of PTCLM unit-tests.
+#
+#########################################################################################
+from PTCLMtesting_prog import PTCLMtesting_prog
+
+testing = PTCLMtesting_prog()
+testing.parse_cmdline_args()
+testing.Initialize()
+testing.Run()
+testing.Finalize()

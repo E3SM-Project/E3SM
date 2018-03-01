@@ -1,0 +1,4 @@
+ These test programs are modified versions of test programs from
+ a previous nf_test. There purpose is to test the use of the Fortran
+ 2003 modules supplied as replacements for the netcdf and netcdf4 include
+ files

@@ -1,0 +1,23 @@
+This program reads USGS 30-sec terrain dataset from NetCDF file and bins it to an approximately 
+3km cubed-sphere grid and outputs the data in netCDF format.
+
+The LANDM_COSLAT field is read in from a separate netCDF file and linearly interpolated to the 3km cubed-sphere grid.
+
+Input files needed:
+
+1. USGS raw data in netCDF format: usgs-rawdata.nc (must be placed in same dirctory as the executables)
+   Generated with software in gen_netCDF_from_USGS/ directory
+
+   File may be found at:
+
+   $CESMDATA/inputdata/atm/cam/gtopo30data/usgs-rawdata.nc
+
+2. landm_coslat dataset (must be placed in same dirctory as the executables). E.g.:
+
+   ln -s /fs/cgd/csm/inputdata/atm/cam2/hrtopo/landm_coslat.nc .
+
+   The landm_coslat field is not used in CAM5!
+
+Output file:
+
+USGS-topo-cube.nc

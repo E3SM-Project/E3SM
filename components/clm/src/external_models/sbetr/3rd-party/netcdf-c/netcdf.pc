@@ -1,0 +1,13 @@
+prefix=/Users/jinyuntang/work/sbetr/build/Darwin-x86_64-static-double-cc-Debug/3rd-party
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ccompiler=gcc
+
+Name: netcdf
+Description: NetCDF Client Library for C
+URL: http://www.unidata.ucar.edu/netcdf
+Version: 4.4.0
+Libs: -L${libdir} -lnetcdf
+Cflags: -I${includedir}
+

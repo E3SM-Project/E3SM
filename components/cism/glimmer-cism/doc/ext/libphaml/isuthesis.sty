@@ -1,0 +1,68 @@
+\def\fileversion{1.22}
+\def\filedate{2001/09/10}
+%%
+%% LaTeX document package `isuthesis', for use with LaTeX2e.
+%% This is a package that is used with the report class to
+%%   create a thesis at Iowa State University.
+%%
+%% COPYRIGHT 1997, by Joe Struss (jastruss@iastate.edu)
+%%
+%% Copying of part or all of any file in the isuthesis.sty package
+%% including isumacros.sty, thesisreport.sty and isuthesis.sty
+%% is allowed under the following conditions only:
+%% (1) You may freely distribute unchanged copies of the files. Please
+%%     include the any or all documentation when you do so.
+%% (2) You may modify a renamed copy of any file, but only for personal
+%%     use or use within an organization.
+%% (3) You may copy fragments from the files, for personal use or for use
+%%     in a macro package for distribution, as long as credit is given
+%%     where credit is due.
+%%
+%% You are NOT ALLOWED to take money for the distribution or use of
+%% these files or modified versions or fragments thereof, except for
+%% a nominal charge for copying etc.
+%%
+\typeout{%
+  Document Package: isuthesis \filedate \space v\fileversion \space (Joe Struss)}
+\usepackage{graphics}
+\usepackage{setspace}
+\usepackage{isumacros}
+\usepackage{threeparttop}
+\renewcommand{\contentsname}{\centering
+\large TABLE OF CONTENTS } %JAS
+\renewcommand{\listfigurename}{\centering \large LIST OF FIGURES}  %JAS
+\renewcommand{\listtablename}{\centering \large LIST OF TABLES}    %JAS
+\renewcommand{\chaptername}{}             %JAS- remove Chapter?
+\renewcommand{\appendixname}{}            %
+\lineskip 1pt                             % old isuthes value
+\renewcommand{\baselinestretch}{1.655}    % old isuthes value
+\setcounter{secnumdepth}{0}
+% We need 1" margins except on the binding edge, where it is 1 1/2"
+% Theses may be either single or double sided
+  \if@twoside
+     \setlength\oddsidemargin   {36.1\p@}
+     \setlength\evensidemargin  {0\p@}
+     \setlength\marginparwidth {40\p@}
+  \else
+     \setlength\oddsidemargin   {36.1\p@}
+     \setlength\evensidemargin  {36.1\p@}
+     \setlength\marginparwidth  {40\p@}
+  \fi
+
+\marginparsep 10pt
+%\oddsidemargin 0.5in \evensidemargin 0in
+%\marginparwidth 40pt
+\topmargin -.5cm \headsep .5in
+\textheight 8.25in
+\textwidth 6in
+%\setlength{\oddsidemargin}{0.25 in}
+%\setlength{\evensidemargin}{0.25 in}
+%\setlength{\textwidth}{6.2 in}           % allow for a little sloppiness (6.3)
+%\setlength{\topmargin}{-.30 in}           % top margin to header (was -.35)
+%\setlength{\textheight}{8.8 in}           % allow for a little sloppiness (8.9)
+%\setlength{\footheight}{1.0 in}
+\pagestyle{threepartheadings}             % top page number
+\usepackage{thesisreport}                 % report alterations for isuthesis
+\usepackage{indentfirst}                  % para. indent after sectionals
+\widowpenalty=450                         % three times normal widow penalty
+\clubpenalty=450                          % three times normal orphan penalty

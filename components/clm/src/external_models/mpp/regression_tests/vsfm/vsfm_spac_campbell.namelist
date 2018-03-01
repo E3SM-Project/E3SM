@@ -1,0 +1,8 @@
+&mpp_driver
+  problem_type = 'vsfm_spac_campbell'
+/
+
+&regression_test
+  write_regression_output = .true.
+  num_cells = 5
+/

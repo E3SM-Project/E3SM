@@ -1,0 +1,2 @@
+This directory contains modules, portions of a makefile, etc. that are
+shared between a number of unit tests.

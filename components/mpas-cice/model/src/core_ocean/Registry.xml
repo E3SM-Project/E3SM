@@ -1,0 +1,2402 @@
+<?xml version="1.0"?>
+<registry model="mpas" core="ocean" core_abbrev="ocn" version="5.2">
+
+	<dims>
+		<dim name="nCells" units="unitless"
+			 description="The number of polygons in the primary grid."
+		/>
+		<dim name="nEdges" units="unitless"
+			 description="The number of edge midpoints in either the primary or dual grid."
+		/>
+		<dim name="maxEdges" units="unitless"
+			 description="The largest number of edges any polygon within the grid has."
+		/>
+		<dim name="maxEdges2" units="unitless"
+			 description="Two times the largest number of edges any polygon within the grid has."
+		/>
+		<dim name="nAdvectionCells" definition="maxEdges2+0" units="unitless"
+			 description="The largest number of advection cells for any edge."
+		/>
+		<dim name="nVertices" units="unitless"
+			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
+		/>
+		<dim name="TWO" definition="2" units="unitless"
+			 description="The number two as a dimension."
+		/>
+		<dim name="R3" definition="3" units="unitless"
+			 description="The number three as a dimension."
+		/>
+		<dim name="SIX" definition="6" units="unitless"
+			 description="The number six as a dimension."
+		/>
+		<dim name="FIFTEEN" definition="15" units="unitless"
+			 description="The number 15 as a dimension."
+		/>
+		<dim name="TWENTYONE" definition="21" units="unitless"
+			 description="The number 21 as a dimension."
+		/>
+		<dim name="vertexDegree" units="unitless"
+			 description="The number of cells or edges touching each vertex."
+		/>
+		<dim name="nVertLevels" units="unitless"
+			 description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
+		/>
+		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
+			 description="The number of interfaces in the vertical direction."
+		/>
+	</dims>
+
+	<!--*************************************-->
+	<!-- General namelists for all run modes -->
+	<!--*************************************-->
+	<nml_record name="run_modes" mode="forward;analysis">
+		<nml_option name="config_ocean_run_mode" type="character" default_value="forward" units="unitless"
+					description="Determines which run mode will be used for the ocean model."
+					mode="forward;analysis" forward_value="forward" analysis_value="analysis"
+					possible_values="'forward' and 'analysis'"
+		/>
+	</nml_record>
+	<nml_record name="time_management" mode="forward;analysis">
+		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
+					description="Determines if the initial conditions should be read from a restart file, or an input file."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="Restart_timestamp" units="unitless"
+					description="Path to the filename for restart timestamps to be read and written from."
+					possible_values="Path to a file."
+		/>
+		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+					description="Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp."
+					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'file'"
+		/>
+		<nml_option name="config_stop_time" type="character" default_value="none" units="unitless" mode="forward"
+					description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
+					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
+		/>
+		<nml_option name="config_run_duration" type="character" default_value="0010_00:00:00" units="unitless" mode="forward"
+					description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
+					possible_values="'DDDD_HH:MM:SS' or 'none'"
+		/>
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
+					description="Selection of the type of calendar that should be used in the simulation."
+					possible_values="'gregorian', 'gregorian_noleap'"
+		/>
+	</nml_record>
+	<nml_record name="io" mode="forward;analysis">
+		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
+					description="Logical flag determining if an output file should be written prior to the first time step."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
+					description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
+					possible_values="Any positive integer value greater than or equal to 0."
+					mode="forward;analysis"
+		/>
+		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
+					description="Integer specifying the stride of each IO task."
+					possible_values="Any positive integer value greater than 0."
+					mode="forward;analysis"
+		/>
+	</nml_record>
+	<nml_record name="decomposition" mode="forward;analysis">
+		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+					description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+					description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a block decomposition file."
+		/>
+		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
+					description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
+					possible_values="Any integer greater than or equal to 0."
+		/>
+		<nml_option name="config_explicit_proc_decomp" type="logical" default_value=".false." units="unitless"
+					description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+					description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a processor decomposition file."
+		/>
+	</nml_record>
+
+	<!--*************************************-->
+	<!-- Namelists for forward run mode only -->
+	<!--*************************************-->
+	<nml_record name="time_integration" mode="forward">
+		<nml_option name="config_dt" type="character" default_value="00:05:00" units="unitless"
+					description="Length of model time-step."
+					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
+		/>
+		<nml_option name="config_time_integrator" type="character" default_value="split_explicit" units="unitless"
+					description="Time integration method."
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit'"
+		/>
+	</nml_record>
+	<nml_record name="ALE_vertical_grid" mode="forward">
+		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
+					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
+					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
+		/>
+		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
+					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_min_thickness" type="real" default_value="1.0" units="m"
+					description="Minimum thickness allowed."
+					possible_values="any positive real value, but typically 0.1 to 1 m."
+		/>
+		<nml_option name="config_max_thickness_factor" type="real" default_value="6.0" units="unitless"
+					description="Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
+					possible_values="any positive real value, but typically 2-4."
+		/>
+		<nml_option name="config_set_restingThickness_to_IC" type="logical" default_value=".true." units="unitless"
+					description="If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
+					description="Determines if the positive Z axis is aligned with the positive K index direction."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="ALE_frequency_filtered_thickness" mode="forward">
+		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
+					description="If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
+					description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
+					possible_values="any positive real value, but typically 5 days."
+		/>
+		<nml_option name="config_use_highFreqThick_restore" type="logical" default_value=".false." units="unitless"
+					description="If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_restore_time" type="real" default_value="30.0" units="days"
+					description="Restoring time scale for high-frequency thickness, $\tau_{hhf}$."
+					possible_values="any positive real value, but typically 5-30 days."
+		/>
+		<nml_option name="config_use_highFreqThick_del2" type="logical" default_value=".false." units="unitless"
+					description="If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
+					description="Horizonal high frequency thickness diffusion, $\kappa_{hhf}$."
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="partial_bottom_cells" mode="forward">
+		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
+					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
+					description="Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
+					possible_values="'full_cell' or 'partial_cell'"
+		/>
+		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
+					description="Determines the minimum fraction of a cell altering the initial conditions can create. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+					possible_values="Any real between 0 and 1."
+		/>
+		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
+					description="Enables a check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="hmix" mode="forward">
+		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false." units="unitless"
+					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_maxMeshDensity" type="real" default_value="-1.0" units="unitless"
+					description="Global maximum of the mesh density"
+					possible_values="Any positive real number. If set any negative real number, config_maxMeshDensity is computed during the initialization of each simulation."
+		/>
+		<nml_option name="config_apvm_scale_factor" type="real" default_value="0.0" units="unitless"
+					description="Anticipated potential vorticity (APV) method scale factor, $c_{apv}$. When zero, APV is off."
+					possible_values="Any non-negative number, typically between zero and one."
+		/>
+	</nml_record>
+	<nml_record name="hmix_del2" mode="forward">
+		<nml_option name="config_use_mom_del2" type="logical" default_value=".true." units="unitless"
+					description="If true, Laplacian horizontal mixing is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tracer_del2" type="logical" default_value=".false." units="unitless"
+					description="If true, Laplacian horizontal mixing is used on the tracer equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
+					description="Horizonal viscosity, $\nu_h$."
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_tracer_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
+					description="Horizonal diffusion, $\kappa_h$."
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="hmix_del4" mode="forward">
+		<nml_option name="config_use_mom_del4" type="logical" default_value=".false." units="unitless"
+					description="If true, biharmonic horizontal mixing is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tracer_del4" type="logical" default_value=".false." units="unitless"
+					description="If true, biharmonic horizontal mixing is used on the tracer equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del4" type="real" default_value="5.0e13" units="m^4 s^{-1}"
+					description="Coefficient for horizontal biharmonic operator on momentum."
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^{-1}"
+					description="Coefficient for horizontal biharmonic operator on tracers."
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="hmix_Leith" mode="forward">
+		<nml_option name="config_use_Leith_del2" type="logical" default_value=".false." units="unitless"
+					description="If true, the Leith enstrophy-cascade closure is turned on"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Leith_parameter" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Leith closure parameter"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_dx" type="real" default_value="15000.0" units="m"
+					description="Characteristic length scale, usually the smallest dx in the mesh"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_visc2_max" type="real" default_value="2.5e3" units="m^2 s^{-1}"
+					description="Upper bound on the allowable value of Leith-computed viscosity"
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="mesoscale_eddy_parameterization" mode="forward">
+		<nml_option name="config_use_standardGM" type="logical" default_value=".false." units="NA"
+					description="If true, the standard GM for the tracer advection and mixing is turned on."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="The Redi diffusion coefficient"
+					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_gravWaveSpeed_trunc" type="real" default_value="0.3" units="m/s"
+					description="Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$"
+					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
+		/>
+		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
+					description="Tapering parameter for Redi diffusion coeffient.  Tapering occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope"
+					possible_values="Positive real numbers"
+		/>
+	</nml_record>
+	<nml_record name="hmix_del2_tensor" mode="forward">
+		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
+					description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
+					description="Horizonal viscosity, $\nu_h$."
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="hmix_del4_tensor" mode="forward">
+		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
+					description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del4_tensor" type="real" default_value="5.0e13" units="m^4 s^{-1}"
+					description="Coefficient for horizontal biharmonic operator on momentum."
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="Rayleigh_damping" mode="forward">
+		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false." units="unitless"
+					description="If true, Rayleigh friction is included in the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="0.0" units="s^{-1}"
+					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$."
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vmix" mode="forward">
+		<nml_option name="config_convective_visc" type="real" default_value="1.0" units="m^2 s^{-1}"
+					description="Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_convective_diff" type="real" default_value="1.0" units="m^2 s^{-1}"
+					description="Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)"
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vmix_const" mode="forward">
+		<nml_option name="config_use_const_visc" type="logical" default_value=".true." units="unitless"
+					description="If true, constant vertical viscosity is included in the momentum equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_const_diff" type="logical" default_value=".false." units="unitless"
+					description="If true, constant vertical diffusion is included in the tracer equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vert_visc" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+					description="Vertical viscosity, applied uniformly throughout domain"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+					description="Vertical diffusion, applied uniformly throughout domain"
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vmix_rich" mode="forward">
+		<nml_option name="config_use_rich_visc" type="logical" default_value=".false." units="unitless"
+					description="If true, Richardson-number based vertical viscosity is included in the momentum equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_rich_diff" type="logical" default_value=".false." units="unitless"
+					description="If true, Richardson-number based vertical diffusion is included in the tracer equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_bkrd_vert_visc" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+					description="Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_bkrd_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+					description="Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_rich_mix" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Coefficient for Richardon-number vertical mixing function, $c_{Ri}$"
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vmix_tanh" mode="forward">
+		<nml_option name="config_use_tanh_visc" type="logical" default_value=".false." units="unitless"
+					description="If true, tanh-based vertical viscosity is included in the momentum equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tanh_diff" type="logical" default_value=".false." units="unitless"
+					description="If true, tanh-based vertical diffusion is included in the tracer equation"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_max_visc_tanh" type="real" default_value="2.5e-1" units="m^2 s^{-1}"
+					description="maximum viscosity value for tanh-fit function"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_min_visc_tanh" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+					description="minimum viscosity value for tanh-fit function"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_max_diff_tanh" type="real" default_value="2.5e-2" units="m^2 s^{-1}"
+					description="maximum diffusion value for tanh-fit function"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_min_diff_tanh" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+					description="minimum diffusion value for tanh-fit function"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_zMid_tanh" type="real" default_value="-100" units="m"
+					description="z-coodinate location of center of tanh function"
+					possible_values="Any real value, typically negative."
+		/>
+		<nml_option name="config_zWidth_tanh" type="real" default_value="100" units="m"
+					description="vertical width parameter for tanh function"
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="cvmix" mode="forward">
+		<nml_option name="config_use_cvmix" type="logical" default_value=".false." units="NA"
+					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_prandtl_number" type="real" default_value="1.0" units="non-dimensional"
+					description="Prandtl number to be used within the CVMix parameterization suite"
+					possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_use_cvmix_background" type="logical" default_value=".true." units="NA"
+					description="If true, background diffusivity and viscosity is computed using CVMix"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+					description="Background vertical diffusion applied to tracer quantities"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+					description="Background vertical viscosity applied to horizontal velocity"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
+					description="If true, convective diffusivity and viscosity is computed using CVMix"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_convective_diffusion" type="real" default_value="1.0" units="m^2 s^{-1}"
+					description="Convective vertical diffusion applied to tracer quantities"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_convective_viscosity" type="real" default_value="1.0" units="m^2 s^{-1}"
+					description="Convective vertical viscosity applied to horizontal velocity components"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true." units="NA"
+					description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_convective_triggerBVF" type="real" default_value="0.0" units="s^{-2}"
+					description="Value of Brunt Viasala frequency squared below which convective mixing is triggered"
+					possible_values="Any real value"
+		/>
+		<nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
+					description="If true, shear-based mixing is computed using CVMix"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
+					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
+					possible_values="PP or KPP"
+		/>
+		<nml_option name="config_cvmix_shear_PP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Numerator of Pacanowski and Philander (1981) Eq (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_alpha" type="real" default_value="5.0" units="unitless"
+					description="Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_exp" type="real" default_value="2.0" units="unitless"
+					description="Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Maximum diffusivity produced by shear-generated mixing"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="0.7" units="non-dimensional"
+					description="Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3" units="NA"
+					description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix tidal mixing"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix double diffusion"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix KPP"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_use_cvmix_fixed_boundary_layer" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is specified as config_cvmix_kpp_boundary_layer_depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_boundary_layer_depth" type="real" default_value="30.0" units="m"
+					description="If config_use_cvmix_fixed_boundary_layer, then KPP OBL calculation is overwritten with this value"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
+					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="NA"
+					description="Determines how the KPP diffusivities are matched to values at base of boundary layer"
+					possible_values="MatchBoth, MatchGradient, SimpleShapes"
+		/>
+		<nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Ekman layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_MonObOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Monin-Obukhov layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="NA"
+					description="Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
+					possible_values="linear, quadratic, cubic"
+		/>
+		<nml_option name="config_cvmix_kpp_surface_layer_extent" type="real" default_value="0.1" units="non-dimensional"
+					description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
+					possible_values="Any value between 0 and 1"
+		/>
+		<nml_option name="config_cvmix_kpp_surface_layer_averaging" type="real" default_value="5.0" units="m"
+					description="The thickness over which to average when computing surface-averaged velocity and buoyancy"
+					possible_values="Any positive real value, but typically should be between 1 and 20 meters"
+		/>
+		<nml_option name="config_cvmix_kpp_stop_OBL_search" type="real" default_value="100.0" units="non-dimensional"
+					description="The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber"
+					possible_values="Any positive value"
+		/>
+	</nml_record>
+	<nml_record name="forcing" mode="forward">
+		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
+					description="Defines the forcing type for the simulation."
+					possible_values="'restoring', 'bulk', or 'off'"
+		/>
+		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
+					description="Restoring time scale for temperature, $\tau_r.$"
+					possible_values="any positive real value, but typically between 30 and 90 days."
+		/>
+		<nml_option name="config_restoreS_timescale" type="real" default_value="90.0" units="days"
+					description="Restoring time scale for salinity, $\tau_r$."
+					possible_values="any positive real value, but typically between 30 and 90 days."
+		/>
+		<nml_option name="config_restoreT_lengthscale" type="real" default_value="50.0" units="m"
+					description="Restoring length scale for temperature."
+					possible_values="any positive real value, but typically about 50 meters."
+		/>
+		<nml_option name="config_restoreS_lengthscale" type="real" default_value="50.0" units="m"
+					description="Restoring length scale for salinity."
+					possible_values="any positive real value, but typically about 50 meters."
+		/>
+		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
+					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
+					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
+		/>
+		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
+					description="Logical flag that determines if the formation of frazil ice is allowed."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
+					description="Name of shortwave absorption type used in simulation."
+					possible_values="'jerlov'"
+		/>
+		<nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
+					description="Integer value defining the water type used in Jerlov short wave absorption."
+					possible_values="Integer values between 1 and 5"
+		/>
+		<nml_option name="config_fixed_jerlov_weights" type="logical" default_value=".true." units="unitless"
+					description="Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.)."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="advection" mode="forward">
+		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
+					description="Method for interpolating tracer values from layer centers to layer edges"
+					possible_values="'spline' and 'stencil'"
+		/>
+		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at layer edges"
+					possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at cell edges"
+					possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_coef_3rd_order" type="real" default_value="0.25" units="non-dimensional"
+					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
+					possible_values="any real between 0 and 1"
+		/>
+		<nml_option name="config_monotonic" type="logical" default_value=".true." units="unitless"
+					description="If .true. then fluxes are limited to produce a monotonic advection scheme"
+					possible_values=".true. and .false."
+		/>
+	</nml_record>
+	<nml_record name="bottom_drag" mode="forward">
+		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-2" units="unitless"
+					description="Dimensionless bottom drag coefficient, $c_{drag}$."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+	</nml_record>
+	<nml_record name="pressure_gradient" mode="forward">
+		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
+					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
+					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
+		/>
+		<nml_option name="config_density0" type="real" default_value="1014.65" units="kg m^{-3}"
+					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
+					possible_values="any positive real, but typically 1000-1035"
+		/>
+		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
+					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
+					possible_values="any real between 0 and 1"
+		/>
+	</nml_record>
+	<nml_record name="eos" mode="forward;analysis">
+		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
+					description="Character string to choose EOS formulation"
+					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
+		/>
+	</nml_record>
+	<nml_record name="eos_linear" mode="forward;analysis">
+		<nml_option name="config_eos_linear_alpha" type="real" default_value="0.2" units="kg m^{-3} C^{-1}"
+					description="Linear thermal expansion coefficient"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_eos_linear_beta" type="real" default_value="0.8" units="kg m^{-3} PSU^{-1}"
+					description="Linear haline contraction coefficient"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_eos_linear_Tref" type="real" default_value="5.0" units="C"
+					description="Reference temperature"
+					possible_values="any real"
+		/>
+		<nml_option name="config_eos_linear_Sref" type="real" default_value="35.0" units="PSU"
+					description="Reference salinity"
+					possible_values="any real"
+		/>
+		<nml_option name="config_eos_linear_densityref" type="real" default_value="1000.0" units="kg m^{-3}"
+					description="Reference density, i.e. density when T=Tref and S=Sref"
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="split_explicit_ts" mode="forward">
+		<nml_option name="config_n_ts_iter" type="integer" default_value="2" units="unitless"
+					description="number of large iterations over stages 1-3"
+					possible_values="any positive integer, but typically 1, 2, or 3"
+		/>
+		<nml_option name="config_n_bcl_iter_beg" type="integer" default_value="1" units="unitless"
+					description="number of iterations of stage 1 (baroclinic solve) on the first split-explicit iteration"
+					possible_values="any positive integer, but typically 1, 2, or 3"
+		/>
+		<nml_option name="config_n_bcl_iter_mid" type="integer" default_value="2" units="unitless"
+					description="number of iterations of stage 1 (baroclinic solve) on any split-explicit iterations between first and last"
+					possible_values="any positive integer, but typically 1, 2, or 3"
+		/>
+		<nml_option name="config_n_bcl_iter_end" type="integer" default_value="2" units="unitless"
+					description="number of iterations of stage 1 (baroclinic solve) on the last split-explicit iteration"
+					possible_values="any positive integer, but typically 1, 2, or 3"
+		/>
+		<nml_option name="config_n_btr_subcycles" type="integer" default_value="20" units="unitless"
+					description="number of barotropic subcycles in stage 2"
+					possible_values="any positive integer, typically between 10 and 100"
+		/>
+		<nml_option name="config_n_btr_cor_iter" type="integer" default_value="2" units="unitless"
+					description="number of iterations of the velocity corrector step in stage 2"
+					possible_values="any positive integer, but typically 1, 2, or 3"
+		/>
+		<nml_option name="config_vel_correction" type="logical" default_value=".true." units="unitless"
+					description="If true, the velocity correction term is included in the horizontal advection of thickness and tracers"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_btr_subcycle_loop_factor" type="integer" default_value="2" units="unitless"
+					description="Barotropic subcycles proceed from $t$ to $t+n\Delta t$, where $n$ is this configuration option."
+					possible_values="Any positive integer, but typically 1 or 2"
+		/>
+		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5" units="unitless"
+					description="Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
+					possible_values="between 0 and 1"
+		/>
+		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="1.0" units="unitless"
+					description="Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
+					possible_values="between 0 and 1"
+		/>
+		<nml_option name="config_btr_gam3_velWt2" type="real" default_value="1.0" units="unitless"
+					description="Weighting of velocity in the SSH corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
+					possible_values="between 0 and 1"
+		/>
+		<nml_option name="config_btr_solve_SSH2" type="logical" default_value=".false." units="unitless"
+					description="If true, execute the SSH corrector step in stage 2"
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="testing" mode="forward">
+		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
+					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
+					description="If true, tensor operations are tested upon start-up."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
+					description="Character string to choose tensor test fuction"
+					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+		/>
+	</nml_record>
+	<nml_record name="debug" mode="forward">
+		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
+					description="If true, disables k33 portion of Redi neutral surface mixing." 
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term2" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term3" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
+					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_filter_btr_mode" type="logical" default_value=".false." units="unitless"
+					description="Enables filtering of the barotropic mode."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_prescribe_velocity" type="logical" default_value=".false." units="unitless"
+					description="Enables a prescribed velocity field. This velocity field is read on input, and remains constant through a simulation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_prescribe_thickness" type="logical" default_value=".false." units="unitless"
+					description="Enables a prescribed thickness field. This thickness field is read on input, and remains constant through a simulation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_include_KE_vertex" type="logical" default_value=".false." units="unitless"
+					description="If true, the kinetic energy in each cell is computed by blending cell-based and vertex-based values of kinetic energy."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false." units="unitless"
+					description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_thick_all_tend" type="logical" default_value=".false." units="unitless"
+					description="Disables all tendencies on the thickness field."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_thick_hadv" type="logical" default_value=".false." units="unitless"
+					description="Disable tendencies on the thickness field from horizontal advection."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_thick_vadv" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the thickness field from vertical advection."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_thick_sflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the thickness field from surface fluxes."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_all_tend" type="logical" default_value=".false." units="unitless"
+					description="Disables all tendencies on the velocity field."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_coriolis" type="logical" default_value=".false." units="unitless"
+					description="Diables tendencies on the velocity field from the Coriolis force."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_pgrad" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from the horizontal pressure gradient."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_hmix" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from horizontal mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_windstress" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from horizontal wind stress."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_vmix" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from vertical mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_vadv" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from vertical advection."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_all_tend" type="logical" default_value=".false." units="unitless"
+					description="Disables all tendencies on tracer fields."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_adv" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on tracer fields from advection, both horizontal and vertical."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_hmix" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on tracer fields from horizontal mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_vmix" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on tracer fields from vertical mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_sflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on tracer fields from surface fluxes."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_nonlocalflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
+		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
+		<package name="surfaceRestoring" description="This package includes variables required for surface tracer restoring."/>
+		<package name="bulkForcing" description="This package includes varibles required for bulk surface forcing."/>
+		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
+		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
+		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
+	</packages>
+
+	<streams>
+		<stream name="mesh" 
+				type="input"
+				filename_template="mesh.nc"
+				input_interval="initial_only"
+				immutable="true"
+				mode="forward;analysis">
+
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="fCell"/>
+			<var name="bottomDepth"/>
+			<var name="maxLevelCell"/>
+			<var name="refBottomDepth"/>
+			<var name="restingThickness"/>
+			<var name="temperatureRestore"/>
+			<var name="salinityRestore"/>
+			<var name="surfaceWindStress"/>
+		</stream>
+		<stream name="input" 
+				type="input"
+				filename_template="init.nc"
+				input_interval="initial_only"
+				immutable="true"
+				mode="forward;analysis">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="highFreqThickness"/>
+			<var name="lowFreqDivergence"/>
+			<var name="seaSurfacePressure"/>
+		</stream>
+		<stream name="restart"
+				type="input;output"
+				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				input_interval="initial_only"
+				output_interval="0005_00:00:00"
+				immutable="true"
+				mode="forward;analysis">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="highFreqThickness"/>
+			<var name="lowFreqDivergence"/>
+			<var name="normalBarotropicVelocity"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="xtime"/>
+			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="vertNonLocalFlux"/>
+
+		</stream>
+		<stream name="output" 
+				type="output"
+				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
+			<var name="layerThickness"/>
+			<var name="ssh"/>
+			<var name="maxLevelEdgeTop"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="edgeMask"/>
+			<var name="vertexMask"/>
+			<var name="cellMask"/>
+			<var name="refZMid"/>
+			<var name="refLayerThickness"/>
+			<var name="xtime"/>
+			<var name="zMid"/>
+			<var name="zTop"/>
+			<var name="kineticEnergyCell"/>
+			<var name="relativeVorticityCell"/>
+			<var name="areaCellGlobal"/>
+			<var name="areaEdgeGlobal"/>
+			<var name="areaTriangleGlobal"/>
+			<var name="volumeCellGlobal"/>
+			<var name="volumeEdgeGlobal"/>
+			<var name="CFLNumberGlobal"/>
+		</stream>
+		<stream name="additional_output"
+				type="none"
+				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<var name="normalVelocity"/>
+			<var name="density"/>
+			<var name="pressure"/>
+			<var name="divergence"/>
+			<var name="viscosity"/>
+			<var name="vertViscTopOfEdge"/>
+			<var name="vertViscTopOfCell"/>
+			<var name="vertDiffTopOfCell"/>
+			<var name="BruntVaisalaFreqTop"/>
+			<var name="RiTopOfCell"/>
+			<var name="bulkRichardsonNumber"/>
+			<var name="vertAleTransportTop"/>
+			<var name="vertVelocityTop"/>
+		</stream>
+		<stream name="real_world"
+				type="none"
+				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
+			<var name="displacedDensity"/>
+			<var name="potentialDensity"/>
+			<var name="boundaryLayerDepth"/>
+			<var name="boundaryLayerDepthEdge"/>
+			<var name="indexBoundaryLayerDepth"/>
+			<var name="indexSurfaceLayerDepth"/>
+			<var name="surfaceFrictionVelocity"/>
+			<var name="windStressZonalDiag"/>
+			<var name="windStressMeridionalDiag"/>
+			<var name="surfaceBuoyancyForcing"/>
+			<var name="seaSurfacePressure"/>
+		</stream>
+		<stream name="averages"
+				type="none"
+				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="nAverage"/>
+			<var_array name="avgTracersSurfaceValue"/>
+			<var_array name="avgSurfaceVelocity"/>
+			<var_array name="avgSSHGradient"/>
+			<var name="avgSSH"/>
+			<var name="avgNormalVelocity"/>
+			<var name="avgVelocityZonal"/>
+			<var name="avgVelocityMeridional"/>
+			<var name="avgVertVelocityTop"/>
+			<var name="avgNormalTransportVelocity"/>
+			<var name="avgTransportVelocityZonal"/>
+			<var name="avgTransportVelocityMeridional"/>
+			<var name="avgVertTransportVelocityTop"/>
+			<var name="varSSH"/>
+			<var name="varNormalVelocity"/>
+			<var name="varVelocityZonal"/>
+			<var name="varVelocityMeridional"/>
+		</stream>
+		<stream name="Cartesian"
+				type="none"
+				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="velocityX"/>
+			<var name="velocityY"/>
+		</stream>
+
+		<stream name="forcing"
+				type="none"
+				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="surfaceTracerFlux"/>
+			<var_array name="vertNonLocalFlux"/>
+			<var name="surfaceWindStressMagnitude"/>
+			<var name="surfaceWindStress"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="seaIceEnergy"/>
+			<var name="penetrativeTemperatureFlux"/>
+			<var name="fractionAbsorbed"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="iceFraction"/>
+			<var name="prognosticCO2"/>
+			<var name="diagnosticCO2"/>
+			<var name="squaredWindSpeed10Meter"/>
+			<var name="CO2Flux"/>
+			<var name="DMSFlux"/>
+			<var name="nAccumulatedCoupled"/>
+			<var name="thermalExpansionCoeff"/>
+			<var name="salineContractionCoeff"/>
+		</stream>
+		<stream name="Gent_McWilliams_spherical"
+				type="none"
+				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellZonal"/>
+			<var name="relativeSlopeTopOfCellMeridional"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityZonal"/>
+			<var name="GMBolusVelocityMeridional"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
+			<var name="avgVertGMBolusVelocityTop"/>
+		</stream>
+		<stream name="Gent_McWilliams_Cartesian"
+				type="none"
+				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellX"/>
+			<var name="relativeSlopeTopOfCellY"/>
+			<var name="relativeSlopeTopOfCellZ"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityX"/>
+			<var name="GMBolusVelocityY"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="GMStreamFuncX"/>
+			<var name="GMStreamFuncY"/>
+		</stream>
+	</streams>
+	<var_struct name="state" time_levs="2">
+		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
+			<var name="temperature" array_group="dynamics" units="degrees Celsius"
+				 description="potential temperature"
+			/>
+			<var name="salinity" array_group="dynamics" units="grams salt per kilogram seawater"
+				 description="salinity"
+			/>
+			<var name="tracer1" array_group="dynamics" units="na"
+				 description="tracer"
+			/>
+		</var_array>
+		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="horizonal velocity, normal component to an edge"
+		/>
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 description="layer thickness"
+		/>
+		<var name="ssh" type="real" dimensions="nCells Time" units="m"
+			 description="sea surface height" packages="forwardMode;analysisMode"
+		/>
+
+		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
+		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 description="high frequency-filtered layer thickness"
+			 packages="thicknessFilter"
+		/>
+		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+			 description="low frequency-filtered divergence"
+			 packages="thicknessFilter"
+		/>
+
+		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
+		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			 description="barotropic velocity, used in split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
+		/>
+		<var name="normalBarotropicVelocitySubcycle" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			 description="barotropic velocity, used in subcycling in stage 2 of split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
+		/>
+		<var name="sshSubcycle" type="real" dimensions="nCells Time" units="m"
+			 description="sea surface height, used in subcycling in stage 2 of split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
+		/>
+		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="baroclinic velocity, used in split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
+		/>
+	</var_struct>
+	<var_struct name="mesh" time_levs="1">
+		<var name="latCell" type="real" dimensions="nCells" units="radians"
+			 description="Latitude location of cell centers in radians."
+		/>
+		<var name="lonCell" type="real" dimensions="nCells" units="radians"
+			 description="Longitude location of cell centers in radians."
+		/>
+		<var name="xCell" type="real" dimensions="nCells" units="unitless"
+			 description="X Coordinate in cartesian space of cell centers."
+		/>
+		<var name="yCell" type="real" dimensions="nCells" units="unitless"
+			 description="Y Coordinate in cartesian space of cell centers."
+		/>
+		<var name="zCell" type="real" dimensions="nCells" units="unitless"
+			 description="Z Coordinate in cartesian space of cell centers."
+		/>
+		<var name="indexToCellID" type="integer" dimensions="nCells" units="unitless"
+			 description="List of global cell IDs."
+		/>
+		<var name="latEdge" type="real" dimensions="nEdges" units="radians"
+			 description="Latitude location of edge midpoints in radians."
+		/>
+		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
+			 description="Longitude location of edge midpoints in radians."
+		/>
+		<var name="xEdge" type="real" dimensions="nEdges" units="unitless"
+			 description="X Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="yEdge" type="real" dimensions="nEdges" units="unitless"
+			 description="Y Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="zEdge" type="real" dimensions="nEdges" units="unitless"
+			 description="Z Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="indexToEdgeID" type="integer" dimensions="nEdges" units="unitless"
+			 description="List of global edge IDs."
+		/>
+		<var name="latVertex" type="real" dimensions="nVertices" units="radians"
+			 description="Latitude location of vertices in radians."
+		/>
+		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
+			 description="Longitude location of vertices in radians."
+		/>
+		<var name="xVertex" type="real" dimensions="nVertices" units="unitless"
+			 description="X Coordinate in cartesian space of vertices."
+		/>
+		<var name="yVertex" type="real" dimensions="nVertices" units="unitless"
+			 description="Y Coordinate in cartesian space of vertices."
+		/>
+		<var name="zVertex" type="real" dimensions="nVertices" units="unitless"
+			 description="Z Coordinate in cartesian space of vertices."
+		/>
+		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
+			 description="List of global vertex IDs."
+		/>
+		<var name="meshDensity" type="real" dimensions="nCells" units="unitless"
+			 description="Value of density function used to generate a particular mesh at cell centers."
+		/>
+		<var name="meshScalingDel2" type="real" dimensions="nEdges" units="unitless"
+			 description="Coefficient to Laplacian mixing terms in momentum and tracer equations, so that viscosity and diffusion scale with mesh."
+		/>
+		<var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
+			 description="Coefficient to biharmonic mixing terms in momentum and tracer equations, so that biharmonic viscosity and diffusion coefficients scale with mesh."
+		/>
+		<var name="meshScaling" type="real" dimensions="nEdges" units="unitless"
+			 description="Coefficient used for mesh scaling, such as the Leith parameter."
+		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+			 description="List of cells that straddle each edge."
+		/>
+		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
+			 description="Number of edges that border each cell."
+		/>
+		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
+			 description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
+		/>
+		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			 description="List of edges that border each cell."
+		/>
+		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
+			 description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
+			 description="Reconstruction weights associated with each of the edgesOnEdge."
+		/>
+		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
+			 description="Length of each edge, computed as the distance between verticesOnEdge."
+		/>
+		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
+			 description="Length of each edge, computed as the distance between cellsOnEdge."
+		/>
+		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
+			 description="Angle the edge normal makes with local eastward direction."
+		/>
+		<var name="areaCell" type="real" dimensions="nCells" units="m^2"
+			 description="Area of each cell in the primary grid."
+		/>
+		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
+			 description="Area of each cell (triangle) in the dual grid."
+		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+			 description="Normal unit vector defined at an edge."
+		/>
+		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges" units="unitless"
+			 description="Tangent unit vector defined at an edge."
+		/>
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+			 description="Unit surface normal vectors defined at cell centers."
+		/>
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+			 description="The two vectors that define a tangent plane at a cell center."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			 description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			 description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+			 description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+			 description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+			 description="List of cells that share a vertex."
+		/>
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
+		/>
+		<var name="fEdge" type="real" dimensions="nEdges" units="s^{-1}"
+			 description="Coriolis parameter at edges."
+		/>
+		<var name="fVertex" type="real" dimensions="nVertices" units="s^{-1}"
+			 description="Coriolis parameter at vertices."
+		/>
+		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
+			 description="Coriolis parameter at cell centers."
+		/>
+		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
+			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
+		/>
+		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
+			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="advCoefs" type="real" dimensions="nAdvectionCells nEdges" units="m"
+			 description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="advCoefs3rd" type="real" dimensions="nAdvectionCells nEdges" units="m"
+			 description="Wegihting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="advCellsForEdge" type="integer" dimensions="nAdvectionCells nEdges" units="unitless"
+			 description="List of cells used to reconstruct a cell quantity at an edge. Used in advection routines."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="nAdvCellsForEdge" type="integer" dimensions="nEdges" units="unitless"
+			 description="Number of cells used in reconstruction of cell center quantities at an edge. Used in advection routines."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="highOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
+			 description="Mask for high order advection. Values are 1 if high order is used, and 0 if not."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+			 description="Coefficients to reconstruct velocity vectors at cells centers."
+		/>
+		<var name="maxLevelCell" type="integer" dimensions="nCells" units="unitless"
+			 description="Index to the last active ocean cell in each column."
+		/>
+		<var name="maxLevelEdgeTop" type="integer" dimensions="nEdges" units="unitless"
+			 description="Index to the last edge in a column with active ocean cells on both sides of it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="maxLevelEdgeBot" type="integer" dimensions="nEdges" units="unitless"
+			 description="Index to the last edge in a column with at least one active ocean cell on either side of it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="maxLevelVertexTop" type="integer" dimensions="nVertices" units="unitless"
+			 description="Index to the last vertex in a column with all active cells around it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="maxLevelVertexBot" type="integer" dimensions="nVertices" units="unitless"
+			 description="Index to the last vertex in a column with at least one active ocean cell around it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="refBottomDepth" type="real" dimensions="nVertLevels" units="m"
+			 description="Reference depth of ocean for each vertical level. Used in 'z-level' type runs."
+		/>
+		<var name="refBottomDepthTopOfCell" type="real" dimensions="nVertLevelsP1" units="m"
+			 description="Reference depth of ocean for each vertical interface. Used in 'z-level' type runs."
+		/>
+		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels" units="unitless"
+			 description="Weights used for distribution of sea surface heigh purturbations through multiple vertical levels."
+		/>
+		<var name="boundaryEdge" type="integer" dimensions="nVertLevels nEdges" units="unitless"
+			 description="Mask for determining boundary edges. A boundary edge has only one active ocean cell neighboring it."
+		/>
+		<var name="boundaryVertex" type="integer" dimensions="nVertLevels nVertices" units="unitless"
+			 description="Mask for determining boundary vertices. A boundary vertex has at least one inactive cell neighboring it."
+		/>
+		<var name="boundaryCell" type="integer" dimensions="nVertLevels nCells" units="unitless"
+			 description="Mask for determining boundary cells. A boundary cell has at least one inactive cell neighboring it."
+		/>
+		<var name="edgeMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
+			 description="Mask on edges that determines if computations should be done on edge."
+		/>
+		<var name="vertexMask" type="integer" dimensions="nVertLevels nVertices" units="unitless"
+			 description="Mask on vertices that determines if computations should be done on vertice."
+		/>
+		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
+			 description="Mask on cells that determines if computations should be done on cell."
+		/>
+		<var name="temperatureRestore" type="real" dimensions="nCells" units="^\circ C"
+			 description="Temperature restoring field, for restoring temperature at the surface."
+			 packages="surfaceRestoring"
+		/>
+		<var name="salinityRestore" type="real" dimensions="nCells" units="PSU"
+			 description="Salinity restoring field, for restoring salinity at the surface."
+			 packages="surfaceRestoring"
+		/>
+		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
+		/>
+		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
+			 description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
+		/>
+		<var name="kiteIndexOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			 description="Index of kite in dual grid, based on verticesOnCell."
+		/>
+	</var_struct>
+	<var_struct name="verticalMesh" time_levs="1">
+		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"
+			 description="Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations."
+		/>
+		<var name="refZMid" type="real" dimensions="nVertLevels" units="m"
+			 description="Reference mid z-coordinate of ocean for each vertical level. This has a negative value."
+		/>
+		<var name="refLayerThickness" type="real" dimensions="nVertLevels" units="m"
+			 description="Reference layerThickness of ocean for each vertical level."
+			 packages="forwardMode;analysisMode"
+		/>
+	</var_struct>
+	<var_struct name="tend" time_levs="1">
+		<var_array name="tendTracers" name_in_code="tracers" type="real" dimensions="nVertLevels nCells Time" packages="forwardMode">
+			<var name="tendTemperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
+				 description="time tendency of potential temperature"
+			/>
+			<var name="tendSalinity" array_group="dynamics" units="PSU s^{-1}" name_in_code="salinity"
+				 description="time tendency of salinity measured as change in practical salinity units per second"
+			/>
+			<var name="tendTracer1" array_group="dynamics" units="na" name_in_code="tracer1"
+				 description="test tracer"
+			/>
+		</var_array>
+		<var name="tendNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}" name_in_code="normalVelocity"
+			 description="time tendency of normal component of velocity"
+			 packages="forwardMode"
+		/>
+		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
+			 description="time tendency of layer thickness"
+			 packages="forwardMode"
+		/>
+		<var name="tendSSH" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
+			 description="time tendency of sea-surface height"
+			 packages="forwardMode"
+		/>
+		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"
+			 description="time tendency of high frequency-filtered layer thickness"
+			 packages="thicknessFilter"
+		/>
+		<var name="tendLowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="lowFreqDivergence"
+			 description="time tendency of low frequency-filtered divergence"
+			 packages="thicknessFilter"
+		/>
+	</var_struct>
+	<var_struct name="diagnostics" time_levs="1">
+		<var name="xtime" type="text" dimensions="Time" units="unitless"
+			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
+				description="potential temperature extrapolated to ocean surface"
+			/>
+			<var name="salinitySurfaceValue" array_group="surfaceValues" units="PSU" name_in_code="salinitySurfaceValue"
+				description="salinity extrapolated to ocean surface"
+			/>
+			<var name="tracer1SurfaceValue" array_group="surfaceValues" units="na"
+				description="Tracer of 1 extrapolated to ocean surface"
+			/>
+		</var_array>
+		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" units="PSU" name_in_code="salinitySurfaceLayerValue"
+				description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" units="na"
+				description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+		</var_array>
+		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" nits="m s^{-1}"
+			 description="normal velocity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
+				 description="Zonal surface velocity reconstructed at cell centers"
+				
+			/>
+			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
+				 description="Meridional surface velocity reconstructed at cell centers"
+			/>
+		</var_array>
+		<var_array name="SSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="SSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
+				 description="Zonal gradient of SSH reconstructed at cell centers"
+			/>
+			<var name="SSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
+				 description="Meridional gradient of SSH reconstructed at cell centers"
+			/>
+		</var_array>
+		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 description="z-coordinate of the mid-depth of the layer"
+		/>
+		<var name="zTop" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 description="z-coordinate of the top of the layer"
+		/>
+
+		<var name="density" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+			 description="density"
+		/>
+		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+			 description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="inSituThermalExpansionCoeff" 
+			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
+			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
+			 packages="inSituEOS"
+		/>
+		<var name="inSituSalineContractionCoeff" 
+			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
+			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
+			 packages="inSituEOS"
+		/>
+
+		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^{-2}"
+			 description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+			 description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 description="pressure used in the momentum equation"
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="horizontal velocity used to transport mass and tracers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertAleTransportTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical transport through the layer interface at the top of the cell"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+			 packages="forwardMode;analysisMode"
+
+		/>
+		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+			 packages="forwardMode;analysisMode"
+
+		/>
+		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="horizontal velocity, tangential to an edge"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness averaged from cell center to edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"
+			 description="layer thickness averaged from cell center to vertices"
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+			 description="kinetic energy of horizonal velocity on cells"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Eddy flux in Gent-McWilliams eddy parameterization"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="hKappa" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="kappa parameter for Gent-McWilliams eddy parameterization"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="hKappaQ" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="kappaQ parameter for Gent-McWilliams eddy parameterization"
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
+			 description="horizontal viscosity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+			 description="divergence of horizonal velocity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
+			 description="area-integrated vorticity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+			 description="curl of horizontal velocity, defined at vertices"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+			 description="curl of horizontal velocity, averaged from vertices to cell centers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+			 description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
+			 description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="barotropicThicknessFlux" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
+			 description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="velocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the y-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the z-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="transportVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="transportVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the y-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="transportVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the z-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="transportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="transportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Gradient of sea surface height at edges."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSHX" type="real" dimensions="nVertLevels nCells Time" units=""
+			 description="X Component of the gradient of sea surface height at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSHY" type="real" dimensions="nVertLevels nCells Time" units=""
+			 description="Y Component of the gradient of sea surface height at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSHZ" type="real" dimensions="nVertLevels nCells Time" units=""
+			 description="Z Component of the gradient of sea surface height at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSHZonal" type="real" dimensions="nVertLevels nCells Time" units=""
+			 description="Zonal Component of the gradient of sea surface height at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gradSSHMeridional" type="real" dimensions="nVertLevels nCells Time" units=""
+			 description="Meridional Component of the gradient of sea surface height at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMBolusVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMBolusVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
+			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="RiTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="nondimensional"
+			 description="gradient Richardson number defined at the edge (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertViscTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^{-1}"
+			 description="vertical viscosity defined at the edge (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertViscTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="vertical viscosity defined at the cell center (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="CVMix/KPP: bulk Richardson number"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
+			 packages="forwardMode;analysisMode"
+		/>
+                <var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                         description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
+                />
+		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
+		/>
+		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer averaged to cell edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time" packages="forwardMode;analysisMode">
+			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
+				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
+		/>
+		</var_array>
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
+			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" units="none"
+			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
+			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="windStressMeridionalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
+			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
+			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaCell variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="areaEdgeGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaEdge variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="areaTriangleGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaTriangle variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="volumeCellGlobal" type="real" dimensions="Time" units="m^3"
+			 description="sum of the volumeCell variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="volumeEdgeGlobal" type="real" dimensions="Time" units="m^3"
+			 description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="CFLNumberGlobal" type="real" dimensions="Time" units="unitless"
+			 description="maximum CFL number over the full domain"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
+			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell is greater than config_gm_max_slope"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="averaging of relativeSlopeTapering function to cell centers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCellX" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCellY" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCellZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCellZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeSlopeTopOfCellMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gmStreamFuncTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function reconstructed to the cell centers"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMStreamFuncY" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMStreamFuncZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMStreamFuncZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="GMStreamFuncMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+			 packages="forwardMode;analysisMode"
+		/>
+	</var_struct>
+	<var_struct name="average" time_levs="1">
+		<var name="nAverage" type="real" dimensions="Time" units="unitless"
+			 description="number of timesteps in time-averaged variables"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgSSH" type="real" dimensions="nCells Time" units="m"
+			 description="time-averaged sea surface height"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="varSSH" type="real" dimensions="nCells Time" units="m"
+			 description="variance of sea surface height"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged velocity, normal to cell edge"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged velocity in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged velocity in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="variance of velocity, normal to cell edge"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="variance of velocity in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="variance of velocity in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgNormalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity, normal to cell edge"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgTransportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgTransportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="time-averaged vertical velocity at top of cell"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgVertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="time-averaged vertical total tracer-transport velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgNormalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity, normal to cell edge"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgGMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity in the eastward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgGMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity in the northward direction"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="avgVertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="time-averaged vertical GM Bolus velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+			 packages="forwardMode;analysisMode"
+		/>
+	</var_struct>
+	<var_struct name="forcing" time_levs="1">
+		<!-- *********************************************************************
+
+				The fields listed below are built within MPAS-O. If they are
+				read in from an input file, their values will be overwritten by
+				constituent fields, depending on the forcing options selected.
+
+			 ********************************************************************* -->
+		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
+			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
+		/>
+		<var name="surfaceWindStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Magnitude of wind stress at the surface of the ocean, at cell centers."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="surfaceThicknessFlux" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Flux of mass through the ocean surface. Positive into ocean."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var_array name="surfaceTracerFlux" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="surfaceTemperatureFlux" array_group="dynamics" units="^\circ C m s^{-1}"
+				 description="Flux of temperature through the ocean surface. Positive into ocean."
+			/>
+			<var name="surfaceSalinityFlux" array_group="dynamics" units="PSU m s^{-1}"
+				 description="Flux of salinity through the ocean surface. Positive into ocean."
+			/>
+			<var name="surfaceTracer1Flux" array_group="testing" units="percent"
+				 description="Flux of tracer1 through the ocean surface. Positive into ocean."
+			/>
+		</var_array>
+
+
+		<!-- *********************************************************************
+
+				The fields listed below are constituent fields for coupling.
+				Their use depends on the forcing options selected (check their
+				packages). Some are used as input for simulations, while others
+				are outputs.
+
+			 ********************************************************************* -->
+		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
+			 description="Pressure defined at the sea surface."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
+			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
+			 packages="frazilIce"
+		/>
+		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
+			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="fractionAbsorbed" type="real" dimensions="nVertLevels nCells Time" units="fractional"
+			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
+			 packages="forwardMode;analysisMode"
+		/>
+
+		<!-- Input fields for coupling -->
+		<!-- Coupling fields associated with wind stress -->
+		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
+			 packages="bulkForcing"
+		/>
+		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
+			 packages="bulkForcing"
+		/>
+
+		<!-- Coupling fields associated with heat fluxes -->
+		<var name="latentHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Latent heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="sensibleHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Sensible heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="longWaveHeatFluxUp" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Upward long wave heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="longWaveHeatFluxDown" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Downward long wave heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="seaIceHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+
+		<!-- Coupling fields associated with mass or salinity fluxes -->
+		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+
+		<!-- Misc. coupling fields -->
+		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent"
+			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="prognosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}"
+			 description="Prognostic CO2 at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="diagnosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}"
+			 description="Diagnostic CO2 at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
+		/>
+		<var name="squaredWindSpeed10Meter" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+			 description="Squared wind speed at 10 meters at cell centers from coupler."
+			 packages="bulkForcing"
+		/>
+		<var name="CO2Flux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}"
+			 description="CO2 Flux."
+			 packages="bulkForcing"
+		/>
+		<var name="DMSFlux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}"
+			 description="DMS Flux."
+			 packages="bulkForcing"
+		/>
+
+		<!-- Output fields for coupling -->
+		<var name="nAccumulatedCoupled" type="integer" dimensions="Time" units="unitless"
+			 description="Number of accumulations in time averaging of coupler fields"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" 
+				 description="Time averaged potential temperature extrapolated to ocean surface"
+			/>
+			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" 
+				 description="Time averaged salinity extrapolated to ocean surface"
+			/>
+			<var name="avgTracer1SurfaceValue" array_group="surfaceValues" units="percent"
+				 description="Time averaged tracer1 extrapolated to ocean surface"
+			/>
+		</var_array>
+		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
+				 description="Time averaged zonal surface velocity"
+			/>
+			<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
+				 description="Time averaged meridional surface velocity"
+			/>
+		</var_array>
+		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
+				 description="Time averaged zonal gradient of SSH"
+			/>
+			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
+				 description="Time averaged meridional gradient of SSH"
+			/>
+		</var_array>
+	</var_struct>
+	<var_struct name="scratch" time_levs="1">
+		<var name="vorticityGradientTangentialComponent" 
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nEdges Time" 
+			units="s^{-1} m^{-1}"
+			description="gradient of vorticity in the tangent direction (positive points from vertex1 to vertex2)"
+		/>
+		<var name="vorticityGradientNormalComponent" 
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nEdges Time" 
+			units="s^{-1} m^{-1}"
+			description="gradient of vorticity in the normal direction (positive points from cell1 to cell2)"
+		/>
+		<var name="normalizedRelativeVorticityVertex"
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+			description="curl of horizontal velocity divided by layer thickness, defined at vertices"
+		/>
+		<var name="normalizedPlanetaryVorticityVertex"
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+			description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
+		/>
+		<var name="kineticEnergyVertex" 
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
+			description="kinetic energy of horizonal velocity defined at vertices"
+		/>
+		<var name="kineticEnergyVertexOnCells"
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+			description="kinetic energy of horizonal velocity defined at vertices"
+		/>
+		<var name="densitySurfaceDisplaced"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+			description="Density computed by displacing SST and SSS to every vertical layer within the column"
+		/>
+		<var name="thermalExpansionCoeff" 
+			 persistence="persistent"
+			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
+			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
+		/>
+		<var name="salineContractionCoeff" 
+			 persistence="persistent"
+			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
+			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$. This is also called the haline contraction coefficient."
+		/>
+
+		<!-- FIELDS FOR TENSOR OPERATIONS -->
+		<var name="normalVelocityTest" 
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="horizonal velocity, normal component to an edge, for testing"
+		/>
+		<var name="tangentialVelocityTest"
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="horizonal velocity, tangential component to an edge, for testing"
+		/>
+		<var name="strainRateR3Cell" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateR3CellSolution" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateR3Edge" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
+			 description="strain rate tensor at edge, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateLonLatRCell" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatRCellSolution" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatREdge" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
+			 description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="divTensorR3Cell" 
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as an R3 vector"
+		/>
+		<var name="divTensorR3CellSolution" 
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor solution at cell center, as an R3 vector"
+		/>
+		<var name="divTensorLonLatRCell" 
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as a lon-lat-r vector"
+		/>
+		<var name="divTensorLonLatRCellSolution" 
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
+		/>
+		<var name="outerProductEdge" 
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
+			 description="Outer product, $u_e \otimes n_e$, at each edge."
+		/>
+		<var name="normalVectorEdge" 
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="Vector component normal to an edge."
+		/>
+		<var name="tangentialVectorEdge" 
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="Vector component tangent to an edge."
+		/>
+		<var name="windStressFullScratch" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="Wind stress used for reconstructing diagnostic output fields."
+		/>
+		<var name="windStressXScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the x direction. Used for diagnostics."
+		/>
+		<var name="windStressYScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the y direction. User for diagnostics."
+		/>
+		<var name="windStressZScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the z direction. User for diagnostics."
+		/>
+		<var name="windStressZonalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
+		/>
+		<var name="windStressMeridionalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
+		/>
+		<var name="gradDensityEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Normal gradient of density"
+		/>
+		<var name="gradDensityConstZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of density along constant z-level surface"
+		/>
+		<var name="gradDensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of density at layer interfaces"
+		/>
+		<var name="gradTracerEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Normal gradient of tracer field at edges"
+		/>
+		<var name="gradTracerTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of tracer field at layer interfaces"
+		/>
+		<var name="gradHTracerSlopedTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="tracer m s^{-1}"
+			 description="Dot product of relative slope with gradient of tracer averaged to cell centers"
+		/>
+		<var name="dDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of potential density"
+		/>
+		<var name="dDensityDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of potential density at edge and top of layer."
+		/>
+		<var name="dDispDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of density"
+		/>
+		<var name="dDispDensityDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of density at edge and top of layer."
+		/>
+		<var name="dTracerdZTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of tracer field at cell centers"
+		/>
+		<var name="dTracerdZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of tracer field at cell edges"
+		/>
+		<var name="gradZMidEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Gradient of zMid"
+		/>
+		<var name="gradZMidTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Gradient of zMid at layer interfaces"
+		/>
+		<var name="tridiagA" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The lower band of a tridiagonal matrix"
+		/>
+		<var name="tridiagB" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The central band of a tridiagonal matrix"
+		/>
+		<var name="tridiagC" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The upper band of a tridiagonal matrix"
+		/>
+		<var name="areaCellSum" type="real" dimensions="nVertLevels nCells Time" units="m^{2}"
+			 persistence="scratch"
+			 description="Accumulated cell area for normalization"
+		/>
+		<var name="rightHandSide" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="A vector"
+		/>
+		<var name="yRelativeSlopeSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface for analytic solution"
+		/>
+		<var name="yGMStreamFuncSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function reconstructed to the cell centers, for analytic solution"
+		/>
+		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
+		/>
+	</var_struct>
+
+#include "analysis_members/Registry_analysis_members.xml"
+</registry>

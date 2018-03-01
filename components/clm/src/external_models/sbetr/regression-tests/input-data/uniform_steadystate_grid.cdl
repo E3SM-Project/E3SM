@@ -1,0 +1,99 @@
+netcdf uniform_steadystate_grid.cdl {
+dimensions:
+	levgrnd = 15 ;
+	lndgrid = 1 ;
+variables:
+	double BSW(levgrnd, lndgrid) ;
+		BSW:long_name = "slope of soil water retention curve" ;
+		BSW:units = "unitless" ;
+		BSW:_FillValue = 9.9999996169031625e+35 ;
+		BSW:missing_value = 9.99999962e+35f ;
+	double WATSAT(levgrnd, lndgrid) ;
+		WATSAT:long_name = "saturated soil water content (porosity)" ;
+		WATSAT:units = "mm3/mm3" ;
+		WATSAT:_FillValue = 9.9999996169031625e+35 ;
+		WATSAT:missing_value = 9.99999962e+35f ;
+	double PCTSAND(levgrnd, lndgrid) ;
+		PCTSAND:long_name = "percentage of sand" ;
+		PCTSAND:units = "%" ;
+		PCTSAND:_FillValue = 9.99999961690316e+35 ;
+		PCTSAND:missing_value = 1.e+36f ;
+	double SUCSAT(levgrnd, lndgrid) ;
+		SUCSAT:long_name = "saturated soil matric potential" ;
+		SUCSAT:units = "mm" ;
+		SUCSAT:_FillValue = 1.e+36f ;
+		SUCSAT:missing_value = 1.e+36f ;
+// global attributes:
+		:title = "Standalone BeTR uniform soil parameters." ;
+		:comment = "NOTE(bja, 201604) created by arbitrarily removing variability from another file!" ;
+		:Conventions = "CF-1.0" ;
+data:
+
+ BSW =
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996,
+  8.4749999999999996 ;
+
+ WATSAT =
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5 ;
+
+ PCTSAND =
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000,
+  20.000000;
+
+ SUCSAT =
+  139.0655,
+  149.7077,
+  156.4651,
+  164.6488,
+  176.6236,
+  167.0838,
+  177.8864,
+  162.6867,
+  158.052,
+  178.32,
+  178.32,
+  178.32,
+  178.32,
+  178.32,
+  178.32 ;
+}

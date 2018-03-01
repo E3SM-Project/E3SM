@@ -1,0 +1,31 @@
+%=======================================================================
+% SVN: $Id: ice_stdout.tex 5 2005-12-12 17:41:05Z mvr $
+%=======================================================================
+% Intro to Output data section
+
+The ice model produces three types of output data.  A file containing
+ASCII text, also known as a log file, is created for each run that
+contains information about how the run was set up and how it progressed.
+A series of binary restart files necessary to continue the run are created.
+A series of netCDF history files containing gridded instantaneous or
+time-averaged output are also generated during a run.  These are described below. 
+
+% Standard output files
+
+\subsection{Stdout Output}
+\label{stdout}
+
+Diagnostics from the ice model are written to an ASCII file that contains
+information from the compilation, a record
+of the input parameters, and how hemispherically averaged, maximum and minimum
+values are evolving with the integration.  Certain error conditions detected
+within the ice setup script or the ice model will also appear in this file.
+Upon the completion of the simulation, some timing information will appear
+at the bottom of the file.
+The file name is of the form {\bf ice.log.\$LID}, where \texttt{\$LID} is
+a timestamp for the file ID. It resides in the executable directory.
+The frequency of the diagnostics is determined by the namelist parameter
+\texttt{diagfreq}. Other diagnostic messages appear in the {\bf ccsm.log.\$LID}
+or {\bf cpl.log.\$LID} files in the executable directory. See the CESM scripts
+documentation.
+

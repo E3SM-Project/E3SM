@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<namelist_definition>
+
+  <version>1.0</version>
+
+  <!-- The following entries are being used by CLM's build-namelist, 
+       which has not been converted to parse the version 2.0 schema for
+       a namelist_definition.xml file
+  -->
+
+  <entry id="start_type" type="char*64" category="expdef"   group="seq_infodata_inparm" valid_values="startup,branch,continue"> </entry>
+  <entry id="start_ymd"  type="integer" category="time"     group="seq_timemgr_inparm"> </entry>
+  <entry id="glc_nec"    type="integer" category="seq_flds" group="seq_cplflds_inparm"> </entry>
+
+</namelist_definition>
+

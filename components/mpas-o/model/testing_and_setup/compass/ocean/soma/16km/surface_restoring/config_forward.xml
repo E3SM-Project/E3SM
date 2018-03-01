@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/init.nc" dest="init.nc"/>
+	<add_link source="../init_step2/forcing.nc" dest="forcing.nc"/>
+	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<get_file dest_path="initial_condition_database" file_name="make_particle_resets.151222.py">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database"/>
+	</get_file>
+
+	<add_link source_path="initial_condition_database" source="make_particle_resets.151222.py" dest="make_particle_resets.py"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="soma_template.xml" path_base="script_configuration_dir"/>
+		<option name="config_dt">'00:10:00'</option>
+		<option name="config_run_duration">'0000_00:01:30'</option>
+		<option name="config_mom_del4">2.0e10</option>
+		<option name="config_btr_dt">'0000_00:00:25'</option>
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="zonal_mean.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="okubo_weiss.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="high_frequency_output.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="eliassen_palm.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="mixed_layer_depths.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="soma_template.xml" path_base="script_configuration_dir"/>
+		<stream name="output">
+                        <attribute name="output_interval">0000_00:01:30</attribute>
+                </stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<step executable="python">
+			<argument flag="">make_particle_resets.py</argument>
+			<argument flag="">mesh.nc</argument>
+			<argument flag="">particles.nc</argument>
+			<argument flag="">graph.info.part.4</argument>
+			<argument flag="">11</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

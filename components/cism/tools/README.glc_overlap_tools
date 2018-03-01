@@ -1,0 +1,148 @@
+   DOCUMENTATION OF TOOLS TO MAKE A CLM OVERLAP FILE FROM A GLC NATIVE GRID
+
+
+OVERVIEW
+
+The process of creating a CLM overlap file from a native GLC grid takes three 
+steps, and three separate tools:
+
+1. Convert the GLC grid from its native format to one understood by SCRIP.
+
+   The tool created for this step is an NCL script called glc2scripConvert.ncl.
+
+2. Create a SCRIP interpolation weights file from the GLC SCRIP file made in 
+   step 1.
+
+   For this, there is a script that points at appropriate GLC and CCSM atm/lnd 
+   grid files and runs SCRIP to create an output file containing corresponding 
+   SCRIP interpolation weights.  This script is called 
+   scrip_make_wgts_CCSM_to_GLC_bilin.csh.
+
+3. Create a CLM overlap file which contains a mask representing the list of CLM 
+   cells that overlap the GLC domain.
+
+   For this, there is a tool that compares the list of points on the CCSM grid 
+   required for any interpolation with the GLC grid and with those from a 
+   corresponding CLM landfrac file.  The tool created for this step is called 
+   scrip2CLMoverlap.ncl.
+
+
+TOOLS
+
+Documentation for each tool follows below:
+
+** glc2scripConvert.ncl **
+
+Description:
+This script is written in NCL, and its basic function is to read in a native
+GLC grid file and write out the same grid in a format understood by SCRIP,
+CCSM's interpolation tool.  SCRIP requires that cell-center lats and lons be
+written out in 1D arrays whose length is the grid size, and that cell-corner
+lats and lons be output as 2D arrays with the grid size as the first dimension 
+and the number of corners per cell as the second dimension.  The GLC grid file
+has lats and lons as 2D arrays of cell corner locations, so this script assumes
+cell centers are located at the midpoints of the corners.  Otherwise, it just
+does some simple transformations before outputting the same grid in the SCRIP
+format.
+
+Input:
+The script requires a user-specified GLC grid file with lats and lons in degrees. 
+
+User Modifications:
+The script is not commandline driven, so the script itself has to be modified
+in several places to set the correct input file name, output file name, and
+a corresponding output file attribute.  In the script, these variables are
+called, respectively:  infile, outfile, and globalAtt@title.  Each variable
+has several options commented out in the script, to show possible uses.
+
+    variable name              variable description
+______________________________________________________________________
+
+     infile                     input file name (GLC native grid file)
+     outfile                    output file name
+     globalAtt@title            output file title attribute
+
+Output:
+The script outputs the GLC grid in SCRIP format, with a user-specified file name.
+
+Usage:
+ncl glc2scripConvert.ncl
+
+
+** scrip_make_wgts_CCSM_to_GLC_bilin.csh **
+
+Description:
+This is a simple shell script that points at two SCRIP-format files, creates a
+corresponding SCRIP input file, and runs SCRIP to create a SCRIP interpolation
+weight file.  It's based on a common CCSM script used for this purpose.  Note:
+this file is hard-wired to calculate bilinear interpolation weights, though it
+could be modified to use SCRIP's conservative remapping algorithm as well.
+
+Input:
+The script requires two user-specified grid files in SCRIP format.
+
+User Modifications:
+This script is also not commandline-driven, so the script itself has to be
+modified in several places for each separate application.  The script variables
+are used in the SCRIP input, are are described in the following table:
+
+     variable name              variable description
+______________________________________________________________________
+
+     gridFn_glc                 GLC grid file in SCRIP format
+                                (output from glc2scripConvert.ncl above)
+     gridFn_lnd                 CCSM/CLM grid file, usually located in
+                                /fis/cgd/cseg/csm/mapping/grids on bluefire
+     mapFn_l2g_bilin            output file name
+     map1_name                  map title attribute
+
+Output:
+The script creates a SCRIP input file called "scrip_in" and runs SCRIP using
+that file.  The output from SCRIP is a netcdf file with a user-specified name.
+
+Usage:
+./scrip_make_wgts_CCSM_to_GLC_bilin.csh
+
+
+** scrip2CLMoverlap.ncl **
+
+Description:
+This script is written in NCL, and its basic function is to read in a SCRIP
+interpolation weight file (between a CCSM grid and a GLC grid) as well as a
+CLM fracdata file and output a CLM "overlap" file that contains a field for
+the GLCMASK representing which CLM grid cells might have data required by GLC
+during a coupled GLC run.  Note that the CLM fracdata MUST be on the same CCSM
+grid used to calculate the SCRIP interpolation file.  The main functionality
+of this script involves comparing the list of CCSM source points for an
+interpolation to GLC with the list of points with a non-zero LANDMASK from
+the CLM fracdata file, and creating a GLCMASK field that is set to one for
+points in both lists (land cells that could be source points for interpolations
+to the GLC grid).  The script then outputs the GLCMASK in a netcdf file in
+a CLM format, with a user-specified name.
+
+Input:
+The script requires a user-specified SCRIP interpolation weight file and a
+user-specified CLM fracdata file. 
+
+User Modifications:
+The script is not commandline driven, so the script itself has to be modified
+in several places to set the correct input file names, output file name, and
+a corresponding output file attribute.  These variables are described below,
+with their script variable name and corresponding description.  In the script,
+each variable has an example name as well as several other options which are
+commented out, to show possible uses.
+
+    variable name              variable description
+______________________________________________________________________
+
+     infileS                    input SCRIP interpolation weight file name
+     infileF                    input CLM fracdata file name
+     outfile                    output file name
+     globalAtt@title            output file title attribute
+
+Output:
+The script outputs the GLCMASK data in CLM format (similar to a LANDMASK
+data file), with a user-specified file name.
+
+Usage:
+ncl scrip2CLMoverlap.ncl

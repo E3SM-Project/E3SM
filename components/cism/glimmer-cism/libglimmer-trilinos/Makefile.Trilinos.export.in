@@ -1,0 +1,16 @@
+## Configure processes this file and replaces the strings in @..@
+##    If configured --with-trilinos, this pulls in a Makefile where
+##       Trilinos variables are defined (e.g. Trilinos_LIBS), which
+##       are used in  libglide/Makefile.am within an if Trilinos block.
+##    Else, this just becomes an unused comment
+
+## For Trilinos 10.4 or later, use these lines
+@TRILINOS_TRUE@include @TRILINOS_PREFIX@/include/Makefile.export.Trilinos
+@TRILINOS_TRUE@TRILINOS_LIBS_BASE = $(top_builddir)/libglimmer-trilinos/libglimmertrilinos.la  $(Trilinos_LIBRARIES)  $(Trilinos_TPL_LIBRARIES)
+
+## For versions of Trilinos before 10.4, uncomment these two lines instead to grab
+## libraries from NOX since a unified Makefile.export.Trilinos did not yet exist
+#@TRILINOS_TRUE@include @TRILINOS_PREFIX@/include/Makefile.export.NOX
+#@TRILINOS_TRUE@TRILINOS_LIBS_BASE = $(top_builddir)/libglimmer-trilinos/libglimmertrilinos.la  $(NOX_LIBRARIES)  $(NOX_TPL_LIBRARIES)
+
+TRILINOS_LIBS_ALL = $(TRILINOS_LIBS_BASE) @EXTRA_LDLIBS_SUBST@

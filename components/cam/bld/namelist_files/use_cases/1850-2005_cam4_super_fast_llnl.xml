@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<start_ymd>18500101</start_ymd>
+
+<!-- Solar data -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1610-2009_ann_c100405.nc</solar_data_file>
+
+<solar_parms_file>atm/waccm/phot/wasolar_ave.nc</solar_parms_file>
+
+<fstrat_file>atm/cam/chem/trop_mozart/ub/ub_vals_moz3.nc</fstrat_file>
+
+<!-- Prescribed BAM data is from Jean-Francois Lamarque -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
+<prescribed_aero_file>aero_1.9x2.5_L26_1850-2005_c091112.nc</prescribed_aero_file>
+<prescribed_aero_type>INTERP_MISSING_MONTHS</prescribed_aero_type>
+
+<!-- aerosol deposition  -->
+<aerodep_flx_datapath>atm/cam/chem/trop_mozart_aero/aero</aerodep_flx_datapath>
+<aerodep_flx_file>aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</aerodep_flx_file>
+<aerodep_flx_type>INTERP_MISSING_MONTHS</aerodep_flx_type>
+
+<!-- Prescribed ozone data is from Jean-Francois Lamarque -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file>ozone_1.9x2.5_L26_1850-2005_c091112.nc</prescribed_ozone_file>
+<prescribed_ozone_name>O3</prescribed_ozone_name>
+<prescribed_ozone_type>INTERP_MISSING_MONTHS</prescribed_ozone_type>
+
+<!-- Volcanic aerosol from eruptions is from Caspar Ammann -->
+<prescribed_volcaero_datapath>atm/cam/volc</prescribed_volcaero_datapath>
+<prescribed_volcaero_file>CCSM4_volcanic_1850-2008_prototype1.nc</prescribed_volcaero_file>
+
+<!-- TEM diagnostics output -->
+<do_circulation_diags         >.false.</do_circulation_diags>
+<do_circulation_diags dyn="fv">.true.</do_circulation_diags>
+
+<!-- History Feilds -->
+<fincl1>
+  'NOX','DO3CHM','NO_Lightning',
+  'DV_O3', 'DV_H2O2', 'DV_NO', 'DV_NO2', 'DV_HNO3', 'DV_CO', 'DV_CH2O', 
+  'DV_CH3OOH', 'DV_DMS', 'DV_SO2', 'DV_SO4',
+  'DF_O3', 'DF_H2O2', 'DF_NO', 'DF_NO2', 'DF_HNO3', 'DF_CO', 'DF_CH2O', 
+  'DF_CH3OOH', 'DF_DMS', 'DF_SO2', 'DF_SO4', 'DF_NOY', 'DF_SOX', 'DF_NHX',
+  'WD_H2O2', 'WD_HNO3', 'WD_CH2O', 'WD_SO2', 'WD_NOY', 'WD_SOX', 'WD_NHX',  'SO4SFWET',
+  'O3_CHMP', 'OH_CHMP', 'HO2_CHMP', 'H2O2_CHMP', 'NO_CHMP', 'NO2_CHMP', 'HNO3_CHMP', 'CH2O_CHMP', 
+  'CH3O2_CHMP', 'CH3OOH_CHMP', 'DMS_CHMP', 'SO2_CHMP', 'SO4_CHMP', 'ISOP_CHMP', 'CO_CHMP', 
+  'O3_CHML', 'OH_CHML', 'HO2_CHML', 'H2O2_CHML', 'NO_CHML', 'NO2_CHML', 'HNO3_CHML', 'CH2O_CHML', 
+  'CH3O2_CHML', 'CH3OOH_CHML', 'DMS_CHML', 'SO2_CHML', 'SO4_CHML', 'ISOP_CHML', 'CO_CHML', 
+  'SFNO', 'SFCO', 'SFCH2O', 'SFDMS', 'SFSO2', 'SFISOP', 'CH4', 
+  'm_N2O_c','cb_N2O_c','m_prsd_ch4_c','cb_prsd_ch4_c'
+</fincl1>
+<fincl1 dyn="fv">
+  'MSKtem','VTH2d','UV2d','UW2d','U2d','V2d','TH2d','W2d','UTGWORO',
+  'NOX','DO3CHM','NO_Lightning',
+  'DV_O3', 'DV_H2O2', 'DV_NO', 'DV_NO2', 'DV_HNO3', 'DV_CO', 'DV_CH2O', 
+  'DV_CH3OOH', 'DV_DMS', 'DV_SO2', 'DV_SO4',
+  'DF_O3', 'DF_H2O2', 'DF_NO', 'DF_NO2', 'DF_HNO3', 'DF_CO', 'DF_CH2O', 
+  'DF_CH3OOH', 'DF_DMS', 'DF_SO2', 'DF_SO4', 'DF_NOY', 'DF_SOX', 'DF_NHX',
+  'WD_H2O2', 'WD_HNO3', 'WD_CH2O', 'WD_SO2', 'WD_NOY', 'WD_SOX', 'WD_NHX',  'SO4SFWET',
+  'O3_CHMP', 'OH_CHMP', 'HO2_CHMP', 'H2O2_CHMP', 'NO_CHMP', 'NO2_CHMP', 'HNO3_CHMP', 'CH2O_CHMP', 
+  'CH3O2_CHMP', 'CH3OOH_CHMP', 'DMS_CHMP', 'SO2_CHMP', 'SO4_CHMP', 'ISOP_CHMP', 'CO_CHMP', 
+  'O3_CHML', 'OH_CHML', 'HO2_CHML', 'H2O2_CHML', 'NO_CHML', 'NO2_CHML', 'HNO3_CHML', 'CH2O_CHML', 
+  'CH3O2_CHML', 'CH3OOH_CHML', 'DMS_CHML', 'SO2_CHML', 'SO4_CHML', 'ISOP_CHML', 'CO_CHML', 
+  'SFNO', 'SFCO', 'SFCH2O', 'SFDMS', 'SFSO2', 'SFISOP', 'CH4', 
+  'm_N2O_c','cb_N2O_c','m_prsd_ch4_c','cb_prsd_ch4_c'
+</fincl1>
+<fexcl1>
+  'SFCLDICE','SFCLDLIQ'
+</fexcl1>
+
+
+<!-- sim_year used for CLM datasets -->
+<sim_year>1850-2000</sim_year>
+
+<!-- Add sub-monthly output for AR5 runs -->
+<mfilt>1,365</mfilt>
+<nhtfrq>0,-24</nhtfrq>
+<avgflag_pertape>'A','A'</avgflag_pertape>
+
+
+<!-- Daily avg fields present in all runs -->
+<fincl2>'TREFHTMN','TREFHTMX','TREFHT','PRECC','PRECL','PSL'</fincl2>
+
+<!-- Chem specific stuff -->
+
+<ncdata hgrid="1.9x2.5" >atm/cam/inic/fv/trk1_2deg_chm_1850_b49.001.cam2.i.0076-01-01-00000.nc</ncdata>
+<ncdata hgrid="0.9x1.25">atm/cam/inic/fv/trk1_1deg_chm_1850_b49.001.cam2.i.0076-01-01-00000.nc</ncdata>
+
+<!-- turn on clm dry dep -->
+<drydep_method>'xactive_lnd'</drydep_method>
+
+<!-- cloud tuning parameter -->
+<cldfrc_rhminl>0.9225D0</cldfrc_rhminl>
+
+<!-- 1850 emissons is from Jean-Francois Lamarque -->
+<srf_emis_type>SERIAL</srf_emis_type>
+
+<ch2o_emis_file    >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CH2O_1850-2000_1.9x2.5.c090728.nc</ch2o_emis_file>
+<co_emis_file      >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CO_1850-2000_1.9x2.5.c090728.nc</co_emis_file>
+<dms_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_DMS_1850-2000_1.9x2.5.c090827.nc</dms_emis_file>
+<nox_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_NOx_1850-2000_1.9x2.5.c090728.nc</nox_emis_file>
+<so2_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_SO2_1850-2000_1.9x2.5.c090522.nc</so2_emis_file>
+<isop_emis_file    >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_ISOP_1850-2000_1.9x2.5.c090827.nc</isop_emis_file>
+
+<!-- turn on clm MEGAN VOC emis -->
+<megan_specifier>'ISOP=isoprene'</megan_specifier>
+<megan_mapped_emisfctrs>.true.</megan_mapped_emisfctrs>
+
+<ch2o_emis_file hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CH2O_1850-2000_0.9x1.25.c100416.nc</ch2o_emis_file>
+<co_emis_file   hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CO_1850-2000_0.9x1.25.c100416.nc</co_emis_file>
+<nox_emis_file  hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_NOx_1850-2000_0.9x1.25.c100416.nc</nox_emis_file>
+<so2_emis_file  hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_SO2_1850-2000_0.9x1.25.c100416.nc</so2_emis_file>
+
+<ext_frc_type>SERIAL</ext_frc_type>
+
+<so2_vrt_emis_file                 >atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO2_1850-2000_1.9x2.5.c090629.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file                 >atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO4_1850-2000_1.9x2.5.c090629.nc</so4_vrt_emis_file>
+<so2_vrt_emis_file hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO2_1850-2000_0.9x1.25.c090629.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO4_1850-2000_0.9x1.25.c090629.nc</so4_vrt_emis_file>
+
+
+<!-- 1850 aircraft emis - zeroed CO and NO emis -->
+<airpl_emis_file>atm/waccm/emis/emis.air.1870.nc</airpl_emis_file>
+<no2_aircraft_emis_file                  >atm/cam/chem/1850-2000_emis/IPCC_emissions_aircraft_NO2_1850-2000_1.9x2.5_c090729.nc</no2_aircraft_emis_file>
+<no2_aircraft_emis_file  hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_aircraft_NO2_1850-2000_0.9x1.25_c100416.nc</no2_aircraft_emis_file>
+<ipcc_aircraft_emis>.true.</ipcc_aircraft_emis>
+
+<!-- prescribed methane  -->
+<tracer_cnst_file     >CH4_1840-1849_clim_c100112.nc</tracer_cnst_file>
+<tracer_cnst_filelist >filelist_c100112.nc</tracer_cnst_filelist>
+<tracer_cnst_datapath >atm/cam/chem/methane</tracer_cnst_datapath>
+<tracer_cnst_type     >INTERP_MISSING_MONTHS</tracer_cnst_type>
+<prescribed_ghg_file    >CH4_1840-1849_clim_c100112.nc</prescribed_ghg_file>
+<prescribed_ghg_filelist>filelist_c100112.nc</prescribed_ghg_filelist>
+<prescribed_ghg_datapath>atm/cam/chem/methane</prescribed_ghg_datapath>
+<prescribed_ghg_type    >INTERP_MISSING_MONTHS</prescribed_ghg_type>
+
+
+<!-- 1850 LINOZ data  -->
+<linoz_data_file>linoz1800-2100_2006jpl_climo_1.9x2.5_26L.c090424.nc</linoz_data_file>
+<linoz_data_path>atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type>INTERP_MISSING_MONTHS</linoz_data_type>
+<chlorine_loading_type>SERIAL</chlorine_loading_type>
+<chlorine_loading_ymd>0</chlorine_loading_ymd>
+
+<!-- fixed lower boundary data  -->
+<flbc_file>atm/waccm/lb/LBC_1850-2100_1.9x2.5_REF2_za_c080114.nc</flbc_file>
+<flbc_type>SERIAL</flbc_type>
+
+<!-- strat aerosol data  -->
+<sad_file>atm/waccm/sulf/SAD_SULF_1850-2100_1.9x2.5_c080220.nc</sad_file>
+<sad_type>SERIAL</sad_type>
+
+<!-- Use AMIP SST datasets -->
+<sstcyc>.false.</sstcyc>
+<stream_year_first>1850</stream_year_first>
+<stream_year_last>2008</stream_year_last>
+
+<bndtvs hgrid="0.47x0.63"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="0.9x1.25"   sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="1.9x2.5"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="4x5"        sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_4x5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="10x15"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_10x15_1850_2008_c100127.nc</bndtvs>
+
+<bndtvs hgrid="128x256"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_128x256_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="64x128"     sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_64x128_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="48x96"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2008_c100128.nc</bndtvs>
+
+<!-- Use the clim_pi SST datasets if AMIP datasets not available -->
+<sstcyc            hgrid="0.23x0.31">.true.</sstcyc>
+<stream_year_first hgrid="0.23x0.31">0</stream_year_first>
+<stream_year_last  hgrid="0.23x0.31">0</stream_year_last>
+<bndtvs            hgrid="0.23x0.31"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c091020.nc</bndtvs>
+
+</namelist_defaults>

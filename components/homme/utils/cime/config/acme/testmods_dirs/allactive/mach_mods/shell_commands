@@ -1,0 +1,2 @@
+#!/bin/bash
+if [ `./xmlquery --value MACH` == melvin ]; then ./xmlchange --id NTHRDS --val 1; fi

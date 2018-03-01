@@ -1,0 +1,47 @@
+\hypertarget{ice__itd_8F90}{
+\section{ice\_\-itd.F90 File Reference}
+\label{ice__itd_8F90}\index{ice\_\-itd.F90@{ice\_\-itd.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__itd}{ice\_\-itd}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__itd_a2c5da98ae0797cd69f98ffce134e4ef7}{ice\_\-itd::init\_\-itd}
+\item 
+subroutine \hyperlink{namespaceice__itd_a8360ff94dd398d403890bfe9e8030b51}{ice\_\-itd::aggregate} (nx\_\-block, ny\_\-block, aicen, trcrn, vicen, vsnon, eicen, esnon, aice, trcr, vice, vsno, eice, esno, aice0, tmask, trcr\_\-depend)
+\item 
+subroutine \hyperlink{namespaceice__itd_a428ffa5cfc4adb00cd323a2d76bf1c4d}{ice\_\-itd::aggregate\_\-area} (nx\_\-block, ny\_\-block, aicen, aice, aice0)
+\item 
+subroutine \hyperlink{namespaceice__itd_a9c2920aedaba5102293185bec0142577}{ice\_\-itd::rebin} (nx\_\-block, ny\_\-block, icells, indxi, indxj, trcr\_\-depend, aicen, trcrn, vicen, vsnon, eicen, esnon, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__itd_aebf0bc54e5651ee1e36e7562ecaa4d73}{ice\_\-itd::reduce\_\-area} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, tmask, aicen, vicen, aicen\_\-init, vicen\_\-init)
+\item 
+subroutine \hyperlink{namespaceice__itd_aa67e5ce0b62a39a084d0058459df445e}{ice\_\-itd::shift\_\-ice} (nx\_\-block, ny\_\-block, indxi, indxj, icells, trcr\_\-depend, aicen, trcrn, vicen, vsnon, eicen, esnon, hicen, donor, daice, dvice, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__itd_acc3eccaeb97f8a721fd0b9127b1fa183}{ice\_\-itd::column\_\-sum} (nx\_\-block, ny\_\-block, icells, indxi, indxj, nsum, xin, xout)
+\item 
+subroutine \hyperlink{namespaceice__itd_a6371b4812310c8ffbdf11c024b9e0c5a}{ice\_\-itd::column\_\-conservation\_\-check} (nx\_\-block, ny\_\-block, icells, indxi, indxj, fieldid, x1, x2, max\_\-err, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__itd_ae64b7540ec9e84001de195ffec097bc3}{ice\_\-itd::compute\_\-tracers} (nx\_\-block, ny\_\-block, icells, indxi, indxj, trcr\_\-depend, atrcrn, aicen, vicen, vsnon, trcrn)
+\item 
+subroutine \hyperlink{namespaceice__itd_a3e9112301701b3265ffbd9273598a98d}{ice\_\-itd::cleanup\_\-itd} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, dt, aicen, trcrn, vicen, vsnon, eicen, esnon, aice0, aice, trcr\_\-depend, fresh, fsalt, fhocn, fsoot, tr\_\-aero, heat\_\-capacity, l\_\-stop, istop, jstop, limit\_\-aice\_\-in)
+\item 
+subroutine \hyperlink{namespaceice__itd_a137780a223f20265133e26e9e96d36a5}{ice\_\-itd::zap\_\-small\_\-areas} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, dt, aice, aice0, aicen, trcrn, vicen, vsnon, eicen, esnon, dfresh, dfsalt, dfhocn, dfsoot, tr\_\-aero, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__itd_a55c2adda4305308869dac586cefe447a}{ice\_\-itd::zerolayer\_\-check} (nx\_\-block, ny\_\-block, icells, indxi, indxj, aicen, vicen, vsnon, eicen, esnon, l\_\-stop, istop, jstop)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__itd_abda5299945828ac5cca9a7e6522991e3}{ice\_\-itd::kitd}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__itd_a096dec1f870d22da21163b6dcacb1d2c}{ice\_\-itd::hi\_\-min} = p01
+\item 
+real(kind=dbl\_\-kind), dimension(0:ncat) \hyperlink{namespaceice__itd_aa7b9ac33772390c73597dec2ed768aba}{ice\_\-itd::hin\_\-max}
+\item 
+character(len=35), dimension(ncat) \hyperlink{namespaceice__itd_a679cef320723f15b41bdfc5811701cea}{ice\_\-itd::c\_\-hi\_\-range}
+\end{DoxyCompactItemize}

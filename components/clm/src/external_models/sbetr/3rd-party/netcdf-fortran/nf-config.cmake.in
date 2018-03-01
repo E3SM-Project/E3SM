@@ -1,0 +1,162 @@
+#! /bin/sh
+#
+# This forms the basis for the nf-config utility, which tells you
+# various things about the netCDF Fortran installation.
+
+echo "nf-config not yet implemented for cmake builds"
+exit 1
+
+# prefix=@CMAKE_INSTALL_PREFIX@
+# exec_prefix=@CMAKE_INSTALL_PREFIX@
+# libdir=@CMAKE_INSTALL_PREFIX@/lib
+# includedir=@CMAKE_INSTALL_PREFIX@/include
+# 
+# cc="@CMAKE_C_COMPILER@"
+# fc="@CMAKE_FORTRAN_COMPILER@"
+# cflags="-I@CMAKE_INSTALL_PREFIX@/include @CMAKE_C_FLAGS@ @CMAKE_CPP_FLAGS@"
+# fflags="@MOD_FLAG@${includedir}"
+# 
+# has_dap="@HAS_DAP@"
+# has_nc2="@HAS_NC2@"
+# has_nc4="@HAS_NC4@"
+# has_f90="@HAS_F90@"
+# has_f03="@HAS_F03@"
+# flibs="-L${libdir} @NC_FLIBS@"
+# version="@PACKAGE_NAME@ @PACKAGE_VERSION@"
+# 
+# usage()
+# {
+#     cat <<EOF
+# Usage: nf-config [OPTION]
+# 
+# Available values for OPTION include:
+# 
+#   --help        display this help message and exit
+#   --all         display all options
+#   --cc          C compiler
+#   --fc          Fortran compiler
+#   --cflags      pre-processor and compiler flags
+#   --fflags      flags needed to compile a Fortran program
+#   --has-dap     whether OPeNDAP is enabled in this build
+#   --has-nc2     whether NetCDF-2 API is enabled
+#   --has-nc4     whether NetCDF-4/HDF-5 is enabled in this build
+#   --has-f90     whether Fortran 90 API is enabled in this build
+#   --has-f03     whether Fortran 2003 API is enabled in this build
+#   --flibs       libraries needed to link a Fortran program
+#   --prefix      Install prefix
+#   --includedir  Include directory
+#   --version     Library version
+# 
+# EOF
+# 
+#     exit $1
+# }
+# 
+# all()
+# {
+#         echo
+#         echo "This $version has been built with the following features: "
+#         echo
+#         echo "  --cc        -> $cc"
+#         echo "  --cflags    -> $cflags"
+#         echo
+#         echo "  --fc        -> $fc"
+#         echo "  --fflags    -> $fflags"
+#         echo "  --flibs     -> $flibs"
+#         echo "  --has-f90   -> $has_f90"
+#         echo "  --has-f03   -> $has_f03"
+#         echo
+#         echo "  --has-nc2   -> $has_nc2"
+#         echo "  --has-nc4   -> $has_nc4"
+# 	echo
+#         echo "  --prefix    -> $prefix"
+#         echo "  --includedir-> $includedir"
+#         echo "  --version   -> $version"
+#         echo
+# }
+# 
+# if test $# -eq 0; then
+#     usage 1
+# fi
+# 
+# while test $# -gt 0; do
+#     case "$1" in
+#     # this deals with options in the style
+#     # --option=value and extracts the value part
+#     # [not currently used]
+#     -*=*) value=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+#     *) value= ;;
+#     esac
+# 
+#     case "$1" in
+# 
+#     --help)
+# 	usage 0
+# 	;;
+# 
+#     --all)
+# 	all
+# 	;;
+# 
+#     --cc)
+# 	echo $cc
+# 	;;
+# 
+#     --fc)
+# 	echo $fc
+# 	;;
+# 
+#     --cflags)
+# 	echo $cflags
+# 	;;
+# 
+#     --fflags)
+# 	echo $fflags
+# 	;;
+# 
+#     --has-dap)
+#        	echo $has_dap
+#        	;;
+# 
+#     --has-nc2)
+#        	echo $has_nc2
+#        	;;
+# 
+#     --has-nc4)
+#        	echo $has_nc4
+#        	;;
+# 
+#     --has-f90)
+#        	echo $has_f90
+#        	;;
+# 
+#     --has-f03)
+#        	echo $has_f03
+#        	;;
+# 
+#     --flibs)
+#        	echo $flibs
+#        	;;
+# 
+#     --prefix)
+#        	echo "${CMAKE_INSTALL_PREFIX}"
+#        	;;
+# 
+#     --includedir)
+#        	echo "${includedir}"
+#        	;;
+# 
+#     --version)
+# 	echo $version
+# 	;;
+# 
+#     *)
+#         echo "unknown option: $1"
+# 	usage
+# 	exit 1
+# 	;;
+#     esac
+#     shift
+# done
+# 
+# exit 0

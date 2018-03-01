@@ -1,0 +1,9 @@
+[run]
+branch = True
+
+[report]
+skip_covered = True
+
+[html]
+directory = coverage-html
+title = 'BeTR regression test driver "meta tests" coverage report.'

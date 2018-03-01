@@ -1,0 +1,33 @@
+#[]
+#dimensions:    time, level, y1, x1
+#units:         
+#long_name:     
+#data:          
+#factor:        
+
+# setup for code generator
+[VARSET]
+# prefix of the generated module
+name:     eis
+# f90 type containing all necessary data
+datatype: eis_climate_type
+# module where type is defined
+datamod:  eis_types
+
+[ela]
+dimensions:    time, y1, x1
+units:         meter
+long_name:     equilibrium line altitude
+data:          data%ela%ela
+factor:        thk0
+standard_name: equilibrium_line_altitude
+coordinates:   lon lat
+load:          1
+
+[cony]
+dimensions:    time, y1, x1
+units:         1
+long_name:     continentality
+data:          data%cony%cony
+coordinates:   lon lat
+load:          1

@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Grid Namelist</TITLE>
+<META NAME="description" CONTENT="Grid Namelist">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node15.html">
+<LINK REL="previous" HREF="node13.html">
+<LINK REL="up" HREF="node8.html">
+<LINK REL="next" HREF="node15.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html262"
+  HREF="node15.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html258"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html252"
+  HREF="node13.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html260"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html263"
+  HREF="node15.html">Domain Namelist</A>
+<B>Up:</B> <A NAME="tex2html259"
+  HREF="node8.html">Namelist Variables</A>
+<B> Previous:</B> <A NAME="tex2html253"
+  HREF="node13.html">Prescribed Ice Namelist</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00046000000000000000">
+Grid Namelist</A>
+</H2>
+
+<P>
+The namelist parameters listed in Table <A HREF="#table:grid_nml">6</A> are for
+grid and mask information.  During execution, the ice model reads grid and 
+land mask information from the files <TT>grid_file</TT> and <TT>kmt_file</TT> that 
+should be located in the executable directory. There are commands in the 
+scripts that copy these files from the input data directory, rename them from 
+<B>global_$ICE_GRID.grid</B> and <B>global_$ICE_GRID.kmt</B> to the
+default filenames shown in Table <A HREF="#table:grid_nml">6</A>.
+
+<P>
+<BR>  <DIV ALIGN="CENTER">
+  <A NAME="table:grid_nml"></A>  <A NAME="559"></A>
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<CAPTION><STRONG>Table:</STRONG>
+Namelist Variables for Grid and Mask Information (grid_nml)</CAPTION>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Varible</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Type</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>Default Value</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>Description</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71><TT>grid_type</TT></TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Character</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>'displaced_pole'</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>Determines grid type.</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>'displaced_pole'</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>'tripole'</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>'rectangular'</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71><TT>grid_format</TT></TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Character</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>binary</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>Grid file format (binary or netCDF)</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71><TT>grid_file</TT></TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Character</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>'data.domain.grid'</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>Input filename
+                                           containing grid information.</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71><TT>kmt_file</TT></TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Character</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>'data.domain.kmt'</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>Input filename
+                                       containing land mask information.</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71><TT>kcatbound</TT></TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=71>Integer</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>0</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=170>How category boundaries are set (0 or 1)</TD>
+</TR>
+</TABLE>
+</DIV>
+<BR>
+
+<P>
+For coupled runs, supported grids include the <TT>'displaced_pole'</TT> grids 
+(gx3v7 and gx1v6) and the <TT>'tripole'</TT> grids.
+
+<P>
+<HR>
+<A NAME="tex2html262"
+  HREF="node15.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html258"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html252"
+  HREF="node13.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html260"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html263"
+  HREF="node15.html">Domain Namelist</A>
+<B>Up:</B> <A NAME="tex2html259"
+  HREF="node8.html">Namelist Variables</A>
+<B> Previous:</B> <A NAME="tex2html253"
+  HREF="node13.html">Prescribed Ice Namelist</A>
+
+<!--End of Navigation Panel-->
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

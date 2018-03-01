@@ -1,0 +1,17 @@
+This directory contains files needed to build the simple_bisicles prototype
+driver.  Simple_bisicles connects CISM to the BISICLES external dynamic core.
+Building BISICLES requires access to the BISICLES and Chombo installations.
+For more information on BISICLES and Chombo, please send email to
+dfmartin@lbl.gov or ranken@lanl.gov.
+
+The build_simple_bisicles file is a script that can be used to build
+simple_bisicles, and also shows the 4 steps of the build process.  The paths
+in this script may need modification.
+
+A test of simple_bisicles specific to hopper.nersc.gov can be found in
+tests/dome.
+
+For a description of BISICLES, see:
+https://seesar.lbl.gov/anag/staff/martin/talks/Martin-LIWG-Jan2011_final.pdf.
+
+Last Revised: 04/19/12 DMR

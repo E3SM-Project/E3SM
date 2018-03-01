@@ -1,0 +1,5 @@
+
+
+The files in this directory are the time-management test driver files.
+They are copied by the ../timeTest script each time the ../timeTest script
+is run.

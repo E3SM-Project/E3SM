@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+
+# Make list of files containing source code.  The source list contains all
+# .F90, .f90, .F, and .c files in a specified list of directories.  The
+# directories are specified one per line in a file called Filepath which
+# this script tries to open in the current directory.  The current
+# directory is prepended to the specified list of directories.  If Filepath
+# doesn't exist then only the source files in the current directory are
+# listed.
+# The list of source files is written to the file Srcfiles.
+
+# Check usage:
+@ARGV == 0                 or usage();
+
+open(SRC,"> Srcfiles")     or die "Can't open Srcfiles\n";
+
+if ( open(FILEPATH,"< Filepath") ) {
+    @paths = <FILEPATH>;
+    close( FILEPATH );
+} else {
+    @paths = ();
+}
+chomp @paths;
+unshift(@paths, '.');
+foreach $dir (@paths) {  # (could check that directories exist here)
+    $dir =~ s!/?\s*$!!;  # remove / and any whitespace at end of directory name
+    ($dir) = glob $dir;  # Expand tildes in path names.
+}
+
+# Loop through the directories and add each filename as a hash key.  This
+# automatically eliminates redunancies.
+%src = ();
+foreach $dir (@paths) {
+    @filenames = (glob("$dir/*.[Fc]"), glob("$dir/*.[Ff]90"));
+    foreach $filename (@filenames) {
+	$filename =~ s!.*/!!;                   # remove part before last slash
+	$src{$filename} = "";
+    }
+}
+
+foreach $file ( sort keys %src ) {
+  print SRC "$file\n";
+}
+close( SRC );
+
+#--------------------------------------------------------------------------------------
+
+sub usage {
+    ($ProgName = $0) =~ s!.*/!!;            # name of program
+    die <<EOF
+SYNOPSIS
+     $ProgName
+DESCRIPTION
+     The $ProgName utility assumes the existence of an input file
+     ./Filepath, and writes an output file ./Srcfiles that contains
+     the names of all the files that match the patterns *.F90, *.F,
+     and *.c in all the directories from ./Filepath plus ./.  The
+     files are listed one per line.
+EOF
+}

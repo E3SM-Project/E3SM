@@ -1,0 +1,34 @@
+
+This is the MOZART chemical preprocessor, which has been modified for the
+CAM framework.  
+
+This tool creates CAM chemistry source code files (fortran) for a given 
+chemical mechanism file (*.inp file).  
+
+Here $PROC_DIR is the top level directory of the chemical preprocessor.
+
+To build:
+> cd $PROC_DIR/src
+> gmake
+This will biuld $PROC_DIR/bin/campp executable.
+
+Edit or create a chemical mechanism file in the $PROC_DIR/inputs
+directory.  Example mechanisms files can be found in $PROC_DIR/inputs.
+More information the chemical mechanism inputs can be found at 
+http://gctm.acd.ucar.edu/mozart/documents/mozart2_preprocessor.pdf
+
+To run:
+> cd $PROC_DIR/inputs
+> $PROC_DIR/bin/campp mechanism.inp
+> cd $PROC_DIR/output
+> cp cam.subs.tar $CAM_USRSRC
+> cd $CAM_USRSRC
+> tar -xvf cam.subs.tar
+
+Include the fortran source files extacted from cam.subs.tar in the
+source path of the CAM build by one of the follow methods.
+ 1) configure CAM with the -usr_src $CAM_USRSRC option
+or
+ 2) copy the new *.F90 files to the trop_mozart directory
+
+Configure and build the new CAM executable.

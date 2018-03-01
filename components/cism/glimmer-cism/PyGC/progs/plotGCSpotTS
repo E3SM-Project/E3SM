@@ -1,0 +1,124 @@
+#! /usr/bin/env python
+
+# Copyright (C) 2010
+# Glimmer-CISM contributors - see AUTHORS file for list of contributors
+#
+# This file is part of Glimmer-CISM.
+#
+# Glimmer-CISM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or (at
+# your option) any later version.
+#
+# Glimmer-CISM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Glimmer-CISM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Glimmer-CISM is hosted on BerliOS.de:
+# https://developer.berlios.de/projects/glimmer-cism/
+
+"""Plot variable at single location through time."""
+
+def getTimes(opts,infile):
+    if opts.options.times  == None and opts.options.timeslice == None:
+        t0=0
+        t1=infile.numt-1
+    else:
+        try:
+            t0 = opts.times(infile,0)
+            t1 = opts.times(infile,1)
+        except:
+            t0 = 0
+            t1 = opts.times(infile,0)
+    return [t0,t1],infile.time([t0,t1])
+
+import PyGC,numpy
+import matplotlib.pyplot
+from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
+
+# creating option parser
+parser = PyGC.GCOptParser()
+parser.width=15.
+parser.spot()
+parser.time()
+parser.region1d()
+parser.plot()
+opts = PyGC.GCOptions(parser,-1)
+
+mfiles = opts.nfiles>1
+mspots = len(opts.options.ij)>1
+
+if opts.options.level == None:
+    level = 0
+else:
+    level = opts.options.level
+
+if mfiles and mspots:
+    raise NotImplementedError
+else:
+    nplots = max(opts.nfiles,len(opts.options.ij))
+naxes = opts.nvars
+
+infile = opts.gcfile()
+time,times = getTimes(opts,infile)
+spot = opts.options.ij[0]
+
+fig = matplotlib.pyplot.figure(figsize=opts.plotsize)
+
+# create axes
+totalheight=0.9
+if nplots > 1:
+    # make room for legend
+    totalheight = totalheight - 0.075
+plotheight = totalheight/naxes
+sep = 0.05
+axprops = {}
+axes = []
+for i in range(1,naxes+1):
+    axes.append( fig.add_axes([0.15,1-i*plotheight,0.8,plotheight-sep],  **axprops))
+    var = opts.vars(infile,i-1)
+    axes[i-1].set_ylabel('%s [%s]'%(var.long_name,var.units))
+    if i==1:
+        axprops['sharex'] = axes[0]
+    if i!=naxes:
+        axes[i-1].get_xaxis().set_visible(False)
+    else:
+        axes[i-1].set_xlabel('time [ka]')
+
+if nplots>1:
+    COLS='bgrcnyk'
+else:
+    COLS='k'
+
+for i in range(0,nplots):
+    if mfiles:
+        infile = opts.gcfile(i)
+        time,times = getTimes(opts,infile)
+        label = infile.title
+    else:
+        spot = opts.options.ij[i]
+        label = str(spot)
+
+    for j in range(0,opts.nvars):
+        if opts.options.vars[j] == 'is':
+            topo = numpy.array(infile.getvar('topg').getSpotIJ(spot,time,level))
+            thk = numpy.array(infile.getvar('thk').getSpotIJ(spot,time,level))
+            axes[j].plot(times, topo,color=COLS[i],label=label)
+            axes[j].plot(times, topo+thk,color=COLS[i])
+        else:
+            var = opts.vars(infile,j)
+            data = var.getSpotIJ(spot,time,level)
+            axes[j].plot(times, data,color=COLS[i],label=label)
+
+handles, labels = axes[-1].get_legend_handles_labels()
+if nplots > 1:
+    matplotlib.pyplot.figlegend(handles,labels,'lower center',ncol=2, mode="expand")
+
+if opts.options.output==None:
+    matplotlib.pyplot.show()
+else:
+    matplotlib.pyplot.savefig(opts.options.output)

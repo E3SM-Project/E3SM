@@ -1,0 +1,112 @@
+PTCLM/test/README                               02/04/2014
+                                                Erik Kluzek
+
+Information on the PTCLM test system.
+
+I. Synopsis:
+
+This directory runs testing to make sure PTCLM works as expected.
+It runs a series of tests for PTCLMmkdata described in a XML file 
+that gives the arguments to run. Some of the results are compared to
+files created previously. An issue with the comparison is that file
+creation dates are often in files and so a change in date will show
+up as a "compare.Fail". The testing also runs using the "--debug"
+flag so that the logic of PTCLMmkdata will be tested, but it won't
+actually create files which would take an enourmous amount of time
+(more than 6-days for the current test list).
+
+II. Description of files:
+
+README ------------------- This file
+
+listings/ ---------------- Sub directory with results for "list" options
+compdirs/ ---------------- Comparison directory
+testing_dir/ ------------- Testing directory that will be created when tests run
+
+PTCLMtesting_prog.py ----- Top level Python class for run script
+PTCLMtestlist.py --------- Python class that reads in the test list and has
+                           methods to run and execute PTCLMmkdata.
+
+PTCLMtestlist.xml -------- XML file that describes the tests
+
+run_PTCLM_tests ---------- Main script that runs the tests
+
+III. Running the tests:
+
+To run the tests when PTCLM is part of a CLM or CESM distribution you simply
+execute the script:
+
+./run_PTCLM_tests
+
+To run whenen PTCLM is checked out seperately you need to tell it where your "CESM_ROOT"
+directory is. You can do this by either setting the CESM_ROOT environment variable or use
+the "--cesm_root" option to run_PTCLM_tests.
+
+So for example...
+
+./run_PTCLM_tests --cesm_root $HOME/clm4_5_99
+
+IV. Test results:
+
+Each test will give a PASS or Fail status as the first part of standard output. Compare tests will
+either report a PASS or a "compare.Fail" status. The final summary at the end is something like this...
+
+
+Total number of tests             = 51
+Number of tests that PASS         = 51
+Number of tests that Fail         = 0
+Number of compare tests that Fail = 44
+Number of compare tests that PASS = 0
+Number of tests without compare   = 7
+
+
+So all the test PASS, none fail. 44 tests fail their comparison, and 7 tests don't have a comparison.
+
+V. Unit testing the Python code:
+
+The python *.py files are setup so they can be unit-tested by running through python. So...
+
+python PTCLMtestlist.py
+
+(and use python -m pdb PTCLMtestlist.py to run the interactive python debugger)
+will unit-test the PTCLMtestlist.py python code (you need to set the env variable CESM_ROOT if you aren't
+in the right directory to do this). Successful results look something like...
+
+e name:		  test
+
+Root CLM directory:	    /Users/erik/clm_transCO2
+** Surface data file will be built using site-level data when available unless otherwise specified ** 
+
+  Extract PFT data from gridded files:	  False
+  Extract soil data from gridded files:	  False
+
+Open Site data file: /Users/erik/PTCLM_trunk/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+
+Usage: PTCLMmkdata [options] -d inputdatadir -s sitename
+
+PTCLMmkdata: error: Entered site is NOT in the list of valid sites: test
+PASS fail-no-datadir.-s+test.
+.
+----------------------------------------------------------------------
+Ran 3 tests in 21.021s
+
+OK
+
+
+testing with fails will look something like...
+
+.Open file: PTCLMtestlist.xml
+E
+======================================================================
+ERROR: test_run (__main__.test_PTCLMtestlist)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "PTCLMtestlist.py", line 224, in test_run
+    self.test.run_PTCLMtest( testlist[0]     )
+TypeError: run_PTCLMtest() takes exactly 3 arguments (2 given)
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.059s
+
+FAILED (errors=1)
+

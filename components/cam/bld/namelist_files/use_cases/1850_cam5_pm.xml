@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- Solar constant from Lean (via Caspar Ammann) -->
+<solar_data_file>atm/cam/solar/SOLAR_SPECTRAL_Lean_1610-2008_annual_c090324.nc</solar_data_file>
+<solar_data_ymd>18500101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
+
+<!-- 1850 GHG values from ipcc-ar4-cfcs-1850-2000.xls (Doug Kinnison) -->
+<co2vmr>284.7e-6</co2vmr>
+<ch4vmr>791.6e-9</ch4vmr>
+<n2ovmr>275.68e-9</n2ovmr>
+<f11vmr>12.48e-12</f11vmr>
+<f12vmr>0.0</f12vmr>
+
+<!-- 1850 ozone data is from Jean-Francois Lamarque -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file>ozone_1.9x2.5_L26_1850clim_c090420.nc</prescribed_ozone_file>
+<prescribed_ozone_name>O3</prescribed_ozone_name>
+<prescribed_ozone_type>CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>1850</prescribed_ozone_cycle_yr>
+
+<!-- 1850 prescribed modal aersols -->
+<prescribed_aero_cycle_yr>1850</prescribed_aero_cycle_yr>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file>mam3_1.9x2.5_L30_1850clim_c130319.nc</prescribed_aero_file>
+<prescribed_aero_specifier>'num_c1', 'bc_c1', 'dst_c1', 'ncl_c1', 'pom_c1', 'so4_c1', 'soa_c1', 'num_c2',
+         'ncl_c2', 'so4_c2', 'soa_c2', 'num_c3', 'dst_c3', 'ncl_c3', 'so4_c3', 'num_a1_logm',
+         'bc_a1_logm', 'dst_a1_logm', 'ncl_a1_logm', 'pom_a1_logm', 'so4_a1_logm', 'soa_a1_logm', 'num_a2_logm', 'ncl_a2_logm',
+         'so4_a2_logm', 'soa_a2_logm', 'num_a3_logm', 'dst_a3_logm', 'ncl_a3_logm', 'so4_a3_logm', 'num_a1_logv', 'bc_a1_logv',
+         'dst_a1_logv', 'ncl_a1_logv', 'pom_a1_logv', 'so4_a1_logv', 'soa_a1_logv', 'num_a2_logv', 'ncl_a2_logv', 'so4_a2_logv',
+         'soa_a2_logv', 'num_a3_logv', 'dst_a3_logv', 'ncl_a3_logv', 'so4_a3_logv'</prescribed_aero_specifier>
+<prescribed_aero_type>CYCLICAL</prescribed_aero_type>
+
+<aerodep_flx_cycle_yr>1850</aerodep_flx_cycle_yr>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_file>mam3_1.9x2.5_L30_1850clim_c130319.nc</aerodep_flx_file>
+<aerodep_flx_specifier>'bc_a1DDF', 'bc_c1DDF', 'pom_a1DDF', 'pom_c1DDF', 'soa_a1DDF', 'soa_c1DDF', 'soa_a2DDF', 'soa_c2DDF',
+             'dst_a1DDF', 'dst_c1DDF', 'dst_a3DDF', 'dst_c3DDF', 'bc_a1SFWET', 'bc_c1SFWET', 'pom_a1SFWET', 'pom_c1SFWET',
+             'soa_a1SFWET', 'soa_c1SFWET', 'dst_a1SFWET', 'dst_c1SFWET', 'dst_a3SFWET', 'dst_c3SFWET'</aerodep_flx_specifier>
+<aerodep_flx_type>CYCLICAL</aerodep_flx_type>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850</sim_year>
+
+</namelist_defaults>

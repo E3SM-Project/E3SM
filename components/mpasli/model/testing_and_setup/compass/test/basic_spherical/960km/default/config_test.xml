@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<config case="test">
+
+	<get_file hash="j62arymcxl" dest_path="mesh_database" file_name="mesh.QU.960km.151026.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
+	</get_file>
+
+	<add_executable source="model" dest="test_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
+	<add_link source_path="mesh_database" source="mesh.QU.960km.151026.nc" dest="base_mesh.nc"/>
+
+	<namelist name="namelist.test" mode="forward"/>
+
+	<streams name="streams.test" keep="immutable" mode="forward">
+		<stream name="input">
+			<attribute name="filename_template">base_mesh.nc</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000-00-00_00:00:01</attribute>
+			<add_contents>
+				<member name="input" type="stream"/>
+				<member name="arrTest" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./make_graph_file.py">
+			<argument flag="-f">base_mesh.nc</argument>
+		</step>
+		<step executable="./metis">
+			<argument flag="">graph.info</argument>
+			<argument flag="">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.test" streams="streams.test"/>
+	</run_script>
+</config>

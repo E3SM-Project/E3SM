@@ -1,0 +1,103 @@
+# compiles C++ side of Glimmer-Dynamic Core interface, and
+# creates a static library for linking to Glimmer
+#CXX = g++
+#FC = mpif90
+FC = ftn
+CXX = CC
+
+PWD = ./
+BISICLES_DIR = $(HOME)/BISICLES/code/interface
+#GLIMMER_DIR = $(PWD)/../../../../gc1/parallel/src/fortran/
+GLIMMER_DIR = $(PWD)/glimmer_srcs
+
+CISM_DIR = $(HOME)/glimmer-cism2/branches/seacism
+LIB_GLIMMER_DIR = $(CISM_DIR)/libglimmer
+LIB_GLIMMER_SOLVE_DIR = $(CISM_DIR)/libglimmer-solve
+LIB_GLIDE_DIR = $(CISM_DIR)/libglide
+SIMPLE_BISICLES_DIR =  $(CISM_DIR)/example-drivers/simple_bisicles/src
+
+SRC_DIRS = simple_bisicles glimmer_srcs
+
+LOCAL_GLIMMER_FILES = simple_bisicles/*.F90 glimmer_srcs/*.F90 
+GLIMMER_FILES = $(foreach _dir,$(SRC_DIRS),$(subst $(_dir),,$(LOCAL_GLIMMER_FILES)))
+
+
+CPPFLAGS = -I$(BISICLES_DIR) -I$(PWD) -I$(PWD)/BISICLES
+CXXFLAGS = -g
+
+.PHONY: clean 
+
+
+BISICLES:  dycore_to_glimmer_extern.o DyCoreToGlimmer.o DyCoreModelRegistry.o BisiclesToGlimmer.o $(GLIDE_DIR)/glimmer_to_dycore.mod $(GLIMMER_DIR)/simple_bisicles.F90 $(GLIMMER_DIR)/Makefile.dycore  $(GLIMMER_DIR)/glide_setup.F90 $(GLIDE_DIR)/glide_types.F90
+#	cp -p glimmer_srcs/*.F90 $(GLIMMER_DIR)
+
+	if test -f libDyCoreToGlimmer.a; then rm libDyCoreToGlimmer.a; fi
+	ar -cvq libDyCoreToGlimmer.a BisiclesToGlimmer.o DyCoreModelRegistry.o  dycore_to_glimmer_extern.o \
+	DyCoreToGlimmer.o
+	mv libDyCoreToGlimmer.a BISICLES
+
+copyFiles: 
+#	cp -p glimmer_srcs/*.F90 $(GLIMMER_DIR)
+#	cp -p simple_bisicles/*.F90 $(GLIMMER_DIR)
+#	cp -p simple_bisicles/Makefile.dycore* $(GLIMMER_DIR)
+
+writeFiles: 
+	echo $(LOCAL_GLIMMER_FILES)
+	echo $(GLIMMER_FILES)
+
+libDyCoreToGlimmer.a:  BisiclesToGlimmer.o DyCoreModelRegistry.o  dycore_to_glimmer_extern.o DyCoreToGlimmer.o \
+		       glimmer_to_dycore.mod
+
+	if test -f libDyCoreToGlimmer.a; then rm libDyCoreToGlimmer.a; fi
+	ar -cvq libDyCoreToGlimmer.a BisiclesToGlimmer.o DyCoreModelRegistry.o  dycore_to_glimmer_extern.o \
+	DyCoreToGlimmer.o
+	mv libDyCoreToGlimmer.a BISICLES
+
+$(GLIMMER_DIR)/simple_bisicles.F90: simple_bisicles/simple_bisicles.F90
+#	cp simple_bisicles/simple_bisicles.F90 $(GLIMMER_DIR)   
+
+$(GLIMMER_DIR)/Makefile.dycore: simple_bisicles/Makefile.dycore
+#	cp simple_bisicles/Makefile.dycore $(GLIMMER_DIR)
+
+$(GLIMMER_DIR)/glide_setup.F90 : glimmer_srcs/glide_setup.F90 
+#	cp glimmer_srcs/glide_setup.F90 $(GLIMMER_DIR)
+
+$(GLIMMER_DIR)/glide_types.F90: glimmer_srcs/glide_types.F90
+#	cp glimmer_srcs/glide_types.F90 $(GLIMMER_DIR)
+
+Ymir: dycore_to_glimmer_extern.o
+
+YmirToGlimmer.o: YmirToGlimmer.cpp
+	$(CXX) -c -g Ymir/YmirToGlimmer.cpp
+
+dycore_to_glimmer_extern.o: dycore_to_glimmer_extern.cpp
+	$(CXX) -c -g dycore_to_glimmer_extern.cpp $(CPPFLAGS) -IYmir
+
+DyCoreToGlimmer.o: DyCoreToGlimmer.cpp
+	$(CXX) -c -g  DyCoreToGlimmer.cpp $(CPPFLAGS)
+
+DyCoreModelRegistry.o: DyCoreModelRegistry.cpp
+	$(CXX) -c -g  DyCoreModelRegistry.cpp $(CPPFLAGS) -I Ymir
+
+BisiclesToGlimmer.o: BISICLES/BisiclesToGlimmer.cpp
+	$(CXX) -c -g  BISICLES/BisiclesToGlimmer.cpp $(CPPFLAGS)
+
+glimmer_to_dycore.mod: glimmer_to_dycore.F90
+	$(FC) -c -g glimmer_to_dycore.F90 -I$(LIB_GLIDE_DIR) -I$(LIB_GLIMMER_DIR) \
+	-I$(LIB_GLIMMER_SOLVE_DIR) -I$(SIMPLE_BISICLES_DIR)
+
+#	cp glimmer_to_dycore.mod $(GLIMMER_DIR)
+
+#glimmer_to_dycore.mod: glimmer_to_dycore.F90
+#	$(FC) -c -g glimmer_to_dycore.F90 -I$(GLIMMER_DIR)
+
+
+STUB_DIR = dycore_stubs
+DYCORE_STUBS: $(STUB_DIR)/glimmer_to_dycore_stubs.F90
+	$(FC) -c -g $(STUB_DIR)/glimmer_to_dycore_stubs.F90 -I../fortran
+	mv glimmer_to_dycore_stubs.o $(STUB_DIR)
+	cp  glimmer_to_dycore.mod ../fortran
+
+clean: 
+	$(RM) *.o glimmer_to_dycore.mod */*.a $(GLIMMER_DIR)/glimmer_to_dycore.mod
+

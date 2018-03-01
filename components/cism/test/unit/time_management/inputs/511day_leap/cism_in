@@ -1,0 +1,14 @@
+&time_manager_nml
+  runid             = 'time_management_test'
+  dt_option         = 'steps_per_day'  ! this will be overwritten, so it doesn't matter
+  dt_count          = 1
+  allow_leapyear    = .true.
+  iyear0            = 1
+  imonth0           = 1
+  iday0             = 1
+  ihour0            = 0
+  iminute0          = 0
+  isecond0          = 0
+  date_separator    = '-'
+  stop_option       = 'never'
+/

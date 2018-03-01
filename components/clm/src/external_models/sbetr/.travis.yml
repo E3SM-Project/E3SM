@@ -1,0 +1,50 @@
+language: 
+
+before_script:
+  - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
+sudo: required
+
+dist: trusty # Ubuntu 14.04.
+
+compiler:
+  - gcc
+
+install: sh ./.travis/install-$TRAVIS_OS_NAME-deps.sh
+
+addons:
+  apt:
+    # Travis whitelist of packages.
+    # https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
+    # NOTE(bja, 201604) default gcc is too old.
+    packages:
+      - cmake
+
+matrix:
+  include:
+    # linux + gcc-5 + DEBUG=0
+    - env: DEBUG=0; CC=gcc-5; export CXX=g++-5; export FC=gfortran-5
+      os: linux
+
+    # linux + gcc-5 + DEBUG=1
+    - env: DEBUG=1; CC=gcc-5; export CXX=g++-5; export FC=gfortran-5
+      os: linux
+
+    # osx + gcc + DEBUG=0
+    - env: DEBUG=0; CC=gcc; export CXX=g++; export FC=gfortran
+      os: osx
+
+    # osx + gcc + DEBUG=1
+    - env: DEBUG=1; CC=gcc; export CXX=g++; export FC=gfortran
+      os: osx
+
+script: 
+  - echo CC=${CC}
+  - echo CXX=${CXX}
+  - echo FC=${FC}
+  - make travis=1 debug=$DEBUG CC=${CC} CXX=${CXX} FC=${FC} config
+  - make travis=1 debug=$DEBUG CC=${CC} CXX=${CXX} FC=${FC} all
+  - make travis=1 debug=$DEBUG CC=${CC} CXX=${CXX} FC=${FC} install
+  - make travis=1 debug=$DEBUG CC=${CC} CXX=${CXX} FC=${FC} test
+  - cd regression-tests; make rtest
+  - cat betr-tests.testlog

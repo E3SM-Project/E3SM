@@ -1,0 +1,35 @@
+#!/bin/sh
+##############################################################################
+# Install a file object to a directory.
+#
+# This script basically recreates the 'cp' command with the important
+# difference that it will not copy dot objects when copying directories.
+# When copying specified files dot objects will be copied.
+#
+# Syntax:
+#   install <target directory> <source object>...
+#
+
+if [ x$1 = x ] ; then
+    echo "You must supply a target directory"
+    exit 1
+elif [ x$2 = x ] ; then
+    echo "You must supply at least one source object"
+    exit 2
+fi
+
+TARGET_DIR=$1
+
+for OBJECT in $*; do
+    if [ $OBJECT != $TARGET_DIR ]; then
+        if [ -f $OBJECT ]; then
+            mkdir -p $TARGET_DIR
+#            cp -v $OBJECT $TARGET_DIR/`basename $OBJECT`
+            cp $OBJECT $TARGET_DIR/`basename $OBJECT`
+        elif [ -d $OBJECT ]; then
+            find $OBJECT -type d -name '[^.]*' -exec mkdir -p $TARGET_DIR/{} \;
+#            find $OBJECT -type f -name '[^.]*' -exec cp -v {} $TARGET_DIR/{} \;
+            find $OBJECT -type f -name '[^.]*' -exec cp {} $TARGET_DIR/{} \;
+        fi
+    fi
+done

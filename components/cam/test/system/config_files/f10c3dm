@@ -1,0 +1,8 @@
+-spmd -nosmp
+-dyn fv
+-res 10x15
+-debug
+-phys cam3
+-ice cice
+-ocn dom
+-s

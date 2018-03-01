@@ -1,0 +1,121 @@
+\hypertarget{ice__calendar_8F90}{
+\section{ice\_\-calendar.F90 File Reference}
+\label{ice__calendar_8F90}\index{ice\_\-calendar.F90@{ice\_\-calendar.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__calendar}{ice\_\-calendar}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__calendar_a98202ec2aea2b959f54a058cd7d1387c}{ice\_\-calendar::init\_\-calendar}
+\item 
+subroutine \hyperlink{namespaceice__calendar_aa88caa12cfe780c61ddec5bfc825e93c}{ice\_\-calendar::calendar} (ttime)
+\item 
+subroutine \hyperlink{namespaceice__calendar_a69cff580919f3926456034ebbc574dac}{ice\_\-calendar::get\_\-daycal} (year, days\_\-per\_\-year\_\-in, daycal\_\-out, daymo\_\-out)
+\item 
+logical \hyperlink{namespaceice__calendar_a6cc159a7c73375fe57015ddc47dff35e}{ice\_\-calendar::is\_\-leap\_\-year} (year)
+\item 
+integer \hyperlink{namespaceice__calendar_aabc8501f17759aa61f9a704f13571258}{ice\_\-calendar::leap\_\-year\_\-count} (Y)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a1fa9382761e78de77e0109c55630554b}{ice\_\-calendar::days\_\-per\_\-year}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_a1d4afbbddfef91146892cd47f6734b77}{ice\_\-calendar::daymo}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_ab55e85b8212a213de225f16289d5bb75}{ice\_\-calendar::daycal}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_aa23a9d5a11d0cd15e84d3b9771338ad5}{ice\_\-calendar::daymo360}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_ad91c534442e93775fa9630bdaa9da806}{ice\_\-calendar::daycal360}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_abd42cdcd4849fa25afe07f9e672c677e}{ice\_\-calendar::daymo365}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_a080909b268176fb29d513a184cc30386}{ice\_\-calendar::daycal365}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_a5db58762f256066e2e55974bc51b0b1e}{ice\_\-calendar::daymo366}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_a19cae1dafbfb758fdfe8ee3378a033ef}{ice\_\-calendar::daycal366}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a6899d76938ada3889a62308eb41331bf}{ice\_\-calendar::istep}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a225919cc1367b6648a33740b98427512}{ice\_\-calendar::istep0}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a56f19d1b69c0acd3d8fd3a6f06855e48}{ice\_\-calendar::istep1}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_af65b8e64abed62d107827ade781bb968}{ice\_\-calendar::mday}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a0d6f497f4cdeb0413e2c5eadca76d8a1}{ice\_\-calendar::hour}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a97f8410cf5a5f94b8c2a271c080c4bd7}{ice\_\-calendar::month}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a2e88fbbaa94dea7baf4d46c950c5be7a}{ice\_\-calendar::monthp}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_afc3c91ad4e19b987b1e28293ec6ec2b7}{ice\_\-calendar::year\_\-init}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ab1bfcde8457aafd600e9ff69b7ec6a3f}{ice\_\-calendar::nyr}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aefc3f061e0c4d064b85e0fa84f0c92af}{ice\_\-calendar::idate}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a60baa4e8bed2d175eaf6170ab792aa03}{ice\_\-calendar::idate0}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a80ddbc12ee9fd336c3148dd0e31f420c}{ice\_\-calendar::sec}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aac483d802138fd2e80f1945fb3385f35}{ice\_\-calendar::npt}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a7d6b1e515218c3fa92e328b9cf745b59}{ice\_\-calendar::stop\_\-now}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ab014cadf8e461a9743825f528cbd9e7a}{ice\_\-calendar::write\_\-restart}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aec83d850502df509fde73dbd084c2dc5}{ice\_\-calendar::diagfreq}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a0762fc870e55d2cfdfa80031188f4851}{ice\_\-calendar::dumpfreq\_\-n}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ae00ad28547110901c77d6d4f2d87a7ea}{ice\_\-calendar::nstreams}
+\item 
+integer(kind=int\_\-kind), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_ab7cea996ca05518dbde0dc027ee81c13}{ice\_\-calendar::histfreq\_\-n}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a8b89d489532c51cefe59876296c1f568}{ice\_\-calendar::dt}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a7c18b75ed60a7c1d0cbee86f4bca61de}{ice\_\-calendar::dt\_\-thm}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a3bb2bcfc8ce6074351961d80011c706a}{ice\_\-calendar::dt\_\-dyn}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a41fbc8dd30edf8e90070b7f5569fdd9b}{ice\_\-calendar::time}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_abc4a1fb6d6f8356506f078c4265a6ce6}{ice\_\-calendar::time\_\-forc}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a4b4393c99a1d82bc45fcee5d7f6c1eab}{ice\_\-calendar::yday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a04f5a8dadd1f3a10e3909afc246aebe4}{ice\_\-calendar::nextsw\_\-cday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a7a56bc05233c72a7b5176c7c2d6abe7c}{ice\_\-calendar::tday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_aaf7ba66b2706feaef77263c10d65e28a}{ice\_\-calendar::xndt\_\-dyn}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a729d7e640fbfecac3733865efcfcb042}{ice\_\-calendar::dayyr}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a2d0b7e0b5144d49dd2e39690c5cde21f}{ice\_\-calendar::new\_\-year}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_adf4af22505e09a7ed33b5c480cce75af}{ice\_\-calendar::new\_\-month}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a766cb3e9a2b5b634a04a558bade2457c}{ice\_\-calendar::new\_\-day}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a0c8bfc71143cc3c7aef340ad41a9068d}{ice\_\-calendar::new\_\-hour}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a0ab845607bc7966960d11bffb6f9f069}{ice\_\-calendar::write\_\-ic}
+\item 
+logical(kind=log\_\-kind), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_a610c4039b3869befd73705569c033bef}{ice\_\-calendar::write\_\-history}
+\item 
+character(len=1), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_a0502fca3c549cbfb5113eddd7de76b20}{ice\_\-calendar::histfreq}
+\item 
+character(len=1) \hyperlink{namespaceice__calendar_aa26268d5abce218fad113a08bedcf8d9}{ice\_\-calendar::dumpfreq}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__calendar_ad01a9ecbaab3997c0252754dee9aa0c7}{ice\_\-calendar::calendar\_\-type}
+\item 
+integer \hyperlink{namespaceice__calendar_a671fa04415abb84aa5564c9269f47f81}{ice\_\-calendar::nleaps} = 0
+\end{DoxyCompactItemize}

@@ -1,0 +1,10 @@
+NC="avhrr.hdf"
+
+NCDUMP="./ncdump"
+#NCDUMP="./.libs/ncdump"
+
+alias q0="${NCDUMP} ${NC}"
+alias qh="${NCDUMP} -h ${NC}"
+alias qq="gdb --args ${NCDUMP} ${NC}"
+alias qqh="gdb --args ${NCDUMP} -h ${NC}"
+

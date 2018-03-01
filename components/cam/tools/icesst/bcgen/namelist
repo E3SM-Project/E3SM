@@ -1,0 +1,18 @@
+ &cntlvars
+ mon1 = 1
+ iyr1 = 1948
+ monn = 12
+ iyrn = 2005
+ mon1rd = 1
+ iyr1rd = 1949
+ monnrd = 12
+ iyrnrd = 2004
+ mon1clm = 1
+ iyr1clm = 1982
+ monnclm = 12
+ iyrnclm = 2001
+ mon1out = 1
+ iyr1out = 1949
+ monnout = 10
+ iyrnout = 2004
+ /

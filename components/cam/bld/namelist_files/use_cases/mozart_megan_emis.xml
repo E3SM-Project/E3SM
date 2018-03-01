@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- turn on clm MEGAN VOC emis -->
+<megan_specifier>
+    'ISOP = isoprene',
+    'CH3OH =  methanol',
+    'CH3COCH3 = acetone',
+    'CH3CHO = acetaldehyde',
+    'CH2O =  formaldehyde',
+    'CO = carbon_monoxide',
+    'C2H6  = ethane',
+    'C3H8 = propane',
+    'C2H4 = ethene',
+    'C3H6 = propene',
+    'C2H5OH = ethanol',
+    'C10H16 = myrcene + sabinene + limonene + carene_3 + ocimene_t_b + pinene_b + pinene_a + 2met_styrene + cymene_p + cymene_o + phellandrene_a + thujene_a + terpinene_a + terpinene_g + terpinolene + phellandrene_b + camphene + bornene + fenchene_a + ocimene_al + ocimene_c_b'
+</megan_specifier>
+
+<megan_factors_file>'atm/cam/chem/trop_mozart/emis/megan21_emis_factors_c20130304.nc'</megan_factors_file> 
+
+<!-- specify which species have emissions from file -->
+<srf_emis_specifier>
+  'BENZENE  -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.SOA_BENZENE.surface.1.9x2.5_c120313.nc',
+  'BIGALK   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.BIGALK.surface.1.9x2.5_c110426.nc',
+  'BIGENE   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.BIGENE.surface.1.9x2.5_c110426.nc',
+  'C10H16   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C10H16.surface.1.9x2.5_c110426.nc',
+  'C2H2     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C2H2.surface.1.9x2.5_c110426.nc',
+  'C2H4     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C2H4_no_bg.surface.1.9x2.5_c121022.nc',
+  'C2H5OH   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C2H5OH.surface.1.9x2.5_c110426.nc',
+  'C2H6     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C2H6_no_bg.surface.1.9x2.5_c121022.nc',
+  'C3H6     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C3H6_no_bg.surface.1.9x2.5_c121022.nc',
+  'C3H8     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.C3H8_no_bg.surface.1.9x2.5_c121022.nc',
+  'CB1      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CB1.surface.1.9x2.5_c110426.nc',
+  'CB2      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CB2.surface.1.9x2.5_c110426.nc',
+  'CH2O     -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CH2O.surface.1.9x2.5_c110426.nc',
+  'CH3CHO   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CH3CHO.surface.1.9x2.5_c110426.nc',
+  'CH3CN    -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CH3CN.surface.1.9x2.5_c110426.nc',
+  'CH3COOH  -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CH3COOH.surface.1.9x2.5_c110426.nc',
+  'CH3OH    -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CH3OH_no_bg.surface.1.9x2.5_c121022.nc',
+  'CO       -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.CO_no_bg.surface.1.9x2.5_c121022.nc',
+  'DMS      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.DMS.surface.1.9x2.5_c110426.nc',
+  'HCN      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.HCN.surface.1.9x2.5_c110426.nc',
+  'HCOOH    -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.HCOOH.surface.1.9x2.5_c110426.nc',
+  'MEK      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.MEK.surface.1.9x2.5_c110426.nc',
+  'NH3      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.NH3.surface.1.9x2.5_c110426.nc',
+  'NO       -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.NO.surface.1.9x2.5_c110426.nc',
+  'OC1      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.OC1.surface.1.9x2.5_c110426.nc',
+  'OC2      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.OC1.surface.1.9x2.5_c110426.nc',
+  'SO2      -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.SO2.surface.1.9x2.5_c110426.nc',
+  'TOLUENE  -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.SOA_TOLUENE.surface.1.9x2.5_c120313.nc',
+  'XYLENE   -> $INPUTDATA_ROOT/atm/cam/chem/emis/1992-2010/emissions.SOA_XYLENE.surface.1.9x2.5_c120313.nc'
+</srf_emis_specifier>
+
+<megan_mapped_emisfctrs>.true.</megan_mapped_emisfctrs>
+
+</namelist_defaults>

@@ -1,0 +1,55 @@
+\hypertarget{ice__transport__driver_8F90}{
+\section{ice\_\-transport\_\-driver.F90 File Reference}
+\label{ice__transport__driver_8F90}\index{ice\_\-transport\_\-driver.F90@{ice\_\-transport\_\-driver.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__transport__driver}{ice\_\-transport\_\-driver}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a47d0afada16dff37da3f72fa4c27ef86}{ice\_\-transport\_\-driver::init\_\-transport}
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_aaca5fc744c83b022ee5b5117300cbe8c}{ice\_\-transport\_\-driver::transport\_\-remap} (dt)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_ac2fc3fdbf27d4f17ac32c18011940121}{ice\_\-transport\_\-driver::transport\_\-upwind} (dt)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a9820a25e1c9c417a464cd9127254edab}{ice\_\-transport\_\-driver::state\_\-to\_\-tracers} (nx\_\-block, ny\_\-block, aice0, aicen, trcrn, vicen, vsnon, eicen, esnon, aim, trm)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a4f5b07efec9e5b90aca1c9c43c06ba4d}{ice\_\-transport\_\-driver::tracers\_\-to\_\-state} (nx\_\-block, ny\_\-block, aim, trm, aice0, aicen, trcrn, vicen, vsnon, eicen, esnon)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_aa19bcb5dc77f4adee16ba36fc1f9e3b5}{ice\_\-transport\_\-driver::global\_\-conservation} (l\_\-stop, asum\_\-init, asum\_\-final, atsum\_\-init, atsum\_\-final)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a1454e3a5f9bdaec16216269fabe0c5b4}{ice\_\-transport\_\-driver::local\_\-max\_\-min} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, trm, tmin, tmax, aimask, trmask)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a67ed05a8905e21d57703a31ede8ead61}{ice\_\-transport\_\-driver::quasilocal\_\-max\_\-min} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, tmin, tmax)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a21179a91327fdb3bd51d2e7b5e3b170d}{ice\_\-transport\_\-driver::check\_\-monotonicity} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, iblk, tmin, tmax, aim, trm, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a922d3b29eea0cadb79c280ead41215ba}{ice\_\-transport\_\-driver::state\_\-to\_\-work} (nx\_\-block, ny\_\-block, narr, trcr\_\-depend, aicen, trcrn, vicen, vsnon, aice0, works)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_a20f15deea681c348f6f2032c7db58c50}{ice\_\-transport\_\-driver::work\_\-to\_\-state} (nx\_\-block, ny\_\-block, narr, trcr\_\-depend, aicen, trcrn, vicen, vsnon, aice0, works)
+\item 
+subroutine \hyperlink{namespaceice__transport__driver_acb90f49777dc049ce780454b1165ed0a}{ice\_\-transport\_\-driver::upwind\_\-field} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, dt, narrays, phi, uee, vnn, HTE, HTN, tarea)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__transport__driver_a1c58448ed0a2533736be3ffabe94127f}{ice\_\-transport\_\-driver::advection}
+\item 
+logical, parameter \hyperlink{namespaceice__transport__driver_ad4c977aa8b5dab5551cb2b87392ff8eb}{ice\_\-transport\_\-driver::l\_\-fixed\_\-area} = .false.
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__transport__driver_acd10161556f58f5f0de2dadd68565201}{ice\_\-transport\_\-driver::ntrace} = 2+ntrcr+nilyr+nslyr
+\item 
+integer(kind=int\_\-kind), dimension(ntrace) \hyperlink{namespaceice__transport__driver_a04137caf1a5335b66116ec171d0bfe44}{ice\_\-transport\_\-driver::tracer\_\-type}
+\item 
+integer(kind=int\_\-kind), dimension(ntrace) \hyperlink{namespaceice__transport__driver_ab13adb14cbe8d413f23beb0e75252023}{ice\_\-transport\_\-driver::depend}
+\item 
+logical(kind=log\_\-kind), dimension(ntrace) \hyperlink{namespaceice__transport__driver_a377931b1b7093fce2f15ea1930370cd1}{ice\_\-transport\_\-driver::has\_\-dependents}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__transport__driver_aeed35e7d53b7d7304b207337c111028b}{ice\_\-transport\_\-driver::integral\_\-order} = 3
+\item 
+logical(kind=log\_\-kind), parameter \hyperlink{namespaceice__transport__driver_a246442f9a224a039eee37618a4cc0751}{ice\_\-transport\_\-driver::l\_\-dp\_\-midpt} = .true.
+\end{DoxyCompactItemize}

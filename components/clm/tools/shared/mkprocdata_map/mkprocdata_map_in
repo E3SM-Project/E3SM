@@ -1,0 +1,6 @@
+&mkprocdata_map_in
+  fmap  = 'map_ne30np4_to_fv1.9x2.5_aave_da_091230.nc'
+  filei = 'Ib14_ne30np4_gx1v6.clm2.h0.0001-01-06-00000.nc'
+  fileo = 'Ib14_ne30np4_gx1v6_2d.clm2.h0.0001-01-06-00000.nc'
+/
+

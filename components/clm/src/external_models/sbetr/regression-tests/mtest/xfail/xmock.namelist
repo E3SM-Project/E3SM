@@ -1,0 +1,17 @@
+&sbetr_driver
+  simulator_name = 'standalone'
+/
+
+&betr_parameters
+  reaction_method = 'mock_run'
+/
+
+&forcing_inparm
+  grid_filename = '../../example_input/sierra_grid.nc'
+  forcing_filename = '../../example_input/sierra_clmdef_hhour.clm2.h0.0021-01-01-00000.nc'
+/
+
+&regression_test
+  write_regression_output = .true.
+  cells = 5
+/

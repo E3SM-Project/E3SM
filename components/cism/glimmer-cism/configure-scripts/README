@@ -1,0 +1,97 @@
+
+These are sample configure scripts for glimmer that are working
+for users on various platforms. These are templates that
+can guide users -- they are not meant to be used as is. 
+In particular, paths to netcdf and Trilinos will likely need
+to be modified. In addition, the build will depend on
+what modules are loaded and what environment variables 
+(such as FC and LD_LIBRARY_PATH) are set.
+
+These scripts are stored in this configure-scripts directory,
+but are designed to run from the top-level glimmer directory.
+
+*** TITAN *** 
+Instructions for building on OLCF Titan in parallel 1/2013
+In top level directory:
+(1)  ./bootstrap
+(3) ./configure-scripts/titan-config (LATER: or ./configure-scripts/titan-config-serial)
+(4) make
+
+notes about configure script in case you want to alter:
+these are older build scripts for jaguar
+jaguar-config:
+./configure \
+  FC=ftn   F77=ftn   \   # wrappers for pgi compilers
+  CC=cc  CXX=CC \
+  CXXFLAGS="-O2 --diag_suppress 554,111,611" \
+  CPPFLAGS="-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK" \  # need this because we are using older xt-asyncpe 
+						and mpt as a workaround for bug in xt-apsyncpe	
+  FCFLAGS="-Mfree -O2" \
+  F77FLAGS="-Mfixed" \
+  CFLAGS="-O2" \
+  --disable-python \
+  --disable-shared \                                # also need this for bug workaround above. Not sure why
+  --with-netcdf=$NETCDF_DIR \
+  EXTRA_LDLIBS="/opt/pgi/10.3.0/linux86-64/10.3/lib/f90main.o" \ # so we can link using C++
+  --with-trilinos=/ccs/proj/cli043/trilinos/NOX_BUILD-FAST   # this trilinos has some performance improvements 
+
+jaguar-config-serial:
+(don't build with trilinos because we use it only with an MPI build)
+./configure \
+  FC="ftn"  F77="ftn"  F90="ftn" \  # these wrappers will automatically pull pgif90 instead of mpif90
+  CC="cc"  CXX="CC -O2 --diag_suppress 554,111,611" \
+  FCFLAGS="-Mfree -O2" \
+  F77FLAGS="-Mfixed" \
+  NETCDF_LIBS="-lnetcdff -lnetcdf" \  # these are needed here
+  LIBS="-lhdf5_hl -lhdf5 -lz" \       # even though not neede in MPI build
+  LDFLAGS="-L/opt/cray/hdf5/1.8.3.1/hdf5-pgi/lib" \
+  EXTRA_LDLIBS="/opt/pgi/10.3.0/linux86-64/10.3/lib/f90main.o" \
+  --disable-python \
+  --disable-shared \
+  --with-netcdf=$NETCDF_DIR \
+
+
+Both serial and MPI enabled versions worked with the following 
+environment on 8/19/2011 (KJE):
+Currently Loaded Modulefiles from these commands:
+module load subversion netcdf/3.6.2 python autoconf
+module swap xt-asyncpe xt-asyncpe/3.7 
+module swap xt-mpt xt-mpt/3.5.1 
+
+ 1) modules/3.1.6                                           15) cray/projdb/1.0.0-1.0202.19483.52.1
+ 2) DefApps                                                 16) Base-opts/2.2.73
+ 3) torque/2.4.1b1-snap.200905191614                        17) pgi/10.9.0
+ 4) moab/5.3.6                                              18) xt-libsci/10.5.0
+ 5) /opt/cray/xt-asyncpe/default/modulefiles/xtpe-istanbul  19) xt-mpt/3.5.1
+ 6) cray/MySQL/5.0.64-1.0000.2342.16.1                      20) xt-pe/2.2.73
+ 7) xtpe-target-cnl                                         21) xt-asyncpe/3.7
+ 8) xt-service/2.2.73                                       22) PrgEnv-pgi/2.2.73
+ 9) xt-os/2.2.73                                            23) subversion/1.5.0
+10) xt-boot/2.2.73                                          24) python/2.5.2-netcdf
+11) xt-lustre-ss/2.2_1.6.5                                  25) netcdf/3.6.2
+12) cray/job/1.5.5-0.1_2.0202.21413.56.6                    26) m4/1.4.11
+13) cray/csa/3.0.0-1_2.0202.21426.77.6                      27) autoconf/2.63
+14) cray/account/1.0.0-2.0202.19482.49.17
+
+*** BLUEFIRE*** 
+Build notes on Bluefire with and without Trilinos (uses MPI) KJE 8/2011
+ 
+(1) module load svn-1.5 trilinos/10.6.2 netcdf python autoconf/2.67
+
+So then, my environment looked like this:
+ Currently Loaded Modulefiles:
+  1) openssl                       5) autoconf/2.67                 9) szip/2.1
+  2) svn-1.5                       6) curl/7.21.2                  10) netcdf/4.1.3_netcdf3-format
+  3) trilinos/10.6.2               7) zlib
+  4) python                        8) hdf5/1.8.6
+
+(2) svn co https://svn-cism-model.cgd.ucar.edu/glimmer-cism2/trunk cism-trunk
+FYI I had problems with svn comands (says svn is old, etc.) unless I grabbed a fresh version of the code (WHY?)
+(3) find . -exec touch -r configure {} +
+FYI I had problems with timestampping unless I grabbed a fresh version of the code (WHY?)
+(4) ./configure-scripts/bf-config or bf-config-serial from the main directory
+(5) gmake
+FYI I am Still getting these warnings:
+ld: 0711-783 WARNING: TOC overflow. TOC size: 65592     Maximum size: 65536
+        Extra instructions are being generated for each reference to a TOC
+

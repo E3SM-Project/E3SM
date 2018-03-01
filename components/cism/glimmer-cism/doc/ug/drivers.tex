@@ -1,0 +1,126 @@
+\section{Example Climate Drivers}
+GLIMMER comes with three climate drivers of varying complexity:
+\begin{enumerate}
+ \item \texttt{simple\_glide}: an EISMINT type driver
+ \item \texttt{eis\_glide}: Edinburh Ice Sheet driver.
+ \item \texttt{libglint}: Interface to global climate data or model
+\end{enumerate}
+These drivers are described in some detail here.
+
+\subsection{EISMINT Driver}\label{driver:eismint}
+\subsubsection{Configuration}
+
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{2}{|l|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{2}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}|l|p{11cm}|}
+%%%% EISMINT-1 fixed margin
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EISMINT-1 fixed margin]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{EISMINT 1 fixed margin scenario.}\\
+    \hline
+    \texttt{temperature} & (real(2)) Temperature forcing $$T_{\mbox{surface}}=t_1+t_2d$$ where $$d=\max\{|x-x_{\mbox{summit}}|,|y-y_{\mbox{summit}}|\}$$\\
+    \texttt{massbalance} & (real) Mass balance forcing \\
+    \texttt{period} & (real) period of time--dependent forcing (switched off when set to 0) $$\Delta T=10\sin\frac{2\pi t}{T}$$ and $$\Delta M=0.2sin\frac{2\pi t}{T}$$\\
+    \hline
+%%%% EISMINT-1 moving margin
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EISMINT-1 moving margin]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{EISMINT 1 moving margin scenario.}\\
+    \hline
+    \texttt{temperature} & (real(2)) Temperature forcing $$T_{\mbox{surface}}=t_1-t_2H$$ where $H$ is the ice thickness\\
+    \texttt{massbalance} & (real(3)) Mass balance forcing $$M=\min\{m_1,m_2(m_3-d)\}$$ where $$d=\sqrt{(x-x_{\mbox{summit}})^2+(y-y_{\mbox{summit}})^2}$$\\
+    \texttt{period} & (real) period of time--dependent forcing (switched off when set to 0) $$\Delta T=10\sin\frac{2\pi t}{T}$$ and $$M=\min\left\{m_1,m_2\left(m_3+100sin\frac{2\pi t}{T}-d\right)\right\}$$\\
+    \hline
+  \end{supertabular*}
+\end{center}
+
+\subsection{EIS Driver}\label{driver:eis}
+\subsubsection{Configuration}
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{2}{|l|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{2}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}|l|p{11cm}|}
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EIS ELA]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Mass balance parameterisation of the EIS driver. The Equilibrium Line Altitude is parameterised with $$z_{\text{ELA}} = a + b\lambda + c\lambda^2 + \Delta z_{\text{ELA}},$$ where $\lambda$ is the latitude in degrees north. The mass balance is then defined by $$M(z^\ast)=\left\{
+    \begin{array}{ll}
+      2M_{\text{max}}\left(\frac{z^\ast}{z_{\text{max}}}\right)-M_{\text{max}}\left(\frac{z^\ast}{z_{\text{max}}}\right)^2&\mbox{for}\quad z^\ast\le z_{\text{max}}\\
+      M_{\text{max}}&\mbox{for}\quad z^\ast>z_{\text{max}}
+    \end{array}
+    \right.,
+$$ where $z^\ast$ is the vertical distance above the ELA. }\\
+    \hline
+    \texttt{ela\_file} & name of file containing ELA variation with time, $\Delta z_{\text{ELA}}$\\
+    \texttt{ela\_ew} & name of file containing longitudinal variations of ELA field. File contains list of longitude, ELA pairs. The ELA perturbations are calculated by linearly interpolating values from file.\\
+    \texttt{ela\_a} & ELA factor $a$\\
+    \texttt{ela\_b} & ELA factor $b$\\
+    \texttt{ela\_c} & ELA factor $c$\\
+    \texttt{zmax\_mar} & The elevation at which the maximum mass balance is reached, $z_{\text{max}}$ for marine conditions\\
+    \texttt{bmax\_mar} & The maximum mass balance, $M_{\text{max}}$ for marine conditions\\
+    \texttt{zmax\_cont} & The elevation at which the maximum mass balance is reached, $z_{\text{max}}$ for continental conditions\\
+    \texttt{bmax\_cont} & The maximum mass balance, $M_{\text{max}}$ for continental conditions\\ 
+    \hline 
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EIS CONY]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{The mass balance function can be modified with a continentality value. The continentality value is determined by finding the ratio between points below sea level and the total number of points in a circle of given search radius. This value between 0 (maritime) and 1 (continental) is used to interpolate between continental and maritime mass balance curves.}\\
+    \hline
+    \texttt{period} & how often continentality is updated (default 500a).\\
+    \texttt{radius} & the search radius (default 600000m).\\
+    \texttt{file} & set to \textbf{1} to load continentality from file.\\ 
+    \hline
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EIS Temperature]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Temperature is also assumed to depend on latitude and the atmospheric lapse rate.}\\
+    \hline
+    \texttt{temp\_file} & name of file containing temperature forcing time series.\\
+    \texttt{type} & 
+    \begin{description}
+    \item[0] polynomial: $T(t)=\sum_{i=0}^N a_i(t)\lambda^i+bz.$ where $\lambda$ is the latitude.
+    \item[1] exponential: $T(t)=a_0+a_1\exp\left(a_2(\lambda-\lambda_0)\right)$
+    \end{description}\\
+    \texttt{lat0} & $\lambda_0$ (only used when exponential type temperature)\\
+    \texttt{order} & order of polynomial, $N$ (only used when using polynomial type temperature).\\
+    \texttt{lapse\_rate} & lapse rate, $b$.\\
+    \hline
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[EIS SLC]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Global sea--level forcing}\\
+    \hline
+    \texttt{slc\_file} & name of file containing sea--level change time series.\\
+    \hline
+  \end{supertabular*}
+\end{center}
+

@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- RTM Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="rtm_tstep" 
+       type="integer" 
+       category="rtm"
+       group="rtm_inparm" 
+       valid_values="" >
+RTM time step (sec).
+Default: 10800
+Can ONLY be set by modifying the value of the xml variable ROF_NCPL in env_run.xml.
+</entry>
+
+<entry id="ice_runoff" 
+       type="logical" 
+       category="rtm"
+       group="rtm_inparm">
+Default: .true.
+If .true., river runoff will be split up into liquid and ice streams,
+otherwise ice runoff will be zero and all runoff directed to liquid
+stream.
+</entry>
+
+<entry id="rtm_mode" 
+       type="char*256" 
+       category="rtm"
+       group="rtm_inparm" 
+       valid_values="ACTIVE,NULL" >
+If ACTIVE, turn on rtm river routing
+Default: ACTIVE
+If the value rtm_mode is NULL, then rof_present will be set to false at runtime
+</entry>
+
+<entry id="flood_mode" 
+       type="char*256" 
+       category="rtm"
+       group="rtm_inparm" 
+       valid_values="ACTIVE,NULL" >
+If ACTIVE, turn on rtm flooding back to clm
+Default: NULL
+Note that rtm flood is not supported in CESM1.1
+</entry>
+
+<entry id="rtm_effvel" 
+       type="char*256" 
+       category="rtm"
+       group="rtm_inparm" 
+       valid_values="ACTIVE,NULL" >
+If ACTIVE, calculate the effective velocity using slope.
+Default: NULL
+Note that flood_mode and rtm_effvel are not supported in CESM1.1
+</entry>
+
+<entry id="finidat_rtm" 
+       type="char*256" 
+       category="rtm"
+       input_pathname="abs" 
+       group="rtm_inparm" 
+       valid_values="" >
+Full pathname of initial rtm file 
+Default: ' '
+</entry>
+
+<entry id="nrevsn_rtm" 
+       type="char*256" 
+       category="rtm"
+       input_pathname="abs" 
+       group="rtm_inparm" 
+       valid_values="" >
+Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch)
+(Set with xml variables RUN_REFCASE and RUN_REFDATE in env_run.xml)
+</entry>
+
+<entry id="frivinp_rtm" 
+       type="char*256" 
+       category="rtm"
+       input_pathname="abs" 
+       group="rtm_inparm" 
+       valid_values="" >
+Full pathname of input datafile for RTM.
+</entry>
+
+<entry id="rtmhist_fexcl1" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to exclude from history tape series 1.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_fexcl2" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to exclude from history tape series  2.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_fexcl3" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to exclude from history tape series  3.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_fincl1" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to add to history tape series  1.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_fincl2" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to add to history tape series  2.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_fincl3" 
+       type="char*34(1000)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Fields to add to history tape series  3.
+Default: ' '
+</entry>
+
+<entry id="rtmhist_mfilt" 
+       type="integer(6)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="" >
+Per tape series  maximum number of time samples.
+Default: 1,30,30
+</entry>
+
+<entry id="rtmhist_ndens" 
+       type="integer(6)" 
+       category="history"
+       group="rtm_inparm" 
+       valid_values="1,2" >
+Per tape series  history file density (i.e. output precision) 
+    1=double precision
+    2=single precision
+<default>Default: 2,2,2</default>
+</entry>
+
+<entry id="rtmhist_nhtfrq" 
+       type="integer(6)" category="history"
+       group="rtm_inparm" valid_values="" >
+Per tape series history write frequency. 
+  positive means in time steps
+  0=monthly
+  negative means hours
+(i.e. 24 means every 24 time-steps and -24 means every day
+<default>Default: 0,-24,-24</default>
+</entry>
+
+</namelist_definition>

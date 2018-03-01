@@ -1,0 +1,121 @@
+\hypertarget{namespaceice__pio}{
+\section{ice\_\-pio Module Reference}
+\label{namespaceice__pio}\index{ice\_\-pio@{ice\_\-pio}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+interface \hyperlink{interfaceice__pio_1_1ice__pio__initdecomp}{ice\_\-pio\_\-initdecomp}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__pio_a82e41ef2d2fdafcbd23064613f27c5f1}{ice\_\-pio\_\-finalize}
+\item 
+subroutine \hyperlink{namespaceice__pio_a14b08b2f773c9970e0938770ad4746e2}{ice\_\-pio\_\-init} (mode, filename, File, clobber, cdf64)
+\item 
+subroutine \hyperlink{namespaceice__pio_a109c38fa2166ac88371fb66b04aa16a5}{ice\_\-pio\_\-set\_\-params} (ice\_\-pio\_\-type\_\-name)
+\item 
+subroutine \hyperlink{namespaceice__pio_abd0ade136046f0940881df9f9d8c85f3}{ice\_\-pio\_\-initdecomp\_\-2d} (iodesc)
+\item 
+subroutine \hyperlink{namespaceice__pio_ad58ca6d958a4735d1709586ad6fde92c}{ice\_\-pio\_\-initdecomp\_\-3d} (ndim3, iodesc)
+\item 
+subroutine \hyperlink{namespaceice__pio_affe281885b53719d3c30c772637990db}{ice\_\-pio\_\-initdecomp\_\-3d\_\-inner} (ndim3, inner\_\-dim, iodesc)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{namespaceice__pio_a5de9334d10947cea25743c63ea790857}{ice\_\-pio\_\-stride}
+\item 
+integer \hyperlink{namespaceice__pio_a727ea1a597ce3ed71fc1e986d39e263c}{ice\_\-num\_\-iotasks}
+\item 
+integer \hyperlink{namespaceice__pio_a005816f4168d35918e2c74a88989e871}{ice\_\-pio\_\-root}
+\item 
+integer \hyperlink{namespaceice__pio_a29c1f71d91a554fa266112edb114b555}{ice\_\-pio\_\-type}
+\item 
+type(iosystem\_\-desc\_\-t) \hyperlink{namespaceice__pio_ad7b25bee3af2d23622eded54fa930040}{ice\_\-pio\_\-subsystem}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__pio_a82e41ef2d2fdafcbd23064613f27c5f1}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-finalize@{ice\_\-pio\_\-finalize}}
+\index{ice\_\-pio\_\-finalize@{ice\_\-pio\_\-finalize}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-finalize}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-finalize ()}}
+\label{namespaceice__pio_a82e41ef2d2fdafcbd23064613f27c5f1}
+
+
+Definition at line 74 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_a14b08b2f773c9970e0938770ad4746e2}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-init@{ice\_\-pio\_\-init}}
+\index{ice\_\-pio\_\-init@{ice\_\-pio\_\-init}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-init (character(len=$\ast$),intent(in) {\em mode}, \/  character(len=$\ast$),intent(in) {\em filename}, \/  type(file\_\-desc\_\-t),intent(inout) {\em File}, \/  logical,intent(in),optional {\em clobber}, \/  logical,intent(in),optional {\em cdf64})}}
+\label{namespaceice__pio_a14b08b2f773c9970e0938770ad4746e2}
+
+
+Definition at line 87 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_abd0ade136046f0940881df9f9d8c85f3}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-initdecomp\_\-2d@{ice\_\-pio\_\-initdecomp\_\-2d}}
+\index{ice\_\-pio\_\-initdecomp\_\-2d@{ice\_\-pio\_\-initdecomp\_\-2d}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-initdecomp\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-initdecomp\_\-2d (type(io\_\-desc\_\-t),intent(out) {\em iodesc})}}
+\label{namespaceice__pio_abd0ade136046f0940881df9f9d8c85f3}
+
+
+Definition at line 295 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_ad58ca6d958a4735d1709586ad6fde92c}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-initdecomp\_\-3d@{ice\_\-pio\_\-initdecomp\_\-3d}}
+\index{ice\_\-pio\_\-initdecomp\_\-3d@{ice\_\-pio\_\-initdecomp\_\-3d}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-initdecomp\_\-3d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-initdecomp\_\-3d (integer(kind=int\_\-kind),intent(in) {\em ndim3}, \/  type(io\_\-desc\_\-t),intent(out) {\em iodesc})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__pio_ad58ca6d958a4735d1709586ad6fde92c}
+
+
+Definition at line 341 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_affe281885b53719d3c30c772637990db}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-initdecomp\_\-3d\_\-inner@{ice\_\-pio\_\-initdecomp\_\-3d\_\-inner}}
+\index{ice\_\-pio\_\-initdecomp\_\-3d\_\-inner@{ice\_\-pio\_\-initdecomp\_\-3d\_\-inner}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-initdecomp\_\-3d\_\-inner}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-initdecomp\_\-3d\_\-inner (integer(kind=int\_\-kind),intent(in) {\em ndim3}, \/  logical,intent(in) {\em inner\_\-dim}, \/  type(io\_\-desc\_\-t),intent(out) {\em iodesc})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__pio_affe281885b53719d3c30c772637990db}
+
+
+Definition at line 390 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_a109c38fa2166ac88371fb66b04aa16a5}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-set\_\-params@{ice\_\-pio\_\-set\_\-params}}
+\index{ice\_\-pio\_\-set\_\-params@{ice\_\-pio\_\-set\_\-params}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-set\_\-params}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-pio::ice\_\-pio\_\-set\_\-params (character(len=$\ast$),intent(in) {\em ice\_\-pio\_\-type\_\-name})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__pio_a109c38fa2166ac88371fb66b04aa16a5}
+
+
+Definition at line 227 of file ice\_\-pio.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__pio_a727ea1a597ce3ed71fc1e986d39e263c}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-num\_\-iotasks@{ice\_\-num\_\-iotasks}}
+\index{ice\_\-num\_\-iotasks@{ice\_\-num\_\-iotasks}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-num\_\-iotasks}]{\setlength{\rightskip}{0pt plus 5cm}integer {\bf ice\_\-pio::ice\_\-num\_\-iotasks}}}
+\label{namespaceice__pio_a727ea1a597ce3ed71fc1e986d39e263c}
+
+
+Definition at line 59 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_a005816f4168d35918e2c74a88989e871}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-root@{ice\_\-pio\_\-root}}
+\index{ice\_\-pio\_\-root@{ice\_\-pio\_\-root}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-root}]{\setlength{\rightskip}{0pt plus 5cm}integer {\bf ice\_\-pio::ice\_\-pio\_\-root}}}
+\label{namespaceice__pio_a005816f4168d35918e2c74a88989e871}
+
+
+Definition at line 59 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_a5de9334d10947cea25743c63ea790857}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-stride@{ice\_\-pio\_\-stride}}
+\index{ice\_\-pio\_\-stride@{ice\_\-pio\_\-stride}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-stride}]{\setlength{\rightskip}{0pt plus 5cm}integer {\bf ice\_\-pio::ice\_\-pio\_\-stride}}}
+\label{namespaceice__pio_a5de9334d10947cea25743c63ea790857}
+
+
+Definition at line 59 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_ad7b25bee3af2d23622eded54fa930040}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-subsystem@{ice\_\-pio\_\-subsystem}}
+\index{ice\_\-pio\_\-subsystem@{ice\_\-pio\_\-subsystem}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-subsystem}]{\setlength{\rightskip}{0pt plus 5cm}type(iosystem\_\-desc\_\-t) {\bf ice\_\-pio::ice\_\-pio\_\-subsystem}}}
+\label{namespaceice__pio_ad7b25bee3af2d23622eded54fa930040}
+
+
+Definition at line 62 of file ice\_\-pio.F90.\hypertarget{namespaceice__pio_a29c1f71d91a554fa266112edb114b555}{
+\index{ice\_\-pio@{ice\_\-pio}!ice\_\-pio\_\-type@{ice\_\-pio\_\-type}}
+\index{ice\_\-pio\_\-type@{ice\_\-pio\_\-type}!ice_pio@{ice\_\-pio}}
+\subsubsection[{ice\_\-pio\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}integer {\bf ice\_\-pio::ice\_\-pio\_\-type}}}
+\label{namespaceice__pio_a29c1f71d91a554fa266112edb114b555}
+
+
+Definition at line 59 of file ice\_\-pio.F90.

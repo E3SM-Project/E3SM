@@ -1,0 +1,13 @@
+*.dylib
+*.mod
+*.x
+.libs
+AssertComplex_mod.F90
+AssertReal_mod.F90
+dispatch.c
+dlCloseWrapper.c
+dlOpenWrapper.c
+dlsymWrapper.c
+getAddress.c
+m_AssertReal.F90
+semantic.cache

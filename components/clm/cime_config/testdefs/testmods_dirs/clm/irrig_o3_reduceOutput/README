@@ -1,0 +1,3 @@
+This testmods directory turns on both irrigation and ozone. These two options
+are unrelated, but are simply combined for convenience (so we can turn on a
+number of things with a single test).

@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<start_ymd>00010101</start_ymd>
+
+<ncdata hgrid="1.9x2.5" >atm/cam/inic/fv/camchemi_ar5_1860-01-01-00000_1.9x2.5_L26_c090501.nc</ncdata>
+<ncdata hgrid="0.9x1.25">atm/cam/inic/fv/camchemi_ar5_1860-01-01-00000_0.9x1.25_L26_c090922.nc</ncdata>
+
+<!-- Solar input data -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1850_cntl_c100407.nc</solar_data_file>
+<solar_data_ymd>18500101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
+
+<solar_parms_file>atm/waccm/phot/wasolar_ave.nc</solar_parms_file>
+
+<fstrat_file>atm/cam/chem/trop_mozart/ub/ub_vals_moz3.nc</fstrat_file>
+
+<!-- 1850 GHG values from ipcc-ar4-cfcs-1850-2000.xls (Doug Kinnison) -->
+<co2vmr>284.7e-6</co2vmr>
+<ch4vmr>791.6e-9</ch4vmr>
+<n2ovmr>275.68e-9</n2ovmr>
+<f11vmr>12.48e-12</f11vmr>
+<f12vmr>0.0</f12vmr>
+
+<!-- turn on clm dry dep -->
+<drydep_method>'xactive_lnd'</drydep_method>
+
+<!-- cloud tuning parameter -->
+<cldfrc_rhminl>0.9225D0</cldfrc_rhminl>
+
+<!-- 1850 BAM data is from Jean-Francois Lamarque -->
+<!-- An older dataset is specified to preserve answers for the 1 degree climotology run -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
+<prescribed_aero_file                 >aero_1.9x2.5_L26_1850clim_c091112.nc</prescribed_aero_file>
+<prescribed_aero_file hgrid="0.9x1.25">aero_1.9x2.5_L26_1850clim_c090420.nc</prescribed_aero_file>
+<prescribed_aero_type>CYCLICAL</prescribed_aero_type>
+<prescribed_aero_cycle_yr>1850</prescribed_aero_cycle_yr>
+
+<!-- aerosol deposition -->
+<aerodep_flx_datapath>atm/cam/chem/trop_mozart_aero/aero</aerodep_flx_datapath>
+<aerodep_flx_file>aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</aerodep_flx_file>
+<aerodep_flx_type>CYCLICAL</aerodep_flx_type>
+<aerodep_flx_cycle_yr>1850</aerodep_flx_cycle_yr>
+
+<!-- 1850 ozone data is from Jean-Francois Lamarque -->
+<!-- An older dataset is specified to preserve answers for the 1 degree climotology run -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file                 >ozone_1.9x2.5_L26_1850clim_c091112.nc</prescribed_ozone_file>
+<prescribed_ozone_file hgrid="0.9x1.25">ozone_1.9x2.5_L26_1850clim_c090420.nc</prescribed_ozone_file>
+<prescribed_ozone_name>O3</prescribed_ozone_name>
+<prescribed_ozone_type>CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>1850</prescribed_ozone_cycle_yr>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850</sim_year>
+
+<!-- 1850 emissons is from Jean-Francois Lamarque -->
+<srf_emis_type>CYCLICAL</srf_emis_type>
+<srf_emis_cycle_yr>1850</srf_emis_cycle_yr>
+<ch2o_emis_file    >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CH2O_1850-2000_1.9x2.5.c090728.nc</ch2o_emis_file>
+<co_emis_file      >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CO_1850-2000_1.9x2.5.c090728.nc</co_emis_file>
+<dms_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_DMS_1850-2000_1.9x2.5.c090827.nc</dms_emis_file>
+<nox_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_NOx_1850-2000_1.9x2.5.c090728.nc</nox_emis_file>
+<so2_emis_file     >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_SO2_1850-2000_1.9x2.5.c090522.nc</so2_emis_file>
+<isop_emis_file    >atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_ISOP_1850-2000_1.9x2.5.c090827.nc</isop_emis_file>
+
+<!-- turn on clm MEGAN VOC emis -->
+<megan_specifier>'ISOP = isoprene'</megan_specifier>
+<megan_mapped_emisfctrs>.true.</megan_mapped_emisfctrs>
+
+<ext_frc_type>FIXED</ext_frc_type>
+<ext_frc_fixed_ymd>18500102</ext_frc_fixed_ymd>
+<so2_vrt_emis_file                 >atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO2_1850-2000_1.9x2.5.c090629.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file                 >atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO4_1850-2000_1.9x2.5.c090629.nc</so4_vrt_emis_file>
+<so2_vrt_emis_file hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO2_1850-2000_0.9x1.25.c090629.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file hgrid="0.9x1.25">atm/cam/chem/1850-2000_emis/IPCC_emissions_volc_SO4_1850-2000_0.9x1.25.c090629.nc</so4_vrt_emis_file>
+
+<!-- 1850 aircraft emis - zeroed CO and NO emis -->
+<airpl_emis_file>atm/waccm/emis/emis.air.1870.nc</airpl_emis_file>
+<no2_aircraft_emis_file>atm/cam/chem/1850-2000_emis/IPCC_emissions_aircraft_NO2_1850-2000_1.9x2.5_c090729.nc</no2_aircraft_emis_file>
+<ipcc_aircraft_emis>.true.</ipcc_aircraft_emis>
+
+<!-- prescribed methane  -->
+<tracer_cnst_file     >CH4_1850-1859_clim_c090605.nc</tracer_cnst_file>
+<tracer_cnst_datapath >atm/cam/chem/methane</tracer_cnst_datapath>
+<tracer_cnst_type     >CYCLICAL</tracer_cnst_type>
+<tracer_cnst_cycle_yr >1855</tracer_cnst_cycle_yr>
+<prescribed_ghg_file    >CH4_1850-1859_clim_c090605.nc</prescribed_ghg_file>
+<prescribed_ghg_datapath>atm/cam/chem/methane</prescribed_ghg_datapath>
+<prescribed_ghg_type    >CYCLICAL</prescribed_ghg_type>
+<prescribed_ghg_cycle_yr>1855</prescribed_ghg_cycle_yr>
+
+
+<!-- 1850 LINOZ data  -->
+<linoz_data_file>linoz1800-2100_2006jpl_climo_1.9x2.5_26L.c090424.nc</linoz_data_file>
+<linoz_data_path>atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type>CYCLICAL</linoz_data_type>
+<linoz_data_cycle_yr>1850</linoz_data_cycle_yr>
+<chlorine_loading_type>FIXED</chlorine_loading_type>
+<chlorine_loading_fixed_ymd>18500101</chlorine_loading_fixed_ymd>
+
+<!-- fixed lower boundary data  -->
+<flbc_cycle_yr>1850</flbc_cycle_yr>
+<flbc_file>atm/waccm/lb/LBC_1850-2100_1.9x2.5_REF2_za_c080114.nc</flbc_file>
+<flbc_type>CYCLICAL</flbc_type>
+
+<!-- strat aerosol data  -->
+<sad_cycle_yr>1850</sad_cycle_yr>
+<sad_file>atm/waccm/sulf/SAD_SULF_1850-2100_1.9x2.5_c080220.nc</sad_file>
+<sad_type>CYCLICAL</sad_type>
+
+<!-- History Feilds -->
+<fincl1>
+  'DV_O3', 'DV_OH', 'DV_HO2', 'DV_H2O2', 'DV_NO', 'DV_NO2', 'DV_HNO3', 'DV_CO', 'DV_CH2O', 
+  'DV_CH3O2', 'DV_CH3OOH', 'DV_DMS', 'DV_SO2', 'DV_SO4', 'DV_ISOP',
+  'DF_O3', 'DF_OH', 'DF_HO2', 'DF_H2O2', 'DF_NO', 'DF_NO2', 'DF_HNO3', 'DF_CO', 'DF_CH2O', 
+  'DF_CH3O2', 'DF_CH3OOH', 'DF_DMS', 'DF_SO2', 'DF_SO4', 'DF_ISOP', 'DF_NOY', 'DF_SOX', 'DF_NHX',
+  'WD_H2O2', 'WD_HNO3', 'WD_CH2O', 'WD_SO2', 'WD_NOY', 'WD_SOX', 'WD_NHX',  'SO4SFWET',
+  'O3_CHMP', 'OH_CHMP', 'HO2_CHMP', 'H2O2_CHMP', 'NO_CHMP', 'NO2_CHMP', 'HNO3_CHMP', 'CH2O_CHMP', 
+  'CH3O2_CHMP', 'CH3OOH_CHMP', 'DMS_CHMP', 'SO2_CHMP', 'SO4_CHMP', 'ISOP_CHMP', 'CO_CHMP', 
+  'O3_CHML', 'OH_CHML', 'HO2_CHML', 'H2O2_CHML', 'NO_CHML', 'NO2_CHML', 'HNO3_CHML', 'CH2O_CHML', 
+  'CH3O2_CHML', 'CH3OOH_CHML', 'DMS_CHML', 'SO2_CHML', 'SO4_CHML', 'ISOP_CHML', 'CO_CHML', 
+  'SFO3', 'SFOH', 'SFHO2', 'SFH2O2', 'SFNO', 'SFNO2', 'SFHNO3', 'SFCO', 'SFCH2O', 
+  'SFCH3O2', 'SFCH3OOH', 'SFDMS', 'SFSO2', 'SFSO4', 'SFISOP'
+</fincl1>
+<nhtfrq>0</nhtfrq> 
+<avgflag_pertape>'A'</avgflag_pertape>
+
+</namelist_defaults>

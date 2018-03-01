@@ -1,0 +1,24 @@
+##################################################################
+#
+# seq_maps.rc
+#
+# This is a resource file which lists the names of mapping
+# weight files to use in a sequential CCSM run (mapname).
+# You can also set when data is rearranged in the mapping (maptype).
+#
+# This file is read during the map_model2model_init calls.
+#
+# For maptype:  X = Rearrange the input so that the output
+#                   is on the correct processor.
+#               Y = Rearrange the output and sum partial outputs
+#                   if necessary
+#
+# NOTE:  For bfb on different processor counts, set all maptypes to "X".
+################################################################## 
+srfFileName: /fs/cgd/csm/mapping/grids/1x1d.nc
+atmFileName: ne30np4_091226_pentagons.nc
+landFileName: /fs/cgd/csm/inputdata/atm/cam/chem/trop_mozart/dvel/regrid_vegetation.nc
+soilwFileName: /fs/cgd/csm/inputdata/atm/cam/chem/trop_mozart/dvel/clim_soilw.nc
+srf2atmFmapname: map_1x1_to_ne30np4_aave_da_101203.nc
+srf2atmFmaptype: X
+outputFileName: atmsrf_ne30np4_101206.nc

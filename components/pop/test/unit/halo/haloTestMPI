@@ -1,0 +1,65 @@
+#!/bin/csh
+
+/bin/cp ../../../build/GNUmakefile .
+
+mkdir build
+/bin/cp -r ../../../build/*.awk build
+/bin/cp -r ../../../build/*.mk  build
+/bin/cp -r ../../../build/*.gnu build
+
+/bin/cp ../../../mpi/POP_CommMod.F90 .
+/bin/cp ../../../mpi/POP_RedistributeMod.F90 .
+/bin/cp ../../../mpi/POP_ReductionsMod.F90 .
+/bin/cp ../../../mpi/POP_HaloMod.F90 .
+/bin/cp ../../../source/POP_KindsMod.F90 .
+/bin/cp ../../../source/POP_ErrorMod.F90 .
+/bin/cp ../../../source/POP_IOUnitsMod.F90 .
+/bin/cp ../../../source/POP_BlocksMod.F90 .
+/bin/cp ../../../source/POP_DistributionMod.F90 .
+/bin/cp ../../../source/POP_GridHorzMod.F90 .
+/bin/cp ../../../source/POP_GridVertMod.F90 .
+/bin/cp ../../../source/POP_GridDimMod.F90 .
+/bin/cp ../../../source/POP_FieldMod.F90 .
+/bin/cp ../../../source/spacecurve_mod.F90 .
+/bin/cp ../../../source/kinds_mod.F90 .
+
+### first test dipole grids
+
+/bin/cp POP.F90Dipole POP.F90
+
+gmake OPTIMIZE=no
+mpirun -np 4 pop_db
+
+/bin/rm POP.F90
+/bin/rm pop_db
+/bin/rm compile/*.f90 *.o
+
+#### now test tripole
+
+/bin/cp POP.F90Tripole POP.F90
+
+gmake OPTIMIZE=no
+mpirun -np 4 pop_db
+
+/bin/rm -r build
+/bin/rm -r compile
+/bin/rm GNUmakefile
+/bin/rm POP_CommMod.F90
+/bin/rm POP_RedistributeMod.F90
+/bin/rm POP_ReductionsMod.F90
+/bin/rm POP_HaloMod.F90
+/bin/rm POP_KindsMod.F90
+/bin/rm POP_ErrorMod.F90
+/bin/rm POP_IOUnitsMod.F90
+/bin/rm POP_BlocksMod.F90
+/bin/rm POP_DistributionMod.F90
+/bin/rm POP_GridHorzMod.F90
+/bin/rm POP_GridVertMod.F90
+/bin/rm POP_GridDimMod.F90
+/bin/rm POP_FieldMod.F90
+/bin/rm spacecurve_mod.F90
+/bin/rm kinds_mod.F90
+/bin/rm POP.F90
+/bin/rm pop_db
+
+

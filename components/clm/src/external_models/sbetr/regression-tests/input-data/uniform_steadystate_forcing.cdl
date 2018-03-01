@@ -1,0 +1,148 @@
+netcdf uniform_steadystate_forcing {
+dimensions:
+	levgrnd = 15 ;
+	lndgrid = 1 ;
+	time = 1 ;
+variables:
+	double TSOI(time, levgrnd, lndgrid) ;
+		TSOI:units = "K" ;
+		TSOI:long_name = "soil temperature (vegetated landunits only)" ;
+		TSOI:cell_methods = "time: mean" ;
+		TSOI:missing_value = 9.99999962e+35f ;
+		TSOI:_FillValue = 9.9999996169031625e+35 ;
+	double H2OSOI(time, levgrnd, lndgrid) ;
+		H2OSOI:units = "mm3/mm3" ;
+		H2OSOI:long_name = "volumetric soil water (vegetated landunits only)" ;
+		H2OSOI:cell_methods = "time: mean" ;
+		H2OSOI:missing_value = 9.99999962e+35f ;
+		H2OSOI:_FillValue = 9.9999996169031625e+35 ;
+	double SOILICE(time, levgrnd, lndgrid) ;
+		SOILICE:units = "kg/m2" ;
+		SOILICE:long_name = "soil ice (vegetated landunits only)" ;
+		SOILICE:cell_methods = "time: mean" ;
+		SOILICE:missing_value = 9.99999962e+35f ;
+		SOILICE:_FillValue = 9.9999996169031625e+35 ;
+	double PBOT(time, lndgrid) ;
+		PBOT:units = "Pa" ;
+		PBOT:long_name = "atmospheric pressure" ;
+		PBOT:cell_methods = "time: mean" ;
+		PBOT:missing_value = 9.99999962e+35f ;
+		PBOT:_FillValue = 9.9999996169031625e+35 ;
+	double QFLX_ROOTSOI(time, levgrnd, lndgrid) ;
+		QFLX_ROOTSOI:units = "m/s" ;
+		QFLX_ROOTSOI:long_name = "depth dependent root water uptake" ;
+		QFLX_ROOTSOI:cell_methods = "time: mean" ;
+		QFLX_ROOTSOI:missing_value = 9.99999962e+35f ;
+		QFLX_ROOTSOI:_FillValue = 9.9999996169031625e+35 ;
+	double TBOT(time, lndgrid) ;
+		TBOT:units = "K" ;
+		TBOT:long_name = "atmospheric air temperature" ;
+		TBOT:cell_methods = "time: mean" ;
+		TBOT:missing_value = 9.99999962e+35f ;
+		TBOT:_FillValue = 9.9999996169031625e+35 ;
+	double QCHARGE(time, lndgrid) ;
+		QCHARGE:units = "mm/s" ;
+		QCHARGE:long_name = "aquifer recharge rate (vegetated landunits only)" ;
+		QCHARGE:cell_methods = "time: mean" ;
+		QCHARGE:missing_value = 9.99999962e+35f ;
+		QCHARGE:_FillValue = 9.9999996169031625e+35 ;
+	double QINFL(time, lndgrid) ;
+		QINFL:units = "mm/s" ;
+		QINFL:long_name = "infiltration" ;
+		QINFL:cell_methods = "time: mean" ;
+		QINFL:missing_value = 9.99999962e+35f ;
+		QINFL:_FillValue = 9.9999996169031625e+35 ;
+	double time(time) ;
+		time:long_name = "time" ;
+		time:units = "days since 0001-01-01 00:00:00" ;
+		time:calendar = "noleap" ;
+		time:bounds = "time_bounds" ;
+
+// global attributes:
+		:title = "Standalone BeTR uniform steady state forcing data." ;
+		:comment = "NOTE(bja, 201604) created by arbitrarily removing variability from another file!" ;
+
+data:
+
+ TSOI =
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283,
+  283 ;
+
+ H2OSOI =
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4,
+  0.4 ;
+
+ SOILICE =
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0 ;
+
+ PBOT =
+  101325 ;
+
+ QFLX_ROOTSOI =
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0 ;
+
+ TBOT =
+  283 ;
+
+ QCHARGE =
+  5.0000000000000001e-03 ;
+
+ QINFL =
+  5.0000000000000001e-03 ;
+
+ time = 1 ;
+}

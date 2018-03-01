@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# pFUnit source/MakeDependenciesInc
+
+# Construct the makefile include, setting off the MPI files in an
+# ifdef USEMPI.
+
+# $1 is the file of dependencies, dependencies.tmp
+# $2 is the output file, dependencies.inc
+
+export tmpFile=$1
+# outFile=$2
+
+# tmpFile=./dependencies.tmp
+outFile=./dependencies.inc
+
+#+echo MakeDependenciesInc:  Writing to ${outFile}
+cat ${tmpFile} | grep -iv Mpi\*.o > ${outFile}; 
+   cat ${tmpFile} | grep -i pfunit\*.o | sed 's/[a-zA-Z0-9]*[m|M]pi[.a-zA-Z0-9]*//g' >> ${outFile}; 
+   echo -e "\nifeq (\$(USEMPI),YES)\n" >> ${outFile}; 
+   cat ${tmpFile} | grep -i Mpi\*.o >> ${outFile}; 
+   echo -e "\nendif\n" >> ${outFile}
+
+# The following converts the occurrences of .o in ${outFile} to $(OBJ_EXT)
+sed -i -e 's&\.o&$(OBJ_EXT)&g' ${outFile}
+
+\rm -f ${outFile}-e

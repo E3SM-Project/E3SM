@@ -1,0 +1,1048 @@
+
+/*!
+
+\page page_ObtainingPFUNIT Obtaining pFUnit
+
+The best way to obtain pFUnit is to <a
+href="https://sourceforge.net/p/pfunit/code/ci/master/tree/">clone
+pFUnit from the git repository</a> from SourceForge as follows.
+
+\code
+# Read Only Access
+git clone git://git.code.sf.net/p/pfunit/code pFUnit\endcode
+
+This will create the directory pFUnit in the current working
+directory.  
+
+You may also visit the project page at SourceForge and
+download the source tarfile "pFUnit.tar.gz" there.
+
+http://sourceforge.net/projects/pfunit/
+or
+http://sourceforge.net/projects/pfunit/files/latest/download
+
+Extracting this tarfile via a command like
+
+`$ tar zxf ./pFUnit.tar.gz`
+
+will place the pFUnit files into the current working directory.
+
+For other ways to acquire the code visit
+
+https://sourceforge.net/p/pfunit/code/ci/master/tree/
+
+or contact the pFUnit team.
+
+\page page_Installation Installation
+
+\section sec_InstallingPFUNIT Installing pFUnit
+
+Comentatry for the page.
+
+\li \ref sec_Prerequisites
+\li \ref sec_ObtainingPFUNIT
+\li \ref sec_Manifest
+\li \ref sec_Configuration
+\li \ref sec_Building
+<ul>
+  <li> \ref sec_BuildingPFUNITSerial </li>
+  <li> \ref sec_BuildingPFUNITMPI </li>
+  <li> \ref sec_BuildingPFUNITOPENMP </li>
+  <li> \ref sec_BuildingPFUNITCleaning </li>
+  <li> \ref sec_BuildingPFUNITDocumentation </li>
+</ul>
+\li \ref sec_Installation
+
+\section sec_Prerequisites Prerequisites
+
+The development work for pFUnit has mostly been carried out on a
+mixture of systems, including high-end computers, Apple Mac OSX, and
+linux-based systems.  A preliminary Windows/CYGWIN port has been
+contributed by a user. Full use of the system depends on the following
+being available.
+
+- Fortran 2003+ (Tested with Intel 14+, NAG 6.0, GCC 4.9.+, IBM's XLF, PGI 15.4)
+- The Message Passing Interface (MPI)
+- OpenMP
+- GNU Make
+- Python
+
+Note: Recent changes have exposed a latent bug in GCC 4.8.2.  The fix
+is available in the GCC 4.9 development branch and will also appear in
+GCC 4.8.3 when that is released.  Users that require older versions of
+GCC should use pFUnit 2.1.x.
+
+<a href="http://www.doxygen.org">Doxygen</a> is used to generate documentation.
+
+The system routinely undergoes regression testing with GNU, Intel, and NAG fortran
+compilers and OpenMPI.
+
+\section sec_ObtainingPFUNIT Obtaining pFUnit
+
+The best way to obtain pFUnit is to <a
+href="https://sourceforge.net/p/pfunit/code/ci/master/tree/">clone
+pFUnit from the git repository</a> from SourceForge as follows.
+
+\code
+# Read Only Access
+git clone git://git.code.sf.net/p/pfunit/code pFUnit\endcode
+
+This will create the directory pFUnit in the current working
+directory.  
+
+You may also visit the project page at SourceForge and
+download the source tarfile "pFUnit.tar.gz" there.
+
+http://sourceforge.net/projects/pfunit/
+or
+http://sourceforge.net/projects/pfunit/files/latest/download
+
+Extracting this tarfile via a command like
+
+`$ tar zxf ./pFUnit.tar.gz`
+
+will place the pFUnit files into the current working directory.
+
+For other ways to acquire the code visit
+
+https://sourceforge.net/p/pfunit/code/ci/master/tree/
+
+or contact the pFUnit team.
+
+\section sec_Manifest Manifest - What's in the directory?
+
+In the top level of the pFUnit distribution you will see the following
+files.
+
+CMakeLists.txt - Initial support for cmake-based builds.
+
+COPYRIGHT - Contains information pertaining to the use and
+distribution of pFUnit.
+
+Examples - Contains examples of how to use pFUnit once it is
+installed.
+
+GNUmakefile - The top level makefile for building and installing
+pFUnit.
+
+LICENSE - The NASA Open Source Agreement for GSC-15,137-1 F-UNIT, also
+known as pFUnit.
+
+README-INSTALL - Basic documentation on pFUnit installation and use.
+
+bin - Executables used to construct and perform unit tests.
+
+include - Files to be included into makefiles or source, including use
+code.
+
+source - Source code and scripts of the pFUnit library and framework.
+
+tests - Source code for unit testing pFUnit itself.
+
+tools - Tools used to help develop, build, and install pFUnit.
+
+VERSION - Contains a string describing the current version of the framework.
+
+\section sec_Configuration Configuration
+Little needs to be done to configure pFUnit for the build, however
+there are several environment variables on which the package depends.
+
+`F90_VENDOR` - is set to include the correct makefile in $(TOP_DIR)/include,
+i.e. GNU, Intel, NAG, or PGI.  Case insensitive file systems may cause
+some confusion from time-to-time.
+
+`F90` - is set to the Fortran compiler being used: e.g. ifort for Intel,
+gfortran for GNU.
+
+`COMPILER` - is set according to `F90_VENDOR` and is automatically set in
+the top level makefile.
+
+For MPI-based unit testing, your setup may require the following as well.
+
+`MPIF90`\code
+$ export MPIF90=mpif90\endcode
+
+As a convenience for working with multiple MPI configurations, you may
+also set the following.
+
+`MPIRUN`\code
+$ export MPIRUN=/some.path/mpirun\endcode
+
+PFUNIT_MAX_ARRAY_RANK
+
+`PFUNIT_MAX_ARRAY_RANK` - controls the maximum size of the arrays asserts are
+defined over.  If PFUNIT_MAX_ARRAY_RANK is not set, the default is 5 and pFUnit's assertions will be able to handle arrays up to rank 5, i.e. A(:,:,:,:,:).  PFUNIT_MAX_ARRAY_RANK and MAX_RANK do not refer to MPI ranks (process id within a group). Example:\code
+$ export PFUNIT_MAX_ARRAY_RANK=5\endcode
+
+`PFUNIT_MAX_RANK` is a deprecated way to set maximum rank and is to be removed in version 4.
+
+
+`DOXYGEN` - To generate documentation, set DOXYGEN to the desired
+executable.  NOTE: Doxygen Version 1.8.5 does not respect CamelCase
+names from Fortran source code by currently converting all to
+lowercase.  It does this to get HTML links correct for references in
+the source code that also do not respect the CamelCase convention.
+The Fortran standard specifies case insensitivity.  Doxygen 1.7.x
+seems to better respect CamelCase.
+\code
+$ export DOXYGEN=/opt/local/share/doxygen/doxygen-1.7.6/bin/doxygen\endcode
+
+\section sec_Building Building pFUnit
+\subsection sec_BuildingPFUNITSerial Building pFUnit for testing serial codes (Non-MPI)
+
+1. Change to the directory into which pFUnit has been placed.
+2. Set the environment variables (for example in bash):
+\code
+$ export F90=gfortran-mp-4.8
+$ export F90_VENDOR=GNU\endcode
+3. To build pFUnit for unit testing of serial codes, execute make.
+The unit tests for pFUnit itself will run automatically.
+\code
+$ make tests\endcode
+3.1 Occasionally on the first run through, one will get a spurious
+(runtime) error, for example in the unix process component.
+\code
+Re-execute "make tests" to check again.\endcode
+4. At this point the pFUnit object library is in the source directory,
+along with a large number of Fortran module files.
+
+\subsection sec_BuildingPFUNITMPI Building pFUnit for testing parallel codes (MPI)
+
+To build pFUnit for unit testing MPI-based codes, be sure that the
+environment is properly set up for the MPI implementation you are
+using. Depending on your local environment, you may need execute the
+build within a batch or other job queing system, e.g. an interactive
+batch job under PBS. The steps for building pFUnit start out the same
+as for the serial case above, but add MPI=YES to the environment to
+switch on MPI support.  The MPI-based unit tests for pFUnit itself
+will run automatically.  Again, occasionally a spurious (runtime)
+error may appear on the first execution.  
+
+3. Execute make as follows.
+\code
+$ make tests MPI=YES \endcode
+
+4. At this point an MPI-enabled pFUnit object library is in the source
+directory, along with a large number of Fortran module files.
+
+Also, one may get some harmless "no symbols" warnings when the pFUnit library is constructed.
+
+\subsection sec_BuildingPFUNITOPENMP OPENMP
+
+Initial (limited) support for OPENMP has been implemented.  At this
+writing, a basic functionality is available.
+
+The process for building pFUnit for testing OPENMP-based codes is
+similar to that for other paradigms.
+
+3. To compile for OPENMP support execute make as follows.
+\code
+$ make tests OPENMP=YES\endcode
+
+4. At this point the OPENMP-enabled pFUnit is ready to be installed.
+
+\subsection sec_BuildingPFUNITCleaning Cleaning
+
+To clean the pFUnit build directory for the space or to rebuild there
+are two options.
+
+1. Make clean to remove object files and other intermediate products.
+\code
+$ make clean\endcode
+
+2. Make distclean to remove libraries and other more final products.
+\code
+$ make distclean\endcode
+
+3. Some directories support a `make src_clean` to remove intermediate
+products in subdirectories.
+
+\subsection sec_BuildingPFUNITDocumentation Documentation
+
+A start at documentation for pFUnit is in the documentation directory.
+<a href="http://www.doxygen.org">Doxygen</a> is our primary
+documentation tool.  To make the documentation, which will be
+generated in the documentation directory, please invoke the following
+from the top level of your pFUnit distribution.
+
+\code
+$ make documentation\endcode
+
+Or to make a reference manual.
+
+\code
+$ make documentation/pFUnit2-ReferenceManual.pdf\endcode
+
+To select a specific version of Doxygen, please set the DOXYGEN
+environment variable as in \ref sec_Configuration. You may wish to do
+this if your code uses CamelCase names as current versions of Doxygen
+(1.8.5) do not respect this convention for Fortran.
+
+\subsection sec_BuildingPFUNITCMAKE CMAKE
+
+Initial support for CMAKE has been implemented.  At this
+writing, a basic functionality is available.
+
+3. The process for building pFUnit using cmake is as follows.  In the
+top directory of the distribution make a new directory to support the
+build, then change to that directory and run cmake (pointing back to
+the source) to generate the required makefiles.
+\code
+$ mkdir build
+$ cd build
+$ # e.g. cmake -DMPI=YES -DOPENMP=NO -DINSTALL_PATH=<A path> <path to source>
+$ cmake -DMPI=NO ..
+$ make tests\endcode
+
+One may also set the environment variable PFUNIT instead of setting
+INSTALL_PATH on the cmake command line as given above.
+
+If your MPI installation does not provide mpirun, you may try to set
+-DMPI_USE_MPIEXEC=YES to tell CMake to use its FindMPI function to
+find out how to execute the tests.
+
+4. If the build is successful, then at this point make install should work.
+
+\section sec_Installation Installation
+\subsection sec_InstallationSerial Installation - Serial
+
+To install pFUnit for regular use, set INSTALL_DIR to the location in
+which to place pFUnit.  This can be done on the make command line.
+For example, after compiling pFUnit for serial use (MPI absent or
+MPI=NO), please try.
+\code
+$ # In the top of the pFUnit build directory.
+$ make install INSTALL_DIR=/opt/pfunit/pfunit-serial\endcode
+
+Note: you may need special priveleges to install in some locations,
+e.g. via sudo.
+
+To test the installation set PFUNIT to INSTALL_DIR, then change the
+working directory to Examples in pFUnit distribution and execute
+"make," which will run a number of examples.  These include some
+expected (intentional) failures.  
+\code
+$ # In the top pFUnit build directory...
+$ export PFUNIT=/opt/pfunit/pfunit-serial
+$ cd Examples
+$ make\endcode
+
+\subsection sec_InstallationMPI Installation - MPI
+
+For installing an MPI-enabled pFUnit library, change to the top of the
+distribution and execute make with MPI=YES.  You may need to "make
+distclean" first.  After compilation and pFUnit passes its self-tests,
+then installation proceeds as for the serial case above.
+\code
+$ make install INSTALL_DIR=/opt/pfunit/pfunit-parallel\endcode
+
+To test, set PFUNIT and go into Examples/MPI_Halo directory.
+\code
+$ # In the top pFUnit build directory...
+$ export PFUNIT=/opt/pfunit/pfunit-parallel
+$ # The variable MPIF90 must be set to the appropriate build script.
+$ export MPIF90=mpif90
+$ cd Examples/MPI_Halo
+$ make\endcode
+
+This will compile and run a set of parallel examples that includes
+intentional failures.  To run all of the examples try executing
+"make MPI=YES" in the Examples directory.
+
+\subsection sec_InstallationOPENMP Installation - OPENMP
+
+At this time the OPENMP version of pFUnit can be installed in the same
+way as for the serial or MPI-parallel codes.  OPENMP support, tests,
+and examples are limited as of this writing.
+
+\subsection sec_InstallationDefaultDirectory Installation - DEFAULT DIRECTORY
+
+If INSTALL_DIR is not set, "make install" will attempt to install
+pFUnit into the top build directory.  This will create directories
+such as lib and mod in the top level of the build directory and will
+overwrite the include/base.mk with include/base-install.mk.  If this
+is not desired, then "make develop" will put back the original
+base.mk, which is the file to be used for development and building
+pFUnit.  In general, we recommend installing to a directory that is not also the
+build directory.
+
+
+
+\page page_Usage Usage
+
+\li \ref sec_UsageConfiguration
+\li \ref sec_UsageHelloWorld
+\li \ref sec_UsagePreprocessor
+\li \ref sec_UsageExecutingTheTest
+
+\section Usage
+\subsection sec_UsageConfiguration Usage - Configuration
+
+For regular use, after installation, the same compiler/MPI development
+configuration that was used to build pFUnit should be used.  Once the
+environment variables and paths associated with the environment are
+set, to configure pFUnit, please set the following.
+
+`PFUNIT` - set to the directory into which pFUnit was installed.
+
+`F90_VENDOR` - set to Intel, GNU, NAG, or PGI accordingly.
+
+\subsection sec_UsageHelloWorld Usage - Hello World
+
+For an example of a simple usage of pFUnit, see Examples/Simple/tests.
+
+The simplest way to write a test is to write a preprocessor input file (extension ".pf"), which is a Fortran free format file with preprocessor directives added.  An example from "helloWorld.pf" follows.
+\code
+! from helloWorld.pf
+@test
+subroutine testHelloWorld()
+   use pfunit_mod
+   implicit none
+   @assertEqual("Hello World!","Hello World!")
+end subroutine testHelloWorld\endcode
+One then instructs the preprocessor to construct a suite to execute these tests via the "testSuites.inc" file as follows.
+\code
+! from testSuites.inc
+ADD_TEST_SUITE(helloWorld_suite)\endcode
+
+At this point, one can invoke the preprocessor to generate a Fortran file that when compiled and linked with pFUnit will execute the tests. For more information please see \ref page_pFUnitParser or try out the examples in Example/Simple.
+
+\section sec_UsagePreprocessor Usage - Preprocessor
+Please see \ref page_pFUnitParser.
+
+\section sec_UsageExecutingTheTest Compiling and Executing The Test
+
+An example of a GNU make rule for for the final step of compiling a test follows.
+
+\code
+# This step presumes "include $(PFUNIT)/include/base.mk" earlier in the makefile.
+tests.x: testSuites.inc myTests.pf
+         $(F90) -o $@ -I$(PFUNIT)/mod -I$(PFUNIT)/include \
+                $(PFUNIT)/include/driver.F90 \
+                ./*$(OBJ_EXT) $(LIBS) $(FFLAGS)\endcode
+
+To execute the tests, one invokes "./tests.x" with the appropriate command line options (see below).
+
+In some cases, since include/driver.F90 is "implicit none," it may be
+necessary to insert a "use" clause to identify external suite-wide
+fixture code to the compiler.  As a convenience, the CPP macro
+PFUNIT_EXTRA_USAGE can be set to a module of fixture code via a
+compiler command line argument turning on a "use PFUNIT_EXTRA_USAGE"
+line at the beginning of include/driver.F90.
+
+\subsection ss_UsageExecutingTheTestParallel - Compiling and Executing the Tests (MPI PARALLEL)
+
+One invokes MPI-based parallel tests according to the MPI framework being used.  For example:
+
+\code
+$ mpirun -np 4 tests.x\endcode
+
+
+\subsection ss_CommandLineOptions Command Line Options
+
+The executable test program provides several command line options,
+when "include/driver.F90" is used, as it is automatically when using
+the PFUNIT preprocessor.
+
+<table border="0" >
+<tr><td>-v or -verbose        </td><td>Verbose execution.</td></tr>
+<tr><td>-d or -debug  </td><td>Provide debugging information.</td></tr>
+<tr><td>-h            </td><td>Print help message.</td></tr>
+<tr><td>-o \<outputfile\> </td><td>Direct pFUnit messages to a file.
+<tr><td>-robust       </td><td>Use the robust runner. Runs tests as processes so failures do not halt testing.</td></tr>
+<tr><td>-max-timeout-duration <duration> Limit detection time for robust runner.</td></tr>
+<tr><td>-max-launch-duration  <duration> Limit detection time for robust runner.</td></tr>
+<tr><td>-skip \<number of tests to skip\></td><td>Use the subset runner, which runs a subset of the tests in a suite.</td></tr>
+<tr><td>-xml \<xmlfile\></td><td>Generate XML output in JUnit
+compatible format, write it to given file. This XML output can be used
+in integration with e.g. Jenkins. To ensure the XML file is written
+correctly, it is recommended to also use the -robust flag.</td></tr>
+<tr><td>-name \<name\></td><td>Give the set of tests an identifying
+name, which is used in the XML output.</td></tr>
+</table>
+
+An example from Examples/Robust:
+
+\code
+$ ./tests.x -robust\endcode
+
+\subsection ss_XML XML output
+
+To output JUnit XML, execute tests with the -xml flag:
+\code
+$ ./tests.x -robust -xml test.xml -name my_suite_name\endcode
+
+This creates a file named test.xml. As an example, the output may look like this:
+
+\code
+<testsuite name="my_suite_name" errors="1" failures="1" tests="3" time="2.1020">
+<testcase name="test_math_suite.test_addition"/>
+<testcase name="test_math_suite.test_division">
+<error message="Location: [[unknown location]], RUNTIME-ERROR: terminated during execution "/>
+</testcase>
+<testcase name="test_other_suite.test_foo">
+<failure message="Location: [ test_other.pf:24],  "/>
+</testcase>
+</testsuite>
+\endcode
+
+Output explained: The test suite took 2.1020 seconds to execute. One
+test (test_addition) succeeded, one (test_division) crashed for some
+reason, and one test (test_foo) failed at line 24 of test_other.pf.
+
+\page page_Development Development
+
+Generally pFUnit development is performed in the build directory
+structure.  Care should be taken to make clean or distclean in between
+configuration changes.  As stated in \ref sec_Installation, it is best
+to set INSTALL_DIR and "make install" pFUnit to another directory that
+can be placed in a
+user's paths.
+
+
+\page page_FeedbackAndSupport Feedback & Support
+
+\li \ref sec_Feedback \li \ref sec_Support
+
+\section sec_Feedback Feedback
+
+Feedback is welcome, please use the facilities at <a href="http://sourceforge.net/projects/pfunit">sourceforge/projects/pfunit</a> to share your views.  
+
+Open a <a href="https://sourceforge.net/p/pfunit/_list/tickets?source=navbar">ticket</a> for bugs, features, and patch recommendations. 
+
+If you use pFUnit, please let us know by leaving a note in our <a href="https://sourceforge.net/p/pfunit/discussion/pfunitinaction/">Applications of pFUnit</a> forum, or email <a href="mailto:Thomas.L.Clune@nasa.gov">Tom Clune</a>, Ph.D., NASA Goddard Space Flight Center.  Letting us know about your application helps us seek support for pFUnit's continued development and improvement.
+
+\section sec_Support Support
+
+Please open a <a href="https://sourceforge.net/p/pfunit/_list/tickets?source=navbar">ticket</a> for bugs, features, and patch recommendations. For longer term needs or considerations, please visit our <a href="https://sourceforge.net/p/pfunit/discussion/?source=navbar">discussion forums</a> or contact <a href="mailto:Thomas.L.Clune@nasa.gov">Tom Clune</a>, Ph.D., NASA Goddard Space Flight Center.
+
+You may also find some help at \ref page_FAQAndTips.
+
+pFUnit supports the software development of several weather and climate simulations efforts.  We constantly seek to improve and correct pFUnit for our users' benefit, granting priority to the needs of our major users.  Please share with us information about your application on our <a href="https://sourceforge.net/p/pfunit/discussion/pfunitinaction/">Applications of pFUnit</a> forum.
+
+
+
+\page page_FAQAndTips FAQ and Tips
+
+<ul>
+   <li>\ref sec_FAQ</li>
+   <ul>
+   <li>\ref ZeroTestsRun</li>
+   <li>\ref SomeOfMyTestsAreNotRunning</li>
+   <li>\ref FAQIntel13</li>
+   <li>\ref FAQSegAndLinkFaults</li>
+   </ul>
+   <li>\ref sec_Tips</li>
+   <ul>
+   <li>\ref TipEnvironmentModules</li>
+   <li>\ref TipCompileTimeErrors</li>
+   <li>\ref TipIntermediateFiles</li>
+   <li>\ref TipWhitespace</li>
+   </ul>
+</ul>
+
+\section sec_FAQ FAQ
+
+\subsection ZeroTestsRun Zero Tests Run
+<p><em>Symptom:</em>  The system under test compiles and runs fine, but reports zero tests run.</p>
+<p><em>Solutions:</em>
+<ul><li>There is no <code>testSuites.inc</code> file.  Please add a <code>testSuites.inc</code> that lists the suites to add via <code>ADD_TEST_SUITE(</code><em>the_suite_to_add</em><code>)</code>, one to a line.</li>
+<li>There is no <code>-DUSE_MPI</code> passed to the compiler during the build. Please add to the compiler invokation.  Please see \ref SomeOfMyTestsAreNotRunning.</li></ul></p>
+\subsection SomeOfMyTestsAreNotRunning Some Tests Are Not Running
+<em>Symptom:</em>  The system under test compiles and runs fine, but reports that some tests don't run.
+<p><em>Solutions:</em>
+<ul><li>There is no <code>-DUSE_MPI</code> passed to the compiler during the build.  Please add as in the following example.
+\code
+% $PFUNIT/bin/pFUnitParser.py test_pio.pf test_pio.F90
+% mpif90 -DUSE_MPI $PFUNIT/include/driver.F90 \
+%     -I$PFUNIT/mod -L$PFUNIT/lib -lpfunit test_pio.F90
+
+% mpirun -np 8 ./a.out
+
+.
+Time:         0.004 seconds
+  
+ OK\endcode
+</li></ul></p>
+
+\subsection FAQIntel13 Intel Fortran Version 13: -DINTEL_13
+
+Using version 13 is deprecated. We have encountered problems using
+version 13, which we believe may be due to subtle compiler bugs.  We
+strongly recommend upgrading to the latest version possible.
+
+To make pFUnit work with Intel Fortran Version 13, please ensure that
+<code>-DINTEL_13</code> is passed to the compiler when building or
+using pFUnit. In the build process for pFUnit, this is added to the
+make variables CPPFLAGS and FPPFLAGS.
+
+\subsection FAQSegAndLinkFaults Segmentation Faults and Odd Link Errors
+
+Q. pFUnit fails to build or now leads to segmentation faults.  Did something change?
+
+A. One cause for failure to build or odd runtime segmentation faults is when we change compiler configurations and some object or library files are left over from a previous environment.  This might be hard to spot, for example, during compiler upgrades.  Switching from one compiler to another, e.g. from Intel to GNU, is more likely to generate link-time errors if old code is still around.  A few items to check follow.
+
+<ul>
+<li>Execute <em>make distclean</em> or remove objects (or their directories if using CMAKE) associated with previous builds.</li>
+<li>Ensure pFUnit and user applications are compiled using compatible (or the same) compilers.</li>
+<li>Ensure the environment variable PFUNIT is set to the appropriate install directory.</li>
+</ul>
+
+Finally, it is quite possible that a bug has been uncovered.  Please contact the development team or open a <a href="https://sourceforge.net/p/pfunit/bugs/?source=navbar">bug ticket</a>.
+
+
+\section sec_Tips Tips
+
+\subsection TipEnvironmentModules Environment Modules
+Though not strictly required, the Environment
+Modules package can be a convenient way to package, maintain, and
+switch between environments.  This can be particularly important for
+pFUnit, which must be built using the same tool suite being used for
+development, e.g. compilers, linkers, etc. [To do:  A sample pFUnit
+modulefile is provided in the OTHER directory.] 
+
+\subsection TipCompileTimeErrors Compile Time Errors
+Compile time errors like '"include [...]include/.mk" not found'
+likely signify that you are not executing make in the top level
+directory during a build.  Alternatively, during regular usage after
+installation, PFUNIT has not been set. 
+
+During building, if you wish to compile in a subdirectory within the
+pFUnit heriarchy, please try setting the COMPILER environment variable
+on the make command line.  For example:
+
+\code
+$ make all COMPILER=Intel\endcode
+
+\subsection TipIntermediateFiles Intermediate files used by pFUnit
+If you wish to see the intermediate files, use the target .PRECIOUS
+in the makefile to keep them from being deleted. For example:
+
+\code
+# In GNUmakefile
+.PRECIOUS: %_cpp.F90\endcode 
+
+\subsection TipWhitespace Ignoring whitespace differences in assertions on strings.
+Several options exist for how to compare strings with assertEqual.
+
+\code
+call assertEqual(expectedString, foundString, &
+               & whitespace=IGNORE_DIFFERENCES )\endcode
+
+<strong>WhitespaceOptions:</strong>
+<ul>
+<li><strong>IGNORE_DIFFERENCES</strong> ignores whitespace differences (number and value).</li>
+<li><strong>IGNORE_ALL</strong> strictly ignores all whitespace (spaces & tabs).</li>
+<li><strong>TRIM_ALL</strong> strictly ignores leading and trailing whitespace.  </li>
+<li><strong>KEEP_ALL</strong> keeps all whitespace as significant, even discriminating
+           between tabs and spaces.</li>
+</ul>
+
+Example usages can be seen in tests/Test_AssertBasic.F90 or
+Examples/Simple/tests/helloWorld.pf.
+
+
+\page page_PlatformSpecific Platform Specific Notes
+
+\section sec_MacOSX Mac OSX
+
+The MacPorts package management system is a convenient way to install
+and maintain many packages, including gcc which includes gfortran.
+
+\section sec_WindowsCYGWIN Windows/CYGWIN
+
+User contributed code for Windows/CYGWIN has been added, but is
+currently not tested and supported by the pFUnit team. At this
+writing, 2013-1031, serial Examples and MPI are not known to be
+supported.  Please contact us if you wish to either contribute or
+otherwise discuss this port.
+
+\section sec_Intel13 Intel Fortran Version 13: -DINTEL_13
+To make pFUnit work with Intel Fortran Version 13, please ensure that
+<code>-DINTEL_13</code> is passed to the compiler when building or
+using pFUnit. In the build process for pFUnit, this is added to the
+make variables CPPFLAGS and FPPFLAGS.
+
+
+\page page_Acknowledgments Acknowledgments
+
+
+Thanks to the follwing for their review and comments: B. Van Aartsen, T. Clune.
+
+Windows/CYGWIN contributions from E. Lezar.
+
+PGI port contributions from M. Leair (PG Group).
+
+Other acknowledgments:  S.P. Santos (NCAR), M. Hambley (UK Met Office)., J. Krishna (ANL).
+
+The design of pFUnit is strongly influenced by <a href="http://junit.org">JUnit</a>.
+
+Initial pFUnit 2 documentation by Michael Rilee (Rilee Systems Technologies).
+
+
+\page page_KnownInstallationsAndVersions Known Installations & Versions
+
+master - The current release.
+
+development - The cutting edge of pFUnit development.
+
+mock_services - Experimental support for mocking.
+
+pfunit_2.1.0 - A feature freeze prior to a major upgrade of the preprocessor.
+
+\page page_TODO TODO
+
+- Make other directory.
+- Make Environment Modules example in other directory.
+
+\page page_pFUnitParser The Preprocessor - pFUnitParser
+
+Overview of Preprocessor (pFUnitParser.py)
+
+<ul>
+   <li>\ref sec_UsingThePreprocessor</li>
+      <ul>
+      <li>\ref ss_Configuration</li>
+      <li>\ref ss_Invocation</li>
+      <li>\ref ss_CommandLineOptions</li>
+      <li>\ref ss_PreprocessorInput</li>
+      <li>\ref ss_Directives</li>
+      <ul>
+         <li>\ref s3_atTest</li>
+         <li>\ref s3_atMPITest</li>
+         <li>\ref s3_atAssert (or \ref page_Assert)</li>
+         <li>\ref s3_atParameters</li>
+         <li>\ref s3_atTestCase</li>
+      </ul>
+   </ul>
+</ul>
+
+///////////////////////////////////////////////////////////////////////
+\section sec_UsingThePreprocessor Using The Preprocessor
+
+How to write tests using the ".pf" files.  We expect this to be the
+main way people write pFUnit-based tests.  Please see the Examples
+directory for a wide range of examples.  The .pf files themselves are
+generally to be found in an example's "tests" subdirectory.
+
+\subsection ss_Configuration Configuration - testSuites.inc
+
+The include file "testSuites.inc" tells the preprocessor to generate
+code for TestSuites listed therein.  The suite names are based on the
+TestCases provided in the preprocessor input file or the name of the
+preprocessor input file (.pf) itself.  For example, if no module is defined
+in a .pf file, i.e. the preprocessor will define the module, one
+can set up a "testSuites.inc" as follows.
+\code
+! To load "exampleTestsNoModule.pf".
+ADD_TEST_SUITE(exampleTestsNoModule_suite)\endcode
+For a .pf file that contains a module associated with a test suite the
+syntax is as follows.
+\code
+! To load "exampleTests.pf" implementing the module exampleTests_mod.
+ADD_TEST_SUITE(exampleTests_mod_suite)\endcode
+
+\subsection ss_Invocation Invocation
+
+To run the preprocessor on on a preprocessor input file "exampleTests.pf", invoke:
+\code
+$ ${PFUNIT}/bin/pFUnitParser.py exampleTests.pf exampleTests.F90 \endcode
+A convenient GNUmakefile rule is as follows.
+\code
+%.F90: %.pf
+       $(PFUNIT)/bin/pFUnitParser.py $<  $@ \endcode
+
+\subsection ss_PreprocessorInput Preprocessor Input File (.pf)
+
+The preprocessor input file is a Fortran free format file that
+contains subroutines, including those implementing the suite of tests,
+or a module with the tests, TestCases, and support for parameters.
+The preprocessor reads and parses this file producing a fortran file
+implementing the tests, automating some boilerplate code.  Embedded
+"@" directives inform the preprocessor about information needed to
+generate the test suite.  If the .pf file does not implement a module
+providing a test suite, the preprocessor will use the name of .pf file
+referred to by "testSuites.inc".  Currently only one test suite per
+.pf file is allowed, a limitation of the current implementation of the
+parser.
+
+Many example .pf files may be found in the examples'
+"tests" subdirectories in the Examples directory.
+
+Below we present the most commonly used directives first, but in a .pf
+file using all of these capabilities, the most common order is as
+follows.
+<ul>
+   <li>\ref s3_atParameters</li>
+   <li>\ref s3_atTestCase</li>
+   <li>\ref s3_atTest or \ref s3_atMPITest
+   <ul><li>\ref s3_atAssert</li>
+   </ul>
+   </li>
+</ul>
+
+
+\subsection ss_Directives Directives
+
+Preprocessor "@" directives, which in keeping with Fortran style are
+not case sensitive, instruct the preprocessor how to interpret parts
+of the code relevant to the generation of the test suite.  The most
+important directives follow.
+
+\subsubsection s3_atTest @Test
+
+This directive is used to indicate a test routine to the preprocessor,
+which then includes it in the test suite.  There may be multiple
+tests in the .pf file, each annotated by the \@Test directive.  
+
+\@Test also supports MPI-parallel tests (see \ref s3_atMPITest ).
+
+An example, from Examples/Fixture:
+
+\code
+@Test
+   subroutine testBracketInterior(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual([3,4], this%interpolator%getBracket(at=4.))
+   end subroutine testBracketInterior
+
+@Test
+   subroutine testInterpolateAtNode(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual(2., this%interpolator%interpolate(at=3.))
+   end subroutine testInterpolateAtNode\endcode
+
+
+\subsubsection s3_atMPITest @MPITest
+
+\ref s3_atMPITest is deprecated as \@Test now handles this case.
+
+This directive indicates an MPI parallel test to the preprocessor,
+which then includes it in an MPI enabled test suite.  The directive
+takes a single argument, the requested number of MPI processes to run.
+The syntax, exemplified by one of the tests from Examples/MPI_Halo:
+
+\code
+@Test( npes=[1,2,3])
+subroutine testHaloInterior(this)
+   use Halo_mod
+   use pfunit_mod
+   implicit none
+   class (MpiTestMethod) :: this
+
+   integer, parameter :: N = 2
+   real :: a(N,0:N+1)
+   integer :: p
+
+   p = this%getProcessRank()
+   a(:,1:N) = p
+   a(:,0) = -1
+   a(:,N+1) = -1
+
+   call haloFill(a, this%getMpiCommunicator())
+
+   @assertEqual(real(p), a(1,1))
+   @assertEqual(real(p), a(2,1))
+   @assertEqual(real(p), a(1,2))
+   @assertEqual(real(p), a(2,2))
+
+end subroutine testHaloInterior\endcode
+
+\subsubsection s3_atAssert @Assert
+
+The \@Assert directives are expanded into calls to similarly named
+pFUnit library routines.  The syntax for the directives follows the
+pattern for \@assertEqual below.
+
+\code
+@assertEqual(expected,found,'An identifying or explanatory message.')\endcode
+
+The preprocessor will automatically add information about source
+location (file & line number) to the call emitted to the test suite
+code.  It also adds the check for exceptions.
+
+For more information about \@assert directives, please refer to the following.
+
+<ul>
+   <li>\ref ss_assertEqual</li>
+   <li>\ref ss_assertTrue</li>
+   <li>\ref ss_assertEqualUserDefined</li>
+   <li>\ref ss_assertFalse</li>
+   <li>\ref ss_assertLessThan</li>
+   <li>\ref ss_assertLessThanOrEqual</li>
+   <li>\ref ss_assertGreaterThan</li>
+   <li>\ref ss_assertGreaterThanOrEqual</li>
+   <li>\ref ss_assertIsMemberOf</li>
+   <li>\ref ss_assertContains</li>
+   <li>\ref ss_assertAny</li>
+   <li>\ref ss_assertAll</li>
+   <li>\ref ss_assertNotAll</li>
+   <li>\ref ss_assertNone</li>
+   <li>\ref ss_assertIsPermutationOf</li>
+   <li>\ref ss_assertExceptionRaised</li>
+   <li>\ref ss_assertSameShape</li>
+   <li>\ref ss_assertIsNaN</li>
+   <li>\ref ss_assertIsFinite</li>
+   <li>\ref ss_assertAssociated</li>
+   <li>\ref ss_assertNotAssociated</li>
+   <li>\ref ss_assertEquivalent</li>
+</ul>
+
+
+\subsubsection s3_atParameters @Parameters
+
+The \@Parameter directive indicates the declaration of the
+parameterized type used to generate the iteration over the multiple
+parameter values.  It also identifies the names of the parameters to
+be iterated over.  The preprocessor extracts type information from the
+declaration of the parameter type collection that immediately follows
+the directive. This directive will set up the iteration.  To define
+the parameter values per iteration the <code>getParameters</code>
+method of the abstract ParameterizedTest must be implemented. For
+example:
+
+\code
+  @Parameters = [p1,p2]
+  type, extends(AbstractTestParameter) :: exampleCase
+     integer :: i
+     real :: x
+  end type exampleCase\endcode
+
+\subsubsection s3_atTestCase @TestCase
+
+This directive identifies to the preprocessor the TestCase
+declaration.  The type declared at this point extends TestCase (or its
+extension), which includes setting methods such as the following:
+setUp, tearDown, runMethod, userMethod.  For the extension
+MPITestCase, as with ParameterizedTestCase, you have the option
+(requirement if parameters are used) to set getParameters and
+getParameterString.  For example:
+
+\code
+  @TestCase
+  type, extends(MPITestCase) :: Test_Parameters
+     integer :: p1, p2
+     procedure(runMethod), pointer :: userMethod => null()
+   contains
+     procedure, nopass :: getParameters
+     procedure :: getParameterString => getParameterString_
+     procedure :: runMethod
+  end type Test_Parameters\endcode
+
+\page page_Assert @Assert Preprocessor Directives
+
+<ul>
+   <li>\ref ss_assertEqual</li>
+   <li>\ref ss_assertTrue</li>
+   <li>\ref ss_assertEqualUserDefined</li>
+   <li>\ref ss_assertFalse</li>
+   <li>\ref ss_assertLessThan</li>
+   <li>\ref ss_assertLessThanOrEqual</li>
+   <li>\ref ss_assertGreaterThan</li>
+   <li>\ref ss_assertGreaterThanOrEqual</li>
+   <li>\ref ss_assertIsMemberOf</li>
+   <li>\ref ss_assertContains</li>
+   <li>\ref ss_assertAny</li>
+   <li>\ref ss_assertAll</li>
+   <li>\ref ss_assertNotAll</li>
+   <li>\ref ss_assertNone</li>
+   <li>\ref ss_assertIsPermutationOf</li>
+   <li>\ref ss_assertExceptionRaised</li>
+   <li>\ref ss_assertSameShape</li>
+   <li>\ref ss_assertIsNaN</li>
+   <li>\ref ss_assertIsFinite</li>
+   <li>\ref ss_assertAssociated</li>
+   <li>\ref ss_assertNotAssociated</li>
+   <li>\ref ss_assertEquivalent</li>
+</ul>
+
+\section sec_AssertPreprocessorDirectives @Assert Preprocessor Directives
+\subsection ss_assertEqual @assertEqual
+\subsection ss_assertTrue @assertTrue
+\subsection ss_assertEqualUserDefined @assertEqualUserDefined
+A convenience function that allows a user to write
+\code
+@assertEqualUserDefined(a,b)\endcode
+instead of 
+\code
+call assertTrue(a==b,...)\endcode
+while a more instructive error message about the arguments and
+source code position is added by the preprocessor.  The user may
+add an error message as follows.
+\code
+@assertEqualUserDefined(a,b,message='a and b should be equal here.')\endcode
+
+\subsection ss_assertFalse @assertFalse
+\subsection ss_assertLessThan @assertLessThan
+\subsection ss_assertLessThanOrEqual @assertLessThanOrEqual
+\subsection ss_assertGreaterThan @assertGreaterThan
+\subsection ss_assertGreaterThanOrEqual @assertGreaterThanOrEqual
+\subsection ss_assertIsMemberOf @assertIsMemberOf
+\subsection ss_assertContains @assertContains
+\subsection ss_assertAny @assertAny
+\subsection ss_assertAll @assertAll
+\subsection ss_assertNotAll @assertNotAll
+\subsection ss_assertNone @assertNone
+\subsection ss_assertIsPermutationOf @assertIsPermutationOf
+\subsection ss_assertExceptionRaised @assertExceptionRaised
+\subsection ss_assertSameShape @assertSameShape
+\subsection ss_assertIsNaN @assertIsNaN
+\subsection ss_assertIsFinite @assertIsFinite
+\subsection ss_assertAssociated @assertAssociated
+@assertAssociated maps to a call to the logical intrinsic function associated.
+\code
+@assertAssociated(a)\endcode
+becomes
+\code
+call assertTrue(associated(a))\endcode
+
+The directive also handles the two-argument pointer-target case.
+\code
+@assertAssociated(pointer,target)\endcode
+becomes
+\code
+call assertTrue(associated(pointer,target))\endcode
+neglecting message and source location information.
+
+A message may be passed as follows.
+\code
+@assertAssociated(a,message="A message.")\endcode
+
+\code
+@assertAssociated(pointer,target,message="A message.")\endcode
+
+\subsection ss_assertNotAssociated @assertNotAssociated
+
+This directive is the same as assertAssociated, except that it maps to assertFalse.  This directive was originally released as assertUnAssociated.
+
+\subsection ss_assertEquivalent @assertEquivalent
+This directive compares two logical values and throws an exception annotated with some useful information.
+We get a special directive for this one because comparing logicals uses the .eqv. infix operator in standard
+Fortran. The arguments a and b below may be 1d arrays.
+\code
+@assertEquivalent(a,b)\endcode
+becomes
+\code
+call assertTrue(a.eqv.b)\endcode
+neglecting the specification of message and source location information.
+
+\page page_RevisionNotes Revision Notes
+
+<ul>
+<li>2015-0508 Some PGI workarounds removed for PGI 15.4. MLR</li>
+<li>2015-0320 PGI port workarounds, including examples. 3.1. MLR</li>
+<li>2014-1211 Minor updates for 3.0.2. MLR</li>
+<li>2014-1110, 2014-1031 Minor edits. MLR</li>
+<li>2014-0915 Minor updates for 3.0.1. MLR</li>
+<li>2014-0404 Updated for release of 3.0. TLC</li>
+<li>2014-0131, 2014-0205. Updated. MLR</li>
+<li>2013-1227. First note of OPENMP additions by T. Clune.  MLR.</li>
+<li>2013-1212. Initial draft of Doxygen version. MLR</li>
+<li>2013-1107. Minor edits. MLR</li>
+<li>2013-1031. Added user contributed code for Windows/CYGWIN & IBM's XLF. MLR</li>
+<li>2013-0830-1359. Minor corrections and added MPIF90 to 6.2. MLR</li>
+<li>2013-0806-1345. Corrected git reference. Was using old URL.  MLR</li>
+<li>2013-0805. Initial draft. MLR</li>
+</ul>
+
+*/

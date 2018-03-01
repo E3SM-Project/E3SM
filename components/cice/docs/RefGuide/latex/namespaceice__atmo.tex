@@ -1,0 +1,53 @@
+\hypertarget{namespaceice__atmo}{
+\section{ice\_\-atmo Module Reference}
+\label{namespaceice__atmo}\index{ice\_\-atmo@{ice\_\-atmo}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__atmo_a0064e438c4aa02621fad02322d62875a}{atmo\_\-boundary\_\-layer} (nx\_\-block, ny\_\-block, sfctype, icells, indxi, indxj, Tsf, potT, uatm, vatm, uvel, vvel, wind, zlvl, Qa, rhoa, strx, stry, Tref, Qref, delt, delq, lhcoef, shcoef)
+\item 
+subroutine \hyperlink{namespaceice__atmo_a7f029ec02aa35ba56d71f83914b70a76}{atmo\_\-boundary\_\-const} (nx\_\-block, ny\_\-block, sfctype, icells, indxi, indxj, uatm, vatm, wind, rhoa, strx, stry, lhcoef, shcoef)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__atmo_aae4bd7119f41531a5beba8ea5f03c805}{atmbndy}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__atmo_a114305e959bca27e073f74995bf55855}{calc\_\-strair}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__atmo_a7f029ec02aa35ba56d71f83914b70a76}{
+\index{ice\_\-atmo@{ice\_\-atmo}!atmo\_\-boundary\_\-const@{atmo\_\-boundary\_\-const}}
+\index{atmo\_\-boundary\_\-const@{atmo\_\-boundary\_\-const}!ice_atmo@{ice\_\-atmo}}
+\subsubsection[{atmo\_\-boundary\_\-const}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-atmo::atmo\_\-boundary\_\-const (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  character (len=3),intent(in) {\em sfctype}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em uatm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em vatm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em wind}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em rhoa}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em strx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em stry}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em lhcoef}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em shcoef})}}
+\label{namespaceice__atmo_a7f029ec02aa35ba56d71f83914b70a76}
+
+
+Definition at line 385 of file ice\_\-atmo.F90.\hypertarget{namespaceice__atmo_a0064e438c4aa02621fad02322d62875a}{
+\index{ice\_\-atmo@{ice\_\-atmo}!atmo\_\-boundary\_\-layer@{atmo\_\-boundary\_\-layer}}
+\index{atmo\_\-boundary\_\-layer@{atmo\_\-boundary\_\-layer}!ice_atmo@{ice\_\-atmo}}
+\subsubsection[{atmo\_\-boundary\_\-layer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-atmo::atmo\_\-boundary\_\-layer (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  character (len=3),intent(in) {\em sfctype}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em Tsf}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em potT}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em uatm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em vatm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em uvel}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em vvel}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em wind}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em zlvl}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em Qa}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em rhoa}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em strx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em stry}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em Tref}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em Qref}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em delt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em delq}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em lhcoef}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em shcoef})}}
+\label{namespaceice__atmo_a0064e438c4aa02621fad02322d62875a}
+
+
+Definition at line 51 of file ice\_\-atmo.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__atmo_aae4bd7119f41531a5beba8ea5f03c805}{
+\index{ice\_\-atmo@{ice\_\-atmo}!atmbndy@{atmbndy}}
+\index{atmbndy@{atmbndy}!ice_atmo@{ice\_\-atmo}}
+\subsubsection[{atmbndy}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len) {\bf ice\_\-atmo::atmbndy}}}
+\label{namespaceice__atmo_aae4bd7119f41531a5beba8ea5f03c805}
+
+
+Definition at line 33 of file ice\_\-atmo.F90.\hypertarget{namespaceice__atmo_a114305e959bca27e073f74995bf55855}{
+\index{ice\_\-atmo@{ice\_\-atmo}!calc\_\-strair@{calc\_\-strair}}
+\index{calc\_\-strair@{calc\_\-strair}!ice_atmo@{ice\_\-atmo}}
+\subsubsection[{calc\_\-strair}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-atmo::calc\_\-strair}}}
+\label{namespaceice__atmo_a114305e959bca27e073f74995bf55855}
+
+
+Definition at line 36 of file ice\_\-atmo.F90.

@@ -1,0 +1,87 @@
+      SPECIES
+
+      Solution
+ O3, OH -> HO, HO2, H2O2, NO, NO2, HNO3, CO, CH4, CH2O, CH3O2
+ CH3OOH -> CH4O2, DMS -> C2H6S, SO2 -> O2S, 
+ SO4 
+      End Solution
+
+      Fixed
+ M, N2, O2, H2O
+      End Fixed
+
+      Col-int
+ O3 = 0.
+ O2 = 0.
+      End Col-int
+
+      END Species
+
+  Solution classes
+      Explicit
+       CO, CH4
+      End explicit
+      Implicit
+       O3, OH, HO2, H2O2, NO, NO2, HNO3, CH2O, CH3O2, CH3OOH
+       DMS, SO2, SO4
+      End implicit
+  END Solution classes
+
+  CHEMISTRY
+      Photolysis
+[jo1d]      O3 + hv -> 2*OH
+[jh2o2]     H2O2 + hv -> 2*OH
+[jno2]      NO2 + hv -> NO + O3
+[jch2o_a]   CH2O + hv -> CO + 2*HO2
+[jch2o_b]   CH2O + hv -> CO
+[jch3ooh]   CH3OOH + hv -> CH2O + HO2 + OH
+      End Photolysis
+
+      Reactions
+              O3 + OH -> HO2 + O2                                       ;   1.700E-12, -940
+[out6]        HO2 + O3 -> 2*O2 + OH                                     ;   1.000E-14, -490
+              HO2 + OH -> H2O + O2                                      ;   4.800E-11, 250
+[usr_HO2_HO2] HO2 + HO2 -> H2O2 + O2
+              H2O2 + OH -> H2O + HO2                                    ;   1.800E-12
+              NO + O3 -> NO2 + O2                                       ;   3.000E-12, -1500
+              HO2 + NO -> NO2 + OH                                      ;   3.500E-12, 250
+              NO2 + OH + M -> HNO3                                      ;   1.800E-30, 3.00, 2.800E-11, 0.00, 0.6
+              CH4 + OH -> CH3O2 + H2O                                   ;   2.450E-12, -1775
+[usr_oh_co]   CO + OH -> HO2                                            
+              CH2O + OH -> CO + H2O + HO2                               ;   5.500E-12, 125
+              CH3O2 + HO2 -> CH3OOH + O2                                ;   4.100E-13, 750
+              CH3OOH + OH -> CH3O2 + H2O                                ;   2.700E-12, 200
+              CH3OOH + OH -> CH2O + H2O + OH                            ;   1.100E-12, 200
+              CH3O2 + NO -> CH2O + HO2 + NO2                            ;   2.800E-12, 300
+              CH3O2 + CH3O2 -> 2*CH2O +  0.80*HO2                       ;   9.500E-14, 390
+[het_no2_h2o] H2O + NO2 ->  0.50*HNO3                                   
+              DMS + OH -> SO2                                           ;   1.100E-11, -240
+[usr_oh_dms]  DMS + OH ->  0.75*SO2                         
+[tag_so2_oh_m] OH + SO2 + M -> SO4                                       ;   3.300E-31, 4.30, 1.600E-12, 0.00, 0.6
+[aq_so2_h2o2] H2O2 + SO2 -> SO4                                    
+[aq_so2_o3]   O3 + SO2 -> SO4                                        
+      End reactions
+
+      Heterogeneous
+       H2O2, HNO3, CH2O, SO2
+      End heterogeneous
+
+      Ext forcing
+       NO2, CO
+      End Ext Forcing
+
+  END Chemistry
+
+  SIMULATION PARAMETERS
+ 
+     Version Options
+        model   = cam
+        machine = intel
+        architecture = hybrid
+        vec_ftns  = on
+        multitask = on
+        namemod = on
+        modules = on
+     End Version Options
+
+  End Simulation Parameters

@@ -1,0 +1,61 @@
+#! /bin/csh -f
+
+if ($NINST_GLC > 1) then
+   set inst_counter = 1
+   set inst_string = ""
+   while ($inst_counter <= $NINST_GLC)
+      set inst_string = $inst_counter
+      if ($inst_counter <= 999) set inst_string = "0$inst_string"
+      if ($inst_counter <=  99) set inst_string = "0$inst_string"
+      if ($inst_counter <=   9) set inst_string = "0$inst_string"
+      set inst_string = _${inst_string}
+      if ( ! -f "$CASEROOT/user_nl_cism${inst_string}" ) then
+         cp $CODEROOT/glc/cism/bld/user_nl_cism $CASEROOT/user_nl_cism${inst_string}
+      endif
+      @ inst_counter = $inst_counter + 1
+   end 
+else
+   if ( ! -f "$CASEROOT/user_nl_cism" ) then
+      cp $CODEROOT/glc/cism/bld/user_nl_cism $CASEROOT/user_nl_cism
+   endif
+endif
+
+#-------------------------------------------------------------------------------
+# stage variable definition files and related scripts and templates to
+# $CASEBUILD/cismIOconf, so users can modify easily modify IO fields
+#-------------------------------------------------------------------------------
+
+set IOCONF_DIR = $CASEBUILD/cismIOconf
+set GLIMMER_CISM_ROOT = $CODEROOT/glc/cism/glimmer-cism
+if !(-d $IOCONF_DIR) mkdir $IOCONF_DIR
+cp $CODEROOT/glc/cism/bld/cismIO/README.cismIO        $IOCONF_DIR/
+cp $GLIMMER_CISM_ROOT/scripts/generate_ncvars.py      $IOCONF_DIR/
+cp $GLIMMER_CISM_ROOT/libglimmer/ncdf_template.F90.in $IOCONF_DIR/
+cp $GLIMMER_CISM_ROOT/libglide/glide_vars.def         $IOCONF_DIR/
+cp $GLIMMER_CISM_ROOT/libglint/glint_vars.def         $IOCONF_DIR/
+cp $GLIMMER_CISM_ROOT/libglint/glint_mbal_vars.def    $IOCONF_DIR/
+
+#-------------------------------------------------------------------------------
+# create cism.buildIO.csh script to allow users to modify the IO fields
+#-------------------------------------------------------------------------------
+
+set buildIO_script = $IOCONF_DIR/cism.buildIO.csh
+cat >! $buildIO_script <<EOF
+#! /bin/csh -f
+
+# -----------------------------------------------------------------------------
+# NOTICE: This script was custom-generated for $CASEROOT.
+#
+#         DO NOT COPY to another case!
+#
+#         Use this script ONLY in $CASEROOT.
+# -----------------------------------------------------------------------------
+
+set sourcemod_dir = $CASEROOT/SourceMods/src.cism/glimmer-cism
+set cism_confIOdir  = $IOCONF_DIR
+
+EOF
+
+cat $CODEROOT/glc/cism/bld/cismIO/cism.buildIO.template.csh >> $buildIO_script
+
+chmod u+x $buildIO_script

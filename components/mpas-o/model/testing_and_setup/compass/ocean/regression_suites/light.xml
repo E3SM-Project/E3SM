@@ -1,0 +1,17 @@
+<regression_suite name="nightly_ocean_test_suite">
+	<test name="Periodic Planar 20km - LIGHT particle general test" core="ocean" configuration="periodic_planar" resolution="20km" test="default_light">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Periodic Planar 20km - LIGHT particle region reset test" core="ocean" configuration="periodic_planar" resolution="20km" test="region_reset_light_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Periodic Planar 20km - LIGHT particle time reset test" core="ocean" configuration="periodic_planar" resolution="20km" test="time_reset_light_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="SOMA 32km - LIGHT particle time general test" core="ocean" configuration="soma" resolution="32km" test="default">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ZISO 20km - LIGHT particle time general test" core="ocean" configuration="ziso" resolution="20km" test="default">
+		<script name="run_test.py"/>
+	</test>
+</regression_suite>

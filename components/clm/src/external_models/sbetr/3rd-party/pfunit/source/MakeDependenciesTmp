@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# pFUnit source/MakeDependenciesIncludeCollectUseStatements
+
+# Collect into $3 the USE statements from $2, the preprocessed version
+#   of $1.  These are collected into the pattern:
+#   filename.o:  usePredicate1.F90...
+# 
+#  $1 is the file.F90
+#  $2 is the file_cpp.f90
+#  $3 is dependencies.tmp
+
+# We do not automatically check to see if references are satisfied
+# within the using file, so we can IGNORE those references by naming
+# them here.
+#
+# Note: PrivateException is in Exception.F90, there is no
+# PrivateException.F90 or PrivateException.o.
+#
+IGNORE="PrivateException"
+# May need to consider case, however if we stick to our current coding
+# style, we should be okay.
+
+# Have trouble with commented use statements... see grep -v "\!" below.
+# Need to watch out for use statements that refer to tokens with use or used.
+# Also may have some trouble with files/modules with "use" in their names.
+
+FILENAME=$1
+FILENAME_CPP=$2
+TMPFILE=$3
+
+# echo MDICUS: ${FILENAME} ${FILENAME_CPP} ${TMPFILE}
+
+   echo `echo ${FILENAME} | cut -f 1 -d. - `".o: " | tr -d "\n" >> ${TMPFILE};
+      grep -i use ${FILENAME_CPP} | grep -v used | cut -d, -f1 - | sort | tr -s " \t\v" | uniq - | \
+      egrep -v ${IGNORE} | \
+      sed 's/use//g' | sed 's/_mod/.o/g' | egrep "\.o" | grep -v "\!\!" | tr -d "\n" | tr -s " \t\v" >> ${TMPFILE};  
+   echo -e "\n" >> ${TMPFILE}; 

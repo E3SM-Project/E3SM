@@ -1,0 +1,540 @@
+<?xml version="1.0"?>
+<registry model="mpas" core="landice" core_abbrev="li" version="5.2">
+
+
+<!-- ======================================================================= -->
+<!-- MODEL DIMENSIONS -->
+
+	<dims>
+		<dim name="nCells" units="unitless"
+		     description="The number of polygons in the primary grid."
+		/>
+		<dim name="nEdges" units="unitless"
+		     description="The number of edge midpoints in either the primary or dual grid."
+		/>
+		<dim name="maxEdges" units="unitless"
+		     description="The largest number of edges any polygon within the grid has."
+		/>
+		<dim name="maxEdges2" units="unitless"
+		     description="Two times the largest number of edges any polygon within the grid has."
+		/>
+		<dim name="nVertices" units="unitless"
+		     description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
+		/>
+		<dim name="TWO" definition="2" units="unitless"
+		     description="The number two as a dimension."
+		/>
+		<dim name="R3" definition="3" units="unitless"
+		     description="The number three as a dimension."
+		/>
+		<dim name="vertexDegree" units="unitless"
+		     description="The number of cells or edges touching each vertex."
+		/>
+		<dim name="nVertLevels" units="unitless"
+		     description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
+		/>
+		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
+		     description="The number of interfaces in the vertical direction."
+		/>
+	</dims>
+
+
+<!-- ======================================================================= -->
+<!-- NAMELIST RECORDS -->
+
+	<nml_record name="velocity_solver" in_defaults="true">
+		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
+		            description="Selection of the method for solving ice velocity."
+		            possible_values="'sia'"
+		/>
+	</nml_record>
+
+
+	<nml_record name="advection" in_defaults="true">
+		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
+		            description="Selection of the method for advecting thickness."
+		            possible_values="'fo', 'none'"
+		/>
+		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for advecting tracers."
+		            possible_values="'none'"
+		/>
+<!-- This option to be implemented in the future.
+		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
+		            description="Determines whether ice can advance beyond its initial extent"
+		            possible_values=".true. or .false."
+		/>
+-->
+	</nml_record>
+
+
+	<nml_record name="physical_parameters" in_defaults="true">
+		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
+		            description="ice density to use"
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_ocean_density" type="real" default_value="1028.0" units="kg m^{-3}"
+		            description="ocean density to use for calculating floatation"
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"
+		            description="sea level to use for calculating floatation"
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
+		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
+		            description="Defines the value of the Glen flow law exponent, n."
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_dynamic_thickness" type="real" default_value="100.0" units="m of ice"
+		            description="Defines the ice thickness below which dynamics are not calculated."
+		            possible_values="Any positive real value"
+		/>
+	</nml_record>
+
+
+	<nml_record name="time_integration" in_defaults="true">
+		<nml_option name="config_dt" type="character" default_value="0001-00-00_00:00:00" units="unitless"
+		            description="Length of model time step defined as a time interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
+		            description="Time integration method."
+		            possible_values="'forward_euler'"
+		/>
+	</nml_record>
+
+
+	<nml_record name="time_management" in_defaults="true">
+		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
+		            description="Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, simply set this to true in the namelist.input file and modify the start time to be the time you want restart from.  A restart will read the grid information from the input field, and the restart state from the restart file.  It will perform a run normally, except velocity will not be solved on a restart."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+		description="Path to the filename for restart timestamps to be read and written from."
+		possible_values="Path to a file."
+		/>
+		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from restart_timestamp"
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve only."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_run_duration" type="character" default_value="none" units="unitless"
+		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
+		            description="Selection of the type of calendar that should be used in the simulation."
+		            possible_values="'gregorian', 'gregorian_noleap'"
+		/>
+	</nml_record>
+
+
+	<nml_record name="io" in_defaults="true">
+<!--		These options to be implemented in the future.
+<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
+		            description="Timestamp determining how often a global statistics files should be written."
+		            possible_values="'DDDD_HH:MM:SS'"
+		/>
+		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".true." units="unitless"
+		            description="Logical flag determining if statistics files should be written prior to the first time step."
+		            possible_values=".true. or .false."
+		/> -->
+		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
+		            description="Logical flag determining if an output file should be written prior to the first time step."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
+		            description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file."
+		            possible_values="Any positive integer value greater than or equal to 0."
+		/>
+		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
+		            description="Integer specifying the stride of each IO task."
+		            possible_values="Any positive integer value greater than 0."
+		/>
+		<nml_option name="config_year_digits" type="integer" default_value="4" units="unitless"
+		            description="Integer specifying the number of digits used to represent the year in time strings."
+		            possible_values="Any positive integer value greater than 0."
+		/>
+	</nml_record>
+
+
+	<nml_record name="decomposition" in_defaults="true">
+		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+		            possible_values="Any positive interger value."
+		/>
+		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		            description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a block decomposition file."
+		/>
+		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
+		            description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
+					possible_values="Any integer $>=$ 0."
+		/>
+		<nml_option name="config_explicit_proc_decomp" type="logical" default_value=".false." units="unitless"
+		            description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		            description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a processor decomposition file."
+		/>
+	</nml_record>
+
+
+	<nml_record name="debug" in_defaults="true">
+		<nml_option name="config_print_thickness_advection_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about thickness advection."
+		            possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+
+<!-- ======================================================================= -->
+<!-- I/O STREAM DEFINITIONS -->
+
+	<streams>
+
+		<!-- basicmesh contains all the required MPAS mesh fields - attach this to other streams as needed -->
+		<stream name="basicmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="layerThicknessFractions"/>
+		</stream>
+
+
+		<stream name="input"
+				type="input"
+				immutable="true"
+				filename_template="landice_grid.nc"
+				input_interval="initial_only">
+
+			<stream name="basicmesh"/>
+			<var_array name="tracers"/>
+			<var name="thickness"/>
+			<var name="normalVelocity"/>
+			<var name="bedTopography"/>
+			<var name="sfcMassBal"/>
+		</stream>
+
+
+		<stream name="restart"
+				type="input;output"
+				immutable="true"
+				filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				input_interval="initial_only"
+				output_interval="0010-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
+
+			<stream name="basicmesh"/>
+			<var_array name="tracers"/>
+			<var name="xtime"/>
+			<var name="thickness"/>
+			<var name="cellMask"/>
+			<var name="normalVelocity"/>
+			<var name="bedTopography"/>
+			<var name="sfcMassBal"/>
+		</stream>
+
+
+		<stream name="output"
+				type="output"
+				filename_template="output.nc"
+				filename_interval="none"
+				output_interval="0001-00-00_00:00:00"
+				runtime_format="single_file"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
+				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
+
+			<stream name="basicmesh"/>
+			<var_array name="tracers"/>
+			<var name="xtime"/>
+			<var name="thickness"/>
+			<var name="layerThickness"/>
+			<var name="lowerSurface"/>
+			<var name="upperSurface"/>
+			<var name="cellMask"/>
+			<var name="edgeMask"/>
+			<var name="vertexMask"/>
+			<var name="normalVelocity"/>
+			<var name="uReconstructX"/>
+			<var name="uReconstructY"/>
+			<var name="uReconstructZ"/>
+			<var name="uReconstructZonal"/>
+			<var name="uReconstructMeridional"/>
+		</stream>
+
+	</streams>
+
+
+<!-- ======================================================================= -->
+<!-- INTERNAL MODEL VARIABLES -->
+
+	<var_struct name="state" time_levs="2">
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<!-- Prognostic Variables: typically read from input, saved in restart, written to output --> 
+		<var name="thickness" type="real" dimensions="nCells Time" units="m"
+		     description="ice thickness"
+		/>
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
+		     description="layer thickness"
+		/>
+		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
+			<var name="temperature" array_group="dynamics" units="degrees Celsius"
+			     description="ice temperature"
+			/>
+		</var_array>
+
+		<!-- Diagnostic Variables: typically just written to output --> 
+		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
+		     description="elevation at bottom of ice"
+		/>
+		<var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
+		     description="elevation at top of ice"
+		/>
+		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		     description="layer thickness on cell edges"
+		/>
+		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+		     description="elevation at top of ice on vertices (currently only needed by shallow ice solver)"
+		/>
+		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
+		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
+		/>
+		<var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
+		     description="bitmask indicating various properties about the ice sheet on edges."
+		/>
+		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none"
+		     description="bitmask indicating various properties about the ice sheet on vertices."
+		/>
+		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="horizonal velocity, normal component to an edge"
+		/>
+			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
+		<var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"    
+		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"    
+		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"    
+		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"    
+		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"    
+		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
+		/>
+	</var_struct>
+
+	<!-- Tendency Variables --> 
+	<var_struct name="tend" time_levs="1">
+		<var name="tend_layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
+		     description="time tendency of layer thickness"
+		/>
+		<var_array name="tendTracers" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracers">
+			<var name="tend_temperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
+			     description="time tendency of ice temperature"
+			/>
+		</var_array>
+	</var_struct>
+
+	<!-- Mesh Variables (includes some time-independent variables)--> 
+	<var_struct name="mesh" time_levs="1">
+		<var name="latCell" type="real" dimensions="nCells" units="radians"
+			 description="Latitude location of cell centers in radians."
+		/>
+		<var name="lonCell" type="real" dimensions="nCells" units="radians"
+		     description="Longitude location of cell centers in radians."
+		/>
+		<var name="xCell" type="real" dimensions="nCells" units="unitless"
+		     description="X Coordinate in cartesian space of cell centers."
+		/>
+		<var name="yCell" type="real" dimensions="nCells" units="unitless"
+		     description="Y Coordinate in cartesian space of cell centers."
+		/>
+		<var name="zCell" type="real" dimensions="nCells" units="unitless"
+		     description="Z Coordinate in cartesian space of cell centers."
+		/>
+		<var name="indexToCellID" type="integer" dimensions="nCells" units="unitless"
+		     description="List of global cell IDs."
+		/>
+		<var name="latEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Latitude location of edge midpoints in radians."
+		/>
+		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Longitude location of edge midpoints in radians."
+		/>
+		<var name="xEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="X Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="yEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="Y Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="zEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="Z Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="indexToEdgeID" type="integer" dimensions="nEdges" units="unitless"
+		     description="List of global edge IDs."
+		/>
+		<var name="latVertex" type="real" dimensions="nVertices" units="radians"
+		     description="Latitude location of vertices in radians."
+		/>
+		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
+		     description="Longitude location of vertices in radians."
+		/>
+		<var name="xVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="X Coordinate in cartesian space of vertices."
+		/>
+		<var name="yVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="Y Coordinate in cartesian space of vertices."
+		/>
+		<var name="zVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="Z Coordinate in cartesian space of vertices."
+		/>
+		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
+		     description="List of global vertex IDs."
+		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of cells that straddle each edge."
+		/>
+		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
+		     description="Number of edges that border each cell."
+		/>
+		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
+		     description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
+		/>
+		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of edges that border each cell."
+		/>
+		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
+		     description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
+		     description="Reconstruction weights associated with each of the edgesOnEdge."
+		/>
+		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
+		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		/>
+		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
+		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		/>
+		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Angle the edge normal makes with local eastward direction."
+		/>
+		<var name="areaCell" type="real" dimensions="nCells" units="m^2"
+		     description="Area of each cell in the primary grid."
+		/>
+		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
+		     description="Area of each cell (triangle) in the dual grid."
+		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+		     description="Normal vector defined at an edge."
+		/>
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+		     description="Unit surface normal vectors defined at cell centers."
+		/>
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+		     description="The two vectors that define a tangent plane at a cell center."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of cells that share a vertex."
+		/>
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
+		/>
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+			 description="Coefficients to reconstruct velocity vectors at cells centers."
+		/>
+		<!-- Mesh Variables specific to land ice core -->
+		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
+		/>
+		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
+		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
+		/>
+		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
+		     description="Fractional thickness of each sigma layer"
+		/>
+		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
+		     description="Sigma (fractional) level at center of each layer"
+		/>
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertLevelsP1" units="none"
+		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
+		/>
+		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"
+		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
+		/>
+		<var name="sfcMassBal" type="real" dimensions="nCells" units="kg m^2 s^{-1}"
+		     description="Surface mass balance"
+		/>
+	</var_struct>
+
+
+<!-- ======================================================================= -->
+
+
+</registry>

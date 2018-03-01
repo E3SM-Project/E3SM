@@ -1,0 +1,141 @@
+\hypertarget{ice__prescribed__mod_8F90}{
+\section{ice\_\-prescribed\_\-mod.F90 File Reference}
+\label{ice__prescribed__mod_8F90}\index{ice\_\-prescribed\_\-mod.F90@{ice\_\-prescribed\_\-mod.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__prescribed__mod}{ice\_\-prescribed\_\-mod}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__prescribed__mod_a653502aece9eed08846385d30fec703b}{ice\_\-prescribed\_\-mod::ice\_\-prescribed\_\-init}
+\item 
+subroutine \hyperlink{namespaceice__prescribed__mod_a73bcaa2e547c18a24eeabaa2e22e8fe9}{ice\_\-prescribed\_\-mod::ice\_\-prescribed\_\-run} (mDateIn, secIn)
+\item 
+subroutine \hyperlink{namespaceice__prescribed__mod_aa67a3710c35bda9e15dedf703582f149}{ice\_\-prescribed\_\-mod::ice\_\-prescribed\_\-readField} (fileName, fldName, nTime, fldRead)
+\item 
+subroutine \hyperlink{namespaceice__prescribed__mod_acc7d1e7dfe5627bee722781e039280c9}{ice\_\-prescribed\_\-mod::ice\_\-prescribed\_\-checkDomain} (csimXCoord, csimYCoord, dataXCoord, dataYCoord, regrid)
+\item 
+subroutine \hyperlink{namespaceice__prescribed__mod_a9e6ac38b742040541c97492d74282b7a}{ice\_\-prescribed\_\-mod::ice\_\-prescribed\_\-phys}
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescribed__mod_a1b42a8c2b0357eb657332946d2b6c78a}{ice\_\-prescribed\_\-mod::prescribed\_\-ice}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a8ffe8edc2e99d865aa09b7c7f7801c37}{ice\_\-prescribed\_\-mod::stream\_\-year\_\-first}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_ade5d68f1b7b652dcacb5263e02aaa099}{ice\_\-prescribed\_\-mod::stream\_\-year\_\-last}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a1710ba150bcf274f07add3f2a05b49e7}{ice\_\-prescribed\_\-mod::model\_\-year\_\-align}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a345c4a3ce0fa3d2ebe4468d03a9fe51a}{ice\_\-prescribed\_\-mod::stream\_\-fldVarName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a6f95de7f96b71c33ef261199631ddf80}{ice\_\-prescribed\_\-mod::stream\_\-fldFileName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_abae176465bd6efc8cb114772aa63b145}{ice\_\-prescribed\_\-mod::stream\_\-domTvarName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_ae6a726ada1e1e93644fa269052a767e4}{ice\_\-prescribed\_\-mod::stream\_\-domXvarName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a38e084e4885a0dcfa51a63fbccbe05b0}{ice\_\-prescribed\_\-mod::stream\_\-domYvarName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a4c5e8c8c8c573e69e00039703e28a83f}{ice\_\-prescribed\_\-mod::stream\_\-domAreaName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_afe7ec341a14bd719d0759586a729e76d}{ice\_\-prescribed\_\-mod::stream\_\-domMaskName}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a54b8dea8c8a1cdca57b336d8dedeb51c}{ice\_\-prescribed\_\-mod::stream\_\-domFileName}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescribed__mod_aa4a8e7410405429c0277535dff2ec7ea}{ice\_\-prescribed\_\-mod::prescribed\_\-ice\_\-fill}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__prescribed__mod_ab6b945488fb9a21b8c0abf9c5c9f13d3}{ice\_\-prescribed\_\-mod::closelat}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__prescribed__mod_a0a932ccb360a743d8d05b685438cce6f}{ice\_\-prescribed\_\-mod::closelon}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a406e46eaa55988c516d70a9e9ed1fb2a}{ice\_\-prescribed\_\-mod::latidx}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a21240c657fdbc312b6cdd4c31395ede0}{ice\_\-prescribed\_\-mod::lonidx}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a2f99c0b35d65529144252c26d4762bc7}{ice\_\-prescribed\_\-mod::ncid}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a05759838d18f2fbc703a6ff43bdc217b}{ice\_\-prescribed\_\-mod::dataXCoord}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_abf3b4ab489983d1531847794139e9397}{ice\_\-prescribed\_\-mod::dataYCoord}
+\item 
+integer(kind=int\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a4d4897310d6673a94b06d49fd6adfbcc}{ice\_\-prescribed\_\-mod::dataMask}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a6cbaf1dd947b14ebfe7fee398952dd6b}{ice\_\-prescribed\_\-mod::dataUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a74430be62d3958af3edd6b7254027d08}{ice\_\-prescribed\_\-mod::dataLB}
+\item 
+type(shr\_\-stream\_\-streamType), save \hyperlink{namespaceice__prescribed__mod_ae8eb8307f8c4017094a64d99000f458d}{ice\_\-prescribed\_\-mod::csim\_\-stream}
+\item 
+type(shr\_\-map\_\-mapType) \hyperlink{namespaceice__prescribed__mod_ada89f7f5c26e2923f8fab5f837979bd9}{ice\_\-prescribed\_\-mod::csim\_\-map}
+\item 
+type(shr\_\-map\_\-mapType) \hyperlink{namespaceice__prescribed__mod_a9cc059c1adaefc7ef43aa8ccf9f774ea}{ice\_\-prescribed\_\-mod::csim\_\-fill}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a7b605d560be8c1903b0df4b66076f31a}{ice\_\-prescribed\_\-mod::dataInLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a07649c4c91bccc292f9aa60851ab2a14}{ice\_\-prescribed\_\-mod::dataInUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a14513a8e50e8321ddac9e3f9d091cd12}{ice\_\-prescribed\_\-mod::dataSrcLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a59169c4d93914baf69c59b8d5f2fb1ab}{ice\_\-prescribed\_\-mod::dataSrcUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a69b2adaed2ac02b269e8c3c1d6b44178}{ice\_\-prescribed\_\-mod::dataDstLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a07af024321e34db28532c6834a352da3}{ice\_\-prescribed\_\-mod::dataDstUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a88edf4fbb0dc86b082ddf6a6c48d393a}{ice\_\-prescribed\_\-mod::dataOutLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescribed__mod_a0c216149ad3a2a7bd66c3bdb274c77e7}{ice\_\-prescribed\_\-mod::dataOutUB}
+\item 
+real(kind=dbl\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__prescribed__mod_a2bc0b66d04bc6ff5ed1c325ee6292eff}{ice\_\-prescribed\_\-mod::ice\_\-cov\_\-global}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__prescribed__mod_a2f6a0d3d485195c75861395c78cc22aa}{ice\_\-prescribed\_\-mod::ice\_\-cov\_\-lb}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__prescribed__mod_a9c50464ba0a337c6fd03cec3a7338897}{ice\_\-prescribed\_\-mod::ice\_\-cov\_\-ub}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__prescribed__mod_ad870001a33c2597b961fde76bceca0b6}{ice\_\-prescribed\_\-mod::ice\_\-cov}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescribed__mod_a794e5c02618e82554dc2cec6c635b8f1}{ice\_\-prescribed\_\-mod::regrid}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_ad31a8b9239fb1c5cca528bc20733ba0a}{ice\_\-prescribed\_\-mod::dateUB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a43e79eec4249cc4e5883bebc24835c94}{ice\_\-prescribed\_\-mod::dateLB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a23c0dbac49b47681dc4939a3f8fd4100}{ice\_\-prescribed\_\-mod::secUB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a1b7b4c13bf3d78d72c62fe92a9a7ebcc}{ice\_\-prescribed\_\-mod::secLB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a7af5d49e5ab6fd7900aeb659387719a3}{ice\_\-prescribed\_\-mod::nlon}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_a553da06a37ff08c4047eaf0e66d4ec53}{ice\_\-prescribed\_\-mod::nlat}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescribed__mod_aeeaddf3904b52191dfe9e843ae36bcd0}{ice\_\-prescribed\_\-mod::nflds}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescribed__mod_a5bdbd6cc049323f35a5c8f6e4613c369}{ice\_\-prescribed\_\-mod::fldList}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__prescribed__mod_a47d61c09a57e43eefae7895db766851a}{ice\_\-prescribed\_\-mod::fldName}
+\item 
+logical \hyperlink{namespaceice__prescribed__mod_a07b5b645c36b9f4e6ffecb44561d737e}{ice\_\-prescribed\_\-mod::read\_\-data}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a9a106a2104e57fea97c1ddf91ffb9c0c}{ice\_\-prescribed\_\-mod::cp\_\-sno} = 0.0\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a39606ec992e07a82b93638f009662c22}{ice\_\-prescribed\_\-mod::rLfi} = Lfresh$\ast$rhoi
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a6d6aa0ced82499b6a9e9fef93efc4215}{ice\_\-prescribed\_\-mod::rLfs} = Lfresh$\ast$rhos
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a142d1bc283475ba8d20f1f9693a7f0a7}{ice\_\-prescribed\_\-mod::rLvi} = Lvap$\ast$rhoi
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a4dfc1b519ac719ccd1df0821e2ee9d05}{ice\_\-prescribed\_\-mod::rLvs} = Lvap$\ast$rhos
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_ad7fb751647d1c0fce8353923c934dcd1}{ice\_\-prescribed\_\-mod::rcpi} = cp\_\-ice$\ast$rhoi
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a4d489995be632463ce884c66d364ae9b}{ice\_\-prescribed\_\-mod::rcps} = cp\_\-sno$\ast$rhos
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a1c5ca290fc59d5ca3c0587261be63bfa}{ice\_\-prescribed\_\-mod::rcpidepressT} = rcpi$\ast$depressT
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__prescribed__mod_a5331e73657db370f6bc527f0e680a647}{ice\_\-prescribed\_\-mod::rLfidepressT} = rLfi$\ast$depressT
+\end{DoxyCompactItemize}

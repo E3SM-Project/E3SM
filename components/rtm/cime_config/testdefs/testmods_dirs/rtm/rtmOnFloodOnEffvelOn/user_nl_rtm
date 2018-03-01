@@ -1,0 +1,6 @@
+&rtm_inparm
+  rtm_mode    = 'ACTIVE'
+  flood_mode  = 'ACTIVE'
+  rtm_effvel  = 'ACTIVE'
+  ice_runoff  = .true. 
+/

@@ -1,0 +1,692 @@
+\hypertarget{namespaceice__grid}{
+\section{ice\_\-grid Module Reference}
+\label{namespaceice__grid}\index{ice\_\-grid@{ice\_\-grid}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__grid_ace97d5a2cdb55b3e8caa37f125635f14}{init\_\-grid1}
+\item 
+subroutine \hyperlink{namespaceice__grid_a1443c2d00f599d16be96edeb376c3e97}{init\_\-grid2}
+\item 
+subroutine \hyperlink{namespaceice__grid_a24e5c873e7aef7bffaa80de04d205f1c}{popgrid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a830c0e85f52a27b04394190410c74730}{popgrid\_\-nc}
+\item 
+subroutine \hyperlink{namespaceice__grid_ae6e42c3f57ad49e30c85c71573096781}{panarctic\_\-grid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a2368fc9f9adb4dd4c869e9e618923640}{rectgrid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a2eadb37992f11dff1d497737f391f976}{primary\_\-grid\_\-lengths\_\-HTN} (work\_\-g)
+\item 
+subroutine \hyperlink{namespaceice__grid_a101630e53001c3cf050c5c5672199c25}{primary\_\-grid\_\-lengths\_\-HTE} (work\_\-g)
+\item 
+subroutine \hyperlink{namespaceice__grid_a3b4d1b3eb2836fed2bf8389411d1dbf0}{makemask}
+\item 
+subroutine \hyperlink{namespaceice__grid_a6d381958e459356fe9b135a76d3423e4}{Tlatlon}
+\item 
+subroutine \hyperlink{namespaceice__grid_afcc1556abeece73115e27355f13c1f66}{t2ugrid\_\-vector} (work)
+\item 
+subroutine \hyperlink{namespaceice__grid_af263876d35043749020fcd9c12766b3f}{to\_\-ugrid} (\hyperlink{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}{work1}, work2)
+\item 
+subroutine \hyperlink{namespaceice__grid_aefb15c768a63706ec6a5155d55b6c5a9}{u2tgrid\_\-vector} (work)
+\item 
+subroutine \hyperlink{namespaceice__grid_a63f5a2363aeb189e80ffb2294d20c42b}{to\_\-tgrid} (\hyperlink{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}{work1}, work2)
+\item 
+subroutine \hyperlink{namespaceice__grid_ac06419b8058ea2a7164cf726ac07b544}{sinlat} (a, k)
+\item 
+subroutine \hyperlink{namespaceice__grid_a26e7cc8fc629dd16d1f98839ebb9b5ff}{bsslzr} (bes, n)
+\item 
+subroutine \hyperlink{namespaceice__grid_a5cd4fd8007e449d3daca8a8ddd45b1b0}{gridbox\_\-corners}
+\item 
+subroutine \hyperlink{namespaceice__grid_acfca25b6f395314aa5ccacde317d5bac}{gridbox\_\-verts} (work\_\-g, vbounds)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_af3bcebba9676775105d70d32996d3ce5}{grid\_\-format}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_ac080d4ddf9dfc9375611416d1c425155}{grid\_\-file}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_a21b896a78dcb089ba19cddd8a763ec94}{kmt\_\-file}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_a927cd355e5ebbeb5b943262b4d8a1c74}{grid\_\-type}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a42016e793e21df58800428163f3eac13}{dxt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae46b1f5dbbef49a552a33a86b1f887b8}{dyt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9fecdcb5623bfc308ef4f2ddb4d284b6}{dxu}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ad2b38c10d13244b2b4da1e461c2ef207}{dyu}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a881253aa819ce18c46c4bffb3d558616}{HTE}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a6d5e0411ab66c52d72c0bcc75f794eab}{HTN}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_af9d3e2476e44dd679c4062b370f21ffa}{tarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8008e6fedd2e53d57bee5d6fa898de9}{uarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab853acbf3fa50d832ffed201f760ef88}{tarear}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_acf709799675ca52c31d335eb09a46fcf}{uarear}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a24fc3cf53e5e2c356bd8e4110112f39c}{tinyarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a233932d1edd125ed1e3c0cc7b990f256}{tarean}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ad08766f36b378acddead7f3503d7be19}{tareas}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a15766c63c75fd52d6d8ea3d651ecba26}{ULON}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a98cabaeec38bbcfe0d2844d8dae12434}{ULAT}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a2b90fd0fa35a54c0313dac995f929ee7}{TLON}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a76fff4cfe2a27c44abe9fd445f806f25}{TLAT}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a0a538e97fcd87790e7fae5de82bd0e77}{ANGLE}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8fc09d102ada560318d68276c1dfd57}{ANGLET}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a30e2151554a97e140124f4cb4317a054}{cyp}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a3c40a8ee2794b13b04b0598c90bf420f}{cxp}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_adb5e2792c5861e949ad784e35f485c08}{cym}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a83a8de6d0e58a6771b3d915acd63afd7}{cxm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a0247c390ce33b9435bbff4edbff8b9e7}{dxhy}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab6ee5703ec9bc808f8ebcf436960d722}{dyhx}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae3bd428fa166bb43e833ff27111c5d8e}{lont\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab343eaee175150d30612b98bf5e83faf}{latt\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_abaf36c701426b67cd588146d434b1f99}{lonu\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a03b1e73bc95079d90193478f58f192ce}{latu\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa84e4b92963d682ab3222a9d5716cbe8}{xav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a637cce7adf54c42ab41eeaf347cf824e}{yav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a7c8bb3b029d335971804fce931af7a4b}{xxav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa4182840814568ebe32038898cd5a7ad}{xyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae982b98ad7bfa759bb9a1da9dd749783}{yyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a62131a38b595f37c91ebbec351691ef3}{xxxav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a471e3cdf6d11b7f3831afcdfb354fbfc}{xxyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab0c9d28119dfb18bfc26a3f493b2e844}{xyyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9ed5ccbe07d1272b819d05221f756b06}{yyyav}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ac0cdb9f8f4e8be0dcf32a5e7adb1ac53}{mne}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9d5b1bf4f3c68140602c96bf28865733}{mnw}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a63866b0446065c97c825f70fc29a3654}{mse}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a517a26693b149509ae9e4a6c2f310dda}{msw}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a7ecb27b1b130ed860c56ab81f4a9373e}{hm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8b13eb710c7be4a90e210294e37b5af}{uvm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a5241715733bdedb6dc95cff6f23292de}{ocn\_\-gridcell\_\-frac}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a5de6731a3b8601be3495a4c306832bf0}{tmask}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a02f5ae5edcea6185af4949d9be61cc26}{umask}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae9873cb5a374679eb9105cbd0b3adaef}{lmask\_\-n}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aab33134c872608cbbcb505d3f788bb2d}{lmask\_\-s}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__grid_aea53b08fccd72dbe7e8a4689ab26534c}{dxrect} = 30.e5\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__grid_a5c8fd584afc136dde0c222634c2fe240}{dyrect} = 30.e5\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab75f2e02f6911b1eacbb7a0647f947b7}{rndex\_\-global}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}{work1}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__grid_a26e7cc8fc629dd16d1f98839ebb9b5ff}{
+\index{ice\_\-grid@{ice\_\-grid}!bsslzr@{bsslzr}}
+\index{bsslzr@{bsslzr}!ice_grid@{ice\_\-grid}}
+\subsubsection[{bsslzr}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::bsslzr (real (kind=dbl\_\-kind),dimension(n),intent(inout) {\em bes}, \/  integer (kind=int\_\-kind),intent(in) {\em n})}}
+\label{namespaceice__grid_a26e7cc8fc629dd16d1f98839ebb9b5ff}
+
+
+Definition at line 2101 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a5cd4fd8007e449d3daca8a8ddd45b1b0}{
+\index{ice\_\-grid@{ice\_\-grid}!gridbox\_\-corners@{gridbox\_\-corners}}
+\index{gridbox\_\-corners@{gridbox\_\-corners}!ice_grid@{ice\_\-grid}}
+\subsubsection[{gridbox\_\-corners}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::gridbox\_\-corners ()}}
+\label{namespaceice__grid_a5cd4fd8007e449d3daca8a8ddd45b1b0}
+
+
+Definition at line 2191 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_acfca25b6f395314aa5ccacde317d5bac}{
+\index{ice\_\-grid@{ice\_\-grid}!gridbox\_\-verts@{gridbox\_\-verts}}
+\index{gridbox\_\-verts@{gridbox\_\-verts}!ice_grid@{ice\_\-grid}}
+\subsubsection[{gridbox\_\-verts}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::gridbox\_\-verts (real (kind=dbl\_\-kind),dimension(:,:),intent(in) {\em work\_\-g}, \/  real (kind=dbl\_\-kind),dimension(4,nx\_\-block,ny\_\-block,max\_\-blocks),intent(out) {\em vbounds})}}
+\label{namespaceice__grid_acfca25b6f395314aa5ccacde317d5bac}
+
+
+Definition at line 2381 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ace97d5a2cdb55b3e8caa37f125635f14}{
+\index{ice\_\-grid@{ice\_\-grid}!init\_\-grid1@{init\_\-grid1}}
+\index{init\_\-grid1@{init\_\-grid1}!ice_grid@{ice\_\-grid}}
+\subsubsection[{init\_\-grid1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::init\_\-grid1 ()}}
+\label{namespaceice__grid_ace97d5a2cdb55b3e8caa37f125635f14}
+
+
+Definition at line 149 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a1443c2d00f599d16be96edeb376c3e97}{
+\index{ice\_\-grid@{ice\_\-grid}!init\_\-grid2@{init\_\-grid2}}
+\index{init\_\-grid2@{init\_\-grid2}!ice_grid@{ice\_\-grid}}
+\subsubsection[{init\_\-grid2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::init\_\-grid2 ()}}
+\label{namespaceice__grid_a1443c2d00f599d16be96edeb376c3e97}
+
+
+Definition at line 287 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a3b4d1b3eb2836fed2bf8389411d1dbf0}{
+\index{ice\_\-grid@{ice\_\-grid}!makemask@{makemask}}
+\index{makemask@{makemask}!ice_grid@{ice\_\-grid}}
+\subsubsection[{makemask}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::makemask ()}}
+\label{namespaceice__grid_a3b4d1b3eb2836fed2bf8389411d1dbf0}
+
+
+Definition at line 1541 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ae6e42c3f57ad49e30c85c71573096781}{
+\index{ice\_\-grid@{ice\_\-grid}!panarctic\_\-grid@{panarctic\_\-grid}}
+\index{panarctic\_\-grid@{panarctic\_\-grid}!ice_grid@{ice\_\-grid}}
+\subsubsection[{panarctic\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::panarctic\_\-grid ()}}
+\label{namespaceice__grid_ae6e42c3f57ad49e30c85c71573096781}
+
+
+Definition at line 795 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a24e5c873e7aef7bffaa80de04d205f1c}{
+\index{ice\_\-grid@{ice\_\-grid}!popgrid@{popgrid}}
+\index{popgrid@{popgrid}!ice_grid@{ice\_\-grid}}
+\subsubsection[{popgrid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::popgrid ()}}
+\label{namespaceice__grid_a24e5c873e7aef7bffaa80de04d205f1c}
+
+
+Definition at line 525 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a830c0e85f52a27b04394190410c74730}{
+\index{ice\_\-grid@{ice\_\-grid}!popgrid\_\-nc@{popgrid\_\-nc}}
+\index{popgrid\_\-nc@{popgrid\_\-nc}!ice_grid@{ice\_\-grid}}
+\subsubsection[{popgrid\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::popgrid\_\-nc ()}}
+\label{namespaceice__grid_a830c0e85f52a27b04394190410c74730}
+
+
+Definition at line 651 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a101630e53001c3cf050c5c5672199c25}{
+\index{ice\_\-grid@{ice\_\-grid}!primary\_\-grid\_\-lengths\_\-HTE@{primary\_\-grid\_\-lengths\_\-HTE}}
+\index{primary\_\-grid\_\-lengths\_\-HTE@{primary\_\-grid\_\-lengths\_\-HTE}!ice_grid@{ice\_\-grid}}
+\subsubsection[{primary\_\-grid\_\-lengths\_\-HTE}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::primary\_\-grid\_\-lengths\_\-HTE (real (kind=dbl\_\-kind),dimension(:,:) {\em work\_\-g})}}
+\label{namespaceice__grid_a101630e53001c3cf050c5c5672199c25}
+
+
+Definition at line 1459 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a2eadb37992f11dff1d497737f391f976}{
+\index{ice\_\-grid@{ice\_\-grid}!primary\_\-grid\_\-lengths\_\-HTN@{primary\_\-grid\_\-lengths\_\-HTN}}
+\index{primary\_\-grid\_\-lengths\_\-HTN@{primary\_\-grid\_\-lengths\_\-HTN}!ice_grid@{ice\_\-grid}}
+\subsubsection[{primary\_\-grid\_\-lengths\_\-HTN}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::primary\_\-grid\_\-lengths\_\-HTN (real (kind=dbl\_\-kind),dimension(:,:) {\em work\_\-g})}}
+\label{namespaceice__grid_a2eadb37992f11dff1d497737f391f976}
+
+
+Definition at line 1380 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a2368fc9f9adb4dd4c869e9e618923640}{
+\index{ice\_\-grid@{ice\_\-grid}!rectgrid@{rectgrid}}
+\index{rectgrid@{rectgrid}!ice_grid@{ice\_\-grid}}
+\subsubsection[{rectgrid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::rectgrid ()}}
+\label{namespaceice__grid_a2368fc9f9adb4dd4c869e9e618923640}
+
+
+Definition at line 1220 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ac06419b8058ea2a7164cf726ac07b544}{
+\index{ice\_\-grid@{ice\_\-grid}!sinlat@{sinlat}}
+\index{sinlat@{sinlat}!ice_grid@{ice\_\-grid}}
+\subsubsection[{sinlat}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::sinlat (real (kind=dbl\_\-kind),dimension(ny\_\-global),intent(out) {\em a}, \/  integer (kind=int\_\-kind),intent(in) {\em k})}}
+\label{namespaceice__grid_ac06419b8058ea2a7164cf726ac07b544}
+
+
+Definition at line 1984 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_afcc1556abeece73115e27355f13c1f66}{
+\index{ice\_\-grid@{ice\_\-grid}!t2ugrid\_\-vector@{t2ugrid\_\-vector}}
+\index{t2ugrid\_\-vector@{t2ugrid\_\-vector}!ice_grid@{ice\_\-grid}}
+\subsubsection[{t2ugrid\_\-vector}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::t2ugrid\_\-vector (real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(inout) {\em work})}}
+\label{namespaceice__grid_afcc1556abeece73115e27355f13c1f66}
+
+
+Definition at line 1776 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a6d381958e459356fe9b135a76d3423e4}{
+\index{ice\_\-grid@{ice\_\-grid}!Tlatlon@{Tlatlon}}
+\index{Tlatlon@{Tlatlon}!ice_grid@{ice\_\-grid}}
+\subsubsection[{Tlatlon}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::Tlatlon ()}}
+\label{namespaceice__grid_a6d381958e459356fe9b135a76d3423e4}
+
+
+Definition at line 1647 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a63f5a2363aeb189e80ffb2294d20c42b}{
+\index{ice\_\-grid@{ice\_\-grid}!to\_\-tgrid@{to\_\-tgrid}}
+\index{to\_\-tgrid@{to\_\-tgrid}!ice_grid@{ice\_\-grid}}
+\subsubsection[{to\_\-tgrid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::to\_\-tgrid (real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks) {\em work1}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks) {\em work2})}}
+\label{namespaceice__grid_a63f5a2363aeb189e80ffb2294d20c42b}
+
+
+Definition at line 1925 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_af263876d35043749020fcd9c12766b3f}{
+\index{ice\_\-grid@{ice\_\-grid}!to\_\-ugrid@{to\_\-ugrid}}
+\index{to\_\-ugrid@{to\_\-ugrid}!ice_grid@{ice\_\-grid}}
+\subsubsection[{to\_\-ugrid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::to\_\-ugrid (real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(in) {\em work1}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(out) {\em work2})}}
+\label{namespaceice__grid_af263876d35043749020fcd9c12766b3f}
+
+
+Definition at line 1820 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aefb15c768a63706ec6a5155d55b6c5a9}{
+\index{ice\_\-grid@{ice\_\-grid}!u2tgrid\_\-vector@{u2tgrid\_\-vector}}
+\index{u2tgrid\_\-vector@{u2tgrid\_\-vector}!ice_grid@{ice\_\-grid}}
+\subsubsection[{u2tgrid\_\-vector}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-grid::u2tgrid\_\-vector (real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),intent(inout) {\em work})}}
+\label{namespaceice__grid_aefb15c768a63706ec6a5155d55b6c5a9}
+
+
+Definition at line 1884 of file ice\_\-grid.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__grid_a0a538e97fcd87790e7fae5de82bd0e77}{
+\index{ice\_\-grid@{ice\_\-grid}!ANGLE@{ANGLE}}
+\index{ANGLE@{ANGLE}!ice_grid@{ice\_\-grid}}
+\subsubsection[{ANGLE}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::ANGLE}}}
+\label{namespaceice__grid_a0a538e97fcd87790e7fae5de82bd0e77}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aa8fc09d102ada560318d68276c1dfd57}{
+\index{ice\_\-grid@{ice\_\-grid}!ANGLET@{ANGLET}}
+\index{ANGLET@{ANGLET}!ice_grid@{ice\_\-grid}}
+\subsubsection[{ANGLET}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::ANGLET}}}
+\label{namespaceice__grid_aa8fc09d102ada560318d68276c1dfd57}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a83a8de6d0e58a6771b3d915acd63afd7}{
+\index{ice\_\-grid@{ice\_\-grid}!cxm@{cxm}}
+\index{cxm@{cxm}!ice_grid@{ice\_\-grid}}
+\subsubsection[{cxm}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::cxm}}}
+\label{namespaceice__grid_a83a8de6d0e58a6771b3d915acd63afd7}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a3c40a8ee2794b13b04b0598c90bf420f}{
+\index{ice\_\-grid@{ice\_\-grid}!cxp@{cxp}}
+\index{cxp@{cxp}!ice_grid@{ice\_\-grid}}
+\subsubsection[{cxp}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::cxp}}}
+\label{namespaceice__grid_a3c40a8ee2794b13b04b0598c90bf420f}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_adb5e2792c5861e949ad784e35f485c08}{
+\index{ice\_\-grid@{ice\_\-grid}!cym@{cym}}
+\index{cym@{cym}!ice_grid@{ice\_\-grid}}
+\subsubsection[{cym}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::cym}}}
+\label{namespaceice__grid_adb5e2792c5861e949ad784e35f485c08}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a30e2151554a97e140124f4cb4317a054}{
+\index{ice\_\-grid@{ice\_\-grid}!cyp@{cyp}}
+\index{cyp@{cyp}!ice_grid@{ice\_\-grid}}
+\subsubsection[{cyp}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::cyp}}}
+\label{namespaceice__grid_a30e2151554a97e140124f4cb4317a054}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a0247c390ce33b9435bbff4edbff8b9e7}{
+\index{ice\_\-grid@{ice\_\-grid}!dxhy@{dxhy}}
+\index{dxhy@{dxhy}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dxhy}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dxhy}}}
+\label{namespaceice__grid_a0247c390ce33b9435bbff4edbff8b9e7}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aea53b08fccd72dbe7e8a4689ab26534c}{
+\index{ice\_\-grid@{ice\_\-grid}!dxrect@{dxrect}}
+\index{dxrect@{dxrect}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dxrect}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-grid::dxrect} = 30.e5\_\-dbl\_\-kind}}
+\label{namespaceice__grid_aea53b08fccd72dbe7e8a4689ab26534c}
+
+
+Definition at line 127 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a42016e793e21df58800428163f3eac13}{
+\index{ice\_\-grid@{ice\_\-grid}!dxt@{dxt}}
+\index{dxt@{dxt}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dxt}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dxt}}}
+\label{namespaceice__grid_a42016e793e21df58800428163f3eac13}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a9fecdcb5623bfc308ef4f2ddb4d284b6}{
+\index{ice\_\-grid@{ice\_\-grid}!dxu@{dxu}}
+\index{dxu@{dxu}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dxu}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dxu}}}
+\label{namespaceice__grid_a9fecdcb5623bfc308ef4f2ddb4d284b6}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ab6ee5703ec9bc808f8ebcf436960d722}{
+\index{ice\_\-grid@{ice\_\-grid}!dyhx@{dyhx}}
+\index{dyhx@{dyhx}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dyhx}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dyhx}}}
+\label{namespaceice__grid_ab6ee5703ec9bc808f8ebcf436960d722}
+
+
+Definition at line 76 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a5c8fd584afc136dde0c222634c2fe240}{
+\index{ice\_\-grid@{ice\_\-grid}!dyrect@{dyrect}}
+\index{dyrect@{dyrect}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dyrect}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-grid::dyrect} = 30.e5\_\-dbl\_\-kind}}
+\label{namespaceice__grid_a5c8fd584afc136dde0c222634c2fe240}
+
+
+Definition at line 127 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ae46b1f5dbbef49a552a33a86b1f887b8}{
+\index{ice\_\-grid@{ice\_\-grid}!dyt@{dyt}}
+\index{dyt@{dyt}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dyt}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dyt}}}
+\label{namespaceice__grid_ae46b1f5dbbef49a552a33a86b1f887b8}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ad2b38c10d13244b2b4da1e461c2ef207}{
+\index{ice\_\-grid@{ice\_\-grid}!dyu@{dyu}}
+\index{dyu@{dyu}!ice_grid@{ice\_\-grid}}
+\subsubsection[{dyu}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::dyu}}}
+\label{namespaceice__grid_ad2b38c10d13244b2b4da1e461c2ef207}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ac080d4ddf9dfc9375611416d1c425155}{
+\index{ice\_\-grid@{ice\_\-grid}!grid\_\-file@{grid\_\-file}}
+\index{grid\_\-file@{grid\_\-file}!ice_grid@{ice\_\-grid}}
+\subsubsection[{grid\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len\_\-long),save {\bf ice\_\-grid::grid\_\-file}}}
+\label{namespaceice__grid_ac080d4ddf9dfc9375611416d1c425155}
+
+
+Definition at line 48 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_af3bcebba9676775105d70d32996d3ce5}{
+\index{ice\_\-grid@{ice\_\-grid}!grid\_\-format@{grid\_\-format}}
+\index{grid\_\-format@{grid\_\-format}!ice_grid@{ice\_\-grid}}
+\subsubsection[{grid\_\-format}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len\_\-long),save {\bf ice\_\-grid::grid\_\-format}}}
+\label{namespaceice__grid_af3bcebba9676775105d70d32996d3ce5}
+
+
+Definition at line 48 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a927cd355e5ebbeb5b943262b4d8a1c74}{
+\index{ice\_\-grid@{ice\_\-grid}!grid\_\-type@{grid\_\-type}}
+\index{grid\_\-type@{grid\_\-type}!ice_grid@{ice\_\-grid}}
+\subsubsection[{grid\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len\_\-long),save {\bf ice\_\-grid::grid\_\-type}}}
+\label{namespaceice__grid_a927cd355e5ebbeb5b943262b4d8a1c74}
+
+
+Definition at line 48 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a7ecb27b1b130ed860c56ab81f4a9373e}{
+\index{ice\_\-grid@{ice\_\-grid}!hm@{hm}}
+\index{hm@{hm}!ice_grid@{ice\_\-grid}}
+\subsubsection[{hm}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::hm}}}
+\label{namespaceice__grid_a7ecb27b1b130ed860c56ab81f4a9373e}
+
+
+Definition at line 111 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a881253aa819ce18c46c4bffb3d558616}{
+\index{ice\_\-grid@{ice\_\-grid}!HTE@{HTE}}
+\index{HTE@{HTE}!ice_grid@{ice\_\-grid}}
+\subsubsection[{HTE}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::HTE}}}
+\label{namespaceice__grid_a881253aa819ce18c46c4bffb3d558616}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a6d5e0411ab66c52d72c0bcc75f794eab}{
+\index{ice\_\-grid@{ice\_\-grid}!HTN@{HTN}}
+\index{HTN@{HTN}!ice_grid@{ice\_\-grid}}
+\subsubsection[{HTN}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::HTN}}}
+\label{namespaceice__grid_a6d5e0411ab66c52d72c0bcc75f794eab}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a21b896a78dcb089ba19cddd8a763ec94}{
+\index{ice\_\-grid@{ice\_\-grid}!kmt\_\-file@{kmt\_\-file}}
+\index{kmt\_\-file@{kmt\_\-file}!ice_grid@{ice\_\-grid}}
+\subsubsection[{kmt\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len\_\-long),save {\bf ice\_\-grid::kmt\_\-file}}}
+\label{namespaceice__grid_a21b896a78dcb089ba19cddd8a763ec94}
+
+
+Definition at line 48 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ab343eaee175150d30612b98bf5e83faf}{
+\index{ice\_\-grid@{ice\_\-grid}!latt\_\-bounds@{latt\_\-bounds}}
+\index{latt\_\-bounds@{latt\_\-bounds}!ice_grid@{ice\_\-grid}}
+\subsubsection[{latt\_\-bounds}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (4,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::latt\_\-bounds}}}
+\label{namespaceice__grid_ab343eaee175150d30612b98bf5e83faf}
+
+
+Definition at line 85 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a03b1e73bc95079d90193478f58f192ce}{
+\index{ice\_\-grid@{ice\_\-grid}!latu\_\-bounds@{latu\_\-bounds}}
+\index{latu\_\-bounds@{latu\_\-bounds}!ice_grid@{ice\_\-grid}}
+\subsubsection[{latu\_\-bounds}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (4,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::latu\_\-bounds}}}
+\label{namespaceice__grid_a03b1e73bc95079d90193478f58f192ce}
+
+
+Definition at line 85 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ae9873cb5a374679eb9105cbd0b3adaef}{
+\index{ice\_\-grid@{ice\_\-grid}!lmask\_\-n@{lmask\_\-n}}
+\index{lmask\_\-n@{lmask\_\-n}!ice_grid@{ice\_\-grid}}
+\subsubsection[{lmask\_\-n}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::lmask\_\-n}}}
+\label{namespaceice__grid_ae9873cb5a374679eb9105cbd0b3adaef}
+
+
+Definition at line 119 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aab33134c872608cbbcb505d3f788bb2d}{
+\index{ice\_\-grid@{ice\_\-grid}!lmask\_\-s@{lmask\_\-s}}
+\index{lmask\_\-s@{lmask\_\-s}!ice_grid@{ice\_\-grid}}
+\subsubsection[{lmask\_\-s}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::lmask\_\-s}}}
+\label{namespaceice__grid_aab33134c872608cbbcb505d3f788bb2d}
+
+
+Definition at line 119 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ae3bd428fa166bb43e833ff27111c5d8e}{
+\index{ice\_\-grid@{ice\_\-grid}!lont\_\-bounds@{lont\_\-bounds}}
+\index{lont\_\-bounds@{lont\_\-bounds}!ice_grid@{ice\_\-grid}}
+\subsubsection[{lont\_\-bounds}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (4,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::lont\_\-bounds}}}
+\label{namespaceice__grid_ae3bd428fa166bb43e833ff27111c5d8e}
+
+
+Definition at line 85 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_abaf36c701426b67cd588146d434b1f99}{
+\index{ice\_\-grid@{ice\_\-grid}!lonu\_\-bounds@{lonu\_\-bounds}}
+\index{lonu\_\-bounds@{lonu\_\-bounds}!ice_grid@{ice\_\-grid}}
+\subsubsection[{lonu\_\-bounds}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (4,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::lonu\_\-bounds}}}
+\label{namespaceice__grid_abaf36c701426b67cd588146d434b1f99}
+
+
+Definition at line 85 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ac0cdb9f8f4e8be0dcf32a5e7adb1ac53}{
+\index{ice\_\-grid@{ice\_\-grid}!mne@{mne}}
+\index{mne@{mne}!ice_grid@{ice\_\-grid}}
+\subsubsection[{mne}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (2,2,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::mne}}}
+\label{namespaceice__grid_ac0cdb9f8f4e8be0dcf32a5e7adb1ac53}
+
+
+Definition at line 103 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a9d5b1bf4f3c68140602c96bf28865733}{
+\index{ice\_\-grid@{ice\_\-grid}!mnw@{mnw}}
+\index{mnw@{mnw}!ice_grid@{ice\_\-grid}}
+\subsubsection[{mnw}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (2,2,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::mnw}}}
+\label{namespaceice__grid_a9d5b1bf4f3c68140602c96bf28865733}
+
+
+Definition at line 103 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a63866b0446065c97c825f70fc29a3654}{
+\index{ice\_\-grid@{ice\_\-grid}!mse@{mse}}
+\index{mse@{mse}!ice_grid@{ice\_\-grid}}
+\subsubsection[{mse}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (2,2,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::mse}}}
+\label{namespaceice__grid_a63866b0446065c97c825f70fc29a3654}
+
+
+Definition at line 103 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a517a26693b149509ae9e4a6c2f310dda}{
+\index{ice\_\-grid@{ice\_\-grid}!msw@{msw}}
+\index{msw@{msw}!ice_grid@{ice\_\-grid}}
+\subsubsection[{msw}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (2,2,nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::msw}}}
+\label{namespaceice__grid_a517a26693b149509ae9e4a6c2f310dda}
+
+
+Definition at line 103 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a5241715733bdedb6dc95cff6f23292de}{
+\index{ice\_\-grid@{ice\_\-grid}!ocn\_\-gridcell\_\-frac@{ocn\_\-gridcell\_\-frac}}
+\index{ocn\_\-gridcell\_\-frac@{ocn\_\-gridcell\_\-frac}!ice_grid@{ice\_\-grid}}
+\subsubsection[{ocn\_\-gridcell\_\-frac}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::ocn\_\-gridcell\_\-frac}}}
+\label{namespaceice__grid_a5241715733bdedb6dc95cff6f23292de}
+
+
+Definition at line 115 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ab75f2e02f6911b1eacbb7a0647f947b7}{
+\index{ice\_\-grid@{ice\_\-grid}!rndex\_\-global@{rndex\_\-global}}
+\index{rndex\_\-global@{rndex\_\-global}!ice_grid@{ice\_\-grid}}
+\subsubsection[{rndex\_\-global}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::rndex\_\-global}}}
+\label{namespaceice__grid_ab75f2e02f6911b1eacbb7a0647f947b7}
+
+
+Definition at line 131 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_af9d3e2476e44dd679c4062b370f21ffa}{
+\index{ice\_\-grid@{ice\_\-grid}!tarea@{tarea}}
+\index{tarea@{tarea}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tarea}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tarea}}}
+\label{namespaceice__grid_af9d3e2476e44dd679c4062b370f21ffa}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a233932d1edd125ed1e3c0cc7b990f256}{
+\index{ice\_\-grid@{ice\_\-grid}!tarean@{tarean}}
+\index{tarean@{tarean}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tarean}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tarean}}}
+\label{namespaceice__grid_a233932d1edd125ed1e3c0cc7b990f256}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ab853acbf3fa50d832ffed201f760ef88}{
+\index{ice\_\-grid@{ice\_\-grid}!tarear@{tarear}}
+\index{tarear@{tarear}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tarear}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tarear}}}
+\label{namespaceice__grid_ab853acbf3fa50d832ffed201f760ef88}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ad08766f36b378acddead7f3503d7be19}{
+\index{ice\_\-grid@{ice\_\-grid}!tareas@{tareas}}
+\index{tareas@{tareas}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tareas}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tareas}}}
+\label{namespaceice__grid_ad08766f36b378acddead7f3503d7be19}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a24fc3cf53e5e2c356bd8e4110112f39c}{
+\index{ice\_\-grid@{ice\_\-grid}!tinyarea@{tinyarea}}
+\index{tinyarea@{tinyarea}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tinyarea}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tinyarea}}}
+\label{namespaceice__grid_a24fc3cf53e5e2c356bd8e4110112f39c}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a76fff4cfe2a27c44abe9fd445f806f25}{
+\index{ice\_\-grid@{ice\_\-grid}!TLAT@{TLAT}}
+\index{TLAT@{TLAT}!ice_grid@{ice\_\-grid}}
+\subsubsection[{TLAT}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::TLAT}}}
+\label{namespaceice__grid_a76fff4cfe2a27c44abe9fd445f806f25}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a2b90fd0fa35a54c0313dac995f929ee7}{
+\index{ice\_\-grid@{ice\_\-grid}!TLON@{TLON}}
+\index{TLON@{TLON}!ice_grid@{ice\_\-grid}}
+\subsubsection[{TLON}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::TLON}}}
+\label{namespaceice__grid_a2b90fd0fa35a54c0313dac995f929ee7}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a5de6731a3b8601be3495a4c306832bf0}{
+\index{ice\_\-grid@{ice\_\-grid}!tmask@{tmask}}
+\index{tmask@{tmask}!ice_grid@{ice\_\-grid}}
+\subsubsection[{tmask}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::tmask}}}
+\label{namespaceice__grid_a5de6731a3b8601be3495a4c306832bf0}
+
+
+Definition at line 119 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aa8008e6fedd2e53d57bee5d6fa898de9}{
+\index{ice\_\-grid@{ice\_\-grid}!uarea@{uarea}}
+\index{uarea@{uarea}!ice_grid@{ice\_\-grid}}
+\subsubsection[{uarea}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::uarea}}}
+\label{namespaceice__grid_aa8008e6fedd2e53d57bee5d6fa898de9}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_acf709799675ca52c31d335eb09a46fcf}{
+\index{ice\_\-grid@{ice\_\-grid}!uarear@{uarear}}
+\index{uarear@{uarear}!ice_grid@{ice\_\-grid}}
+\subsubsection[{uarear}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::uarear}}}
+\label{namespaceice__grid_acf709799675ca52c31d335eb09a46fcf}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a98cabaeec38bbcfe0d2844d8dae12434}{
+\index{ice\_\-grid@{ice\_\-grid}!ULAT@{ULAT}}
+\index{ULAT@{ULAT}!ice_grid@{ice\_\-grid}}
+\subsubsection[{ULAT}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::ULAT}}}
+\label{namespaceice__grid_a98cabaeec38bbcfe0d2844d8dae12434}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a15766c63c75fd52d6d8ea3d651ecba26}{
+\index{ice\_\-grid@{ice\_\-grid}!ULON@{ULON}}
+\index{ULON@{ULON}!ice_grid@{ice\_\-grid}}
+\subsubsection[{ULON}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::ULON}}}
+\label{namespaceice__grid_a15766c63c75fd52d6d8ea3d651ecba26}
+
+
+Definition at line 55 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a02f5ae5edcea6185af4949d9be61cc26}{
+\index{ice\_\-grid@{ice\_\-grid}!umask@{umask}}
+\index{umask@{umask}!ice_grid@{ice\_\-grid}}
+\subsubsection[{umask}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::umask}}}
+\label{namespaceice__grid_a02f5ae5edcea6185af4949d9be61cc26}
+
+
+Definition at line 119 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aa8b13eb710c7be4a90e210294e37b5af}{
+\index{ice\_\-grid@{ice\_\-grid}!uvm@{uvm}}
+\index{uvm@{uvm}!ice_grid@{ice\_\-grid}}
+\subsubsection[{uvm}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::uvm}}}
+\label{namespaceice__grid_aa8b13eb710c7be4a90e210294e37b5af}
+
+
+Definition at line 111 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}{
+\index{ice\_\-grid@{ice\_\-grid}!work1@{work1}}
+\index{work1@{work1}!ice_grid@{ice\_\-grid}}
+\subsubsection[{work1}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks) {\bf ice\_\-grid::work1}}}
+\label{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}
+
+
+Definition at line 134 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aa84e4b92963d682ab3222a9d5716cbe8}{
+\index{ice\_\-grid@{ice\_\-grid}!xav@{xav}}
+\index{xav@{xav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xav}}}
+\label{namespaceice__grid_aa84e4b92963d682ab3222a9d5716cbe8}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a7c8bb3b029d335971804fce931af7a4b}{
+\index{ice\_\-grid@{ice\_\-grid}!xxav@{xxav}}
+\index{xxav@{xxav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xxav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xxav}}}
+\label{namespaceice__grid_a7c8bb3b029d335971804fce931af7a4b}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a62131a38b595f37c91ebbec351691ef3}{
+\index{ice\_\-grid@{ice\_\-grid}!xxxav@{xxxav}}
+\index{xxxav@{xxxav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xxxav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xxxav}}}
+\label{namespaceice__grid_a62131a38b595f37c91ebbec351691ef3}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a471e3cdf6d11b7f3831afcdfb354fbfc}{
+\index{ice\_\-grid@{ice\_\-grid}!xxyav@{xxyav}}
+\index{xxyav@{xxyav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xxyav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xxyav}}}
+\label{namespaceice__grid_a471e3cdf6d11b7f3831afcdfb354fbfc}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_aa4182840814568ebe32038898cd5a7ad}{
+\index{ice\_\-grid@{ice\_\-grid}!xyav@{xyav}}
+\index{xyav@{xyav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xyav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xyav}}}
+\label{namespaceice__grid_aa4182840814568ebe32038898cd5a7ad}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ab0c9d28119dfb18bfc26a3f493b2e844}{
+\index{ice\_\-grid@{ice\_\-grid}!xyyav@{xyyav}}
+\index{xyyav@{xyyav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{xyyav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::xyyav}}}
+\label{namespaceice__grid_ab0c9d28119dfb18bfc26a3f493b2e844}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a637cce7adf54c42ab41eeaf347cf824e}{
+\index{ice\_\-grid@{ice\_\-grid}!yav@{yav}}
+\index{yav@{yav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{yav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::yav}}}
+\label{namespaceice__grid_a637cce7adf54c42ab41eeaf347cf824e}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_ae982b98ad7bfa759bb9a1da9dd749783}{
+\index{ice\_\-grid@{ice\_\-grid}!yyav@{yyav}}
+\index{yyav@{yyav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{yyav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::yyav}}}
+\label{namespaceice__grid_ae982b98ad7bfa759bb9a1da9dd749783}
+
+
+Definition at line 92 of file ice\_\-grid.F90.\hypertarget{namespaceice__grid_a9ed5ccbe07d1272b819d05221f756b06}{
+\index{ice\_\-grid@{ice\_\-grid}!yyyav@{yyyav}}
+\index{yyyav@{yyyav}!ice_grid@{ice\_\-grid}}
+\subsubsection[{yyyav}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks),save {\bf ice\_\-grid::yyyav}}}
+\label{namespaceice__grid_a9ed5ccbe07d1272b819d05221f756b06}
+
+
+Definition at line 92 of file ice\_\-grid.F90.

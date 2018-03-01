@@ -1,0 +1,56 @@
+#!/bin/bash
+# This script needs to be run before the  cmake  command for CMake
+# builds. It should be called from all cmake scripts. 
+#
+# This script auto-generates files that were autogerenated as part 
+# of the autoconf system.
+
+echo
+echo "Auto-generating glide_io.F90, "
+echo "glint_io.F90, glint_mbal_io.F90 in build directory."
+echo
+
+mkdir -p fortran_autogen_srcs
+pushd fortran_autogen_srcs
+
+rm *.F90
+
+if [ $# -eq 1 ];
+  then
+    export CISM_SOURCE_DIR=$1 
+  else
+    export CISM_SOURCE_DIR=../../../
+echo $1
+fi
+echo "Auto-generate script is using CISM source directory: "
+echo $CISM_SOURCE_DIR
+
+# copy template file to shorten python calls below
+cp $CISM_SOURCE_DIR/libglimmer/ncdf_template.F90.in .
+
+##########################
+# The following lines generate several *_io.F90 files, based on variable definition files:
+
+# Use python scripts
+echo "  --creating glide_io.F90"
+cp $CISM_SOURCE_DIR/libglide/glide_vars.def .
+python $CISM_SOURCE_DIR/scripts/generate_ncvars.py glide_vars.def ncdf_template.F90.in
+
+#echo "  --creating glint_io.F90 and glint_mbal_io.F90 "
+#cp $CISM_SOURCE_DIR/libglint/glint_vars.def .
+#cp $CISM_SOURCE_DIR/libglint/glint_mbal_vars.def .
+#python $CISM_SOURCE_DIR/scripts/generate_ncvars.py glint_vars.def ncdf_template.F90.in
+#python $CISM_SOURCE_DIR/scripts/generate_ncvars.py glint_mbal_vars.def ncdf_template.F90.in
+
+
+#echo "  --creating eis_io.F90"
+#cp $CISM_SOURCE_DIR/example-drivers/eis/src/eis_vars.def .
+#python ../../../scripts/generate_ncvars.py eis_vars.def ncdf_template.F90.in
+
+echo "  --deleting temporary .def files and template file"
+rm *.def
+rm ncdf_template.F90.in
+
+popd
+
+

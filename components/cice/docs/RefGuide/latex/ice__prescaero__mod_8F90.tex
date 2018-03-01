@@ -1,0 +1,115 @@
+\hypertarget{ice__prescaero__mod_8F90}{
+\section{ice\_\-prescaero\_\-mod.F90 File Reference}
+\label{ice__prescaero__mod_8F90}\index{ice\_\-prescaero\_\-mod.F90@{ice\_\-prescaero\_\-mod.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__prescaero__mod}{ice\_\-prescaero\_\-mod}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__prescaero__mod_a49687e63d926d56d80c47d29f3348bf3}{ice\_\-prescaero\_\-mod::ice\_\-prescaero\_\-init} (prescribed\_\-aero\_\-in)
+\item 
+subroutine \hyperlink{namespaceice__prescaero__mod_a26d851ac89ccf10b178b800a3c9a3c68}{ice\_\-prescaero\_\-mod::ice\_\-prescaero\_\-run} (mDateIn, secIn)
+\item 
+subroutine \hyperlink{namespaceice__prescaero__mod_a0abb4e2f6271ccd9b7df6b797d3f6b4e}{ice\_\-prescaero\_\-mod::ice\_\-prescaero\_\-readField} (fileName, fldName, nTime, fldRead)
+\item 
+subroutine \hyperlink{namespaceice__prescaero__mod_a047baf1e9b916248581b645f065f84d7}{ice\_\-prescaero\_\-mod::ice\_\-prescaero\_\-checkDomain} (aeroXCoord, aeroYCoord, dataXCoord, dataYCoord, regrid)
+\item 
+subroutine \hyperlink{namespaceice__prescaero__mod_a255b193e694ed5ffbbad1b5c3935173b}{ice\_\-prescaero\_\-mod::ice\_\-prescaero\_\-phys}
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescaero__mod_a12fbaeed0ee95a72e9c96406be9d7578}{ice\_\-prescaero\_\-mod::prescribed\_\-aero}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a707a18c373ea6a3f7aa42d9a1872f322}{ice\_\-prescaero\_\-mod::stream\_\-year\_\-first\_\-aero}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_ae0ffc599bd1d380d44541bac8026fc8d}{ice\_\-prescaero\_\-mod::stream\_\-year\_\-last\_\-aero}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a992cda048d40587ac16120bfa8691a42}{ice\_\-prescaero\_\-mod::model\_\-year\_\-align\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a92f0e6afee8f0fce04d39a9b726579c4}{ice\_\-prescaero\_\-mod::stream\_\-fldVarName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a5528b5428fb89c7e220fc959f2c80009}{ice\_\-prescaero\_\-mod::stream\_\-fldFileName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a73733a5cec61434d5a1da1d83629e601}{ice\_\-prescaero\_\-mod::stream\_\-domTvarName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a6ba0f1529c78ceec4eb50dd637ee5a54}{ice\_\-prescaero\_\-mod::stream\_\-domXvarName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a9e4fb440c2ad241c5a3d034e180fffef}{ice\_\-prescaero\_\-mod::stream\_\-domYvarName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_afc3d3f278ce9859e477534269596e82f}{ice\_\-prescaero\_\-mod::stream\_\-domAreaName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a9ba2c680142ab95e945ff4071df68330}{ice\_\-prescaero\_\-mod::stream\_\-domMaskName\_\-aero}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a4b93709d4642b42b9af488601bef97f6}{ice\_\-prescaero\_\-mod::stream\_\-domFileName\_\-aero}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescaero__mod_aa57981b6da9b30b28d73604e3a8b9851}{ice\_\-prescaero\_\-mod::prescribed\_\-aero\_\-fill}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_aec4bdb0ed27915f50239245791a64619}{ice\_\-prescaero\_\-mod::dataXCoord}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_a7ebbdee8a01449422409a6d584c84806}{ice\_\-prescaero\_\-mod::dataYCoord}
+\item 
+integer(kind=int\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_ab34b112295019ba547110ff459523bd4}{ice\_\-prescaero\_\-mod::dataMask}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_a5dc80d6924fb5d7281e3ed6a94055e43}{ice\_\-prescaero\_\-mod::dataUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_adb7c17b56a47e03225f2fe34bee46d47}{ice\_\-prescaero\_\-mod::dataLB}
+\item 
+type(shr\_\-stream\_\-streamType), save \hyperlink{namespaceice__prescaero__mod_acec6a7f28171dd632bbd24ad76884414}{ice\_\-prescaero\_\-mod::aero\_\-stream}
+\item 
+type(shr\_\-map\_\-mapType) \hyperlink{namespaceice__prescaero__mod_a4975c089616e76a62c08619dc3e4fd8a}{ice\_\-prescaero\_\-mod::cice\_\-map}
+\item 
+type(shr\_\-map\_\-mapType) \hyperlink{namespaceice__prescaero__mod_a24d44223461a3f3c815c1c8ef882947f}{ice\_\-prescaero\_\-mod::cice\_\-fill}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_a7ef634010a6c0d07c52a41321fce88d6}{ice\_\-prescaero\_\-mod::dataInLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_a0f7120047c00901e14be1cb218202430}{ice\_\-prescaero\_\-mod::dataInUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_afbd1563a75a090ddd309cc987ea8e9e5}{ice\_\-prescaero\_\-mod::dataSrcLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_ad4ef44bba9c163d1a0cdd1f739878aff}{ice\_\-prescaero\_\-mod::dataSrcUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_a7b35ab67e4a9bc5affef31d7a418c8cc}{ice\_\-prescaero\_\-mod::dataDstLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_aaafab7a06140832287cfb2357f553967}{ice\_\-prescaero\_\-mod::dataDstUB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_ab068cb9460ac0d6936bf8b6ffc60d694}{ice\_\-prescaero\_\-mod::dataOutLB}
+\item 
+real(kind=dbl\_\-kind), allocatable \hyperlink{namespaceice__prescaero__mod_ad753676afac58f6bdbb0c4ad5f330c09}{ice\_\-prescaero\_\-mod::dataOutUB}
+\item 
+real(kind=dbl\_\-kind), dimension(:,:,:,:), allocatable \hyperlink{namespaceice__prescaero__mod_acd22778b78cac460f018ccef7ec19441}{ice\_\-prescaero\_\-mod::aero\_\-lb}
+\item 
+real(kind=dbl\_\-kind), dimension(:,:,:,:), allocatable \hyperlink{namespaceice__prescaero__mod_a5da19bde8a1695cce4a672195097610a}{ice\_\-prescaero\_\-mod::aero\_\-ub}
+\item 
+real(kind=dbl\_\-kind), dimension(:,:,:,:), allocatable \hyperlink{namespaceice__prescaero__mod_a0bde5e1bf6589d6060071642738d53be}{ice\_\-prescaero\_\-mod::aero\_\-loc}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__prescaero__mod_a425d07f2285f906fd3d7feb2590c6381}{ice\_\-prescaero\_\-mod::worka}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__prescaero__mod_af47c8a64b468928d1aaad008ef8609d8}{ice\_\-prescaero\_\-mod::regrid}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a30a561e9f5e6d98c4f0ea75abe09c691}{ice\_\-prescaero\_\-mod::dateUB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a6be4e65c946ef5d7a771830e380b7a98}{ice\_\-prescaero\_\-mod::dateLB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a635da64637bdade19196f7e407c86f3b}{ice\_\-prescaero\_\-mod::secUB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a93fbf6de60396f73513b16a2d0230a0b}{ice\_\-prescaero\_\-mod::secLB}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a06c7ca3e93cd15535e2ed6f3cd5bf314}{ice\_\-prescaero\_\-mod::nlon}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a7b9a21f0e090fc79f73045a9e324d08f}{ice\_\-prescaero\_\-mod::nlat}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_ab653a95f175ec939e8476b301828c31e}{ice\_\-prescaero\_\-mod::nflds}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__prescaero__mod_a9aac3151343a550064a4ea724d9cdb6f}{ice\_\-prescaero\_\-mod::n}
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__prescaero__mod_a3be7ab6e22248b38d141107dd0ee2a59}{ice\_\-prescaero\_\-mod::fldList}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__prescaero__mod_a3ec9a560b31f3c5c6bc587e700ee9570}{ice\_\-prescaero\_\-mod::fldName}
+\item 
+logical \hyperlink{namespaceice__prescaero__mod_af2c2ae945aa6208a444abc903ead27d9}{ice\_\-prescaero\_\-mod::read\_\-data}
+\end{DoxyCompactItemize}

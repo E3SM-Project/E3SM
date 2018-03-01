@@ -1,0 +1,1 @@
+-l CSMDATA -r 10x15 -y 1850-2000 -irrig .true. -exedir EXEDIR

@@ -1,0 +1,71 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example Code}\label{sec:examplecode}
+
+The example code for PHAML demonstrates calling the phaml\_xxxx modules from within the ice-sheet model and how to start new solutions.  This is the standard way most of the libraries for GLIMMER-CISM are used.  This requires loading everything the model requires and running through the full set of calculations on the ice-sheet.  The calls to PHAML will be one small part of the overall simulation process.  Therefore, the example code is demonstrative of the smaller piece of code that would be in a larger module.
+
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+use phaml
+use phaml_example
+use glide_types
+type(phaml_solution_type) :: phaml_solution
+type(glide_global_type) :: cism_model
+
+!initialize all variables needed
+call phaml_init(cism_model,phaml_solution)
+
+!does the evaluation and places the 
+!solution in cism_model%phaml%uphaml
+call phaml_evolve(cism_model,phaml_solution)
+
+!close and free variables
+call phaml_close(phaml_solution)
+
+\end{verbatim}
+\end{framecode}
+
+This is an example of when only the solution is desired and no intermediate steps are needed.  If a nonlinear or relaxation type of simulation is required then it is possible to walk through the solution one step at a time like the example below.  All of the options in PHAML can be tweaked in the evolve procedures of each module if needed.
+
+\begin{framecode}{6in}
+\begin{verbatim}
+
+use phaml
+use phaml_example
+use glide_types
+type(phaml_solution_type) :: phaml_solution
+type(glide_global_type) :: cism_model
+
+!initialize all variables needed
+call phaml_init(cism_model,phaml_solution)
+
+!creates the mesh and sets initial conditions 
+call phaml_setup(cism_model,phaml_solution)
+
+!looping through timesteps
+do while(time .le. model%numerics%tend)
+
+    !copy old solution and do one iteration
+    call phaml_nonlin_evolve(cism_model,phaml_solution)
+    
+    !get the solution and copy to desired variable
+    call phaml_getsolution(phaml_solution, cism_model%phaml%uphaml)
+end do
+
+!close and free variables
+phaml_close(phaml_solution)
+
+\end{verbatim}
+\end{framecode}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Standalone Code}
+
+GLIMMER-CISM provides an excellent framework for doing small scale simulations by using a basic set of libraries.  This is a good way to work with PHAML as well since you can integrate it with GLIMMER-CISM for simple tests without the overhead of the entire model.  There is an simple example driver like this included in the libphaml source files aptly named \href{http://svn.berlios.de/svnroot/repos/glimmer-cism/glimmer-cism2/libphaml/simple\_phaml.F90}{simple\_phaml.F90}. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Debugging Options}
+
+PHAML provides options to hand running code over to a debugger so that slaves can be monitored separately from the master.  These are very useful when handling usermod variables or when using many slaves on different processors.  
+
+When calling `phaml\_create' the parameter `spawn\_form=DEBUG\_SLAVE' can be passed and then slaves will spawn in a an xterm window with a debugger.  This requires compiling with the `-g' flag though, and will default to GDB for the debugger.  If a different debugger is desired you can set the `debug\_command' parameter to specify which to use.

@@ -1,0 +1,6 @@
+-spmd -smp
+-dyn sld
+-res 32x64
+-phys adiabatic
+-debug
+-s

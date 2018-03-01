@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<config case="experiment_B4">
+        <!-- add needed files/executables -->
+        <add_executable source="model" dest="landice_model"/>
+        <!-- link in scripts that the user will need -->
+        <add_link source_path="script_test_dir" source="setup_hydro-shmip_experimentB_initial_conditions.py" dest="."/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+        </streams>
+
+        <run_script name="setup_test.py">
+
+        <!-- Don't actually do anything - just set up directory -->
+
+        </run_script>
+
+</config>
+

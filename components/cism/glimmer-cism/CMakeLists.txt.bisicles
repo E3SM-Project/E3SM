@@ -1,0 +1,215 @@
+# CMAKE File for GLIMMER building against an installed Trilinos
+
+cmake_minimum_required(VERSION 2.8.6)
+
+OPTION (NO_TRILINOS "Toggle to Not use Trilinos: defaults to OFF (Trilinos on by default)" OFF)
+
+IF (NOT ${NO_TRILINOS})
+  OPTION(GLIMMER_TRILINOS_DIR "Required path to installed Trilinos")
+  OPTION(GLIMMER_NETCDF_DIR "Required path to installed Netcdf")
+
+  # Error check up front
+  IF (NOT DEFINED GLIMMER_TRILINOS_DIR)
+    MESSAGE(FATAL_ERROR "\nGLIMMER Error: cmake must define GLIMMER_TRILINOS_DIR:
+    (-D GLIMMER_TRILINOS_DIR=<trilinos_install_prefix>)!")
+  ENDIF()
+
+  # Get Trilinos as one entity
+  SET(CMAKE_PREFIX_PATH ${GLIMMER_TRILINOS_DIR} ${CMAKE_PREFIX_PATH})
+  FIND_PACKAGE(Trilinos REQUIRED)
+
+  IF (${Trilinos_VERSION} VERSION_LESS  10.8.0)
+    MESSAGE(FATAL_ERROR "Trilinos version 10.8 or newer required!")
+  ENDIF()
+
+  MESSAGE("\nFound Trilinos!  Here are the details: ")
+  MESSAGE("   Trilinos_DIR = ${Trilinos_DIR}")
+  MESSAGE("   Trilinos_VERSION = ${Trilinos_VERSION}")
+  MESSAGE("   Trilinos_PACKAGE_LIST = ${Trilinos_PACKAGE_LIST}")
+  MESSAGE("   Trilinos_LIBRARIES = ${Trilinos_LIBRARIES}")
+  MESSAGE("   Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS}")
+  MESSAGE("   Trilinos_LIBRARY_DIRS = ${Trilinos_LIBRARY_DIRS}")
+  MESSAGE("   Trilinos_TPL_LIST = ${Trilinos_TPL_LIST}")
+  MESSAGE("   Trilinos_TPL_INCLUDE_DIRS = ${Trilinos_TPL_INCLUDE_DIRS}")
+  MESSAGE("   Trilinos_TPL_LIBRARIES = ${Trilinos_TPL_LIBRARIES}")
+  MESSAGE("   Trilinos_TPL_LIBRARY_DIRS = ${Trilinos_TPL_LIBRARY_DIRS}")
+  MESSAGE("   Trilinos_BUILD_SHARED_LIBS = ${Trilinos_BUILD_SHARED_LIBS}")
+  MESSAGE("   Trilinos_CXX_COMPILER_FLAGS = ${Trilinos_CXX_COMPILER_FLAGS}")
+  MESSAGE("   Trilinos_Fortran_COMPILER_FLAGS = ${Trilinos_Fortran_COMPILER_FLAGS}")
+  MESSAGE("End of Trilinos details\n")
+  IF (NOT DEFINED CMAKE_CXX_COMPILER) 
+    SET(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER})
+  ENDIF()
+  IF (NOT DEFINED CMAKE_C_COMPILER) 
+    SET(CMAKE_C_COMPILER ${Trilinos_C_COMPILER})
+  ENDIF()
+  IF (NOT DEFINED CMAKE_Fortran_COMPILER)
+    SET(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER})
+  ENDIF()
+ENDIF()
+
+ENABLE_LANGUAGE(Fortran) 
+
+MESSAGE(">> GLIMMER_NETCDF_DIR set to : ${GLIMMER_NETCDF_DIR}")
+
+IF (NOT DEFINED GLIMMER_NETCDF_DIR)
+  MESSAGE(FATAL_ERROR "\nGLIMMER Error: cmake must define GLIMMER_NETCDF_DIR:
+  (-D GLIMMER_NETCDF_DIR=<netcdf_install_prefix>)!")
+ENDIF()
+
+SET(GLIMMER_NETCDF_LIBS "netcdff;netcdf" CACHE STRING "Netcdf Library Names(s)")
+MESSAGE(">> GLIMMER_NETCDF_LIBS Library(s) set to : ${GLIMMER_NETCDF_LIBS}")
+
+FIND_PACKAGE(HDF5 REQUIRED)
+IF (HDF5_FOUND)
+  INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+  # TARGET_LINK_LIBRARIES(simple_glide ${HDF5_LIBRARIES})
+ENDIF (HDF5_FOUND)
+
+
+SET(GLIMMER_HDF5_LIBS "hdf5;hdf5_hl;z;hdf5_pgi_parallel" CACHE STRING "HDF5 Library Names(s)")
+#MESSAGE(">> GLIMMER_HDF5_LIBS Library(s) set to : ${GLIMMER_HDF5_LIBS}")
+
+SET(GLIMMER_MPI_LIBS "mpichf90" CACHE STRING "MPI Extra Library Names(s)")
+
+
+PROJECT(GLIMMER)
+
+MESSAGE(">> Calling cmake-scripts/autogenerate-script")
+EXECUTE_PROCESS(COMMAND ./autogenerate-script
+                WORKING_DIRECTORY ${GLIMMER_SOURCE_DIR}/cmake-scripts
+                OUTPUT_FILE ${GLIMMER_BINARY_DIR}/autogenerate.log)
+MESSAGE(">> see ${GLIMMER_BINARY_DIR}/autogenerate.log")
+
+# End of setup and error checking
+#  NOTE: PROJECT command checks for compilers, so this statement
+#        is moved AFTER setting CMAKE_CXX_COMPILER from Trilinos
+
+## Use CMAKE_CXX_FLAGS   CMAKE_Fortran_FLAGS   to override  Trilinos flags
+## USe GLIMMER_CXX_FLAGS GLIMMER_Fortran_FLAGS to append to Trilinos flags
+
+IF (NOT CMAKE_CXX_FLAGS)
+  SET(CMAKE_CXX_FLAGS ${Trilinos_CXX_COMPILER_FLAGS} )
+ENDIF()
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GLIMMER_CXX_FLAGS}")
+
+IF (NOT CMAKE_Fortran_FLAGS)
+  SET(CMAKE_Fortran_FLAGS ${Trilinos_Fortran_COMPILER_FLAGS} )
+ENDIF()
+SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${GLIMMER_Fortran_FLAGS}")
+
+IF (NOT ${NO_TRILINOS}) 
+   ## GLIMMER requires Trilinos to include the Piro build 
+   MESSAGE("-- Looking for Piro within Trilinos:")
+   MESSAGE("Trilinos pkg list: " ${Trilinos_PACKAGE_LIST})
+   LIST(FIND Trilinos_PACKAGE_LIST  Piro Piro_List_ID)
+   IF (Piro_List_ID GREATER -1)
+     MESSAGE("-- Looking for Piro: -- found! Continuing.")
+   ELSE()
+     MESSAGE(FATAL_ERROR "-- Looking for Piro: -- not found! Rebuild Trilinos with Piro package.")
+   ENDIF()
+ENDIF()
+
+######
+
+include_directories(${GLIMMER_NETCDF_DIR}/include ${MPI_BASE_DIR}/include)
+link_directories(${GLIMMER_NETCDF_DIR}/lib ${MPI_BASE_DIR}/lib ${SCI_LIB_DIR} 
+		 ${GLIMMER_DYCORE_DIR} ${HDF5_LIB_DIR} ${HDF5_PARALLEL_LIB_DIR} 
+                 ${BISICLES_INTERFACE_DIR}) 
+
+
+IF (NOT ${NO_TRILINOS})
+  ADD_DEFINITIONS(-DGLIMMER_MPI -DTRILINOS)
+ENDIF()
+
+
+IF (BUILD_SIMPLE_BISICLES)
+  MESSAGE("\nBuilding BISICLES...\n")  
+
+  SET(GLIMMER_DYCORE_DIR ${GLIMMER_SOURCE_DIR}/libdycore)
+  SET(GLIMMER_TO_DYCORE ${GLIMMER_DYCORE_DIR}/glimmer_to_dycore.F90) 
+
+  SET(GLIMMER_BISICLES_DIR ${GLIMMER_DYCORE_DIR}/BISICLES)
+
+  INCLUDE_DIRECTORIES(${GLIMMER_DYCORE_DIR} ${GLIMMER_DYCORE_DIR}/BISICLES)
+ENDIF()
+
+IF (NOT DEFINED(CMAKE_Fortran_MODULE_DIRECTORY))
+  SET(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran_mod_files)
+ENDIF()
+
+#####Build All Fortran Sources #####
+file(GLOB FORTRANSOURCES
+     libglimmer-solve/SLAP/*.f
+     libglimmer-solve/*.F90
+     libglimmer/*.F90 libglimmer/writestats.c
+     libglide/*.F90 libglide/fgmresD.f90 
+     ${GLIMMER_TO_DYCORE})
+
+
+LIST(REMOVE_ITEM FORTRANSOURCES
+   ${GLIMMER_SOURCE_DIR}/libglimmer/parallel_slap.F90
+   ${GLIMMER_SOURCE_DIR}/libglimmer/unittest_glimmer_deriv.F90 
+   ${GLIMMER_SOURCE_DIR}/libglide/relaxed.F90)
+
+
+### (For CESM) Remove source files with names already in GLIMMER_SOURCEMOD_DIR
+OPTION(GLIMMER_SOURCEMOD_DIR 
+      "Path to SourceMod directory of F90 files to replace Glimmer files")
+
+MESSAGE("Fortran Source Files: ${FORTRANSOURCES}")
+
+FILE(GLOB SOURCEMODFILES ${GLIMMER_SOURCEMOD_DIR}/*.F90)
+
+# MESSAGE("glimmer_sourcemod_dir: " ${GLIMMER_SOURCEMOD_DIR})
+# MESSAGE("Fortran Mod Files: ${SOURCEMODFILES}")
+
+FOREACH( MODFILE ${SOURCEMODFILES})
+  STRING(FIND ${MODFILE} / index REVERSE)
+  MATH(EXPR index ${index}+1)
+  STRING(SUBSTRING ${MODFILE} ${index} -1 filename)
+  FOREACH( SOURCEFILE ${FORTRANSOURCES})
+    STRING(REGEX MATCH ${filename} match_found ${SOURCEFILE})
+
+    IF(match_found)
+      MESSAGE("--SourceMod: removing ${SOURCEFILE} in favor of ${MODFILE}")
+      LIST(REMOVE_ITEM FORTRANSOURCES ${SOURCEFILE})
+   ENDIF()
+  ENDFOREACH()
+ENDFOREACH()
+###
+
+
+
+#SET(CMAKE_INCLUDE_PATH ${GLIMMER_BINARY_DIR}/include)
+
+
+
+#message("Fortransource ${FORTRANSOURCES}")
+
+# include-dirs: Binary: all the .mod files; SOURCE: config.inc; 
+#               libglide: glide_mask.inc
+
+include_directories (${GLIMMER_BINARY_DIR} ${GLIMMER_BINARY_DIR}/include
+                     ${GLIMMER_SOURCE_DIR} ${GLIMMER_SOURCE_DIR}/libglide)
+
+
+SET(LIBRARY_OUTPUT_PATH ${GLIMMER_BINARY_DIR}/lib)
+
+add_library(glimmercismfortran ${FORTRANSOURCES})
+
+
+#####Build C++ Sources #####
+add_subdirectory(libglimmer-trilinos)
+
+#####Build simple_glide executable (unless turned off) #####
+OPTION(GLIMMER_NO_EXECUTABLE "Set to  ON  to just build libraries (default:OFF)"  OFF)
+IF (NOT GLIMMER_NO_EXECUTABLE)
+  add_subdirectory(example-drivers/simple_glide/src)
+ENDIF()
+
+IF (BUILD_SIMPLE_BISICLES)
+  add_subdirectory(example-drivers/simple_bisicles/src)
+  add_subdirectory(libdycore)
+  file(GLOB BISICLES_INTERFACE_CPP_SOURCES libdycore/*cpp) 
+ENDIF()

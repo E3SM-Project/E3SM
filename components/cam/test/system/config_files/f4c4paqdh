@@ -1,0 +1,8 @@
+-spmd -smp
+-dyn fv
+-res 4x5
+-phys cam4
+-debug
+-pergro
+-ocn aquaplanet
+-s

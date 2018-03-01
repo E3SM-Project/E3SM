@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+"""
+List test results based on TestStatus files. Returns True if
+no errors occured (not based on test statuses).
+"""
+
+from standard_script_setup import *
+import argparse, sys, os, logging, glob
+from CIME.test_status import *
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n{0} <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > {0} path/to/testarea/*/TestStatus
+""".format(os.path.basename(args[0])),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("paths", nargs="*", help="Paths to TestStatus files.")
+
+    parser.add_argument("-s", "--summary", action="store_true",
+                        help="Only show summary")
+
+    parser.add_argument("-t", "--test-id", action="append", default=[],
+                        help="Only show summary")
+
+    parser.add_argument("-r", "--test-root", default=os.getcwd(),
+                        help="Only show summary")
+
+    args = parser.parse_args(args[1:])
+
+    return args.paths, args.summary, args.test_id, args.test_root
+
+###############################################################################
+def cs_status(test_paths, summary=False):
+###############################################################################
+    test_id_output = {}
+    for test_path in test_paths:
+        test_dir=os.path.dirname(test_path)
+        ts = TestStatus(test_dir=test_dir)
+        test_id = os.path.basename(test_dir).split(".")[-1]
+        test_name = ts.get_name()
+        status = ts.get_overall_test_status()
+        if not summary:
+            output = "  %s (Overall: %s) details:\n" % (test_name, status)
+            output += ts.phase_statuses_dump(prefix="    ")
+        else:
+            output = "  %s %s\n" % (status, test_name)
+
+        if test_id in test_id_output:
+            test_id_output[test_id] += output
+        else:
+            test_id_output[test_id] = output
+
+    for test_id in sorted(test_id_output):
+        print(test_id)
+        print(test_id_output[test_id])
+        print(' ')
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    test_paths, summary, test_ids, test_root = parse_command_line(sys.argv, description)
+    for test_id in test_ids:
+        test_paths.extend(glob.glob(os.path.join(test_root, "*%s/TestStatus" % test_id)))
+
+    cs_status(test_paths, summary)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

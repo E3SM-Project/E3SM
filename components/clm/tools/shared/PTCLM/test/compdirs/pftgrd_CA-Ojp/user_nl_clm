@@ -1,0 +1,5 @@
+! user_nl_clm namelist options written by PTCLMmkdata:
+! ../PTCLMmkdata --verbose --soilgrid -m yellowstone_intel -s CA-Ojp -d /glade/p/cesmdata/cseg/inputdata --cesm_root /Users/erik/clm_trunk --debug --mydatadir testing_dir/soigrid_file_creation 
+ fsurdat = '/Users/erik/PTCLM_trunk/test/testing_dir/soigrid_file_creation/1x1pt_CA-Ojp/surfdata_1x1pt_CA-Ojp_simyr2000_clm4_5_c140131.nc'
+ hist_nhtfrq = 0
+ hist_mfilt  = 1200

@@ -1,0 +1,118 @@
+BEGSIM
+output_unit_number = 7
+output_file        = cam_aer_nosynoz.doc
+procout_path       = ../output/
+src_path           = ../bkend/
+procfiles_path     = ../procfiles/cam/
+sim_dat_path       = ../output/
+sim_dat_filename   = cam_aer_nosynoz.dat
+
+Comments
+     "This is a mozart4 simulation with :"
+     "(1)  New hydrocarbon chemistry (lumped alkane, alkene, aromatic)"
+     "(2)  New aerosol chemistry"
+     "(3)  No groups"
+     "(4)  NCEP inputs (28 levels)"
+     "(5)  no N atom; no NH4, no H2SO4"
+End Comments
+
+      SPECIES
+
+      Solution
+        CO
+        COEA -> CO
+        COSA -> CO
+        COEU -> CO
+        CONA -> CO
+        COAVOC -> CO
+        COBVOC -> CO
+        COCH4 -> CO
+        CAVOC -> C
+        CBVOC -> C
+        PRO1 -> C3H8
+        BUT1 -> C4H10
+        ETH1 -> C2H6
+        PRO2 -> C3H8
+        BUT2 -> C4H10
+        ETH2 -> C2H6
+      End Solution
+
+      Fixed
+        M, N2, O2, H2O, CH4
+      End Fixed
+
+      Col-int
+      End Col-int
+
+   End SPECIES
+
+   Solution Classes
+      Explicit
+        CO
+        COEA
+        COSA
+        COEU
+        CONA
+        COAVOC
+        COBVOC
+        COCH4
+        CAVOC
+        CBVOC
+        PRO1
+        BUT1
+        ETH1
+        PRO2
+        BUT2
+        ETH2
+      End Explicit
+      Implicit
+      End Implicit
+   End Solution Classes
+
+ CHEMISTRY
+      Photolysis
+      End Photolysis
+
+      Reactions
+        CO ->                   ; 4.62963e-07
+        COEA ->                 ; 4.62963e-07
+        COSA ->                 ; 4.62963e-07
+        COEU ->                 ; 4.62963e-07
+        CONA ->                 ; 4.62963e-07
+        COAVOC ->               ; 4.62963e-07
+        COBVOC ->               ; 4.62963e-07
+        COCH4 ->                ; 4.62963e-07
+        CAVOC -> 0.7*COAVOC     ; 1.65344e-06
+        CBVOC -> 0.4*COBVOC     ; 1.15741e-05
+        CH4  -> 0.86*COCH4      ; 3.83142e-07
+        PRO1 ->                 ; 0.86e-7
+        BUT1 ->                 ; 2.05e-7
+        ETH1 ->                 ; 0.18e-7
+        PRO2 ->                 ; 1.72e-7
+        BUT2 ->                 ; 4.10e-7
+        ETH2 ->                 ; 0.36e-7
+      End Reactions
+
+   Heterogeneous
+   End Heterogeneous
+
+   Ext Forcing
+   End Ext Forcing
+
+   END CHEMISTRY
+
+   SIMULATION PARAMETERS
+
+     Version Options
+        model   = cam
+        machine = intel
+        architecture = hybrid
+        vec_ftns  = on
+        multitask = on
+        namemod = on
+        modules = on
+     End Version Options
+
+   END SIMULATION PARAMETERS
+
+ENDSIM

@@ -1,0 +1,63 @@
+FCDEFAULT_INCLUDES = $(DEFAULT_INCLUDES)
+PPFCCOMPILE = $(FC) $(FCDEFS) $(FCDEFAULT_INCLUDES) $(FCINCLUDES) $(AM_FCCPPFLAGS) $(FCCPPFLAGS) $(AM_FCFLAGS) $(FCFLAGS)
+LTPPFCCOMPILE = $(LIBTOOL) --tag=FC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(PPFCCOMPILE)
+
+# Treat all .f, .f90, and .F90 files as preprocessed Fortran.
+.f90.o:
+	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
+.f.o:
+	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f) $<
+.F90.o:
+	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_F90) $<
+
+# Remove module files upon make clean:
+clean-local: clean-modules
+clean-modules:
+	test -z "$(FC_MODEXT)" || $(RM) *.$(FC_MODEXT)
+
+%.nc:	%.config
+	$(PYTHON) $(top_srcdir)/scripts/glide_launch.py $(LAUNCH_OPTIONS) -m $(MODEL_BINARY) @AM_SGE_OPTS@ $(SGE_OPTS) $^
+
+graphics:	$(graphics)
+data:		$(data)
+
+compare-%:	%.nc	
+	@if [ ! -e $(GOLD_STD_PREFIX)/$(rel_builddir)/$< ];then \
+	echo "Reference file $(GOLD_STD_PREFIX)/$(rel_builddir)/$< does not exist, download files from ftp.berlios.de/pub/glimmer-cism"; \
+	echo "and point configure to this directory --with-gold-std=/path/to/files"; \
+	exit -1; \
+	fi ;\
+	if $(top_builddir)/utils/compare $(GOLD_STD_PREFIX)/$(rel_builddir)/$< $< -a 1e-8; then \
+	echo "$< passed"; \
+	else echo "$< failed"; \
+	fi	
+
+check-data:	$(gold_standard_data)
+	make $(patsubst %.nc, compare-%, $^)
+
+dist-gold-standard:	$(gold_standard_data)
+	@if [ -n "$(gold_standard_data)" ]; then \
+	mkdir -p $(top_builddir)/$(PACKAGE)-gold-$(VERSION)/$(rel_builddir); \
+	for f in $^; do ln -f $$f $(top_builddir)/$(PACKAGE)-gold-$(VERSION)/$(rel_builddir)/$$f;done; \
+	fi
+
+plotGCvar = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotGCvar
+plotGCProfile = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotGCProfile
+plotGCProfileTS = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotGCProfileTS
+plotEISMINT2stats = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotEISMINT2stats -d $(top_srcdir)/PyGC/data/eismint2.data --size=4 3
+plotGCseds =  PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/extensions/erosion/scripts/plotGCseds --colourmap=$(top_srcdir)/extensions/erosion/scripts/erosion.cpt
+plotGCSedsProfile = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/extensions/erosion/scripts/plotGCSedsProfile
+plotGCSpotTS = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotGCSpotTS
+plotGCSpot = PYTHONPATH=$(top_builddir)/PyGC/src/.libs:$(top_srcdir)/PyGC/:$$PYTHONPATH $(top_srcdir)/PyGC/progs/plotGCSpot
+
+# the following macro produces the current build path relative to the toplevel build directory
+rel_builddir = $(subst  $(abspath $(top_builddir))/,,$(CURDIR))
+
+f90_dep_sources ?= $(SOURCES)
+
+f90_dep.mak:	$(f90_dep_sources)
+		$(PYTHON) $(top_srcdir)/scripts/f90_dependencies.py -l -o $@ $^
+
+SUFFIXES = .config
+
+
