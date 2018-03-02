@@ -836,10 +836,10 @@ is the value of that variable from the *previous* time level!
 		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice that calves (less than or equal to ice thickness)"
 		/>
-                <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="kg s m^{-2}" time_levs="1"
+                <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="m s" time_levs="1"
 		     description="proportionality constant K2+- used in eigencalving formulation"
 		/>
-        <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+                <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
 		     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane).  This retreat rate is converted in the code to requiredCalvingVolumeRate."
 		/>
                 <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"

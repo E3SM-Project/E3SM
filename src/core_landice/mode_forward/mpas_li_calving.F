@@ -914,7 +914,9 @@ module li_calving
 !> \brief Calve ice from the calving front based on a strain rate threshold
 !> \author Matthew Hoffman
 !> \date   Feb. 2018
-!> \details TODO
+!> \details Calve using eigencalving scheme in which calving rate is taken
+!>  proportional to the product of principle strain rates, if both extensional,
+!>  and zero otherwise. Described in detail in:
 !>  Levermann, A., T. Albrecht, R. Winkelmann, M. A. Martin, M. Haseloff, and
 !>  I. Joughin (2012), Kinematic first-order calving law implies potential for
 !>  abrupt ice-shelf retreat, Cryosph., 6(2), 273–286, doi:10.5194/tc-6-273-2012.
