@@ -314,14 +314,14 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 if compname.find('mpas') == 0:
                     # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix =                   compname + '\d*'                   + '\.' + suffix + '\.'
+                    newsuffix =                   compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '\.' + compname + '\d*' + ninst_string[i] + '\.' + suffix + '\.'
+                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i] + r'\.' + suffix + r'\.'
             else:
                 if compname.find('mpas') == 0:
-                    newsuffix =                   compname + '\d*'                   + '\.' + suffix + '\.'
+                    newsuffix =                   compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '\.' + compname + '\d*'                   + '\.' + suffix + '\.'
+                    newsuffix = casename + r'\.' + compname + r'\d*'                   + r'\.' + suffix + r'\.'
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
 
             pfile = re.compile(newsuffix)
@@ -480,9 +480,9 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
-                    pattern =  ninst_strings[i] + '\.' + suffix + '\.' + datename_str
+                    pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
                 else:
-                    pattern =                     '\.' + suffix + '\.' + datename_str
+                    pattern =                     r'\.' + suffix + r'\.' + datename_str
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
                 logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
