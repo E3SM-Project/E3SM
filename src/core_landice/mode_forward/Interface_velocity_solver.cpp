@@ -113,7 +113,7 @@ int velocity_solver_init_mpi(int* fComm) {
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F,
                          double const* sea_level_F, double const* flowParamA_F,
-                         double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F,
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F,
                          double const* clausius_clapeyron_coeff,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
                          bool const* use_GLP_F) {
@@ -123,7 +123,7 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
-                                            *enhancementFactor_F, *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
 }
 
 
@@ -403,7 +403,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
-//        enhancementFactorData,
+        enhancementFactorData,
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;

@@ -62,7 +62,7 @@ module li_velocity_external
       ! Note: Could add all interface routines to this interface...
       ! For now, just trying it with this new routine.
       subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
-         config_default_flowParamA, config_enhancementFactor, &
+         config_default_flowParamA, &
          config_flowLawExponent, config_dynamic_thickness, iceMeltingPointPressureDependence, &
          li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp) &
          bind(C, name="velocity_solver_set_parameters")
@@ -71,7 +71,7 @@ module li_velocity_external
 
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
-                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity, &
+                           config_flowLawExponent, config_dynamic_thickness, gravity, &
                            iceMeltingPointPressureDependence
          LOGICAL(C_BOOL) :: config_use_glp
       end subroutine velocity_solver_set_parameters
@@ -261,7 +261,7 @@ contains
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density,  config_sea_level, config_default_flowParamA, &
-                                    config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness
+                                    config_flowLawExponent, config_dynamic_thickness
       logical, pointer :: config_use_glp
 
       ! halo exchange arrays
@@ -351,13 +351,12 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
-      call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
-         config_default_flowParamA, config_enhancementFactor, &
+         config_default_flowParamA, &
          config_flowLawExponent, config_dynamic_thickness, &
          iceMeltingPointPressureDependence, &
          li_mask_ValueAlbanyActive, li_mask_ValueIce, &
