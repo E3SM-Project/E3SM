@@ -440,7 +440,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:), pointer :: temperature
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
@@ -490,7 +489,6 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -572,12 +570,12 @@ contains
           call mpas_pool_get_field(scratchPool, 'workCell', depthAveragedFlowEnhancementFactorField)
           call mpas_allocate_scratch_field(depthAveragedFlowEnhancementFactorField, .true.)
           do iCell = 1, nCells
-             if (thickness(iCell) > 0.0_RKIND) then
-                depthAveragedFlowEnhancementFactorField % array(iCell) = sum(layerThickness(iCell, :) * &
-                        flowEnhancementFactor(iCell, :)) / thickness(iCell)
-             endif
+             depthAveragedFlowEnhancementFactorField % array(iCell) = &
+                   sum(layerThicknessFractions(:) * flowEnhancementFactor(iCell, :))
           enddo
-
+          ! call mpas_log_write("3d E: max=$r, min=$r;  2d E: max=$r, min=$r", &
+          !realArgs=(/maxval(flowEnhancementFactor), minval(flowEnhancementFactor), maxval(depthAveragedFlowEnhancementFactorField%array), &
+          !minval(depthAveragedFlowEnhancementFactorField%array) /))
 
           call mpas_timer_start("velocity_solver_solve_FO")
           err_albany => err_tmp
