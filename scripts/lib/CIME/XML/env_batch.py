@@ -156,16 +156,20 @@ class EnvBatch(EnvBase):
             self.set_batch_system_type(batch_system_type)
 
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
-            for node in batchobj.get_children(root=batchobj.machine_node):
-                oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
-                if oldnode is not None and self.name(oldnode) != "directives":
-                    logger.debug( "Replacing {}".format(self.name(oldnode)))
-                    batchobj.remove_child(oldnode, root=batchobj.batch_system_node)
+            for node in batchobj.get_children("",root=batchobj.machine_node):
+                name = self.name(node)
+                if name != 'directives':
+                    oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
+                    if oldnode is not None:
+                        logger.debug( "Replacing {}".format(self.name(oldnode)))
+                        batchobj.remove_child(oldnode, root=batchobj.batch_system_node)
 
         if batchobj.batch_system_node is not None:
             self.add_child(self.copy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.add_child(self.copy(batchobj.machine_node))
+        self.set_value("BATCH_SYSTEM", batch_system_type)
+
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))

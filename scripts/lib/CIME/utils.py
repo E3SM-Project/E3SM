@@ -1212,7 +1212,7 @@ def append_status(msg, sfile, caseroot='.'):
 
     with open(os.path.join(caseroot, sfile), "a") as fd:
         fd.write(ctime + msg + line_ending)
-        fd.write("\n ---------------------------------------------------\n" + line_ending)
+        fd.write(" ---------------------------------------------------" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """

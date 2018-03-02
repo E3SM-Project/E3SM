@@ -937,6 +937,7 @@ class Case(object):
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
+        logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
 
@@ -1170,10 +1171,11 @@ class Case(object):
                     mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
+        result =  env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
                                      skip_pnl=skip_pnl, mail_user=mail_user,
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
+        return result
 
     def get_job_info(self):
         """
