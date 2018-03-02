@@ -44,7 +44,7 @@
   <comp_archive_spec compname="rtm" compclass="rof">
     <rest_file_extension>r</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
-    <rest_history_varname>locfnh</rest_history_varname>
+    <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -54,7 +54,7 @@
   <comp_archive_spec compname="mosart" compclass="rof">
     <rest_file_extension>r</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
-    <rest_history_varname>locfnh</rest_history_varname>
+    <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -118,8 +118,8 @@
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING.tavg</rpointer_file>
-      <rpointer_content>./$CASE.pop$NINST_STRING.rh.$DATENAME.nc</rpointer_content>
+      <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
+      <rpointer_content>$MPAS_DATENAME</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -136,8 +136,8 @@
     <rest_file_extension>[ri]</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
     <hist_file_extension>initial_hist</hist_file_extension>
-      <rest_history_varname>unset</rest_history_varname>
-      <rpointer>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
@@ -154,7 +154,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>r</rest_file_extension>
+    <rest_file_extension>\..*</rest_file_extension>
     <hist_file_extension>hi</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
