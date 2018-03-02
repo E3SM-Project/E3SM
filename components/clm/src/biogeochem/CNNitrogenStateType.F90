@@ -1849,7 +1849,8 @@ contains
        dwt_livecrootn_to_litter,            &
        dwt_deadcrootn_to_litter,            &
        prod10_nflux,                        &
-       prod100_nflux                        &
+       prod100_nflux,                       &
+       crop_product_nflux                   &
        )
     !
     ! !DESCRIPTION:
@@ -1878,6 +1879,7 @@ contains
     real(r8)                       , intent(inout) :: dwt_deadcrootn_to_litter (bounds%begp:)
     real(r8)                       , intent(inout) :: prod10_nflux             (bounds%begp:)
     real(r8)                       , intent(inout) :: prod100_nflux            (bounds%begp:)
+    real(r8)                       , intent(inout) :: crop_product_nflux       (bounds%begp:)
     !
     ! !LOCAL VARIABLES:
     integer                     :: begp, endp
@@ -1910,6 +1912,7 @@ contains
     SHR_ASSERT_ALL((ubound(dwt_deadcrootn_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod10_nflux             ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod100_nflux            ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(crop_product_nflux       ) == (/endp/)), errMsg(__FILE__, __LINE__))
    
     old_weight_was_zero = patch_state_updater%old_weight_was_zero(bounds)
     patch_grew          = patch_state_updater%patch_grew(bounds)
