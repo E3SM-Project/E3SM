@@ -1,0 +1,24 @@
+! -*- mode: f90; -*-
+module test_betr_transport_module
+
+  use pfunit_mod
+
+  implicit none
+
+contains
+
+  @test
+  subroutine test_mass_curve_correct()
+
+    use bshr_kind_mod, only : r8 => shr_kind_r8
+    use TransportMod, only : mass_curve_correct_
+
+    implicit none
+
+    @assertEqual(0.0_r8, mass_curve_correct_(1.234e-16_r8))
+    @assertEqual(0.0_r8, mass_curve_correct_(-1.234e-16_r8))
+    @assertEqual(2.34e-14_r8, mass_curve_correct_(2.34e-14_r8))
+    @assertEqual(-2.34e-14_r8, mass_curve_correct_(-2.34e-14_r8))
+
+  end subroutine test_mass_curve_correct
+end module test_betr_transport_module

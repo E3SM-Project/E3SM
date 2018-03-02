@@ -1,0 +1,59 @@
+!----------
+! The following test intentionally stops.  A robust runner
+! will continue with other tests and report this one as
+! a runtime error.
+!---------
+
+@test(ifdef=INCLUDE_INTENTIONALLY_BROKEN)
+subroutine testStops()
+   use add_mod
+   use pfunit_mod
+   implicit none
+
+   stop
+
+end subroutine testStops
+
+!----------
+! The following test intentionally loops forever.  A robust runner
+! will kill the test and continue with others reporting this one 
+! as a runtime error.
+! Currently time limit is 100 ms, but that is expected to be configurable
+! in the near future.
+!
+! Once can now set time limits on startup and execution via command line
+! arguments to the executable.
+!  -max-timeout-duration <real>
+!  -max-launch-duration  <real>
+!---------
+@test(ifdef=INCLUDE_INTENTIONALLY_BROKEN)
+subroutine testAddHangs()
+   use add_mod
+   use pfunit_mod
+   implicit none
+
+   do
+   end do   
+
+end subroutine testAddHangs
+   
+@test
+subroutine testAdd()
+   use add_mod
+   use pfunit_mod
+   implicit none
+
+   @assertEqual(3., add(1.,2.))
+
+end subroutine testAdd
+
+@test(ifdef=INCLUDE_INTENTIONALLY_BROKEN)
+subroutine testAddBroken()
+   use add_mod
+   use pfunit_mod
+   implicit none
+
+   @assertEqual(1., add(1.,2.), message='intentional broken test')
+
+end subroutine testAddBroken
+

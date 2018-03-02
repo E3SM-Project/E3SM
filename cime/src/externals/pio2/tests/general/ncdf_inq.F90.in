@@ -1,0 +1,192 @@
+MODULE ncdf_inq_tests_tgv
+  use pio_tutil
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_fname = "pio_ncdf_inq_test_file.nc"
+  integer :: tgv_iotype
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_var_name = "dummy_var"
+  integer, parameter :: tgv_var_ndims = 1
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_dim_name = "dummy_dim"
+  integer, parameter :: TGV_DIM_LEN = 100
+  integer, parameter :: tgv_var_natts = 2
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_iatt_name = "dummy_iatt"
+  integer, parameter :: tgv_iatt_val = 3
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_catt_name = "dummy_catt"
+  integer, parameter :: TGV_ATT_LEN = 100
+  character(len=TGV_ATT_LEN) :: tgv_catt_val = "DUMMY_STR"
+END MODULE ncdf_inq_tests_tgv
+
+SUBROUTINE test_setup(ret)
+  use pio_tutil
+  use ncdf_inq_tests_tgv
+  implicit none
+
+  integer, intent(out) :: ret
+
+  type(file_desc_t) :: pio_file
+  type(var_desc_t)  :: pio_var
+  integer :: pio_dim
+  real, dimension(TGV_DIM_LEN) :: val
+  integer, dimension(TGV_ATT_LEN) :: iatt
+  CHARACTER(len=TGV_ATT_LEN) :: catt
+
+  ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_CLOBBER)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! Since file is just created no need to enter redef
+  ret = PIO_def_dim(pio_file, tgv_dim_name, TGV_DIM_LEN, pio_dim)
+  PIO_TF_CHECK_ERR(ret, "Failed to define dim:" // trim(tgv_fname))
+
+  ret = PIO_def_var(pio_file, tgv_var_name, pio_real, (/pio_dim/), pio_var)
+  PIO_TF_CHECK_ERR(ret, "Failed to define var:" // trim(tgv_fname))
+
+  iatt = tgv_iatt_val
+  ret = PIO_put_att(pio_file, pio_var, tgv_iatt_name, iatt);
+  PIO_TF_CHECK_ERR(ret, "Failed to put attribute:" // trim(tgv_fname))
+
+  catt = tgv_catt_val
+  ret = PIO_put_att(pio_file, pio_var, tgv_catt_name, catt);
+  PIO_TF_CHECK_ERR(ret, "Failed to put attribute:" // trim(tgv_fname))
+
+  ret = PIO_enddef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(tgv_fname))
+
+  val = pio_tf_world_rank_
+  ret = PIO_put_var(pio_file, pio_var, val)
+  PIO_TF_CHECK_ERR(ret, "Failed to put var: " // trim(tgv_fname))
+
+  call PIO_closefile(pio_file)
+END SUBROUTINE test_setup
+
+SUBROUTINE test_teardown(ret)
+  use pio_tutil
+  use ncdf_inq_tests_tgv
+  implicit none
+
+  integer, intent(out) :: ret
+
+  ret = PIO_NOERR
+  call PIO_deletefile(pio_tf_iosystem_, tgv_fname)  
+END SUBROUTINE test_teardown
+
+SUBROUTINE test_inq_var(pio_file, ret)
+  use pio_tutil
+  use ncdf_inq_tests_tgv
+  implicit none
+
+  type(file_desc_t), intent(in) :: pio_file
+  integer, intent(inout) :: ret
+
+  type(var_desc_t)  :: pio_var
+  integer :: var_id, var_type, var_ndims, var_natts
+  integer, dimension(:), allocatable :: var_dims
+  character(len=pio_max_name) :: var_name
+
+  ret = pio_inq_varid(pio_file, tgv_var_name, var_id)
+  PIO_TF_CHECK_ERR(ret, "Failed to inquire varid :"//trim(tgv_fname))
+
+  ret = pio_inq_varname(pio_file, var_id, var_name)
+  PIO_TF_PASSERT(var_name .eq. tgv_var_name, "Variable name is not the expected value")
+
+  ret = pio_inq_vartype(pio_file, var_id, var_type)
+  PIO_TF_PASSERT(var_type == PIO_real, "Variable tye is not the expected type")
+
+  ret = pio_inq_varndims(pio_file, var_id, var_ndims)
+  PIO_TF_PASSERT(var_ndims == tgv_var_ndims, "Num of dims for variable is not expected")
+
+  allocate(var_dims(var_ndims))
+  ret = pio_inq_vardimid(pio_file, var_id, var_dims)
+  PIO_TF_CHECK_ERR(ret, "Failed to get dim ids:"//trim(tgv_fname))
+  deallocate(var_dims)
+
+  ret = pio_inq_varnatts(pio_file, var_id, var_natts)
+  PIO_TF_PASSERT(var_natts == tgv_var_natts, "Num of atts for variable is not expected")
+
+END SUBROUTINE test_inq_var
+
+SUBROUTINE test_inq_dim(pio_file, ret)
+  use pio_tutil
+  use ncdf_inq_tests_tgv
+  implicit none
+
+  type(file_desc_t), intent(in) :: pio_file
+  integer, intent(inout) :: ret
+
+  integer :: dim_id
+  character(len=pio_max_name) :: dim_name
+  integer(kind=pio_offset_kind) :: dim_len
+
+  ret = pio_inq_dimid(pio_file, tgv_dim_name, dim_id)
+  PIO_TF_CHECK_ERR(ret, "Failed to inq dimid :"//trim(tgv_fname))
+
+  ret = pio_inq_dimname(pio_file, dim_id, dim_name)
+  PIO_TF_PASSERT(dim_name .eq. tgv_dim_name, "Dim name is not the expected value") 
+
+  ret = pio_inq_dimlen(pio_file, dim_id, dim_len)
+  PIO_TF_PASSERT(dim_len == TGV_DIM_LEN, "Dim length is not the expected value")
+
+END SUBROUTINE test_inq_dim
+
+SUBROUTINE test_inq_att(pio_file, ret)
+  use pio_tutil
+  use ncdf_inq_tests_tgv
+  implicit none
+
+  type(file_desc_t), intent(inout) :: pio_file
+  integer, intent(inout) :: ret
+
+  integer :: var_id
+  integer(kind=pio_offset_kind) :: att_len
+
+  ret = pio_inq_varid(pio_file, tgv_var_name, var_id)
+  PIO_TF_CHECK_ERR(ret, "Failed to inquire varid :"//trim(tgv_fname))
+
+  ret = pio_inq_attlen(pio_file, var_id, tgv_iatt_name, att_len)
+  PIO_TF_CHECK_ERR(ret, "Failed to inquire att len :"//trim(tgv_fname))
+  !PIO_TF_PASSERT(att_len == tgv_iatt_len, "Att length is not expected value")
+
+  ret = pio_inq_attlen(pio_file, var_id, tgv_catt_name, att_len)
+  PIO_TF_CHECK_ERR(ret, "Failed to inquire att len :"//trim(tgv_fname))
+  PIO_TF_PASSERT(att_len == len(trim(tgv_catt_val)), "Attribute length is not expected value")
+
+END SUBROUTINE test_inq_att
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_inq
+  use ncdf_inq_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+  integer :: i, ret
+  
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing type :", iotype_descs(i)
+    tgv_iotype = iotypes(i)
+
+    call test_setup(ret)
+    PIO_TF_CHECK_ERR(ret, "Test setup failed")
+
+    ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_nowrite)
+    PIO_TF_CHECK_ERR(ret, "Failed to open: "// trim(tgv_fname))
+
+    call test_inq_var(pio_file, ret)
+    PIO_TF_CHECK_ERR(ret, "Failed to inq var:" // trim(tgv_fname))
+
+    call test_inq_dim(pio_file, ret)
+    PIO_TF_CHECK_ERR(ret, "Failed to inq dim:" // trim(tgv_fname))
+
+    call test_inq_att(pio_file, ret)
+    PIO_TF_CHECK_ERR(ret, "Failed to inq att:" // trim(tgv_fname))
+
+    call PIO_closefile(pio_file)
+
+    call test_teardown(ret)
+    PIO_TF_CHECK_ERR(ret, "Test teardown failed")
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+PIO_TF_AUTO_TEST_SUB_END test_inq

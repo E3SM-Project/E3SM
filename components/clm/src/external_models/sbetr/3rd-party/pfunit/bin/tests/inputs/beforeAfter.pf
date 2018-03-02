@@ -1,0 +1,20 @@
+@before
+subroutine initA()
+end subroutine initA
+
+@after
+subroutine finalA()
+end subroutine finalA
+
+! First test
+@test
+subroutine testMethodA()
+end subroutine testMethodA
+
+! Second test
+@test
+subroutine testMethodB
+end subroutine testMethodB
+
+
+

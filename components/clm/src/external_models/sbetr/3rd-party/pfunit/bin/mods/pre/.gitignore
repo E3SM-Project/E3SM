@@ -1,0 +1,8 @@
+
+*.pyc
+/test_include.inc
+/test_include.txt
+/test_include_output.txt
+/test_include_result.txt
+/2013-0909-1011-42-ShellPre-1
+/.#*

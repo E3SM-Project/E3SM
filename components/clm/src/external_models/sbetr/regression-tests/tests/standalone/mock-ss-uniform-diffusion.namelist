@@ -1,0 +1,32 @@
+&sbetr_driver
+  simulator_name = 'standalone'
+/
+
+&betr_parameters
+  reaction_method = 'mock_run'
+  advection_on = .false.
+  diffusion_on = .true.
+  reaction_on = .false.
+/
+
+&betr_time
+  stop_time = 5184000.0
+/
+
+&forcing_inparm
+  forcing_type_name = 'steady state'
+  forcing_format = 'netcdf'
+  forcing_filename = '../../input-data/uniform_steadystate_forcing.cdl.nc'
+/
+
+&betr_grid
+  grid_data_filename = '../../input-data/uniform_steadystate_grid.cdl.nc'
+  grid_type_str = 'uniform'
+  delta_z = 0.1
+  nlevgrnd = 15
+/
+
+&regression_test
+  write_regression_output = .true.
+  cells = 5
+/

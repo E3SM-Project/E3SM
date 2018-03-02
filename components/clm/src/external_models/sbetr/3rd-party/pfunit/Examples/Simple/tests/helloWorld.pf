@@ -1,0 +1,21 @@
+@test
+subroutine testHelloWorld()
+   use pfunit_mod
+   implicit none
+   @assertEqual("Hello World!","Hello World!")
+end subroutine testHelloWorld
+
+@test(ifdef=INCLUDE_INTENTIONALLY_BROKEN)
+subroutine testBrokenHelloWorld()
+   use pfunit_mod
+   implicit none
+   @assertEqual("Hello World!","Found something else!","Intentionally broken test!")
+end subroutine testBrokenHelloWorld
+
+@test
+subroutine testIgnoreWhitespaceHelloWorld()
+   use pfunit_mod
+   implicit none
+   @assertEqual("Hello     World!","Hello World!  ",whitespace=IGNORE_DIFFERENCES)
+end subroutine testIgnoreWhitespaceHelloWorld
+

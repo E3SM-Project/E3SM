@@ -1,0 +1,24 @@
+module TestA_mod
+   use pfunit_mod
+   implicit none
+
+contains
+
+   @test
+   ! First test
+   subroutine testMethodA()
+   end subroutine testMethodA
+
+   @test
+   ! Second test
+   subroutine testMethodB()
+   end subroutine testMethodB
+   
+   @mpitest(npes=[1,3,5])
+   subroutine testMethodC(this)
+      class (MpiTestMethod), intent(inout) :: this
+   end subroutine testMethodC
+
+end module TestA_mod
+
+

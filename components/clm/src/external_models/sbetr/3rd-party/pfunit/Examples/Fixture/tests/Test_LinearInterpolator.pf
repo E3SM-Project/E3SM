@@ -1,0 +1,55 @@
+module Test_LinearInterpolator_mod
+   use LinearInterpolator_mod
+   use pfunit_mod
+   implicit none
+
+   public :: Test_LinearInterpolator
+
+@TestCase
+   type, extends(TestCase) :: Test_LinearInterpolator
+      type (LinearInterpolator) :: interpolator
+   contains
+      procedure :: setUp     ! overides generic
+      procedure :: tearDown  ! overrides generic
+   end type Test_LinearInterpolator
+
+contains
+
+   ! No need to annotate setUp() when _extending_ TestCase
+   subroutine setUp(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+
+      this%interpolator = LinearInterpolator([1.,2.,3.,5.],[1.,1.,2.,3.])
+
+   end subroutine setUp
+
+   ! No need to annotate tearDown() _extending_ TestCase
+   subroutine tearDown(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+   end subroutine tearDown
+
+@Test
+   subroutine testBracketAtNode(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual([1,1], this%interpolator%getBracket(at=1.))
+   end subroutine testBracketAtNode
+
+@Test
+   subroutine testBracketInterior(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual([3,4], this%interpolator%getBracket(at=4.))
+   end subroutine testBracketInterior
+
+@Test
+   subroutine testInterpolateAtNode(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual(2., this%interpolator%interpolate(at=3.))
+   end subroutine testInterpolateAtNode
+
+@Test
+   subroutine testInterpolateConstant(this)
+      class (Test_LinearInterpolator), intent(inout) :: this
+      @assertEqual(1., this%interpolator%interpolate(at=1.5))
+   end subroutine testInterpolateConstant
+
+end module Test_LinearInterpolator_mod

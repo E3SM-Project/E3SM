@@ -1,0 +1,7 @@
+*.mod
+*.o
+*.i90
+*.o
+/driver.obj
+/tests.exe
+/tests.x

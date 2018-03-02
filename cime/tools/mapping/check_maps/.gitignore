@@ -1,0 +1,4 @@
+ESMF_RegridWeightGenCheck
+src/*.o
+*.nc
+*.Log

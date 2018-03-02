@@ -1,0 +1,5 @@
+/GNUmakefile~
+*.i90
+*.o
+*.mod
+/tests.x

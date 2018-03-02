@@ -1,0 +1,70 @@
+[grid]
+ewn = 76 
+nsn = 141
+upn = 11
+dew = 20000.
+dns = 20000.
+
+[GLINT climate]
+precip_mode = 1   # 1 = use precip as is  
+acab_mode = 0     # 0 = SMB from GCM, 1 = PDD scheme
+
+[projection]
+type = STERE
+centre_longitude = 321.0
+centre_latitude = 90.0
+false_easting = 800000.0
+false_northing = 3400000.0
+standard_parallel = 71.0
+
+[options]
+dycore = 0               # 0 = glide, 1 = glam
+evolution = 0            # 0 = pseudo diffusion, 2 = iterated diffusion, 3 = remap
+temperature = 1          # 0 = sfc air, 1 = prognostic
+temp_init = 2            # 1 = sfc air, 2 = linear profile
+flow_law = 2             # 0 = constant, 2 = Paterson-Budd
+slip_coeff = 0           # 0 = no slip, 1 = constant, 3 = constant where T=Tpmp
+basal_water = 0          # 0 = none, 1 = local
+basal_mass_balance = 0   # 0 = not in continuity eqn, 1 = in continuity eqn
+gthf = 0                 # 0 = uniform, 1 = prescribe from file
+marine_margin = 1        # 1 = remove all floating ice, 4 = present bedrock threshold
+vertical_integration = 0 # 0 = standard, 1 = upper kinemetic BC
+sigma = 0                # 0 = compute, 2 = read from config file
+restart = 0              # 0 = initial run, 1 = restart
+ 
+[time]
+dt = 1.
+dt_diag = 1.
+idiag = 25
+jdiag = 74
+
+[parameters]
+log_level = 6
+ice_limit = 100.            # meters
+marine_limit = -200.        # meters 
+geothermal = -5.e-2         # W/m2, positive down
+flow_factor = 3.            # dimensionless
+hydro_time = 1000.          # yr
+basal_tract_const = 1.e-3   # (m/yr)/Pa
+
+########################################
+# I/O configuration follows
+########################################
+
+[CF default]
+title: GLINT example test run
+#institution: My Institution
+comment: results from a Greenland 20-km test run
+
+[CF output]
+name:      greenland_20km.nc
+frequency: 10
+variables: thk usurf topg temp uvel vvel velnorm acab artm bmlt bwat
+
+[CF output]
+name:      greenland_20km.hot.nc
+frequency: 1000
+variables: hot
+
+[CF input]
+name: gland20.input.nc

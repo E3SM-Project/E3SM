@@ -1,0 +1,2 @@
+# ESMF Builds/Processes files differently. Ignore all processed Fortran files
+*.f

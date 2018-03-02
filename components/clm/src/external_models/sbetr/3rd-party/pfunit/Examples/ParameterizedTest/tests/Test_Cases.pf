@@ -1,0 +1,62 @@
+! A synthetic example using cases.  This is mostly use to test
+! that the parser is handling the cases=... option correctly.
+
+module Cases_mod
+   use pfunit_mod
+   implicit none
+
+   @testParameter(constructor=newMyParam)
+   type, extends (AbstractTestParameter) :: MyParamType
+      integer :: i
+   contains
+      procedure :: toString
+   end type MyParamType
+
+   @testCase(constructor=newMyTestCase)
+   type, extends (ParameterizedTestCase) :: MyTestCase
+      integer :: i
+   end type MyTestCase
+
+contains
+
+   function newMyParam(i) result(param)
+      type (MyParamType) :: param
+      integer, intent(in) :: i
+      param%i = i
+
+   end function newMyParam
+
+   function newMyTestCase(param)
+      type (MyTestCase) :: newMyTestCase
+      type (MyParamType) :: param
+
+      newMyTestCase%i = param%i
+
+   end function newMyTestCase
+
+   @test(cases = [3,5,7])
+   subroutine test_odd(this)
+      class  (MyTestCase), intent(inout) :: this
+
+      @assertEqual(1,mod(this%i,2))
+
+   end subroutine test_odd
+
+   @test(cases = [2,4,6])
+   subroutine test_even(this)
+      class  (MyTestCase), intent(inout) :: this
+
+      @assertEqual(0, mod(this%i,2))
+
+   end subroutine test_even
+
+   function toString(this) result(string)
+      class (MyParamType), intent(in) :: this
+      character(:), allocatable :: string
+      character(len=3) :: str
+
+      write(str,'(i0)') this%i
+      string = str
+   end function toString
+
+end module Cases_mod

@@ -1,0 +1,37 @@
+# editor files
+*~
+
+# python artifacts
+*.pyc
+
+# build artifacts
+build/
+local/
+*.mod
+*.o
+
+# test input
+# NOTE(bja, 201604) input is stored in git as plain text cdl files,
+# not binary nc!
+regression-tests/input-data/*.nc
+
+# test output
+*.testlog
+*.stdout
+*.bak
+*.regression
+
+# python coverage output
+.coverage
+coverage-html
+
+# python virtual environments
+env/
+env2/
+env3/
+
+# simulation output
+*.output.nc
+
+# os x junk
+.DS_Store

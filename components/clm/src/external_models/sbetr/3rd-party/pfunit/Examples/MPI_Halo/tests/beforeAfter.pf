@@ -1,0 +1,43 @@
+! This file is to demonstrate the use of @before and @after in an MPI context
+
+module BeforeAfter_mod
+   use pfunit_mod
+   implicit none
+
+   ! global counters (not recommended - just for demo)
+   integer :: countStart = 0 
+   integer :: countComplete = 0
+
+contains
+
+@before
+   subroutine first(this)
+      class (MpiTestMethod), intent(inout) :: this
+      countStart = countStart + 1
+   end subroutine first
+
+@after
+   subroutine last(this)
+      class (MpiTestMethod), intent(inout) :: this
+      countComplete = countComplete + 1
+   end subroutine last
+
+@test(npes=[4])
+   subroutine firstAndLastCalled(this)
+     class (MpiTestMethod), intent(inout) :: this
+     @assertEqual(1,countStart,'checking call to first')
+     @assertEqual(0,countComplete,'checking call to last')
+   end subroutine firstAndLastCalled
+
+@test(npes=[1,2])
+   subroutine succeeds(this)
+      class (MpiTestMethod), intent(inout) :: this
+   end subroutine succeeds
+
+@test(ifdef=INCLUDE_INTENTIONALLY_BROKEN, npes=[3])
+   subroutine fails(this)
+      class (MpiTestMethod), intent(inout) :: this
+      @assertEqual(0, countStart, 'intentionally failing test')
+   end subroutine fails
+
+end module BeforeAfter_mod

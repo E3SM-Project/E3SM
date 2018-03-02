@@ -1,0 +1,24 @@
+# setup for code generator
+[VARSET]
+# prefix of the generated module
+name:     verif
+# f90 type containing all necessary data
+datatype: verif_type
+# module where type is defined
+datamod:  verif
+
+
+[thke]
+dimensions:    time, y1, x1
+units:         meter
+long_name:     exact ice thickness
+data:          data%exact_h
+standard_name: land_ice_thickness
+coordinates:   lon lat
+
+[ivole]
+dimensions:    time
+units:         km3
+factor:        len0*len0*1.e-9
+long_name:     exact ice volume
+data:          data%ivol_e

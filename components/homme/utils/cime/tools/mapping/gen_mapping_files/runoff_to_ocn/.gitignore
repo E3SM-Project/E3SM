@@ -1,0 +1,11 @@
+runoff_map
+*.nc
+obj
+src/*.o
+src/*.mod
+src/Macros.make
+src/.env_mach*
+src/env_mach*
+src/makdep
+src/*.d
+src/Depends*

@@ -1,0 +1,2 @@
+aprun -n 1 ../../simple_bisicles dome.0032.config
+

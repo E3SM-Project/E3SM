@@ -1,0 +1,22 @@
+! -*- mode: f90; -*-
+module test_mathfunc_module
+
+  use pfunit_mod
+
+  implicit none
+
+contains
+
+  @test
+  subroutine test_heavyside()
+
+    use bshr_kind_mod, only : r8 => shr_kind_r8
+    use MathFuncMod, only : heviside
+
+    implicit none
+
+    @assertEqual(1.0_r8, heviside(0.2_r8))
+    @assertEqual(0.0_r8, heviside(-2.0_r8))
+
+  end subroutine test_heavyside
+end module test_mathfunc_module

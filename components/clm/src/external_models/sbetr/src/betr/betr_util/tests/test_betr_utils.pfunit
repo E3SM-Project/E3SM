@@ -1,0 +1,70 @@
+! -*- mode: f90; -*-
+module test_utils_module
+
+  use pfunit_mod
+
+  implicit none
+
+contains
+
+  @test
+  subroutine test_remove_filename_extension_simple()
+
+    use betr_constants, only : betr_filename_length
+    use betr_utils, only : remove_filename_extension
+
+    implicit none
+
+    character(len=betr_filename_length) :: filename
+    character(len=betr_filename_length) :: basename
+    character(len=betr_filename_length) :: expected
+
+    filename = 'simple.txt'
+    expected = 'simple'
+    basename = remove_filename_extension(filename)
+    
+    @assertEqual(expected, basename)
+
+  end subroutine test_remove_filename_extension_simple
+
+  @test
+  subroutine test_remove_filename_extension_none()
+
+    use betr_constants, only : betr_filename_length
+    use betr_utils, only : remove_filename_extension
+
+    implicit none
+
+    character(len=betr_filename_length) :: filename
+    character(len=betr_filename_length) :: basename
+    character(len=betr_filename_length) :: expected
+
+    filename = 'simple_filename'
+    expected = 'simple_filename'
+    basename = remove_filename_extension(filename)
+    
+    @assertEqual(expected, basename)
+
+  end subroutine test_remove_filename_extension_none
+  
+  @test
+  subroutine test_remove_filename_extension_multi()
+
+    use betr_constants, only : betr_filename_length
+    use betr_utils, only : remove_filename_extension
+
+    implicit none
+
+    character(len=betr_filename_length) :: filename
+    character(len=betr_filename_length) :: basename
+    character(len=betr_filename_length) :: expected
+
+    filename = 'simple.filename.txt'
+    expected = 'simple.filename'
+    basename = remove_filename_extension(filename)
+    
+    @assertEqual(expected, basename)
+
+  end subroutine test_remove_filename_extension_multi
+  
+end module test_utils_module

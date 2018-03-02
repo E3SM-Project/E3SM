@@ -1,0 +1,38 @@
+module TestCaseA_mod
+   use pfunit_mod
+   implicit none
+
+   
+@testCase
+   type, extends(TestCase) :: TestCaseA
+      integer :: componentI
+   contains
+      procedure :: setUp
+      procedure :: tearDown
+   end type TestCaseA
+
+contains
+
+   subroutine setUp(this)
+      class (TestCaseA), intent(inout) :: this
+      this%componentI = 5
+   end subroutine setUp
+
+   subroutine tearDown(this)
+      class (TestCaseA), intent(inout) :: this
+      this%componentI = -1
+   end subroutine tearDown
+
+   @test
+   ! First test
+   subroutine testA(this)
+      class (TestCaseA), intent(inout) :: this
+   end subroutine testA
+
+   @test
+   ! Second test
+   subroutine testB(this)
+      class (TestCaseA), intent(inout) :: this
+   end subroutine testB
+
+end module TestCaseA_mod

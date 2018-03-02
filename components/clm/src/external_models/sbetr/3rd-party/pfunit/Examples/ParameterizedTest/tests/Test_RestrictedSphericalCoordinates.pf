@@ -1,0 +1,106 @@
+!------------------
+! This module tests that restricted spherical coordinates are always
+! in the proper interval.
+! -90 <= lat <= 90
+!   0 <= lon < 360
+!
+! There are a variety of cases to check, but the actual test logic is
+! the same each time.  Thus we use a parameterized test to run over
+! all cases.
+!
+!------------------
+
+module Test_RestrictSphericalCoordinates_mod
+   use pfunit_mod
+   use SphericalCoordinates_mod
+   implicit none
+
+@testParameter
+   type, extends(AbstractTestParameter) :: LatLonCase
+      real :: lat
+      real :: lon
+      real :: restrictedLat
+      real :: restrictedLon
+   contains
+      procedure :: toString
+   end type LatLonCase
+
+@TestCase(testParameters={getParameters()}, constructor=newTest)
+   type, extends(ParameterizedTestCase) :: Test_RestrictSphericalCoordinates
+      real :: lat
+      real :: lon
+      real :: restrictedLat
+      real :: restrictedLon
+      type (SphericalCoordinates) :: unrestricted
+      type (SphericalCoordinates) :: restricted
+   end type Test_RestrictSphericalCoordinates
+
+!!$   interface Test_RestrictSphericalCoordinates
+!!$      module procedure newTest
+!!$   end interface Test_RestrictSphericalCoordinates
+
+contains
+
+! Constructor
+   function newTest(testParameter) result(tst)
+      type (Test_RestrictSphericalCoordinates) :: tst
+      type (LatLonCase), intent(in) :: testParameter
+
+      real :: lat
+      real :: lon
+      real :: restrictedLat
+      real :: restrictedLon
+
+      tst%lat = testParameter%lat
+      tst%lon = testParameter%lon
+      tst%restrictedLat = testParameter%restrictedLat
+      tst%restrictedLon = testParameter%restrictedLon
+
+   end function newTest
+
+!-------------------
+   function getParameters() result(params)
+      type (LatLonCase), allocatable :: params(:)
+
+!                              lat    lon     lat'   lon'
+      params = [ &
+           & LatLonCase(    0.,    0.,     0.,     0.), &
+           & LatLonCase(   89.,    0.,    89.,     0.), &
+           & LatLonCase(  -89.,    0.,   -89.,     0.), &
+           & LatLonCase(    0.,  360.,     0.,     0.), &
+           & LatLonCase(   91.,    0.,    89.,   180.), &
+           & LatLonCase(  -91.,    0.,   -89.,   180.), &
+           & LatLonCase(  269.,    5.,   -89.,   185.), &
+           & LatLonCase(  271.,    5.,   -89.,     5.) &
+           & ]
+
+   end function getParameters
+!-------------------
+
+@Test
+   subroutine testRestrict(this)
+      class (Test_RestrictSphericalCoordinates), intent(inout) :: this
+
+      type (SphericalCoordinates) :: coordinates
+
+      coordinates = SphericalCoordinates(this%lat, this%lon)
+      call coordinates%restrict() 
+
+      @assertEqual(this%restrictedLat, coordinates%getLat(), message='Latitude not correct;')
+      @assertEqual(this%restrictedLon, coordinates%getLon(), message='Longitude not correct;')
+
+   end subroutine testRestrict
+
+   function toString(this) result(string)
+      class (LatLonCase), intent(in) :: this
+      character(:), allocatable :: string
+
+      character(len=80) :: buffer
+
+      write(buffer,'("(lat,lon)=(",f10.4,",",f10.4,") => (",f10.4,",",f10.4,")")') &
+           & this%lat, this%lon, this%restrictedLat, this%restrictedLon
+      string = trim(buffer)
+
+   end function toString
+
+end module Test_RestrictSphericalCoordinates_mod

@@ -1,0 +1,6 @@
+PIO_TF_AUTO_TEST_SUB_BEGIN init_finalize
+  ! The default test driver should initialize and finalize PIO
+  PRINT *, "Hello world"
+PIO_TF_AUTO_TEST_SUB_END init_finalize
+
+

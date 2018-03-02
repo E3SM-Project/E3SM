@@ -1,0 +1,1 @@
+ADD_TEST_SUITE(test_betr_transport_module_suite)

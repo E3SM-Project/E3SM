@@ -1,0 +1,69 @@
+module TestCaseB_mod
+   use pfunit_mod
+   implicit none
+
+   
+@testCase(constructor=newTestCaseB)
+   type, extends(ParameterizedTestCase) :: TestCaseB
+      integer, allocatable :: table(:)
+      real :: phi
+      real :: theta
+   contains
+      procedure :: setUp
+      procedure :: tearDown
+   end type TestCaseB
+
+@testParameter
+   type, extends(AbstractTestParameter) :: B_Parameter
+      real :: phi
+      real :: theta
+   contains
+      procedure :: toString
+   end type B_Parameter
+
+!!$   interface TestCaseB
+!!$      module procedure newTestCaseB
+!!$   end interface TestCaseB
+
+contains
+
+   function newTestCaseB(testParameter) result(newTest)
+      type (TestCaseB) :: newTest
+      class (B_Parameter), intent(in) :: testParameter ! driver may subclass this
+      newTest%phi = testParameter%phi
+      newTest%theta = testParameter%theta
+   end function newTestCaseB
+
+   subroutine setUp(this)
+      class (TestCaseB), intent(inout) :: this
+      allocate(this%table(10))
+   end subroutine setUp
+
+   subroutine tearDown(this)
+      class (TestCaseB), intent(inout) :: this
+      deallocate(this%table)
+   end subroutine tearDown
+
+   @test(testParameters={[B_Parameter(0.1,0.2),B_Parameter(0.3,0.1)]})
+   ! First test
+   subroutine testA(this)
+      class (TestCaseB), intent(inout) :: this
+   end subroutine testA
+
+   @test(testParameters={[B_Parameter(0.1,0.2)]})
+   ! Second test
+   subroutine testB(this)
+      class (TestCaseB), intent(inout) :: this
+   end subroutine testB
+
+   function toString(this) result(str)
+      class (B_Parameter), intent(in) :: this
+      character(:), allocatable :: str
+
+      str = 'no message'
+
+   end function toString
+
+end module TestCaseB_mod
+
+

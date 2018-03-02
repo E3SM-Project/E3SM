@@ -1,0 +1,100 @@
+Ross Ice Shelf Experiment
+=========================
+This experiment was designed to model the Ross Ice Shelf off Antarctica.  
+For information about the experiment and its results see:
+http://homepages.vub.ac.be/~phuybrec/eismint/iceshelf.html
+
+The python scripts provided here (runRoss.py and plotRoss.py, refered to
+in the following as the Ross scripts) were created to run the experiment 
+using Glimmer/CISM and compare the results with measured velocities.
+
+PREREQUISITES:
+In order to use the Ross scripts, you will need to have Python and one of the
+following Python modules installed:
+Scientific.IO.NetCDF, netCDF4, or pycdf
+
+To plot the results (which is the usual way to view the output), the Python 
+matplotlib library also must be installed.
+
+RUNNING THE EXPERIMENT:
+Running the experiment is a two step process.  Each step invokes a python script
+by entering a command on the command line.  The working directory should be the
+directory which contains the Ross scripts.  This directory should also 
+contain three subdirectories, "data", containing input data for the experiment, 
+and "output" and "scratch", where the results of running the scripts will be 
+written.
+
+STEP 1. Run Glimmer/CISM by invoking the runRoss.py script:
+
+python runRoss.py
+
+Currently, the default settings are for this command to simply build the necessary
+input files in the "./output" subdirectory. To run the code in serial, use
+
+./simple_glide ross.config
+
+To run in parallel use, e.g., 
+
+mpirun -np 6 ./simple_glide ross.config	  # linux cluster example
+
+or
+
+aprun -n6 ./simple_glide ross.config      # cray cluster example
+
+This step will run Glimmer using parameters specified in the ross.config file.
+
+STEP 2. Plot the results by invoking the plotRoss.py script:
+
+python plotRoss.py
+
+The plotRoss.py script can also be invoked using command line options to plot
+filled contours, change the color map, and mask the grounded region.  Example:
+
+python plotRoss.py --ncontours=14 --vmax=1400 --cmap=gist_ncar --mask
+
+Short forms of the options are also available.  Example:
+
+python plotRoss.py -n 14 -v 1400 -c gist_ncar -m
+
+# Output files
+
+OUTPUT FILES:
+When you run runRoss.py, it creates three NetCDF files in the "output"
+subdirectory.  These files can be examined using a tool such as ncview. Their
+contents are described below.
+
+1. raw.nc is netCDF file containing the experiment input data from the "data" 
+directory with minimal modification.  This file is really not necessary.
+2. ross.nc is an input file created by runRoss.py which provides input 
+information to Glimmer.
+3. ross.out.nc is an output file created by Glimmer.
+
+SCRATCH FILES:
+Glimmer creates some additional files in addition to its netCDF output file.
+At the end of its execution, runRoss.py moves any files in the current
+working directory having names ending in either ".txt", ".log", or ".nc" to 
+the "scratch" subdirectory under the assumption that they were created by
+Glimmer and are not needed.  So... 
+WARNING: If you have files with names ending ".txt", ".log", or ".nc" in the
+directory from which you are running runRoss.py they will get moved
+to the "scratch" subdirectory when you run runRoss.py
+
+
+TO DO / KNOWN ISSUES
+
+Note that this test case can take a long time to converge. For example, it may need to go 
+through several hundred nonlinear iterations before a converged solution is reached. In 
+addition, the residual may not appear to be coverging anymore after some point. This is due 
+to several grid points in uninteresting/unimportant parts of the domain which have trouble
+converging. However, if one compares the results after several hundred iterations (e.g. 500, 
+iterations, the max value for which can be set for the PP core using "cmax" in glam_strs2.F90)
+with those from the other tests cases (using the plotResults script), it is clear that the 
+results are consistent with the other models that participated in the benchmarking studies. 
+The failure to converge is thought to be a function of (1) poor linear solvers or preconditioning 
+and (2) a simplified residual calculation. Both of these are currently being upgraded and will
+be improved in future releases of the code. 
+
+For the Payne/Price core (diagnostic_scheme = 3), the "which_sparse" option must
+be set to 1 (use GMRES for the linear solver) in order for the solution to converge.
+Future releases will include the capability to use additional linear solvers.
+

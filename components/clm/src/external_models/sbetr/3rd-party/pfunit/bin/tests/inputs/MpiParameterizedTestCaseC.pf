@@ -1,0 +1,122 @@
+module TestCaseC_mod
+   use pfunit_mod
+   implicit none
+
+   
+@testCase(constructor=newTestCaseC)
+   type, extends(MpiTestCase) :: TestCaseC
+      integer, allocatable :: table(:)
+      real :: phi
+      real :: theta
+   contains
+      procedure :: setUp
+      procedure :: tearDown
+   end type TestCaseC
+
+@testParameter(constructor=newC_Parameter)
+   type, extends(MpiTestParameter) :: C_Parameter
+      real :: phi
+      real :: theta
+   contains
+      procedure :: toString
+   end type C_Parameter
+
+   interface newC_Parameter
+      module procedure newC_Parameter_phiTheta
+      module procedure newC_Parameter_case
+   end interface newC_Parameter
+
+contains
+
+   function newTestCaseC(testParameter) result(newTest)
+      type (TestCaseC) :: newTest
+      class (C_Parameter), intent(in) :: testParameter ! driver may subclass this
+      newTest%phi = testParameter%phi
+      newTest%theta = testParameter%theta
+   end function newTestCaseC
+
+   subroutine setUp(this)
+      class (TestCaseC), intent(inout) :: this
+      allocate(this%table(10))
+   end subroutine setUp
+
+   subroutine tearDown(this)
+      class (TestCaseC), intent(inout) :: this
+      deallocate(this%table)
+   end subroutine tearDown
+
+   @test(npes=[1,3],testParameters={[newC_Parameter(1,0.1,0.1)]})
+   ! First test
+   subroutine testA(this)
+      class (TestCaseC), intent(inout) :: this
+   end subroutine testA
+
+   @test(testParameters={paramGenerator()})
+   ! Second test
+   subroutine testB(this)
+      class (TestCaseC), intent(inout) :: this
+   end subroutine testB
+
+   @test(cases=[1,2])
+   ! Third test
+   subroutine testC(this)
+      class (TestCaseC), intent(inout) :: this
+   end subroutine testC
+
+   function newC_Parameter_phiTheta(npes, phi, theta) result(testParameter)
+      type (C_Parameter) :: testParameter
+      integer, intent(in) :: npes
+
+      real, intent(in) :: phi
+      real, intent(in) :: theta
+
+      testParameter%phi = phi
+      testParameter%theta = theta
+
+      call testParameter%setNumProcessesRequested(npes)
+
+   end function newC_Parameter_phiTheta
+
+   elemental function newC_Parameter_case(i) result(testParameter)
+      type (C_Parameter) :: testParameter
+      integer, intent(in) :: i
+
+      integer :: npes
+
+      select case(i)
+      case (1)
+         testParameter%phi = 0.1
+         testParameter%theta = 0.2
+         npes = 3
+      case (2)
+         testParameter%phi = -0.1
+         testParameter%theta = 0.2
+         npes = 4
+      end select
+
+      call testParameter%setNumProcessesRequested(npes)
+
+   end function newC_Parameter_case
+
+   function paramGenerator() result(testParameters)
+      type (C_Parameter), allocatable :: testParameters(:)
+
+      testParameters = [ &
+           & newC_Parameter(npes=1,phi=0.1,theta=0.2), &
+           & newC_Parameter(npes=2,phi=0.1,theta=0.2), &
+           & newC_Parameter(npes=3,phi=0.2,theta=0.2), &
+           & newC_Parameter(npes=4,phi=0.1,theta=0.3) ]
+
+   end function paramGenerator
+
+   function toString(this) result(str)
+      class (C_Parameter), intent(in) :: this
+      character(:), allocatable :: str
+
+      str = 'no message'
+
+   end function toString
+
+end module TestCaseC_mod
+
+

@@ -1,0 +1,306 @@
+! Get a block cyclic decomposition
+! If force_rearrange is FALSE, the decomposition is such that
+! # All even procs have VEC_LOCAL_SZ elements
+! # All odd procs have VEC_LOCAL_SZ + 1 elements
+! e.g. For VEC_LOCAL_SZ = 2,
+! e.g. 1)    [1,2] [3,4,5] [6,7]
+! e.g. 2)    [1,2] [3,4,5] [6,7] [8,9,10]
+! e.g. 3)    [1,2] [3,4,5] [6,7] [8,9,10] [11,12]
+! If force_rearrange is TRUE, the decomposition is such that,
+! If possible, the even rank "exchanges" elements with the next
+! higher ranked odd proc.
+! This for example can be used to force rearrangement when reading
+! or writing data.
+! e.g. For VEC_LOCAL_SZ = 2,
+! e.g. 1)    [3,4,5] [1,2] [6,7]
+! e.g. 2)    [3,4,5] [1,2] [8,9,10] [6,7]
+! e.g. 3)    [3,4,5] [1,2] [8,9,10] [6,7] [11,12]
+SUBROUTINE get_1d_bc_info(rank, sz, dims, start, count, force_rearrange)
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  integer, intent(in) :: rank
+  integer, intent(in) :: sz
+  integer, dimension(1), intent(out) :: dims
+  integer, dimension(1), intent(out) :: start
+  integer, dimension(1), intent(out) :: count
+  logical, intent(in) :: force_rearrange
+
+  logical :: is_even_rank
+  integer :: num_odd_procs, num_even_procs
+  integer :: iodd, ieven
+
+  is_even_rank = .false.
+  if (mod(rank, 2) == 0) then
+    is_even_rank = .true.
+  end if
+  num_odd_procs = sz / 2
+  num_even_procs = sz - num_odd_procs
+  dims(1) = num_even_procs * VEC_LOCAL_SZ + num_odd_procs * (VEC_LOCAL_SZ + 1)
+  ! Number of odd and even procs before this rank
+  iodd = rank / 2
+  ieven = (rank + 1) / 2
+  if(force_rearrange) then
+    ! Make sure that we force rearrangement
+    if (is_even_rank) then
+      if(rank + 1 < sz) then
+        ! Force rearrangement
+        count(1) = VEC_LOCAL_SZ + 1
+        start(1) = ieven * VEC_LOCAL_SZ + iodd * (VEC_LOCAL_SZ + 1) + (VEC_LOCAL_SZ) + 1
+      else
+        count(1) = VEC_LOCAL_SZ
+        start(1) = ieven * VEC_LOCAL_SZ + iodd * (VEC_LOCAL_SZ + 1) + 1
+      end if
+    else
+      ! For all odd procs there is an even lower ranked, rank-1, proc
+      ! So force rearrangement
+      count(1) = VEC_LOCAL_SZ
+      start(1) = ieven * VEC_LOCAL_SZ + iodd * (VEC_LOCAL_SZ + 1) - (VEC_LOCAL_SZ) + 1
+    end if
+  else
+    if (is_even_rank) then
+      count(1) = VEC_LOCAL_SZ
+    else
+      count(1) = VEC_LOCAL_SZ + 1
+    end if
+    start(1) = ieven * VEC_LOCAL_SZ + iodd * (VEC_LOCAL_SZ + 1) + 1
+  end if
+
+END SUBROUTINE
+
+! Get a 1d block decomposition with holes
+! If has_hole is TRUE, the decomposition is such that
+! # All even procs have VEC_LOCAL_SZ * 2 elements
+! # (the even procs take all elems from the odd procs)
+! # All odd procs have 0 elements
+! e.g. For VEC_LOCAL_SZ = 2,
+! e.g. 1)    [1,2,3,4] [] [5,6]
+! e.g. 2)    [1,2,3,4] [] [5,6,7,8] []
+! If has_hole is FALSE, the data is evenly divided among all procs
+! e.g. For VEC_LOCAL_SZ = 2,
+! e.g. 1)    [1,2] [3,4] [5,6]
+! e.g. 2)    [1,2] [3,4] [5,6] [7,8]
+SUBROUTINE get_1d_bc_with_holes_info(rank, sz, dims, start, count, has_hole)
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  integer, intent(in) :: rank
+  integer, intent(in) :: sz
+  integer, dimension(1), intent(out) :: dims
+  integer, dimension(1), intent(out) :: start
+  integer, dimension(1), intent(out) :: count
+  logical, intent(in) :: has_hole
+
+  logical :: is_even_rank
+  integer :: num_odd_procs, num_even_procs
+  integer :: iodd, ieven
+
+  is_even_rank = .false.
+  if (mod(rank, 2) == 0) then
+    is_even_rank = .true.
+  end if
+  num_odd_procs = sz / 2
+  num_even_procs = sz - num_odd_procs
+  dims(1) = VEC_LOCAL_SZ * sz
+  ! Number of odd and even procs before this rank
+  iodd = rank / 2
+  ieven = (rank + 1) / 2
+  if(has_hole) then
+    if (is_even_rank) then
+      if(rank + 1 < sz) then
+        count(1) = VEC_LOCAL_SZ * 2
+      else
+        count(1) = VEC_LOCAL_SZ
+      end if
+      start(1) = ieven * VEC_LOCAL_SZ * 2 + 1
+    else
+      count(1) = 0
+      start(1) = 0
+    end if
+  else
+    count(1) = VEC_LOCAL_SZ
+    start(1) = ieven * VEC_LOCAL_SZ + iodd * (VEC_LOCAL_SZ) + 1
+  end if
+
+END SUBROUTINE
+
+! Test block cyclic interface
+! Write with one decomp and read with another
+! Test all combs 
+! - no rearrage read + no rearrange write
+! - rearrage read + no rearrange write
+! - no rearrage read + rearrange write
+! - rearrage read + rearrange write
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_rd_1d_bc
+  implicit none
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wr_iodesc, rd_iodesc
+  integer, dimension(:), allocatable :: compdof
+  integer, dimension(1) :: start, count
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+  logical, dimension(2) :: enable_rd_rearr = (/.false., .true./)
+  integer :: rd_rearr_opt_idx
+  logical, dimension(2) :: enable_wr_rearr = (/.false., .true./)
+  integer :: wr_rearr_opt_idx
+
+  do rd_rearr_opt_idx=1,size(enable_rd_rearr)
+    do wr_rearr_opt_idx=1,size(enable_wr_rearr)
+      PIO_TF_LOG(0, *) "Testing Rd rearr =", enable_rd_rearr(rd_rearr_opt_idx), ",Write rearr=", enable_wr_rearr(wr_rearr_opt_idx)
+      ! Set the decomposition for writing data - forcing rearrangement
+      call get_1d_bc_info(pio_tf_world_rank_, pio_tf_world_sz_, dims,&
+             start, count, enable_wr_rearr(wr_rearr_opt_idx))
+      allocate(wbuf(count(1)))
+      allocate(compdof(count(1)))
+      do i=1,count(1)
+        wbuf(i) = start(1) + i - 1
+        compdof(i) = start(1) + i - 1
+      end do
+
+      call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, compdof, wr_iodesc)
+      deallocate(compdof)
+
+      ! Set the decomposition for reading data - different from the write decomp
+      call get_1d_bc_info(pio_tf_world_rank_, pio_tf_world_sz_, dims,&
+             start, count, enable_rd_rearr(rd_rearr_opt_idx))
+      allocate(rbuf(count(1)))
+      allocate(compdof(count(1)))
+      allocate(exp_val(count(1)))
+      do i=1,count(1)
+        compdof(i) = start(1) + i -1
+        ! Expected value, after reading, is the same as the compdof
+        exp_val(i) = compdof(i)
+      end do
+
+      call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, compdof, rd_iodesc)
+      deallocate(compdof)
+
+      num_iotypes = 0
+      call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+      filename = "test_pio_decomp_simple_tests.testfile"
+      do i=1,num_iotypes
+        PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+        ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+        PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+        ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+        PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+        ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+        PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+        ierr = PIO_enddef(pio_file)
+        PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+        ! Write the variable out
+        call PIO_write_darray(pio_file, pio_var, wr_iodesc, wbuf, ierr)
+        PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+        call PIO_syncfile(pio_file)
+
+        rbuf = 0
+        call PIO_read_darray(pio_file, pio_var, rd_iodesc, rbuf, ierr)
+        PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+        PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+        call PIO_closefile(pio_file)
+        
+        call PIO_deletefile(pio_tf_iosystem_, filename);
+      end do
+
+      if(allocated(iotypes)) then
+        deallocate(iotypes)
+        deallocate(iotype_descs)
+      end if
+
+      call PIO_freedecomp(pio_tf_iosystem_, rd_iodesc)
+      call PIO_freedecomp(pio_tf_iosystem_, wr_iodesc)
+      deallocate(exp_val)
+      deallocate(rbuf)
+      deallocate(wbuf)
+    end do !wr_rearr_opt_idx=1,size(enable_wr_rearr)
+  end do !rd_rearr_opt_idx=1,size(enable_rd_rearr)
+PIO_TF_AUTO_TEST_SUB_END nc_wr_rd_1d_bc
+
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
+  implicit none
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wr_iodesc
+  integer, dimension(:), allocatable :: compdof
+  integer, dimension(1) :: start, count
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  ! Set the decomposition for writing data - has holes
+  call get_1d_bc_with_holes_info(pio_tf_world_rank_, pio_tf_world_sz_, dims, start, count, .true.)
+  allocate(wbuf(count(1)))
+  allocate(rbuf(count(1)))
+  allocate(compdof(count(1)))
+  allocate(exp_val(count(1)))
+  do i=1,count(1)
+    wbuf(i) = start(1) + i - 1
+    compdof(i) = wbuf(i)
+    exp_val(i) = wbuf(i)
+  end do
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, compdof, wr_iodesc)
+  deallocate(compdof)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_decomp_simple_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    ! Write the variable out
+    call PIO_write_darray(pio_file, pio_var, wr_iodesc, wbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    call PIO_read_darray(pio_file, pio_var, wr_iodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+    
+    call PIO_deletefile(pio_tf_iosystem_, filename);
+  end do
+
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, wr_iodesc)
+  deallocate(exp_val)
+  deallocate(rbuf)
+  deallocate(wbuf)
+PIO_TF_AUTO_TEST_SUB_END nc_wr_1d_bc_with_holes

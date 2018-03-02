@@ -1,0 +1,40 @@
+module MpiTestCaseB_mod
+   use pfunit_mod
+   implicit none
+
+   
+@testCase(npes = [1,3,5])
+   type, extends(MpiTestCase) :: MpiTestCaseB
+      integer :: componentI
+   contains
+      procedure :: setUp
+      procedure :: tearDown
+   end type MpiTestCaseB
+
+contains
+
+   subroutine setUp(this)
+      class (MpiTestCaseB), intent(inout) :: this
+      this%componentI = 5
+   end subroutine setUp
+
+   subroutine tearDown(this)
+      class (MpiTestCaseB), intent(inout) :: this
+      this%componentI = -1
+   end subroutine tearDown
+
+   @test(npes = [1,2])
+   ! First test
+   subroutine testA(this)
+      class (MpiTestCaseB), intent(inout) :: this
+   end subroutine testA
+
+   @test
+   ! Second test
+   subroutine testB(this)
+      class (MpiTestCaseB), intent(inout) :: this
+   end subroutine testB
+
+end module MpiTestCaseB_mod
+
+

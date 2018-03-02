@@ -1,0 +1,6 @@
+build
+local
+*.testlog
+*.stdout
+*.regression
+*xcode

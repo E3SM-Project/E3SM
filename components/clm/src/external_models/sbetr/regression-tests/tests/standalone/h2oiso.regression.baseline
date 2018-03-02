@@ -1,0 +1,199 @@
+[N2_total_aqueous_conc]
+category = concentration
+min =   0.2232608120993E+01
+max =   0.6086524177150E+01
+mean =   0.4112246541042E+01
+cell    1 =   0.6086524177150E+01
+cell    3 =   0.4763463601891E+01
+cell    5 =   0.4015547390177E+01
+cell    7 =   0.3422504740733E+01
+cell    9 =   0.3492630071104E+01
+
+[N2_gas_partial_fraction]
+category = pfraction
+min =   0.7808334698692E+00
+max =   0.7918501259221E+00
+mean =   0.7832657188953E+00
+cell    1 =   0.7808334698692E+00
+cell    3 =   0.7809636155712E+00
+cell    5 =   0.7814194303563E+00
+cell    7 =   0.7828060345350E+00
+cell    9 =   0.7867624655271E+00
+
+[O2_total_aqueous_conc]
+category = concentration
+min =   0.5860770753634E+00
+max =   0.1662444845967E+01
+mean =   0.1118821650213E+01
+cell    1 =   0.1662444845967E+01
+cell    3 =   0.1304388467784E+01
+cell    5 =   0.1100453157480E+01
+cell    7 =   0.9349607320273E+00
+cell    9 =   0.9293610099604E+00
+
+[O2_gas_partial_fraction]
+category = pfraction
+min =   0.1997712020632E+00
+max =   0.2094578669757E+00
+mean =   0.2073201322425E+00
+cell    1 =   0.2094578669757E+00
+cell    3 =   0.2093447267703E+00
+cell    5 =   0.2089431930393E+00
+cell    7 =   0.2077251326018E+00
+cell    9 =   0.2042478916961E+00
+
+[AR_total_aqueous_conc]
+category = concentration
+min =   0.2433230968490E-01
+max =   0.7432772850235E-01
+mean =   0.4949836621300E-01
+cell    1 =   0.7432772850235E-01
+cell    3 =   0.5830242034911E-01
+cell    5 =   0.4906867085992E-01
+cell    7 =   0.4133865311181E-01
+cell    9 =   0.3996917565057E-01
+
+[AR_gas_partial_fraction]
+category = pfraction
+min =   0.8245899877710E-02
+max =   0.9339883989048E-02
+mean =   0.9099471806173E-02
+cell    1 =   0.9339883989048E-02
+cell    3 =   0.9327668406558E-02
+cell    5 =   0.9282732447794E-02
+cell    7 =   0.9145060808554E-02
+cell    9 =   0.8752071315452E-02
+
+[CO2x_total_aqueous_conc]
+category = concentration
+min =   0.1007368792495E-02
+max =   0.5092882833358E-02
+mean =   0.3411613891382E-02
+cell    1 =   0.5092882833358E-02
+cell    3 =   0.4227591931229E-02
+cell    5 =   0.3691769795646E-02
+cell    7 =   0.3139682159654E-02
+cell    9 =   0.2142949484927E-02
+
+[CO2x_gas_partial_fraction]
+category = pfraction
+min =   0.1311770677738E-03
+max =   0.3669891843231E-03
+mean =   0.3129299549941E-03
+cell    1 =   0.3669891843231E-03
+cell    3 =   0.3622014863208E-03
+cell    5 =   0.3528644669229E-03
+cell    7 =   0.3220168832572E-03
+cell    9 =   0.2358862783111E-03
+
+[CH4_total_aqueous_conc]
+category = concentration
+min =   0.4667364964444E-05
+max =   0.1419089711605E-04
+mean =   0.9449567467755E-05
+cell    1 =   0.1419089711605E-04
+cell    3 =   0.1112325727603E-04
+cell    5 =   0.9355318065381E-05
+cell    7 =   0.7882587750858E-05
+cell    9 =   0.7653856197656E-05
+
+[CH4_gas_partial_fraction]
+category = pfraction
+min =   0.1595069255402E-05
+max =   0.1789981705592E-05
+mean =   0.1747101069850E-05
+cell    1 =   0.1789981705592E-05
+cell    3 =   0.1787765637553E-05
+cell    5 =   0.1779689711912E-05
+cell    7 =   0.1755171419782E-05
+cell    9 =   0.1685183022996E-05
+
+[BLK_H2O_total_aqueous_conc]
+category = concentration
+min =   0.2914257887003E+03
+max =   0.3338400251540E+03
+mean =   0.3023273342138E+03
+cell    1 =   0.3067235516508E+03
+cell    3 =   0.2914257887003E+03
+cell    5 =   0.2999883153555E+03
+cell    7 =   0.3123035402931E+03
+cell    9 =   0.2924760270799E+03
+
+[BLK_H2O_gas_partial_fraction]
+category = pfraction
+min =              Infinity
+max =             -Infinity
+mean =                   NaN
+cell    1 =                   NaN
+cell    3 =                   NaN
+cell    5 =                   NaN
+cell    7 =                   NaN
+cell    9 =                   NaN
+
+[O18_H2O_total_aqueous_conc]
+category = concentration
+min =   0.2914257887003E+03
+max =   0.3338400251540E+03
+mean =   0.3023273342138E+03
+cell    1 =   0.3067235516508E+03
+cell    3 =   0.2914257887003E+03
+cell    5 =   0.2999883153555E+03
+cell    7 =   0.3123035402931E+03
+cell    9 =   0.2924760270799E+03
+
+[O18_H2O_gas_partial_fraction]
+category = pfraction
+min =              Infinity
+max =             -Infinity
+mean =                   NaN
+cell    1 =                   NaN
+cell    3 =                   NaN
+cell    5 =                   NaN
+cell    7 =                   NaN
+cell    9 =                   NaN
+
+[D_H2O_total_aqueous_conc]
+category = concentration
+min =   0.2914257887003E+03
+max =   0.3338400251540E+03
+mean =   0.3023273342138E+03
+cell    1 =   0.3067235516508E+03
+cell    3 =   0.2914257887003E+03
+cell    5 =   0.2999883153555E+03
+cell    7 =   0.3123035402931E+03
+cell    9 =   0.2924760270799E+03
+
+[D_H2O_gas_partial_fraction]
+category = pfraction
+min =              Infinity
+max =             -Infinity
+mean =                   NaN
+cell    1 =                   NaN
+cell    3 =                   NaN
+cell    5 =                   NaN
+cell    7 =                   NaN
+cell    9 =                   NaN
+
+[total_gas_pressure]
+category = pressure
+min =   0.6740941735707E+05
+max =   0.9058934298361E+05
+mean =   0.8475684556130E+05
+cell    1 =   0.9058934298361E+05
+cell    3 =   0.8995773983230E+05
+cell    5 =   0.8827321301639E+05
+cell    7 =   0.8482575144051E+05
+cell    9 =   0.7740097589326E+05
+
+[advective flux]
+category = velocity
+min =  -0.1042287139557E-07
+max =   0.1735752429119E-07
+mean =   0.4250315580842E-08
+cell    1 =   0.0000000000000E+00
+cell    3 =  -0.8144046101461E-08
+cell    5 =   0.5958011229309E-09
+cell    7 =   0.1148380546242E-07
+cell    9 =   0.1486620431369E-07
+cell   11 =   0.8752790563449E-08
+

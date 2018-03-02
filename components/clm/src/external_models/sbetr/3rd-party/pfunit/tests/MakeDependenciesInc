@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# pFUnit tests/MakeDependenciesInc
+
+# Generates makefile dependencies from "use" statements in
+# Fortran files. Specifically built to pFUnit conventions.
+#
+# M. Rilee, 2013-1029
+
+# TODO:  Move this and its cousins to a single "$(TOP)/bin/MakeDependenciesInclude".
+
+# Dependency injection...
+# Intermediate & target files...
+export tmpFile=$1
+# export tmpFile=./dependencies.tmp
+export outFile=./dependencies.inc
+
+cat ${tmpFile} | grep -iv selfTests.o > ${outFile}; 
+   echo -e "\nifeq (\$(USEMPI),YES)\n" >> ${outFile}; 
+   cat ${tmpFile} | grep -i selfTests.o >> ${outFile}; 
+   echo -e "\nelse\n" >> ${outFile}; 
+
+cat ${tmpFile} | grep -i selfTests.o | sed 's/[_a-zA-Z0-9]*[m|M]pi[._a-zA-Z0-9]*//g' >> ${outFile}; 
+   echo -e "\nendif\n" >> ${outFile}
+
+# The following converts the occurrences of .o in ${outFile} to $(OBJ_EXT)
+sed -i -e 's&\.o&$(OBJ_EXT)&g' ${outFile}
+\rm -f ${outFile}-e
