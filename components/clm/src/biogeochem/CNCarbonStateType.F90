@@ -20,7 +20,7 @@ module CNCarbonStateType
   use subgridAveMod          , only : p2c
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use clm_varctl             , only : nu_com, use_fates
+  use clm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
   use CNSpeciesMod           , only : species_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
@@ -78,6 +78,8 @@ module CNCarbonStateType
      real(r8), pointer :: ctrunc_vr_col           (:,:)    ! col (gC/m3) vertically-resolved column-level sink for C truncation
 
      ! pools for dynamic landcover
+     real(r8), pointer :: cropseedc_deficit_patch  (:) ! (gC/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
+     real(r8), pointer :: seedc_grc                (:)     ! (gC/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
      real(r8), pointer :: frootc_col               (:)     ! col (gC/m2) column-level C pool for fine root
      real(r8), pointer :: seedc_col                (:)     ! col (gC/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod10c_col              (:)     ! col (gC/m2) wood product C pool, 10-year lifespan
@@ -179,10 +181,12 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
     integer           :: begc,endc
+    integer           :: begg,endg
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
 
     if ( .not. use_fates ) then
        allocate(this%leafc_patch              (begp :endp))                   ;     this%leafc_patch              (:)   = nan
@@ -261,6 +265,8 @@ contains
     allocate(this%errcb_patch (begp:endp));     this%errcb_patch (:) = nan
     allocate(this%errcb_col   (begc:endc));     this%errcb_col   (:) = nan
 
+    allocate(this%cropseedc_deficit_patch  (begp:endp)) ; this%cropseedc_deficit_patch  (:) = nan
+    allocate(this%seedc_grc                (begg:endg)) ; this%seedc_grc                (:) = nan
     allocate(this%totpftc_beg_col(begc:endc));  this%totpftc_beg_col (:) = nan
     allocate(this%cwdc_beg_col   (begc:endc));  this%cwdc_beg_col    (:) = nan
     allocate(this%totlitc_beg_col(begc:endc));  this%totlitc_beg_col (:) = nan
@@ -350,6 +356,11 @@ contains
           call hist_addfld1d (fname='GRAINC', units='gC/m^2', &
                 avgflag='A', long_name='grain C', &
                 ptr_patch=this%grainc_patch, default='inactive')
+
+          this%cropseedc_deficit_patch(begp:endp) = spval
+          call hist_addfld1d (fname='CROPSEEDC_DEFICIT', units='gC/m^2', &
+               avgflag='A', long_name='C used for crop seed that needs to be repaid', &
+               ptr_patch=this%cropseedc_deficit_patch)
        end if
 
        this%woodc_patch(begp:endp) = spval
@@ -497,7 +508,10 @@ contains
             avgflag='A', long_name='total aboveground vegetation carbon, excluding cpool', &
             ptr_patch=this%totvegc_abg_patch)
 
-
+       this%seedc_grc(begg:endg) = spval
+       call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
+            avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
+            ptr_gcell=this%seedc_grc)
 
     end if
 
@@ -641,6 +655,7 @@ contains
        call hist_addfld1d (fname='C13_TOTPFTC', units='gC13/m^2', &
              avgflag='A', long_name='C13 total patch-level carbon, including cpool', &
              ptr_patch=this%totpftc_patch)
+
     endif
 
     !-------------------------------
@@ -992,6 +1007,24 @@ contains
        call hist_addfld1d (fname='C13_TOTPRODC', units='gC13/m^2', &
              avgflag='A', long_name='C13 total wood product C', &
              ptr_col=this%totprodc_col)
+
+       this%seedc_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
+            avgflag='A', long_name='C13 pool for seeding new PFTs via dynamic landcover', &
+            ptr_gcell=this%seedc_grc)
+
+       if (use_crop) then
+          this%grainc_patch(begp:endp) = spval
+          call hist_addfld1d (fname='C13_GRAINC', units='gC/m^2', &
+               avgflag='A', long_name='C13 grain C (does not equal yield)', &
+               ptr_patch=this%grainc_patch)
+          this%cropseedc_deficit_patch(begp:endp) = spval
+
+          call hist_addfld1d (fname='C13_CROPSEEDC_DEFICIT', units='gC/m^2', &
+               avgflag='A', long_name='C13 C used for crop seed that needs to be repaid', &
+               ptr_patch=this%cropseedc_deficit_patch)
+       end if
+       
     endif
 
     !-------------------------------
@@ -1086,6 +1119,23 @@ contains
        call hist_addfld1d (fname='C14_TOTPRODC', units='gC14/m^2', &
              avgflag='A', long_name='C14 total wood product C', &
              ptr_col=this%totprodc_col)
+
+       this%seedc_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C14_SEEDC', units='gC14/m^2', &
+            avgflag='A', long_name='C14 pool for seeding new PFTs via dynamic landcover', &
+            ptr_gcell=this%seedc_grc)
+
+       if (use_crop) then
+          this%grainc_patch(begp:endp) = spval
+          call hist_addfld1d (fname='C14_GRAINC', units='gC/m^2', &
+               avgflag='A', long_name='C14 grain C (does not equal yield)', &
+               ptr_patch=this%grainc_patch)
+          this%cropseedc_deficit_patch(begp:endp) = spval
+          call hist_addfld1d (fname='C14_CROPSEEDC_DEFICIT', units='gC/m^2', &
+               avgflag='A', long_name='C14 C used for crop seed that needs to be repaid', &
+               ptr_patch=this%cropseedc_deficit_patch)
+       end if
+
     endif
 
  end subroutine InitHistory
@@ -1107,7 +1157,7 @@ contains
     type(carbonstate_type), optional, intent(in) :: c12_carbonstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: p,c,l,j,k
+    integer :: p,c,l,g,j,k
     integer :: fc                                        ! filter index
     integer :: num_special_col                           ! number of good values in special_col filter
     integer :: num_special_patch                         ! number of good values in special_patch filter
@@ -1175,31 +1225,31 @@ contains
              this%livestemc_storage_patch(p) = 0._r8 
              this%livestemc_xfer_patch(p)    = 0._r8 
 
-          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
-             this%deadstemc_patch(p) = 0.1_r8 * ratio
-          else
-             this%deadstemc_patch(p) = 0._r8 
-          end if
-          this%deadstemc_storage_patch(p)  = 0._r8 
-          this%deadstemc_xfer_patch(p)     = 0._r8
-          
-          if (nu_com .ne. 'RD') then
-              ! ECA competition calculate root NP uptake as a function of fine root biomass
-              ! better to initialize root CNP pools with a non-zero value
-              if (veg_pp%itype(p) .ne. noveg) then
-                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                    this%leafc_patch(p) = 20._r8 * ratio
-                    this%leafc_storage_patch(p) = 0._r8
-                    this%frootc_patch(p) = 20._r8 * ratio
-                    this%frootc_storage_patch(p) = 0._r8
-                 else
-                    this%leafc_patch(p) = 0._r8 
-                    this%leafc_storage_patch(p) = 20._r8 * ratio
-                    this%frootc_patch(p) = 0._r8
-                    this%frootc_storage_patch(p) = 20._r8 * ratio
-                 end if
-              end if
-          end if
+             if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+                this%deadstemc_patch(p) = 0.1_r8 * ratio
+             else
+                this%deadstemc_patch(p) = 0._r8 
+             end if
+             this%deadstemc_storage_patch(p)  = 0._r8 
+             this%deadstemc_xfer_patch(p)     = 0._r8
+
+             if (nu_com .ne. 'RD') then
+                ! ECA competition calculate root NP uptake as a function of fine root biomass
+                ! better to initialize root CNP pools with a non-zero value
+                if (veg_pp%itype(p) .ne. noveg) then
+                   if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
+                      this%leafc_patch(p) = 20._r8 * ratio
+                      this%leafc_storage_patch(p) = 0._r8
+                      this%frootc_patch(p) = 20._r8 * ratio
+                      this%frootc_storage_patch(p) = 0._r8
+                   else
+                      this%leafc_patch(p) = 0._r8 
+                      this%leafc_storage_patch(p) = 20._r8 * ratio
+                      this%frootc_patch(p) = 0._r8
+                      this%frootc_storage_patch(p) = 20._r8 * ratio
+                   end if
+                end if
+             end if
 
              this%livecrootc_patch(p)         = 0._r8 
              this%livecrootc_storage_patch(p) = 0._r8 
@@ -1221,9 +1271,10 @@ contains
              this%woodc_patch(p)              = 0._r8
 
              if ( crop_prog )then
-                this%grainc_patch(p)         = 0._r8 
-                this%grainc_storage_patch(p) = 0._r8 
-                this%grainc_xfer_patch(p)    = 0._r8 
+                this%grainc_patch(p)            = 0._r8 
+                this%grainc_storage_patch(p)    = 0._r8 
+                this%grainc_xfer_patch(p)       = 0._r8 
+                this%cropseedc_deficit_patch(p) = 0._r8
              end if
 
              ! calculate totvegc explicitly so that it is available for the isotope 
@@ -1346,6 +1397,10 @@ contains
        this%prod100c_col(c)   = 0._r8
        this%prod1c_col(c)     = 0._r8
        this%totprodc_col(c)   = 0._r8
+    end do
+
+    do g = bounds%begg, bounds%endg
+       this%seedc_grc(g) = 0._r8
     end do
 
     ! initialize fields for special filters
@@ -2348,17 +2403,24 @@ contains
        !--------------------------------
 
        if (crop_prog) then
-          call restartvar(ncid=ncid, flag=flag,  varname='grainc', xtype=ncd_double,  &
-               dim1name='pft', long_name='grain C', units='gC/m2', &
-               interpinic_flag='interp', readvar=readvar, data=this%grainc_patch)
+          if (carbon_type == 'c12') then
+             call restartvar(ncid=ncid, flag=flag,  varname='grainc', xtype=ncd_double,  &
+                  dim1name='pft', long_name='grain C', units='gC/m2', &
+                  interpinic_flag='interp', readvar=readvar, data=this%grainc_patch)
 
-          call restartvar(ncid=ncid, flag=flag,  varname='grainc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='grain C storage', units='gC/m2', &
-               interpinic_flag='interp', readvar=readvar, data=this%grainc_storage_patch)
+             call restartvar(ncid=ncid, flag=flag,  varname='grainc_storage', xtype=ncd_double,  &
+                  dim1name='pft', long_name='grain C storage', units='gC/m2', &
+                  interpinic_flag='interp', readvar=readvar, data=this%grainc_storage_patch)
 
-          call restartvar(ncid=ncid, flag=flag,  varname='grainc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='grain C transfer', units='gC/m2', &
-               interpinic_flag='interp', readvar=readvar, data=this%grainc_xfer_patch)
+             call restartvar(ncid=ncid, flag=flag,  varname='grainc_xfer', xtype=ncd_double,  &
+                  dim1name='pft', long_name='grain C transfer', units='gC/m2', &
+                  interpinic_flag='interp', readvar=readvar, data=this%grainc_xfer_patch)
+
+             call restartvar(ncid=ncid, flag=flag, varname='cropseedc_deficit', xtype=ncd_double,  &
+                  dim1name='pft', long_name='pool for seeding new crop growth', units='gC/m2', &
+                  interpinic_flag='interp', readvar=readvar, data=this%cropseedc_deficit_patch)
+          end if
+
        end if
 
     endif  ! .not. use_fates
@@ -2846,15 +2908,15 @@ contains
           this%totpftc_patch(i)            = value_patch
           this%woodc_patch(i)              = value_patch
           this%totvegc_abg_patch(i)        = value_patch
-
-
        end do
+       
        if ( crop_prog ) then
           do fi = 1,num_patch
              i = filter_patch(fi)
-             this%grainc_patch(i)          = value_patch
-             this%grainc_storage_patch(i)  = value_patch
-             this%grainc_xfer_patch(i)     = value_patch
+             this%grainc_patch(i)            = value_patch
+             this%grainc_storage_patch(i)    = value_patch
+             this%grainc_xfer_patch(i)       = value_patch
+             this%cropseedc_deficit_patch(i) = value_patch
           end do
        endif
     endif ! .not. use_fates
@@ -3008,7 +3070,11 @@ contains
             this%totvegc_patch(p) + &
             this%xsmrpool_patch(p) + &
             this%ctrunc_patch(p)
-       c = veg_pp%column(p)
+
+       if (use_crop) then 
+          this%totvegc_patch(p) = this%totvegc_patch(p) + this%cropseedc_deficit_patch(p)
+       end if
+
        ! (WOODC) - wood C
        this%woodc_patch(p) = &
             this%deadstemc_patch(p)    + &
@@ -3247,7 +3313,8 @@ contains
        dwt_livecrootc_to_litter,            &
        dwt_deadcrootc_to_litter,            &
        prod10_cflux,                        &
-       prod100_cflux                        &
+       prod100_cflux,                       &
+       crop_product_cflux                   &
        )
     !
     ! !DESCRIPTION:
@@ -3275,6 +3342,7 @@ contains
     real(r8)                       , intent(inout) :: dwt_deadcrootc_to_litter (bounds%begp:)
     real(r8)                       , intent(inout) :: prod10_cflux             (bounds%begp:)
     real(r8)                       , intent(inout) :: prod100_cflux            (bounds%begp:)
+    real(r8)                       , intent(inout) :: crop_product_cflux       (bounds%begp:)
     !
     ! !LOCAL VARIABLES:
     integer                     :: begp, endp
@@ -3305,6 +3373,7 @@ contains
     SHR_ASSERT_ALL((ubound(dwt_deadcrootc_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod10_cflux             ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod100_cflux            ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(crop_product_cflux       ) == (/endp/)), errMsg(__FILE__, __LINE__))
    
     old_weight_was_zero = patch_state_updater%old_weight_was_zero(bounds)
     patch_grew          = patch_state_updater%patch_grew(bounds)
@@ -3577,6 +3646,17 @@ contains
          filterp_with_inactive                                      , &
          var               = this%totpftc_patch(begp:endp))
 
+    if (use_crop) then
+       ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
+       ! of the atmosphere.
+       call patch_state_updater%update_patch_state(         &
+            bounds                                        , &
+            num_filterp_with_inactive                     , &
+            filterp_with_inactive                         , &
+            var = this%cropseedc_deficit_patch(begp:endp) , &
+            flux_out_grc_area = conv_cflux(begp:endp))
+    end if
+
     ! These fluxes are computed as negative quantities, but are expected to be positive,
     ! so flip the signs
     do p = begp, endp
@@ -3584,6 +3664,8 @@ contains
        dwt_livecrootc_to_litter(p) = -1._r8 * dwt_livecrootc_to_litter(p)
        dwt_deadcrootc_to_litter(p) = -1._r8 * dwt_deadcrootc_to_litter(p)
     end do
+
+
 
   end subroutine DynamicPatchAdjustments
   

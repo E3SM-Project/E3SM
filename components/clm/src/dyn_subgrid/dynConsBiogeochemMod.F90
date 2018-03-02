@@ -109,9 +109,11 @@ contains
     real(r8), allocatable         :: conv_cflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: prod10_cflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: prod100_cflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_cflux(:)         ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: conv_nflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_nflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_nflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_nflux(:)         ! pft-level mass loss due to weight shift
     real(r8)                      :: t1,t2,wt_new,wt_old
     real(r8)                      :: init_state, change_state, new_state
     real(r8)                      :: tot_leaf, pleaf, pstor, pxfer
@@ -130,6 +132,7 @@ contains
     real(r8), allocatable, target :: conv_pflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_pflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_pflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_pflux(:)         ! pft-level mass loss due to weight shift
     real(r8)                      :: leafp_seed
     real(r8)                      :: deadstemp_seed, ppool_seed
 
@@ -142,6 +145,7 @@ contains
     real(r8), allocatable, target :: conv_c13flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c13flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c13flux(:)            ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_c13flux(:)       ! pft-level mass loss due to weight shift
     real(r8)                      :: leafc13_seed, deadstemc13_seed
     !! C14
     real(r8), allocatable         :: dwt_leafc14_seed(:)           ! pft-level mass gain due to seeding of new area
@@ -152,6 +156,7 @@ contains
     real(r8), allocatable, target :: conv_c14flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c14flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c14flux(:)            ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_c14flux(:)       ! pft-level mass loss due to weight shift
     real(r8)                      :: leafc14_seed, deadstemc14_seed
     real(r8) :: froot, croot
     real(r8) :: fr_flab, fr_fcel, fr_flig
@@ -186,9 +191,11 @@ contains
     allocate(conv_cflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_cflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_cflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_cflux       (bounds%begp:bounds%endp), stat=ier)
     allocate(conv_nflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_nflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_nflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_nflux       (bounds%begp:bounds%endp), stat=ier)
 
     ! Allocate P arrays
     allocate(dwt_leafp_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -200,6 +207,7 @@ contains
     allocate(conv_pflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_pflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_pflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_pflux       (bounds%begp:bounds%endp), stat=ier)
 
     if ( use_c13 ) then
        allocate(dwt_leafc13_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -210,6 +218,7 @@ contains
        allocate(conv_c13flux               (bounds%begp:bounds%endp), stat=ier)
        allocate(prod10_c13flux             (bounds%begp:bounds%endp), stat=ier)
        allocate(prod100_c13flux            (bounds%begp:bounds%endp), stat=ier)
+       allocate(crop_product_c13flux       (bounds%begp:bounds%endp), stat=ier)
     endif
     if ( use_c14 ) then
        allocate(dwt_leafc14_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -220,6 +229,7 @@ contains
        allocate(conv_c14flux               (bounds%begp:bounds%endp), stat=ier)
        allocate(prod10_c14flux             (bounds%begp:bounds%endp), stat=ier)
        allocate(prod100_c14flux            (bounds%begp:bounds%endp), stat=ier)
+       allocate(crop_product_c14flux       (bounds%begp:bounds%endp), stat=ier)
     endif
     
     ! Get time step
@@ -236,6 +246,7 @@ contains
        conv_cflux(p)               = 0._r8
        prod10_cflux(p)             = 0._r8
        prod100_cflux(p)            = 0._r8
+       crop_product_cflux(p)       = 0._r8
        
        dwt_leafn_seed(p)           = 0._r8
        dwt_deadstemn_seed(p)       = 0._r8
@@ -246,6 +257,7 @@ contains
        conv_nflux(p)               = 0._r8
        prod10_nflux(p)             = 0._r8
        prod100_nflux(p)            = 0._r8
+       crop_product_nflux(p)       = 0._r8
        
        dwt_leafp_seed(p)           = 0._r8
        dwt_deadstemp_seed(p)       = 0._r8
@@ -256,6 +268,7 @@ contains
        conv_pflux(p)               = 0._r8
        prod10_pflux(p)             = 0._r8
        prod100_pflux(p)            = 0._r8
+       crop_product_pflux(p)       = 0._r8
 
        if ( use_c13 ) then
           dwt_leafc13_seed(p)           = 0._r8
@@ -266,6 +279,7 @@ contains
           conv_c13flux(p)               = 0._r8
           prod10_c13flux(p)             = 0._r8
           prod100_c13flux(p)            = 0._r8
+          crop_product_c13flux(p)       = 0._r8
        endif
        
        if ( use_c14 ) then
@@ -277,6 +291,7 @@ contains
           conv_c14flux(p)               = 0._r8
           prod10_c14flux(p)             = 0._r8
           prod100_c14flux(p)            = 0._r8
+          crop_product_c14flux(p)       = 0._r8
        endif
        
        l = veg_pp%landunit(p)
@@ -337,7 +352,8 @@ contains
          dwt_livecrootc_to_litter,      &
          dwt_deadcrootc_to_litter,      &
          prod10_cflux,                  &
-         prod100_cflux                  &
+         prod100_cflux,                 &
+         crop_product_cflux             &
          )
 
     if (use_c13) then
@@ -354,7 +370,8 @@ contains
             dwt_livecrootc13_to_litter,    &
             dwt_deadcrootc13_to_litter,    &
             prod10_c13flux,                &
-            prod100_c13flux                &
+            prod100_c13flux,               &
+            crop_product_c13flux           &
             )
     endif
 
@@ -372,7 +389,8 @@ contains
             dwt_livecrootc14_to_litter,    &
             dwt_deadcrootc14_to_litter,    &
             prod10_c14flux,                &
-            prod100_c14flux                &
+            prod100_c14flux,               &
+            crop_product_c14flux           &
             )
     endif
 
@@ -390,7 +408,8 @@ contains
          dwt_livecrootn_to_litter,      &
          dwt_deadcrootn_to_litter,      &
          prod10_nflux,                  &
-         prod100_nflux                  &
+         prod100_nflux,                 &
+         crop_product_nflux             &
          )
 
     call ps%DynamicPatchAdjustments(    &
@@ -407,7 +426,8 @@ contains
          dwt_livecrootp_to_litter,      &
          dwt_deadcrootp_to_litter,      &
          prod10_pflux,                  &
-         prod100_pflux                  &
+         prod100_pflux,                 &
+         crop_product_pflux             &
          )
 
     ! calculate column-level seeding fluxes
@@ -647,9 +667,11 @@ contains
     deallocate(conv_cflux)
     deallocate(prod10_cflux)
     deallocate(prod100_cflux)
+    deallocate(crop_product_cflux)
     deallocate(conv_nflux)
     deallocate(prod10_nflux)
     deallocate(prod100_nflux)
+    deallocate(crop_product_nflux)
 
     deallocate(dwt_leafp_seed)
     deallocate(dwt_deadstemp_seed)
@@ -660,7 +682,8 @@ contains
     deallocate(conv_pflux)
     deallocate(prod10_pflux)
     deallocate(prod100_pflux)
-             
+    deallocate(crop_product_pflux)
+
     if ( use_c13 ) then
        deallocate(dwt_leafc13_seed)
        deallocate(dwt_deadstemc13_seed)
@@ -670,6 +693,7 @@ contains
        deallocate(conv_c13flux)
        deallocate(prod10_c13flux)
        deallocate(prod100_c13flux)
+       deallocate(crop_product_c13flux)
     endif
              
     if ( use_c14 ) then
@@ -681,6 +705,7 @@ contains
        deallocate(conv_c14flux)
        deallocate(prod10_c14flux)
        deallocate(prod100_c14flux)
+       deallocate(crop_product_c14flux)
     endif
     
    end associate
