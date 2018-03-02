@@ -190,13 +190,10 @@ contains
     do p = bounds%begp, bounds%endp
        this%pwtgcell_new(p) = veg_pp%wtgcell(p)
        this%pwtcol_new(p)   = veg_pp%wtcol(p)
-       !this%dwt(p) = this%pwtgcell_new(p) - this%pwtgcell_old(p)
-       this%dwt(p) = this%pwtcol_new(p)   - this%pwtcol_old(p)
+       this%dwt(p) = this%pwtgcell_new(p) - this%pwtgcell_old(p)
        if (this%dwt(p) > 0._r8) then
-          !this%growing_old_fraction(p) = this%pwtgcell_old(p) / this%pwtgcell_new(p)
-          !this%growing_new_fraction(p) = this%dwt(p) / this%pwtgcell_new(p)
-          this%growing_old_fraction(p) = this%pwtcol_old(p) / this%pwtcol_new(p)
-          this%growing_new_fraction(p) = this%dwt(p) / this%pwtcol_new(p)
+          this%growing_old_fraction(p) = this%pwtgcell_old(p)/ this%pwtgcell_new(p)
+          this%growing_new_fraction(p) = this%dwt(p)         / this%pwtgcell_new(p)
        else
           ! These values are unused in this case, but set them to something reasonable for
           ! safety. (We could set them to NaN, but that requires a more expensive
@@ -296,13 +293,15 @@ contains
           if (present(seed)) then
              var(p) = var(p) + seed(p) * this%growing_new_fraction(p)
              if (present(seed_addition)) then
-                seed_addition(p) = seed_addition(p) + seed(p) * this%dwt(p)
+                !seed_addition(p) = seed_addition(p) + seed(p) * this%dwt(p)
+                seed_addition(p) = seed_addition(p) + seed(p) * (this%pwtcol_new(p)   - this%pwtcol_old(p))
              end if
           end if
 
        else if (this%dwt(p) < 0._r8) then
           if (present(flux_out_grc_area)) then
-             flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * this%dwt(p)
+             !flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * this%dwt(p)
+             flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * (this%pwtcol_new(p)   - this%pwtcol_old(p))
           end if
           if (present(flux_out_col_area)) then
              ! No need to check for divide by 0 here: If dwt < 0 then we must have had
