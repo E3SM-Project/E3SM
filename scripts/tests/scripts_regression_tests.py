@@ -2686,7 +2686,7 @@ OR
 
     \033[1;32m# Run test test_wait_for_test_all_pass from class M_TestWaitForTests \033[0m
     > {0} M_TestWaitForTests.test_wait_for_test_all_pass
-"""
+""".format(os.path.basename(sys.argv[0]))
 
     parser = argparse.ArgumentParser(usage=help_str,
                                      description=description,
