@@ -59,7 +59,7 @@ module clm_interface_pflotranMod
   use pflotran_clm_setmapping_module
 #include "petsc/finclude/petscsys.h"
 
-#if PETSC_VERSION_GE(3,8,0)
+#if PETSC_VERSION_GE(3,7,5)
 #include "petsc/finclude/petscvec.h"
   use petscsys
   use petscvec
@@ -69,7 +69,7 @@ module clm_interface_pflotranMod
 
 ! note: the following appears NOT good if putting before 'implicit none'
 ! for PETSC 3.7.x and earlier
-#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_MINOR<8)
+#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_MINOR<5)
 #include "petsc/finclude/petscvec.h"
 #include "petsc/finclude/petscvec.h90"
 #endif
@@ -3549,7 +3549,7 @@ contains
 
     dtime = get_step_size()
     nstep = get_nstep()
-
+#if 0
     ! from PF==>CLM
     call VecGetArrayReadF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -3606,7 +3606,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayReadF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
+#endif
     end associate
   end subroutine update_bcflow_pf2clm
 

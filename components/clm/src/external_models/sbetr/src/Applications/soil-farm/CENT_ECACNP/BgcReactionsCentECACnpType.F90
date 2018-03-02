@@ -228,10 +228,10 @@ contains
     if(bstatus%check_status())return
 
     !create the models
-    allocate(this%centuryeca(bounds%begc:bounds%endc,lbj:ubj), source=create_centuryeca_type())
+    !allocate(this%centuryeca(bounds%begc:bounds%endc,lbj:ubj), source=create_centuryeca_type())
 
     !create model specific forcing data structure
-    allocate(this%centuryforc(bounds%begc:bounds%endc,lbj:ubj), source=create_century_forc_type())
+    !allocate(this%centuryforc(bounds%begc:bounds%endc,lbj:ubj), source=create_century_forc_type())
 
     !initialize
     do j = lbj, ubj
