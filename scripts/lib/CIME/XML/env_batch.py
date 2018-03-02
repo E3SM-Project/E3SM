@@ -23,7 +23,7 @@ class EnvBatch(EnvBase):
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
-        EnvBase.__init__(self, case_root, infile, schema=schema)
+        super(EnvBatch,self).__init__(case_root, infile, schema=schema)
 
     # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
@@ -31,6 +31,7 @@ class EnvBatch(EnvBase):
         Override the entry_id set_value function with some special cases for this class
         """
         val = None
+
         if item == "JOB_WALLCLOCK_TIME":
             #Most systems use %H:%M:%S format for wallclock but LSF
             #uses %H:%M this code corrects the value passed in to be
@@ -48,10 +49,12 @@ class EnvBatch(EnvBase):
 
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
-            nodes = self.get_children("entry", {"id":item})
-            for node in nodes:
-                self._set_value(node, value, vid=item, ignore_type=ignore_type)
-                val = value
+            gnodes = self.get_children("group")
+            for gnode in gnodes:
+                node = self.get_optional_child("entry", {"id":item}, root=gnode)
+                if node is not None:
+                    self._set_value(node, value, vid=item, ignore_type=ignore_type)
+                    val = value
         else:
             group = self.get_optional_child("group", {"id":subgroup})
             if group is not None:
@@ -70,27 +73,36 @@ class EnvBatch(EnvBase):
         value = None
         if subgroup is None:
             node = self.get_optional_child(item, attribute)
+            if node is None:
+                # this will take the last instance of item listed in all batch_system elements
+                bs_nodes = self.get_children("batch_system")
+                for bsnode in bs_nodes:
+                    cnode = self.get_optional_child(item, attribute, root=bsnode)
+                    if cnode is not None:
+                        node = cnode
             if node is not None:
                 value = self.text(node)
                 if resolved:
                     value = self.get_resolved_value(value)
             else:
-                value = EnvBase.get_value(self,item,attribute,resolved)
+                value = super(EnvBatch, self).get_value(item,attribute,resolved)
         else:
-            value = EnvBase.get_value(self, item, attribute=attribute, resolved=resolved, subgroup=subgroup)
+            value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
         return value
 
     def get_type_info(self, vid):
-        nodes = self.get_children("entry",{"id":vid})
-        type_info = None
-        for node in nodes:
-            new_type_info = self._get_type_info(node)
-            if type_info is None:
-                type_info = new_type_info
-            else:
-                expect( type_info == new_type_info,
-                        "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
+        gnodes = self.get_children("group")
+        for gnode in gnodes:
+            nodes = self.get_children("entry",{"id":vid}, root=gnode)
+            type_info = None
+            for node in nodes:
+                new_type_info = self._get_type_info(node)
+                if type_info is None:
+                    type_info = new_type_info
+                else:
+                    expect( type_info == new_type_info,
+                            "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
 
     def get_jobs(self):
@@ -108,7 +120,7 @@ class EnvBatch(EnvBase):
 
         orig_group = self.get_child("group", {"id":"job_submission"},
                                     err_msg="Looks like job groups have already been created")
-        orig_group_children = EnvBase.get_children(self, root=orig_group)
+        orig_group_children = super(EnvBatch, self).get_children(root=orig_group)
 
         childnodes = []
         for child in reversed(orig_group_children):
@@ -136,7 +148,7 @@ class EnvBatch(EnvBase):
             if vnode is not None:
                 self.remove_child(vnode, root=node)
         else:
-            node = EnvBase.cleanupnode(self, node)
+            node = super(EnvBatch, self).cleanupnode(node)
         return node
 
     def set_batch_system(self, batchobj, batch_system_type=None):
@@ -281,7 +293,9 @@ class EnvBatch(EnvBase):
         submit_arg_nodes = []
 
         for node in bs_nodes:
-            submit_arg_nodes += self.get_children("arg",root=node)
+            sanode = self.get_optional_child("submit_args", root=node)
+            if sanode is not None:
+                submit_arg_nodes += self.get_children("arg",root=sanode)
 
         for arg in submit_arg_nodes:
             flag = self.get(arg, "flag")
@@ -469,7 +483,6 @@ class EnvBatch(EnvBase):
                     submitargs += " {} {}".format(mail_type_flag, "".join(mail_type_args))
                 else:
                     submitargs += " {} {}".format(mail_type_flag, " {} ".format(mail_type_flag).join(mail_type_args))
-
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
                "Unable to determine the correct command for batch submission.")
@@ -591,21 +604,31 @@ class EnvBatch(EnvBase):
         return None
 
     def get_default_queue(self):
-        node = self.get_optional_child("queue", attributes={"default" : "true"})
-        if node is None:
-            node = self.get_optional_child("queue")
+        bs_nodes = self.get_children("batch_system")
+        for bsnode in bs_nodes:
+            qnodes = self.get_children("queues", root=bsnode)
+            for qnode in qnodes:
+                node = self.get_optional_child("queue", attributes={"default" : "true"}, root=qnode)
+                if node is None:
+                    node = self.get_optional_child("queue", root=qnode)
         expect(node is not None, "No queues found")
         return node
 
     def get_all_queues(self):
-        return self.get_children("queue")
+        bs_nodes = self.get_children("batch_system")
+        nodes = []
+        for bsnode in bs_nodes:
+            qnode = self.get_optional_child("queues", root=bsnode)
+            if qnode is not None:
+                nodes.extend(self.get_children("queue", root=qnode))
+        return nodes
 
     def get_children(self, name=None, attributes=None, root=None):
         if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
-            nodes = EnvBase.get_children(self, "entry", attributes={"id":name}, root=root)
+            nodes = super(EnvBatch, self).get_children("entry", attributes={"id":name}, root=root)
         else:
-            nodes = EnvBase.scan_children(self, name, attributes=attributes, root=root)
+            nodes = super(EnvBatch, self).get_children(name, attributes=attributes, root=root)
 
         return nodes
 

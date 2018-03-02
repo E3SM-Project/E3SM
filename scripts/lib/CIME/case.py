@@ -279,7 +279,7 @@ class Case(object):
                 if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    if vtype is not None or vtype != "char":
+                    if vtype is not None and vtype != "char":
                         result = convert_to_type(result, vtype, item)
 
                 return result
