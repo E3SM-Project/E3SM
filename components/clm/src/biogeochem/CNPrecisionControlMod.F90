@@ -806,7 +806,7 @@ contains
                            cn_eca = cn_eca - ncrit + ns%decomp_npools_vr_col(c,j,l)
                            ns%decomp_npools_vr_col(c,j,l) = ncrit
                         else
-                           write(iulog, "(A,2I,E8.1)") 'error decomp_npools is negative: ',j,l,ns%decomp_npools_vr_col(c,j,l)
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,ns%decomp_npools_vr_col(c,j,l)
                            call endrun(msg=errMsg(__FILE__, __LINE__))
                         end if
                      end if
@@ -815,7 +815,7 @@ contains
                            cp_eca = cp_eca - ncrit/1e4_r8 + ps%decomp_ppools_vr_col(c,j,l)
                            ps%decomp_ppools_vr_col(c,j,l) = ncrit/1e4_r8
                          else 
-                           write(iulog, "(A,2I,E8.1)") 'error decomp_ppools is negative: ',j,l,ps%decomp_ppools_vr_col(c,j,l)
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_ppools is negative: ',j,l,ps%decomp_ppools_vr_col(c,j,l)
                            call endrun(msg=errMsg(__FILE__, __LINE__))
                          end if
                      end if
