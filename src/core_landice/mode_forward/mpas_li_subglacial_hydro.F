@@ -1152,8 +1152,6 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: basalSpeed
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
-      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
-      real (kind=RKIND), dimension(:,:), pointer :: enhancementFactor
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
@@ -1210,7 +1208,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
       call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -1220,7 +1217,7 @@ module li_subglacial_hydro
       !   basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
-      closingRate(:) = creepCoeff * flowEnhancementFactor(nVertLevels, :) * flowParamA(nVertLevels, :) * &
+      closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * &
               effectivePressure(:)**3 * waterThickness(:)
 !      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND
 !          ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
@@ -1416,7 +1413,6 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
-      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
 
@@ -1460,7 +1456,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelEffectivePressure', channelEffectivePressure)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
@@ -1515,8 +1510,7 @@ module li_subglacial_hydro
          cell2 = cellsOnEdge(2, iEdge)
 
          ! Not sure if these ought to be upwind average, but using centered
-         flowParamAChannel(iEdge) = 0.5_RKIND * (flowEnhancementFactor(nVertLevels, cell1) * flowParamA(nVertLevels, cell1) + &
-                 flowEnhancementFactor(nVertLevels, cell2) * flowParamA(nVertLevels, cell2) )
+         flowParamAChannel(iEdge) = 0.5_RKIND * (flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
          channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressure(cell1) + effectivePressure(cell2))
       end do
       channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3

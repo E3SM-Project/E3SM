@@ -1655,9 +1655,6 @@ module li_thermal
           flowParamA               ! flow factor in each layer of each cell, Pa^(-n) s^(-1)
 
      real(kind=RKIND), dimension(:,:), pointer :: &
-          flowEnhancementFactor ! flow enhancement factor in each layer of each cell, unitless
-
-     real(kind=RKIND), dimension(:,:), pointer :: &
           heatDissipation          ! interior heat dissipation in each layer of each cell (deg/s)
                                    ! output from this subroutine
 
@@ -1680,7 +1677,7 @@ module li_thermal
           weightEdge               ! edge weight for averaging to cell center
 
      real (kind=RKIND), dimension(:), allocatable ::  &
-          flowParamAEdge           ! flow parameter averaged to edge.  Note includes enhancement factor
+          flowParamAEdge           ! flow parameter averaged to edge.
 
      integer :: iCell, iCell1, iCell2, iEdge, iEdgeOnCell, iLayer
 
@@ -1737,7 +1734,6 @@ module li_thermal
 
         ! get fields from the velocity pool
         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-        call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
 
         ! get fields from the thermal pool
         call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
@@ -1773,8 +1769,7 @@ module li_thermal
 
               ! average the thickness and flow parameter to the edge
               thicknessEdge = 0.5_RKIND * (thickness(iCell1) + thickness(iCell2))
-              flowParamAEdge(:) = 0.5_RKIND * (flowEnhancementFactor(:,iCell1) * flowParamA(:,iCell1) + &
-                      flowEnhancementFactor(:,iCell2) * flowParamA(:,iCell2)) ! Note: enhancement factor included in flowParamEdge!
+              flowParamAEdge(:) = 0.5_RKIND * (flowParamA(:,iCell1) + flowParamA(:,iCell2))
 
               ! compute the dissipation at each level
               !TODO - Verify that this equation gives the right answer

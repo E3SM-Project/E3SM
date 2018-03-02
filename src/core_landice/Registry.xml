@@ -73,10 +73,6 @@
 			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field."
 			possible_values="'constant', 'PB1982', 'CP2010'"
 		/>
-		<nml_option name="config_enhancementFactor_method" type="character" default_value="scalar" units="unitless"
-			description="Source of enhancement factor value.  'scalar' will take the value from the config option 'config_enhancementFactor'.  'data' will take a 3d field from the input variable 'flowEnhancementFactor'"
-			possible_values="'scalar', 'data'"
-		/>
 		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
 		            description="By default, external, higher-order dycores return the uReconstructX and uReconstructY fields (which are the native locations of their FEM solution).  If this option is set to .true., uReconstructX and uReconstructY will be calculated by MPAS using framework's vector reconstruction routines based on the values of normalVelocity supplied by the external dycore.  This provides a way to test the calculation of normalVelocity in the interface."
 		            possible_values=".true. or .false."
@@ -227,10 +223,6 @@
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
 		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
 		            possible_values="Any positive real value"
-		/>
-		<nml_option name="config_enhancementFactor" type="real" default_value="1.0" units="none"
-			description="multiplier on the flow parameter A"
-			possible_values="Any positive real value"
 		/>
 		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
 		            description="Defines the value of the Glen flow law exponent, n."
@@ -474,7 +466,7 @@
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
                         <var name="eigencalvingParameter"/>
-                        <var name="flowEnhancementFactor"/>
+                        <var name="stiffnessFactor"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -539,7 +531,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="eigencalvingParameter"/>
-                        <var name="flowEnhancementFactor"/>
+                        <var name="stiffnessFactor"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
@@ -908,9 +900,6 @@ is the value of that variable from the *previous* time level!
 		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
 		     description="flow law parameter, A"
 		/>
-		<var name="flowEnhancementFactor" type="real" dimensions="nVertLevels nCells Time" units="none" default_value="1.0"
-		     description="enhancement factor applied to flowParamA"
-		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge, layer interface"
 		/>
@@ -946,6 +935,9 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
 		     description="higher-order basal traction parameter; NOTE: not SI units!"
+		/>
+		<var name="stiffnessFactor" type="real" dimensions="nCells Time" units="none" default_value="1.0"
+		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
 		/>
 		<var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
 		     description="x-component of strain rate"
