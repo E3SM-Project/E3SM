@@ -41,7 +41,7 @@ def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     logger.debug("build complete is {} ".format(build_complete))
 
     # load the module environment...
-    case.load_env()
+    case.load_env(job="case.run")
 
     # set environment variables
     # This is a requirement for yellowstone only

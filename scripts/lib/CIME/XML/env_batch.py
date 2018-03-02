@@ -157,12 +157,15 @@ class EnvBatch(EnvBase):
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
-
         task_count = self.get_value("task_count", subgroup=job)
         overrides = {}
         if task_count is not None:
             overrides["total_tasks"] = int(task_count)
             overrides["num_nodes"]   = int(math.ceil(float(task_count)/float(case.tasks_per_node)))
+        else:
+            task_count = case.get_value("TOTALPES")*int(case.thread_count)
+        if int(task_count) < case.get_value("MAX_TASKS_PER_NODE"):
+            overrides["max_tasks_per_node"] = int(task_count)
 
         overrides["job_id"] = case.get_value("CASE") + os.path.splitext(job)[1]
         if "pleiades" in case.get_value("MACH"):
@@ -170,7 +173,6 @@ class EnvBatch(EnvBase):
             overrides["job_id"] = overrides["job_id"][:15]
 
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
-
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
         output_name = get_batch_script_for_job(job)
 
@@ -247,21 +249,26 @@ class EnvBatch(EnvBase):
         directive_prefix = None
 
         roots = self.get_children("batch_system")
+        queue = self.get_value("JOB_QUEUE", subgroup=job)
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
                     directive_prefix = self.get_element_text("batch_directive", root=root)
 
-                nodes = self.get_children("directive", root=root)
-                for node in nodes:
-                    directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
-                    default = self.get(node, "default")
-                    if default is None:
-                        directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
-                    else:
-                        directive = transform_vars(directive, default=default)
+                dnodes = self.get_children("directives", root=root)
+                for dnode in dnodes:
+                    if self.has(dnode,"queue") and self.get(dnode, "queue") != queue:
+                        continue
+                    nodes = self.get_children("directive", root=dnode)
+                    for node in nodes:
+                        directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
+                        default = self.get(node, "default")
+                        if default is None:
+                            directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
+                        else:
+                            directive = transform_vars(directive, default=default)
 
-                    result.append("{} {}".format("" if directive_prefix is None else directive_prefix, directive))
+                        result.append("{} {}".format("" if directive_prefix is None else directive_prefix, directive))
 
         return "\n".join(result)
 

@@ -280,6 +280,14 @@
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="mpt" queue="share">
+      <executable>mpirun `hostname`</executable>
+      <arguments>
+	<arg name="anum_tasks"> -np $TOTALPES</arg>
+	<!-- the omplace argument needs to be last -->
+	<arg name="zthreadplacement"> omplace -tm open64 </arg>
+      </arguments>
+    </mpirun>
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
@@ -363,6 +371,10 @@
       <!-- It's possible that we also need to set:
 	   LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
       -->
+      <env name="MPI_USE_ARRAY">false</env>
+    </environment_variables>
+    <environment_variables queue="share">
+      <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <resource_limits>
