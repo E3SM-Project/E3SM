@@ -439,7 +439,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:), pointer :: temperature
-      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
+      real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
@@ -450,13 +450,11 @@ contains
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
-      integer, pointer :: nCells
       integer, pointer :: nVertLevels
       integer, pointer :: timestepNumber
       type (field2dReal), pointer :: dissipationVertexField
-      type (field1dReal), pointer :: depthAveragedFlowEnhancementFactorField
       real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
-      integer :: iEdge, iCell
+      integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
       integer, target :: err_tmp
@@ -477,7 +475,6 @@ contains
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -503,7 +500,7 @@ contains
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
-      call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
+      call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       ! Capture Albany output
@@ -565,21 +562,11 @@ contains
           call mpas_pool_get_field(scratchPool, 'workLevelVertex', dissipationVertexField)
           call mpas_allocate_scratch_field(dissipationVertexField, .true.)
 
-          ! Calculate depth-averaged enhancement factor - Albany uses a 2d field, but we keep a 3d field
-          call mpas_pool_get_field(scratchPool, 'workCell', depthAveragedFlowEnhancementFactorField)
-          call mpas_allocate_scratch_field(depthAveragedFlowEnhancementFactorField, .true.)
-          do iCell = 1, nCells
-             depthAveragedFlowEnhancementFactorField % array(iCell) = &
-                   sum(layerThicknessFractions(:) * flowEnhancementFactor(iCell, :))
-          enddo
-          ! call mpas_log_write("3d E: max=$r, min=$r;  2d E: max=$r, min=$r", &
-          !realArgs=(/maxval(flowEnhancementFactor), minval(flowEnhancementFactor), maxval(depthAveragedFlowEnhancementFactorField%array), &
-          !minval(depthAveragedFlowEnhancementFactorField%array) /))
 
           call mpas_timer_start("velocity_solver_solve_FO")
           err_albany => err_tmp
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
-                betaSolve, sfcMassBal, temperature, depthAveragedFlowEnhancementFactorField % array, &
+                betaSolve, sfcMassBal, temperature, stiffnessFactor, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
                 deltat, err_albany)  ! return values
@@ -591,7 +578,6 @@ contains
           endif
           err = ior(err,err_tmp)
 
-          call mpas_deallocate_scratch_field(depthAveragedFlowEnhancementFactorField, .true.)
 
           ! Now interpolate from vertices to cell centers
           call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
@@ -755,12 +741,10 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges, indexToCellID
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
+      real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       type (mpas_pool_type), pointer :: meshPool, geometryPool, thermalPool, observationsPool, velocityPool, scratchPool
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
-      type (field1dReal), pointer :: depthAveragedFlowEnhancementFactorField
-      integer, pointer :: nCells
       integer :: iCell
       integer :: err
 
@@ -818,13 +802,12 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! Velocity variables
       call mpas_pool_get_array(velocityPool, 'beta', beta)
       call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
-      call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
+      call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -857,16 +840,6 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       floatingEdges = li_mask_is_floating_ice_int(edgeMask)
       call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
 
-      ! Calculate depth-averaged enhancement factor - Albany uses a 2d field, but we keep a 3d field
-      call mpas_pool_get_field(scratchPool, 'workCell', depthAveragedFlowEnhancementFactorField)
-      call mpas_allocate_scratch_field(depthAveragedFlowEnhancementFactorField, .true.)
-      do iCell = 1, nCells
-         if (thickness(iCell) > 0.0_RKIND) then
-            depthAveragedFlowEnhancementFactorField % array(iCell) = sum(layerThickness(iCell, :) * &
-                    flowEnhancementFactor(iCell, :)) / thickness(iCell)
-         endif
-      enddo
-
 
       ! Create FEM mesh
       call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
@@ -877,7 +850,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       call mpas_log_write("Writing Albany ASCII mesh.", flushNow=.true.)
       call write_ascii_mesh(indexToCellID, bedTopography, lowerSurface, &
               beta, temperature, &
-              depthAveragedFlowEnhancementFactorField % array, &
+              stiffnessFactor, &
               thickness, thicknessUncertainty, &
               sfcMassBal, sfcMassBalUncertainty, &
               floatingBasalMassBal, floatingBasalMassBalUncertainty, &
@@ -888,7 +861,6 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
       call interface_reset_stdout()
 
-      call mpas_deallocate_scratch_field(depthAveragedFlowEnhancementFactorField, .true.)
 
       ! kill the model so we don't actually run the forward model
       call mpas_log_write("Write of Albany ASCII mesh complete. Terminating execution normally.", MPAS_LOG_CRIT)

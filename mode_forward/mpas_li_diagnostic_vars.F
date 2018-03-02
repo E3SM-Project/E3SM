@@ -376,7 +376,7 @@ contains
 !>   transition temperature (-10 deg C at 0 pressure).
 !>   Values for $A0, Q, \Phi$ differ from PB1982.
 !>
-!>  The result is NOT adjusted by the enhancement factor.
+!>  The result is NOT adjusted by an enhancement factor.
 !-----------------------------------------------------------------------
    subroutine li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
 
