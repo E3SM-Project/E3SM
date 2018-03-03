@@ -1,0 +1,6 @@
+
+
+components/cam/bld/namelist_files/namelist_definition.xml
+components/cam/src/physics/cam/nucleate_ice.F90 
+components/cam/src/physics/cam/nucleate_ice_cam.F90 
+
