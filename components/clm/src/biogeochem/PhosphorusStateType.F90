@@ -1493,7 +1493,9 @@ contains
       end if
       call ncd_pio_closefile(ncid)
       do g = bounds%begg, bounds%endg
-        if(abs(this%weather_scalar(g))<2._r8)this%weather_scalar(g)=this%weather_scalar(g)*100._r8
+        if(abs(this%weather_scalar(g))<2._r8)then
+          this%weather_scalar(g)=max(this%weather_scalar(g),0.01)*100._r8
+        endif
       enddo
     endif
   end subroutine readProfileP

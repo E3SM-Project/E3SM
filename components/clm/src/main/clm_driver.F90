@@ -289,9 +289,11 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        if (use_betr) then
+         call t_startf('begbetrbal')
          dtime=get_step_size(); nstep=get_nstep()
          call ep_betr%SetClock(dtime= dtime, nelapstep=nstep)
          call ep_betr%BeginMassBalanceCheck(bounds_clump)
+         call t_stopf('begbetrbal')
        endif
        
        if (use_cn) then
@@ -590,8 +592,10 @@ contains
        ! Determine temperatures
        ! ============================================================================
        if(use_betr)then
+         call t_startf('betrwatdiag1')
          call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
          call ep_betr%PreDiagSoilColWaterFlux(filter(nc)%num_nolakec , filter(nc)%nolakec)
+         call t_stopf('betrwatdiag1')
        endif
        ! Set lake temperature 
 
@@ -614,8 +618,10 @@ contains
 
 
        if(use_betr)then
+         call t_startf('betrwatdiag2')
          call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
          call ep_betr%DiagnoseDtracerFreezeThaw(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec, col_pp, lun_pp)
+         call t_stopf('betrwatdiag2')
        endif
        ! ============================================================================
        ! update surface fluxes for new ground temperature.
@@ -912,6 +918,7 @@ contains
          call t_stopf('depvel')
 
          if (use_betr)then
+           call t_startf('betrstepwodrain')
            call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
               temperature_vars%t_soisno_col(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
               soilstate_vars, waterstate_vars, soil_water_retention_curve)
@@ -931,6 +938,7 @@ contains
                PlantMicKinetics_vars)
            endif
            call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
+           call t_stopf('betrstepwodrain')
          endif  !end use_betr
          
          if (use_lch4 .and. .not. is_active_betr_bgc) then
