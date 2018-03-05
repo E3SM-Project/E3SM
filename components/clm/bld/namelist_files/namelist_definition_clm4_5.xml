@@ -121,6 +121,13 @@ If TRUE, use new N2 fixation algorithm that comes with nu_com module
 If TRUE, run forest N/P fertilization experiment
 </entry>
 
+<entry id="ECA_Pconst_RGspin" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, do not allow soil labile, secondary, occcluded, and 
+parent material phosphorus to change, during Regular Spinup,
+for ECA model
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit

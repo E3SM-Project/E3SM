@@ -44,6 +44,7 @@ module controlMod
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use clm_varctl              , only: forest_fert_exp
+  use clm_varctl              , only: ECA_Pconst_RGspin
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -166,6 +167,8 @@ contains
          nu_com_nfix
     namelist /clm_inparm/ &
          forest_fert_exp
+    namelist /clm_inparm/ &
+         ECA_Pconst_RGspin
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -623,6 +626,7 @@ contains
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)

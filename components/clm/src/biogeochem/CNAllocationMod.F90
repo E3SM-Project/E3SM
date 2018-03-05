@@ -1429,16 +1429,21 @@ contains
                   do p = col_pp%pfti(c), col_pp%pftf(c)
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         ! scaling factor based on  CN ratio flexibility
-                        cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                            (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
-
+                        if (cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only()) then
+                            cn_scalar(p) = 0.0_r8 
+                        else
+                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                                                   max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                                                   leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                                                   (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                        endif
                         plant_ndemand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
                              froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j) *  compet_plant_n(p) 
 
                         plant_ndemand_vr_patch(p,j) = max(plant_ndemand_vr_patch(p,j), 0.0_r8)
                         col_plant_ndemand_vr(c,j) = col_plant_ndemand_vr(c,j) + plant_ndemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
-                        cn_scalar(p) = 1.0_r8
+                        cn_scalar(p) = 0.0_r8
                         plant_ndemand_vr_patch(p,j) = 0.0_r8
                      end if
                   end do
@@ -1603,15 +1608,21 @@ contains
                   do p = col_pp%pfti(c), col_pp%pftf(c)
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         ! scaling factor based on  CP ratio flexibility
-                        cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                            (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                        if (cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only()) then
+                            cp_scalar(p) = 0.0_r8
+                        else
+                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                                                  leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                                                  (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                        endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
                              cp_scalar(p) * t_scalar(c,j) * compet_plant_p(p)
                         plant_pdemand_vr_patch(p,j) = max(plant_pdemand_vr_patch(p,j),0.0_r8)
                         col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + plant_pdemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
-                        cp_scalar(p) = 1.0
+                        cp_scalar(p) = 0.0_r8
                         plant_pdemand_vr_patch(p,j) = 0.0_r8
                      end if
                   end do
@@ -2129,8 +2140,14 @@ contains
                   do p = col_pp%pfti(c), col_pp%pftf(c)
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         ! scaling factor based on  CN ratio flexibility
-                        cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                            (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                        if (cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only()) then
+                            cn_scalar(p) = 0.0_r8
+                        else
+                            cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                                                  leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                                                  (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                        endif
 
                         plant_nh4demand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
                              cn_scalar(p) * t_scalar(c,j) * compet_plant_nh4(p) 
@@ -2141,7 +2158,7 @@ contains
                         col_plant_nh4demand_vr(c,j) = col_plant_nh4demand_vr(c,j) + plant_nh4demand_vr_patch(p,j)*veg_pp%wtcol(p) 
                         col_plant_no3demand_vr(c,j) = col_plant_no3demand_vr(c,j) +  plant_no3demand_vr_patch(p,j)*veg_pp%wtcol(p) 
                      else
-                        cn_scalar(p) = 1.0_r8
+                        cn_scalar(p) = 0.0_r8
                         plant_nh4demand_vr_patch(p,j) = 0.0_r8
                         plant_no3demand_vr_patch(p,j) = 0.0_r8
                      end if
@@ -2421,15 +2438,21 @@ contains
                   do p = col_pp%pfti(c), col_pp%pftf(c)
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         ! scaling factor based on  CP ratio flexibility
-                        cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                            (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                        if (cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only()) then
+                            cp_scalar(p) = 0.0_r8
+                        else
+                            cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                                                  max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                                                  leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                                                  (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                        endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
                              cp_scalar(p) * t_scalar(c,j) * compet_plant_p(p)
                         plant_pdemand_vr_patch(p,j) = max(plant_pdemand_vr_patch(p,j),0.0_r8)
                         col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + plant_pdemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
-                        cp_scalar(p) = 1.0_r8
+                        cp_scalar(p) = 0.0_r8
                         plant_pdemand_vr_patch(p,j) = 0.0_r8
                      end if
                   end do
@@ -3003,6 +3026,11 @@ contains
          allocation_stem              => carbonflux_vars%allocation_stem                       , &
          allocation_froot             => carbonflux_vars%allocation_froot                      , &
          xsmrpool_turnover            => carbonflux_vars%xsmrpool_turnover_patch               , &
+         rf_decomp_cascade            => cnstate_vars%rf_decomp_cascade_col                    , &
+         fpi_vr                       => cnstate_vars%fpi_vr_col                               , &
+         fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , &
+         supplement_to_plantn         => nitrogenflux_vars%supplement_to_plantn                , &
+         supplement_to_plantp         => phosphorusflux_vars%supplement_to_plantp              , &
 
          c13cf => c13_carbonflux_vars, &
          c14cf => c14_carbonflux_vars  &
@@ -3664,27 +3692,30 @@ contains
          
          if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
 
+             supplement_to_plantn(p)  = 0.0_r8
+             supplement_to_plantp(p)  = 0.0_r8
+
              if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then
 
-                 supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) + cpool_to_leafc(p) / cnl - npool_to_leafn(p)
-                 supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) + cpool_to_leafc_storage(p) / cnl -  npool_to_leafn_storage(p)
-                 supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) + cpool_to_frootc(p) / cnfr - npool_to_frootn(p)
-                 supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) + cpool_to_frootc_storage(p) / cnfr- npool_to_frootn_storage(p)
-                 
+                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_leafc(p) / cnl - npool_to_leafn(p)
+                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_leafc_storage(p) / cnl -  npool_to_leafn_storage(p)
+                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc(p) / cnfr - npool_to_frootn(p)
+                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc_storage(p) / cnfr- npool_to_frootn_storage(p)
+
                  npool_to_leafn(p) = cpool_to_leafc(p) / cnl
                  npool_to_leafn_storage(p) =  cpool_to_leafc_storage(p) / cnl
                  npool_to_frootn(p) = cpool_to_frootc(p) / cnfr
                  npool_to_frootn_storage(p) = cpool_to_frootc_storage(p) / cnfr
                  
                  if (woody(ivt(p)) == 1._r8) then
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p) 
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livestemc_storage(p) / cnlw - npool_to_livestemn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadstemc_storage(p) / cndw - npool_to_deadstemn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livecrootc_storage(p) / cnlw - npool_to_livecrootn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadcrootc_storage(p) / cndw - npool_to_deadcrootn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw - npool_to_livestemn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(p) / cndw - npool_to_deadstemn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(p) / cnlw - npool_to_livecrootn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(p) / cndw - npool_to_deadcrootn_storage(p)
                      
                      npool_to_livestemn(p)  =  cpool_to_livestemc(p) / cnlw
                      npool_to_livestemn_storage(p) =  cpool_to_livestemc_storage(p) / cnlw
@@ -3697,17 +3728,17 @@ contains
                  end if
                  if (ivt(p) >= npcropmin) then ! skip 2 generic crops
                      cng = graincn(ivt(p))
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p) 
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livestemc_storage(p) / cnlw - npool_to_livestemn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadstemc_storage(p) / cndw - npool_to_deadstemn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_livecrootc_storage(p) / cnlw - npool_to_livecrootn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_deadcrootc_storage(p) / cndw - npool_to_deadcrootn_storage(p)
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_grainc(p) / cng - npool_to_grainn(p) 
-                     supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) +  cpool_to_grainc_storage(p) / cng - npool_to_grainn_storage(p)
-                     
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw - npool_to_livestemn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(p) / cndw - npool_to_deadstemn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(p) / cnlw - npool_to_livecrootn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(p) / cndw - npool_to_deadcrootn_storage(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_grainc(p) / cng - npool_to_grainn(p)
+                     supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_grainc_storage(p) / cng - npool_to_grainn_storage(p)
+
                      npool_to_livestemn(p) = cpool_to_livestemc(p) / cnlw
                      npool_to_livestemn_storage(p) = cpool_to_livestemc_storage(p) / cnlw
                      npool_to_deadstemn(p) = cpool_to_deadstemc(p) / cndw
@@ -3722,26 +3753,27 @@ contains
                  
              else if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
 
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_leafc(p) / cpl - ppool_to_leafp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_leafc_storage(p) / cpl - ppool_to_leafp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_frootc(p) / cpfr - ppool_to_frootp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_frootc_storage(p) / cpfr - ppool_to_frootp_storage(p),0._r8)
-                     
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_leafc(p) / cpl - ppool_to_leafp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_leafc_storage(p) / cpl - ppool_to_leafp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc(p) / cpfr - ppool_to_frootp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc_storage(p) / cpfr - ppool_to_frootp_storage(p),0._r8)
+
                      ppool_to_leafp(p) = cpool_to_leafc(p) / cpl
                      ppool_to_leafp_storage(p) =  cpool_to_leafc_storage(p) / cpl
                      ppool_to_frootp(p) = cpool_to_frootc(p) / cpfr
                      ppool_to_frootp_storage(p) = cpool_to_frootc_storage(p) / cpfr
                  
                  if (woody(ivt(p)) == 1._r8) then
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
                      
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
+
                      ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
                      ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
                      ppool_to_deadstemp(p) = cpool_to_deadstemc(p) / cpdw
@@ -3753,17 +3785,17 @@ contains
                  end if
                  if (ivt(p) >= npcropmin) then ! skip 2 generic crops
                      cpg = graincp(ivt(p))
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_grainc(p) / cpg - ppool_to_grainp(p),0._r8)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_grainc_storage(p) / cpg - ppool_to_grainp_storage(p),0._r8)
-                     
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_grainc(p) / cpg - ppool_to_grainp(p),0._r8)
+                     supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_grainc_storage(p) / cpg - ppool_to_grainp_storage(p),0._r8)
+
                      ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
                      ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
                      ppool_to_deadstemp(p) = cpool_to_deadstemc(p) / cpdw

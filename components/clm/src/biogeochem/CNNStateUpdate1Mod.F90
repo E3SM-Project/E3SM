@@ -24,6 +24,7 @@ module CNNStateUpdate1Mod
   use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
+  use clm_varctl             , only : nu_com
   !
   implicit none
   save
@@ -364,6 +365,7 @@ contains
          ! uptake from soil mineral N pool
          ns%npool_patch(p) = &
               ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
+         if (nu_com .ne. 'RD') ns%npool_patch(p) = ns%npool_patch(p) + nf%supplement_to_plantn(p)*dt
 
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt

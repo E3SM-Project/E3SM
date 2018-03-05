@@ -19,6 +19,10 @@ module CNBalanceCheckMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnType          , only : col_pp                
   use GridcellType        , only : grc_pp
+  use clm_varpar          , only : nlevdecomp
+  use clm_varcon          , only : dzsoi_decomp
+  use clm_varctl          , only : nu_com
+  use clm_varctl          , only : ECA_Pconst_RGspin
 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
@@ -31,6 +35,8 @@ module CNBalanceCheckMod
   use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl          , only : forest_fert_exp
+  use VegetationType      , only : veg_pp
+  use pftvarcon           , only: noveg
 
   !
   implicit none
@@ -288,7 +294,7 @@ contains
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: c,err_index,j  ! indices
+    integer :: c,err_index,j,p  ! indices
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
@@ -315,6 +321,7 @@ contains
          dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
          product_nloss       =>    nitrogenflux_vars%product_nloss_col       , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss
          som_n_leached       =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
+         supplement_to_plantn=> nitrogenflux_vars%supplement_to_plantn       , &
          ! pflotran:
          col_decompn_delta   =>    nitrogenflux_vars%externaln_to_decomp_delta_col  , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
 
@@ -341,7 +348,13 @@ contains
          col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
-         
+
+         do p = col_pp%pfti(c), col_pp%pftf(c)
+            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+            end if
+         end do
+
          ! forest fertilization
          if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
@@ -451,7 +464,7 @@ contains
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: c,err_index,j,k  ! indices
+    integer :: c,err_index,j,k,p  ! indices
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
@@ -476,6 +489,7 @@ contains
          primp_to_labilep    =>    phosphorusflux_vars%primp_to_labilep_col    , &
          secondp_to_occlp    =>    phosphorusflux_vars%secondp_to_occlp_col    , &
          fert_p_to_sminp     =>    phosphorusflux_vars%fert_p_to_sminp_col     , &
+         supplement_to_plantp=>    phosphorusflux_vars%supplement_to_plantp    , &
  
          col_pinputs         =>    phosphorusflux_vars%pinputs_col             , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs        =>    phosphorusflux_vars%poutputs_col            , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
@@ -493,7 +507,8 @@ contains
          frootp_to_litter      =>  phosphorusflux_vars%frootp_to_litter_patch  , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          sminp_to_plant        =>  phosphorusflux_vars%sminp_to_plant_col      , &
          cascade_receiver_pool =>  decomp_cascade_con%cascade_receiver_pool    , &
-         pf                    =>  phosphorusflux_vars                           &
+         pf                    =>  phosphorusflux_vars                         , &
+         ps                    =>  phosphorusstate_vars                          &
          )
 
       ! set time steps
@@ -523,14 +538,14 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   flux_mineralization_col(c) = flux_mineralization_col(c) - &
-                                               pf%decomp_cascade_sminp_flux_col(c,k)*dt
+                                               pf%decomp_cascade_sminp_flux_col(c,k)
                end do
          else
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                     flux_mineralization_col(c) = flux_mineralization_col(c) + &
-                                               pf%decomp_cascade_sminp_flux_col(c,k)*dt
+                                               pf%decomp_cascade_sminp_flux_col(c,k)
 
                end do
          endif
@@ -562,6 +577,12 @@ contains
 !         col_pinputs(c) =  flux_mineralization_col(c)/dt
 !         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c) 
 
+         do p = col_pp%pfti(c), col_pp%pftf(c)
+            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)
+            end if
+         end do
+
          ! forest fertilization
          if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
@@ -571,7 +592,17 @@ contains
              end if
          end if
 
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
+         if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
+            do j = 1, nlevdecomp               
+               col_poutputs(c) = col_poutputs(c) + &
+                  (ps%solutionp_vr_col_cur(c,j) -  ps%solutionp_vr_col_prev(c,j)  + &
+                  ps%labilep_vr_col_cur(c,j) -  ps%labilep_vr_col_prev(c,j) + &
+                  ps%secondp_vr_col_cur(c,j) - ps%secondp_vr_col_prev(c,j) ) * dzsoi_decomp(j)/dt
+            end do 
+         else
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
+         end if
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)

@@ -389,6 +389,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: soil_n_grossmin_flux                      (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_litter_nflux                     (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_cwd_nflux                        (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: supplement_to_plantn                      (:)     ! supplementary N flux for plant
 
    contains
 
@@ -793,6 +794,7 @@ contains
     allocate(this%smin_nh4_to_plant_col       (begc:endc)) ;             this%smin_nh4_to_plant_col (:)   = nan 
     allocate(this%plant_to_litter_nflux       (begc:endc)) ;             this%plant_to_litter_nflux (:)   = nan
     allocate(this%plant_to_cwd_nflux          (begc:endc)) ;             this%plant_to_cwd_nflux    (:)   = nan
+    allocate(this%supplement_to_plantn        (begp:endp)) ;             this%supplement_to_plantn  (:)   = nan
     
   end subroutine InitAllocate
 

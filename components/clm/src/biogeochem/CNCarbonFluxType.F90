@@ -4879,7 +4879,70 @@ contains
           this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
        enddo
     endif
+    
+    ! some zeroing
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr_col(c)              = 0._r8
+       this%lithr_col(c)              = 0._r8
+       this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
+       if (.not. (use_pflotran .and. pf_cmode)) then
+       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! thus 'hr_vr_col' should NOT be set to 0
+            this%hr_vr_col(c,1:nlevdecomp) = 0._r8
+       end if
+    enddo
 
+      ! vertically integrate HR and decomposition cascade fluxes
+      do k = 1, ndecomp_cascade_transitions
+
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+             this%decomp_cascade_hr_col(c,k) = &
+                this%decomp_cascade_hr_col(c,k) + &
+                this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j)
+
+          end do
+       end do
+      end do
+    ! litter heterotrophic respiration (LITHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%lithr_col(c) = &
+              this%lithr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+          end do
+        end if
+      end do
+
+      ! soil organic matter heterotrophic respiration (SOMHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%somhr_col(c) = &
+              this%somhr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+          end do
+        end if
+      end do
+
+      ! total heterotrophic respiration, vertically resolved (HR)
+
+      do k = 1, ndecomp_cascade_transitions
+        do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%hr_vr_col(c,j) = &
+                this%hr_vr_col(c,j) + &
+                this%decomp_cascade_hr_vr_col(c,j,k)
+          end do
+        end do
+      end do
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
@@ -5342,7 +5405,8 @@ end subroutine CSummary_interface
 
     associate(&
          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
-         is_soil   =>    decomp_cascade_con%is_soil     & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+         is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+         is_cwd    =>    decomp_cascade_con%is_cwd      &
     )
 
     ! patch loop
@@ -5420,7 +5484,7 @@ end subroutine CSummary_interface
 
       ! litter heterotrophic respiration (LITHR)
       do k = 1, ndecomp_cascade_transitions
-        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
           do fc = 1,num_soilc
             c = filter_soilc(fc)
             this%lithr_col(c) = &
