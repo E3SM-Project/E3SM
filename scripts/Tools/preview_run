@@ -35,6 +35,7 @@ OR
         description=description,
         formatter_class=argparse.RawTextHelpFormatter
     )
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
@@ -42,7 +43,7 @@ OR
     parser.add_argument("-j", "--job", default=None,
                         help="The job you want to print")
 
-    args = parser.parse_args(args[1:])
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.caseroot, args.job
 

@@ -21,7 +21,7 @@ class EnvMachSpecific(EnvBase):
         """
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
         EnvBase.__init__(self, caseroot, infile, schema=schema)
-        self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing")
+        self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing", "queue")
         self._unit_testing = unit_testing
 
     def populate(self, machobj):
@@ -389,6 +389,7 @@ class EnvMachSpecific(EnvBase):
         default_match = None
         best_num_matched_default = -1
         args = []
+        queue = case.get_value("JOB_QUEUE", subgroup=job)
         for mpirun_node in mpirun_nodes:
             xml_attribs = self.attrib(mpirun_node)
             all_match = True
