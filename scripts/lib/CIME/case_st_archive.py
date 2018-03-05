@@ -368,12 +368,6 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
             for item in items:
                 # the following match has an option of having a './' at the beginning of
                 # the history filename
-# KDR Does this do what's intended?
-#     I think it's looking for '"...//{awordchar}{anythingelse} "'
-#     That could be done with r"\"\.*\S+\s?\""
-#     which is                 '"...{1 or more non-space}{optional space}"'
-# An example that matches the simpler pattern:
-#    "/glade/scratch/raeder/CIME_DA_vars_6/run/CIME_DA_vars_6.cam_0001.rs.2008-08-02-21600.nc"
                 matchobj = re.search(r"\"(\.*\/*\w.*)\s?\"", item)
                 if matchobj:
                     histfile = matchobj.group(1).strip()
