@@ -95,8 +95,8 @@
     <rest_file_extension>[ri]</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
     <hist_file_extension>initial_hist</hist_file_extension>
-      <rest_history_varname>unset</rest_history_varname>
-      <rpointer>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
