@@ -67,7 +67,7 @@ class EnvMachSpecific(EnvBase):
 
         return envs_to_set
 
-    def load_env(self, case, force_method=None, job=None):
+    def load_env(self, case, force_method=None, job=None, verbose=False):
         """
         Should only be called by case.load_env
         """
@@ -75,11 +75,11 @@ class EnvMachSpecific(EnvBase):
         # in the environment_variables block
         modules_to_load = self._get_modules_for_case(case)
         if (modules_to_load is not None):
-            self._load_modules(modules_to_load, force_method=force_method)
+            self._load_modules(modules_to_load, force_method=force_method, verbose=verbose)
 
         envs_to_set = self._get_envs_for_case(case, job=job)
         if (envs_to_set is not None):
-            self._load_envs(envs_to_set)
+            self._load_envs(envs_to_set, verbose=verbose)
 
         self._get_resources_for_case(case)
 
@@ -94,14 +94,14 @@ class EnvMachSpecific(EnvBase):
                 limits = (int(val), limits[1])
                 resource.setrlimit(attr, limits)
 
-    def _load_modules(self, modules_to_load, force_method=None):
+    def _load_modules(self, modules_to_load, force_method=None, verbose=False):
         module_system = self.get_module_system_type() if force_method is None else force_method
         if (module_system == "module"):
-            self._load_module_modules(modules_to_load)
+            self._load_module_modules(modules_to_load, verbose=verbose)
         elif (module_system == "soft"):
-            self._load_modules_generic(modules_to_load)
+            self._load_modules_generic(modules_to_load, verbose=verbose)
         elif (module_system == "generic"):
-            self._load_modules_generic(modules_to_load)
+            self._load_modules_generic(modules_to_load, verbose=verbose)
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
@@ -160,10 +160,11 @@ class EnvMachSpecific(EnvBase):
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
 
-    def _load_envs(self, envs_to_set):
+    def _load_envs(self, envs_to_set, verbose=False):
         for env_name, env_value in envs_to_set:
             os.environ[env_name] = "" if env_value is None else env_value
-
+            if verbose:
+                logger.warn("Setting Environment {}={}".format(env_name, env_value))
     # Private API
 
     def _compute_module_actions(self, module_nodes, case, job=None):
@@ -275,15 +276,18 @@ class EnvMachSpecific(EnvBase):
 
         return cmds
 
-    def _load_module_modules(self, modules_to_load):
+    def _load_module_modules(self, modules_to_load, verbose=False):
         for cmd in self._get_module_commands(modules_to_load, "python"):
-            logger.debug("module command is {}".format(cmd))
+            if verbose:
+                logger.warn("module command is {}".format(cmd))
+            else:
+                logger.debug("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
             expect(stat==0 and (len(errout) == 0 or self.allow_error()),
                    "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
-    def _load_modules_generic(self, modules_to_load):
+    def _load_modules_generic(self, modules_to_load, verbose=False):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
 
@@ -305,6 +309,8 @@ class EnvMachSpecific(EnvBase):
         # Use null terminated lines to give us something more definitive to split on.
         # Env vars can contain newlines, so splitting on newlines can be ambiguous
         cmd += " && env -0"
+        if verbose:
+            logger.warn("cmd: {}".format(cmd))
         output = run_cmd_no_fail(cmd)
 
         ###################################################

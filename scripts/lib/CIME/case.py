@@ -1260,11 +1260,11 @@ class Case(object):
         else:
             logger.warning("WARNING: No {} Model version found.".format(model))
 
-    def load_env(self, reset=False, job=None):
+    def load_env(self, reset=False, job=None, verbose=False):
         if not self._is_env_loaded or reset:
             os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
-            env_module.load_env(self, job=job)
+            env_module.load_env(self, job=job, verbose=verbose)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
