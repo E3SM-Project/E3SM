@@ -266,9 +266,9 @@ class EnvMachSpecific(EnvBase):
             os.environ[env_name] = "" if env_value is None else env_value
             if verbose:
                 if env_value is not None:
-                    logger.warn("Setting Environment {}={}".format(env_name, env_value))
+                    logger.warning("Setting Environment {}={}".format(env_name, env_value))
                 else:
-                    logger.warn("Unsetting Environment {}".format(env_name))
+                    logger.warning("Unsetting Environment {}".format(env_name))
 
     def _compute_module_actions(self, module_nodes, case, job=None):
         return self._compute_actions(module_nodes, "command", case, job=job)
@@ -382,7 +382,7 @@ class EnvMachSpecific(EnvBase):
     def _load_module_modules(self, modules_to_load, verbose=False):
         for cmd in self._get_module_commands(modules_to_load, "python"):
             if verbose:
-                logger.warn("module command is {}".format(cmd))
+                logger.warning("module command is {}".format(cmd))
             else:
                 logger.debug("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
@@ -413,7 +413,7 @@ class EnvMachSpecific(EnvBase):
         # Env vars can contain newlines, so splitting on newlines can be ambiguous
         cmd += " && env -0"
         if verbose:
-            logger.warn("cmd: {}".format(cmd))
+            logger.warning("cmd: {}".format(cmd))
         output = run_cmd_no_fail(cmd)
 
         ###################################################
