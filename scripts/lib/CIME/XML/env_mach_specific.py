@@ -50,23 +50,6 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-    def _get_modules_for_case(self, case, job=None):
-        module_nodes = self.get_children("modules", root=self.get_child("module_system"))
-        modules_to_load = None
-        if module_nodes is not None:
-            modules_to_load = self._compute_module_actions(module_nodes, case, job=job)
-
-        return modules_to_load
-
-    def _get_envs_for_case(self, case, job=None):
-        env_nodes = self.get_children("environment_variables")
-
-        envs_to_set = None
-        if env_nodes is not None:
-            envs_to_set = self._compute_env_actions(env_nodes, case, job=job)
-
-        return envs_to_set
-
     def load_env(self, case, force_method=None, job=None, verbose=False):
         """
         Should only be called by case.load_env
@@ -82,30 +65,6 @@ class EnvMachSpecific(EnvBase):
             self._load_envs(envs_to_set, verbose=verbose)
 
         self._get_resources_for_case(case)
-
-    def _get_resources_for_case(self, case):
-        resource_nodes = self.get_children("resource_limits")
-        if resource_nodes is not None:
-            nodes = self._compute_resource_actions(resource_nodes, case)
-            for name, val in nodes:
-                attr = getattr(resource, name)
-                limits = resource.getrlimit(attr)
-                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
-                limits = (int(val), limits[1])
-                resource.setrlimit(attr, limits)
-
-    def _load_modules(self, modules_to_load, force_method=None, verbose=False):
-        module_system = self.get_module_system_type() if force_method is None else force_method
-        if (module_system == "module"):
-            self._load_module_modules(modules_to_load, verbose=verbose)
-        elif (module_system == "soft"):
-            self._load_modules_generic(modules_to_load, verbose=verbose)
-        elif (module_system == "generic"):
-            self._load_modules_generic(modules_to_load, verbose=verbose)
-        elif (module_system == "none"):
-            self._load_none_modules(modules_to_load)
-        else:
-            expect(False, "Unhandled module system '{}'".format(module_system))
 
     def list_modules(self):
         module_system = self.get_module_system_type()
@@ -160,12 +119,156 @@ class EnvMachSpecific(EnvBase):
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
 
+    def get_module_system_type(self):
+        """
+        Return the module system used on this machine
+        """
+        module_system = self.get_child("module_system")
+        return self.get(module_system, "type")
+
+    def allow_error(self):
+        """
+        Return True if stderr output from module commands should be assumed
+        to be an error. Default False. This is necessary since implementations
+        of environment modules are highlty variable and some systems produce
+        stderr output even when things are working fine.
+        """
+        module_system = self.get_child("module_system")
+        value = self.get(module_system, "allow_error")
+        return value.upper() == "TRUE" if value is not None else False
+
+    def get_module_system_init_path(self, lang):
+        init_nodes = self.get_optional_child("init_path", attributes={"lang":lang}, root=self.get_child("module_system"))
+        return self.text(init_nodes) if init_nodes is not None else None
+
+    def get_module_system_cmd_path(self, lang):
+        cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
+        return self.text(cmd_nodes) if cmd_nodes is not None else None
+
+    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
+        """
+        Find best match, return (executable, {arg_name : text})
+        """
+        mpirun_nodes = self.get_children("mpirun")
+        best_match = None
+        best_num_matched = -1
+        default_match = None
+        best_num_matched_default = -1
+        args = []
+        for mpirun_node in mpirun_nodes:
+            xml_attribs = self.attrib(mpirun_node)
+            all_match = True
+            matches = 0
+            is_default = False
+
+            for key, value in attribs.items():
+                expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
+                if key in xml_attribs:
+                    if xml_attribs[key].lower() == "false":
+                        xml_attrib = False
+                    elif xml_attribs[key].lower() == "true":
+                        xml_attrib = True
+                    else:
+                        xml_attrib = xml_attribs[key]
+
+                    if xml_attrib == value:
+                        matches += 1
+                    elif key == "mpilib" and value != "mpi-serial" and xml_attrib == "default":
+                        is_default = True
+                    else:
+                        all_match = False
+                        break
+
+            if all_match:
+                if is_default:
+                    if matches > best_num_matched_default:
+                        default_match = mpirun_node
+                        best_num_matched_default = matches
+                else:
+                    if matches > best_num_matched:
+                        best_match = mpirun_node
+                        best_num_matched = matches
+
+        # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
+        if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
+            return "",[]
+
+        expect(best_match is not None or default_match is not None,
+               "Could not find a matching MPI for attributes: {}".format(attribs))
+
+        the_match = best_match if best_match is not None else default_match
+
+        # Now that we know the best match, compute the arguments
+        if not exe_only:
+            arg_node = self.get_optional_child("arguments", root=the_match)
+            if arg_node is not None:
+                arg_nodes = self.get_children("arg", root=arg_node)
+                for arg_node in arg_nodes:
+                    arg_value = transform_vars(self.text(arg_node),
+                                               case=case,
+                                               subgroup=job,
+                                               default=self.get(arg_node, "default"))
+                    args.append(arg_value)
+
+        exec_node = self.get_child("executable", root=the_match)
+        expect(exec_node is not None,"No executable found")
+        executable = self.text(exec_node)
+
+        return executable, args
+
+    def get_type_info(self, vid):
+        return "char"
+
+    # Private API
+    def _get_modules_for_case(self, case, job=None):
+        module_nodes = self.get_children("modules", root=self.get_child("module_system"))
+        modules_to_load = None
+        if module_nodes is not None:
+            modules_to_load = self._compute_module_actions(module_nodes, case, job=job)
+
+        return modules_to_load
+
+    def _get_envs_for_case(self, case, job=None):
+        env_nodes = self.get_children("environment_variables")
+
+        envs_to_set = None
+        if env_nodes is not None:
+            envs_to_set = self._compute_env_actions(env_nodes, case, job=job)
+
+        return envs_to_set
+
+    def _get_resources_for_case(self, case):
+        resource_nodes = self.get_children("resource_limits")
+        if resource_nodes is not None:
+            nodes = self._compute_resource_actions(resource_nodes, case)
+            for name, val in nodes:
+                attr = getattr(resource, name)
+                limits = resource.getrlimit(attr)
+                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
+                limits = (int(val), limits[1])
+                resource.setrlimit(attr, limits)
+
+    def _load_modules(self, modules_to_load, force_method=None, verbose=False):
+        module_system = self.get_module_system_type() if force_method is None else force_method
+        if (module_system == "module"):
+            self._load_module_modules(modules_to_load, verbose=verbose)
+        elif (module_system == "soft"):
+            self._load_modules_generic(modules_to_load, verbose=verbose)
+        elif (module_system == "generic"):
+            self._load_modules_generic(modules_to_load, verbose=verbose)
+        elif (module_system == "none"):
+            self._load_none_modules(modules_to_load)
+        else:
+            expect(False, "Unhandled module system '{}'".format(module_system))
+
     def _load_envs(self, envs_to_set, verbose=False):
         for env_name, env_value in envs_to_set:
             os.environ[env_name] = "" if env_value is None else env_value
             if verbose:
-                logger.warn("Setting Environment {}={}".format(env_name, env_value))
-    # Private API
+                if env_value is not None:
+                    logger.warn("Setting Environment {}={}".format(env_name, env_value))
+                else:
+                    logger.warn("Unsetting Environment {}".format(env_name))
 
     def _compute_module_actions(self, module_nodes, case, job=None):
         return self._compute_actions(module_nodes, "command", case, job=job)
@@ -358,103 +461,3 @@ class EnvMachSpecific(EnvBase):
 '''.format(shell)
         header += "source {}".format(self.get_module_system_init_path(shell))
         return header
-
-    def get_module_system_type(self):
-        """
-        Return the module system used on this machine
-        """
-        module_system = self.get_child("module_system")
-        return self.get(module_system, "type")
-
-    def allow_error(self):
-        """
-        Return True if stderr output from module commands should be assumed
-        to be an error. Default False. This is necessary since implementations
-        of environment modules are highlty variable and some systems produce
-        stderr output even when things are working fine.
-        """
-        module_system = self.get_child("module_system")
-        value = self.get(module_system, "allow_error")
-        return value.upper() == "TRUE" if value is not None else False
-
-    def get_module_system_init_path(self, lang):
-        init_nodes = self.get_optional_child("init_path", attributes={"lang":lang}, root=self.get_child("module_system"))
-        return self.text(init_nodes) if init_nodes is not None else None
-
-    def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
-        return self.text(cmd_nodes) if cmd_nodes is not None else None
-
-    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
-        """
-        Find best match, return (executable, {arg_name : text})
-        """
-        mpirun_nodes = self.get_children("mpirun")
-        best_match = None
-        best_num_matched = -1
-        default_match = None
-        best_num_matched_default = -1
-        args = []
-        for mpirun_node in mpirun_nodes:
-            xml_attribs = self.attrib(mpirun_node)
-            all_match = True
-            matches = 0
-            is_default = False
-
-            for key, value in attribs.items():
-                expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
-                if key in xml_attribs:
-                    if xml_attribs[key].lower() == "false":
-                        xml_attrib = False
-                    elif xml_attribs[key].lower() == "true":
-                        xml_attrib = True
-                    else:
-                        xml_attrib = xml_attribs[key]
-
-                    if xml_attrib == value:
-                        matches += 1
-                    elif key == "mpilib" and value != "mpi-serial" and xml_attrib == "default":
-                        is_default = True
-                    else:
-                        all_match = False
-                        break
-
-            if all_match:
-                if is_default:
-                    if matches > best_num_matched_default:
-                        default_match = mpirun_node
-                        best_num_matched_default = matches
-                else:
-                    if matches > best_num_matched:
-                        best_match = mpirun_node
-                        best_num_matched = matches
-
-        # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
-        if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
-            return "",[]
-
-        expect(best_match is not None or default_match is not None,
-               "Could not find a matching MPI for attributes: {}".format(attribs))
-
-        the_match = best_match if best_match is not None else default_match
-
-        # Now that we know the best match, compute the arguments
-        if not exe_only:
-            arg_node = self.get_optional_child("arguments", root=the_match)
-            if arg_node is not None:
-                arg_nodes = self.get_children("arg", root=arg_node)
-                for arg_node in arg_nodes:
-                    arg_value = transform_vars(self.text(arg_node),
-                                               case=case,
-                                               subgroup=job,
-                                               default=self.get(arg_node, "default"))
-                    args.append(arg_value)
-
-        exec_node = self.get_child("executable", root=the_match)
-        expect(exec_node is not None,"No executable found")
-        executable = self.text(exec_node)
-
-        return executable, args
-
-    def get_type_info(self, vid):
-        return "char"

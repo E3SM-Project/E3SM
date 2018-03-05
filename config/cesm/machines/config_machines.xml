@@ -366,6 +366,7 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="MPI_USE_ARRAY"/>
     </environment_variables>
     <environment_variables unit_testing="true">
       <!-- It's possible that we also need to set:
