@@ -741,6 +741,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
 
     ! local variables
+    character (len=250) :: errstr
     integer :: lchnk,i
     integer :: astat,ipes, ipes_tmp, igcol, chunkid,icol, iown,ilchnk, tot_cols, ierr    !BSINGH-  added for fixing RNG in RRTMG
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
@@ -751,36 +752,36 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
 
-    allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )          
+    !following calc. are used for pergro mods, it is not enclosed in
+    !if (pergro) so as ilchnk variable (which uses following variables) is valid for all simulations.
+    allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )
     if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
-       call endrun
+       write(errstr,*) 'physpkg-phys_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
+       call endrun (errstr)
     end if
     tot_chnk_till_this_prc (:) = 0 !Initialize to zero and only assign valid values if pergro_mods flags is true
-
-    if (pergro_mods) then !if pergro mods are active, compute variables needed for computing random numbers for RRTMG codes
-       !BSINGH - Build lat lon relationship to chunk and column
-       nchunks = size(chunks)
-       !Compute maximum number of chunks each processor have
-       if(masterproc) then
-          max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
-          tot_chnk_till_this_prc(0:npes-1) = huge(1)
-          do ipes = 0, npes - 1
-             tot_chnk_till_this_prc(ipes) = 0
-             do ipes_tmp = 0, ipes-1
-                tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
-             enddo
+    max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
+    
+    !BSINGH - Build lat lon relationship to chunk and column
+    nchunks = size(chunks)
+    !Compute maximum number of chunks each processor have
+    if(masterproc) then
+       tot_chnk_till_this_prc(0:npes-1) = huge(1)
+       do ipes = 0, npes - 1
+          tot_chnk_till_this_prc(ipes) = 0
+          do ipes_tmp = 0, ipes-1
+             tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
           enddo
-       endif
+       enddo
+    endif
 #ifdef SPMD
-       call mpibcast(max_chnks_in_blk,1, mpi_integer, 0, mpicom)
-       !BSINGH - Ideally we should use mpi_scatter but we are using this variable
-       !in "if(masterproc)" below in phys_run1, so I am using broadcast
-       call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
+    !BSINGH - Ideally we should use mpi_scatter but we are using this variable
+    !in "if(masterproc)" below in phys_run1, so broadcast is iused here
+    call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
 #endif
-       call get_block_bounds_d(firstblock,lastblock)
-       
-       !Allocate arrays
+    call get_block_bounds_d(firstblock,lastblock)
+    
+    if (pergro_mods) then !if pergro mods are active, set initial seeds
        if(masterproc) then
           !Initialize seeds to fixed values for both LW and SW at first time step
           s1 = 1
@@ -788,7 +789,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
           s3 = 3
           s4 = 4
        endif
-       !BSINGH-ENDS
     end if
 
     do lchnk = begchunk, endchunk
@@ -799,16 +799,16 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !so that code crashes if it is used inappropriately
     allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
     if( astat /= 0 ) then
-       write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id; error = ',astat
-       call endrun
+       write(errstr,*) 'physpkg.F90-phys_init: failed to allocate clm_id; error = ',astat
+       call endrun(errstr)
     end if
     clm_id(:,:) = huge(1)
 
     if (pergro_mods) then !BSINGH - compute unique column id for each column for generating seeds for RNG
        allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
        if( astat /= 0 ) then
-          write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
-          call endrun
+          write(errstr,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
+          call endrun(errstr)
        end if
               
        if(masterproc) then
@@ -1024,7 +1024,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     use check_energy,   only: check_energy_gmean
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
-    use cam_control_mod,        only: nsrest  ! restart flag !BSINGH
 #if (defined BFB_CAM_SCAM_IOP )
     use cam_history,    only: outfld
 #endif
@@ -1130,9 +1129,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_startf ('diag_physvar_ic')
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
-
-          !note: tot_chnk_till_this_prc variable will have valid values only if pergro mods are 
-          !turned on, otherwise it will have zeros
 
           ilchnk = (c - lastblock) - tot_chnk_till_this_prc(iam)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
@@ -2080,7 +2076,6 @@ subroutine tphysbc (ztodt,               &
     logical   :: lq(pcnst)
 
     character(len=fieldname_len)   :: varname, vsuffix
-    integer :: mpicom=0
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
     ! by aero_model_wetdep subroutine. 
 

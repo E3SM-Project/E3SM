@@ -127,7 +127,6 @@ module clubb_intr
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
-  logical            :: pergro_mods                  !logical to tun on/off perturbation grwoth test mods
 
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
@@ -232,7 +231,6 @@ module clubb_intr
                        do_tms_out                      = do_tms,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
-                       pergro_mods_out                 = pergro_mods, &
                        micro_do_icesupersat_out        = micro_do_icesupersat, &
                        micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)
 

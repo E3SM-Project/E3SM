@@ -52,7 +52,7 @@ integer,public              :: cosp_cnt_init = 0 !initial value for cosp counter
 
 integer,public, parameter   :: kiss_seed_num = 4
 integer,public, allocatable :: rad_randn_seedrst(:,:,:)
-integer,public              :: max_chnks_in_blk= huge(1) 
+integer,public              :: max_chnks_in_blk 
 
 
 ! Private module data
@@ -712,13 +712,9 @@ end function radiation_nextsw_cday
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
 
-    !BSINGH -  for pergrow
-    use parrrtm, only: nsubcollw => ngptlw !BSINGH
-    use parrrsw, only: nsubcolsw => ngptsw !BSINGH
-
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false
-    integer,  intent(in),optional    :: ilchnk
+    integer,  intent(in)    :: ilchnk
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
@@ -824,7 +820,7 @@ end function radiation_nextsw_cday
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
 
     ! Local variables from radctl
-    integer i, k, id, iseed                  ! index
+    integer i, k, iseed                  ! index
     integer :: istat
     real(r8) solin(pcols)         ! Solar incident flux
     real(r8) fsntoa(pcols)        ! Net solar flux at TOA
