@@ -57,7 +57,6 @@ module clm_interface_pflotranMod
   use clm_pflotran_interface_data
   use pflotran_clm_main_module
   use pflotran_clm_setmapping_module
-
 #include "petsc/finclude/petscsys.h"
 
 #if PETSC_VERSION_GE(3,8,0)
@@ -69,8 +68,8 @@ module clm_interface_pflotranMod
 #endif
 
 ! note: the following appears NOT good if putting before 'implicit none'
-! for PETSC 3.7.x and earlier
-#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_MINOR<8)
+! for PETSC 3.7.x, BUT excluding 3.7.5 (for xsdk-0.2 or earlier - needs more checking here!!!)
+#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_LT(3,8,0))
 #include "petsc/finclude/petscvec.h"
 #include "petsc/finclude/petscvec.h90"
 #endif
