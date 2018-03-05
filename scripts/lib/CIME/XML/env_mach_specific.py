@@ -389,7 +389,6 @@ class EnvMachSpecific(EnvBase):
         default_match = None
         best_num_matched_default = -1
         args = []
-        queue = case.get_value("JOB_QUEUE", subgroup=job)
         for mpirun_node in mpirun_nodes:
             xml_attribs = self.attrib(mpirun_node)
             all_match = True
