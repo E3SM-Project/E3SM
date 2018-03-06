@@ -164,7 +164,10 @@ class EnvMachSpecific(EnvBase):
 
     def _load_envs(self, envs_to_set, verbose=False):
         for env_name, env_value in envs_to_set:
-            os.environ[env_name] = "" if env_value is None else env_value
+            if env_value is None and env_name in os.environ:
+                del os.environ[env_name]
+            elif env_value is not None:
+                os.environ[env_name] = env_value
             if verbose:
                 if env_value is not None:
                     logger.warning("Setting Environment {}={}".format(env_name, env_value))
@@ -315,6 +318,8 @@ class EnvMachSpecific(EnvBase):
         cmd += " && env -0"
         if verbose:
             logger.warning("cmd: {}".format(cmd))
+        else:
+            logger.debug("cmd: {}".format(cmd))
         output = run_cmd_no_fail(cmd)
 
         ###################################################
