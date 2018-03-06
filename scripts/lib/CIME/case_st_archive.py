@@ -467,9 +467,6 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
-#                 pattern = r"{}\.{}\d*.*".format(casename, compname)
-# KDR This finds   casename.compname[any # digits][any # non-Ret chars]
-#     Instead want casename.compname[any # digits or _].[any # non-Ret chars]
                 pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
