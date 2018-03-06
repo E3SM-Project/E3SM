@@ -283,9 +283,7 @@ CONTAINS
           if (.not. single_column) phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
         end do
       end do
-    end do
-  endif
-
+   end do
 
    if (write_inithist() ) then
       do lchnk=begchunk,endchunk

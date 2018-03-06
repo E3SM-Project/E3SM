@@ -199,6 +199,8 @@ contains
       end if
 
       if (single_column .and. dim1e == 1) then
+        ! Specifically, this condition is for when the single column model 
+        !  is run in the Spectral Element dycore
         strt(1) = dim1b
         cnt(1) = 1 
         call shr_scam_getCloseLatLon(ncid%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)

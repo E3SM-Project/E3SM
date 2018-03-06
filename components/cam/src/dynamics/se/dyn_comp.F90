@@ -332,6 +332,8 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
+    use scamMod,          only: single_column
+    use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
     use dimensions_mod,   only : nlev
@@ -370,10 +372,13 @@ CONTAINS
           ! forward-in-time RK, with subcycling
           call t_startf("prim_run_sybcycle")
           call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
-               tstep, TimeLevel, hvcoord, n)
+               tstep, single_column, TimeLevel, hvcoord, n)
           call t_stopf("prim_run_sybcycle")
        end do
 
+       if (single_column) then
+         call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)
+       endif
 
 #ifdef HORIZ_OPENMP
        !$OMP END PARALLEL
