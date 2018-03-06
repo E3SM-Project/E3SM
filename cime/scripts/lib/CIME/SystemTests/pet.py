@@ -20,16 +20,20 @@ class PET(SystemTestsCompareTwo):
         """
         SystemTestsCompareTwo.__init__(self, case,
                                        separate_builds = False,
-                                       multisubmit=True,
+                                       multisubmit=False,
                                        run_two_suffix = 'single_thread',
                                        run_one_description = 'default threading',
                                        run_two_description = 'threads set to 1')
+        self._nthrds_changed = False
 
     def _case_one_setup(self):
         # first make sure that all components have threaded settings
         for comp in self._case.get_values("COMP_CLASSES"):
             if self._case.get_value("NTHRDS_{}".format(comp)) <= 1:
                 self._case.set_value("NTHRDS_{}".format(comp), 2)
+                self._nthrds_changed = True
+        if self._nthrds_changed and self._case.get_value("MAX_TASKS_PER_NODE") == self._case.get_value("MAX_MPITASKS_PER_NODE"):
+            self._case.set_value("MAX_MPITASKS_PER_NODE", int(self._case.get_value("MAX_MPITASKS_PER_NODE") / 2))
 
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
@@ -38,6 +42,8 @@ class PET(SystemTestsCompareTwo):
         #Do a run with all threads set to 1
         for comp in self._case.get_values("COMP_CLASSES"):
             self._case.set_value("NTHRDS_{}".format(comp), 1)
+        if self._nthrds_changed and self._case.get_value("MAX_TASKS_PER_NODE") == self._case.get_value("MAX_MPITASKS_PER_NODE"):
+            self._case.set_value("MAX_MPITASKS_PER_NODE", int(self._case.get_value("MAX_MPITASKS_PER_NODE") / 2))
 
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
