@@ -394,7 +394,7 @@ class EnvBatch(EnvBase):
                 if dep in depid.keys() and depid[dep] is not None:
                     dep_jobs.append(str(depid[dep]))
 
-            logger.warning("job {} depends on {}".format(job, dep_jobs))
+            logger.info("job {} depends on {}".format(job, dep_jobs))
             result = self._submit_single_job(case, job,
                                              dep_jobs=dep_jobs,
                                              no_batch=no_batch,
@@ -417,7 +417,8 @@ class EnvBatch(EnvBase):
     def _submit_single_job(self, case, job, dep_jobs=None, no_batch=False,
                            skip_pnl=False, mail_user=None, mail_type=None,
                            batch_args=None, dry_run=False):
-        logger.warning("Submit job {}".format(job))
+        if not dry_run:
+            logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
