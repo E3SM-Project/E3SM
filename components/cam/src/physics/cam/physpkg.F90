@@ -13,16 +13,15 @@ module physpkg
   !-----------------------------------------------------------------------
 
 
-  use shr_kind_mod,     only: r8 => shr_kind_r8, i8 => shr_kind_i8
-  use spmd_utils,       only: masterproc, iam, npes
+  use shr_kind_mod,     only: r8 => shr_kind_r8
+  use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
-  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map !BSINGH-added  chunks
-  use cam_abortutils,     only: endrun
+  use phys_grid,        only: get_ncols_p
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -69,15 +68,6 @@ module physpkg
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
-  
-  !BSINGH - (For fixing random number generation in RRTMG-perturbation growth test)
-  !Seeds for random number generator
-  integer :: s1,s2,s3,s4
-  integer :: nchunks
-  integer :: firstblock, lastblock      ! global block indices
-  integer, allocatable,dimension(:) :: tot_chnk_till_this_prc !total number of chunks till this processor
-
-
 
   save
 
@@ -697,7 +687,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_init
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_init
     use radheat,            only: radheat_init
-    use radiation,          only: radiation_init, max_chnks_in_blk
+    use radiation,          only: radiation_init
     use cloud_diagnostics,  only: cloud_diagnostics_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
@@ -729,9 +719,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
-    !BSINGH -  added for fixing random number generation
-    use dyn_grid,           only: get_block_bounds_d
-    use ppgrid,             only: pver 
+
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -741,100 +729,16 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
 
     ! local variables
-    character (len=250) :: errstr
-    integer :: lchnk,i
-    integer :: astat,ipes, ipes_tmp, igcol, chunkid,icol, iown,ilchnk, tot_cols, ierr    !BSINGH-  added for fixing RNG in RRTMG
-    integer, allocatable, dimension(:,:,:) :: clm_id_mstr
-    integer, allocatable, dimension(:,:) :: clm_id
+    integer :: lchnk
     real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
 
     !-----------------------------------------------------------------------
 
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
 
-    !following calc. are used for pergro mods, it is not enclosed in
-    !if (pergro) so as ilchnk variable (which uses following variables) is valid for all simulations.
-    allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )
-    if( astat /= 0 ) then
-       write(errstr,*) 'physpkg-phys_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
-       call endrun (errstr)
-    end if
-    tot_chnk_till_this_prc (:) = 0 !Initialize to zero and only assign valid values if pergro_mods flags is true
-    max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
-    
-    !BSINGH - Build lat lon relationship to chunk and column
-    nchunks = size(chunks)
-    !Compute maximum number of chunks each processor have
-    if(masterproc) then
-       tot_chnk_till_this_prc(0:npes-1) = huge(1)
-       do ipes = 0, npes - 1
-          tot_chnk_till_this_prc(ipes) = 0
-          do ipes_tmp = 0, ipes-1
-             tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
-          enddo
-       enddo
-    endif
-#ifdef SPMD
-    !BSINGH - Ideally we should use mpi_scatter but we are using this variable
-    !in "if(masterproc)" below in phys_run1, so broadcast is iused here
-    call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
-#endif
-    call get_block_bounds_d(firstblock,lastblock)
-    
-    if (pergro_mods) then !if pergro mods are active, set initial seeds
-       if(masterproc) then
-          !Initialize seeds to fixed values for both LW and SW at first time step
-          s1 = 1
-          s2 = 2
-          s3 = 3
-          s4 = 4
-       endif
-    end if
-
     do lchnk = begchunk, endchunk
        call physics_state_set_grid(lchnk, phys_state(lchnk))
     end do
-
-    !clm_id is passed on to radiation, so allocate this variable here and assign it 
-    !so that code crashes if it is used inappropriately
-    allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
-    if( astat /= 0 ) then
-       write(errstr,*) 'physpkg.F90-phys_init: failed to allocate clm_id; error = ',astat
-       call endrun(errstr)
-    end if
-    clm_id(:,:) = huge(1)
-
-    if (pergro_mods) then !BSINGH - compute unique column id for each column for generating seeds for RNG
-       allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
-       if( astat /= 0 ) then
-          write(errstr,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
-          call endrun(errstr)
-       end if
-              
-       if(masterproc) then
-          do igcol = 1, ngcols_p
-             i = latlon_to_dyn_gcol_map(igcol)
-             chunkid  = knuhcs(i)%chunkid
-             icol = knuhcs(i)%col
-             iown  = chunks(chunkid)%owner
-             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-             clm_id_mstr(icol,ilchnk,iown+1) = igcol
-          enddo
-       endif
-       
-#ifdef SPMD
-       !Scatter
-       tot_cols = pcols*max_chnks_in_blk
-       call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
-            clm_id,    tot_cols,  mpi_integer, 0,             &
-            MPI_COMM_WORLD,ierr)
-#else
-       !BSINGH - Haven't tested it.....               
-       call endrun('physpkg.F90-phys_init: non-mpi compiles are not tested yet for pergro test...')
-       rnglw = rnglw_mstr(:,:,:,1)
-       rngsw = rngsw_mstr(:,:,:,1)
-#endif       
-    end if !pergro_mods
 
     !-------------------------------------------------------------------------------------------
     ! Initialize any variables in physconst which are not temporally and/or spatially constant
@@ -934,7 +838,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call tsinti(tmelt, latvap, rair, stebol, latice)
 
-    call radiation_init(clm_id, phys_state)
+    call radiation_init(phys_state)
 
     call rad_solar_var_init()
 
@@ -1053,7 +957,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer :: c                                 ! indices
     integer :: ncol                              ! number of columns
     integer :: nstep                             ! current timestep number
-    integer :: ilchnk
 #if (! defined SPMD)
     integer  :: mpicom = 0
 #endif
@@ -1119,7 +1022,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk,ilchnk)
+!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
        do c=begchunk, endchunk
           !
           ! Output physics terms to IC file
@@ -1130,10 +1033,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
 
-          ilchnk = (c - lastblock) - tot_chnk_till_this_prc(iam)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
-                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c), ilchnk )
+                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        end do
 
@@ -1883,7 +1785,7 @@ end subroutine tphysac
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,            &
-       sgh, sgh30, cam_out, cam_in , ilchnk)
+       sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1957,7 +1859,6 @@ subroutine tphysbc (ztodt,               &
     !
     ! Arguments
     !
-    integer,  intent(in) :: ilchnk
     real(r8), intent(in) :: ztodt                            ! 2 delta t (model time increment)
     real(r8), intent(inout) :: fsns(pcols)                   ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)                   ! Net column abs solar flux at model top
@@ -2791,7 +2692,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx, ilchnk, is_cmip6_volc)
+         fsds, net_flx,is_cmip6_volc)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

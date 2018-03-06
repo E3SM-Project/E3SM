@@ -15,7 +15,7 @@ module radiation
 !---------------------------------------------------------------------------------
 
 use shr_kind_mod,    only: r8=>shr_kind_r8
-use spmd_utils,      only: masterproc
+use spmd_utils,      only: masterproc, iam, npes
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
 use physics_types,   only: physics_state, physics_ptend
 use physconst,       only: cappa
@@ -50,10 +50,8 @@ public :: &
 integer,public, allocatable :: cosp_cnt(:)       ! counter for cosp
 integer,public              :: cosp_cnt_init = 0 !initial value for cosp counter
 
-integer,public, parameter   :: kiss_seed_num = 4
-integer,public, allocatable :: rad_randn_seedrst(:,:,:)
-integer,public              :: max_chnks_in_blk 
-
+integer, public, parameter   :: kiss_seed_num = 4
+integer, public, allocatable :: rad_randn_seedrst(:,:,:), tot_chnk_till_this_prc(:) !total number of chunks till this processor
 
 ! Private module data
 integer :: qrs_idx      = 0 
@@ -94,6 +92,7 @@ integer, allocatable :: clm_rand_seed(:,:,:)
 real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true !BSINGH - Added for solar insolation calc.
 
 logical :: pergro_mods = .false. ! for activating pergro mods
+integer :: firstblock, lastblock      ! global block indices
 
 !===============================================================================
 contains
@@ -313,13 +312,14 @@ end function radiation_nextsw_cday
 
 !================================================================================================
 
-  subroutine radiation_init(clm_id, phys_state)
+  subroutine radiation_init(phys_state)
 !-----------------------------------------------------------------------
 !
 ! Initialize the radiation parameterization, add fields to the history buffer
 ! 
 !-----------------------------------------------------------------------
     use physics_buffer, only: pbuf_get_index
+    use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols_p, latlon_to_dyn_gcol_map
     use cam_history,    only: addfld, horiz_only, add_default
     use constituents,   only: cnst_get_ind
     use physconst,      only: gravit, stebol, &
@@ -335,10 +335,13 @@ end function radiation_nextsw_cday
     use modal_aer_opt, only: modal_aer_opt_init
     use rrtmg_state,   only: rrtmg_state_init
     use time_manager,   only: get_step_size
+    use dyn_grid,       only: get_block_bounds_d
+#ifdef SPMD
+    use mpishorthand,   only: mpi_integer, mpicom, mpi_comm_world
+#endif
 
     type(physics_state), intent(in) :: phys_state(begchunk:endchunk)
-    integer,             intent(in) :: clm_id(pcols, max_chnks_in_blk)
-    
+
     integer :: icall, nmodes
     logical :: active_calls(0:N_DIAG)
     integer :: nstep                       ! current timestep number
@@ -350,7 +353,14 @@ end function radiation_nextsw_cday
     integer :: history_budget_histfile_num ! output history file number for budget fields
     integer :: err
 
-    integer :: dtime, id, lchnk, ncol, icol, ilchnk, astat, iseed
+    integer :: dtime
+
+    !variables for pergro_mods
+    character (len=250) :: errstr
+    integer, allocatable, dimension(:,:,:) :: clm_id_mstr
+    integer, allocatable, dimension(:,:) :: clm_id
+    integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
+    integer :: igcol, imap, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
     !-----------------------------------------------------------------------
     
     call rrtmg_state_init()
@@ -395,13 +405,74 @@ end function radiation_nextsw_cday
     
     allocate(cosp_cnt(begchunk:endchunk))
 
-    allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
-    if( astat /= 0 ) then
-       write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
-       call endrun
-    end if
-    clm_rand_seed (:,:,:) = huge(1)! Assign a number so that it crashes if used inappropriately
+    !Modification needed by pergro_mods for generating random numbers
+    if (pergro_mods) then
+       max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
+       allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
+       if( astat /= 0 ) then
+          write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
+          call endrun
+       end if
 
+       allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )
+       if( astat /= 0 ) then
+          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
+          call endrun (errstr)
+       end if
+       
+       !BSINGH - Build lat lon relationship to chunk and column
+       !Compute maximum number of chunks each processor have
+       if(masterproc) then
+          tot_chnk_till_this_prc(0:npes-1) = huge(1)
+          do ipes = 0, npes - 1
+             tot_chnk_till_this_prc(ipes) = 0
+             do ipes_tmp = 0, ipes-1
+                tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
+             enddo
+          enddo
+       endif
+#ifdef SPMD
+       !BSINGH - Ideally we should use mpi_scatter but we are using this variable
+       !in "if(masterproc)" below in phys_run1, so broadcast is iused here
+       call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
+#endif
+       call get_block_bounds_d(firstblock,lastblock)
+       
+       allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
+       if( astat /= 0 ) then
+          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id; error = ',astat
+          call endrun(errstr)
+       end if
+       
+       allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
+       if( astat /= 0 ) then
+          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id_mstr; error = ',astat
+          call endrun(errstr)
+       end if
+       !compute all clm ids on masterproc and then scatter it ....
+       if(masterproc) then
+          do igcol = 1, ngcols_p
+             imap = latlon_to_dyn_gcol_map(igcol)
+             chunkid  = knuhcs(imap)%chunkid
+             icol = knuhcs(imap)%col
+             iown  = chunks(chunkid)%owner
+             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+             clm_id_mstr(icol,ilchnk,iown+1) = igcol
+          enddo
+       endif
+       
+#ifdef SPMD
+       !Scatter
+       tot_cols = pcols*max_chnks_in_blk
+       call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
+            clm_id,    tot_cols,  mpi_integer, 0,             &
+            MPI_COMM_WORLD,ierr)
+#else
+       !BSINGH - Haven't tested it.....               
+       call endrun('radiation.F90(rrtmg)-radiation_init: non-mpi compiles are not tested yet for pergro test...')
+#endif       
+    endif
+       
     if (is_first_restart_step()) then
        cosp_cnt(begchunk:endchunk)=cosp_cnt_init
        if (pergro_mods) then
@@ -657,7 +728,7 @@ end function radiation_nextsw_cday
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, ilchnk, is_cmip6_volc)
+       fsds, net_flx, is_cmip6_volc)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -713,8 +784,7 @@ end function radiation_nextsw_cday
     use output_aerocom_aie , only: do_aerocom_ind3
 
     ! Arguments
-    logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false
-    integer,  intent(in)    :: ilchnk
+    logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
@@ -820,8 +890,9 @@ end function radiation_nextsw_cday
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
 
     ! Local variables from radctl
-    integer i, k, iseed                  ! index
+    integer :: i, k, iseed, ilchnk                  ! index
     integer :: istat
+    integer :: clm_seed (pcols,kiss_seed_num)
     real(r8) solin(pcols)         ! Solar incident flux
     real(r8) fsntoa(pcols)        ! Net solar flux at TOA
     real(r8) fsutoa(pcols)        ! Upwelling solar flux at TOA
@@ -882,7 +953,7 @@ end function radiation_nextsw_cday
     integer, dimension(pcols) :: IdxDay  ! Indicies of daylight coumns
     integer, dimension(pcols) :: IdxNite ! Indicies of night coumns
 
-    integer :: icall,icol                     ! index through climate/diagnostic radiation calls
+    integer :: icall                     ! index through climate/diagnostic radiation calls
     logical :: active_calls(0:N_DIAG)
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
@@ -902,6 +973,14 @@ end function radiation_nextsw_cday
 
     lchnk = state%lchnk
     ncol = state%ncol
+    
+    if(pergro_mods) then
+       ilchnk = (lchnk - lastblock) - tot_chnk_till_this_prc(iam)
+       clm_seed(1:pcols,1:kiss_seed_num) = clm_rand_seed (1:pcols,1:kiss_seed_num,ilchnk)       
+    else
+       !for default simulation, clm_seed should never be used, assign it a value which breaks the simulation if used.
+       clm_seed(1:pcols,1:kiss_seed_num) = huge(1)
+    endif
 
     calday = get_curr_calday()
 
@@ -1146,7 +1225,7 @@ end function radiation_nextsw_cday
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
                        cam_out%solsd,cam_out%solld,fns,          fcns,                         &
-                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_rand_seed (:,:,ilchnk),  &
+                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
@@ -1294,8 +1373,7 @@ end function radiation_nextsw_cday
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
-                       clm_rand_seed(:,:,ilchnk),                                                & 
-                       lu,           ld)
+                       clm_seed,     lu,           ld                                            )
                   call t_stopf ('rad_rrtmg_lw')
 
                   if (lwrad_off) then
@@ -1486,7 +1564,7 @@ end function radiation_nextsw_cday
        !write kissvec seeds for random numbers
        do iseed = 1, kiss_seed_num    
           do i = 1, ncol          
-             rad_randn_seedrst(i,iseed,lchnk) = clm_rand_seed(i,iseed,ilchnk)
+             rad_randn_seedrst(i,iseed,lchnk) = clm_seed(i,iseed)
           enddo
        enddo
     endif
