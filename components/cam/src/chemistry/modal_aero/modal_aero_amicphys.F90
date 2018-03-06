@@ -4347,7 +4347,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
 ! inter-modal coag of ultrafine mode
 
 ! uses
-      use modal_aero_coag, only: getcoags_wrapper_f
+      use modal_aero_coag, only: getcoags_quad
 
       implicit none
 
@@ -4391,7 +4391,6 @@ mainloop1_ipair:  do n = 1, ntot_amode
       real(r8) :: tmp1, tmp2, tmp3, tmp4
       real(r8) :: tmpa, tmpb, tmpc, tmpn
       real(r8) :: tmp_dq, tmp_xf
-      real(r8) :: xbetaij2i, xbetaij2j, xbetaii2, xbetajj2
       real(r8) :: ybetaij0(max_coagpair), ybetaij3(max_coagpair), &
                   ybetaii0(max_coagpair), ybetajj0(max_coagpair)
 
@@ -4430,14 +4429,13 @@ mainloop1_ipair:  do n = 1, ntot_amode
 !           pdensat, pdensac,                       &
 !           betaij0, betaij2i, betaij2j, betaij3,   &
 !           betaii0, betaii2, betajj0, betajj2      )
-         call getcoags_wrapper_f(                                       &
+         call getcoags_quad(                                            &
             temp,                        pmid,                          &
             dgn_awet(modefrm),           dgn_awet(modetoo),             &
             sigmag_aer(modefrm),         sigmag_aer(modetoo),           &
-            alnsg_aer(modefrm),          alnsg_aer(modetoo),            &
             wetdens(modefrm),            wetdens(modetoo),              &
-            ybetaij0(ip), xbetaij2i,     xbetaij2j,     ybetaij3(ip),   &
-            ybetaii0(ip), xbetaii2,      ybetajj0(ip),  xbetajj2        )
+            ybetaii0(ip),                ybetajj0(ip),                  &
+            ybetaij0(ip),                ybetaij3(ip)                   )
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
 !   short diagnostics for coag coefficients

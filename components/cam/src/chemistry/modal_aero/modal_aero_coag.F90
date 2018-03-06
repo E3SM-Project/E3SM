@@ -20,7 +20,8 @@
   save
 
 ! !PUBLIC MEMBER FUNCTIONS:
-  public :: modal_aero_coag_sub, modal_aero_coag_init, getcoags_wrapper_f
+  public :: modal_aero_coag_sub, modal_aero_coag_init, getcoags_wrapper_f, &
+            getcoags_quad
 
 ! !PUBLIC DATA MEMBERS:
   integer, parameter :: pcnstxx = gas_pcnst
@@ -1127,6 +1128,319 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
 
       return
       end subroutine getcoags_wrapper_f
+
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+      subroutine getcoags_quad(                   &
+          airtemp, airprs,                        &
+          dgatk, dgacc,                           &
+          sgatk, sgacc,                           &
+          pdensat, pdensac,                       &
+          betaii0, betajj0,   &
+          betaij0, betaij3      )
+        use physconst, only: p0 => pstd, &
+                             tmelt, &
+                             boltz
+!
+!
+! explcit quadrature method for coag rate coefficients
+! calls getcoagker_fuchs for each dp1,dp2 pair
+!
+! code adapted from CMDV-verification project for DOE's
+! E3SM model
+!
+!
+      implicit none
+
+! *** arguments
+
+      real(r8), intent(in) :: airtemp  ! air temperature [ k ]
+      real(r8), intent(in) :: airprs   ! air pressure in [ pa ]
+
+
+      real(r8), intent(in) :: dgatk    ! aitken mode geometric mean diameter [m]
+      real(r8), intent(in) :: dgacc    ! accumulation mode geometric mean diam [m]
+
+      real(r8), intent(in) :: sgatk    ! aitken mode geometric standard deviation
+      real(r8), intent(in) :: sgacc    ! accumulation mode geometric standard deviation
+
+      real(r8), intent(in) :: pdensat  ! aitken mode particle density [ kg / m**3 ]
+      real(r8), intent(in) :: pdensac  ! accumulation mode density [ kg / m**3 ]
+
+      real(r8), intent(out) :: betaii0, betajj0,   &
+                               betaij0, betaij3
+
+! *** local parameters
+      real(r8), parameter :: pi = 3.1415926536897932384626433832795028841971_r8
+      real(r8), parameter :: onehalf = 1.0_r8/2.0_r8
+
+! *** local variables
+      real(r8) :: const1(4),const2(4)
+      real(r8) :: N1
+      real(r8) :: x1(4),x2(4)
+      real(r8) :: dp1,dp2
+      real(r8) :: dpwet_pair(8)
+      real(r8) :: wetdens_pair(8)
+      real(r8) :: x01(4),x02(4)
+      real(r8) :: dx1(4),dx2(4)
+      real(r8) :: sx1(4),sx2(4)
+      real(r8) :: B_tmp(4)
+      real(r8) :: tmp1(4), tmp2(4), tempsum1(4), tempsum2(4)
+      real(r8) :: tempsum3(4),tmpa(4),tmpb(4)
+      real(r8) :: ker12
+
+      integer :: i,j,ii,jj
+      integer :: n_1sigma
+      integer :: n_tot
+      integer :: k, ip, nn
+
+! *** initialize B0 and B3
+
+      betaii0 = 0._r8
+      betajj0 = 0._r8
+      betaij0 = 0._r8
+      betaij3 = 0._r8
+
+! *** start calculation
+
+      wetdens_pair(1) = pdensat
+      wetdens_pair(2) = pdensat
+      wetdens_pair(3) = pdensac
+      wetdens_pair(4) = pdensac
+      wetdens_pair(5) = pdensat
+      wetdens_pair(6) = pdensac
+      wetdens_pair(7) = pdensat
+      wetdens_pair(8) = pdensac
+
+
+      do k = 1,4
+          if (k == 1) then
+              sx1(k) = log(sgatk)
+              sx2(k) = log(sgatk)
+              x01(k) = log(dgatk)
+              x02(k) = log(dgatk)
+          elseif (k == 2) then
+              sx1(k) = log(sgacc)
+              sx2(k) = log(sgacc)
+              x01(k) = log(dgacc)
+              x02(k) = log(dgacc)
+          else
+              sx1(k) = log(sgatk)
+              sx2(k) = log(sgacc)
+              x01(k) = log(dgatk)
+              x02(k) = log(dgacc)
+          endif
+      enddo
+
+
+
+!!! explicit quadrature for:
+!!! nn=1 0 moment intra-modal coag rate
+!!! nn=2 0 moment intra-modal coag rate
+!!! nn=3 0 moment inter-modal coag rate
+!!! nn=4 3 moment inter-modal coag rate
+
+        do nn = 1,4
+
+        ! assign # of evaluation pts per sigma interval (n_1sigma)
+        ! assign # of integration points (n_tot)
+        ! assign quadrature interval (dx),
+        ! assign constants for normalized dn/dlnp
+
+           n_1sigma = 1
+           n_tot = n_1sigma*5
+           dx1(nn) = sx1(nn)/n_1sigma
+           dx2(nn) = sx2(nn)/n_1sigma
+           const1(nn) = 1._r8/(sqrt(2._r8*pi)*sx1(nn))
+           const2(nn) = 1._r8/(sqrt(2._r8*pi)*sx2(nn))
+
+           ! ii and jj are counters for density and particle
+           ! diamter pairs that are passed to getcoagker_fuchs
+           ! to obtain the coag kernel
+           ii = nn*2-1
+           jj = nn*2
+
+           ! initialize arrays holding final values of coag rate
+           B_tmp(nn) = 0._r8
+           tempsum1(nn) = 0._r8
+           tempsum2(nn) = 0._r8
+           tempsum3(nn) = 0._r8
+
+
+! *** begin quadrature
+           do i = -n_tot,n_tot
+
+            x2(nn) = x02(nn) + dx2(nn)*i                  !ln(dpi)
+            tmp2(nn) = (x2(nn) - x02(nn))/sx2(nn)         !expression to
+                                                          !be
+                                                          !exponentiated
+            tmpb(nn)=const2(nn)*exp(-onehalf*tmp2(nn) &   !dndlndp/N_tot
+                      *tmp2(nn))
+
+            dp2 = exp( x2(nn) )
+            dpwet_pair(jj) = dp2
+
+            do j = -n_tot,n_tot
+                x1(nn) = x01(nn) + dx1(nn)*j
+                tmp1(nn) = ( x1(nn) - x01(nn) ) / sx1(nn)
+                dp1 = exp( x1(nn) )
+                dpwet_pair(ii) = dp1
+                if (nn /= 4 ) then
+                    tmpa(nn) = const1(nn) * &
+                    exp( -onehalf * tmp1(nn) * tmp1(nn) )
+                else
+                    tmpa(nn) = const1(nn) * &
+                    exp( -onehalf * tmp1(nn) * tmp1(nn) ) * &
+                    (dp1**3)
+                endif
+
+                call getcoagker_fuchs( airtemp, airprs, dpwet_pair(ii:jj), &
+                                  wetdens_pair(ii:jj), ker12 )
+
+                tempsum3(nn) = tempsum3(nn) + tmpa(nn) * tmpb(nn) * &
+                               dx1(nn) * dx2(nn) * ker12
+
+            enddo
+          enddo
+
+      enddo
+
+      B_tmp(1) = (onehalf * tempsum3(1))
+      B_tmp(2) = (onehalf * tempsum3(2))
+      B_tmp(3) = tempsum3(3)
+      B_tmp(4) = tempsum3(4) * (1 / ( (dgatk**3) ) ) * &
+                 (1/(exp(4.5_r8*sx1(4)*sx1(4))))
+
+      betaii0 = B_tmp(1)
+      betajj0 = B_tmp(2)
+      betaij0 = B_tmp(3)
+      betaij3 = B_tmp(4)
+
+      return
+
+      end subroutine getcoags_quad
+
+
+!---------------------------------------------------------------------
+!  subroutine getcoagker_fuchs calculates the coagulation
+!        kernel for each coagulation particle pair using
+!        the method outlined by Fuchs, 1964.
+
+      subroutine getcoagker_fuchs( temp, pmid, dpwet, &
+                                    wetdens, ker12 )
+
+      use physconst, only: p0 => pstd, tmelt, pi
+
+      implicit none
+
+      real(r8), intent(in) :: temp
+      real(r8), intent(in) :: pmid
+      real(r8), intent(in), dimension(1:2) :: &
+                dpwet, &
+                wetdens
+      real(r8), intent(out) :: ker12
+
+
+! *** local parameters
+      real(r8), parameter :: dens_h20 = 1.000e3_r8
+      real(r8), parameter :: Avogadro = 6.022e23_r8
+      real(r8), parameter :: R_universal = 8.314e3_r8
+      real(r8), parameter :: mw_air = 28.97_r8
+      real(r8), parameter :: boltz = 1.381e-23_r8
+
+! *** local variables
+
+     real(r8) :: deltat
+     real(r8) :: mfp(2)
+     real(r8) :: speed(2)
+     real(r8) :: mu
+     real(r8) :: diffus_p(2)
+     real(r8) :: Cc(2)
+     real(r8) :: t0
+     real(r8) :: Knudsen(2)
+     real(r8) :: gasfreepath
+     real(r8) :: gasspeed
+     real(r8) :: tmp1,tmp2,tmp3,tmp4
+     real(r8) :: gg(2)
+     real(r8) :: kernel
+     real(r8) :: tmp_drydens, tmp_drymass, tmp_wtrmass
+     real(r8) :: tmp_dryvol, tmp_wtrvol, tmp_wetvol
+     real(r8) :: sx
+     integer :: iaer_mode1, iaer_mode2, iaer_mode3
+     integer :: ii,jj
+
+! *** initialization
+
+     kernel = 0._r8
+     t0 = tmelt + 15._r8
+
+! *** begin calculation
+
+
+      gasspeed=sqrt( (8._r8 * R_universal * temp) / (pi * mw_air) )
+      mu = 1.458e-6 * temp * sqrt(temp) / (temp + 110.4_r8)
+      gasfreepath= (2._r8 * mu) / (pmid * ( (8._r8 * mw_air) &
+           / (pi * R_universal * temp) )**0.5_r8)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ii = 1
+
+      tmp_wetvol = (dpwet(ii)**3) * (pi / 6._r8)
+      Knudsen(ii)= (2._r8 * gasfreepath) / dpwet(ii)
+
+      Cc(ii) = 1._r8 + Knudsen(ii) * (1.257_r8 + &
+                0.4_r8 * exp(-1.1_r8 / Knudsen(ii) ) )
+
+      diffus_p(ii)= (boltz * temp * Cc(ii)) / &
+               (3._r8 * pi * mu * dpwet(ii))
+
+      speed(ii) = sqrt( (8._r8 * boltz * temp) / &
+                (pi * (wetdens(ii) * (tmp_wetvol)) ) )
+
+      mfp(ii) = (8._r8 * diffus_p(ii)) / (pi * speed(ii))
+
+      gg(ii)= (1 / (3._r8 * dpwet(ii) * mfp(ii)) ) * &
+              ( (dpwet(ii) + mfp(ii) )**3 - &
+              (dpwet(ii) * dpwet(ii) + mfp(ii) * mfp(ii) )**1.5) &
+               - dpwet(ii)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      jj = 2
+
+      tmp_wetvol= (dpwet(jj)**3) * (pi / 6._r8)
+      Knudsen(jj)= (2._r8 * gasfreepath) / dpwet(jj)
+
+      Cc(jj) = 1._r8 + Knudsen(jj) * (1.257_r8 + &
+                  0.4_r8 * exp(-1.1_r8 / Knudsen(jj)) )
+
+      diffus_p(jj)= (boltz * temp * Cc(jj)) / &
+                   (3._r8 * pi * mu * dpwet(jj) )
+
+      speed(jj)= sqrt( (8._r8 * boltz * temp) / &
+                     ( pi * (wetdens(jj) * (tmp_wetvol)) ) )
+
+      mfp(jj) = (8._r8 * diffus_p(jj)) / (pi * speed(jj))
+      gg(jj)= (1 / (3._r8 * dpwet(jj) * mfp(jj)) ) * &
+              ( (dpwet(jj) + mfp(jj) )**3 - &
+              ( dpwet(jj) * dpwet(jj) + mfp(jj) * mfp(jj) )**1.5) &
+                - dpwet(jj)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      tmp1 = 2._r8 * ( (gg(ii) * gg(ii)) + (gg(jj) * gg(jj)) )**0.5_r8
+      tmp2= ( (speed(ii) * speed(ii)) + (speed(jj) * speed(jj)) )**0.5_r8
+      tmp3= (dpwet(ii) + dpwet(jj)) / (dpwet(ii) + dpwet(jj) + tmp1)
+      tmp4= ( 8._r8 * (diffus_p(ii) + diffus_p(jj)) ) / &
+            ( tmp2 * (dpwet(ii) + dpwet(jj)) )
+
+      kernel= ( 2._r8 * pi * (diffus_p(ii) + diffus_p(jj)) * &
+              (dpwet(ii) + dpwet(jj)) ) * &
+              ( 1._r8 / (tmp3+tmp4) )
+      ker12 = kernel
+
+      return
+
+      end subroutine getcoagker_fuchs
+
+!-------------------------------------------------------------------
 
 
 
