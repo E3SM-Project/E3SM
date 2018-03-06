@@ -314,12 +314,12 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 if compname.find('mpas') == 0:
                     # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix =                   compname + r'\d*'                   + r'\.' + suffix + r'\.'
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
                     newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i] + r'\.' + suffix + r'\.'
             else:
                 if compname.find('mpas') == 0:
-                    newsuffix =                   compname + r'\d*'                   + r'\.' + suffix + r'\.'
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
                     newsuffix = casename + r'\.' + compname + r'\d*'                   + r'\.' + suffix + r'\.'
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
