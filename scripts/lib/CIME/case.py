@@ -136,6 +136,7 @@ class Case(object):
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
             "threaded" : self.get_build_threaded(),
+            "queue": self.get_value("JOB_QUEUE", subgroup="case.run")
             }
 
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
