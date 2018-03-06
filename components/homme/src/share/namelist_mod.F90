@@ -216,6 +216,7 @@ module namelist_mod
       cubed_sphere_map, &
       qsplit,        &
       rsplit,        &
+      vsplit,        &
       rk_stage_user, &
       LFTfreq,       &
       disable_diagnostics, &
@@ -821,6 +822,10 @@ module namelist_mod
 !nsplit=1, and 
 !rsplit = Factor * ( nsplit * vsplit ), rsplit > 0
     if( vsplit > 0 )then
+
+
+    if (par%masterproc) write (iulog,*) "VSPLIT>0, nsplit, rsplit, ftype",nsplit, rsplit,ftype
+    if (par%masterproc) write (iulog,*) "VSPLIT>0, se_nsplit, rsplit, se_ftype",se_nsplit, rsplit,se_ftype
        if((rsplit == 0).OR.(nsplit > 1).OR.(ftype .ne. 2))then
          call abortmp('in CAM vsplit > 0 requires rsplit > 0, nsplit = 1 and ftype=2')
        else
@@ -941,6 +946,7 @@ module namelist_mod
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
+       write(iulog,*)"readnl: interpolation for vertical remap frequency vsplit (-1,0=disabled): ",vsplit
 
        write(iulog,*)"readnl: runtype       = ",runtype
 
