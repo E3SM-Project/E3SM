@@ -172,15 +172,14 @@
     </rpointer>
   </comp_archive_spec>
 
+  <comp_archive_spec compclass="esp" compname="dart">
+    <rest_file_extension>e\.\w+inf\w+</rest_file_extension>
+    <hist_file_extension>[ei]</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.unset</rpointer_file>
+      <rpointer_content>unset</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
 
-    </comp_archive_spec>
-    <comp_archive_spec compclass="esp" compname="dart">
-      <rest_file_extension>e\.\w+inf\w+</rest_file_extension>
-      <hist_file_extension>[ei]</hist_file_extension>
-      <rest_history_varname>unset</rest_history_varname>
-      <rpointer>
-        <rpointer_file>rpointer.unset</rpointer_file>
-        <rpointer_content>unset</rpointer_content>
-      </rpointer>
-    </comp_archive_spec>
-  </components>
+</components>
