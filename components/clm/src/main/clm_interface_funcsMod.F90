@@ -223,6 +223,7 @@ contains
     !
     ! !USES:
     use CNDecompCascadeConType, only : decomp_cascade_con
+    use clm_varctl            , only : spinup_state
     !
     ! !ARGUMENTS:
 
@@ -288,7 +289,11 @@ contains
     clm_idata%bgc%initial_cn_ratio(:)    = initial_cn_ratio(:)
     clm_idata%bgc%initial_cp_ratio(:)    = initial_cp_ratio(:)
     clm_idata%bgc%decomp_k_pools(:)      = decomp_k_pools(1:ndecomp_pools)
-    clm_idata%bgc%adfactor_kd_pools(:)   = adfactor_kd_pools(1:ndecomp_pools)
+    if (spinup_state == 1) then
+        clm_idata%bgc%adfactor_kd_pools(:) = adfactor_kd_pools(1:ndecomp_pools)
+    else
+        clm_idata%bgc%adfactor_kd_pools(:) = 1.0_r8
+    end if
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
