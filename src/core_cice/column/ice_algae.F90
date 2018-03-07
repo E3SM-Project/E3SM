@@ -2683,7 +2683,7 @@
          endif
            
          if (abs(diff_dt) > accuracy ) then
-           l_stop = .true.
+           !l_stop = .true.
            write(warning,*) 'Conservation of zbgc low order solution failed: diff_dt:',&
                         diff_dt
            write(warning,*) 'Total initial tracer', C_init_tot
