@@ -2462,7 +2462,13 @@ end if
           if (macrop_scheme .ne. 'CLUBB_SGS') then
 
             select case (simple_macrop_opt) ! simple condensation models
-           !case (1) ! saturation adjustment scheme from Reed and Jablonowski
+            case (1) ! saturation adjustment scheme from Reed and Jablonowski
+
+               call reed_jablonowski_sat_adj_tend(state, ptend, cld_macmic_ztodt)
+               call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+               call physics_update(state, ptend, ztodt, tend)
+               call check_energy_chng(state, tend, "Reed-Jablonowski saturation adjustment", nstep, ztodt, &
+                    zero, zero, zero, zero)
 
             case (2) ! simplified Rasch-Kristjansson-Zhang scheme
 
