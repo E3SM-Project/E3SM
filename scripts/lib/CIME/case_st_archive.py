@@ -199,6 +199,7 @@ def _get_component_archive_entries(case, archive):
     compset_comps.append('dart')
 
     for compname in compset_comps:
+        logger.debug("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
             yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
@@ -313,19 +314,20 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 if compname.find('mpas') == 0:
                     # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix = compname + '.*' + suffix
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i] + r'\.' + suffix + r'\.'
             else:
                 if compname.find('mpas') == 0:
-                    newsuffix = compname + '.*' + suffix
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '.' + compname + ".*" + suffix
-
+                    newsuffix = casename + r'\.' + compname + r'\d*'                   + r'\.' + suffix + r'\.'
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
 
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            logger.debug("histfiles = {} ".format(histfiles))
+
             if histfiles:
                 for histfile in histfiles:
                     file_date = get_file_date(os.path.basename(histfile))
@@ -465,16 +467,16 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
-                pattern = r"{}\.{}\d*.*".format(casename, compname)
+                pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
-                    pattern = ninst_strings[i] + suffix + datename_str
+                    pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
                 else:
-                    pattern = suffix + datename_str
+                    pattern =                     r'\.' + suffix + r'\.' + datename_str
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
-            logger.debug("Pattern is {} restfiles {}".format(pattern, restfiles))
+                logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
