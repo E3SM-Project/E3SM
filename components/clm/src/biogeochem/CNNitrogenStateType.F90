@@ -684,12 +684,12 @@ contains
 
     this%totecosysn_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTECOSYSN', units='gN/m^2', &
-         avgflag='A', long_name='total ecosystem N', &
+         avgflag='A', long_name='total ecosystem N but excl product pools', &
          ptr_col=this%totecosysn_col)
 
     this%totcoln_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTCOLN', units='gN/m^2', &
-         avgflag='A', long_name='total column-level N', &
+         avgflag='A', long_name='total column-level N but excl product pools', &
          ptr_col=this%totcoln_col)
 
     this%seedn_col(begc:endc) = spval
@@ -1802,7 +1802,6 @@ contains
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
            this%sminn_col(c) + &
-           this%totprodn_col(c) + &
            this%totvegn_col(c)
 
       ! total column nitrogen, including pft (TOTCOLN)
@@ -1812,7 +1811,6 @@ contains
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
            this%sminn_col(c) + &
-           this%totprodn_col(c) + &
            this%seedn_col(c) + &
            this%ntrunc_col(c)+ &
            this%plant_n_buffer_col(c)

@@ -610,12 +610,12 @@ contains
 
     this%totecosysp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
-         avgflag='A', long_name='total ecosystem P', &
+         avgflag='A', long_name='total ecosystem P but excl product pools', &
          ptr_col=this%totecosysp_col)
 
     this%totcolp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
-         avgflag='A', long_name='total column-level P', &
+         avgflag='A', long_name='total column-level P but excl product pools', &
          ptr_col=this%totcolp_col)
 
     this%seedp_col(begc:endc) = spval
@@ -1823,7 +1823,6 @@ contains
            this%secondp_col(c) + &
            this%primp_col(c) + &
            this%occlp_col(c) + &
-           this%totprodp_col(c) + &
            this%totvegp_col(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
@@ -1835,7 +1834,6 @@ contains
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
-           this%totprodp_col(c) + &
            this%seedp_col(c)    + &
            this%ptrunc_col(c)
    end do

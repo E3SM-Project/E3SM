@@ -885,12 +885,12 @@ contains
 
        this%totecosysc_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTECOSYSC', units='gC/m^2', &
-             avgflag='A', long_name='total ecosystem carbon, incl veg but excl cpool', &
+             avgflag='A', long_name='total ecosystem carbon, incl veg but excl cpool but excl product pools', &
              ptr_col=this%totecosysc_col)
 
        this%totcolc_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTCOLC', units='gC/m^2', &
-             avgflag='A', long_name='total column carbon, incl veg and cpool', &
+             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
              ptr_col=this%totcolc_col)
 
        this%prod10c_col(begc:endc) = spval
@@ -980,12 +980,12 @@ contains
 
        this%totecosysc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_TOTECOSYSC', units='gC13/m^2', &
-             avgflag='A', long_name='C13 total ecosystem carbon, incl veg but excl cpool', &
+             avgflag='A', long_name='C13 total ecosystem carbon, incl veg but excl cpool but excl product pools', &
              ptr_col=this%totecosysc_col)
 
        this%totcolc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_TOTCOLC', units='gC13/m^2', &
-             avgflag='A', long_name='C13 total column carbon, incl veg and cpool', &
+             avgflag='A', long_name='C13 total column carbon, incl veg and cpool but excl product pools', &
              ptr_col=this%totcolc_col)
 
        this%prod10c_col(begc:endc) = spval
@@ -1092,12 +1092,12 @@ contains
 
        this%totecosysc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_TOTECOSYSC', units='gC14/m^2', &
-             avgflag='A', long_name='C14 total ecosystem carbon, incl veg but excl cpool', &
+             avgflag='A', long_name='C14 total ecosystem carbon, incl veg but excl cpool but excl product pools', &
              ptr_col=this%totecosysc_col)
 
        this%totcolc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_TOTCOLC', units='gC14/m^2', &
-             avgflag='A', long_name='C14 total column carbon, incl veg and cpool', &
+             avgflag='A', long_name='C14 total column carbon, incl veg and cpool but excl product pools', &
              ptr_col=this%totcolc_col)
 
        this%prod10c_col(begc:endc) = spval
@@ -3276,7 +3276,6 @@ contains
             this%cwdc_col(c)     + &
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
-            this%totprodc_col(c) + &
             this%totvegc_col(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
@@ -3286,7 +3285,6 @@ contains
             this%cwdc_col(c)     + &
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
-            this%totprodc_col(c) + &
             this%seedc_col(c)    + &
             this%ctrunc_col(c)
             
