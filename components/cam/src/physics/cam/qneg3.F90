@@ -113,7 +113,7 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
          end if
       end do
 
-      if(print_fixer_message .and. abs(worst)>max(qmin(m),1.e-8_r8) ) then 
+      if(print_fixer_message .and. found .and. abs(worst)>max(qmin(m),1.e-8_r8) ) then 
          if (lfix) then 
             write(iulog,9000)subnam,m,idx,nvals,qmin(m),worst,iw,kw
          else
