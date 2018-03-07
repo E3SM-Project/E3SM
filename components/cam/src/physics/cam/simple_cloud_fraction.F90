@@ -58,6 +58,18 @@ contains
 
     rhu00 = rhlim
 
+  case (10) ! Slingo formula with upper limit is 1 for ast.
+
+    rhpert = 0._r8
+    gbmrh(:ncol,:pver) = q(:ncol,:pver) /qsat(:ncol,:pver)*(1.0_r8+real(0,r8)*rhpert)
+
+    rhlim = 0.8_r8
+    rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
+    ast(:ncol,:pver) = min(1.0_r8,(max(rhdif(:ncol,:pver),0.0_r8))**2)
+    dastdrh(:ncol,:pver) = max(rhdif(:ncol,:pver),0.0_r8) /(1.0_r8-rhlim) *2._r8
+
+    rhu00 = rhlim
+
   case (2) ! Park et al. (2014) statistical scheme based on triangular PDF
 
     rhmin = 0.8_r8              ! critical gribox-mean RH (gbmrh) for st clouds to form

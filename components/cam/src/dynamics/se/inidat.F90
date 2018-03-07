@@ -233,6 +233,10 @@ contains
           call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
                1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
        end if
+       !!!!!!!let the liquide water be zero in initial conditions;;;;;;;
+       !!!!!!!used in the test for simple condensation model;;;;;;;;;;;;
+       !if(m_cnst==2) tmp = 0.0_r8  !!!!m_cnst==2 is liquid water indenx 
+
        if(.not. found) then
 
           if(par%masterproc  ) write(iulog,*) 'Field ',cnst_name(m_cnst),' not found on initial dataset'

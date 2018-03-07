@@ -51,6 +51,8 @@ contains
 
     call addfld ('RKZ_ql',  (/'lev'/), 'I','kg/kg','grid-box mean ql used in the simple RKZ scheme')
     call addfld ('RKZ_qv',  (/'lev'/), 'I','kg/kg','grid-box mean qv used in the simple RKZ scheme')
+    call addfld ('RKZ_Tbf', (/'lev'/), 'I','K','grid-box mean temperature after the simple RKZ scheme')
+    call addfld ('RKZ_Taf', (/'lev'/), 'I','K','grid-box mean temperature before the simple RKZ scheme')
 
     call addfld ('RKZ_qsat',    (/'lev'/), 'I', 'kg/kg',   'saturation specific humidity used in the simple RKZ scheme')
     call addfld ('RKZ_dqsatdT', (/'lev'/), 'I', 'kg/kg/K', 'derivative of saturation specific humidity wrt temperature used in the simple RKZ scheme')
@@ -74,8 +76,15 @@ contains
     call addfld ('RKZ_zqme', (/'lev'/), 'I', 'kg/kg/s', 'condensation rate before limiters in the simple RKZ scheme')
     call addfld ('RKZ_qme',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate after limiters in the simple RKZ scheme')
 
-    call addfld ('RKZ_qme_lm4',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 4 in the simple RKZ scheme')
-    call addfld ('RKZ_qme_lm5',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 in the simple RKZ scheme')
+    call addfld ('RKZ_qme_lm4_qv',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 4 for qv in the simple RKZ scheme')
+    call addfld ('RKZ_qme_lm4_ql',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 4 for ql in the simple RKZ scheme')
+    call addfld ('RKZ_qme_lm5_ps',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 with positive sign in the simple RKZ scheme')
+    call addfld ('RKZ_qme_lm5_ng',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 with negative sign in the simple RKZ scheme')
+
+    call addfld ('RKZ_qverr_lm4',  (/'lev'/), 'I', 'kg/kg', 'clipping in qv by limiter 4 for qv in the simple RKZ scheme')
+    call addfld ('RKZ_qlerr_lm4',  (/'lev'/), 'I', 'kg/kg', 'clipping in ql by limiter 4 for ql in the simple RKZ scheme')
+    call addfld ('RKZ_sqerr_lm4',  (/'lev'/), 'I', 'kJ/kg', 'clipping in dry static energy by limiter 4 for qv in the simple RKZ scheme')
+    call addfld ('RKZ_slerr_lm4',  (/'lev'/), 'I', 'kJ/kg', 'clipping in dry static energy by limiter 4 for ql in the simple RKZ scheme')
 
   end subroutine simple_RKZ_init
 
@@ -170,6 +179,7 @@ contains
 
   real(r8) :: qmebf   (pcols,pver)   ! total condensation rate before appling limiter 
   real(r8) :: qmedf   (pcols,pver)   ! difference of total condensation rate before and after limiter application
+  real(r8) :: tmp     (pcols,pver)   ! temporary work array 
 
   real(r8) :: term_A (pcols,pver)
   real(r8) :: term_B (pcols,pver)
@@ -188,7 +198,9 @@ contains
   real(r8) :: zlim (pcols,pver)
   real(r8) :: zsmall                 ! bottom boundary for ql and qv used in limiter 4 and 5
 
-
+  real(r8) :: zqverr(pcols,pver)     ! Save the negative qv for analysis.
+  real(r8) :: zqlerr(pcols,pver)     ! Save the negative ql for analysis.
+  real(r8) :: zsterr(pcols,pver)     ! Save the dry static energy change before and after limiter 
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
   ncol  = state%ncol
@@ -220,6 +232,8 @@ contains
 
   call outfld('RKZ_qv',    state%q(:,:,1),        pcols, lchnk)
   call outfld('RKZ_ql',    state%q(:,:,ixcldliq), pcols, lchnk)
+  call outfld('RKZ_Taf',   state%t(:,:), pcols, lchnk)
+  call outfld('RKZ_Tbf',   tcwat,        pcols, lchnk)
 
   call outfld('RKZ_f',     ast,      pcols, lchnk)
   call outfld('RKZ_dfdRH', dastdRH,  pcols, lchnk)
@@ -375,7 +389,6 @@ contains
         zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver) !C_gamma
         term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)* &
                               (zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver))
-
      case default
          write(iulog,*) "Unrecognized value of rkz_term_C_opt:",rkz_term_C_opt,". Abort."
          call endrun
@@ -393,7 +406,6 @@ contains
      call outfld('RKZ_term_A', term_A, pcols, lchnk)
      call outfld('RKZ_term_B', term_B, pcols, lchnk)
      call outfld('RKZ_term_C', term_C, pcols, lchnk)
-
      call outfld('RKZ_ql_incld', ql_incld, pcols, lchnk)
 
      select case (rkz_term_C_opt)
@@ -474,25 +486,42 @@ contains
      !---------------------------------------------------------------------------
      if (l_rkz_lmt_4) then
 
-        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
-
         ! Avoid negative qv
 
+        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
+
+        zqverr(:ncol,:pver) = 0._r8
+        zsterr(:ncol,:pver) = 0._r8
         zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
         where( zqvnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
+           zqverr(:ncol,:pver) = zqvnew(:ncol,:pver)
+           zsterr(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
         end where
+        qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
+
+        call outfld('RKZ_qme_lm4_qv',   qmedf,    pcols, lchnk)
+        call outfld('RKZ_qverr_lm4',   zqverr,    pcols, lchnk)
+        call outfld('RKZ_sqerr_lm4',   zsterr,    pcols, lchnk)
 
         ! Avoid negative ql (note that qme could be negative, which would mean evaporation)
 
+        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
+
         zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
+        zqlerr(:ncol,:pver) = 0._r8
+        zsterr(:ncol,:pver) = 0._r8
         where( zqlnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
+           zqlerr(:ncol,:pver) = zqlnew(:ncol,:pver)
+           zsterr(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
         end where
-
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
-        call outfld('RKZ_qme_lm4',   qmedf,    pcols, lchnk)
 
+        call outfld('RKZ_qme_lm4_ql',   qmedf,    pcols, lchnk)
+        call outfld('RKZ_qlerr_lm4',   zqlerr,    pcols, lchnk)
+        call outfld('RKZ_slerr_lm4',   zsterr,    pcols, lchnk)
+        
      end if
 
      !---------------------------------------------------------------------------
@@ -504,21 +533,21 @@ contains
      !---------------------------------------------------------------------------
      if (l_rkz_lmt_5) then
 
-        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
-
         ! Avoid nonzero qme if f=0 and df/dt=0 
+
+        qmebf(:ncol,:pver)  = qme(:ncol,:pver)
 
         select case (rkz_lmt5_opt)
         case(0)
-           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8))
+           where ((ast(:ncol,:pver) == 0._r8).and.(dfdt(:ncol,:pver) == 0._r8))
              qme(:ncol,:pver) = 0._r8
            end where
         case(1)
-           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8).and.(ltend(:ncol,:pver).lt.0._r8))
+           where ((ast(:ncol,:pver) == 0._r8).and.(dfdt(:ncol,:pver) == 0._r8).and.(ltend(:ncol,:pver) < 0._r8))
              qme(:ncol,:pver) = 0._r8
            end where
         case(2)
-           where ((ast(:ncol,:pver).eq.0._r8).and.(dfdt(:ncol,:pver).eq.0._r8).and.(ltend(:ncol,:pver).gt.0._r8))
+           where ((ast(:ncol,:pver) == 0._r8).and.(dfdt(:ncol,:pver) == 0._r8).and.(ltend(:ncol,:pver) > 0._r8))
              qme(:ncol,:pver) = 0._r8
            end where
         case default
@@ -527,7 +556,18 @@ contains
         end select
 
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
-        call outfld('RKZ_qme_lm5',   qmedf,    pcols, lchnk)
+
+        tmp(:ncol,:pver) = 0._r8
+        where (qmedf(:ncol,:pver) < 0._r8)
+          tmp(:ncol,:pver) = qmedf(:ncol,:pver)
+        end where
+        call outfld('RKZ_qme_lm5_ng',   tmp,    pcols, lchnk)
+
+        tmp(:ncol,:pver) = 0._r8
+        where (qmedf(:ncol,:pver) > 0._r8)
+          tmp(:ncol,:pver) = qmedf(:ncol,:pver)
+        end where
+        call outfld('RKZ_qme_lm5_ps',   tmp,    pcols, lchnk)
 
      end if
 
