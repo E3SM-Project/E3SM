@@ -198,6 +198,9 @@ module seq_comm_mct
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_InitializeFortran
     integer, public :: mhid, mhfid, mpoid
+    integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+    integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
 #endif
 !=======================================================================
 contains

@@ -14,7 +14,7 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
 #ifdef HAVE_MOAB
-  use seq_comm_mct, only : mhid, mpoid
+  use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
   use shr_mpi_mod,  only: shr_mpi_max
 #endif
 
@@ -1004,8 +1004,6 @@ contains
     integer, external        :: iMOAB_WriteMesh
     integer                  :: ierr
     character*32             :: appname, outfile, wopts
-    integer                  :: pid_target  ! it is out from this routine, should be saved as
-                                            !   moab pid
     integer                  :: maxMH, maxMPO ! max pids for moab apps
 
     !-----------------------------------------------------
@@ -1040,16 +1038,16 @@ contains
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, pid_target)
-        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
+        ! migrated mesh gets another app id, moab atm to coupler (mbax)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mbaxid)
+        ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
         ! debug test
         outfile = 'recMeshAtm.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0)
 !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
+        ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
       endif
-    endif !  only for atm for the time being
-    ! this works now for atmosphere only;
+    endif
     if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -1060,15 +1058,16 @@ contains
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, pid_target)
-        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
+        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mboxid)
+        ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
         ! debug test
         outfile = 'recMeshOcn.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
+        ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
       endif
-    endif !  only for atm for the time being
+    endif
 
 
 
