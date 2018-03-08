@@ -16,6 +16,12 @@ module prep_atm_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: atm, lnd, ocn, ice
+#ifdef HAVE_MOAB
+  use shr_mpi_mod,  only:  shr_mpi_commrank
+  use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+  use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+#endif
 
   implicit none
   save
@@ -104,6 +110,13 @@ contains
     type(mct_avect), pointer         :: a2x_ax
     character(*), parameter          :: subname = '(prep_atm_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
+#ifdef HAVE_MOAB
+    integer, external :: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterFortranApplication, &
+        iMOAB_WriteMesh
+    real(8)   radius, radius2, eps1, boxeps
+    integer ierr, idintx, rank
+    character*32             :: appname, outfile, wopts, lnum
+#endif
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata, &
@@ -160,6 +173,22 @@ contains
           call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
                'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
                'mapper_So2a initialization',esmf_map_flag)
+#ifdef HAVE_MOAB
+!          radius=1.
+!          radius2 = 2.
+!          eps1=1.e-8
+!          boxeps=1.e-6
+          appname = "ATM_OCN_COU"//CHAR(0)
+          ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
+!          ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa,&
+!           radius, radius2, eps1, boxeps);
+!           ! write the file after intx, just to see if it is right
+!           wopts = CHAR(0)
+!           call shr_mpi_commrank( mpicom_CPLID, rank )
+!           write(lnum,"(I0.2)")rank
+!           outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
+!           ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+#endif
        end if
 
        ! needed for domain checking
