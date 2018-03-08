@@ -23,7 +23,7 @@ module clm_driver
   use abortutils             , only : endrun
   !
   use dynSubgridDriverMod    , only : dynSubgrid_driver
-  use BalanceCheckMod        , only : BeginWaterBalance, BalanceCheck
+  use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
   !
   use CanopyTemperatureMod   , only : CanopyTemperature ! (formerly Biogeophysics1Mod)
   use SoilTemperatureMod     , only : SoilTemperature
@@ -53,8 +53,8 @@ module clm_driver
   use CNEcosystemDynMod      , only : CNEcosystemDynLeaching 
   use CNVegStructUpdateMod   , only : CNVegStructUpdate 
   use CNAnnualUpdateMod      , only : CNAnnualUpdate
-  use CNBalanceCheckMod      , only : BeginCBalance, BeginNBalance, CBalanceCheck, NBalanceCheck
-  use CNBalanceCheckMod      , only : BeginPBalance, PBalanceCheck
+  use CNBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
+  use CNBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNFireMod              , only : CNFireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
@@ -352,7 +352,7 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        call t_startf('begwbal')
-       call BeginWaterBalance(bounds_clump,                   &
+       call BeginColWaterBalance(bounds_clump,                &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
@@ -361,15 +361,15 @@ contains
 
        if (use_cn) then
           call t_startf('begcnpbal')
-          call BeginCBalance(bounds_clump, &
+          call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                carbonstate_vars)
 
-          call BeginNBalance(bounds_clump, &
+          call BeginColNBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                nitrogenstate_vars)
 
-          call BeginPBalance(bounds_clump, &
+          call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                phosphorusstate_vars)
           call t_stopf('begcnpbal')
@@ -1083,7 +1083,7 @@ contains
        end if
 
        call t_startf('balchk')
-       call BalanceCheck(bounds_clump, &
+       call ColWaterBalanceCheck(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, &
             waterstate_vars, energyflux_vars, canopystate_vars)
@@ -1100,16 +1100,15 @@ contains
              else
                 call t_startf('cnbalchk')
 
-                call CBalanceCheck(bounds_clump, &
+                call ColCBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      carbonstate_vars, carbonflux_vars)
 
-                call NBalanceCheck(bounds_clump, &
+                call ColNBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      nitrogenstate_vars, nitrogenflux_vars)
 
-
-                call PBalanceCheck(bounds_clump, &
+                call ColPBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      phosphorusstate_vars, phosphorusflux_vars)
 
