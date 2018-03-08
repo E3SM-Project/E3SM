@@ -237,6 +237,7 @@ while ($inst_counter <= $NINST_OCN) {
 	$sysmod .= " -casebuild $CASEBUILD";
 	$sysmod .= " -cimeroot $CIMEROOT";
 	$sysmod .= " -inst_string '$inst_string'";
+	$sysmod .= " -decomp_prefix '$decomp_prefix'";
 	$sysmod .= " -date_stamp '$decomp_date'";
 	$sysmod .= " -ocn_grid '$OCN_MASK'";
 	$sysmod .= " -ocn_forcing '$OCN_FORCING'";
