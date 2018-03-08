@@ -44,18 +44,18 @@ module CNBalanceCheckMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: BeginCBalance
-  public :: BeginNBalance
-  public :: BeginPBalance
-  public :: CBalanceCheck
-  public :: NBalanceCheck
-  public :: PBalanceCheck
+  public :: BeginColCBalance
+  public :: BeginColNBalance
+  public :: BeginColPBalance
+  public :: ColCBalanceCheck
+  public :: ColNBalanceCheck
+  public :: ColPBalanceCheck
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine BeginCBalance(bounds, num_soilc, filter_soilc, &
+  subroutine BeginColCBalance(bounds, num_soilc, filter_soilc, &
        carbonstate_vars)
     !
     ! !DESCRIPTION:
@@ -86,10 +86,10 @@ contains
 
     end associate
 
-  end subroutine BeginCBalance
+  end subroutine BeginColCBalance
  
   !-----------------------------------------------------------------------
-  subroutine BeginNBalance(bounds, num_soilc, filter_soilc, &
+  subroutine BeginColNBalance(bounds, num_soilc, filter_soilc, &
        nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -120,10 +120,10 @@ contains
 
     end associate
 
-  end subroutine BeginNBalance
+  end subroutine BeginColNBalance
 
   !-----------------------------------------------------------------------
-  subroutine BeginPBalance(bounds, num_soilc, filter_soilc, &
+  subroutine BeginColPBalance(bounds, num_soilc, filter_soilc, &
        phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -164,10 +164,10 @@ contains
 
     end associate
 
-  end subroutine BeginPBalance
+  end subroutine BeginColPBalance
 
   !-----------------------------------------------------------------------
-  subroutine CBalanceCheck(bounds, &
+  subroutine ColCBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars)
     !
@@ -281,10 +281,10 @@ contains
 
     end associate
 
-  end subroutine CBalanceCheck
+  end subroutine ColCBalanceCheck
 
   !-----------------------------------------------------------------------
-  subroutine NBalanceCheck(bounds, &
+  subroutine ColNBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
        nitrogenstate_vars, nitrogenflux_vars)
     !
@@ -461,11 +461,11 @@ contains
 
     end associate
 
-  end subroutine NBalanceCheck
+  end subroutine ColNBalanceCheck
 
 
   !-----------------------------------------------------------------------
-  subroutine PBalanceCheck(bounds, &
+  subroutine ColPBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
        phosphorusstate_vars, phosphorusflux_vars)
     !
@@ -647,6 +647,6 @@ contains
 
     end associate
 
-  end subroutine PBalanceCheck
+  end subroutine ColPBalanceCheck
 
 end module CNBalanceCheckMod
