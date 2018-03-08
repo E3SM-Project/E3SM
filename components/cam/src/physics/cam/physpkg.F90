@@ -720,6 +720,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
     use simple_condensation_model, only: simple_RKZ_init
+    use reed_jablonowski_condensation_model, only: reed_jablonowski_init
 
 
     ! Input/output arguments
@@ -862,6 +863,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
 
     call phys_getopts(simple_macrop_opt_out=simple_macrop_opt)
+    if (simple_macrop_opt.eq.1) then
+       call reed_jablonowski_init
+    end if
     if (simple_macrop_opt.eq.2) then
        call simple_RKZ_init()
     end if
@@ -1819,6 +1823,7 @@ subroutine tphysbc (ztodt,               &
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
     use simple_condensation_model, only: simple_RKZ_tend
+    use reed_jablonowski_condensation_model, only: reed_jablonowski_sat_adj_tend
     use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_update, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
