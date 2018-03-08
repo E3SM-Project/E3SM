@@ -367,6 +367,11 @@ module CNCarbonFluxType
      real(r8), pointer :: landuseflux_col                           (:)     ! (gC/m2/s) dwt_closs+product_closs
      real(r8), pointer :: landuptake_col                            (:)     ! (gC/m2/s) nee-landuseflux
 
+     real(r8), pointer :: dwt_prod10c_gain_grc                      (:)     ! (gC/m2/s) dynamic landcover addition to 10-year wood product pool
+     real(r8), pointer :: dwt_prod100c_gain_grc                     (:)     ! (gC/m2/s) dynamic landcover addition to 100-year wood product pool
+     real(r8), pointer :: hrv_deadstemc_to_prod10c_grc              (:)     ! (gC/m2/s) dead stem harvest to 10-year wood product pool
+     real(r8), pointer :: hrv_deadstemc_to_prod100c_grc             (:)     ! (gC/m2/s) dead stem harvest to 100-year wood product pool
+
      ! CN wood product pool loss fluxes
      real(r8), pointer :: prod1c_loss_col                           (:)     ! (gC/m2/s) decomposition loss from 1-year product pool
      real(r8), pointer :: prod10c_loss_col                          (:)     ! (gC/m2/s) decomposition loss from 10-yr wood product pool
@@ -762,6 +767,11 @@ contains
      allocate(this%prod10c_loss_col                  (begc:endc))                  ; this%prod10c_loss_col          (:)  =nan
      allocate(this%prod100c_loss_col                 (begc:endc))                  ; this%prod100c_loss_col         (:)  =nan
      allocate(this%product_closs_col                 (begc:endc))                  ; this%product_closs_col         (:)  =nan
+
+     allocate(this%dwt_prod10c_gain_grc              (begg:endg))                  ; this%dwt_prod10c_gain_grc      (:)  =nan
+     allocate(this%dwt_prod100c_gain_grc             (begg:endg))                  ; this%dwt_prod100c_gain_grc     (:)  =nan
+     allocate(this%hrv_deadstemc_to_prod10c_grc      (begg:endg))                  ; this%hrv_deadstemc_to_prod10c_grc (:) = nan
+     allocate(this%hrv_deadstemc_to_prod100c_grc     (begg:endg))                  ; this%hrv_deadstemc_to_prod100c_grc(:) = nan
 
      allocate(this%bgc_cpool_ext_inputs_vr_col       (begc:endc, 1:nlevdecomp_full,ndecomp_pools))
      this%bgc_cpool_ext_inputs_vr_col(:,:,:) = nan
@@ -3297,6 +3307,25 @@ contains
             avgflag='A', long_name='NEE minus LAND_USE_FLUX, negative for update', &
             ptr_col=this%landuptake_col)
 
+       this%dwt_prod10c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_PROD10C_GAIN_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
+
+       this%dwt_prod100c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_PROD100C_GAIN_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain_patch, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD10C_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD100C_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
 
        this%annsum_npp_patch(begp:endp) = spval
        call hist_addfld1d (fname='ANNSUM_NPP', units='gC/m^2/yr', &
@@ -3625,6 +3654,25 @@ contains
             avgflag='A', long_name='C13 total carbon loss from wood product pools', &
             ptr_col=this%product_closs_col)
 
+       this%dwt_prod10c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
+
+       this%dwt_prod100c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain_patch, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
     endif
 
     !-------------------------------
@@ -3921,6 +3969,25 @@ contains
             avgflag='A', long_name='C14 total carbon loss from wood product pools', &
             ptr_col=this%product_closs_col)
 
+       this%dwt_prod10c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
+
+       this%dwt_prod100c_gain_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain_patch, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
+       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
     endif
 
     if (carbon_type == 'c13' .and. .not.use_fates ) then
@@ -3940,7 +4007,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
-    integer :: p, c, l, j
+    integer :: g, p, c, l, j
     integer :: fc                                        ! filter index
     integer :: num_special_col                           ! number of good values in special_col filter
     integer :: num_special_patch                         ! number of good values in special_patch filter
@@ -3973,6 +4040,13 @@ contains
 
     if (.not.use_fates) then
        
+       do g = bounds%begg, bounds%endg
+          this%dwt_prod10c_gain_grc(g)          = 0._r8
+          this%dwt_prod100c_gain_grc(g)         = 0._r8
+          this%hrv_deadstemc_to_prod10c_grc(g)  = 0._r8
+          this%hrv_deadstemc_to_prod100c_grc(g) = 0._r8
+       end do
+
        do p = bounds%begp,bounds%endp
           l = veg_pp%landunit(p)
 
@@ -4691,9 +4765,13 @@ contains
     ! to 0 at the beginning of every timestep
 
     do g = bounds%begg, bounds%endg
-       this%dwt_seedc_to_leaf_grc(g)        = 0._r8
-       this%dwt_seedc_to_deadstem_grc(g)    = 0._r8
-       this%dwt_conv_cflux_grc(g)           = 0._r8
+       this%dwt_seedc_to_leaf_grc(g)         = 0._r8
+       this%dwt_seedc_to_deadstem_grc(g)     = 0._r8
+       this%dwt_conv_cflux_grc(g)            = 0._r8
+       this%dwt_prod10c_gain_grc(g)          = 0._r8
+       this%dwt_prod100c_gain_grc(g)         = 0._r8
+       this%hrv_deadstemc_to_prod10c_grc(g)  = 0._r8
+       this%hrv_deadstemc_to_prod100c_grc(g) = 0._r8
     end do
     
     do c = bounds%begc,bounds%endc
