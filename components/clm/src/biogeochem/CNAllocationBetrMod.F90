@@ -619,9 +619,9 @@ contains
       dayscrecover = CNAllocParamsInst%dayscrecover
 
       call get_curr_date(yr, mon, day, sec)
-      if (spinup_state == 1 .and. yr .gt. nyears_ad_carbon_only) then
-        call cnallocate_carbon_only_set(.false.)
-      end if
+!      if (spinup_state == 1 .and. yr .gt. nyears_ad_carbon_only) then
+!        call cnallocate_carbon_only_set(.false.)
+!      end if
 
      ! loop over patches to assess the total plant N demand and P demand
       do fp=1,num_soilp
