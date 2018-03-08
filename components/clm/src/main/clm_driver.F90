@@ -279,8 +279,7 @@ contains
     !$OMP END PARALLEL DO
 
     ! ============================================================================
-    ! Initialize the mass balance checks for carbon and nitrogen, and zero fluxes for
-    ! transient land cover
+    ! Zero fluxes for transient land cover
     ! ============================================================================
 
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
@@ -294,22 +293,7 @@ contains
        endif
        
        if (use_cn) then
-          call t_startf('begcnbal')
-
-          call BeginCBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               carbonstate_vars)
-
-          call BeginNBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               nitrogenstate_vars)
-
-          
-
-          call BeginPBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               phosphorusstate_vars)
-
+          call t_startf('cnpinit')
 
           call carbonflux_vars%ZeroDWT(bounds_clump)
           if (use_c13) then
@@ -325,7 +309,7 @@ contains
           call nitrogenstate_vars%ZeroDWT(bounds_clump)
           call phosphorusstate_vars%ZeroDWT(bounds_clump)
 
-          call t_stopf('begcnbal')
+          call t_stopf('cnpinit')
        end if
 
     end do
@@ -358,6 +342,9 @@ contains
     ! want to change the balance checks to ensure that the grid cell-level water
     ! is conserved, considering qflx_liq_dynbal; in this case, the call to
     ! BeginWaterBalance should be moved to before the weight updates.
+    !
+    ! For CNP: This needs to be done after dynSubgrid_driver, because the
+    ! changes due to dynamic area adjustments can break column-level conservation
     ! ============================================================================
 
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
@@ -371,6 +358,23 @@ contains
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars, waterstate_vars)
        call t_stopf('begwbal')
+
+       if (use_cn) then
+          call t_startf('begcnpbal')
+          call BeginCBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               carbonstate_vars)
+
+          call BeginNBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               nitrogenstate_vars)
+
+          call BeginPBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               phosphorusstate_vars)
+          call t_stopf('begcnpbal')
+       end if
+
     end do
     !$OMP END PARALLEL DO
 
