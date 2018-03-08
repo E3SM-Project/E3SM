@@ -8,26 +8,31 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CIMEROOT		= `./xmlquery  CIMEROOT			-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
-my $COMPSET		= `./xmlquery  COMPSET			-value`;
-my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
-my $OBJROOT		= `./xmlquery  OBJROOT			-value`;
-my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT		-value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
-my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT		-value`;
-my $ICE_GRID		= `./xmlquery  ICE_GRID			-value`;
-my $ICE_MASK		= `./xmlquery  MASK_GRID		-value`;
-my $IC_MODE		= `./xmlquery  MPASCICE_IC_MODE 	-value`;
-my $ICE_BGC		= `./xmlquery  MPASCICE_BGC		-value`;
-my $SURFACE_MODE	= `./xmlquery  MPASCICE_SURFACE_MODE	-value`;
-my $NTASKS_ICE		= `./xmlquery  NTASKS_ICE		-value`;
-my $ICE_PIO_TYPENAME	= `./xmlquery  ICE_PIO_TYPENAME		-value`;
+my $CIMEROOT           = `./xmlquery  CIMEROOT                 -value`;
+my $CASEROOT           = `./xmlquery  CASEROOT                 -value`;
+my $CASEBUILD          = `./xmlquery  CASEBUILD                -value`;
+my $COMPSET            = `./xmlquery  COMPSET                  -value`;
+my $SRCROOT            = `./xmlquery  SRCROOT                  -value`;
+my $OBJROOT            = `./xmlquery  OBJROOT                  -value`;
+my $SCRIPTSROOT        = `./xmlquery  SCRIPTSROOT              -value`;
+my $COMP_INTERFACE     = `./xmlquery  COMP_INTERFACE           -value`;
+my $DIN_LOC_ROOT       = `./xmlquery  DIN_LOC_ROOT             -value`;
+my $ICE_GRID           = `./xmlquery  ICE_GRID                 -value`;
+my $ICE_MASK           = `./xmlquery  MASK_GRID                -value`;
+my $IC_MODE            = `./xmlquery  MPASCICE_IC_MODE         -value`;
+my $ICE_BGC            = `./xmlquery  MPASCICE_BGC             -value`;
+my $SURFACE_MODE       = `./xmlquery  MPASCICE_SURFACE_MODE    -value`;
+my $NTASKS_ICE         = `./xmlquery  NTASKS_ICE               -value`;
+my $ICE_PIO_TYPENAME   = `./xmlquery  ICE_PIO_TYPENAME         -value`;
 #my $NINST_ICE       = `./xmlquery  NINST_ICE			-value`;
-my $NINST_ICE		= 1; # Change if you want multiple instances... though this isn't coded yet.
-my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
-my $STREAM_NAME		= 'streams.cice';
+my $NINST_ICE          = 1; # Change if you want multiple instances... though this isn't coded yet.
+my $RUNDIR             = `./xmlquery  RUNDIR                   -value`;
+my $RUN_TYPE           = `./xmlquery  RUN_TYPE                 -value`;
+my $RUN_STARTDATE      = `./xmlquery  RUN_STARTDATE            -value`;
+my $RUN_REFCASE        = `./xmlquery  RUN_REFCASE              -value`;
+my $RUN_REFDATE        = `./xmlquery  RUN_REFDATE              -value`;
+my $RUN_REFTOD         = `./xmlquery  RUN_REFTOD               -value`;
+my $STREAM_NAME        = 'streams.cice';
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
 unshift @INC, @dirs;
@@ -144,11 +149,24 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 chdir "$CASEBUILD/mpas-ciceconf";
 
 #--------------------------------------------------------------------
+# Set the initial file, changing to a restart file for branch and hybrid runs
+# Note: this is not setup for multiple instances
+#--------------------------------------------------------------------
+
+my $input_file = "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc";
+if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
+    $input_file = "$RUNDIR/mpascice.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
+    if (! -e "$input_file") {
+        die " ERROR mpas-cice buildnml: missing specified restart file for branch or hybrid run";
+    }
+}
+
+#--------------------------------------------------------------------
 # Generate input data file with stream-specified files
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-cice.input_data_list");
-print $input_list "mesh = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc\n";
+print $input_list "mesh = $input_file\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -261,7 +279,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
         }
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file "                  filename_template=" . '"' 
-						. "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc" 
+						. "$input_file"
 						. '"' . "\n";
 	print $stream_file '                  input_interval="initial_only" />' . "\n";
 	print $stream_file '' . "\n";
@@ -300,7 +318,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
                         print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
                 }
                 print $stream_file "                  filename_template=" . '"'
-                                                        . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                        . "$input_file"
                                                         . '"' . "\n";
                 print $stream_file '                  filename_interval="none"' . "\n";
                 print $stream_file '                  input_interval="initial_only" />' . "\n";
@@ -628,7 +646,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
         print $stream_file "        filename_template=" . '"'
-                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                . "$input_file"
                                                 . '">' . "\n";
         print $stream_file '' . "\n";
         print $stream_file '       <var name="landIceMask"/>' . "\n";
