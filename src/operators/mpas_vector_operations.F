@@ -714,13 +714,13 @@ contains
       if (cell1 == nCells+1) then ! this is a boundary edge
         ! the normal points from the cell location to the edge location
         if (is_periodic) then
-          edgeNormalVectors(1,iEdge) = mpas_fix_periodicity(xEdge(iEdge), xCell(cell2), x_period) - xCell(cell2)
-          edgeNormalVectors(2,iEdge) = mpas_fix_periodicity(yEdge(iEdge), yCell(cell2), y_period) - yCell(cell2)
-          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+          edgeNormalVectors(1,iEdge) = xCell(cell2) - mpas_fix_periodicity(xEdge(iEdge), xCell(cell2), x_period)
+          edgeNormalVectors(2,iEdge) = yCell(cell2) - mpas_fix_periodicity(yEdge(iEdge), yCell(cell2), y_period)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zEdge(iEdge)
         else
-          edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell2)
-          edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell2)
-          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+          edgeNormalVectors(1,iEdge) = xCell(cell2) - xEdge(iEdge)
+          edgeNormalVectors(2,iEdge) = yCell(cell2) - yEdge(iEdge)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zEdge(iEdge)
         end if
 
       else if (cell2 == nCells+1) then ! this is a boundary edge
