@@ -1,3 +1,0 @@
-./xmlchange -a OCN_TRACER_MODULES=abio_dic_dic14
-./xmlchange CCSM_CO2_PPMV=284.7
-./xmlchange PIO_TYPENAME=pnetcdf
