@@ -81,10 +81,11 @@ contains
     call addfld ('RKZ_qme_lm5_ps',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 with positive sign in the simple RKZ scheme')
     call addfld ('RKZ_qme_lm5_ng',  (/'lev'/), 'I', 'kg/kg/s', 'condensation rate difference before and after limiter 5 with negative sign in the simple RKZ scheme')
 
-    call addfld ('RKZ_qverr_lm4',  (/'lev'/), 'I', 'kg/kg', 'clipping in qv by limiter 4 for qv in the simple RKZ scheme')
-    call addfld ('RKZ_qlerr_lm4',  (/'lev'/), 'I', 'kg/kg', 'clipping in ql by limiter 4 for ql in the simple RKZ scheme')
-    call addfld ('RKZ_sqerr_lm4',  (/'lev'/), 'I', 'kJ/kg', 'clipping in dry static energy by limiter 4 for qv in the simple RKZ scheme')
-    call addfld ('RKZ_slerr_lm4',  (/'lev'/), 'I', 'kJ/kg', 'clipping in dry static energy by limiter 4 for ql in the simple RKZ scheme')
+    call addfld ('RKZ_qvneg_lm4',  (/'lev'/), 'I', 'kg/kg', 'negative qv clipped by limiter 4 in the simple RKZ scheme')
+    call addfld ('RKZ_qlneg_lm4',  (/'lev'/), 'I', 'kg/kg', 'negative ql clipped by limiter 4 in the simple RKZ scheme')
+
+    call addfld ('RKZ_stend_lm4_qv',  (/'lev'/), 'I', 'kJ/kg', 'dry static energy tendency associated with limiter 4 for clipping negative qv in the simple RKZ scheme')
+    call addfld ('RKZ_stend_lm4_ql',  (/'lev'/), 'I', 'kJ/kg', 'dry static energy tendency associated with limiter 4 for clipping negative ql in the simple RKZ scheme')
 
   end subroutine simple_RKZ_init
 
@@ -198,9 +199,9 @@ contains
   real(r8) :: zlim (pcols,pver)
   real(r8) :: zsmall                 ! bottom boundary for ql and qv used in limiter 4 and 5
 
-  real(r8) :: zqverr(pcols,pver)     ! Save the negative qv for analysis.
-  real(r8) :: zqlerr(pcols,pver)     ! Save the negative ql for analysis.
-  real(r8) :: zsterr(pcols,pver)     ! Save the dry static energy change before and after limiter 
+  real(r8) :: zqvneg(pcols,pver)     ! Save the negative qv for analysis.
+  real(r8) :: zqlneg(pcols,pver)     ! Save the negative ql for analysis.
+  real(r8) :: zstend(pcols,pver)     ! Save the dry static energy change before and after limiter 
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
   ncol  = state%ncol
@@ -490,37 +491,37 @@ contains
 
         qmebf(:ncol,:pver)  = qme(:ncol,:pver)
 
-        zqverr(:ncol,:pver) = 0._r8
-        zsterr(:ncol,:pver) = 0._r8
+        zqvneg(:ncol,:pver) = 0._r8
+        zstend(:ncol,:pver) = 0._r8
         zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
         where( zqvnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
-           zqverr(:ncol,:pver) = zqvnew(:ncol,:pver)
-           zsterr(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
+           zqvneg(:ncol,:pver) = zqvnew(:ncol,:pver)
+           zstend(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
         end where
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
 
-        call outfld('RKZ_qme_lm4_qv',   qmedf,    pcols, lchnk)
-        call outfld('RKZ_qverr_lm4',   zqverr,    pcols, lchnk)
-        call outfld('RKZ_sqerr_lm4',   zsterr,    pcols, lchnk)
+        call outfld('RKZ_qme_lm4_qv',    qmedf,    pcols, lchnk)
+        call outfld('RKZ_qvneg_lm4',    zqvneg,    pcols, lchnk)
+        call outfld('RKZ_stend_lm4_qv', zstend,    pcols, lchnk)
 
         ! Avoid negative ql (note that qme could be negative, which would mean evaporation)
 
         qmebf(:ncol,:pver)  = qme(:ncol,:pver)
 
         zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
-        zqlerr(:ncol,:pver) = 0._r8
-        zsterr(:ncol,:pver) = 0._r8
+        zqlneg(:ncol,:pver) = 0._r8
+        zstend(:ncol,:pver) = 0._r8
         where( zqlnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
-           zqlerr(:ncol,:pver) = zqlnew(:ncol,:pver)
-           zsterr(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
+           zqlneg(:ncol,:pver) = zqlnew(:ncol,:pver)
+           zstend(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
         end where
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
 
-        call outfld('RKZ_qme_lm4_ql',   qmedf,    pcols, lchnk)
-        call outfld('RKZ_qlerr_lm4',   zqlerr,    pcols, lchnk)
-        call outfld('RKZ_slerr_lm4',   zsterr,    pcols, lchnk)
+        call outfld('RKZ_qme_lm4_ql',    qmedf,    pcols, lchnk)
+        call outfld('RKZ_qlneg_lm4',    zqlneg,    pcols, lchnk)
+        call outfld('RKZ_stend_lm4_ql', zstend,    pcols, lchnk)
         
      end if
 
