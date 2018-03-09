@@ -367,11 +367,13 @@ contains
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
 
-         do p = col_pp%pfti(c), col_pp%pftf(c)
-            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
-            end if
-         end do
+         if(nu_com .ne. 'RD') then
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+                if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                   col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+                end if
+            end do
+         end if
 
          ! forest fertilization
          if (forest_fert_exp) then
