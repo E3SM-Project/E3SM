@@ -34,7 +34,8 @@ contains
   real(r8) :: rhpert, rhlim, rhdif(pcols,pver)  ! for the Slingo formula of cloud fraction
   real(r8) :: rhmin, cldrh, dv                  ! for Park's pdf scheme of cloud fraction
   real(r8),parameter :: pi = 3.141592653589793
-
+  real(r8),parameter :: fmax= 0.999_r8 ! upper limit for the cloud fraction
+ 
   select case (smpl_frc_schm)
   case (0) ! Constant or binary
 
@@ -53,8 +54,11 @@ contains
 
     rhlim = 0.8_r8
     rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
-    ast(:ncol,:pver) = min(0.999_r8,(max(rhdif(:ncol,:pver),0.0_r8))**2)
+    ast(:ncol,:pver) = min(fmax,(max(rhdif(:ncol,:pver),0.0_r8))**2)
     dastdrh(:ncol,:pver) = max(rhdif(:ncol,:pver),0.0_r8) /(1.0_r8-rhlim) *2._r8
+    where( ast(:ncol,:pver) .gt. fmax )
+      dastdrh(:ncol,:pver) = 0._r8
+    end where
 
     rhu00 = rhlim
 
