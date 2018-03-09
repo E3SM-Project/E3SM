@@ -1,7 +1,0 @@
-&domainNML
- nProcsClinic = 153
- nProcsTropic = 153
- topographyFile = 'topography.x1.bin'
- distrbMethodClinic = 'rake'
- distrbMethodTropic = 'cartesian'
-/
