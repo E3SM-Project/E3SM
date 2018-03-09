@@ -61,13 +61,9 @@ _TEST_SUITES = {
     # ACME tests below
     #
 
-    "e3sm_runoff_developer" : (None, "0:45:00",
-                             ("ERS.f19_f19.IM1850CLM45CN",
-                              "ERS.f19_f19.IMCLM45")
-                             ),
-
-    "e3sm_land_developer" : ("e3sm_runoff_developer", "0:45:00",
-                             ("ERS.f19_f19.I1850CLM45CN",
+    "e3sm_land_developer" : (None, "0:45:00",
+                             ("ERS.f19_f19.ICLM45",
+                              "ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "ERS.f19_f19.I20TRCLM45CN",
                               "SMS_Ld1.hcru_hcru.I1850CRUCLM45CN",
@@ -80,7 +76,7 @@ _TEST_SUITES = {
                              ("ERS.f09_g16.I1850CLM45CN","clm-bgcinterface"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                              ("ERS.f19_g16.I1850CNRDCTCBC","clm-rd"),
-                              "ERS.f09_g16.IMCLM45BC")
+                              "ERS.f09_g16.ICLM45BC")
                              ),
 
     "e3sm_atm_developer" : (None, None,
