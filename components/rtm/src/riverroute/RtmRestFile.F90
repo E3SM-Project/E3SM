@@ -188,7 +188,7 @@ contains
     ! LOCAL VARIABLES:
     integer :: status                      ! return status
     integer :: length                      ! temporary          
-    character(len=256) :: ftest,ctest      ! temporaries
+    character(len=512) :: ftest,ctest      ! temporaries
     !---------------------------------------------------
 
     ! Continue run:
@@ -246,7 +246,7 @@ contains
     integer :: i                  ! indices
     integer :: nio                ! restart unit
     integer :: status             ! substring check status
-    character(len=256) :: locfn   ! Restart pointer file name
+    character(len=512) :: locfn   ! Restart pointer file name
     !--------------------------------------------------------
 
     ! Obtain the restart file from the restart pointer file. 
@@ -286,7 +286,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: m                    ! index
     integer :: nio                  ! restart pointer file
-    character(len=256) :: filename  ! local file name
+    character(len=512) :: filename  ! local file name
 
     if (masterproc) then
        nio = getavu()
@@ -303,7 +303,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-  character(len=256) function RtmRestFileName( rdate )
+  character(len=512) function RtmRestFileName( rdate )
 
     implicit none
     character(len=*), intent(in) :: rdate   ! input date for restart file name 
@@ -332,7 +332,7 @@ contains
     integer :: ier                 ! error status
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
-    character(len=256) :: str
+    character(len=512) :: str
     character(len= 32) :: subname='restFile_dimset' ! subroutine name
     !----------------------------------------------------------------
 

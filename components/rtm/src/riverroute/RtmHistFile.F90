@@ -635,9 +635,9 @@ contains
     type(file_desc_t) :: lnfid     ! local file id
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
-    character(len=256) :: name     ! name of attribute
-    character(len=256) :: units    ! units of attribute
-    character(len=256) :: str      ! global attribute string
+    character(len=512) :: name     ! name of attribute
+    character(len=512) :: units    ! units of attribute
+    character(len=512) :: str      ! global attribute string
     character(len=  1) :: avgflag  ! time averaging flag
     character(len=*),parameter :: subname = 'htape_create'
     !-----------------------------------------------------
@@ -766,7 +766,7 @@ contains
     character(len=max_chars) :: long_name ! variable long name
     character(len=max_namlen):: varname   ! variable name
     character(len=max_namlen):: units     ! variable units
-    character(len=256):: str              ! global attribute string
+    character(len=512):: str              ! global attribute string
     integer :: status
     logical, save :: writeTC = .true. ! true => write out time-constant data
     character(len=*),parameter :: subname = 'htape_timeconst'
@@ -904,7 +904,7 @@ contains
     integer :: yrm1                ! nstep-1 year (0 -> ...)
     integer :: mcsecm1             ! nstep-1 time of day [seconds]
     real(r8):: time                ! current time
-    character(len=256):: str       ! global attribute string
+    character(len=512):: str       ! global attribute string
     character(len=1)  :: avgflag   ! averaging flag
     real(r8), pointer :: histo(:)  ! temporary
     real(r8), pointer :: hbuf(:)   ! history buffer
@@ -1607,7 +1607,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-  character(len=256) function set_hist_filename (hist_freq, rtmhist_mfilt, hist_file)
+  character(len=512) function set_hist_filename (hist_freq, rtmhist_mfilt, hist_file)
 
     ! Determine history dataset filenames.
     
@@ -1618,7 +1618,7 @@ contains
     integer, intent(in)  :: hist_file   !history file index
     
     ! !LOCAL VARIABLES:
-    character(len=256) :: cdate       !date char string
+    character(len=512) :: cdate       !date char string
     character(len=  1) :: hist_index  !p,1 or 2 (currently)
     integer :: day                    !day (1 -> 31)
     integer :: mon                    !month (1 -> 12)

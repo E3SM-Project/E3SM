@@ -55,7 +55,7 @@ module RtmMod
 ! !PRIVATE TYPES:
 
 ! RTM tracers
-  character(len=256) :: rtm_trstr   ! tracer string
+  character(len=512) :: rtm_trstr   ! tracer string
 
 ! RTM naemlists
   integer :: rtm_tstep                    ! RTM time step
@@ -81,12 +81,12 @@ module RtmMod
   real(r8),pointer :: rlonw(:)    ! longitude of 1d west grid cell edge (deg)
   real(r8),pointer :: rlone(:)    ! longitude of 1d east grid cell edge (deg)
 
-  character(len=256) :: flood_mode
-  character(len=256) :: rtm_mode
-  character(len=256) :: rtm_effvel    
+  character(len=512) :: flood_mode
+  character(len=512) :: rtm_mode
+  character(len=512) :: rtm_effvel    
 
-  character(len=256) :: nlfilename_rof = 'rof_in' 
-  character(len=256) :: nlfilename_lnd = 'lnd_in' 
+  character(len=512) :: nlfilename_rof = 'rof_in' 
+  character(len=512) :: nlfilename_lnd = 'lnd_in' 
   real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
 !
 !EOP
@@ -166,9 +166,9 @@ contains
     integer ,pointer  :: rglo2gdc(:)          ! temporary for initialization
     integer ,pointer  :: gmask(:)             ! global mask
     logical           :: found                ! if variable found on rdirc file
-    character(len=256):: fnamer               ! name of netcdf restart file 
-    character(len=256):: pnamer               ! full pathname of netcdf restart file
-    character(len=256):: locfn                ! local file name
+    character(len=512):: fnamer               ! name of netcdf restart file 
+    character(len=512):: pnamer               ! full pathname of netcdf restart file
+    character(len=512):: locfn                ! local file name
     integer , pointer :: num_rtm(:)           ! num of cells on each pe
     integer           :: begro,endro          ! local start/stop indices
     integer           :: begrl,endrl          ! local start/stop indices
@@ -1034,7 +1034,7 @@ contains
     integer , save :: nsub_save             ! previous nsub
     !real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
     logical , save :: first_time = .true.   ! first time flag (for backwards compatibility)
-    character(len=256) :: filer             ! restart file name
+    character(len=512) :: filer             ! restart file name
     integer,parameter  :: dbug = 1          ! local debug flag
     character(*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
@@ -1353,7 +1353,7 @@ contains
     type(var_desc_t)   :: vardesc1   ! pio variable desc 
     type(var_desc_t)   :: vardesc2   ! pio variable desc 
     type(io_desc_t)    :: iodesc     ! pio io desc
-    character(len=256) :: locfn      ! local file name
+    character(len=512) :: locfn      ! local file name
 
     !Rtm Flood constants for spatially varying celerity
     real(r8) :: effvel4_0(nt_rtm)    ! downstream velocity (m/s)
