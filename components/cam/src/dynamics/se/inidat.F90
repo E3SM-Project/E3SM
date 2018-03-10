@@ -235,7 +235,7 @@ contains
        end if
        !!!!!!!let the liquide water be zero in initial conditions;;;;;;;
        !!!!!!!used in the test for simple condensation model;;;;;;;;;;;;
-       if(m_cnst==2) tmp = 0.0_r8  !!!!m_cnst==2 is liquid water indenx 
+       !if(m_cnst==2) tmp = 0.0_r8  !!!!m_cnst==2 is liquid water indenx 
 
        if(.not. found) then
 

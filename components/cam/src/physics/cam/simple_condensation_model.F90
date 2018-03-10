@@ -84,8 +84,12 @@ contains
     call addfld ('RKZ_qvneg_lm4',  (/'lev'/), 'I', 'kg/kg', 'negative qv clipped by limiter 4 in the simple RKZ scheme')
     call addfld ('RKZ_qlneg_lm4',  (/'lev'/), 'I', 'kg/kg', 'negative ql clipped by limiter 4 in the simple RKZ scheme')
 
-    call addfld ('RKZ_stend_lm4_qv',  (/'lev'/), 'I', 'kJ/kg', 'dry static energy tendency associated with limiter 4 for clipping negative qv in the simple RKZ scheme')
-    call addfld ('RKZ_stend_lm4_ql',  (/'lev'/), 'I', 'kJ/kg', 'dry static energy tendency associated with limiter 4 for clipping negative ql in the simple RKZ scheme')
+    call addfld ('RKZ_stend_lm4_qv',  (/'lev'/), 'I', 'J/kg', 'dry static energy tendency associated with limiter 4 for clipping negative qv in the simple RKZ scheme')
+    call addfld ('RKZ_stend_lm4_ql',  (/'lev'/), 'I', 'J/kg', 'dry static energy tendency associated with limiter 4 for clipping negative ql in the simple RKZ scheme')
+
+    call addfld ('RKZ_lmt4_flg',  (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger limiter 4')
+    call addfld ('RKZ_lmt5_flg',  (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger limiter 5')
+    call addfld ('RKZ_lmt45_flg', (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger both limiter 4 and limiter 5')
 
   end subroutine simple_RKZ_init
 
@@ -202,6 +206,15 @@ contains
   real(r8) :: zqvneg(pcols,pver)     ! Save the negative qv for analysis.
   real(r8) :: zqlneg(pcols,pver)     ! Save the negative ql for analysis.
   real(r8) :: zstend(pcols,pver)     ! Save the dry static energy change before and after limiter 
+
+  real(r8) :: flag_lmt4         (pcols,pver)  ! 1 = condition is met for triggering limiter 4
+  real(r8) :: flag_lmt5         (pcols,pver)  ! 1 = condition is met for triggering limiter 5
+  real(r8) :: flag_lmt4_and_lmt5(pcols,pver)  ! 1 = condition is met for triggering both limiter 4 and limiter 5
+
+  logical :: lcondition4_qv(pcols,pver)  ! condition is met for triggering limiter 4 to prevent negative qv
+  logical :: lcondition4_ql(pcols,pver)  ! condition is met for triggering limiter 4 to prevent negative ql
+  logical :: lcondition5   (pcols,pver)  ! condition is met for triggering limiter 5
+
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
   ncol  = state%ncol
@@ -494,10 +507,12 @@ contains
         zqvneg(:ncol,:pver) = 0._r8
         zstend(:ncol,:pver) = 0._r8
         zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
+        lcondition4_qv(:ncol,:pver) = .false.
         where( zqvnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
            zqvneg(:ncol,:pver) = zqvnew(:ncol,:pver)
            zstend(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
+           lcondition4_qv(:ncol,:pver) = .true.
         end where
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
 
@@ -512,17 +527,41 @@ contains
         zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
         zqlneg(:ncol,:pver) = 0._r8
         zstend(:ncol,:pver) = 0._r8
+        lcondition4_ql(:ncol,:pver) = .false.
         where( zqlnew(:ncol,:pver).lt.zsmall )
            qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
            zqlneg(:ncol,:pver) = zqlnew(:ncol,:pver)
            zstend(:ncol,:pver) = qme(:ncol,:pver)*latvap - qmebf(:ncol,:pver)*latvap
+           lcondition4_ql(:ncol,:pver) = .true.
         end where
         qmedf(:ncol,:pver)  = qme(:ncol,:pver) - qmebf(:ncol,:pver)
 
         call outfld('RKZ_qme_lm4_ql',    qmedf,    pcols, lchnk)
         call outfld('RKZ_qlneg_lm4',    zqlneg,    pcols, lchnk)
         call outfld('RKZ_stend_lm4_ql', zstend,    pcols, lchnk)
-        
+       
+        ! identify cells that would be "corrected" by limiter 5 
+
+        lcondition5(:ncol,:pver) = (ast(:ncol,:pver) == 0._r8).and.(dfdt(:ncol,:pver) == 0._r8).and.(ltend(:ncol,:pver) /= 0._r8)
+        flag_lmt5         (:ncol,:pver) = 0._r8
+        flag_lmt4         (:ncol,:pver) = 0._r8
+        flag_lmt4_and_lmt5(:ncol,:pver) = 0._r8
+
+        where (lcondition5(:ncol,:pver))
+          flag_lmt5(:ncol,:pver) = 1._r8
+        end where
+        call outfld('RKZ_lmt5_flg', flag_lmt5, pcols, lchnk)
+
+        where ( lcondition4_qv(:ncol,:pver).or.lcondition4_ql(:ncol,:pver)  )
+          flag_lmt4(:ncol,:pver) = 1._r8
+        end where
+        call outfld('RKZ_lmt4_flg', flag_lmt4, pcols, lchnk)
+
+        where ( lcondition5(:ncol,:pver) .and. (lcondition4_qv(:ncol,:pver).or.lcondition4_ql(:ncol,:pver))  )
+          flag_lmt4_and_lmt5(:ncol,:pver) = 1._r8
+        end where
+        call outfld('RKZ_lmt45_flg', flag_lmt4_and_lmt5, pcols, lchnk)
+
      end if
 
      !---------------------------------------------------------------------------
