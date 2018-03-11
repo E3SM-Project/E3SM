@@ -62,9 +62,7 @@ We love pull requests from everyone. Fork, then clone the repo:
     git clone git@github.com:your-username/CIME.git
 
 You will need to install CIME dependencies and edit config files
-to tell CIME about your development machine.
-
-    See the [users guide](https://esmci.github.io/cime/users_guide/porting-cime.html)
+to tell CIME about your development machine. See the [CIME users guide](https://esmci.github.io/cime/users_guide/porting-cime.html)
 
 Run the scripts_regression_test:
 
