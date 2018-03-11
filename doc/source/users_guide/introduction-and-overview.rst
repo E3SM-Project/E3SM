@@ -6,7 +6,7 @@ Introduction
 *************
 
 Part 1 of this guide explains the basic commands
-that are needed to get a model running.  
+that are needed to get a model running.
 
 Prerequisites
 =============
@@ -35,10 +35,10 @@ Key Terms and concepts
 ======================
 
 The following key terms and concepts are ingrained in CIME and are used frequently in this documentation.
-See the glossary for a more complete list of terms. 
+See the glossary for a more complete list of terms.
 
 **active, data and stub models**
-   *active models*: Components of a model that solve a complex set of equations to describe the model's behavior are called 
+   *active models*: Components of a model that solve a complex set of equations to describe the model's behavior are called
    *active* models. Sometimes they are called *prognostic* or *full* models.
 
    CIME recognizes 7 different active models. They are:
@@ -57,7 +57,7 @@ See the glossary for a more complete list of terms.
 
 **case**:
     The most important concept in CIME is a *case*. To build and execute a CIME-enabled climate model, you have to
-    make choices of compset, model grid, machine and compiler. A collection of these choices, and any additional 
+    make choices of compset, model grid, machine and compiler. A collection of these choices, and any additional
     customizations you may make, is called the *case*.
 
 **compiler**:
@@ -65,37 +65,47 @@ See the glossary for a more complete list of terms.
    Some machines support multiple compilers, so you may need to specify which one to use.
 
 **component set** or **compset**:
-   CIME allows several sub-models and other tools to be linked together into a climate model. These sub-models and 
-   tools are called *components* of the climate model. For example, a climate model has an atmosphere component, an 
+   CIME allows several sub-models and other tools to be linked together into a climate model. These sub-models and
+   tools are called *components* of the climate model. For example, a climate model has an atmosphere component, an
    ocean component, and so on. The resulting set of components is called the *component set* or *compset*.
 
 **grid** or **model grid**:
-   Each active model must solve its equations on a numerical grid. CIME allows models within the system to have 
+   Each active model must solve its equations on a numerical grid. CIME allows models within the system to have
    different grids. The resulting set of numerical grids is called the *model grid* or sometimes just the *grid*, where
-   *grid* is a unique name that denotes a set of numerical grids. Sometimes the *resolution* also refers to a specific set 
+   *grid* is a unique name that denotes a set of numerical grids. Sometimes the *resolution* also refers to a specific set
    of grids with different resolutions.
 
 **machine**:
-   The *machine* is the computer you are using to run CIME and build and run the climate model. It could be a workstation 
+   The *machine* is the computer you are using to run CIME and build and run the climate model. It could be a workstation
    or a national supercomputer. The *machine* is typically the UNIX hostname but it could be any string.
 
 **out-of-the-box**:
    Any case or capability available with a basic installation of a CIME-driven model.
 
-Setting defaults
-=================
+CIME and your environment
+=========================
 
-Before using any CIME commands, set the ``CIME_MODEL`` environment variable. In csh, use **setenv** as shown and replace 
-**<model>** with the appropriate text. Current possibilities are "acme" or "cesm."
+Before using any CIME commands, set the ``CIME_MODEL`` environment variable. In bash, use **export** as shown and replace
+**<model>** with the appropriate text. Current possibilities are "e3sm" or "cesm."
 ::
 
-   > setenv CIME_MODEL <model>
+   > export CIME_MODEL=<model>
 
+There are a number of possible ways to set CIME variables.
+For variables that can be set in more than one way, the order of precedence is:
+
+- variable appears in a command line argument to a CIME command
+
+- variable is set as an environment variable
+
+- variable is set in ``$HOME/.cime/config``
+
+- variable is set in a ``$CASEROOT`` xml file
 
 Directory content
 ==================
 
-If you use CIME as part of a climate model or standalone, the content of the **cime** directory is the same.  
+If you use CIME as part of a climate model or standalone, the content of the **cime** directory is the same.
 
 If you are using it as part of a climate model, **cime** is usually one of the first subdirectories under the main directory:
 
@@ -127,7 +137,7 @@ CIME's content is split into several subdirectories. Users should start in the *
    "tools/", "Standalone climate modeling tools"
    "utils/", "Some Perl source code for CIME scripts; see **scripts/lib** for Python version"
 
-Here are some other key subdirectories, down one level in the 
+Here are some other key subdirectories, down one level in the
 directory structure.
 
 .. csv-table:: **Content of some key CIME subdirectories**
