@@ -71,7 +71,7 @@ module CNEcosystemDynBetrMod
     use CNDecompMod               , only : CNDecompAlloc
     use CNPhenologyMod            , only : CNPhenology
     use CNGRespMod                , only : CNGResp
-    use CNCStateUpdate1Mod        , only : CStateUpdate1,CStateUpdate0
+    use CNCStateUpdate1BeTRMod    , only : CStateUpdate1,CStateUpdate0
     use CNNStateUpdate1BeTRMod    , only : NStateUpdate1
     use CNGapMortalityMod         , only : CNGapMortality
     use CNCStateUpdate2Mod        , only : CStateUpdate2, CStateUpdate2h
@@ -92,7 +92,7 @@ module CNEcosystemDynBetrMod
     use PStateUpdate3Mod          , only : PStateUpdate3
     use CNNStateUpdate3BeTRMod    , only : NStateUpdate3
     use CNNDynamicsMod            , only : CNNFixation_balance
-    use PStateUpdate1Mod          , only : PStateUpdate1
+    use PStateUpdate1BeTRMod      , only : PStateUpdate1
     use PStateUpdate2Mod          , only : PStateUpdate2, PStateUpdate2h
     use PDynamicsMod              , only : PDeposition,PWeathering,PBiochemMin_Ptaseact
     use CNVerticalProfileMod      , only : decomp_vertprofiles

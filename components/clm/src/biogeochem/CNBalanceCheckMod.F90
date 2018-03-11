@@ -87,7 +87,7 @@ contains
 !         if(c==5657 .and. .false.)then
 !           print*,'totbgc blgc',carbonstate_vars%totabgc_col(c),carbonstate_vars%totblgc_col(c)
 !         endif
-!         col_pp%debug_flag(c)=.true.
+!         col_pp%debug_flag(c)=(get_nstep()==2)
       end do
 !      if(iam==6)col_pp%debug_flag(17236)=.true.
     end associate
@@ -507,7 +507,7 @@ contains
          write(iulog,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
          write(iulog,*)'abgn                  = ',nitrogenstate_vars%totabgn_col(c)
-         write(iulog,*)'blgn                  = ',totcoln(c)-nitrogenstate_vars%totabgn_col(c)
+         write(iulog,*)'blgn                  = ',nitrogenstate_vars%totblgn_col(c)
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if

@@ -911,22 +911,22 @@ contains
       decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
-          plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) * t_scalar(c,j)
+          plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) 
 
           if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then
             plant_nh4_vmax_vr_patch(p,j)  = 0._r8
             plant_no3_vmax_vr_patch(p,j)  = 0._r8
           else
-            plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* plant_eff_frootc_vr_patch(p,j) * &
+            plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p)) * t_scalar(c,j) * &
                             cn_scalar(p) / e_plant_scalar
 
-            plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) *plant_eff_frootc_vr_patch(p,j) * &
+            plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * t_scalar(c,j) * &
                              cn_scalar(p)  / e_plant_scalar
           endif
           if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
             plant_p_vmax_vr_patch(p,j) = 0._r8
           else
-            plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) *plant_eff_frootc_vr_patch(p,j)  * &
+            plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * t_scalar(c,j)  * &
                              cp_scalar(p)  / e_plant_scalar
           endif
           plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))

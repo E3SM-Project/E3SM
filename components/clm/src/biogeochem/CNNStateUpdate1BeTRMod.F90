@@ -53,6 +53,7 @@ contains
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
+    real(r8) :: nflx_tmp, nflx_scalar
     !-----------------------------------------------------------------------
 
     associate(                                                                                           &
@@ -150,45 +151,56 @@ contains
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt
          ns%retransn_patch(p) = ns%retransn_patch(p) - nf%retransn_to_npool_patch(p)*dt
-
-         ! allocation fluxes
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_leafn_patch(p)*dt
-         ns%leafn_patch(p)           = ns%leafn_patch(p)          + nf%npool_to_leafn_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_leafn_storage_patch(p)*dt
-         ns%leafn_storage_patch(p)   = ns%leafn_storage_patch(p)  + nf%npool_to_leafn_storage_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_frootn_patch(p)*dt
-         ns%frootn_patch(p)          = ns%frootn_patch(p)         + nf%npool_to_frootn_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_frootn_storage_patch(p)*dt
-         ns%frootn_storage_patch(p)  = ns%frootn_storage_patch(p) + nf%npool_to_frootn_storage_patch(p)*dt
-
+         nflx_tmp=0._r8; nflx_scalar=1._r8
+         nflx_tmp = nflx_tmp + nf%npool_to_leafn_patch(p)*dt
+         nflx_tmp = nflx_tmp + nf%npool_to_leafn_storage_patch(p)*dt
+         nflx_tmp = nflx_tmp + nf%npool_to_frootn_patch(p)*dt
+         nflx_tmp = nflx_tmp + nf%npool_to_frootn_storage_patch(p)*dt
          if (woody(ivt(p)) == 1._r8) then
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_patch(p)*dt
-            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadstemn_patch(p)*dt
-            ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          + nf%npool_to_deadstemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadstemn_storage_patch(p)*dt
-            ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  + nf%npool_to_deadstemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livecrootn_patch(p)*dt
-            ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         + nf%npool_to_livecrootn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livecrootn_storage_patch(p)*dt
-            ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) + nf%npool_to_livecrootn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadcrootn_patch(p)*dt
-            ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         + nf%npool_to_deadcrootn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadcrootn_storage_patch(p)*dt
-            ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) + nf%npool_to_deadcrootn_storage_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_storage_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_storage_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_storage_patch(p)*dt
+         endif
+         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_grainn_patch(p)*dt
+            nflx_tmp = nflx_tmp + nf%npool_to_grainn_storage_patch(p)*dt
+         endif
+         if (ns%npool_patch(p) >= nflx_tmp)then
+           ns%npool_patch(p) = ns%npool_patch(p)-nflx_tmp
+         else
+           if(nflx_tmp>0._r8)then
+             nflx_scalar = ns%npool_patch(p)/nflx_tmp
+           endif
+           ns%npool_patch(p) = 0._r8
+         endif
+         ! allocation fluxes
+         ns%leafn_patch(p)           = ns%leafn_patch(p)          + nf%npool_to_leafn_patch(p)*dt*nflx_scalar
+         ns%leafn_storage_patch(p)   = ns%leafn_storage_patch(p)  + nf%npool_to_leafn_storage_patch(p)*dt*nflx_scalar
+         ns%frootn_patch(p)          = ns%frootn_patch(p)         + nf%npool_to_frootn_patch(p)*dt*nflx_scalar
+         ns%frootn_storage_patch(p)  = ns%frootn_storage_patch(p) + nf%npool_to_frootn_storage_patch(p)*dt*nflx_scalar
+         if (woody(ivt(p)) == 1._r8) then
+            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt*nflx_scalar
+            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt*nflx_scalar
+            ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          + nf%npool_to_deadstemn_patch(p)*dt*nflx_scalar
+            ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  + nf%npool_to_deadstemn_storage_patch(p)*dt*nflx_scalar
+            ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         + nf%npool_to_livecrootn_patch(p)*dt*nflx_scalar
+            ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) + nf%npool_to_livecrootn_storage_patch(p)*dt*nflx_scalar
+            ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         + nf%npool_to_deadcrootn_patch(p)*dt*nflx_scalar
+            ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) + nf%npool_to_deadcrootn_storage_patch(p)*dt*nflx_scalar
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_patch(p)*dt
-            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_grainn_patch(p)*dt
-            ns%grainn_patch(p)             = ns%grainn_patch(p)             + nf%npool_to_grainn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_grainn_storage_patch(p)*dt
-            ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)     + nf%npool_to_grainn_storage_patch(p)*dt
+            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt*nflx_scalar
+            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt*nflx_scalar
+            ns%grainn_patch(p)             = ns%grainn_patch(p)             + nf%npool_to_grainn_patch(p)*dt*nflx_scalar
+            ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)     + nf%npool_to_grainn_storage_patch(p)*dt*nflx_scalar
          end if
 
          ! move storage pools into transfer pools
