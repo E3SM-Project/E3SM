@@ -61,7 +61,21 @@
     <default_value>2</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer output depth</desc>
+    <desc>
+      integer indicating maximum detail level to profile. This xml
+    variable is used to set the namelist variable
+    timing_detail_limit. This namelist variable is used by perf_mod
+    (in $CIMEROOT/src/share/timing/perf_mod.F90) to turn timers off
+    and on depending on calls to the routine t_adj_detailf. If in the
+    code a statement appears like t_adj_detailf(+1), then the current
+    timer detail level is incremented by 1 and compared to the
+    time_detail_limit obtained from the namelist.  If the limit is
+    exceeded then the timer is turned off.
+
+
+
+
+    </desc>
   </entry>
 
   <entry id="TIMER_LEVEL">
@@ -69,7 +83,7 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer output depth</desc>
+    <desc>Maximum code stack depth of enabled timers.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
