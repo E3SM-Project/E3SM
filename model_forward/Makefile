@@ -1,13 +1,13 @@
 .SUFFIXES: .F .o
 
-OBJS = 	mpas_cice_core.o \
-	mpas_cice_core_interface.o
+OBJS = 	mpas_seaice_core.o \
+	mpas_seaice_core_interface.o
 
 all: $(OBJS)
 
-mpas_cice_core.o: 
+mpas_seaice_core.o: 
 
-mpas_cice_core_interface.o: mpas_cice_core.o
+mpas_seaice_core_interface.o: mpas_seaice_core.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
