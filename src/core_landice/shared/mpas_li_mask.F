@@ -294,6 +294,7 @@ contains
       logical :: validVertex
       real (kind=RKIND) :: thinnestNeighborHeight
       integer :: iCellNeighbor
+      logical :: openOceanNeighbor
 
       call mpas_timer_start('calculate mask')
 
@@ -432,12 +433,15 @@ contains
       endif
 
       ! Identify the grounding line
-      ! For a cell, we define the GL as a grounded cell with ice with at least one neighbor with floating ice
+      ! For a cell, we define the GL as a grounded cell with ice with at least one neighbor with floating ice or open ocean
       do i=1,nCells
           if (li_mask_is_grounded_ice(cellMask(i))) then  ! only need to check grounded cells
-              do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating
-                 if (li_mask_is_floating_ice(cellMask(cellsOnCell(j,i)))) &
+              do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating or open ocean
+                 iCellNeighbor = cellsOnCell(j,i)
+                 if (li_mask_is_floating_ice(cellMask(iCellNeighbor)) .or. &
+                       ((bedTopography(iCellNeighbor) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(iCellNeighbor)))) ) then
                     cellMask(i) = ior(cellMask(i), li_mask_ValueGroundingLine)
+                 endif
                  cycle  ! no need to look at additional neighbors
               enddo
           endif
