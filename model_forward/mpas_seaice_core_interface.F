@@ -37,17 +37,17 @@ module cice_core_interface
       core % core_init => cice_core_init
       core % core_run => cice_core_run
       core % core_finalize => cice_core_finalize
-      core % define_packages => cice_define_packages
+      core % define_packages => seaice_define_packages
       core % setup_packages => cice_setup_packages
       core % setup_decompositions => cice_setup_decompositions
       core % setup_clock => cice_setup_clock
       core % setup_log => cice_setup_log
       core % get_mesh_stream => cice_get_mesh_stream
-      core % setup_immutable_streams => cice_setup_immutable_streams
-      core % setup_derived_dimensions => cice_setup_derived_dimensions
-      core % setup_decomposed_dimensions => cice_setup_decomposed_dimensions
+      core % setup_immutable_streams => seaice_setup_immutable_streams
+      core % setup_derived_dimensions => seaice_setup_derived_dimensions
+      core % setup_decomposed_dimensions => seaice_setup_decomposed_dimensions
       core % setup_block => cice_setup_block
-      core % setup_namelist => cice_setup_namelists
+      core % setup_namelist => seaice_setup_namelists
 
       core % Conventions = 'MPAS'
       core % source = 'MPAS'
@@ -770,7 +770,7 @@ module cice_core_interface
       integer :: iErr
 
       iErr = 0
-      call cice_generate_structs(block, block % structs, block % dimensions, block % packages)
+      call seaice_generate_structs(block, block % structs, block % dimensions, block % packages)
    end function cice_setup_block!}}}
 
 #include "../inc/setup_immutable_streams.inc"
