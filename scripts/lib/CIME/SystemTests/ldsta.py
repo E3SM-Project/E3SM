@@ -31,7 +31,14 @@ class LDSTA(SystemTestsCommon):
             shutil.rmtree(archive_dir)
         self.run_indv()
         # finished running, so all archive files should exist
-        start_date = get_file_date(self._case.get_value('RUN_STARTDATE'))
+        _start_date = get_file_date(self._case.get_value('RUN_STARTDATE'))
+        # use datetime.datetime so we don't have to implement incrementing the day by ourself
+        start_date = datetime.datetime(year = _start_date.year(),
+                                       month = _start_date.month(),
+                                       day = _start_date.day(),
+                                       hour = _start_date.hour(),
+                                       minute = _start_date.minute(),
+                                       second = _start_date.second())
         rest_dir = os.path.join(archive_dir, 'rest')
         delta_day = datetime.timedelta(1)
         current_date = start_date + delta_day
