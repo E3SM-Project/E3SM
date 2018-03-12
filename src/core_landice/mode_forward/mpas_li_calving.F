@@ -950,6 +950,7 @@ module li_calving
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), pointer :: config_sea_level
+      real(kind=RKIND), pointer :: config_calving_thickness
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
@@ -977,6 +978,7 @@ module li_calving
                config_calving_eigencalving_parameter_scalar_value)
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_source', config_calving_eigencalving_parameter_source)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
 
       ! block loop
       block => domain % blocklist
@@ -1057,6 +1059,11 @@ module li_calving
 
          call distribute_calving_flux(meshPool, geometryPool, scratchPool, calvingFrontMask, err_tmp)
          err = ior(err, err_tmp)
+
+         ! Also remove thin floating, dynamic ice
+         where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. thickness<config_calving_thickness))
+             calvingThickness = thickness
+         end where
 
          call mpas_deallocate_scratch_field(calvingFrontMaskField, .true.)
 
