@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_initialize
+!  seaice_initialize
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_initialize
+module seaice_initialize
 
   use mpas_dmpar
   use mpas_derived_types
@@ -28,14 +28,14 @@ module cice_initialize
   save
 
   public :: &
-       cice_init, &
-       cice_init_post_clock_advance
+       seaice_init, &
+       seaice_init_post_clock_advance
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init
+!  seaice_init
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -45,7 +45,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init(&
+  subroutine seaice_init(&
        domain, &
        clock, &
        dt)!{{{
@@ -123,11 +123,11 @@ contains
     call mpas_log_write(" Initialize coupler fluxes...")
     call cice_reset_coupler_fluxes(domain)
 
-  end subroutine cice_init!}}}
+  end subroutine seaice_init!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_post_clock_advance
+!  seaice_init_post_clock_advance
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -137,7 +137,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_post_clock_advance(&
+  subroutine seaice_init_post_clock_advance(&
        domain, &
        clock)!{{{
 
@@ -162,7 +162,7 @@ contains
     if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) &
          call cice_init_column_shortwave(domain, clock)
 
-  end subroutine cice_init_post_clock_advance
+  end subroutine seaice_init_post_clock_advance
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2036,4 +2036,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_initialize
+end module seaice_initialize
