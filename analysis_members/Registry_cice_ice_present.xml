@@ -1,0 +1,30 @@
+	<nml_record name="AM_icePresent">
+		<nml_option name="config_AM_icePresent_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member icePresent is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_icePresent_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_icePresent_output_stream" type="character" default_value="none" units="unitless"
+			description="Name of the stream that the icePresent analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_icePresent_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_icePresent_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="icePresentAMPKG" description="This package includes variables required for the icePresent analysis member."/>
+	</packages>
+	<var_struct name="icePresentAM" time_levs="1" packages="icePresentAMPKG">
+		<var name="icePresent" type="real" dimensions="nCells Time" units="-"
+			description="1.0 if ice present, 0.0 if ice not present"
+		/>
+	</var_struct>
