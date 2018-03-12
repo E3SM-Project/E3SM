@@ -3797,5 +3797,5 @@
 		/>
 	</var_struct>
 
-#include "analysis_members/Registry_cice_analysis_members.xml"
+#include "analysis_members/Registry_seaice_analysis_members.xml"
 </registry>
