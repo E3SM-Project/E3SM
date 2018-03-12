@@ -1,9 +1,9 @@
 .SUFFIXES: .F .o
 .PHONY: model_forward analysis_members shared
 
-all: core_cice
+all: core_seaice
 
-core_cice: column_package shared analysis_members model_forward
+core_seaice: column_package shared analysis_members model_forward
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 gen_includes:

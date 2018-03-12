@@ -3,8 +3,8 @@ ifeq "$(ROOT_DIR)" ""
 endif
 EXE_NAME=cice_model
 NAMELIST_SUFFIX=cice
-FCINCLUDES += -I$(ROOT_DIR)/core_cice/column -I$(ROOT_DIR)/core_cice/shared -I$(ROOT_DIR)/core_cice/analysis_members -I$(ROOT_DIR)/core_cice/model_forward
-override CPPFLAGS += -DCORE_CICE
+FCINCLUDES += -I$(ROOT_DIR)/core_seaice/column -I$(ROOT_DIR)/core_seaice/shared -I$(ROOT_DIR)/core_seaice/analysis_members -I$(ROOT_DIR)/core_seaice/model_forward
+override CPPFLAGS += -DCORE_SEAICE
 ifneq "$(ESM)" ""
 override CPPFLAGS += -Dcoupled -DCCSMCOUPLED
 endif
