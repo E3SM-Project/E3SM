@@ -584,6 +584,7 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
          ! ---
          ! --- Calculate reconstructed velocities
@@ -643,6 +644,8 @@ contains
          ! ---
          call calculate_strain_rates(meshPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
+
+         call remove_fast_ice(surfaceSpeed, geometryPool)
 
          block => block % next
       end do
@@ -924,6 +927,55 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine calculate_strain_rates
+
+!***********************************************************************
+!
+!  routine remove_fast_ice
+!
+!> \brief  Removes floating ice with a fast surface speed, presumably an iceberg
+!> \author Matt Hoffman
+!> \date   March 2018
+!> \details
+!>  Inspired by BISICLES/Dan Martin.  Could/should make an option to disable.
+!
+!-----------------------------------------------------------------------
+
+   subroutine remove_fast_ice(surfaceSpeed, geometryPool)
+
+      use li_mask
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:) :: surfaceSpeed
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: geometryPool
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
+      integer, dimension(:), pointer :: cellMask
+      real(kind=RKIND), parameter :: highSpeed = 0.00318471337_RKIND ! 100,000 m/yr in m/s
+
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+
+      where (li_mask_is_floating_ice(cellMask) .and. (surfaceSpeed > highSpeed))
+         calvingThickness = calvingThickness + thickness
+         thickness = 0.0_RKIND
+      end where
+
+   !--------------------------------------------------------------------
+   end subroutine remove_fast_ice
 
 !***********************************************************************
 
