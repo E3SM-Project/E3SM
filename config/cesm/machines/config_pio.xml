@@ -45,6 +45,8 @@
     <values>
       <value>pnetcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
+      <value mach="lawrencium-lr3">netcdf</value>
+      <value mach="lawrencium-lr2">netcdf</value>
     </values>
   </entry>
 
