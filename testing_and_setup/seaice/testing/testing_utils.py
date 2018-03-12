@@ -201,7 +201,10 @@ def run_model(runName, mpasDir, domainsDir, domain, configuration, nmlChanges, s
     os.chdir(runName)
 
     # sym link executable
-    os.symlink(mpasDir + "/cice_model", "cice_model")
+    if (os.path.isfile(mpasDir + "/seaice_model")):
+        os.symlink(mpasDir + "/seaice_model", "seaice_model")
+    else:
+        os.symlink(mpasDir + "/cice_model", "seaice_model")
 
     # get domain
     get_domain(domainsDir, domain)
@@ -302,8 +305,8 @@ def execute_model(nProcs, logfile):
 
     import subprocess
 
-    # execute mpirun -np np cice_model
-    process = subprocess.Popen(["mpirun", "-np", "%i" %(nProcs), "cice_model"], stdout=logfile, stderr=logfile)
+    # execute mpirun -np np seaice_model
+    process = subprocess.Popen(["mpirun", "-np", "%i" %(nProcs), "seaice_model"], stdout=logfile, stderr=logfile)
     returnCode = process.wait()
     logfile.flush()
     logfile.write("Return code: %i\n" %(returnCode))
