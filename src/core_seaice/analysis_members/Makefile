@@ -1,16 +1,16 @@
 .SUFFIXES: .F .c .o
 
-OBJS = mpas_cice_analysis_driver.o
+OBJS = mpas_seaice_analysis_driver.o
 
-MEMBERS = mpas_cice_high_frequency_output.o mpas_cice_temperatures.o mpas_cice_regional_statistics.o mpas_cice_ridging_diagnostics.o mpas_cice_conservation_check.o mpas_cice_geographical_vectors.o mpas_cice_ice_present.o mpas_cice_time_series_stats.o mpas_cice_load_balance.o mpas_cice_maximum_ice_presence.o mpas_cice_miscellaneous.o mpas_cice_area_variables.o mpas_cice_pond_diagnostics.o mpas_cice_deactivate_unneeded_fields.o mpas_cice_pointwise_stats.o mpas_cice_unit_conversion.o mpas_cice_ice_shelves.o
+MEMBERS = mpas_seaice_high_frequency_output.o mpas_seaice_temperatures.o mpas_seaice_regional_statistics.o mpas_seaice_ridging_diagnostics.o mpas_seaice_conservation_check.o mpas_seaice_geographical_vectors.o mpas_seaice_ice_present.o mpas_seaice_time_series_stats.o mpas_seaice_load_balance.o mpas_seaice_maximum_ice_presence.o mpas_seaice_miscellaneous.o mpas_seaice_area_variables.o mpas_seaice_pond_diagnostics.o mpas_seaice_deactivate_unneeded_fields.o mpas_seaice_pointwise_stats.o mpas_seaice_unit_conversion.o mpas_seaice_ice_shelves.o
 
 all: $(OBJS)
 
-mpas_cice_area_variables.o: mpas_cice_deactivate_unneeded_fields.o
+mpas_seaice_area_variables.o: mpas_seaice_deactivate_unneeded_fields.o
 
-mpas_cice_pond_diagnostics.o:
+mpas_seaice_pond_diagnostics.o:
 
-mpas_cice_analysis_driver.o: $(MEMBERS)
+mpas_seaice_analysis_driver.o: $(MEMBERS)
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
