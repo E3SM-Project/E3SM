@@ -207,10 +207,16 @@ def run_model(runName, mpasDir, domainsDir, domain, configuration, nmlChanges, s
     get_domain(domainsDir, domain)
 
     # create namelist file
-    create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.cice", "namelist.cice", nmlChanges)
+    try:
+        create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.seaice", "namelist.seaice", nmlChanges)
+    except:
+        create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.cice", "namelist.cice", nmlChanges)
 
     # create streams file
-    create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.cice", "streams.cice", streamChanges)
+    try:
+        create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.seaice", "streams.seaice", streamChanges)
+    except:
+        create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.cice", "streams.cice", streamChanges)
 
     # run the model
     returnCode = execute_model(nProcs, logfile)
@@ -261,14 +267,26 @@ def restart_model(runName, nmlChanges, streamChanges, nProcs, logfile):
     os.chdir(runName)
 
     # update namelist
-    os.rename("namelist.cice","namelist.cice.prev")
-    os.rename("streams.cice","streams.cice.prev")
+    try:
+        os.rename("namelist.seaice","namelist.seaice.prev")
+    except:
+        os.rename("namelist.cice","namelist.cice.prev")
+    try:
+        os.rename("streams.seaice","streams.seaice.prev")
+    except:
+        os.rename("streams.cice","streams.cice.prev")
 
     # update namelist
-    create_new_namelist("namelist.cice.prev", "namelist.cice", nmlChanges)
+    try:
+        create_new_namelist("namelist.seaice.prev", "namelist.seaice", nmlChanges)
+    except:
+        create_new_namelist("namelist.cice.prev", "namelist.cice", nmlChanges)
 
     # create streams file
-    create_new_streams("streams.cice.prev", "streams.cice", streamChanges)
+    try:
+        create_new_streams("streams.seaice.prev", "streams.seaice", streamChanges)
+    except:
+        create_new_streams("streams.cice.prev", "streams.cice", streamChanges)
 
     # run the model
     returnCode = execute_model(nProcs, logfile)
