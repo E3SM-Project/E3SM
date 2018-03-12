@@ -362,7 +362,7 @@ contains
 
             ! regional sum of mass lass due do calving (kg yr^{-1})
             blockSumRegionCalvingFlux(iRegion) = blockSumRegionCalvingFlux(iRegion) + &
-            ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+            ( real(regionCellMasks(iRegion,iCell),RKIND) &
               * calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr ) )
 
             ! max, min thickness values (m)
