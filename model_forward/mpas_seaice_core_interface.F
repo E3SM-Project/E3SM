@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module cice_core_interface
+module seaice_core_interface
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -21,9 +21,9 @@ module cice_core_interface
 
    !***********************************************************************
    !
-   !  routine cice_setup_core
+   !  routine seaice_setup_core
    !
-   !> \brief   Ocean core setup routine
+   !> \brief   Seaice core setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
    !> \details
@@ -31,7 +31,7 @@ module cice_core_interface
    !>  for the ocean core.
    !
    !-----------------------------------------------------------------------
-   subroutine cice_setup_core(core)!{{{
+   subroutine seaice_setup_core(core)!{{{
       type (core_type), pointer :: core
 
       core % core_init => cice_core_init
@@ -53,13 +53,13 @@ module cice_core_interface
       core % source = 'MPAS'
 #include "../inc/core_variables.inc"
 
-   end subroutine cice_setup_core!}}}
+   end subroutine seaice_setup_core!}}}
 
    !***********************************************************************
    !
-   !  routine cice_setup_domain
+   !  routine seaice_setup_domain
    !
-   !> \brief   Ocean domain setup routine
+   !> \brief   Seaice domain setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
    !> \details
@@ -67,12 +67,12 @@ module cice_core_interface
    !>  for the ocean core.
    !
    !-----------------------------------------------------------------------
-   subroutine cice_setup_domain(domain)!{{{
+   subroutine seaice_setup_domain(domain)!{{{
       type (domain_type), pointer :: domain
 
 #include "../inc/domain_variables.inc"
 
-   end subroutine cice_setup_domain!}}}
+   end subroutine seaice_setup_domain!}}}
 
    !***********************************************************************
    !
@@ -785,4 +785,4 @@ module cice_core_interface
 
 #include "../inc/namelist_defines.inc"
 
-end module cice_core_interface
+end module seaice_core_interface
