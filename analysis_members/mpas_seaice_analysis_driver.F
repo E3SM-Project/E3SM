@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_analysis_driver
+!  seaice_analysis_driver
 !
 !> \brief Driver for MPAS ocean analysis core
 !> \author Mark Petersen
@@ -17,7 +17,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_analysis_driver
+module seaice_analysis_driver
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -60,15 +60,15 @@ module cice_analysis_driver
    !
    !--------------------------------------------------------------------
 
-   public :: cice_analysis_setup_packages, &
-             cice_analysis_bootstrap, &
-             cice_analysis_init, &
-             cice_analysis_compute_startup, &
-             cice_analysis_precompute, &
-             cice_analysis_compute, &
-             cice_analysis_write, &
-             cice_analysis_restart, &
-             cice_analysis_finalize
+   public :: seaice_analysis_setup_packages, &
+             seaice_analysis_bootstrap, &
+             seaice_analysis_init, &
+             seaice_analysis_compute_startup, &
+             seaice_analysis_precompute, &
+             seaice_analysis_compute, &
+             seaice_analysis_write, &
+             seaice_analysis_restart, &
+             seaice_analysis_finalize
 
    !--------------------------------------------------------------------
    !
@@ -101,7 +101,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_analysis_setup_packages
+!  routine seaice_analysis_setup_packages
 !
 !> \brief   Setup packages for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -112,7 +112,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_setup_packages(configPool, packagePool, iocontext, err)!{{{
+   subroutine seaice_analysis_setup_packages(configPool, packagePool, iocontext, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -191,11 +191,11 @@ contains
          end if
       end do
 
-   end subroutine cice_analysis_setup_packages!}}}
+   end subroutine seaice_analysis_setup_packages!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_bootstrap
+!  routine seaice_analysis_bootstrap
 !
 !> \brief   Bootstrap analysis members (pre-init configuration)
 !> \author  Doug Jacobsen
@@ -219,7 +219,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_bootstrap(domain, err)!{{{
+   subroutine seaice_analysis_bootstrap(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -285,7 +285,7 @@ contains
             call mpas_timer_start(timerName)
 
             !call mpas_log_write('      Bootstrapping AM ' // poolItr % memberName(1:nameLength))
-            call cice_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
+            call seaice_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
 
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_restart_stream'
             nullify(config_AM_restart_stream)
@@ -352,11 +352,11 @@ contains
 
       call mpas_pool_set_error_level(poolErrorLevel)
 
-   end subroutine cice_analysis_bootstrap!}}}
+   end subroutine seaice_analysis_bootstrap!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_init
+!  routine seaice_analysis_init
 !
 !> \brief   Initialize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -367,7 +367,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_init(domain, err)!{{{
+   subroutine seaice_analysis_init(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -424,7 +424,7 @@ contains
             !call mpas_log_write('      Initializing AM ' // poolItr % memberName(1:nameLength))
             timerName = trim(initTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
-            call cice_init_analysis_members(domain, poolItr % memberName, err_tmp)
+            call seaice_init_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
 
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
@@ -494,11 +494,11 @@ contains
 
       call mpas_timer_stop('analysis_init')
 
-   end subroutine cice_analysis_init!}}}
+   end subroutine seaice_analysis_init!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_compute_startup
+!  routine seaice_analysis_compute_startup
 !
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
@@ -509,7 +509,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_compute_startup(domain, err)!{{{
+   subroutine seaice_analysis_compute_startup(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -569,7 +569,7 @@ contains
                timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
                !call mpas_log_write('      Computing AM ' // poolItr % memberName(1:nameLength))
                call mpas_timer_start(timerName)
-               call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call seaice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
             end if
@@ -592,22 +592,22 @@ contains
 
       call mpas_timer_stop('analysis_compute_startup')
 
-   end subroutine cice_analysis_compute_startup!}}}
+   end subroutine seaice_analysis_compute_startup!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_precompute
+!  routine seaice_analysis_precompute
 !
-!> \brief   Driver for MPAS-CICE analysis computations
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Driver for MPAS-Seaice analysis computations
+!> \author  MPAS-Ocean/Seaice development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all pre timestep computation subroutines
-!>  required for the MPAS-CICE analysis driver.
+!>  required for the MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_precompute(domain, err)!{{{
+   subroutine seaice_analysis_precompute(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -672,13 +672,13 @@ contains
                if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
                     streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   call mpas_timer_start(timerName, .false.)
-                  call cice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call seaice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
                !call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp) ! not needed in precompute
                call mpas_timer_start(timerName, .false.)
-               call cice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call seaice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
             end if
          end if
@@ -686,11 +686,11 @@ contains
 
       call mpas_timer_stop('analysis_precompute')
 
-   end subroutine cice_analysis_precompute!}}}
+   end subroutine seaice_analysis_precompute!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_compute
+!  routine seaice_analysis_compute
 !
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
@@ -701,7 +701,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_compute(domain, err)!{{{
+   subroutine seaice_analysis_compute(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -767,14 +767,14 @@ contains
                     direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   !call mpas_log_write('      Computing AM ' // poolItr % memberName(1:nameLength))
                   call mpas_timer_start(timerName)
-                  call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call seaice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
                !call mpas_log_write('      Computing AM ' // poolItr % memberName(1:nameLength))
                call mpas_timer_start(timerName)
-               call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call seaice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
             end if
          end if
@@ -782,11 +782,11 @@ contains
 
       call mpas_timer_stop('analysis_compute')
 
-   end subroutine cice_analysis_compute!}}}
+   end subroutine seaice_analysis_compute!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_restart
+!  routine seaice_analysis_restart
 !
 !> \brief   Save restart for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -797,7 +797,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_restart(domain, err)!{{{
+   subroutine seaice_analysis_restart(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -848,7 +848,7 @@ contains
             !call mpas_log_write('      Preparing AM ' // poolItr % memberName(1:nameLength) // ' for restart write')
             timerName = trim(restartTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
-            call cice_restart_analysis_members(domain, poolItr % memberName, err_tmp)
+            call seaice_restart_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)
          end if
@@ -856,11 +856,11 @@ contains
 
       call mpas_timer_stop('analysis_restart')
 
-   end subroutine cice_analysis_restart!}}}
+   end subroutine seaice_analysis_restart!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_write
+!  routine seaice_analysis_write
 !
 !> \brief   Driver for MPAS-Ocean analysis output
 !> \author  Mark Petersen
@@ -873,7 +873,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_write(domain, err)!{{{
+   subroutine seaice_analysis_write(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -979,11 +979,11 @@ contains
 
       call mpas_timer_stop('analysis_write')
 
-   end subroutine cice_analysis_write!}}}
+   end subroutine seaice_analysis_write!}}}
 
 !***********************************************************************
 !
-!  routine cice_analysis_finalize
+!  routine seaice_analysis_finalize
 !
 !> \brief   Finalize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -994,7 +994,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_finalize(domain, err)!{{{
+   subroutine seaice_analysis_finalize(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1046,7 +1046,7 @@ contains
             !call mpas_log_write('      Finalizing AM ' // poolItr % memberName(1:nameLength))
             timerName = trim(finalizeTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
-            call cice_finalize_analysis_members(domain, poolItr % memberName, err_tmp)
+            call seaice_finalize_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)
          end if
@@ -1054,11 +1054,11 @@ contains
 
       call mpas_timer_stop('analysis_finalize')
 
-   end subroutine cice_analysis_finalize!}}}
+   end subroutine seaice_analysis_finalize!}}}
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_analysis_members
+!  routine seaice_bootstrap_analysis_members
 !
 !> \brief Analysis member initialization driver
 !> \author Doug Jacobsen
@@ -1067,7 +1067,7 @@ contains
 !>  This private routine calls the correct init routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_bootstrap_analysis_members(domain, analysisMemberName, iErr)!{{{
+   subroutine seaice_bootstrap_analysis_members(domain, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
@@ -1125,11 +1125,11 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_bootstrap_analysis_members!}}}
+   end subroutine seaice_bootstrap_analysis_members!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_analysis_members
+!  routine seaice_init_analysis_members
 !
 !> \brief Analysis member initialization driver
 !> \author Doug Jacobsen
@@ -1138,7 +1138,7 @@ contains
 !>  This private routine calls the correct init routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_init_analysis_members(domain, analysisMemberName, iErr)!{{{
+   subroutine seaice_init_analysis_members(domain, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
@@ -1195,11 +1195,11 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_init_analysis_members!}}}
+   end subroutine seaice_init_analysis_members!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_analysis_members
+!  routine seaice_precompute_analysis_members
 !
 !> \brief Analysis member compute driver
 !> \author Adrian K. Turner
@@ -1208,7 +1208,7 @@ contains
 !>  This private routine calls the correct precompute routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_precompute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+   subroutine seaice_precompute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
@@ -1268,11 +1268,11 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_precompute_analysis_members!}}}
+   end subroutine seaice_precompute_analysis_members!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_analysis_members
+!  routine seaice_compute_analysis_members
 !
 !> \brief Analysis member compute driver
 !> \author Doug Jacobsen
@@ -1281,7 +1281,7 @@ contains
 !>  This private routine calls the correct compute routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_compute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+   subroutine seaice_compute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
@@ -1339,11 +1339,11 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_compute_analysis_members!}}}
+   end subroutine seaice_compute_analysis_members!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_analysis_members
+!  routine seaice_restart_analysis_members
 !
 !> \brief Analysis member restart driver
 !> \author Doug Jacobsen
@@ -1352,7 +1352,7 @@ contains
 !>  This private routine calls the correct restart routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_restart_analysis_members(domain, analysisMemberName, iErr)!{{{
+   subroutine seaice_restart_analysis_members(domain, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
@@ -1409,11 +1409,11 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_restart_analysis_members!}}}
+   end subroutine seaice_restart_analysis_members!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_analysis_members
+!  routine seaice_finalize_analysis_members
 !
 !> \brief Analysis member finalize driver
 !> \author Doug Jacobsen
@@ -1422,7 +1422,7 @@ contains
 !>  This private routine calls the correct finalize routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine cice_finalize_analysis_members(domain, analysisMemberName, iErr)!{{{
+   subroutine seaice_finalize_analysis_members(domain, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
@@ -1479,8 +1479,8 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-   end subroutine cice_finalize_analysis_members!}}}
+   end subroutine seaice_finalize_analysis_members!}}}
 
-end module cice_analysis_driver
+end module seaice_analysis_driver
 
 ! vim: foldmethod=marker

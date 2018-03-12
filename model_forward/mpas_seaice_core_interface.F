@@ -11,8 +11,8 @@ module seaice_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_io_units
-   use cice_core
-   use cice_analysis_driver
+   use seaice_core
+   use seaice_analysis_driver
    use mpas_log, only: mpas_log_write
 
    public
@@ -34,19 +34,19 @@ module seaice_core_interface
    subroutine seaice_setup_core(core)!{{{
       type (core_type), pointer :: core
 
-      core % core_init => cice_core_init
-      core % core_run => cice_core_run
-      core % core_finalize => cice_core_finalize
+      core % core_init => seaice_core_init
+      core % core_run => seaice_core_run
+      core % core_finalize => seaice_core_finalize
       core % define_packages => seaice_define_packages
-      core % setup_packages => cice_setup_packages
-      core % setup_decompositions => cice_setup_decompositions
-      core % setup_clock => cice_setup_clock
-      core % setup_log => cice_setup_log
-      core % get_mesh_stream => cice_get_mesh_stream
+      core % setup_packages => seaice_setup_packages
+      core % setup_decompositions => seaice_setup_decompositions
+      core % setup_clock => seaice_setup_clock
+      core % setup_log => seaice_setup_log
+      core % get_mesh_stream => seaice_get_mesh_stream
       core % setup_immutable_streams => seaice_setup_immutable_streams
       core % setup_derived_dimensions => seaice_setup_derived_dimensions
       core % setup_decomposed_dimensions => seaice_setup_decomposed_dimensions
-      core % setup_block => cice_setup_block
+      core % setup_block => seaice_setup_block
       core % setup_namelist => seaice_setup_namelists
 
       core % Conventions = 'MPAS'
@@ -76,7 +76,7 @@ module seaice_core_interface
 
    !***********************************************************************
    !
-   !  function cice_setup_packages
+   !  function seaice_setup_packages
    !
    !> \brief   Pacakge setup routine
    !> \author  Doug Jacobsen
@@ -88,7 +88,7 @@ module seaice_core_interface
    !>   *not* allocated until after this routine is called.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
+   function seaice_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
 
       use mpas_derived_types
 
@@ -109,12 +109,12 @@ module seaice_core_interface
       call setup_packages_column_physics(configPool, packagePool, ierr)
 
       ! set up analysis member packages
-      call cice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
+      call seaice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
 
       ! testing system test
       call setup_packages_other(configPool, packagePool, ierr)
 
-   end function cice_setup_packages!}}}
+   end function seaice_setup_packages!}}}
 
    !***********************************************************************
    !
@@ -585,7 +585,7 @@ module seaice_core_interface
 
    !***********************************************************************
    !
-   !  routine cice_setup_decompositions
+   !  routine seaice_setup_decompositions
    !
    !> \brief   Decomposition setup routine
    !> \author  Doug Jacobsen
@@ -595,7 +595,7 @@ module seaice_core_interface
    !>  domain type, and register any decompositons the core wants within it.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_decompositions(decompList) result(ierr)!{{{
+   function seaice_setup_decompositions(decompList) result(ierr)!{{{
 
       use mpas_derived_types
       use mpas_decomp
@@ -625,12 +625,12 @@ module seaice_core_interface
          iErr = 0
       end if
 
-   end function cice_setup_decompositions!}}}
+   end function seaice_setup_decompositions!}}}
 
 
    !***********************************************************************
    !
-   !  function cice_setup_clock
+   !  function seaice_setup_clock
    !
    !> \brief   Pacakge setup routine
    !> \author  Michael Duda
@@ -645,7 +645,7 @@ module seaice_core_interface
    !>  options are available.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_clock(core_clock, configs) result(ierr)!{{{
+   function seaice_setup_clock(core_clock, configs) result(ierr)!{{{
 
       use mpas_derived_types
 
@@ -655,13 +655,13 @@ module seaice_core_interface
       type (mpas_pool_type), intent(inout) :: configs
       integer :: ierr
 
-      call cice_simulation_clock_init(core_clock, configs, ierr)
+      call seaice_simulation_clock_init(core_clock, configs, ierr)
 
-   end function cice_setup_clock!}}}
+   end function seaice_setup_clock!}}}
 
    !***********************************************************************
    !
-   !  function cice_setup_log
+   !  function seaice_setup_log
    !
    !> \brief   Log setup routine
    !> \author  Matt Hoffman, Adrian K. Turner
@@ -671,7 +671,7 @@ module seaice_core_interface
    !>  and allow the core to specify details of the configuration.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_log(logInfo, domain) result(iErr)!{{{
+   function seaice_setup_log(logInfo, domain) result(iErr)!{{{
 
       use mpas_derived_types
       use mpas_log
@@ -699,11 +699,11 @@ module seaice_core_interface
       call mpas_log_open(err=local_err)
       iErr = ior(iErr, local_err)
 
-   end function cice_setup_log!}}}
+   end function seaice_setup_log!}}}
 
    !***********************************************************************
    !
-   !  function cice_get_mesh_stream
+   !  function seaice_get_mesh_stream
    !
    !> \brief   Returns the name of the stream containing mesh information
    !> \author  Michael Duda
@@ -715,7 +715,7 @@ module seaice_core_interface
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   function cice_get_mesh_stream(configs, stream) result(ierr)!{{{
+   function seaice_get_mesh_stream(configs, stream) result(ierr)!{{{
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -749,12 +749,12 @@ module seaice_core_interface
          endif
       endif
 
-   end function cice_get_mesh_stream!}}}
+   end function seaice_get_mesh_stream!}}}
 
 
    !***********************************************************************
    !
-   !  function cice_setup_block
+   !  function seaice_setup_block
    !
    !> \brief   Ocean block setup function
    !> \author  Doug Jacobsen
@@ -764,14 +764,14 @@ module seaice_core_interface
    !>  ocean core block.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_block(block) result(iErr)!{{{
+   function seaice_setup_block(block) result(iErr)!{{{
       use mpas_derived_types
       type (block_type), pointer :: block
       integer :: iErr
 
       iErr = 0
       call seaice_generate_structs(block, block % structs, block % dimensions, block % packages)
-   end function cice_setup_block!}}}
+   end function seaice_setup_block!}}}
 
 #include "../inc/setup_immutable_streams.inc"
 
