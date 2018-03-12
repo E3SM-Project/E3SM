@@ -5,21 +5,21 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module cice_core
+module seaice_core
 
    use mpas_framework
    use mpas_timekeeping
-   use cice_analysis_driver
+   use seaice_analysis_driver
    use cice_column
    use mpas_threading
    use mpas_log, only: mpas_log_write
 
    private
    public :: &
-        cice_core_init, &
-        cice_core_run, &
-        cice_core_finalize, &
-        cice_simulation_clock_init
+        seaice_core_init, &
+        seaice_core_run, &
+        seaice_core_finalize, &
+        seaice_simulation_clock_init
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -27,7 +27,7 @@ module cice_core
 
    !***********************************************************************
    !
-   !  routine cice_core_init
+   !  routine seaice_core_init
    !
    !> \brief
    !> \author
@@ -37,7 +37,7 @@ module cice_core
    !
    !-----------------------------------------------------------------------
 
-   function cice_core_init(domain, startTimeStamp) result(iErr)
+   function seaice_core_init(domain, startTimeStamp) result(iErr)
 
       use mpas_derived_types
       use mpas_stream_manager
@@ -111,7 +111,7 @@ module cice_core
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart_ic', direction=MPAS_STREAM_INPUT, ierr=ierr)
 
       ! bootstrap analysis members
-      call cice_analysis_bootstrap(domain, ierr)
+      call seaice_analysis_bootstrap(domain, ierr)
 
       ! Read all other inputs
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
@@ -126,18 +126,18 @@ module cice_core
       call cice_initialize_time_diagnostics(domain)
 
       ! initialize analysis members
-      call cice_analysis_init(domain, ierr)
+      call seaice_analysis_init(domain, ierr)
 
       ! bootstrap analysis has used config_do_restart: now modify for rest of code
       if (trim(config_initial_condition_type) == "restart") config_do_restart = .true.
 
       call mpas_init_block(domain, dt)
 
-   end function cice_core_init
+   end function seaice_core_init
 
    !***********************************************************************
    !
-   !  routine cice_simulation_clock_init
+   !  routine seaice_simulation_clock_init
    !
    !> \brief
    !> \author
@@ -147,7 +147,7 @@ module cice_core
    !
    !-----------------------------------------------------------------------
 
-   subroutine cice_simulation_clock_init(core_clock, configs, ierr)
+   subroutine seaice_simulation_clock_init(core_clock, configs, ierr)
 
       implicit none
 
@@ -177,12 +177,12 @@ module cice_core
       if ( trim(config_start_time) == "file" ) then
          open(22, file=config_restart_timestamp_name, form='formatted', status='old', iostat=local_err)
          if (local_err /= 0) then
-            call mpas_log_write("cice_simulation_clock_init: problem opening restart timestamp file for reading: $i", &
+            call mpas_log_write("seaice_simulation_clock_init: problem opening restart timestamp file for reading: $i", &
                  MPAS_LOG_CRIT, intArgs=(/local_err/))
          endif
          read(22,*,iostat=local_err) restartTimeStamp
          if (local_err /= 0) then
-            call mpas_log_write("cice_simulation_clock_init: problem reading restart timestamp file $i: ", &
+            call mpas_log_write("seaice_simulation_clock_init: problem reading restart timestamp file $i: ", &
                  MPAS_LOG_CRIT, intArgs=(/local_err/))
          endif
          close(22)
@@ -215,7 +215,7 @@ module cice_core
          ierr = 1
       end if
 
-   end subroutine cice_simulation_clock_init
+   end subroutine seaice_simulation_clock_init
 
    !***********************************************************************
    !
@@ -233,7 +233,7 @@ module cice_core
 
       use mpas_derived_types
 
-      use cice_initialize, only: cice_init
+      use seaice_initialize, only: seaice_init
 
       implicit none
 
@@ -241,13 +241,13 @@ module cice_core
       real (kind=RKIND), intent(in) :: dt
 
       ! initialize general stuff
-      call cice_init(domain, clock, dt)
+      call seaice_init(domain, clock, dt)
 
    end subroutine mpas_init_block
 
    !***********************************************************************
    !
-   !  routine cice_core_run
+   !  routine seaice_core_run
    !
    !> \brief
    !> \author
@@ -257,15 +257,15 @@ module cice_core
    !
    !-----------------------------------------------------------------------
 
-   function cice_core_run(domain) result(iErr)
+   function seaice_core_run(domain) result(iErr)
 
       use mpas_derived_types
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
-      use cice_time_integration, only: cice_timestep_finalize
+      use seaice_time_integration, only: seaice_timestep_finalize
       use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart_times
-      use cice_initialize, only: cice_init_post_clock_advance
+      use seaice_initialize, only: seaice_init_post_clock_advance
       use cice_debug, only: istep
 
       implicit none
@@ -294,7 +294,7 @@ module cice_core
 
       ! compute analysis at startup if required
       ! (note: might require some reordering of call here if cice_forcing_get data is used in analysis members)
-      call cice_analysis_compute_startup(domain, ierr)
+      call seaice_analysis_compute_startup(domain, ierr)
 
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -312,7 +312,7 @@ module cice_core
       call cice_forcing_get(domain % streamManager, domain, clock, .true.)
 
       ! final initialization after clock advance
-      call cice_init_post_clock_advance(domain, clock)
+      call seaice_init_post_clock_advance(domain, clock)
 
       istep = istep + 1
 
@@ -323,7 +323,7 @@ module cice_core
          call mpas_log_write('Doing timestep '//trim(timeStamp))
 
          ! pre-timestep analysis computation
-         call cice_analysis_precompute(domain, ierr)
+         call seaice_analysis_precompute(domain, ierr)
 
          ! do the time integration
          call mpas_timer_start("time integration")
@@ -331,9 +331,9 @@ module cice_core
          call mpas_timer_stop("time integration")
 
          ! update analysis members
-         call cice_analysis_compute(domain, ierr)
-         call cice_analysis_restart(domain, ierr)
-         call cice_analysis_write(domain, ierr)
+         call seaice_analysis_compute(domain, ierr)
+         call seaice_analysis_restart(domain, ierr)
+         call seaice_analysis_write(domain, ierr)
 
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
               streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
@@ -347,12 +347,12 @@ module cice_core
               streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=ierr)
             if (ierr /= 0) then
-               call mpas_log_write("cice_core_run: problem opening restart timestamp file for writing: $i", &
+               call mpas_log_write("seaice_core_run: problem opening restart timestamp file for writing: $i", &
                     MPAS_LOG_CRIT, intArgs=(/ierr/))
             endif
             write(22, *, iostat=ierr) timeStamp
             if (ierr /= 0) then
-               call mpas_log_write("cice_core_run: problem writing restart timestamp file: $i", &
+               call mpas_log_write("seaice_core_run: problem writing restart timestamp file: $i", &
                     MPAS_LOG_CRIT, intArgs=(/ierr/))
             endif
             close(22)
@@ -361,7 +361,7 @@ module cice_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
          ! finalize the timstep
-         call cice_timestep_finalize(domain)
+         call seaice_timestep_finalize(domain)
 
          ! check if the simulation is finished
          if (mpas_is_clock_stop_time(clock)) exit timeLoop
@@ -376,7 +376,7 @@ module cice_core
 
       end do timeLoop
 
-   end function cice_core_run
+   end function seaice_core_run
 
    !***********************************************************************
    !
@@ -393,7 +393,7 @@ module cice_core
    subroutine mpas_timestep(domain, itimestep, timeStamp)
 
       use mpas_derived_types
-      use cice_time_integration
+      use seaice_time_integration
       use cice_error, only: cice_check_critical_error
 
       implicit none
@@ -405,7 +405,7 @@ module cice_core
       integer :: ierr
 
       ierr = 0
-      call cice_timestep(domain, clock, itimestep, ierr)
+      call seaice_timestep(domain, clock, itimestep, ierr)
 
       call cice_check_critical_error(domain, ierr)
 
@@ -413,7 +413,7 @@ module cice_core
 
    !***********************************************************************
    !
-   !  routine cice_core_finalize
+   !  routine seaice_core_finalize
    !
    !> \brief
    !> \author
@@ -423,7 +423,7 @@ module cice_core
    !
    !-----------------------------------------------------------------------
 
-   function cice_core_finalize(domain) result(iErr)
+   function seaice_core_finalize(domain) result(iErr)
 
       use mpas_derived_types
       use mpas_decomp
@@ -440,14 +440,14 @@ module cice_core
       ! finalize column
       call cice_column_finalize(domain)
 
-      call cice_analysis_finalize(domain, ierr)
+      call seaice_analysis_finalize(domain, ierr)
 
       call mpas_destroy_clock(clock, ierr)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-   end function cice_core_finalize
+   end function seaice_core_finalize
 
    !-----------------------------------------------------------------------
 
-end module cice_core
+end module seaice_core

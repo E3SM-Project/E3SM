@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_time_integration
+!  seaice_time_integration
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_time_integration
+module seaice_time_integration
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -23,14 +23,14 @@ module cice_time_integration
   save
 
   public :: &
-       cice_timestep, &
-       cice_timestep_finalize
+       seaice_timestep, &
+       seaice_timestep_finalize
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_timestep
+!  seaice_timestep
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -40,7 +40,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_timestep(&
+  subroutine seaice_timestep(&
        domain, &
        clock, &
        itimestep, &
@@ -174,7 +174,7 @@ contains
     ! check the physical state of the model
     call cice_check_state(domain)
 
-  end subroutine cice_timestep!}}}
+  end subroutine seaice_timestep!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -234,7 +234,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_timestep_finalize
+!  seaice_timestep_finalize
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -244,7 +244,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_timestep_finalize(&
+  subroutine seaice_timestep_finalize(&
        domain)!{{{
 
     use cice_column, only: &
@@ -255,8 +255,8 @@ contains
 
     call cice_column_reinitialize_fluxes(domain)
 
-  end subroutine cice_timestep_finalize
+  end subroutine seaice_timestep_finalize
 
 !-----------------------------------------------------------------------
 
-end module cice_time_integration
+end module seaice_time_integration
