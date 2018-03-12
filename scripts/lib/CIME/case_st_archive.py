@@ -120,8 +120,6 @@ def get_file_date(filename):
 def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
-    Note unfortunately datetime.datetime.strftime expects years > 1900
-    to support abbreviations, so we can't use that here
 
     >>> _datetime_str(date(5, 8, 22))
     '0005-08-22-00000'
@@ -138,8 +136,6 @@ def _datetime_str(_date):
 def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
-    Note unfortunately date.strftime expects years > 1900
-    to support abbreviations, so we can't use that here
 
     >>> _datetime_str_mpas(date(5, 8, 22))
     '0005-08-22_00:00:00'
