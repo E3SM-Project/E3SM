@@ -45,8 +45,9 @@ The goal is to maintain a diverse community that's pleasant for everyone.
   For unrelated changes, please submit multiple pull requests.
 * Do not commit changes to files that are irrelevant to your feature or bugfix
   (eg: .gitignore).
-* Be willing to accept criticism and work on improving your code; we don't want
-  to break other users' code, so care must be taken not to introduce bugs.
+* Be willing to accept constructive criticism as part of issuing a pull request,
+  since the CIME developers are dedicated to ensuring that new features extend the
+  system robustly and do not introduce new bugs.
 * Be aware that the pull request review process is not immediate, and is
   generally proportional to the size of the pull request.
 
@@ -80,8 +81,7 @@ Push to your fork and [submit a pull request][pr].
 [pr]: https://github.com/ESMCI/CIME/compare
 
 ## Code Review
-Once you've submitted a Pull Request, at this point you're waiting on us. You
-should expect to hear at least a comment within a couple of days.
+Once you have submitted a pull request, expect to hear at least a comment within a couple of days.
 We may suggest some changes or improvements or alternatives.
 
 Some things that will increase the chance that your pull request is accepted:
