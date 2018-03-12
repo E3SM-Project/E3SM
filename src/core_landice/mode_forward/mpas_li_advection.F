@@ -1658,7 +1658,6 @@ module li_advection
                   call mpas_log_write('vertical_remap, mass*tracer conservation error, iCell = $i', MPAS_LOG_WARN, intArgs=(/iCell/))
                   call mpas_log_write('init energy, final energy, difference: $r $r $r', &
                      realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
-                  stop
                endif
             endif
          endif
