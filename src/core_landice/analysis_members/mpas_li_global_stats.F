@@ -334,7 +334,7 @@ contains
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
             blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
-            blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+            blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
