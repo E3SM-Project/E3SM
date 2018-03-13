@@ -15,7 +15,6 @@ module seaice_time_integration
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
-  use cice_debug
 
   implicit none
 

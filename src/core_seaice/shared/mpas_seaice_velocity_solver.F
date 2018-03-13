@@ -494,8 +494,6 @@ contains
 
   subroutine seaice_run_velocity_solver(domain, clock)!{{{
 
-    use cice_debug
-
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -2376,9 +2374,6 @@ contains
 
     use seaice_velocity_solver_variational, only: &
          seaice_internal_stress_variational
-
-    use cice_debug, only: &
-         cice_time_output_variable_real
 
     use seaice_diagnostics, only: &
          seaice_load_balance_timers
