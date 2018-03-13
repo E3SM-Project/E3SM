@@ -48,8 +48,10 @@ contains
 
     use mpas_timer
 
-    use cice_diagnostics, only: &
-         cice_set_time_diagnostics
+    use seaice_diagnostics, only: &
+         seaice_set_time_diagnostics, &
+         seaice_check_state, &
+         seaice_load_balance_timers
 
     use cice_unit_test, only: &
          cice_perform_unit_test
@@ -68,10 +70,6 @@ contains
          cice_column_reinitialize_diagnostics_thermodynamics, &
          cice_column_reinitialize_diagnostics_bgc, &
          cice_column_reinitialize_diagnostics_dynamics
-
-    use cice_diagnostics, only: &
-         cice_check_state, &
-         cice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -108,10 +106,10 @@ contains
 #endif
 
     ! halo barrier diagnostics for coupling/forcing
-    call cice_load_balance_timers(domain, "coupling")
+    call seaice_load_balance_timers(domain, "coupling")
 
     ! set time diagnostics
-    call cice_set_time_diagnostics(domain)
+    call seaice_set_time_diagnostics(domain)
 
     call store_timestep_counter(domain, itimestep)
 
@@ -172,7 +170,7 @@ contains
     call mpas_timer_stop("Column post-dynamics")
 
     ! check the physical state of the model
-    call cice_check_state(domain)
+    call seaice_check_state(domain)
 
   end subroutine seaice_timestep!}}}
 

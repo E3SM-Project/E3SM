@@ -222,8 +222,8 @@ contains
 
    subroutine cice_compute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
-     use cice_mesh, only: &
-          cice_latlon_vector_rotation_backward
+     use seaice_mesh, only: &
+          seaice_latlon_vector_rotation_backward
 
       !-----------------------------------------------------------------
       !
@@ -373,7 +373,7 @@ contains
          do iVertex = 1, nVerticesSolve
 
             ! ice velocity
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  uVelocityGeo(iVertex), &
                  vVelocityGeo(iVertex), &
                  uVelocity(iVertex), &
@@ -387,7 +387,7 @@ contains
                  rotateCartesianGrid)
 
             ! stress divergence
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  stressDivergenceUGeo(iVertex), &
                  stressDivergenceVGeo(iVertex), &
                  stressDivergenceU(iVertex), &
@@ -401,7 +401,7 @@ contains
                  rotateCartesianGrid)
 
             ! air stress
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  airStressVertexUGeo(iVertex), &
                  airStressVertexVGeo(iVertex), &
                  airStressVertexU(iVertex), &
@@ -415,7 +415,7 @@ contains
                  rotateCartesianGrid)
 
             ! ocean stress
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  oceanStressUGeo(iVertex), &
                  oceanStressVGeo(iVertex), &
                  oceanStressU(iVertex), &
@@ -429,7 +429,7 @@ contains
                  rotateCartesianGrid)
 
             ! surface tilt
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  surfaceTiltForceUGeo(iVertex), &
                  surfaceTiltForceVGeo(iVertex), &
                  surfaceTiltForceU(iVertex), &
@@ -443,7 +443,7 @@ contains
                  rotateCartesianGrid)
 
             ! ocean velocity
-            call cice_latlon_vector_rotation_backward(&
+            call seaice_latlon_vector_rotation_backward(&
                  uOceanVelocityVertexGeo(iVertex), &
                  vOceanVelocityVertexGeo(iVertex), &
                  uOceanVelocityVertex(iVertex), &

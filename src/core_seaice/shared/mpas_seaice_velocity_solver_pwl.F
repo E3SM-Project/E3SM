@@ -48,8 +48,8 @@ contains
        rotateCartesianGrid, &
        includeMetricTerms)!{{{
 
-    use cice_mesh, only: &
-         cice_cell_vertices_at_vertex
+    use seaice_mesh, only: &
+         seaice_cell_vertices_at_vertex
 
     use cice_velocity_solver_variational_shared, only: &
          cice_calc_local_coords, &
@@ -118,7 +118,7 @@ contains
          rotateCartesianGrid, &
          includeMetricTerms)
 
-    call cice_cell_vertices_at_vertex(&
+    call seaice_cell_vertices_at_vertex(&
          mesh, &
          cellVerticesAtVertex)
 

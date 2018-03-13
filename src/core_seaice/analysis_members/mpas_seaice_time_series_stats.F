@@ -23,9 +23,6 @@ module cice_time_series_stats
   use mpas_stream_manager
   use mpas_log, only: mpas_log_write
 
-  !use cice_constants
-  !use cice_diagnostics_routines
-
   implicit none
   private
   save

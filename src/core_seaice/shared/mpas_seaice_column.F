@@ -18,7 +18,7 @@ module cice_column
   use mpas_timer
   use mpas_log, only: mpas_log_write
 
-  use cice_error
+  use seaice_error
   use cice_debug
 
   use ice_kinds_mod, only: &
@@ -1626,7 +1626,7 @@ contains
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
              ierr = SEAICE_ERROR_COL_VERT_THERM
-             call cice_critical_error_write_block(domain, block)
+             call seaice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -1961,7 +1961,7 @@ contains
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
              ierr = SEAICE_ERROR_COL_ITD_THERM
-             call cice_critical_error_write_block(domain, block)
+             call seaice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -2753,7 +2753,7 @@ contains
              call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
              ierr = SEAICE_ERROR_COL_RIDGING
-             call cice_critical_error_write_block(domain, block)
+             call seaice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -3228,7 +3228,7 @@ contains
              call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
              ierr = SEAICE_ERROR_COL_BGC
-             call cice_critical_error_write_block(domain, block)
+             call seaice_critical_error_write_block(domain, block)
              return
           endif
 
