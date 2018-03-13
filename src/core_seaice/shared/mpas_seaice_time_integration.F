@@ -53,8 +53,8 @@ contains
          seaice_check_state, &
          seaice_load_balance_timers
 
-    use cice_unit_test, only: &
-         cice_perform_unit_test
+    use seaice_unit_test, only: &
+         seaice_perform_unit_test
 
     use seaice_velocity_solver, only: &
          seaice_run_velocity_solver
@@ -125,7 +125,7 @@ contains
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
 
     if (config_perform_unit_test) then
-       call cice_perform_unit_test(domain)
+       call seaice_perform_unit_test(domain)
        return
     endif
 
