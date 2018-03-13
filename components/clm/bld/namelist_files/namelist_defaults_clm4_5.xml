@@ -98,6 +98,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <paramfile                 >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c170919.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params.c180312.nc</paramfile>
 
 
 <!-- ================================================================== -->
@@ -108,6 +109,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
+<fsoilordercon nu_com="RD" >lnd/clm2/paramdata/CNP_parameters_c180312.nc</fsoilordercon> 
 
 <!--
 
