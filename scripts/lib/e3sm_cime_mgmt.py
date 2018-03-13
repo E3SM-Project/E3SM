@@ -21,6 +21,8 @@ def setup():
     run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME), verbose=True)
     run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME), verbose=True)
 
+    run_cmd_no_fail("git clean -fd", verbose=True)
+
 ###############################################################################
 def get_tag(prefix, expected_num=1):
 ###############################################################################
