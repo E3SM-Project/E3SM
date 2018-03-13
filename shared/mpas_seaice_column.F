@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column
+!  seaice_column
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_column
+module seaice_column
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -30,20 +30,20 @@ module cice_column
   save
 
   public :: &
-       cice_init_column_physics_package_parameters, &
-       cice_init_column_physics_package_variables, &
-       cice_column_predynamics_time_integration, &
-       cice_column_dynamics_time_integration, &
-       cice_column_postdynamics_time_integration, &
-       cice_init_column_shortwave, &
-       cice_column_aggregate, &
-       cice_column_initial_air_drag_coefficient, &
-       cice_column_reinitialize_fluxes, &
-       cice_column_reinitialize_diagnostics_thermodynamics, &
-       cice_column_reinitialize_diagnostics_dynamics, &
-       cice_column_reinitialize_diagnostics_bgc, &
-       cice_column_coupling_prep, &
-       cice_column_finalize
+       seaice_init_column_physics_package_parameters, &
+       seaice_init_column_physics_package_variables, &
+       seaice_column_predynamics_time_integration, &
+       seaice_column_dynamics_time_integration, &
+       seaice_column_postdynamics_time_integration, &
+       seaice_init_column_shortwave, &
+       seaice_column_aggregate, &
+       seaice_column_initial_air_drag_coefficient, &
+       seaice_column_reinitialize_fluxes, &
+       seaice_column_reinitialize_diagnostics_thermodynamics, &
+       seaice_column_reinitialize_diagnostics_dynamics, &
+       seaice_column_reinitialize_diagnostics_bgc, &
+       seaice_column_coupling_prep, &
+       seaice_column_finalize
 
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -188,7 +188,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_column_physics_package_parameters
+!  seaice_init_column_physics_package_parameters
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -198,7 +198,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_column_physics_package_parameters(domain)
+  subroutine seaice_init_column_physics_package_parameters(domain)
 
     type(domain_type), intent(inout) :: domain
 
@@ -219,11 +219,11 @@ contains
 
     endif
 
-  end subroutine cice_init_column_physics_package_parameters
+  end subroutine seaice_init_column_physics_package_parameters
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_column_physics_package_variables
+!  seaice_init_column_physics_package_variables
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -233,7 +233,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_column_physics_package_variables(domain, clock)
+  subroutine seaice_init_column_physics_package_variables(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -271,11 +271,11 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
        if (config_do_restart .and. config_use_column_shortwave) &
-            call cice_init_column_shortwave(domain, clock)
+            call seaice_init_column_shortwave(domain, clock)
 
     endif
 
-  end subroutine cice_init_column_physics_package_variables
+  end subroutine seaice_init_column_physics_package_variables
 
 !-----------------------------------------------------------------------
 ! column package initialization routine wrappers
@@ -433,7 +433,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_column_shortwave(domain, clock)
+  subroutine seaice_init_column_shortwave(domain, clock)
 
     use ice_colpkg, only: &
          colpkg_init_orbit, &
@@ -645,7 +645,7 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_init_column_shortwave
+  end subroutine seaice_init_column_shortwave
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -802,7 +802,7 @@ contains
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_finalize
+!  seaice_column_finalize
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -812,20 +812,20 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_finalize(domain)
+  subroutine seaice_column_finalize(domain)
 
     type(domain_type), intent(inout) :: domain
 
     call finalize_column_non_activated_pointers(domain)
 
-  end subroutine cice_column_finalize
+  end subroutine seaice_column_finalize
 
 !-----------------------------------------------------------------------
 ! runtime
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_predynamics_time_integration
+!  seaice_column_predynamics_time_integration
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -835,7 +835,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_predynamics_time_integration(domain, clock, ierr)
+  subroutine seaice_column_predynamics_time_integration(domain, clock, ierr)
 
     type(domain_type), intent(inout) :: domain
 
@@ -913,7 +913,7 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column predyn update state")
-       call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
+       call seaice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
        call mpas_timer_stop("Column predyn update state")
 
        !-----------------------------------------------------------------
@@ -927,11 +927,11 @@ contains
 
     endif
 
-  end subroutine cice_column_predynamics_time_integration
+  end subroutine seaice_column_predynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_dynamics_time_integration
+!  seaice_column_dynamics_time_integration
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -941,7 +941,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_dynamics_time_integration(domain, clock, ierr)
+  subroutine seaice_column_dynamics_time_integration(domain, clock, ierr)
 
     type(domain_type), intent(inout) :: domain
 
@@ -994,16 +994,16 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column update state")
-       call cice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
+       call seaice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
 
     endif
 
-  end subroutine cice_column_dynamics_time_integration
+  end subroutine seaice_column_dynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_postdynamics_time_integration
+!  seaice_column_postdynamics_time_integration
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1013,7 +1013,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_postdynamics_time_integration(domain, clock)
+  subroutine seaice_column_postdynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -1043,12 +1043,12 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column coupling prep")
-       call cice_column_coupling_prep(domain)
+       call seaice_column_coupling_prep(domain)
        call mpas_timer_stop("Column coupling prep")
 
     endif
 
-  end subroutine cice_column_postdynamics_time_integration
+  end subroutine seaice_column_postdynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -3398,7 +3398,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_update_state
+!  seaice_column_update_state
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -3408,7 +3408,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_update_state(domain, stateUpdateType, dt, iceAgeTimeOffset)
+  subroutine seaice_column_update_state(domain, stateUpdateType, dt, iceAgeTimeOffset)
 
     type(domain_type), intent(inout) :: domain
 
@@ -3444,7 +3444,7 @@ contains
 
     ! aggregate state variables
     call mpas_timer_start("Column aggregate")
-    call cice_column_aggregate(domain)
+    call seaice_column_aggregate(domain)
     call mpas_timer_stop("Column aggregate")
 
     ! get configs
@@ -3477,7 +3477,7 @@ contains
 
        else
 
-          call mpas_log_write("cice_column_update_state: Unknown update type: "//trim(stateUpdateType), messageType=MPAS_LOG_CRIT)
+          call mpas_log_write("seaice_column_update_state: Unknown update type: "//trim(stateUpdateType), messageType=MPAS_LOG_CRIT)
 
        endif
 
@@ -3506,11 +3506,11 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_column_update_state
+  end subroutine seaice_column_update_state
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_aggregate
+!  seaice_column_aggregate
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -3520,7 +3520,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_aggregate(domain)
+  subroutine seaice_column_aggregate(domain)
 
     use ice_colpkg, only: colpkg_aggregate
 
@@ -3615,11 +3615,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_column_aggregate
+  end subroutine seaice_column_aggregate
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_coupling_prep
+!  seaice_column_coupling_prep
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -3629,7 +3629,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_coupling_prep(domain)
+  subroutine seaice_column_coupling_prep(domain)
 
     use seaice_constants, only: &
          seaicePuny, &
@@ -3745,7 +3745,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
     if (config_use_ocean_mixed_layer) &
-         call cice_column_ocean_mixed_layer(domain)
+         call seaice_column_ocean_mixed_layer(domain)
 
     block => domain % blocklist
     do while (associated(block))
@@ -4034,13 +4034,13 @@ contains
        block => block % next
     enddo
 
-    call cice_column_scale_fluxes(domain)
+    call seaice_column_scale_fluxes(domain)
 
-  end subroutine cice_column_coupling_prep
+  end subroutine seaice_column_coupling_prep
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_scale_fluxes
+!  seaice_column_scale_fluxes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -4050,7 +4050,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_scale_fluxes(domain)
+  subroutine seaice_column_scale_fluxes(domain)
 
     use seaice_constants, only: &
          seaiceStefanBoltzmann, &
@@ -4301,11 +4301,11 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_column_scale_fluxes
+  end subroutine seaice_column_scale_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_ocean_mixed_layer
+!  seaice_column_ocean_mixed_layer
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -4315,7 +4315,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_ocean_mixed_layer(domain)
+  subroutine seaice_column_ocean_mixed_layer(domain)
 
     use ice_colpkg, only: &
          colpkg_atm_boundary, &
@@ -4538,7 +4538,7 @@ contains
 
     endif !
 
-  end subroutine cice_column_ocean_mixed_layer
+  end subroutine seaice_column_ocean_mixed_layer
 
 !-----------------------------------------------------------------------
 ! CICE tracer object
@@ -10962,7 +10962,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_initial_air_drag_coefficient
+!  seaice_column_initial_air_drag_coefficient
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10972,7 +10972,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  function cice_column_initial_air_drag_coefficient() result(airDragCoefficient)
+  function seaice_column_initial_air_drag_coefficient() result(airDragCoefficient)
 
     use seaice_constants, only: &
          seaiceVonKarmanConstant, &
@@ -10985,11 +10985,11 @@ contains
     airDragCoefficient = (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness)) &
                        * (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness))
 
-  end function cice_column_initial_air_drag_coefficient
+  end function seaice_column_initial_air_drag_coefficient
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_fluxes
+!  seaice_column_reinitialize_fluxes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10999,21 +10999,21 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_fluxes(domain)
+  subroutine seaice_column_reinitialize_fluxes(domain)
 
     type(domain_type) :: domain
 
     ! atmospheric fluxes
-    call cice_column_reinitialize_atmospheric_fluxes(domain)
+    call seaice_column_reinitialize_atmospheric_fluxes(domain)
 
     ! oceanic fluxes
-    call cice_column_reinitialize_oceanic_fluxes(domain)
+    call seaice_column_reinitialize_oceanic_fluxes(domain)
 
-  end subroutine cice_column_reinitialize_fluxes
+  end subroutine seaice_column_reinitialize_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_atmospheric_fluxes
+!  seaice_column_reinitialize_atmospheric_fluxes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -11023,7 +11023,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_atmospheric_fluxes(domain)
+  subroutine seaice_column_reinitialize_atmospheric_fluxes(domain)
 
     type(domain_type) :: domain
 
@@ -11096,11 +11096,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_column_reinitialize_atmospheric_fluxes
+  end subroutine seaice_column_reinitialize_atmospheric_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_oceanic_fluxes
+!  seaice_column_reinitialize_oceanic_fluxes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -11110,7 +11110,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_oceanic_fluxes(domain)
+  subroutine seaice_column_reinitialize_oceanic_fluxes(domain)
 
     type(domain_type) :: domain
 
@@ -11152,7 +11152,7 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_column_reinitialize_oceanic_fluxes
+  end subroutine seaice_column_reinitialize_oceanic_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -11976,7 +11976,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_diagnostics_thermodynamics
+!  seaice_column_reinitialize_diagnostics_thermodynamics
 !
 !> \brief Reinitialize thermodynamics diagnostics
 !> \author Adrian K. Turner, LANL
@@ -11986,7 +11986,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_diagnostics_thermodynamics(domain)
+  subroutine seaice_column_reinitialize_diagnostics_thermodynamics(domain)
 
     use seaice_constants, only: &
          seaiceIceOceanDragCoefficient
@@ -12169,7 +12169,7 @@ contains
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
           oceanDragCoefficient = seaiceIceOceanDragCoefficient
-          airDragCoefficient   = cice_column_initial_air_drag_coefficient()
+          airDragCoefficient   = seaice_column_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
 
@@ -12216,11 +12216,11 @@ contains
 
     endif ! config_use_column_package
 
-  end subroutine cice_column_reinitialize_diagnostics_thermodynamics
+  end subroutine seaice_column_reinitialize_diagnostics_thermodynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_diagnostics_dynamics
+!  seaice_column_reinitialize_diagnostics_dynamics
 !
 !> \brief Reinitialize dynamics diagnostics
 !> \author Adrian K. Turner, LANL
@@ -12230,7 +12230,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_diagnostics_dynamics(domain)
+  subroutine seaice_column_reinitialize_diagnostics_dynamics(domain)
 
     type(domain_type) :: domain
 
@@ -12384,11 +12384,11 @@ contains
 
     endif ! config_use_column_package
 
-  end subroutine cice_column_reinitialize_diagnostics_dynamics
+  end subroutine seaice_column_reinitialize_diagnostics_dynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_diagnostics_bgc
+!  seaice_column_reinitialize_diagnostics_bgc
 !
 !> \brief Reinitialize BGC diagnostics
 !> \author Adrian K. Turner, LANL
@@ -12398,7 +12398,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_diagnostics_bgc(domain)
+  subroutine seaice_column_reinitialize_diagnostics_bgc(domain)
 
     type(domain_type) :: domain
 
@@ -12483,7 +12483,7 @@ contains
 
     endif ! config_use_column_package
 
-  end subroutine cice_column_reinitialize_diagnostics_bgc
+  end subroutine seaice_column_reinitialize_diagnostics_bgc
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -13282,4 +13282,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_column
+end module seaice_column

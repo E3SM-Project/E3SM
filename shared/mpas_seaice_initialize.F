@@ -53,10 +53,10 @@ contains
     use seaice_mesh, only: seaice_init_mesh
     use seaice_advection, only: seaice_init_advection
     use seaice_velocity_solver, only: seaice_init_velocity_solver
-    use cice_column, only: &
-         cice_init_column_physics_package_parameters, &
-         cice_init_column_physics_package_variables
-    use cice_forcing, only: cice_forcing_init, cice_reset_coupler_fluxes
+    use seaice_column, only: &
+         seaice_init_column_physics_package_parameters, &
+         seaice_init_column_physics_package_variables
+    use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
          seaice_set_testing_system_test_arrays
 
@@ -89,7 +89,7 @@ contains
 
     ! init the basic column physics package
     call mpas_log_write(" Initialize column parameters...")
-    call cice_init_column_physics_package_parameters(domain)
+    call seaice_init_column_physics_package_parameters(domain)
 
     ! init coupler fluxes
     call mpas_log_write(" Initialize coupler fields...")
@@ -97,7 +97,7 @@ contains
 
     ! initialize forcing
     call mpas_log_write(" Initialize forcing...")
-    call cice_forcing_init(domain)
+    call seaice_forcing_init(domain)
 
     ! init dynamics
     call mpas_log_write(" Initialize velocity solver...")
@@ -109,7 +109,7 @@ contains
 
     ! column physics initialization
     call mpas_log_write(" Initialize column variables...")
-    call cice_init_column_physics_package_variables(domain, clock)
+    call seaice_init_column_physics_package_variables(domain, clock)
 
     ! init ice state
     call mpas_log_write(" Initialize ice state...")
@@ -121,7 +121,7 @@ contains
 
     ! coupler flux reset
     call mpas_log_write(" Initialize coupler fluxes...")
-    call cice_reset_coupler_fluxes(domain)
+    call seaice_reset_coupler_fluxes(domain)
 
   end subroutine seaice_init!}}}
 
@@ -141,8 +141,8 @@ contains
        domain, &
        clock)!{{{
 
-    use cice_column, only: &
-         cice_init_column_shortwave
+    use seaice_column, only: &
+         seaice_init_column_shortwave
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -160,7 +160,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) &
-         call cice_init_column_shortwave(domain, clock)
+         call seaice_init_column_shortwave(domain, clock)
 
   end subroutine seaice_init_post_clock_advance
 
@@ -236,8 +236,8 @@ contains
     use seaice_testing, only: &
          seaice_init_square_test_case_hex, &
          seaice_init_square_point_test_case_hex
-    use cice_column, only: &
-         cice_column_aggregate
+    use seaice_column, only: &
+         seaice_column_aggregate
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -416,7 +416,7 @@ contains
     ! aggregate tracers even if restart
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
     if (config_use_column_package) &
-         call cice_column_aggregate(domain)
+         call seaice_column_aggregate(domain)
 
   end subroutine init_ice_state!}}}
 
@@ -1715,8 +1715,8 @@ contains
          seaiceStefanBoltzmann, &
          seaiceFreshWaterFreezingPoint
 
-    use cice_column, only: &
-         cice_column_initial_air_drag_coefficient
+    use seaice_column, only: &
+         seaice_column_initial_air_drag_coefficient
 
     type(domain_type) :: domain
 
@@ -1845,7 +1845,7 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "drag", drag)
           call MPAS_pool_get_array(drag, "airDragCoefficient", airDragCoefficient)
-          airDragCoefficient = cice_column_initial_air_drag_coefficient()
+          airDragCoefficient = seaice_column_initial_air_drag_coefficient()
 
        endif
 
