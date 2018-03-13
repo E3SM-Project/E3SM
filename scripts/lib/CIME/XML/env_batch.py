@@ -284,7 +284,10 @@ class EnvBatch(EnvBase):
                         else:
                             directive = transform_vars(directive, default=default)
 
-                        result.append("{} {}".format("" if directive_prefix is None else directive_prefix, directive))
+                        custom_prefix = self.get(node, "prefix")
+                        prefix = directive_prefix if custom_prefix is None else custom_prefix
+
+                        result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
 
         return "\n".join(result)
 
