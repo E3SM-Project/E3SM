@@ -246,7 +246,6 @@ class EnvMachSpecific(EnvBase):
         cmds = []
         last_action = None
         last_cmd    = None
-        actions_that_cannot_be_batched = ["swap"]
 
         # Normally, we will try to combine or batch module commands together...
         #

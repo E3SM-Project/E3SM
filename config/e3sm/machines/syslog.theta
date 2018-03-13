@@ -12,12 +12,12 @@ set dir = $6
 # Wait until some model output appears before saving output file.
 # Target length was determined empirically (more lines than number of MPICH environment variables), 
 #  so it may need to be adjusted in the future.
-# (Note that calling script 'touch'es the acme log file before spawning this script, so that 'wc' does not fail.)
+# (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
 set outtarget = 130
 set outlth = 0
 while ($outlth < $outtarget)
   sleep 10
-  set outlth = `wc \-l $run/acme.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+  set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
 
 set TimeRemaining = `qstat -l --header TimeRemaining $jid | grep -F TimeRemaining | sed 's/^ *TimeRemaining *: *\([0-9]*:[0-9]*:[0-9]*\) */\1/' `
@@ -31,7 +31,7 @@ if ("X$rem_secs" == "X")  set rem_secs  = 0
 cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
-/bin/cp --preserve=timestamps $run/acme.log.$lid $dir/acme.log.$lid.$remaining
+/bin/cp --preserve=timestamps $run/e3sm.log.$lid $dir/e3sm.log.$lid.$remaining
 xtnodestat > $dir/xtnodestat.$lid.$remaining
 
 while ($remaining > 0)

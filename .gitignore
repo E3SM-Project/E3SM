@@ -13,6 +13,4 @@ doc/build
 scripts/Tools/JENKINS*
 
 # Ignore anything that are produced under scripts "cases" directory
-
 /scripts/cases/
-

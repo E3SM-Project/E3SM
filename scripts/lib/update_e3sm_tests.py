@@ -152,7 +152,9 @@ _TEST_SUITES = {
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
-                           "SMS.f09_g16_a.MPASLIALB")
+                           "SMS.f09_g16_a.MPASLIALB",
+			   ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"),
+                           ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
     "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",),None,
@@ -162,6 +164,7 @@ _TEST_SUITES = {
     "e3sm_hi_res" : (("e3sm_atm_hi_res",),None,
                      (
                       ("SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS", "cam-cosplite"),
+                       "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
                      )),
 
     #e3sm tests to mimic production runs
