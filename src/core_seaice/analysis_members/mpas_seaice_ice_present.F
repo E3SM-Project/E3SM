@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_ice_present
+!  seaice_ice_present
 !
 !> \brief MPAS sea ice analysis mode member: ice_present
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_ice_present
+module seaice_ice_present
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_ice_present
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_ice_present, &
-             cice_init_ice_present, &
-             cice_precompute_ice_present, &
-             cice_compute_ice_present, &
-             cice_restart_ice_present, &
-             cice_finalize_ice_present
+   public :: seaice_bootstrap_ice_present, &
+             seaice_init_ice_present, &
+             seaice_precompute_ice_present, &
+             seaice_compute_ice_present, &
+             seaice_restart_ice_present, &
+             seaice_finalize_ice_present
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_ice_present
+!  routine seaice_bootstrap_ice_present
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_ice_present(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_ice_present(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_ice_present!}}}
+   end subroutine seaice_bootstrap_ice_present!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_ice_present
+!  routine seaice_init_ice_present
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_ice_present(domain, instance, err)!{{{
+   subroutine seaice_init_ice_present(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_ice_present!}}}
+   end subroutine seaice_init_ice_present!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_ice_present
+!  routine seaice_precompute_ice_present
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_ice_present(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_ice_present(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_ice_present!}}}
+   end subroutine seaice_precompute_ice_present!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_ice_present
+!  routine seaice_compute_ice_present
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_ice_present(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_ice_present(domain, instance, timeLevel, err)!{{{
 
       use seaice_constants, only: &
            seaicePuny
@@ -304,11 +304,11 @@ contains
          block => block % next
       end do
 
-   end subroutine cice_compute_ice_present!}}}
+   end subroutine seaice_compute_ice_present!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_ice_present
+!  routine seaice_restart_ice_present
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -319,7 +319,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_ice_present(domain, instance, err)!{{{
+   subroutine seaice_restart_ice_present(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -353,11 +353,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_ice_present!}}}
+   end subroutine seaice_restart_ice_present!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_ice_present
+!  routine seaice_finalize_ice_present
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -368,7 +368,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_ice_present(domain, instance, err)!{{{
+   subroutine seaice_finalize_ice_present(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -402,10 +402,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_ice_present!}}}
+   end subroutine seaice_finalize_ice_present!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_ice_present
+end module seaice_ice_present
 
 ! vim: foldmethod=marker

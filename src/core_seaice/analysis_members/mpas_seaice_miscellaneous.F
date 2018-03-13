@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_miscellaneous
+!  seaice_miscellaneous
 !
 !> \brief MPAS sea ice analysis mode member: miscellaneous
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_miscellaneous
+module seaice_miscellaneous
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_miscellaneous
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_miscellaneous, &
-             cice_init_miscellaneous, &
-             cice_precompute_miscellaneous, &
-             cice_compute_miscellaneous, &
-             cice_restart_miscellaneous, &
-             cice_finalize_miscellaneous
+   public :: seaice_bootstrap_miscellaneous, &
+             seaice_init_miscellaneous, &
+             seaice_precompute_miscellaneous, &
+             seaice_compute_miscellaneous, &
+             seaice_restart_miscellaneous, &
+             seaice_finalize_miscellaneous
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_miscellaneous
+!  routine seaice_bootstrap_miscellaneous
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_miscellaneous(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_miscellaneous(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_miscellaneous!}}}
+   end subroutine seaice_bootstrap_miscellaneous!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_miscellaneous
+!  routine seaice_init_miscellaneous
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_miscellaneous(domain, instance, err)!{{{
+   subroutine seaice_init_miscellaneous(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_miscellaneous!}}}
+   end subroutine seaice_init_miscellaneous!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_miscellaneous
+!  routine seaice_precompute_miscellaneous
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_miscellaneous(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_miscellaneous(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_miscellaneous!}}}
+   end subroutine seaice_precompute_miscellaneous!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_miscellaneous
+!  routine seaice_compute_miscellaneous
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_miscellaneous(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_miscellaneous(domain, instance, timeLevel, err)!{{{
 
      use ice_constants_colpkg, only: &
           awtvdr, &
@@ -391,11 +391,11 @@ contains
          enddo
       endif
 
-   end subroutine cice_compute_miscellaneous!}}}
+   end subroutine seaice_compute_miscellaneous!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_miscellaneous
+!  routine seaice_restart_miscellaneous
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -406,7 +406,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_miscellaneous(domain, instance, err)!{{{
+   subroutine seaice_restart_miscellaneous(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -440,11 +440,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_miscellaneous!}}}
+   end subroutine seaice_restart_miscellaneous!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_miscellaneous
+!  routine seaice_finalize_miscellaneous
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -455,7 +455,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_miscellaneous(domain, instance, err)!{{{
+   subroutine seaice_finalize_miscellaneous(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -489,10 +489,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_miscellaneous!}}}
+   end subroutine seaice_finalize_miscellaneous!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_miscellaneous
+end module seaice_miscellaneous
 
 ! vim: foldmethod=marker

@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_maximum_ice_presence
+!  seaice_maximum_ice_presence
 !
 !> \brief MPAS sea ice analysis mode member: maximum_ice_presence
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_maximum_ice_presence
+module seaice_maximum_ice_presence
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_maximum_ice_presence
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_maximum_ice_presence, &
-             cice_init_maximum_ice_presence, &
-             cice_precompute_maximum_ice_presence, &
-             cice_compute_maximum_ice_presence, &
-             cice_restart_maximum_ice_presence, &
-             cice_finalize_maximum_ice_presence
+   public :: seaice_bootstrap_maximum_ice_presence, &
+             seaice_init_maximum_ice_presence, &
+             seaice_precompute_maximum_ice_presence, &
+             seaice_compute_maximum_ice_presence, &
+             seaice_restart_maximum_ice_presence, &
+             seaice_finalize_maximum_ice_presence
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_maximum_ice_presence
+!  routine seaice_bootstrap_maximum_ice_presence
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_maximum_ice_presence(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_maximum_ice_presence(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_maximum_ice_presence!}}}
+   end subroutine seaice_bootstrap_maximum_ice_presence!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_maximum_ice_presence
+!  routine seaice_init_maximum_ice_presence
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_maximum_ice_presence(domain, instance, err)!{{{
+   subroutine seaice_init_maximum_ice_presence(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_maximum_ice_presence!}}}
+   end subroutine seaice_init_maximum_ice_presence!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_maximum_ice_presence
+!  routine seaice_precompute_maximum_ice_presence
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_maximum_ice_presence(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_maximum_ice_presence(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_maximum_ice_presence!}}}
+   end subroutine seaice_precompute_maximum_ice_presence!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_maximum_ice_presence
+!  routine seaice_compute_maximum_ice_presence
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_maximum_ice_presence(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_maximum_ice_presence(domain, instance, timeLevel, err)!{{{
 
      use seaice_constants, only: &
           seaicePuny
@@ -325,11 +325,11 @@ contains
 
       endif
 
-   end subroutine cice_compute_maximum_ice_presence!}}}
+   end subroutine seaice_compute_maximum_ice_presence!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_maximum_ice_presence
+!  routine seaice_restart_maximum_ice_presence
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -340,7 +340,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_maximum_ice_presence(domain, instance, err)!{{{
+   subroutine seaice_restart_maximum_ice_presence(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -374,11 +374,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_maximum_ice_presence!}}}
+   end subroutine seaice_restart_maximum_ice_presence!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_maximum_ice_presence
+!  routine seaice_finalize_maximum_ice_presence
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -389,7 +389,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_maximum_ice_presence(domain, instance, err)!{{{
+   subroutine seaice_finalize_maximum_ice_presence(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -423,10 +423,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_maximum_ice_presence!}}}
+   end subroutine seaice_finalize_maximum_ice_presence!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_maximum_ice_presence
+end module seaice_maximum_ice_presence
 
 ! vim: foldmethod=marker

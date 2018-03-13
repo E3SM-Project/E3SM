@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_temperatures
+!  seaice_temperatures
 !
 !> \brief MPAS cice analysis mode member: temperatures
 !> \author Adrian K. Turner
@@ -19,7 +19,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_temperatures
+module seaice_temperatures
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -43,12 +43,12 @@ module cice_temperatures
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_temperatures, &
-             cice_init_temperatures, &
-             cice_precompute_temperatures, &
-             cice_compute_temperatures, &
-             cice_restart_temperatures, &
-             cice_finalize_temperatures
+   public :: seaice_bootstrap_temperatures, &
+             seaice_init_temperatures, &
+             seaice_precompute_temperatures, &
+             seaice_compute_temperatures, &
+             seaice_restart_temperatures, &
+             seaice_finalize_temperatures
 
    !--------------------------------------------------------------------
    !
@@ -62,7 +62,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_temperatures
+!  routine seaice_bootstrap_temperatures
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_temperatures(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -107,11 +107,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_temperatures!}}}
+   end subroutine seaice_bootstrap_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_temperatures
+!  routine seaice_init_temperatures
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -122,7 +122,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_temperatures(domain, instance, err)!{{{
+   subroutine seaice_init_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -156,11 +156,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_temperatures!}}}
+   end subroutine seaice_init_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_temperatures
+!  routine seaice_precompute_temperatures
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -170,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_temperatures(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_temperatures(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -206,11 +206,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_temperatures!}}}
+   end subroutine seaice_precompute_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_temperatures
+!  routine seaice_compute_temperatures
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -223,7 +223,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_temperatures(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_temperatures(domain, instance, timeLevel, err)!{{{
 
       use ice_colpkg, only: &
            colpkg_ice_temperature, &
@@ -347,11 +347,11 @@ contains
          block => block % next
       enddo
 
-   end subroutine cice_compute_temperatures!}}}
+   end subroutine seaice_compute_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_temperatures
+!  routine seaice_restart_temperatures
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -362,7 +362,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_temperatures(domain, instance, err)!{{{
+   subroutine seaice_restart_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -396,11 +396,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_temperatures!}}}
+   end subroutine seaice_restart_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_temperatures
+!  routine seaice_finalize_temperatures
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -411,7 +411,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_temperatures(domain, instance, err)!{{{
+   subroutine seaice_finalize_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -445,10 +445,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_temperatures!}}}
+   end subroutine seaice_finalize_temperatures!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_temperatures
+end module seaice_temperatures
 
 ! vim: foldmethod=marker
