@@ -16,8 +16,8 @@
 !>  MPAS sea ice analysis mode member: TEM_PLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     cp mpas_seaice_TEMPLATE.F mpas_cice_your_new_name.F
-!>     cp Registry_seaice_TEMPLATE.xml Registry_cice_your_new_name.xml
+!>     cp mpas_seaice_TEMPLATE.F mpas_seaice_your_new_name.F
+!>     cp Registry_seaice_TEMPLATE.xml Registry_seaice_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
 !>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
@@ -90,12 +90,12 @@ contains
 !
 !  routine seaice_bootstrap_TEM_PLATE
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -139,12 +139,12 @@ contains
 !
 !  routine seaice_init_TEM_PLATE
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -188,12 +188,12 @@ contains
 !
 !  routine seaice_precompute_TEM_PLATE
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all pre-computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -239,12 +239,12 @@ contains
 !
 !  routine seaice_compute_TEM_PLATE
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -363,12 +363,12 @@ contains
 !
 !  routine seaice_restart_TEM_PLATE
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -412,12 +412,12 @@ contains
 !
 !  routine seaice_finalize_TEM_PLATE
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

@@ -29,7 +29,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     # base run
     nProcs = 16
 
-    nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'}}
+    nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 
@@ -44,7 +44,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     # first restart run
     nProcs = 16
 
-    nmlChanges = {"cice_model": {"config_run_duration":'12:00:00'}}
+    nmlChanges = {"seaice_model": {"config_run_duration":'12:00:00'}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 
@@ -59,7 +59,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     # restart
     nProcs = 32
 
-    nmlChanges = {"cice_model": {"config_start_time":"file"},
+    nmlChanges = {"seaice_model": {"config_start_time":"file"},
                   "restart":    {"config_do_restart":True}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}

@@ -10,4 +10,4 @@ override CPPFLAGS += -Dcoupled -DCCSMCOUPLED
 endif
 
 report_builds:
-	@echo "CORE=cice"
+	@echo "CORE=seaice"

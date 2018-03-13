@@ -9,11 +9,11 @@
 !
 !  seaice_high_frequency_output
 !
-!> \brief MPAS CICE analysis mode member: high_frequency_output
+!> \brief MPAS-Seaice analysis mode member: high_frequency_output
 !> \author Todd Ringler
 !> \date   2015/06/12
 !> \details
-!>  MPAS CICE analysis mode member: high_frequency_output
+!>  MPAS-Seaice analysis mode member: high_frequency_output
 !>
 !-----------------------------------------------------------------------
 
@@ -63,12 +63,12 @@ contains
 !
 !  routine seaice_bootstrap_high_frequency_output
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian Turner
 !> \date    10th November 2015
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -112,12 +112,12 @@ contains
 !
 !  routine seaice_init_high_frequency_output
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Todd Ringler
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -161,12 +161,12 @@ contains
 !
 !  routine seaice_precompute_high_frequency_output
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2015/09/09
 !> \details
 !>  This routine conducts all precomputation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -212,12 +212,12 @@ contains
 !
 !  routine seaice_compute_high_frequency_output
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Todd Ringler
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -295,12 +295,12 @@ contains
 !
 !  routine seaice_restart_high_frequency_output
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Todd Ringler
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -344,12 +344,12 @@ contains
 !
 !  routine seaice_finalize_high_frequency_output
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Todd Ringler
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

@@ -27,7 +27,7 @@ ifeq "$(CORE)" "ocean"
     COMPONENT=ocn
 else ifeq "$(CORE)" "landice"
     COMPONENT=glc
-else ifeq "$(CORE)" "cice"
+else ifeq "$(CORE)" "seaice"
     COMPONENT=ice
 endif
 

@@ -61,12 +61,12 @@ contains
 !
 !  routine seaice_bootstrap_unit_conversion
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -110,12 +110,12 @@ contains
 !
 !  routine seaice_init_unit_conversion
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -159,12 +159,12 @@ contains
 !
 !  routine seaice_precompute_unit_conversion
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts all pre-computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -210,12 +210,12 @@ contains
 !
 !  routine seaice_compute_unit_conversion
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -344,12 +344,12 @@ contains
 !
 !  routine seaice_restart_unit_conversion
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -393,12 +393,12 @@ contains
 !
 !  routine seaice_finalize_unit_conversion
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    19th February 2016
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

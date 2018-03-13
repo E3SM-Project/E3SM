@@ -62,12 +62,12 @@ contains
 !
 !  routine seaice_bootstrap_geographical_vectors
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    10th November 2015
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -111,12 +111,12 @@ contains
 !
 !  routine seaice_init_geographical_vectors
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    14th October 2015
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -160,12 +160,12 @@ contains
 !
 !  routine seaice_precompute_geographical_vectors
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    14th October 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -211,12 +211,12 @@ contains
 !
 !  routine seaice_compute_geographical_vectors
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    14th October 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -467,12 +467,12 @@ contains
 !
 !  routine seaice_restart_geographical_vectors
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    14th October 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -516,12 +516,12 @@ contains
 !
 !  routine seaice_finalize_geographical_vectors
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    14th October 2015
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

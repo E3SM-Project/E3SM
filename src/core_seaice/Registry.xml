@@ -290,7 +290,7 @@
 		/>
 	</dims>
 
-	<nml_record name="cice_model" in_defaults="true">
+	<nml_record name="seaice_model" in_defaults="true">
 		<nml_option name="config_dt" type="real" default_value="3600.0" units="Seconds"
 			description="Length of model time-step."
 			possible_values="Any positive real number."

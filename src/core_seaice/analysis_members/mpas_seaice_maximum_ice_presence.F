@@ -62,12 +62,12 @@ contains
 !
 !  routine seaice_bootstrap_maximum_ice_presence
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -111,12 +111,12 @@ contains
 !
 !  routine seaice_init_maximum_ice_presence
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -160,12 +160,12 @@ contains
 !
 !  routine seaice_precompute_maximum_ice_presence
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts all pre-computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -211,12 +211,12 @@ contains
 !
 !  routine seaice_compute_maximum_ice_presence
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -331,12 +331,12 @@ contains
 !
 !  routine seaice_restart_maximum_ice_presence
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -380,12 +380,12 @@ contains
 !
 !  routine seaice_finalize_maximum_ice_presence
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    2nd December 2015
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
