@@ -159,8 +159,8 @@ contains
        xLocal, &
        yLocal)!{{{
 
-    use cice_numerics, only: &
-         cice_solve_linear_basis_system
+    use seaice_numerics, only: &
+         seaice_solve_linear_basis_system
 
     use cice_velocity_solver_variational_shared, only: &
          cice_wrapped_index
@@ -321,7 +321,7 @@ contains
           rightHandSide(2) = 0.0_RKIND
           rightHandSide(3) = 0.0_RKIND
 
-          call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+          call seaice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
           subBasisGradientU(iSubCell,1) = solutionVector(1)
           subBasisGradientV(iSubCell,1) = solutionVector(2)
@@ -332,7 +332,7 @@ contains
           rightHandSide(2) = 1.0_RKIND
           rightHandSide(3) = 0.0_RKIND
 
-          call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+          call seaice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
           subBasisGradientU(iSubCell,2) = solutionVector(1)
           subBasisGradientV(iSubCell,2) = solutionVector(2)
