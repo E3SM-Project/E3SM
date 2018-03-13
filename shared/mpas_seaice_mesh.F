@@ -2963,7 +2963,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_test_rotation
+!  seaice_test_rotation
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2973,7 +2973,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_test_rotation(domain)
+  subroutine seaice_test_rotation(domain)
 
     type(domain_type) :: domain
 
@@ -3259,11 +3259,11 @@ contains
 
     stop
 
-  end subroutine cice_test_rotation
+  end subroutine seaice_test_rotation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_test_mesh_conversions
+!  seaice_test_mesh_conversions
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -3273,7 +3273,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_test_mesh_conversions(domain)
+  subroutine seaice_test_mesh_conversions(domain)
 
     use seaice_constants, only: &
          pii
@@ -3781,7 +3781,7 @@ contains
 
     !stop
 
-  end subroutine cice_test_mesh_conversions
+  end subroutine seaice_test_mesh_conversions
 
 !-----------------------------------------------------------------------
 
