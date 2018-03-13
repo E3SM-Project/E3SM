@@ -271,7 +271,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    if ( allocated(londimnames) ) deallocate(londimnames)
    if ( allocated(vars)        ) deallocate( vars )
 
-   if (latlen .eq. 1 .and. lonlen .gt. 1) then !-- Enforce for SE grids
+   if (londimnames(1) .eq. 'ncol') then !-- Enforce for SE grids
      closelatidx = 1
    endif
 
@@ -330,7 +330,8 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    integer(IN)                      ::  ndimid
    integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
    integer(IN)                      ::  nlon = 0, nlat = 0
-   logical                          ::  lfound, islatitude        ! local version of found
+   logical                          ::  lfound
+   logical                          ::  is_segrid, islatitude        ! local version of found
    integer(IN), dimension(nf90_max_var_dims) :: dimids
    character(len=80), allocatable   ::  vars(:)
    character(len=80), allocatable   ::  latdimnames(:)
@@ -424,8 +425,10 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
      latlen=lonlen
      islatitude=.false. ! if spectral element lat and lon 
                         !   are on same array structure
+     is_segrid=.true.
    else
      islatitude=.true.
+     is_segrid=.false.
    endif
 
    !--- Loop through all variables until we find lat and lon ---
@@ -494,7 +497,7 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    deallocate( vars )
 
    !--- If dealing with SE grids, set this to 1
-   if (latlen .eq. 1 .and. lonlen .gt. 1) then
+   if (is_segrid) then
      closelatidx = 1
    endif
 
