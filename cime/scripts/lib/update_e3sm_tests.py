@@ -141,7 +141,7 @@ _TEST_SUITES = {
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
                         )),
 
-    "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
+    "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration", "e3sm_rrm"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
