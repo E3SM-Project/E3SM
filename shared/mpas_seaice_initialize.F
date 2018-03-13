@@ -233,9 +233,9 @@ contains
        domain, &
        clock)!{{{
 
-    use cice_testing, only: &
-         cice_init_square_test_case_hex, &
-         cice_init_square_point_test_case_hex
+    use seaice_testing, only: &
+         seaice_init_square_test_case_hex, &
+         seaice_init_square_point_test_case_hex
     use cice_column, only: &
          cice_column_aggregate
 
@@ -310,13 +310,13 @@ contains
 
           else if (trim(config_initial_condition_type) == "square") then
 
-             call cice_init_square_test_case_hex(&
+             call seaice_init_square_test_case_hex(&
                   block, &
                   domain % configs)
 
           else if (trim(config_initial_condition_type) == "square_point") then
 
-             call cice_init_square_point_test_case_hex(&
+             call seaice_init_square_point_test_case_hex(&
                   block, &
                   domain % configs)
 

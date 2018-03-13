@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_testing
+!  seaice_testing
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_testing
+module seaice_testing
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -22,13 +22,13 @@ module cice_testing
   save
 
   public :: &
-       cice_divergence_stress_test_velocity_set, &
-       cice_divergence_stress_test_stress_set_hex, &
-       cice_divergence_stress_test_stress_set_tri, &
-       cice_divergence_stress_test_stress_set_weak, &
-       cice_init_square_test_case_hex, &
-       cice_init_square_point_test_case_hex, &
-       cice_init_spherical_test_case
+       seaice_divergence_stress_test_velocity_set, &
+       seaice_divergence_stress_test_stress_set_hex, &
+       seaice_divergence_stress_test_stress_set_tri, &
+       seaice_divergence_stress_test_stress_set_weak, &
+       seaice_init_square_test_case_hex, &
+       seaice_init_square_point_test_case_hex, &
+       seaice_init_spherical_test_case
 
 contains
 
@@ -38,7 +38,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_spherical_test_case
+!  seaice_init_spherical_test_case
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -48,7 +48,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_spherical_test_case(&
+  subroutine seaice_init_spherical_test_case(&
        mesh, &
        iceAreaCell, &
        iceVolumeCell, &
@@ -210,7 +210,7 @@ contains
 
     endif ! test_type
 
-  end subroutine cice_init_spherical_test_case
+  end subroutine seaice_init_spherical_test_case
 
 !-----------------------------------------------------------------------
 ! Square test case
@@ -218,7 +218,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_square_test_case_hex
+!  seaice_init_square_test_case_hex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -228,7 +228,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_square_test_case_hex(&
+  subroutine seaice_init_square_test_case_hex(&
        block, &
        configs)
 
@@ -295,7 +295,7 @@ contains
          ocean_coupling, &
          boundary)
 
-  end subroutine cice_init_square_test_case_hex
+  end subroutine seaice_init_square_test_case_hex
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -634,7 +634,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_square_point_test_case_hex
+!  seaice_init_square_point_test_case_hex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -644,7 +644,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_square_point_test_case_hex(&
+  subroutine seaice_init_square_point_test_case_hex(&
        block, &
        configs)
 
@@ -706,7 +706,7 @@ contains
     enddo
 !!    call mpas_log_write(' ')
 
-  end subroutine cice_init_square_point_test_case_hex
+  end subroutine seaice_init_square_point_test_case_hex
 
 !-----------------------------------------------------------------------
 ! stress divergence operator test velocities
@@ -714,7 +714,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_divergence_stress_test_velocity_set
+!  seaice_divergence_stress_test_velocity_set
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -724,7 +724,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_divergence_stress_test_velocity_set(&
+  subroutine seaice_divergence_stress_test_velocity_set(&
        uVelocity, &
        vVelocity, &
        x, &
@@ -837,11 +837,11 @@ contains
 
     end select
 
-  end subroutine cice_divergence_stress_test_velocity_set
+  end subroutine seaice_divergence_stress_test_velocity_set
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_divergence_stress_test_stress_set_hex
+!  seaice_divergence_stress_test_stress_set_hex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -851,7 +851,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_divergence_stress_test_stress_set_hex(&
+  subroutine seaice_divergence_stress_test_stress_set_hex(&
        mesh, &
        stress1, &
        stress2, &
@@ -947,11 +947,11 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_divergence_stress_test_stress_set_hex
+  end subroutine seaice_divergence_stress_test_stress_set_hex
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_divergence_stress_test_stress_set_tri
+!  seaice_divergence_stress_test_stress_set_tri
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -961,7 +961,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_divergence_stress_test_stress_set_tri(&
+  subroutine seaice_divergence_stress_test_stress_set_tri(&
        mesh, &
        stress1, &
        stress2, &
@@ -1055,11 +1055,11 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_divergence_stress_test_stress_set_tri
+  end subroutine seaice_divergence_stress_test_stress_set_tri
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_divergence_stress_test_stress_set_weak
+!  seaice_divergence_stress_test_stress_set_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1069,7 +1069,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_divergence_stress_test_stress_set_weak(&
+  subroutine seaice_divergence_stress_test_stress_set_weak(&
        mesh, &
        stress11, &
        stress22, &
@@ -1137,8 +1137,8 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_divergence_stress_test_stress_set_weak
+  end subroutine seaice_divergence_stress_test_stress_set_weak
 
 !-----------------------------------------------------------------------
 
-end module cice_testing
+end module seaice_testing
