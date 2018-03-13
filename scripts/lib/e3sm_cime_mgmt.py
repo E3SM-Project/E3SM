@@ -132,6 +132,7 @@ def e3sm_cime_split(resume):
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
         except:
             # If unexpected failure happens, delete new split tag
+            logging.info("Abandoning merge due to unexpected failure")
             delete_tag(new_split_tag)
             raise
 
@@ -164,6 +165,7 @@ def e3sm_cime_merge(resume):
 
             pr_branch = make_pr_branch(get_branch_from_tag(new_merge_tag), "origin/master")
         except:
+            logging.info("Abandoning merge due to unexpected failure")
             delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
             raise
 
