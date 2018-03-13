@@ -19,7 +19,6 @@ module seaice_initialize
   use mpas_stream_manager
   use mpas_io_units
   use mpas_abort
-  use cice_debug
   use mpas_log, only: mpas_log_write
 
   implicit none

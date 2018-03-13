@@ -26,6 +26,9 @@ module seaice_velocity_solver_unit_tests
        seaice_stress_divergence_operator_unit_test, &
        seaice_constitutive_relationship_unit_test
 
+  integer, private :: &
+       iObject = 2
+
 contains
 
 !-----------------------------------------------------------------------
@@ -107,10 +110,6 @@ contains
 
     use seaice_velocity_solver_variational, only: &
          seaice_strain_tensor_variational
-
-    use cice_debug, only: &
-         cice_rms_difference, &
-         cice_plot_spherical_latlon
 
     use seaice_mesh, only: &
          seaice_latlon_from_xyz, &
@@ -440,21 +439,21 @@ contains
        close(57)
 
        ! rms difference
-       call cice_rms_difference( &
+       call rms_difference( &
             strain11(1:nCells),    &
             strain11_test,         &
             solveStress(1:nCells), &
             nCells,                &
             rms_strain11)
 
-       call cice_rms_difference( &
+       call rms_difference( &
             strain22(1:nCells),    &
             strain22_test,         &
             solveStress(1:nCells), &
             nCells,                &
             rms_strain22)
 
-       call cice_rms_difference( &
+       call rms_difference( &
             strain12(1:nCells),    &
             strain12_test,         &
             solveStress(1:nCells), &
@@ -481,21 +480,21 @@ contains
        enddo ! iCell
 
        ! plot spatial distribution
-       call cice_plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell_"//trim(unit_test_subtype)//".txt")
-       call cice_plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress_"//trim(unit_test_subtype)//".txt")
-       call cice_plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0_"//trim(unit_test_subtype)//".txt")
 
-       call cice_plot_spherical_latlon(mesh, strain11,      "strain11_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(mesh, strain11_test, "strain11_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       call plot_spherical_latlon(mesh, strain11,      "strain11_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call plot_spherical_latlon(mesh, strain11_test, "strain11_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
-       call cice_plot_spherical_latlon(mesh, strain22,      "strain22_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(mesh, strain22_test, "strain22_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       call plot_spherical_latlon(mesh, strain22,      "strain22_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call plot_spherical_latlon(mesh, strain22_test, "strain22_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
-       call cice_plot_spherical_latlon(mesh, strain12,      "strain12_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(mesh, strain12_test, "strain12_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       call plot_spherical_latlon(mesh, strain12,      "strain12_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call plot_spherical_latlon(mesh, strain12_test, "strain12_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
        deallocate(strain11)
        deallocate(strain22)
@@ -1010,10 +1009,6 @@ contains
     use seaice_velocity_solver_variational, only: &
          seaice_stress_divergence_variational
 
-    use cice_debug, only: &
-         cice_rms_difference, &
-         cice_plot_spherical_latlon
-
     use seaice_mesh, only: &
          seaice_grid_rotation_forward, &
          seaice_latlon_from_xyz
@@ -1325,14 +1320,14 @@ contains
        close(56)
 
        ! rms difference
-       call cice_rms_difference( &
+       call rms_difference( &
             stressDivergenceU(1:nVertices), &
             stressDivergenceU_test,         &
             solveVelocity(1:nVertices),     &
             nVertices,                      &
             rms_divergenceU)
 
-       call cice_rms_difference( &
+       call rms_difference( &
             stressDivergenceV(1:nVertices), &
             stressDivergenceV_test,         &
             solveVelocity(1:nVertices),     &
@@ -1356,22 +1351,22 @@ contains
        enddo ! iCell
 
        ! plot spatial distribution
-       call cice_plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex_"//trim(unit_test_subtype)//".txt")
-       call cice_plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity_"//trim(unit_test_subtype)//".txt")
-       call cice_plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity_"//trim(unit_test_subtype)//".txt")
+       call plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0_"//trim(unit_test_subtype)//".txt")
 
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceU,      "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceU_test, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceU_diff, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceV,      "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceV_test, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(&
+       call plot_spherical_latlon(&
             mesh, stressDivergenceV_diff, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
        ! cleanup
@@ -2133,6 +2128,286 @@ contains
     enddo ! iTest
 
   end subroutine constitutive_relationship_writeout!}}}
+
+!-----------------------------------------------------------------------
+! Utils
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  rms_difference
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine rms_difference(array1, array2, mask, n, rms)!{{{
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array1, & !< Input:
+         array2    !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         mask !< Input:
+
+    integer, intent(in) :: &
+         n !< Input:
+
+    real(kind=RKIND), intent(out) :: &
+         rms !< Output:
+
+    integer :: &
+         i, &
+         num
+
+    rms = 0.0_RKIND
+    num = 0
+
+    do i = 1, n
+
+       if (mask(i) == 1) then
+
+          rms = rms + (array1(i) - array2(i))**2
+          num = num + 1
+
+       endif
+
+    enddo ! i
+
+    rms = sqrt(rms / real(num, RKIND))
+
+  end subroutine rms_difference!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_spherical_latlon
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_spherical_latlon(mesh, array, filename, tag)!{{{
+
+    use seaice_constants, only: &
+         pii
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array !< Input:
+
+    character(len=*), intent(in) :: &
+         filename !< Input:
+
+    integer, optional, intent(in) :: &
+         tag !< Input:
+
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         pointVertexOnPoint
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         lonPointVertex, &
+         latPointVertex, &
+         lonPoint, &
+         latPoint
+
+    integer, dimension(:), allocatable :: &
+         nPointVerticesOnPoint, &
+         plotPoint
+
+    integer :: &
+         iPoint, &
+         iPointVertexOnPoint, &
+         iPointVertex, &
+         nPoints, &
+         array_size
+
+    real(kind=RKIND) :: &
+         plotLonPointVertex, &
+         plotLatPointVertex, &
+         plotLonPointVertex0, &
+         plotLatPointVertex0
+
+    character(len=2000) :: &
+         strout, &
+         stroutvertex
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    if (size(array) == nCells+1 .or. size(array) == nCells) then
+
+       array_size = nCells
+
+       nPoints = nCells
+       call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+       allocate(nPointVerticesOnPoint(nCells))
+       nPointVerticesOnPoint(:) = nEdgesOnCell(1:nCells)
+       call MPAS_pool_get_array(mesh, "verticesOnCell", pointVertexOnPoint)
+       call MPAS_pool_get_array(mesh, "lonVertex", lonPointVertex)
+       call MPAS_pool_get_array(mesh, "latVertex", latPointVertex)
+       call MPAS_pool_get_array(mesh, "lonCell", lonPoint)
+       call MPAS_pool_get_array(mesh, "latCell", latPoint)
+       allocate(plotPoint(nCells))
+       plotPoint = 1
+
+    else if (size(array) == nVertices+1 .or. size(array) == nVertices) then
+
+       array_size = nVertices
+
+       nPoints = nVertices
+       call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+       allocate(nPointVerticesOnPoint(nVertices))
+       nPointVerticesOnPoint(:) = vertexDegree
+       call MPAS_pool_get_array(mesh, "cellsOnVertex", pointVertexOnPoint)
+       call MPAS_pool_get_array(mesh, "lonCell", lonPointVertex)
+       call MPAS_pool_get_array(mesh, "latCell", latPointVertex)
+       call MPAS_pool_get_array(mesh, "lonVertex", lonPoint)
+       call MPAS_pool_get_array(mesh, "latVertex", latPoint)
+       allocate(plotPoint(nVertices))
+       do iPoint = 1, nVertices
+          plotPoint(iPoint) = 1
+          do iPointVertexOnPoint = 1, vertexDegree
+             if (pointVertexOnPoint(iPointVertexOnPoint,iPoint) > nCells) then
+                plotPoint(iPoint) = 0
+             endif
+          enddo ! iPointVertexOnPoint
+       enddo ! iPoint
+
+    else
+       write(*,*) "plot_spherical_latlon: size not supported: ", size(array)
+    endif
+
+    call open_filename_tag(55, filename, tag)
+
+    write(55,*) "set xrange [0:6.283]"
+    write(55,*) "set yrange [-1.571:1.571]"
+    write(55,*) "set cbrange [",minval(array(1:array_size)),":",maxval(array(1:array_size)),"]"
+
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, "//&
+         "4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+
+    iObject = 1
+
+    do iPoint = 1, nPoints
+
+       if (plotPoint(iPoint) == 1) then
+
+          write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+
+          do iPointVertexOnPoint = 1, nPointVerticesOnPoint(iPoint)
+
+             iPointVertex = pointVertexOnPoint(iPointVertexOnPoint,iPoint)
+
+             plotLonPointVertex = lonPointVertex(iPointVertex)
+             plotLatPointVertex = latPointVertex(iPointVertex)
+
+             if (lonPoint(iPoint) <= pii) then
+
+                if (plotLonPointVertex >= 0.9_RKIND * 2.0_RKIND * pii) then
+                   plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
+                endif
+
+             endif
+
+             if (lonPoint(iPoint) > pii) then
+
+                if (plotLonPointVertex <= 0.1_RKIND * 2.0_RKIND * pii) then
+                   plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
+                endif
+
+             endif
+
+             if (iPointVertexOnPoint == 1) then
+
+                plotLonPointVertex0 = plotLonPointVertex
+                plotLatPointVertex0 = plotLatPointVertex
+
+             endif
+
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') plotLonPointVertex, ",", plotLatPointVertex, " to "
+             strout = trim(strout)//trim(stroutvertex)
+
+          enddo ! iPointVertexOnPoint
+
+          write(stroutvertex,fmt='(f14.2,a,f14.2)') plotLonPointVertex0, ",", plotLatPointVertex0
+          strout = trim(strout)//trim(stroutvertex)
+          write(55,*) trim(strout)
+
+          write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', array(iPoint), ' fillstyle solid'
+          write(55,*) trim(strout)
+
+          iObject = iObject + 1
+
+       endif ! plotPoint
+
+    enddo ! iPoint
+
+    deallocate(nPointVerticesOnPoint)
+    deallocate(plotPoint)
+
+    write(55,*) "plot -10"
+
+    close(55)
+
+  end subroutine plot_spherical_latlon!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  open_filename_tag
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine open_filename_tag(unit, filename, tag)!{{{
+
+    integer, intent(in) :: &
+         unit !< Input:
+
+    character(len=*), intent(in) :: &
+         filename !< Input:
+
+    integer, optional, intent(in) :: &
+         tag !< Input:
+
+    character(len=2000) :: &
+         strtag, &
+         filename_use
+
+    if (present(tag)) then
+       write(strtag,fmt='(i5.5)') tag
+       filename_use = filename(1:len(trim(filename))-4)//"_"//trim(strtag)//filename(len(trim(filename))-3:)
+       open(unit,file=trim(filename_use),action='write')
+    else
+       open(unit,file=trim(filename),action='write')
+    endif
+
+  end subroutine open_filename_tag!}}}
 
   !--------------------------------------------------------------------------
 

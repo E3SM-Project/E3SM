@@ -55,9 +55,6 @@ contains
          seaice_calc_local_coords, &
          seaice_calc_variational_metric_terms
 
-    use cice_debug, only: &
-         cice_plot_cells_planar
-
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
