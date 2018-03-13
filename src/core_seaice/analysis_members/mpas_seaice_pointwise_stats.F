@@ -713,12 +713,12 @@ contains
 !
 !  routine seaice_init_pointwise_stats
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
 !> \date    Jan 2016
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -829,12 +829,12 @@ contains
 !
 !  routine seaice_precompute_pointwise_stats
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
 !> \date    Jan 2016
 !> \details
 !>  This routine conducts all pre-computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -880,12 +880,12 @@ contains
 !
 !  routine seaice_compute_pointwise_stats
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
 !> \date    Jan 2016
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -1423,12 +1423,12 @@ contains
 !
 !  routine seaice_restart_pointwise_stats
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
 !> \date    Jan 2016
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -1472,12 +1472,12 @@ contains
 !
 !  routine seaice_finalize_pointwise_stats
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
 !> \date    Jan 2016
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

@@ -63,12 +63,12 @@ contains
 !
 !  routine seaice_bootstrap_conservation_check
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    10th November 2015
 !> \details
 !>  This routine conducts all boostraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -112,12 +112,12 @@ contains
 !
 !  routine seaice_init_conservation_check
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -161,12 +161,12 @@ contains
 !
 !  routine seaice_precompute_conservation_check
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts all pre-computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -256,12 +256,12 @@ contains
 !
 !  routine seaice_compute_conservation_check
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -356,12 +356,12 @@ contains
 !
 !  routine energy_conservation
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -627,12 +627,12 @@ contains
 !
 !  routine mass_conservation
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    11th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -880,12 +880,12 @@ contains
 !
 !  routine salt_conservation
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    11th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -1470,12 +1470,12 @@ contains
 !
 !  routine seaice_restart_conservation_check
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -1519,12 +1519,12 @@ contains
 !
 !  routine seaice_finalize_conservation_check
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

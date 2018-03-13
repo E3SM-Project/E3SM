@@ -1,4 +1,4 @@
-&cice_model
+&seaice_model
     config_dt = 3600.0
     config_calendar_type = 'gregorian_noleap'
     config_start_time = '2000-01-01_00:00:00'

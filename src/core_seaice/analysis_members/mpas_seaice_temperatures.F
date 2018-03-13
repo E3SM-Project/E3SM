@@ -9,11 +9,11 @@
 !
 !  seaice_temperatures
 !
-!> \brief MPAS cice analysis mode member: temperatures
+!> \brief MPAS-Seaice analysis mode member: temperatures
 !> \author Adrian K. Turner
 !> \date   6th September 2015
 !> \details
-!>  MPAS cice analysis mode member: temperatures
+!>  MPAS-Seaice analysis mode member: temperatures
 !>  Calculates ice and snow temperatures using the CICE column
 !>  package routines.
 !>
@@ -64,12 +64,12 @@ contains
 !
 !  routine seaice_bootstrap_temperatures
 !
-!> \brief   Bootstrap MPAS-CICE analysis member
+!> \brief   Bootstrap MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    10th November 2015
 !> \details
 !>  This routine conducts all bootstraps required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -113,12 +113,12 @@ contains
 !
 !  routine seaice_init_temperatures
 !
-!> \brief   Initialize MPAS-CICE analysis member
+!> \brief   Initialize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    6th September 2015
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -162,7 +162,7 @@ contains
 !
 !  routine seaice_precompute_temperatures
 !
-!> \brief   Precompute MPAS-CICE analysis member
+!> \brief   Precompute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    9th September 2015
 !> \details
@@ -212,12 +212,12 @@ contains
 !
 !  routine seaice_compute_temperatures
 !
-!> \brief   Compute MPAS-CICE analysis member
+!> \brief   Compute MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    6th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member. It computes ice and snow layer
+!>  MPAS-Seaice analysis member. It computes ice and snow layer
 !>  temperatures from enthalpies and salinities using CICE column
 !>  package routines.
 !
@@ -353,12 +353,12 @@ contains
 !
 !  routine seaice_restart_temperatures
 !
-!> \brief   Save restart for MPAS-CICE analysis member
+!> \brief   Save restart for MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    6th September 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-CICE analysis member.
+!>  for the MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 
@@ -402,12 +402,12 @@ contains
 !
 !  routine seaice_finalize_temperatures
 !
-!> \brief   Finalize MPAS-CICE analysis member
+!> \brief   Finalize MPAS-Seaice analysis member
 !> \author  Adrian K. Turner
 !> \date    6th September 2015
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-Seaice analysis member.
 !
 !-----------------------------------------------------------------------
 

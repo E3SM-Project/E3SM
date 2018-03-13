@@ -1,4 +1,4 @@
-CICE and MPAS-CICE Column Physics Package
+CICE and MPAS-Seaice Column Physics Package
 June 30, 2015 (CHANGE FOR RELEASE)
 
 A very large community, including many climate modeling and forecast 
@@ -12,7 +12,7 @@ grid and other infrastructural CICE elements (e.g. MPI tasks, calendar).
 It also includes an interface of subroutine calls that translate from 
 model-specific arrays and other variables to the model-independent column 
 physics calculations.  The package is callable by both the older CICE 
-model (modified v5.1) and the new MPAS-CICE model to enable continued 
+model (modified v5.1) and the new MPAS-Seaice model to enable continued 
 development of the CICE column physics during the transition.
 
 The column package code is available to approved collaborators through the 
@@ -59,7 +59,7 @@ package.  We are still working on it.
 Source Code:
 
 Interface modules, marked with *, contain all code that needs to be 
-accessed from outside the column package in CICE and MPAS-CICE. In turn, 
+accessed from outside the column package in CICE and MPAS-Seaice. In turn, 
 the interface modules call other, internal column package code.  Although 
 it is not included in the column package, corresponding code must be 
 included outside of the column package to declare spatial arrays, assign 

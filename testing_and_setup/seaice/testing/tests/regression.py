@@ -29,7 +29,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
     # development run
     nProcs = 16
 
-    nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'}}
+    nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 
@@ -44,7 +44,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
     # base run
     nProcs = 16
 
-    nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'}}
+    nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 

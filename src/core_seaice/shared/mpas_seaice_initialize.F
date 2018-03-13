@@ -71,7 +71,7 @@ contains
     type(block_type), pointer :: &
          block
 
-    call mpas_log_write("cice_init: Initialize sea-ice model")
+    call mpas_log_write("seaice_init: Initialize sea-ice model")
 
     ! init testing system test arrays
     call seaice_set_testing_system_test_arrays(domain)
