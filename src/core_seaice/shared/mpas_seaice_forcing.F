@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_forcing
+!  seaice_forcing
 !
 !> \brief A core forcing module example
 !> \author Adrian K. Turner, LANL
@@ -11,7 +11,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_forcing
+module seaice_forcing
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -24,15 +24,15 @@ module cice_forcing
 
   private
   public :: &
-       cice_forcing_init, &
-       cice_forcing_get, &
-       cice_forcing_write_restart_times, &
-       cice_reset_coupler_fluxes,  &
+       seaice_forcing_init, &
+       seaice_forcing_get, &
+       seaice_forcing_write_restart_times, &
+       seaice_reset_coupler_fluxes,  &
        post_atmospheric_coupling,  &
        post_atmospheric_forcing,   &
        post_oceanic_coupling
 
-  type (MPAS_forcing_group_type), pointer :: ciceForcingGroups
+  type (MPAS_forcing_group_type), pointer :: seaiceForcingGroups
 
   ! forcing parameters
   real (kind=RKIND), parameter :: &
@@ -53,7 +53,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_forcing_init
+!  seaice_forcing_init
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -63,7 +63,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_forcing_init(domain)
+  subroutine seaice_forcing_init(domain)
 
     type (domain_type) :: domain
 
@@ -82,7 +82,7 @@ contains
 
     endif
 
-  end subroutine cice_forcing_init
+  end subroutine seaice_forcing_init
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -160,7 +160,7 @@ contains
 
     ! create the six hourly forcing group
     call MPAS_forcing_init_group(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          domain, &
          config_forcing_start_time, &
@@ -174,7 +174,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          "airTemperature", &
          "LYqSixHourlyForcing", &
@@ -187,7 +187,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          "airSpecificHumidity", &
          "LYqSixHourlyForcing", &
@@ -200,7 +200,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          "uAirVelocity", &
          "LYqSixHourlyForcing", &
@@ -213,7 +213,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          "vAirVelocity", &
          "LYqSixHourlyForcing", &
@@ -225,7 +225,7 @@ contains
          "next")
 
     call MPAS_forcing_init_field_data(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          domain % streamManager, &
          config_do_restart, &
@@ -233,7 +233,7 @@ contains
 
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
@@ -246,7 +246,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_monthly", &
          "cloudFraction", &
          "LYqMonthlyForcing", &
@@ -258,7 +258,7 @@ contains
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_monthly", &
          "rainfallRate", &
          "LYqMonthlyForcing", &
@@ -269,7 +269,7 @@ contains
          forcingIntervalMonthly)
 
     call MPAS_forcing_init_field_data(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
@@ -283,7 +283,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_forcing
+!  seaice_forcing
 !
 !> \brief Retrieve forcing data during time stepping
 !> \author Adrian K. Turner, LANL
@@ -294,7 +294,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_forcing_get(&
+  subroutine seaice_forcing_get(&
        streamManager, &
        domain, &
        simulationClock, &
@@ -329,7 +329,7 @@ contains
 
     endif
 
-  end subroutine cice_forcing_get
+  end subroutine seaice_forcing_get
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -370,13 +370,13 @@ contains
     if (trim(config_atmospheric_forcing_type) == "CORE") then
 
        call MPAS_forcing_get_forcing(&
-            ciceForcingGroups, &
+            seaiceForcingGroups, &
             "cice_atmospheric_forcing_sixhrly", &
             streamManager, &
             config_dt)
 
        call MPAS_forcing_get_forcing(&
-            ciceForcingGroups, &
+            seaiceForcingGroups, &
             "cice_atmospheric_forcing_monthly", &
             streamManager, &
             config_dt)
@@ -498,7 +498,7 @@ contains
 
     ! get the current time
     call MPAS_forcing_get_forcing_time(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
          currentForcingTime)
 
@@ -1184,7 +1184,7 @@ contains
 
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_sst_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
@@ -1195,7 +1195,7 @@ contains
     ! sea surface temperature
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_sst_forcing_monthly", &
          "seaSurfaceTemperature", &
          "NCARMonthlySSTForcing", &
@@ -1206,7 +1206,7 @@ contains
          forcingIntervalMonthly)
 
     call MPAS_forcing_init_field_data(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_sst_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
@@ -1214,7 +1214,7 @@ contains
 
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
@@ -1225,7 +1225,7 @@ contains
     ! sea surface salinity
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "seaSurfaceSalinity", &
          "NCARMonthlyForcing", &
@@ -1238,7 +1238,7 @@ contains
     ! u ocean velocity
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "uOceanVelocity", &
          "NCARMonthlyForcing", &
@@ -1251,7 +1251,7 @@ contains
     ! v ocean velocity
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "vOceanVelocity", &
          "NCARMonthlyForcing", &
@@ -1264,7 +1264,7 @@ contains
     ! u surface tilt
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "seaSurfaceTiltU", &
          "NCARMonthlyForcing", &
@@ -1277,7 +1277,7 @@ contains
     ! v surface tilt
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "seaSurfaceTiltV", &
          "NCARMonthlyForcing", &
@@ -1290,7 +1290,7 @@ contains
     ! ocean mixed layer depth
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "oceanMixedLayerDepth", &
          "NCARMonthlyForcing", &
@@ -1303,7 +1303,7 @@ contains
     ! deep ocean heat flux convergence
     call MPAS_forcing_init_field(&
          domain % streamManager, &
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          "oceanHeatFluxConvergence", &
          "NCARMonthlyForcing", &
@@ -1314,7 +1314,7 @@ contains
          forcingIntervalMonthly)
 
     call MPAS_forcing_init_field_data(&
-         ciceForcingGroups, &
+         seaiceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
@@ -1370,7 +1370,7 @@ contains
     if (trim(config_forcing_sst_type) == 'ncar') then
 
        call MPAS_forcing_get_forcing(&
-            ciceForcingGroups, &
+            seaiceForcingGroups, &
             "cice_oceanic_forcing_monthly", &
             streamManager, &
             config_dt)
@@ -1379,7 +1379,7 @@ contains
        if (firstTimeStep .and. .not. config_do_restart) then
 
           call MPAS_forcing_get_forcing(&
-               ciceForcingGroups, &
+               seaiceForcingGroups, &
                "cice_sst_forcing_monthly", &
                streamManager, &
                config_dt)
@@ -1596,7 +1596,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_reset_coupler_fluxes
+!  seaice_reset_coupler_fluxes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1606,7 +1606,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_reset_coupler_fluxes(domain)
+  subroutine seaice_reset_coupler_fluxes(domain)
 
     type(domain_type) :: domain
 
@@ -1622,7 +1622,7 @@ contains
 
     endif
 
-  end subroutine cice_reset_coupler_fluxes
+  end subroutine seaice_reset_coupler_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1844,7 +1844,7 @@ contains
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_forcing_write_restart_times
+!  seaice_forcing_write_restart_times
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1854,7 +1854,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_forcing_write_restart_times(domain)
+  subroutine seaice_forcing_write_restart_times(domain)
 
     type(domain_type) :: domain
 
@@ -1865,48 +1865,12 @@ contains
 
     if (config_use_forcing) then
 
-       call MPAS_forcing_write_restart_times(ciceForcingGroups)
+       call MPAS_forcing_write_restart_times(seaiceForcingGroups)
 
     endif
 
-  end subroutine cice_forcing_write_restart_times
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  forcing_testing
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine forcing_testing(block)
-
-    use cice_debug, only: cice_debug_output_array
-
-    type(block_type) :: block
-
-    type(MPAS_pool_type), pointer :: pool
-
-    real(kind=RKIND), dimension(:), pointer :: array
-
-    character(len=200), parameter :: &
-         poolName  = "ocean_coupling", &
-         fieldName = "seaSurfaceTemperature"
-
-    call mpas_log_write(trim(poolName)//" "//trim(fieldName))
-
-    call MPAS_pool_get_subpool(block % structs, trim(poolName), pool)
-
-    call MPAS_pool_get_array(pool, trim(fieldName), array)
-
-    call cice_debug_output_array(array)
-
-  end subroutine forcing_testing
+  end subroutine seaice_forcing_write_restart_times
 
 !-----------------------------------------------------------------------
 
-end module cice_forcing
+end module seaice_forcing

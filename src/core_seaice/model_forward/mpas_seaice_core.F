@@ -10,7 +10,7 @@ module seaice_core
    use mpas_framework
    use mpas_timekeeping
    use seaice_analysis_driver
-   use cice_column
+   use seaice_column
    use mpas_threading
    use mpas_log, only: mpas_log_write
 
@@ -264,7 +264,9 @@ module seaice_core
       use mpas_stream_manager
       use mpas_timer
       use seaice_time_integration, only: seaice_timestep_finalize
-      use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart_times
+      use seaice_forcing, only: &
+           seaice_forcing_get, &
+           seaice_forcing_write_restart_times
       use seaice_initialize, only: seaice_init_post_clock_advance
       use cice_debug, only: istep
 
@@ -293,7 +295,7 @@ module seaice_core
       call mpas_log_write('Initial timestep '//trim(timeStamp))
 
       ! compute analysis at startup if required
-      ! (note: might require some reordering of call here if cice_forcing_get data is used in analysis members)
+      ! (note: might require some reordering of call here if seaice_forcing_get data is used in analysis members)
       call seaice_analysis_compute_startup(domain, ierr)
 
       ! Avoid writing a restart file at the initial time
@@ -309,7 +311,7 @@ module seaice_core
       call mpas_advance_clock(clock)
 
       ! initial forcing
-      call cice_forcing_get(domain % streamManager, domain, clock, .true.)
+      call seaice_forcing_get(domain % streamManager, domain, clock, .true.)
 
       ! final initialization after clock advance
       call seaice_init_post_clock_advance(domain, clock)
@@ -337,7 +339,7 @@ module seaice_core
 
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
               streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
-            call cice_forcing_write_restart_times(domain)
+            call seaice_forcing_write_restart_times(domain)
          endif
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
@@ -372,7 +374,7 @@ module seaice_core
          istep = istep + 1
 
          ! forcing
-         call cice_forcing_get(domain % streamManager, domain, clock, .false.)
+         call seaice_forcing_get(domain % streamManager, domain, clock, .false.)
 
       end do timeLoop
 
@@ -427,8 +429,8 @@ module seaice_core
 
       use mpas_derived_types
       use mpas_decomp
-      use cice_column, only: &
-           cice_column_finalize
+      use seaice_column, only: &
+           seaice_column_finalize
 
       implicit none
 
@@ -438,7 +440,7 @@ module seaice_core
       iErr = 0
 
       ! finalize column
-      call cice_column_finalize(domain)
+      call seaice_column_finalize(domain)
 
       call seaice_analysis_finalize(domain, ierr)
 
