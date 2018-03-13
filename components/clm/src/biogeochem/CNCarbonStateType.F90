@@ -3285,7 +3285,6 @@ contains
             this%cwdc_col(c)     + &
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
-            this%seedc_col(c)    + &
             this%ctrunc_col(c)
             
        this%totabgc_col(c) = &

@@ -1811,7 +1811,6 @@ contains
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
            this%sminn_col(c) + &
-           this%seedn_col(c) + &
            this%ntrunc_col(c)+ &
            this%plant_n_buffer_col(c)
            

@@ -158,9 +158,6 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begpb(c) = totcolp(c)
-!         col_begpb(c) = totpftp(c)
-!         col_begpb(c) = sminp(c)
-!         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
       end do
 
     end associate
@@ -197,11 +194,8 @@ contains
          er                        =>    carbonflux_vars%er_col                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          col_fire_closs            =>    carbonflux_vars%fire_closs_col                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
          col_hrv_xsmrpool_to_atm   =>    carbonflux_vars%hrv_xsmrpool_to_atm_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
-         dwt_closs                 =>    carbonflux_vars%dwt_closs_col                 , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
          som_c_leached             =>    carbonflux_vars%som_c_leached_col             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
          col_decompc_delta         =>    carbonflux_vars%externalc_to_decomp_delta_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
-         dwt_prod10c_gain          =>    carbonflux_vars%dwt_prod10c_gain_col          , & ! Input:  [real(r8) (:) ]  (gC/m2/s) addition to 10-yr wood product pool
-         dwt_prod100c_gain         =>    carbonflux_vars%dwt_prod100c_gain_col         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) addition to 10-yr wood product pool
          hrv_deadstemc_to_prod10c  =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemc_to_prod100c =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
          col_begcb                 =>    carbonstate_vars%begcb_col                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
@@ -225,13 +219,12 @@ contains
 
          ! calculate total column-level outputs
          ! er = ar + hr, col_fire_closs includes pft-level fire losses
-         col_coutputs = er(c) + col_fire_closs(c) + dwt_closs(c) + col_hrv_xsmrpool_to_atm(c)
+         col_coutputs = er(c) + col_fire_closs(c) + col_hrv_xsmrpool_to_atm(c)
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to
          ! these balance checks
          col_coutputs = col_coutputs + &
-              dwt_prod10c_gain(c)         + dwt_prod100c_gain(c)         + &
               hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
 
          ! subtract leaching flux
@@ -260,17 +253,18 @@ contains
          if (err_found) then
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input=',col_cinputs*dt
-            write(iulog,*)'output=',col_coutputs*dt
-            write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
-            write(iulog,*)'fire=',col_fire_closs(c)*dt
-            write(iulog,*)'dwt=',dwt_closs(c)*dt
-            write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'leach=',som_c_leached(c)*dt
-            write(iulog,*)'begcb       = ',col_begcb(c)
-            write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
-            write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
+            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+            write(iulog,*)'input                 = ',col_cinputs*dt
+            write(iulog,*)'output                = ',col_coutputs*dt
+            write(iulog,*)'er                    = ',er(c)*dt,carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt
+            write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
+            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+            write(iulog,*)'begcb                 = ',col_begcb(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
+            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
@@ -313,28 +307,23 @@ contains
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
     !-----------------------------------------------------------------------
 
-    associate(                                                                 &
-         totcoln                   =>    nitrogenstate_vars%totcoln_col            , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
-         ndep_to_sminn             =>    nitrogenflux_vars%ndep_to_sminn_col       , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
-         nfix_to_sminn             =>    nitrogenflux_vars%nfix_to_sminn_col       , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
-         fert_to_sminn             =>    nitrogenflux_vars%fert_to_sminn_col       , & ! Input:  [real(r8) (:)]                                          
-         soyfixn_to_sminn          =>    nitrogenflux_vars%soyfixn_to_sminn_col    , & ! Input:  [real(r8) (:)]                                          
-         supplement_to_sminn       =>    nitrogenflux_vars%supplement_to_sminn_col , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)         
-         denit                     =>    nitrogenflux_vars%denit_col               , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s) 
-         sminn_leached             =>    nitrogenflux_vars%sminn_leached_col       , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
-         smin_no3_leached          =>    nitrogenflux_vars%smin_no3_leached_col    , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
-         smin_no3_runoff           =>    nitrogenflux_vars%smin_no3_runoff_col     , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
-         f_n2o_nit                 =>    nitrogenflux_vars%f_n2o_nit_col           , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
-         col_fire_nloss            =>    nitrogenflux_vars%fire_nloss_col          , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
-         dwt_nloss                 =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
-         som_n_leached             =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
-         supplement_to_plantn      =>    nitrogenflux_vars%supplement_to_plantn       , &
-         
-         dwt_prod10n_gain          =>    nitrogenflux_vars%dwt_prod10n_gain_col          , & ! Input:  [real(r8) (:)]  (gN/m2/s) addition to 10-yr wood product pool
-         dwt_prod100n_gain         =>    nitrogenflux_vars%dwt_prod100n_gain_col         , & ! Input:  [real(r8) (:)]  (gN/m2/s) addition to 10-yr wood product pool
+    associate(                                                                             &
+         totcoln                   =>    nitrogenstate_vars%totcoln_col                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         ndep_to_sminn             =>    nitrogenflux_vars%ndep_to_sminn_col             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
+         nfix_to_sminn             =>    nitrogenflux_vars%nfix_to_sminn_col             , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         fert_to_sminn             =>    nitrogenflux_vars%fert_to_sminn_col             , & ! Input:  [real(r8) (:)]
+         soyfixn_to_sminn          =>    nitrogenflux_vars%soyfixn_to_sminn_col          , & ! Input:  [real(r8) (:)]
+         supplement_to_sminn       =>    nitrogenflux_vars%supplement_to_sminn_col       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
+         denit                     =>    nitrogenflux_vars%denit_col                     , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s)
+         sminn_leached             =>    nitrogenflux_vars%sminn_leached_col             , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
+         smin_no3_leached          =>    nitrogenflux_vars%smin_no3_leached_col          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
+         smin_no3_runoff           =>    nitrogenflux_vars%smin_no3_runoff_col           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
+         f_n2o_nit                 =>    nitrogenflux_vars%f_n2o_nit_col                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
+         col_fire_nloss            =>    nitrogenflux_vars%fire_nloss_col                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          hrv_deadstemn_to_prod10n  =>    nitrogenflux_vars%hrv_deadstemn_to_prod10n_col  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemn_to_prod100n =>    nitrogenflux_vars%hrv_deadstemn_to_prod100n_col , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
-
+         som_n_leached             =>    nitrogenflux_vars%som_n_leached_col             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
+         supplement_to_plantn      =>    nitrogenflux_vars%supplement_to_plantn          , &
          ! pflotran:
          col_decompn_delta         =>    nitrogenflux_vars%externaln_to_decomp_delta_col , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
          col_ninputs               =>    nitrogenflux_vars%ninputs_col                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
@@ -382,13 +371,12 @@ contains
          end if
 
          ! calculate total column-level outputs
-         col_noutputs(c) = denit(c) + col_fire_nloss(c) + dwt_nloss(c)
+         col_noutputs(c) = denit(c) + col_fire_nloss(c)
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to
          ! these balance checks
          col_noutputs = col_noutputs + &
-              dwt_prod10n_gain(c)         + dwt_prod100n_gain(c)         + &
               hrv_deadstemn_to_prod10n(c) + hrv_deadstemn_to_prod100n(c)
 
          if (is_active_betr_bgc)then
@@ -435,7 +423,7 @@ contains
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
+         write(iulog,*)'column nbalance error = ',col_errnb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begnb                 = ',col_begnb(c)
          write(iulog,*)'endnb                 = ',col_endnb(c)
@@ -445,17 +433,16 @@ contains
          write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
          write(iulog,*)'denit                 = ',denit(c)*dt
          write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
-         write(iulog,*)'no3 leach             = ', smin_no3_leached(c)*dt 
-         write(iulog,*)'no3 runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'no3 leach             = ',smin_no3_leached(c)*dt 
+         write(iulog,*)'no3 runof             = ',smin_no3_runoff(c)*dt
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
-         write(iulog,*)'nfix                  = ', nfix_to_sminn(c)*dt
+         write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
-         write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
 
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
@@ -507,11 +494,8 @@ contains
          supplement_to_sminp       => phosphorusflux_vars%supplement_to_sminp_col       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
          sminp_leached             => phosphorusflux_vars%sminp_leached_col             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          col_fire_ploss            => phosphorusflux_vars%fire_ploss_col                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
-         dwt_prod10p_gain          => phosphorusflux_vars%dwt_prod10p_gain_col          , & ! Input:  [real(r8) (:)]  (gP/m2/s) addition to 10-yr wood product pool
-         dwt_prod100p_gain         => phosphorusflux_vars%dwt_prod100p_gain_col         , & ! Input:  [real(r8) (:)]  (gP/m2/s) addition to 10-yr wood product pool
          hrv_deadstemp_to_prod10p  => phosphorusflux_vars%hrv_deadstemp_to_prod10p_col  , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemp_to_prod100p => phosphorusflux_vars%hrv_deadstemp_to_prod100p_col , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 100-year product pool
-         dwt_ploss                 => phosphorusflux_vars%dwt_ploss_col                 , & ! Input:  [real(r8) (:)]  (gP/m2/s) total phosphorus loss from product pools and conversion
          primp_to_labilep          => phosphorusflux_vars%primp_to_labilep_col          , &
          secondp_to_occlp          => phosphorusflux_vars%secondp_to_occlp_col          , &
          fert_p_to_sminp           => phosphorusflux_vars%fert_p_to_sminp_col           , &
@@ -609,13 +593,12 @@ contains
              end if
          end if
 
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c)
+         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to
          ! these balance checks
          col_poutputs = col_poutputs + &
-              dwt_prod10p_gain(c)         + dwt_prod100p_gain(c)         + &
               hrv_deadstemp_to_prod10p(c) + hrv_deadstemp_to_prod100p(c)
 
          if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
