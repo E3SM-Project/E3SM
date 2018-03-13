@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_unit_tests
+!  seaice_velocity_solver_unit_tests
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_unit_tests
+module seaice_velocity_solver_unit_tests
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -102,11 +102,11 @@ contains
        domain, &
        unit_test_subtype)!{{{
 
-    use cice_velocity_solver_weak, only: &
-         cice_strain_tensor_weak
+    use seaice_velocity_solver_weak, only: &
+         seaice_strain_tensor_weak
 
-    use cice_velocity_solver_variational, only: &
-         cice_strain_tensor_variational
+    use seaice_velocity_solver_variational, only: &
+         seaice_strain_tensor_variational
 
     use cice_debug, only: &
          cice_rms_difference, &
@@ -346,7 +346,7 @@ contains
        ! calculate strain
        if (trim(config_stress_divergence_scheme) == "weak") then
 
-          call cice_strain_tensor_weak(&
+          call seaice_strain_tensor_weak(&
                mesh, &
                strain11_weak,       &
                strain22_weak,       &
@@ -363,7 +363,7 @@ contains
 
        else if (trim(config_stress_divergence_scheme) == "variational") then
 
-          call cice_strain_tensor_variational(&
+          call seaice_strain_tensor_variational(&
                mesh, &
                strain11_variational, &
                strain22_variational, &
@@ -1004,11 +1004,11 @@ contains
        domain, &
        unit_test_subtype)!{{{
 
-    use cice_velocity_solver_weak, only: &
-         cice_stress_divergence_weak
+    use seaice_velocity_solver_weak, only: &
+         seaice_stress_divergence_weak
 
-    use cice_velocity_solver_variational, only: &
-         cice_stress_divergence_variational
+    use seaice_velocity_solver_variational, only: &
+         seaice_stress_divergence_variational
 
     use cice_debug, only: &
          cice_rms_difference, &
@@ -1250,7 +1250,7 @@ contains
        ! calculate divergence of stress
        if (trim(config_stress_divergence_scheme) == "weak") then
 
-          call cice_stress_divergence_weak(&
+          call seaice_stress_divergence_weak(&
                mesh, &
                stressDivergenceU,    &
                stressDivergenceV,    &
@@ -1263,7 +1263,7 @@ contains
 
        else if (trim(config_stress_divergence_scheme) == "variational") then
 
-          call cice_stress_divergence_variational(&
+          call seaice_stress_divergence_variational(&
                mesh, &
                stressDivergenceU, &
                stressDivergenceV, &
@@ -1920,10 +1920,10 @@ contains
   subroutine cice_constitutive_relationship_unit_test(&
        domain)!{{{
 
-    use cice_velocity_solver_constitutive_relation, only: &
-         cice_evp_constitutive_relation, &
-         cice_evp_constitutive_relation_revised, &
-         cice_init_evp
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_evp_constitutive_relation, &
+         seaice_evp_constitutive_relation_revised, &
+         seaice_init_evp
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -1961,7 +1961,7 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
 
-    call cice_init_evp(domain)
+    call seaice_init_evp(domain)
 
     block => domain % blocklist
     do while (associated(block))
@@ -1984,7 +1984,7 @@ contains
 
           if (.not. config_revised_evp) then
 
-             call cice_evp_constitutive_relation(&
+             call seaice_evp_constitutive_relation(&
                   stress11(iTest), &
                   stress22(iTest), &
                   stress12(iTest), &
@@ -1998,7 +1998,7 @@ contains
 
           else
 
-             call cice_evp_constitutive_relation_revised(&
+             call seaice_evp_constitutive_relation_revised(&
                   stress11(iTest), &
                   stress22(iTest), &
                   stress12(iTest), &
@@ -2136,4 +2136,4 @@ contains
 
   !--------------------------------------------------------------------------
 
-end module cice_velocity_solver_unit_tests
+end module seaice_velocity_solver_unit_tests

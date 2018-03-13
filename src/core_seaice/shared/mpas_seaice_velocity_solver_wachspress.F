@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_wachspress
+!  seaice_velocity_solver_wachspress
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_wachspress
+module seaice_velocity_solver_wachspress
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -23,7 +23,7 @@ module cice_velocity_solver_wachspress
   save
 
   public :: &
-       cice_init_velocity_solver_wachspress
+       seaice_init_velocity_solver_wachspress
 
 contains
 
@@ -33,7 +33,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_velocity_solver_wachspress
+!  seaice_init_velocity_solver_wachspress
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -43,7 +43,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_velocity_solver_wachspress(&
+  subroutine seaice_init_velocity_solver_wachspress(&
        mesh, &
        velocity_variational, &
        boundary, &
@@ -57,9 +57,9 @@ contains
     use seaice_mesh, only: &
          seaice_cell_vertices_at_vertex
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_calc_local_coords, &
-         cice_calc_variational_metric_terms
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_calc_local_coords, &
+         seaice_calc_variational_metric_terms
 
     use cice_debug, only: &
          cice_plot_cells_planar
@@ -137,13 +137,13 @@ contains
     allocate(wachspressA(maxEdges,nCells))
     allocate(wachspressB(maxEdges,nCells))
 
-    call cice_calc_local_coords(&
+    call seaice_calc_local_coords(&
          mesh, &
          xLocal, &
          yLocal, &
          rotateCartesianGrid)
 
-    call cice_calc_variational_metric_terms(&
+    call seaice_calc_variational_metric_terms(&
          mesh, &
          tanLatVertexRotatedOverRadius, &
          rotateCartesianGrid, &
@@ -192,7 +192,7 @@ contains
 
     call mpas_timer_stop("Velocity solver Wachpress init")
 
-  end subroutine cice_init_velocity_solver_wachspress!}}}
+  end subroutine seaice_init_velocity_solver_wachspress!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -311,8 +311,8 @@ contains
        nEdgesOnCellSubset, &
        vertexIndexSubset)
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     integer, intent(in) :: &
          nEdgesOnCell
@@ -331,7 +331,7 @@ contains
     do jVertex = 1, nEdgesOnCell
 
        i1 = jVertex
-       i2 = cice_wrapped_index(jVertex + 1, nEdgesOnCell)
+       i2 = seaice_wrapped_index(jVertex + 1, nEdgesOnCell)
 
        nEdgesOnCellSubset(jVertex) = 0
 
@@ -372,8 +372,8 @@ contains
        vertexIndexSubset, &
        wachpress)!{{{
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     integer, intent(in) :: &
          nEdgesOnCell, & !< Input:
@@ -795,8 +795,8 @@ contains
 
     use mpas_timer
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     ! basisGradientUV(jVertexOnCell,iVertexOnCell,iCell)
     ! iCell         : The cell the gradients are based in
@@ -898,11 +898,11 @@ contains
           basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
           basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
 
-          iGradientVertex = cice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))
+          iGradientVertex = seaice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))
           basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
           basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
 
-          iGradientVertex = cice_wrapped_index(iBasisVertex + 1, nEdgesOnCell(iCell))
+          iGradientVertex = seaice_wrapped_index(iBasisVertex + 1, nEdgesOnCell(iCell))
           basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
           basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
 
@@ -1888,8 +1888,8 @@ contains
 
     use seaice_constants, only: pii
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     real(kind=RKIND), intent(inout) :: &
          basisIntegralsU, &
@@ -1975,7 +1975,7 @@ contains
     do iSubTriangle = 1, nEdgesOnCell
 
        i1 = iSubTriangle
-       i2 = cice_wrapped_index(iSubTriangle + 1, nEdgesOnCell)
+       i2 = seaice_wrapped_index(iSubTriangle + 1, nEdgesOnCell)
 
        call get_triangle_mapping(&
             mapping, &
@@ -2911,4 +2911,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_wachspress
+end module seaice_velocity_solver_wachspress

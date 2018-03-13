@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_variational_shared
+!  seaice_velocity_solver_variational_shared
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_variational_shared
+module seaice_velocity_solver_variational_shared
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -21,15 +21,15 @@ module cice_velocity_solver_variational_shared
   save
 
   public :: &
-       cice_calc_local_coords, &
-       cice_calc_variational_metric_terms, &
-       cice_wrapped_index
+       seaice_calc_local_coords, &
+       seaice_calc_variational_metric_terms, &
+       seaice_wrapped_index
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_calc_local_coords
+!  seaice_calc_local_coords
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -39,7 +39,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_calc_local_coords(&
+  subroutine seaice_calc_local_coords(&
        mesh, &
        xLocal, &
        yLocal, &
@@ -73,7 +73,7 @@ contains
             yLocal)
     endif
 
-  end subroutine cice_calc_local_coords!}}}
+  end subroutine seaice_calc_local_coords!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -253,7 +253,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_calc_variational_metric_terms
+!  seaice_calc_variational_metric_terms
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -263,7 +263,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_calc_variational_metric_terms(&
+  subroutine seaice_calc_variational_metric_terms(&
        mesh, &
        tanLatVertexRotatedOverRadius, &
        rotateCartesianGrid, &
@@ -334,11 +334,11 @@ contains
 
     endif
 
-  end subroutine cice_calc_variational_metric_terms
+  end subroutine seaice_calc_variational_metric_terms
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_wrapped_index
+!  seaice_wrapped_index
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -348,7 +348,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  function cice_wrapped_index(&
+  function seaice_wrapped_index(&
        input, &
        nelements) &
        result(output)!{{{
@@ -361,8 +361,8 @@ contains
 
     output = modulo(input - 1, nelements) + 1
 
-  end function cice_wrapped_index!}}}
+  end function seaice_wrapped_index!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_variational_shared
+end module seaice_velocity_solver_variational_shared

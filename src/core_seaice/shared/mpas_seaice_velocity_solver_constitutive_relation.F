@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_constitutive_relation
+!  seaice_velocity_solver_constitutive_relation
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_constitutive_relation
+module seaice_velocity_solver_constitutive_relation
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -22,9 +22,9 @@ module cice_velocity_solver_constitutive_relation
   save
 
   public :: &
-       cice_init_evp, &
-       cice_evp_constitutive_relation, &
-       cice_evp_constitutive_relation_revised
+       seaice_init_evp, &
+       seaice_evp_constitutive_relation, &
+       seaice_evp_constitutive_relation_revised
 
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
@@ -51,7 +51,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_evp
+!  seaice_init_evp
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -61,7 +61,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_evp(domain)
+  subroutine seaice_init_evp(domain)
 
     type(domain_type) :: domain
 
@@ -133,11 +133,11 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_init_evp
+  end subroutine seaice_init_evp
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_evp_constitutive_relation
+!  seaice_evp_constitutive_relation
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -147,7 +147,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_evp_constitutive_relation(&
+  subroutine seaice_evp_constitutive_relation(&
        stress11, &
        stress22, &
        stress12, &
@@ -213,11 +213,11 @@ contains
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
 
-  end subroutine cice_evp_constitutive_relation
+  end subroutine seaice_evp_constitutive_relation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_evp_constitutive_relation_revised
+!  seaice_evp_constitutive_relation_revised
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -227,7 +227,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_evp_constitutive_relation_revised(&
+  subroutine seaice_evp_constitutive_relation_revised(&
        stress11, &
        stress22, &
        stress12, &
@@ -291,11 +291,11 @@ contains
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
 
-  end subroutine cice_evp_constitutive_relation_revised
+  end subroutine seaice_evp_constitutive_relation_revised
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_linear_constitutive_relation
+!  seaice_linear_constitutive_relation
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -305,7 +305,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_linear_constitutive_relation(&
+  subroutine seaice_linear_constitutive_relation(&
        stress11, &
        stress22, &
        stress12, &
@@ -330,8 +330,8 @@ contains
     stress22 = lambda * strain22
     stress12 = lambda * strain12
 
-  end subroutine cice_linear_constitutive_relation
+  end subroutine seaice_linear_constitutive_relation
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_constitutive_relation
+end module seaice_velocity_solver_constitutive_relation
