@@ -33,7 +33,7 @@ module cice_advection_incremental_remap
         cice_set_tracer_array_pointers, &
         cice_update_tracer_halo
 
-   use cice_error
+   use seaice_error
 
    implicit none
    private
@@ -948,7 +948,7 @@ contains
 !> \details
 !>  This routine rotates global vectors through 90 degrees such that the
 !>  true poles have z = 0 and the true equator has x = 0.
-!>  It is similar to cice_grid_rotation_forward, except that it operates
+!>  It is similar to seaice_grid_rotation_forward, except that it operates
 !>  on a global array instead of a single vector.
 !-----------------------------------------------------------------------
 
@@ -2352,8 +2352,8 @@ contains
 
     use mpas_dmpar
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type (domain_type), intent(inout) :: &
          domain    !< Input/Output: domain info
@@ -2445,7 +2445,7 @@ contains
 
        if (verboseRun) call mpas_log_write('Doing initial halo updates for velocity, mass and tracers')
 
-       call cice_load_balance_timers(domain, "advection before")
+       call seaice_load_balance_timers(domain, "advection before")
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
@@ -2486,7 +2486,7 @@ contains
 
        endif ! config_use_halo_exch
 
-       call cice_load_balance_timers(domain, "advection after")
+       call seaice_load_balance_timers(domain, "advection after")
 
        ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
@@ -3191,7 +3191,7 @@ contains
          ierr)
     call mpas_timer_stop("incr remap integrate fluxes")
     if (ierr > 0) then
-       call cice_critical_error_write_block(domain, block)
+       call seaice_critical_error_write_block(domain, block)
        return
     endif
 
@@ -3301,7 +3301,7 @@ contains
          ierr)
     call mpas_timer_stop("incr remap update tracers")
     if (ierr > 0) then
-       call cice_critical_error_write_block(domain, block)
+       call seaice_critical_error_write_block(domain, block)
        return
     endif
 
@@ -8633,7 +8633,7 @@ contains
                                  realArgs=(/toleranceMin, thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)/))
                             call mpas_log_write('IR advection, monotonicity violation (min, nDims == 2)', MPAS_LOG_ERR)
                             ierr = SEAICE_ERROR_IR_MONO
-                            call cice_critical_error_write_block(domain, block)
+                            call seaice_critical_error_write_block(domain, block)
                             return
 
                          elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
@@ -8651,7 +8651,7 @@ contains
                                  realArgs=(/toleranceMax, thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)/))
                             call mpas_log_write('IR advection, monotonicity violation (max, nDims == 2)', MPAS_LOG_ERR)
                             ierr = SEAICE_ERROR_IR_MONO
-                            call cice_critical_error_write_block(domain, block)
+                            call seaice_critical_error_write_block(domain, block)
                             return
 
                          endif
@@ -8766,7 +8766,7 @@ contains
                                     realArgs=(/toleranceMin, thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('IR advection, monotonicity violation (min, nDims == 3)', MPAS_LOG_ERR)
                                ierr = SEAICE_ERROR_IR_MONO
-                               call cice_critical_error_write_block(domain, block)
+                               call seaice_critical_error_write_block(domain, block)
                                return
 
                             elseif (thisTracer % array3D(iLayer,iCat,iCell) > &
@@ -8785,7 +8785,7 @@ contains
                                     realArgs=(/toleranceMax, thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('IR advection, monotonicity violation (max, nDims == 3)', MPAS_LOG_ERR)
                                ierr = SEAICE_ERROR_IR_MONO
-                               call cice_critical_error_write_block(domain, block)
+                               call seaice_critical_error_write_block(domain, block)
                                return
 
                             endif

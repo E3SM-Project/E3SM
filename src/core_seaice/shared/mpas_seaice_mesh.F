@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_mesh
+!  seaice_mesh
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_mesh
+module seaice_mesh
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -23,24 +23,24 @@ module cice_mesh
   save
 
   public :: &
-       cice_init_mesh, &
-       cice_cell_vertices_at_vertex, &
-       cice_normal_vectors, &
-       cice_normal_vectors_polygon, &
-       cice_dot_product_3space, &
-       cice_grid_rotation_forward, &
-       cice_latlon_vector_rotation_forward, &
-       cice_latlon_vector_rotation_backward, &
-       cice_latlon_from_xyz, &
-       cice_interpolate_cell_to_vertex, &
-       cice_interpolate_vertex_to_cell, &
-       cice_project_3D_vector_onto_local_2D
+       seaice_init_mesh, &
+       seaice_cell_vertices_at_vertex, &
+       seaice_normal_vectors, &
+       seaice_normal_vectors_polygon, &
+       seaice_dot_product_3space, &
+       seaice_grid_rotation_forward, &
+       seaice_latlon_vector_rotation_forward, &
+       seaice_latlon_vector_rotation_backward, &
+       seaice_latlon_from_xyz, &
+       seaice_interpolate_cell_to_vertex, &
+       seaice_interpolate_vertex_to_cell, &
+       seaice_project_3D_vector_onto_local_2D
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_mesh
+!  seaice_init_mesh
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -50,7 +50,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_mesh(&
+  subroutine seaice_init_mesh(&
        domain)!{{{
 
     type (domain_type), intent(inout) :: &
@@ -65,7 +65,7 @@ contains
     ! boundary variables
     call init_boundary(domain)
 
-  end subroutine cice_init_mesh!}}}
+  end subroutine seaice_init_mesh!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -620,7 +620,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_cell_vertices_at_vertex
+!  seaice_cell_vertices_at_vertex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -630,7 +630,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_cell_vertices_at_vertex(&
+  subroutine seaice_cell_vertices_at_vertex(&
        mesh, &
        cellVerticesAtVertex)!{{{
 
@@ -690,7 +690,7 @@ contains
 
     enddo ! iVertex
 
-  end subroutine cice_cell_vertices_at_vertex!}}}
+  end subroutine seaice_cell_vertices_at_vertex!}}}
 
 !-----------------------------------------------------------------------
 ! normal vectors
@@ -698,7 +698,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_normal_vectors
+!  seaice_normal_vectors
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -708,7 +708,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_normal_vectors(&
+  subroutine seaice_normal_vectors(&
        mesh, &
        normalVectorPolygon, &
        normalVectorTriangle, &
@@ -736,14 +736,14 @@ contains
          latCellRotated, & !< Output:
          latVertexRotated  !< Output:
 
-    call cice_normal_vectors_polygon(&
+    call seaice_normal_vectors_polygon(&
          mesh, &
          normalVectorPolygon, &
          rotateCartesianGrid, &
          removeMetricTerms, &
          latCellRotated)
 
-    call cice_normal_vectors_triangle(&
+    call seaice_normal_vectors_triangle(&
          mesh, &
          normalVectorTriangle, &
          interiorVertex, &
@@ -751,11 +751,11 @@ contains
          removeMetricTerms, &
          latVertexRotated)
 
-  end subroutine cice_normal_vectors!}}}
+  end subroutine seaice_normal_vectors!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_normal_vectors_polygon
+!  seaice_normal_vectors_polygon
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -765,7 +765,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_normal_vectors_polygon(&
+  subroutine seaice_normal_vectors_polygon(&
        mesh, &
        normalVectorPolygon, &
        rotateCartesianGrid, &
@@ -798,11 +798,11 @@ contains
        if (present(latCellRotated)) latCellRotated = 0.0_RKIND
     endif
 
-  end subroutine cice_normal_vectors_polygon!}}}
+  end subroutine seaice_normal_vectors_polygon!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_normal_vectors_triangle
+!  seaice_normal_vectors_triangle
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -812,7 +812,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_normal_vectors_triangle(&
+  subroutine seaice_normal_vectors_triangle(&
        mesh, &
        normalVectorTriangle, &
        interiorVertex, &
@@ -849,7 +849,7 @@ contains
        if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
     endif
 
-  end subroutine cice_normal_vectors_triangle!}}}
+  end subroutine seaice_normal_vectors_triangle!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1118,7 +1118,7 @@ contains
     do iCell = 1, nCells
 
        ! rotate the cell centre to rotated geographical grid
-       call cice_grid_rotation_forward(&
+       call seaice_grid_rotation_forward(&
             cellCentreRotated(1), cellCentreRotated(2), cellCentreRotated(3), &
             xCell(iCell),         yCell(iCell),         zCell(iCell), &
             rotateCartesianGrid)
@@ -1162,17 +1162,17 @@ contains
           iVertex2 = verticesOnEdge(2,iEdge)
 
           ! perform grid rotations
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                edgeRotated(1), edgeRotated(2), edgeRotated(3), &
                xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
                rotateCartesianGrid)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                vertexRotated1(1), vertexRotated1(2), vertexRotated1(3), &
                xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
                rotateCartesianGrid)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                vertexRotated2(1), vertexRotated2(2), vertexRotated2(3), &
                xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
                rotateCartesianGrid)
@@ -1207,7 +1207,7 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
+          call seaice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
 
@@ -1310,17 +1310,17 @@ contains
           iVertex2 = verticesOnEdge(2,iEdge)
 
           ! perform grid rotations
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xEdge0,       yEdge0,       zEdge0, &
                xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
                rotateCartesianGrid)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xVertex1,          yVertex1,          zVertex1, &
                xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
                rotateCartesianGrid)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xVertex2,          yVertex2,          zVertex2, &
                xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
                rotateCartesianGrid)
@@ -1347,7 +1347,7 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
+          call seaice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
 
@@ -1481,7 +1481,7 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           ! rotate the cell centre to rotated geographical grid
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                vertexRotated(1), vertexRotated(2), vertexRotated(3), &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
@@ -1525,17 +1525,17 @@ contains
              iCell2 = cellsOnEdge(2,iEdge)
 
              ! perform grid rotations
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   edgeRotated(1), edgeRotated(2), edgeRotated(3), &
                   xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
                   rotateCartesianGrid)
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   cellRotated1(1), cellRotated1(2), cellRotated1(3), &
                   xCell(iCell1),   yCell(iCell1),   zCell(iCell1), &
                   rotateCartesianGrid)
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   cellRotated2(1), cellRotated2(2), cellRotated2(3), &
                   xCell(iCell2),   yCell(iCell2),   zCell(iCell2), &
                   rotateCartesianGrid)
@@ -1570,7 +1570,7 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
+             call seaice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
 
@@ -1679,17 +1679,17 @@ contains
              iCell2 = cellsOnEdge(2,iEdge)
 
              ! perform grid rotations
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   xEdge0,       yEdge0,       zEdge0, &
                   xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
                   rotateCartesianGrid)
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   xCell1,        yCell1,        zCell1, &
                   xCell(iCell1), yCell(iCell1), zCell(iCell1), &
                   rotateCartesianGrid)
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   xCell2,        yCell2,        zCell2, &
                   xCell(iCell2), yCell(iCell2), zCell(iCell2), &
                   rotateCartesianGrid)
@@ -1710,7 +1710,7 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
+             call seaice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
 
@@ -1727,7 +1727,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_dot_product_3space
+!  seaice_dot_product_3space
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1737,7 +1737,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_dot_product_3space(dot, x1, y1, z1, x2, y2, z2)!{{{
+  subroutine seaice_dot_product_3space(dot, x1, y1, z1, x2, y2, z2)!{{{
 
     real(kind=RKIND), intent(out) :: &
          dot !< Output:
@@ -1748,7 +1748,7 @@ contains
 
     dot = x1 * x2 + y1 * y2 + z1 * z2
 
-  end subroutine cice_dot_product_3space!}}}
+  end subroutine seaice_dot_product_3space!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1851,7 +1851,7 @@ contains
     do iCell = 1, nCells
 
        ! get rotated three space positions
-       call cice_grid_rotation_forward(&
+       call seaice_grid_rotation_forward(&
             xCell0,       yCell0,       zCell0, &
             xCell(iCell), yCell(iCell), zCell(iCell), &
             rotateCartesianGrid)
@@ -1867,7 +1867,7 @@ contains
                mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
           ! project the 3D vector onto the local 2D plane
-          call cice_project_3D_vector_onto_local_2D(&
+          call seaice_project_3D_vector_onto_local_2D(&
                normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
 
           ! normalize the projected vector
@@ -1955,7 +1955,7 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           ! get rotated three space positions
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xVertex0,         yVertex0,         zVertex0, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
@@ -1971,7 +1971,7 @@ contains
                   mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
              ! project the 3D vector onto the local 2D plane
-             call cice_project_3D_vector_onto_local_2D(&
+             call seaice_project_3D_vector_onto_local_2D(&
                   normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
 
              ! normalize the projected vector
@@ -1990,7 +1990,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_project_3D_vector_onto_local_2D
+!  seaice_project_3D_vector_onto_local_2D
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2000,7 +2000,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_project_3D_vector_onto_local_2D(&
+  subroutine seaice_project_3D_vector_onto_local_2D(&
        normalVector2D, &
        normalVector3D, &
        xPoint, &
@@ -2029,18 +2029,18 @@ contains
          unitVectorNorth)
 
     ! project normal 3D vector onto U 2D direction - eastwards
-    call cice_dot_product_3space(&
+    call seaice_dot_product_3space(&
          normalVector2D(1), &
          normalVector3D(1), normalVector3D(2), normalVector3D(3), &
          unitVectorEast(1), unitVectorEast(2), unitVectorEast(3))
 
     ! project normal 3D vector onto V 2D direction - northwards
-    call cice_dot_product_3space(&
+    call seaice_dot_product_3space(&
          normalVector2D(2), &
          normalVector3D(1),  normalVector3D(2),  normalVector3D(3), &
          unitVectorNorth(1), unitVectorNorth(2), unitVectorNorth(3))
 
-  end subroutine cice_project_3D_vector_onto_local_2D!}}}
+  end subroutine seaice_project_3D_vector_onto_local_2D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2126,7 +2126,7 @@ contains
        ! interior
 
        ! get rotated three space positions
-       call cice_grid_rotation_forward(&
+       call seaice_grid_rotation_forward(&
             xCell2,        yCell2,        zCell2, &
             xCell(iCell2), yCell(iCell2), zCell(iCell2), &
             rotateCartesianGrid)
@@ -2142,7 +2142,7 @@ contains
        iEdge = edgesOnCell(iEdgeOnCell, iCell)
 
        ! get rotated three space positions
-       call cice_grid_rotation_forward(&
+       call seaice_grid_rotation_forward(&
             xEdge0,       yEdge0,       zEdge0, &
             xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
             rotateCartesianGrid)
@@ -2228,7 +2228,7 @@ contains
     enddo ! iVertexOnEdge
 
     ! get rotated three space positions
-    call cice_grid_rotation_forward(&
+    call seaice_grid_rotation_forward(&
          xVertex2,          yVertex2,          zVertex2, &
          xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
          rotateCartesianGrid)
@@ -2319,7 +2319,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_grid_rotation_forward
+!  seaice_grid_rotation_forward
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2329,7 +2329,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)!{{{
+  subroutine seaice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)!{{{
 
     ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
 
@@ -2360,7 +2360,7 @@ contains
 
     endif
 
-  end subroutine cice_grid_rotation_forward!}}}
+  end subroutine seaice_grid_rotation_forward!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2499,7 +2499,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_latlon_vector_rotation_forward
+!  seaice_latlon_vector_rotation_forward
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2509,7 +2509,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
+  subroutine seaice_latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
 
     ! rotate a latlon vector from geographical grid to rotated grid with poles on real equator
 
@@ -2544,10 +2544,10 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
+    call seaice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
-    call cice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+    call seaice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
 
     ! convert lat lon vector to xyz vector on gegraphical grid
     call latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
@@ -2558,11 +2558,11 @@ contains
     ! convert xyz vector to lat lon vector on rotated grid
     call xyz_vector_to_latlon_vector(up, vp, vxp, vyp, vzp, latp, lonp)
 
-  end subroutine cice_latlon_vector_rotation_forward!}}}
+  end subroutine seaice_latlon_vector_rotation_forward!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_latlon_vector_rotation_backward
+!  seaice_latlon_vector_rotation_backward
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2572,7 +2572,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
+  subroutine seaice_latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
 
     ! rotate latlon vector from rotated grid with poles on real equator to geographical grid
 
@@ -2607,10 +2607,10 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
+    call seaice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
-    call cice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+    call seaice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
 
     ! convert lat lon vector to xyz vector on rotated grid
     call latlon_vector_to_xyz_vector(vxp, vyp, vzp, up, vp, latp, lonp)
@@ -2621,7 +2621,7 @@ contains
     ! convert xyz vector to lat lon vector on geographical grid
     call xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
 
-  end subroutine cice_latlon_vector_rotation_backward!}}}
+  end subroutine seaice_latlon_vector_rotation_backward!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2694,7 +2694,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_latlon_from_xyz
+!  seaice_latlon_from_xyz
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2704,7 +2704,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_latlon_from_xyz(lat, lon, x, y, z, r)!{{{
+  subroutine seaice_latlon_from_xyz(lat, lon, x, y, z, r)!{{{
 
     ! given xyz coordinates determine the latitude and longitude
 
@@ -2721,7 +2721,7 @@ contains
     lon = atan2(y, x)
     lat = asin(z/r)
 
-  end subroutine cice_latlon_from_xyz!}}}
+  end subroutine seaice_latlon_from_xyz!}}}
 
 !-----------------------------------------------------------------------
 ! interpolaton
@@ -2729,7 +2729,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_interpolate_cell_to_vertex
+!  seaice_interpolate_cell_to_vertex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2739,7 +2739,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_interpolate_cell_to_vertex(&
+  subroutine seaice_interpolate_cell_to_vertex(&
        mesh, &
        variableVertex, &
        variableCell)!{{{
@@ -2871,11 +2871,11 @@ contains
     enddo ! iVertex
 #endif
 
-  end subroutine cice_interpolate_cell_to_vertex!}}}
+  end subroutine seaice_interpolate_cell_to_vertex!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_interpolate_vertex_to_cell
+!  seaice_interpolate_vertex_to_cell
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -2885,7 +2885,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_interpolate_vertex_to_cell(&
+  subroutine seaice_interpolate_vertex_to_cell(&
        mesh, &
        boundary, &
        variableCell, &
@@ -2955,7 +2955,7 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_interpolate_vertex_to_cell
+  end subroutine seaice_interpolate_vertex_to_cell
 
 !-----------------------------------------------------------------------
 ! Testing
@@ -3111,7 +3111,7 @@ contains
        ! rotate forward
        do iCell = 1, nCells
 
-          call cice_latlon_vector_rotation_forward(&
+          call seaice_latlon_vector_rotation_forward(&
                vectorCellURotate(iCell), &
                vectorCellVRotate(iCell), &
                vectorCellU(iCell), &
@@ -3141,7 +3141,7 @@ contains
        ! rotate back
        do iCell = 1, nCells
 
-          call cice_latlon_vector_rotation_backward(&
+          call seaice_latlon_vector_rotation_backward(&
                vectorCellURotateRotate(iCell), &
                vectorCellVRotateRotate(iCell), &
                vectorCellURotate(iCell), &
@@ -3165,7 +3165,7 @@ contains
 
        ! rotated coords
        do iCell = 1, nCells
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xCellRotate(iCell), &
                yCellRotate(iCell), &
                zCellRotate(iCell), &
@@ -3507,9 +3507,9 @@ contains
           ! initial fields
           do iCell = 1, nCells
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   xCellRotate, yCellRotate, zCellRotate, xCell(iCell), yCell(iCell), zCell(iCell), rotateGrid)
-             call cice_latlon_from_xyz(latCellRotate, lonCellRotate, xCellRotate, yCellRotate, zCellRotate, sphere_radius)
+             call seaice_latlon_from_xyz(latCellRotate, lonCellRotate, xCellRotate, yCellRotate, zCellRotate, sphere_radius)
 
              !lonCellRotate = lonCell(iCell)
              !latCellRotate = latCell(iCell)
@@ -3525,9 +3525,9 @@ contains
 
           do iVertex = 1, nVertices
 
-             call cice_grid_rotation_forward(&
+             call seaice_grid_rotation_forward(&
                   xVertexRotate, yVertexRotate, zVertexRotate, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), rotateGrid)
-             call cice_latlon_from_xyz(&
+             call seaice_latlon_from_xyz(&
                   latVertexRotate, lonVertexRotate, xVertexRotate, yVertexRotate, zVertexRotate, sphere_radius)
 
              !lonVertexRotate = lonVertex(iVertex)
@@ -3610,7 +3610,7 @@ contains
        ! rotate fields forward
        do iCell = 1, nCells
 
-          call cice_latlon_vector_rotation_forward(&
+          call seaice_latlon_vector_rotation_forward(&
                vectorCellURotate(iCell), &
                vectorCellVRotate(iCell), &
                vectorCellU(iCell), &
@@ -3627,7 +3627,7 @@ contains
 
        do iVertex = 1, nVertices
 
-          call cice_latlon_vector_rotation_forward(&
+          call seaice_latlon_vector_rotation_forward(&
                vectorVertexURotate(iVertex), &
                vectorVertexVRotate(iVertex), &
                vectorVertexU(iVertex), &
@@ -3643,20 +3643,20 @@ contains
        enddo ! iVertex
 
        ! interpolate
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             vectorVertexUInterpolate, &
             vectorCellU)
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             vectorVertexVInterpolate, &
             vectorCellV)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             vectorVertexURotateInterpolate, &
             vectorCellURotate)
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             vectorVertexVRotateInterpolate, &
             vectorCellVRotate)
@@ -3664,7 +3664,7 @@ contains
        ! convert back
        do iCell = 1, nCells
 
-          call cice_latlon_vector_rotation_backward(&
+          call seaice_latlon_vector_rotation_backward(&
                vectorCellURotateRotate(iCell), &
                vectorCellVRotateRotate(iCell), &
                vectorCellURotate(iCell), &
@@ -3681,7 +3681,7 @@ contains
 
        do iVertex = 1, nVertices
 
-          call cice_latlon_vector_rotation_backward(&
+          call seaice_latlon_vector_rotation_backward(&
                vectorVertexURotateRotate(iVertex), &
                vectorVertexVRotateRotate(iVertex), &
                vectorVertexURotate(iVertex), &
@@ -3694,7 +3694,7 @@ contains
                sphere_radius, &
                rotateGrid)
 
-          call cice_latlon_vector_rotation_backward(&
+          call seaice_latlon_vector_rotation_backward(&
                vectorVertexURotateInterpolateRotate(iVertex), &
                vectorVertexVRotateInterpolateRotate(iVertex), &
                vectorVertexURotateInterpolate(iVertex), &
@@ -3785,4 +3785,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_mesh
+end module seaice_mesh

@@ -1962,8 +1962,8 @@ contains
 
   subroutine test_case_output_global_velocity(block, itimestep)!{{{
 
-    use cice_mesh, only: &
-         cice_latlon_vector_rotation_backward
+    use seaice_mesh, only: &
+         seaice_latlon_vector_rotation_backward
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -2087,7 +2087,7 @@ contains
     allocate(stressDivergenceVGeographical(nVertices))
 
     do iVertex = 1, nVertices
-       call cice_latlon_vector_rotation_backward(&
+       call seaice_latlon_vector_rotation_backward(&
             uVelocityGeographical(iVertex), &
             vVelocityGeographical(iVertex), &
             uVelocity(iVertex), &
@@ -2099,7 +2099,7 @@ contains
             zVertex(iVertex), &
             sphere_radius, &
             config_rotate_cartesian_grid)
-       call cice_latlon_vector_rotation_backward(&
+       call seaice_latlon_vector_rotation_backward(&
             airStressVertexUGeographical(iVertex), &
             airStressVertexVGeographical(iVertex), &
             airStressVertexU(iVertex), &
@@ -2111,7 +2111,7 @@ contains
             zVertex(iVertex), &
             sphere_radius, &
             config_rotate_cartesian_grid)
-       call cice_latlon_vector_rotation_backward(&
+       call seaice_latlon_vector_rotation_backward(&
             stressDivergenceUGeographical(iVertex), &
             stressDivergenceVGeographical(iVertex), &
             stressDivergenceU(iVertex), &
@@ -2126,7 +2126,7 @@ contains
     enddo ! iVertex
 
     do iCell = 1, nCells
-       call cice_latlon_vector_rotation_backward(&
+       call seaice_latlon_vector_rotation_backward(&
             uAirVelocityGeographical(iCell), &
             vAirVelocityGeographical(iCell), &
             uAirVelocity(iCell), &
@@ -2138,7 +2138,7 @@ contains
             zCell(iCell), &
             sphere_radius, &
             config_rotate_cartesian_grid)
-       call cice_latlon_vector_rotation_backward(&
+       call seaice_latlon_vector_rotation_backward(&
             airStressCellUGeographical(iCell), &
             airStressCellVGeographical(iCell), &
             airStressCellU(iCell), &

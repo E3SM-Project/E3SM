@@ -50,15 +50,15 @@ contains
        clock, &
        dt)!{{{
 
-    use cice_mesh, only: cice_init_mesh
+    use seaice_mesh, only: seaice_init_mesh
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
     use cice_column, only: &
          cice_init_column_physics_package_parameters, &
          cice_init_column_physics_package_variables
     use cice_forcing, only: cice_forcing_init, cice_reset_coupler_fluxes
-    use cice_diagnostics, only: &
-         cice_set_testing_system_test_arrays
+    use seaice_diagnostics, only: &
+         seaice_set_testing_system_test_arrays
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -75,7 +75,7 @@ contains
     call mpas_log_write("cice_init: Initialize sea-ice model")
 
     ! init testing system test arrays
-    call cice_set_testing_system_test_arrays(domain)
+    call seaice_set_testing_system_test_arrays(domain)
 
     ! initialize junk values
     call init_junk_values(domain)
@@ -85,7 +85,7 @@ contains
 
     ! mesh initialization
     call mpas_log_write(" Initialize mesh...")
-    call cice_init_mesh(domain)
+    call seaice_init_mesh(domain)
 
     ! init the basic column physics package
     call mpas_log_write(" Initialize column parameters...")
@@ -1393,8 +1393,8 @@ contains
        block, &
        configs)!{{{
 
-    use cice_mesh, only: &
-         cice_interpolate_cell_to_vertex
+    use seaice_mesh, only: &
+         seaice_interpolate_cell_to_vertex
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -1447,11 +1447,11 @@ contains
     allocate(uOceanVelocityVertex(nVertices))
     allocate(vOceanVelocityVertex(nVertices))
 
-    call cice_interpolate_cell_to_vertex(mesh, &
+    call seaice_interpolate_cell_to_vertex(mesh, &
          uOceanVelocityVertex, &
          uOceanVelocity)
 
-    call cice_interpolate_cell_to_vertex(mesh, &
+    call seaice_interpolate_cell_to_vertex(mesh, &
          vOceanVelocityVertex, &
          vOceanVelocity)
 

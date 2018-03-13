@@ -692,11 +692,11 @@ contains
 
   subroutine calculation_masks(domain)
 
-    use cice_mesh, only: &
-         cice_interpolate_cell_to_vertex
+    use seaice_mesh, only: &
+         seaice_interpolate_cell_to_vertex
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -750,7 +750,7 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("ice area halo")
 
@@ -792,7 +792,7 @@ contains
 
     call mpas_timer_stop("ice area halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate area and mass from cells to vertices
     block => domain % blocklist
@@ -806,12 +806,12 @@ contains
        call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
        call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             iceAreaVertex, &
             iceAreaCellInitial)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             totalMassVertex, &
             totalMassCell)
@@ -825,7 +825,7 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("velocity mask halo")
 
@@ -866,7 +866,7 @@ contains
 
     call mpas_timer_stop("velocity mask halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
   end subroutine calculation_masks
 
@@ -1087,11 +1087,11 @@ contains
 
   subroutine new_ice_velocities(domain)!{{{
 
-    use cice_mesh, only: &
-         cice_interpolate_cell_to_vertex
+    use seaice_mesh, only: &
+         seaice_interpolate_cell_to_vertex
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1160,12 +1160,12 @@ contains
        call MPAS_pool_get_array(oceanCouplingPool, "vOceanVelocity", vOceanVelocity)
 
        ! interpolate cell ocean velocity to vertex
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             uOceanVelocityVertex, &
             uOceanVelocity)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             vOceanVelocityVertex, &
             vOceanVelocity)
@@ -1204,7 +1204,7 @@ contains
     enddo
 
     ! halo exchange velocities
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("velocity halo")
 
@@ -1246,7 +1246,7 @@ contains
 
     call mpas_timer_stop("velocity halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
   end subroutine new_ice_velocities!}}}
 
@@ -1271,8 +1271,8 @@ contains
          seaiceIceStrengthConstantHiblerP, &
          seaiceIceStrengthConstantHiblerC
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1386,7 +1386,7 @@ contains
     enddo
 
     ! halo exchange ice strength
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("ice strength halo")
 
@@ -1427,7 +1427,7 @@ contains
 
     call mpas_timer_stop("ice strength halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
   end subroutine ice_strength
 
@@ -1445,11 +1445,11 @@ contains
 
   subroutine air_stress(domain)
 
-    use cice_mesh, only: &
-         cice_interpolate_cell_to_vertex
+    use seaice_mesh, only: &
+         seaice_interpolate_cell_to_vertex
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1503,7 +1503,7 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("air stress halo")
 
@@ -1545,7 +1545,7 @@ contains
 
     call mpas_timer_stop("air stress halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate air stress
     block => domain % blocklist
@@ -1559,12 +1559,12 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
        call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             airStressVertexU, &
             airStressCellU)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             airStressVertexV, &
             airStressCellV)
@@ -1947,14 +1947,14 @@ contains
 
   subroutine surface_tilt_ssh_gradient(domain)
 
-    use cice_mesh, only: &
-         cice_interpolate_cell_to_vertex
+    use seaice_mesh, only: &
+         seaice_interpolate_cell_to_vertex
 
     use seaice_constants, only: &
          seaiceGravity
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1993,7 +1993,7 @@ contains
          config_reuse_halo_exch
 
     ! halo exchange surface tilt
-    call cice_load_balance_timers(domain, "vel prep before")
+    call seaice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("sea surface tilt halo")
 
@@ -2035,7 +2035,7 @@ contains
 
     call mpas_timer_stop("sea surface tilt halo")
 
-    call cice_load_balance_timers(domain, "vel prep after")
+    call seaice_load_balance_timers(domain, "vel prep after")
 
     block => domain % blocklist
     do while (associated(block))
@@ -2060,12 +2060,12 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "seaSurfaceTiltVertexV", seaSurfaceTiltVertexV)
 
        ! interpolate sea surface tilt from cells to vertices
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             seaSurfaceTiltVertexU, &
             seaSurfaceTiltU)
 
-       call cice_interpolate_cell_to_vertex(&
+       call seaice_interpolate_cell_to_vertex(&
             meshPool, &
             seaSurfaceTiltVertexV, &
             seaSurfaceTiltV)
@@ -2380,8 +2380,8 @@ contains
     use cice_debug, only: &
          cice_time_output_variable_real
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -2443,7 +2443,7 @@ contains
     endif
 
     ! halo exchange
-    call cice_load_balance_timers(domain, "vel before")
+    call seaice_load_balance_timers(domain, "vel before")
 
     call mpas_timer_start("Velocity solver halo")
 
@@ -2485,7 +2485,7 @@ contains
 
     call mpas_timer_stop("Velocity solver halo")
 
-    call cice_load_balance_timers(domain, "vel after")
+    call seaice_load_balance_timers(domain, "vel after")
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -3127,11 +3127,11 @@ contains
 
   subroutine ocean_stress_final(domain)
 
-    use cice_mesh, only: &
-         cice_interpolate_vertex_to_cell
+    use seaice_mesh, only: &
+         seaice_interpolate_vertex_to_cell
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -3250,7 +3250,7 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
-       call cice_load_balance_timers(domain, "vel prep before")
+       call seaice_load_balance_timers(domain, "vel prep before")
 
        call mpas_timer_start("ocean stress halo")
 
@@ -3292,7 +3292,7 @@ contains
 
        call mpas_timer_stop("ocean stress halo")
 
-       call cice_load_balance_timers(domain, "vel prep after")
+       call seaice_load_balance_timers(domain, "vel prep after")
 
        block => domain % blocklist
        do while (associated(block))
@@ -3313,8 +3313,8 @@ contains
           call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
 
           ! interpolate ocean stress to cells
-          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellU, oceanStressU)
-          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellV, oceanStressV)
+          call seaice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellU, oceanStressU)
+          call seaice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellV, oceanStressV)
 
           ! multiply ocean stress back by ice area
           do iVertex = 1, nVerticesSolve

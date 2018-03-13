@@ -954,8 +954,8 @@ contains
 
    subroutine fixed_regional_statistics(domain)
 
-      use cice_mesh, only: &
-           cice_interpolate_vertex_to_cell
+      use seaice_mesh, only: &
+           seaice_interpolate_vertex_to_cell
 
       use ice_constants_colpkg, only: &
            awtvdr, &
@@ -1101,8 +1101,8 @@ contains
          call MPAS_pool_get_array(regionalStatisticsAMPool, 'vVelocityCell', vVelocityCell)
 
          ! cell centre velocity for velocity statistics
-         call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, uVelocityCell, uVelocity)
-         call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, vVelocityCell, vVelocity)
+         call seaice_interpolate_vertex_to_cell(meshPool, boundaryPool, uVelocityCell, uVelocity)
+         call seaice_interpolate_vertex_to_cell(meshPool, boundaryPool, vVelocityCell, vVelocity)
 
          ! quantities on cells
          do iCell = 1, nCellsSolve

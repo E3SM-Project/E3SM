@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_error
+!  seaice_error
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_error
+module seaice_error
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -38,14 +38,14 @@ module cice_error
 
   ! public routines
   public :: &
-       cice_critical_error_write_block, &
-       cice_check_critical_error
+       seaice_critical_error_write_block, &
+       seaice_check_critical_error
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_critical_error_write_block
+!  seaice_critical_error_write_block
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -55,7 +55,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_critical_error_write_block(domain, block)
+  subroutine seaice_critical_error_write_block(domain, block)
 
     type(domain_type), intent(in) :: &
          domain
@@ -70,11 +70,11 @@ contains
          streamID='abort_block', &
          forceWriteNow=.true.)
 
-  end subroutine cice_critical_error_write_block
+  end subroutine seaice_critical_error_write_block
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_check_critical_error
+!  seaice_check_critical_error
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -84,7 +84,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_check_critical_error(domain, ierr)
+  subroutine seaice_check_critical_error(domain, ierr)
 
     use mpas_dmpar, only: mpas_dmpar_max_int
 
@@ -123,7 +123,7 @@ contains
 
     endif
 
-  end subroutine cice_check_critical_error
+  end subroutine seaice_check_critical_error
 
   !-----------------------------------------------------------------------
 
@@ -158,4 +158,4 @@ contains
 
   !-----------------------------------------------------------------------
 
-end module cice_error
+end module seaice_error

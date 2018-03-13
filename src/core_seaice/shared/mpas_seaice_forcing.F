@@ -584,8 +584,8 @@ contains
 
   subroutine post_atmospheric_coupling(block)
 
-    use cice_mesh, only: &
-         cice_latlon_vector_rotation_forward
+    use seaice_mesh, only: &
+         seaice_latlon_vector_rotation_forward
 
     type (block_type), pointer :: block
 
@@ -652,7 +652,7 @@ contains
        windSpeed(iCell) = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
 
        ! rotate velocities from geographical to local
-       call cice_latlon_vector_rotation_forward(&
+       call seaice_latlon_vector_rotation_forward(&
             uAirVelocity(iCell), &
             vAirVelocity(iCell), &
             uAirVelocity(iCell), &
@@ -1502,8 +1502,8 @@ contains
 
   subroutine post_oceanic_coupling(block)
 
-    use cice_mesh, only: &
-         cice_latlon_vector_rotation_forward
+    use seaice_mesh, only: &
+         seaice_latlon_vector_rotation_forward
 
     type (block_type), pointer :: block
 
@@ -1560,7 +1560,7 @@ contains
     ! make rotated ocean velocity available across all cells
     do iCell = 1, nCells
 
-       call cice_latlon_vector_rotation_forward(&
+       call seaice_latlon_vector_rotation_forward(&
             uOceanVelocity(iCell), &
             vOceanVelocity(iCell), &
             uOceanVelocity(iCell), &
@@ -1573,7 +1573,7 @@ contains
             sphere_radius, &
             config_rotate_cartesian_grid)
 
-       call cice_latlon_vector_rotation_forward(&
+       call seaice_latlon_vector_rotation_forward(&
             seaSurfaceTiltU(iCell), &
             seaSurfaceTiltV(iCell), &
             seaSurfaceTiltU(iCell), &

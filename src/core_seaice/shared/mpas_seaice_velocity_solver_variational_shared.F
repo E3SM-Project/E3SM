@@ -161,9 +161,9 @@ contains
        yLocal, &
        rotateCartesianGrid)!{{{
 
-    use cice_mesh, only: &
-         cice_project_3D_vector_onto_local_2D, &
-         cice_grid_rotation_forward
+    use seaice_mesh, only: &
+         seaice_project_3D_vector_onto_local_2D, &
+         seaice_grid_rotation_forward
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -225,17 +225,17 @@ contains
 
           iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                normalVector3D(1), normalVector3D(2), normalVector3D(3), &
                xVertex(iVertex),  yVertex(iVertex),  zVertex(iVertex), &
                rotateCartesianGrid)
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xCellRotated, yCellRotated, zCellRotated, &
                xCell(iCell), yCell(iCell), zCell(iCell), &
                rotateCartesianGrid)
 
-          call cice_project_3D_vector_onto_local_2D(&
+          call seaice_project_3D_vector_onto_local_2D(&
                normalVector2D, &
                normalVector3D, &
                xCellRotated, &
@@ -269,8 +269,8 @@ contains
        rotateCartesianGrid, &
        includeMetricTerms)
 
-    use cice_mesh, only: &
-         cice_grid_rotation_forward
+    use seaice_mesh, only: &
+         seaice_grid_rotation_forward
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -313,7 +313,7 @@ contains
 
        do iVertex = 1, nVertices
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xVertexRotated,   yVertexRotated,   zVertexRotated, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)

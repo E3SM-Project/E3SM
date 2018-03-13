@@ -1121,8 +1121,8 @@ contains
 
     use mpas_dmpar
 
-    use cice_diagnostics, only: &
-         cice_load_balance_timers
+    use seaice_diagnostics, only: &
+         seaice_load_balance_timers
 
     type(tracer_type), pointer, intent(in) :: &
          tracersHead ! do not alter this pointer - it should always point to the first element
@@ -1135,7 +1135,7 @@ contains
          config_use_halo_exch, &
          config_aggregate_halo_exch
 
-    call cice_load_balance_timers(domain, "advection before")
+    call seaice_load_balance_timers(domain, "advection before")
 
     call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
     if (config_use_halo_exch) then
@@ -1153,7 +1153,7 @@ contains
 
     endif ! config_use_halo_exch
 
-    call cice_load_balance_timers(domain, "advection after")
+    call seaice_load_balance_timers(domain, "advection after")
 
   end subroutine cice_update_tracer_halo
 
