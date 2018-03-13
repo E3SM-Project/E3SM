@@ -41,7 +41,7 @@
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
-      <directive name=""></directive>
+      <directive></directive>
     </directives>
   </batch_system>
 
@@ -52,7 +52,7 @@
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
-      <directive name=""></directive>
+      <directive></directive>
     </directives>
   </batch_system>
 
