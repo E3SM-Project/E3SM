@@ -161,7 +161,7 @@ contains
     ! create the six hourly forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          domain, &
          config_forcing_start_time, &
          config_forcing_cycle_start, &
@@ -175,7 +175,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          "airTemperature", &
          "LYqSixHourlyForcing", &
          "atmos_coupling", &
@@ -188,7 +188,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          "airSpecificHumidity", &
          "LYqSixHourlyForcing", &
          "atmos_coupling", &
@@ -201,7 +201,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          "uAirVelocity", &
          "LYqSixHourlyForcing", &
          "atmos_coupling", &
@@ -214,7 +214,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          "vAirVelocity", &
          "LYqSixHourlyForcing", &
          "atmos_coupling", &
@@ -226,7 +226,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -234,7 +234,7 @@ contains
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_monthly", &
+         "seaice_atmospheric_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -247,7 +247,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_monthly", &
+         "seaice_atmospheric_forcing_monthly", &
          "cloudFraction", &
          "LYqMonthlyForcing", &
          "atmos_forcing", &
@@ -259,7 +259,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_monthly", &
+         "seaice_atmospheric_forcing_monthly", &
          "rainfallRate", &
          "LYqMonthlyForcing", &
          "atmos_coupling", &
@@ -270,7 +270,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_monthly", &
+         "seaice_atmospheric_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -371,13 +371,13 @@ contains
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
-            "cice_atmospheric_forcing_sixhrly", &
+            "seaice_atmospheric_forcing_sixhrly", &
             streamManager, &
             config_dt)
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
-            "cice_atmospheric_forcing_monthly", &
+            "seaice_atmospheric_forcing_monthly", &
             streamManager, &
             config_dt)
 
@@ -499,7 +499,7 @@ contains
     ! get the current time
     call MPAS_forcing_get_forcing_time(&
          seaiceForcingGroups, &
-         "cice_atmospheric_forcing_sixhrly", &
+         "seaice_atmospheric_forcing_sixhrly", &
          currentForcingTime)
 
     ! get the number of seconds so far today
@@ -1185,7 +1185,7 @@ contains
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "cice_sst_forcing_monthly", &
+         "seaice_sst_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1196,7 +1196,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_sst_forcing_monthly", &
+         "seaice_sst_forcing_monthly", &
          "seaSurfaceTemperature", &
          "NCARMonthlySSTForcing", &
          "ocean_coupling", &
@@ -1207,7 +1207,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "cice_sst_forcing_monthly", &
+         "seaice_sst_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1215,7 +1215,7 @@ contains
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1226,7 +1226,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "seaSurfaceSalinity", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1239,7 +1239,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "uOceanVelocity", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1252,7 +1252,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "vOceanVelocity", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1265,7 +1265,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "seaSurfaceTiltU", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1278,7 +1278,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "seaSurfaceTiltV", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1291,7 +1291,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "oceanMixedLayerDepth", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1304,7 +1304,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          "oceanHeatFluxConvergence", &
          "NCARMonthlyForcing", &
          "ocean_coupling", &
@@ -1315,7 +1315,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "cice_oceanic_forcing_monthly", &
+         "seaice_oceanic_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1371,7 +1371,7 @@ contains
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
-            "cice_oceanic_forcing_monthly", &
+            "seaice_oceanic_forcing_monthly", &
             streamManager, &
             config_dt)
 
@@ -1380,7 +1380,7 @@ contains
 
           call MPAS_forcing_get_forcing(&
                seaiceForcingGroups, &
-               "cice_sst_forcing_monthly", &
+               "seaice_sst_forcing_monthly", &
                streamManager, &
                config_dt)
 
