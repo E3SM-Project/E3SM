@@ -165,6 +165,13 @@ _TEST_SUITES = {
                        "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
                      )),
 
+    #e3sm tests for RRM grids
+    "e3sm_rrm" : (None, None, 
+                  ("SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
+                   "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
+                   "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L")
+                 ),
+
     #e3sm tests to mimic production runs
     "e3sm_prod" : (("e3sm_atm_prod",),None,
                      () ),
