@@ -361,6 +361,18 @@ contains
 
        if (use_cn) then
           call t_startf('begcnpbal')
+          call carbonstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call nitrogenstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call phosphorusstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                carbonstate_vars)
