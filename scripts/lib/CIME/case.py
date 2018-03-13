@@ -99,8 +99,11 @@ class Case(object):
         self._component_classes = []
         self._component_description = {}
         self._is_env_loaded = False
+
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
+
+        # Derived attributes
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -108,6 +111,7 @@ class Case(object):
         self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
+
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
