@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver
+!  seaice_velocity_solver
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver
+module seaice_velocity_solver
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -25,15 +25,15 @@ module cice_velocity_solver
   save
 
   public :: &
-       cice_init_velocity_solver, &
-       cice_run_velocity_solver
+       seaice_init_velocity_solver, &
+       seaice_run_velocity_solver
 
   ! velocity solver constants
   real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
        cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
-       ciceAreaMinimum = 0.001_RKIND, &
-       ciceMassMinimum = 0.01_RKIND
+       seaiceAreaMinimum = 0.001_RKIND, &
+       seaiceMassMinimum = 0.01_RKIND
 
 contains
 
@@ -43,7 +43,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_velocity_solver
+!  seaice_init_velocity_solver
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -53,17 +53,17 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_velocity_solver(&
+  subroutine seaice_init_velocity_solver(&
        domain)!{{{
 
-    use cice_velocity_solver_constitutive_relation, only: &
-         cice_init_evp
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_init_evp
 
-    use cice_velocity_solver_weak, only: &
-         cice_init_velocity_solver_weak
+    use seaice_velocity_solver_weak, only: &
+         seaice_init_velocity_solver_weak
 
-    use cice_velocity_solver_variational, only: &
-         cice_init_velocity_solver_variational
+    use seaice_velocity_solver_variational, only: &
+         seaice_init_velocity_solver_variational
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -132,7 +132,7 @@ contains
     if (config_use_velocity_solver) then
 
        ! initialize the evp solver
-       call cice_init_evp(domain)
+       call seaice_init_evp(domain)
 
        block => domain % blocklist
        do while (associated(block))
@@ -151,7 +151,7 @@ contains
 
           if (trim(config_stress_divergence_scheme) == "weak") then
 
-             call cice_init_velocity_solver_weak(&
+             call seaice_init_velocity_solver_weak(&
                   mesh, &
                   boundary, &
                   velocity_weak, &
@@ -159,7 +159,7 @@ contains
 
           else if (trim(config_stress_divergence_scheme) == "variational") then
 
-             call cice_init_velocity_solver_variational(&
+             call seaice_init_velocity_solver_variational(&
                   mesh, &
                   velocity_variational, &
                   boundary, &
@@ -318,7 +318,7 @@ contains
 
     endif ! config_aggregate_halo_exch
 
-  end subroutine cice_init_velocity_solver!}}}
+  end subroutine seaice_init_velocity_solver!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -482,7 +482,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_run_velocity_solver
+!  seaice_run_velocity_solver
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -492,7 +492,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_velocity_solver(domain, clock)!{{{
+  subroutine seaice_run_velocity_solver(domain, clock)!{{{
 
     use cice_debug
 
@@ -527,7 +527,7 @@ contains
 
     endif ! config_use_velocity_solver
 
-  end subroutine cice_run_velocity_solver!}}}
+  end subroutine seaice_run_velocity_solver!}}}
 
 !-----------------------------------------------------------------------
 ! Pre sub-cycle
@@ -942,8 +942,8 @@ contains
 
           solveStress(iCell) = 0
 
-          if (iceAreaCellInitial(iCell) > ciceAreaMinimum .and. &
-              totalMassCell(iCell) > ciceMassMinimum .and. &
+          if (iceAreaCellInitial(iCell) > seaiceAreaMinimum .and. &
+              totalMassCell(iCell) > seaiceMassMinimum .and. &
               landIceMask(iCell) == 0) then
 
              ! this cell has sufficient ice
@@ -956,8 +956,8 @@ contains
 
                 iCellNeighbour = cellsOnCell(iCellOnCell,iCell)
 
-                if (iceAreaCellInitial(iCellNeighbour) > ciceAreaMinimum .and. &
-                    totalMassCell(iCellNeighbour) > ciceMassMinimum .and. &
+                if (iceAreaCellInitial(iCellNeighbour) > seaiceAreaMinimum .and. &
+                    totalMassCell(iCellNeighbour) > seaiceMassMinimum .and. &
                     landIceMask(iCellNeighbour) == 0) then
 
                    solveStress(iCell) = 1
@@ -1052,8 +1052,8 @@ contains
 
           if (interiorVertex(iVertex) == 1 .and. &
               landIceMaskVertex(iVertex) == 0 .and. &
-              iceAreaVertex(iVertex) > ciceAreaMinimum .and. &
-              totalMassVertex(iVertex) > ciceMassMinimum) then
+              iceAreaVertex(iVertex) > seaiceAreaMinimum .and. &
+              totalMassVertex(iVertex) > seaiceMassMinimum) then
 
              ! this vertex has sufficient ice
              solveVelocity(iVertex) = 1
@@ -2371,11 +2371,11 @@ contains
        clock, &
        iElasticSubcycle)!{{{
 
-    use cice_velocity_solver_weak, only: &
-         cice_internal_stress_weak
+    use seaice_velocity_solver_weak, only: &
+         seaice_internal_stress_weak
 
-    use cice_velocity_solver_variational, only: &
-         cice_internal_stress_variational
+    use seaice_velocity_solver_variational, only: &
+         seaice_internal_stress_variational
 
     use cice_debug, only: &
          cice_time_output_variable_real
@@ -2411,13 +2411,13 @@ contains
     if (trim(config_stress_divergence_scheme) == "weak") then
 
        call mpas_timer_start("Velocity solver internal stress")
-       call cice_internal_stress_weak(domain)
+       call seaice_internal_stress_weak(domain)
        call mpas_timer_stop("Velocity solver internal stress")
 
     else if (trim(config_stress_divergence_scheme) == "variational") then
 
        call mpas_timer_start("Velocity solver internal stress")
-       call cice_internal_stress_variational(domain)
+       call seaice_internal_stress_variational(domain)
        call mpas_timer_stop("Velocity solver internal stress")
 
     endif
@@ -2725,7 +2725,7 @@ contains
 
   subroutine solve_velocity_revised(domain)
 
-    use cice_velocity_solver_constitutive_relation, only: &
+    use seaice_velocity_solver_constitutive_relation, only: &
          numericalInertiaCoefficient
 
     type(domain_type), intent(inout) :: &
@@ -2897,11 +2897,11 @@ contains
 
   subroutine final_divergence_shear(domain)
 
-    use cice_velocity_solver_variational, only: &
-         cice_final_divergence_shear_variational
+    use seaice_velocity_solver_variational, only: &
+         seaice_final_divergence_shear_variational
 
-    use cice_velocity_solver_weak, only: &
-         cice_final_divergence_shear_weak
+    use seaice_velocity_solver_weak, only: &
+         seaice_final_divergence_shear_weak
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2919,11 +2919,11 @@ contains
 
        if (trim(config_stress_divergence_scheme) == "weak") then
 
-          call cice_final_divergence_shear_weak(block)
+          call seaice_final_divergence_shear_weak(block)
 
        else if (trim(config_stress_divergence_scheme) == "variational") then
 
-          call cice_final_divergence_shear_variational(block)
+          call seaice_final_divergence_shear_variational(block)
 
        endif
 
@@ -3353,4 +3353,4 @@ contains
 
   !-----------------------------------------------------------------------
 
-end module cice_velocity_solver
+end module seaice_velocity_solver

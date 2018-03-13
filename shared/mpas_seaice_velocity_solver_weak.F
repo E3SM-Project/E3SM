@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_weak
+!  seaice_velocity_solver_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_weak
+module seaice_velocity_solver_weak
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -21,12 +21,12 @@ module cice_velocity_solver_weak
   save
 
   public :: &
-       cice_init_velocity_solver_weak, &
-       cice_internal_stress_weak, &
-       cice_strain_tensor_weak, &
-       cice_stress_tensor_weak, &
-       cice_stress_divergence_weak, &
-       cice_final_divergence_shear_weak
+       seaice_init_velocity_solver_weak, &
+       seaice_internal_stress_weak, &
+       seaice_strain_tensor_weak, &
+       seaice_stress_tensor_weak, &
+       seaice_stress_divergence_weak, &
+       seaice_final_divergence_shear_weak
 
 contains
 
@@ -36,7 +36,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_velocity_solver_weak
+!  seaice_init_velocity_solver_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -46,7 +46,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_velocity_solver_weak(&
+  subroutine seaice_init_velocity_solver_weak(&
        mesh, &
        boundary, &
        velocity_weak, &
@@ -92,7 +92,7 @@ contains
          latCellRotated, &
          latVertexRotated)
 
-  end subroutine cice_init_velocity_solver_weak!}}}
+  end subroutine seaice_init_velocity_solver_weak!}}}
 
 !-----------------------------------------------------------------------
 ! Time step
@@ -100,7 +100,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_internal_stress_weak
+!  seaice_internal_stress_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -110,7 +110,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_internal_stress_weak(domain)!{{{
+  subroutine seaice_internal_stress_weak(domain)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
@@ -183,7 +183,7 @@ contains
        call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
        call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressure)
 
-       call cice_strain_tensor_weak(&
+       call seaice_strain_tensor_weak(&
             meshPool, &
             strain11, &
             strain22, &
@@ -194,7 +194,7 @@ contains
             latCellRotated, &
             solveStress)
 
-       call cice_stress_tensor_weak(&
+       call seaice_stress_tensor_weak(&
             meshPool, &
             stress11, &
             stress22, &
@@ -208,7 +208,7 @@ contains
             elasticTimeStep, &
             revisedEVP)
 
-       call cice_stress_divergence_weak(&
+       call seaice_stress_divergence_weak(&
             meshPool, &
             stressDivergenceU, &
             stressDivergenceV, &
@@ -222,11 +222,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_internal_stress_weak!}}}
+  end subroutine seaice_internal_stress_weak!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_strain_tensor_weak
+!  seaice_strain_tensor_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -236,7 +236,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_strain_tensor_weak(&
+  subroutine seaice_strain_tensor_weak(&
        mesh, &
        strain11, &
        strain22, &
@@ -377,11 +377,11 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_strain_tensor_weak!}}}
+  end subroutine seaice_strain_tensor_weak!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_tensor_weak
+!  seaice_stress_tensor_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -391,7 +391,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_tensor_weak(&
+  subroutine seaice_stress_tensor_weak(&
        mesh, &
        stress11, &
        stress22, &
@@ -405,9 +405,9 @@ contains
        dtElastic, &
        revisedEVP)!{{{
 
-    use cice_velocity_solver_constitutive_relation, only: &
-         cice_evp_constitutive_relation, &
-         cice_evp_constitutive_relation_revised
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_evp_constitutive_relation, &
+         seaice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -453,7 +453,7 @@ contains
 
           if (solveStress(iCell) == 1) then
 
-             call cice_evp_constitutive_relation(&
+             call seaice_evp_constitutive_relation(&
                   stress11(iCell), &
                   stress22(iCell), &
                   stress12(iCell), &
@@ -481,7 +481,7 @@ contains
 
           if (solveStress(iCell) == 1) then
 
-             call cice_evp_constitutive_relation_revised(&
+             call seaice_evp_constitutive_relation_revised(&
                   stress11(iCell), &
                   stress22(iCell), &
                   stress12(iCell), &
@@ -504,11 +504,11 @@ contains
 
     endif
 
-  end subroutine cice_stress_tensor_weak!}}}
+  end subroutine seaice_stress_tensor_weak!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_divergence_weak
+!  seaice_stress_divergence_weak
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -518,7 +518,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_divergence_weak(&
+  subroutine seaice_stress_divergence_weak(&
        mesh, &
        stressDivergenceU, &
        stressDivergenceV, &
@@ -665,7 +665,7 @@ contains
 
     enddo ! iVertex
 
-  end subroutine cice_stress_divergence_weak!}}}
+  end subroutine seaice_stress_divergence_weak!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -679,9 +679,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_final_divergence_shear_weak(block)
+  subroutine seaice_final_divergence_shear_weak(block)
 
-    use cice_velocity_solver_constitutive_relation, only: &
+    use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
 
     type(block_type), intent(inout) :: &
@@ -774,8 +774,8 @@ contains
     ! cleanup
     deallocate(Delta)
 
-  end subroutine cice_final_divergence_shear_weak
+  end subroutine seaice_final_divergence_shear_weak
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_weak
+end module seaice_velocity_solver_weak

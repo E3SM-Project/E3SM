@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_pwl
+!  seaice_velocity_solver_pwl
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_pwl
+module seaice_velocity_solver_pwl
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -21,7 +21,7 @@ module cice_velocity_solver_pwl
   save
 
   public :: &
-       cice_init_velocity_solver_pwl
+       seaice_init_velocity_solver_pwl
 
 contains
 
@@ -31,7 +31,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_velocity_solver_pwl
+!  seaice_init_velocity_solver_pwl
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -41,7 +41,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_velocity_solver_pwl(&
+  subroutine seaice_init_velocity_solver_pwl(&
        mesh, &
        velocity_variational, &
        boundary, &
@@ -51,9 +51,9 @@ contains
     use seaice_mesh, only: &
          seaice_cell_vertices_at_vertex
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_calc_local_coords, &
-         cice_calc_variational_metric_terms
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_calc_local_coords, &
+         seaice_calc_variational_metric_terms
 
     use cice_debug, only: &
          cice_plot_cells_planar
@@ -106,13 +106,13 @@ contains
     allocate(xLocal(maxEdges,nCells))
     allocate(yLocal(maxEdges,nCells))
 
-    call cice_calc_local_coords(&
+    call seaice_calc_local_coords(&
          mesh, &
          xLocal, &
          yLocal, &
          rotateCartesianGrid)
 
-    call cice_calc_variational_metric_terms(&
+    call seaice_calc_variational_metric_terms(&
          mesh, &
          tanLatVertexRotatedOverRadius, &
          rotateCartesianGrid, &
@@ -135,7 +135,7 @@ contains
     deallocate(xLocal)
     deallocate(yLocal)
 
-  end subroutine cice_init_velocity_solver_pwl!}}}
+  end subroutine seaice_init_velocity_solver_pwl!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -162,8 +162,8 @@ contains
     use seaice_numerics, only: &
          seaice_solve_linear_basis_system
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     type(MPAS_pool_type), pointer :: &
          mesh !< Input:
@@ -277,7 +277,7 @@ contains
 
           iEdge = edgesOnCell(iSubCell,iCell)
           iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = cice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = seaice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           c = dvEdge(iEdge)
           a = sqrt((xLocal(iVertexOnCell1,iCell) - xPWLCentre)**2 + &
@@ -301,7 +301,7 @@ contains
        do iSubCell = 1, nEdgesOnCell(iCell)
 
           iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = cice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = seaice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           ! set up left hand matrix
           leftMatrix(1,1) = xLocal(iVertexOnCell1,iCell) - xPWLCentre
@@ -360,7 +360,7 @@ contains
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,1)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,1)
 
-             else if (iSubCell == cice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
+             else if (iSubCell == seaice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
 
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,2)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,2)
@@ -377,7 +377,7 @@ contains
           do iGradientVertex = 1, nEdgesOnCell(iCell)
 
              iSubCell1 = iGradientVertex
-             iSubCell2 = cice_wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
+             iSubCell2 = seaice_wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
 
              basisGradientU(iBasisVertex,iGradientVertex,iCell) = &
                   0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
@@ -397,7 +397,7 @@ contains
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                if (iSubCell == iStressVertex .or. iSubCell == cice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                if (iSubCell == iStressVertex .or. iSubCell == seaice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
                    basisIntegral = ((alphaPWL + 1) * basisSubArea(iSubCell)) / 3.0_RKIND
                 else
                    basisIntegral = ( alphaPWL      * basisSubArea(iSubCell)) / 3.0_RKIND
@@ -425,7 +425,7 @@ contains
                 ! determine stress subcell type
                 if (iSubCell == iStressVertex) then
                    subCellTypeStress = 1
-                else if (iSubCell == cice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == seaice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
                    subCellTypeStress = 2
                 else
                    subCellTypeStress = 3
@@ -434,7 +434,7 @@ contains
                 ! determine velocity subcell type
                 if (iSubCell == iVelocityVertex) then
                    subCellTypeVelocity = 1
-                else if (iSubCell == cice_wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == seaice_wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
                    subCellTypeVelocity = 2
                 else
                    subCellTypeVelocity = 3
@@ -507,8 +507,8 @@ contains
        iSubCell) &
        result(grad)!{{{
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     integer, intent(in) :: &
          nEdgesOnCell, &      !< Input:
@@ -526,7 +526,7 @@ contains
     grad = basisGradient(1,iSubCell) * &
            (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == basisVertexOnCell)) + &
            basisGradient(2,iSubCell) * &
-           (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == cice_wrapped_index(basisVertexOnCell - 1, nEdgesOnCell)))
+           (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == seaice_wrapped_index(basisVertexOnCell - 1, nEdgesOnCell)))
 
   end function pwl_basis_gradient!}}}
 
@@ -690,8 +690,8 @@ contains
        x0, &
        y0)!{{{
 
-    use cice_velocity_solver_variational_shared, only: &
-         cice_wrapped_index
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_wrapped_index
 
     integer, intent(in) :: &
          nEdgesOnCell, & !< Input:
@@ -752,7 +752,7 @@ contains
                             subBasisGradientV(iSubTriangle,3) * y + &
                             subBasisConstant(iSubTriangle,3))
 
-             write(*,*) iVertex, nEdgesOnCell, cice_wrapped_index(iVertex - 1, nEdgesOnCell)
+             write(*,*) iVertex, nEdgesOnCell, seaice_wrapped_index(iVertex - 1, nEdgesOnCell)
 
              if (iSubTriangle == iVertex) then
 
@@ -761,7 +761,7 @@ contains
                       subBasisGradientV(iSubTriangle,1) * y + &
                       subBasisConstant(iSubTriangle,1))
 
-             else if (iSubTriangle == cice_wrapped_index(iVertex - 1, nEdgesOnCell)) then
+             else if (iSubTriangle == seaice_wrapped_index(iVertex - 1, nEdgesOnCell)) then
 
                 pwl = pwl + &
                      (subBasisGradientU(iSubTriangle,2) * x + &
@@ -892,4 +892,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_pwl
+end module seaice_velocity_solver_pwl
