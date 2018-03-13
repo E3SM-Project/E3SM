@@ -21,6 +21,8 @@ def setup():
     run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME), verbose=True)
     run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME), verbose=True)
 
+    run_cmd_no_fail("git clean -fd", verbose=True)
+
 ###############################################################################
 def get_tag(prefix, expected_num=1):
 ###############################################################################
@@ -130,6 +132,7 @@ def e3sm_cime_split(resume):
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
         except:
             # If unexpected failure happens, delete new split tag
+            logging.info("Abandoning merge due to unexpected failure")
             delete_tag(new_split_tag)
             raise
 
@@ -162,6 +165,7 @@ def e3sm_cime_merge(resume):
 
             pr_branch = make_pr_branch(get_branch_from_tag(new_merge_tag), "origin/master")
         except:
+            logging.info("Abandoning merge due to unexpected failure")
             delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
             raise
 
