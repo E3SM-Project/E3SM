@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_advection_upwind
+!  seaice_advection_upwind
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_advection_upwind
+module seaice_advection_upwind
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -23,8 +23,8 @@ module cice_advection_upwind
   save
 
   public :: &
-       cice_init_advection_upwind, &
-       cice_run_advection_upwind
+       seaice_init_advection_upwind, &
+       seaice_run_advection_upwind
 
   ! maximum number of tracers
   integer, parameter, private :: &
@@ -61,7 +61,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_advection_upwind
+!  seaice_init_advection_upwind
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_advection_upwind(domain)!{{{
+  subroutine seaice_init_advection_upwind(domain)!{{{
 
     !use mpas_tracer_advection_helpers, only: &
     !     mpas_tracer_advection_coefficients
@@ -184,7 +184,7 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_init_advection_upwind!}}}
+  end subroutine seaice_init_advection_upwind!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -428,7 +428,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_run_advection
+!  seaice_run_advection_upwind
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -438,7 +438,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection_upwind(domain, clock)!{{{
+  subroutine seaice_run_advection_upwind(domain, clock)!{{{
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -571,7 +571,7 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_run_advection_upwind!}}}
+  end subroutine seaice_run_advection_upwind!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -885,9 +885,6 @@ contains
     use seaice_constants, only: &
          iceAreaMinimum
 
-    use cice_debug, only: &
-         cice_time_output_variable_int
-
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
 
@@ -1125,12 +1122,6 @@ contains
 
     !use mpas_tracer_advection_mono, only: &
     !     mpas_tracer_advection_mono_tend_seaice
-
-    use cice_debug, only: &
-         cice_time_output_variable_int, &
-         cice_time_output_variable_int_2D, &
-         cice_time_output_variable_real, &
-         cice_time_output_variable_real_2D
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
@@ -1956,8 +1947,6 @@ contains
     use seaice_constants, only: &
          iceAreaMinimum
 
-    use cice_debug, only: cice_time_output_variable_real
-
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
 
@@ -2058,8 +2047,6 @@ contains
 
     use seaice_constants, only: &
          iceAreaMinimum
-
-    use cice_debug, only: cice_time_output_variable_real
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
@@ -2750,4 +2737,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module cice_advection_upwind
+end module seaice_advection_upwind

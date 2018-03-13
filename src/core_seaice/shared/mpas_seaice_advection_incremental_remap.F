@@ -7,9 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_cice_advection_incremental_remap
+!  mpas_seaice_advection_incremental_remap
 !
-!> \brief  incremental remapping transport scheme for cice
+!> \brief  incremental remapping transport scheme
 !> \author William Lipscomb
 !> \date   September 2015
 !> \details
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_advection_incremental_remap
+module seaice_advection_incremental_remap
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -26,12 +26,12 @@ module cice_advection_incremental_remap
    use mpas_timer
    use mpas_log, only: mpas_log_write
 
-   use cice_advection_incremental_remap_tracers, only: &
+   use seaice_advection_incremental_remap_tracers, only: &
         tracer_type, &
         tracersHead, &
-        cice_add_tracers_to_linked_list, &
-        cice_set_tracer_array_pointers, &
-        cice_update_tracer_halo
+        seaice_add_tracers_to_linked_list, &
+        seaice_set_tracer_array_pointers, &
+        seaice_update_tracer_halo
 
    use seaice_error
 
@@ -40,8 +40,8 @@ module cice_advection_incremental_remap
    save
 
    public :: &
-        cice_init_advection_incremental_remap, &
-        cice_run_advection_incremental_remap
+        seaice_init_advection_incremental_remap, &
+        seaice_run_advection_incremental_remap
 
    ! variables private to this module
 
@@ -158,9 +158,9 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_init_advection_incremental_remap
+!  routine seaice_init_advection_incremental_remap
 !
-!> \brief MPAS-CICE incremental remapping initialization
+!> \brief MPAS-Seaice incremental remapping initialization
 !> \author William Lipscomb
 !> \date   March 2015
 !> \details
@@ -169,12 +169,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_advection_incremental_remap(domain)
+  subroutine seaice_init_advection_incremental_remap(domain)
 
     use mpas_rbf_interpolation, only: mpas_rbf_interp_initialize
     use mpas_vector_reconstruction, only: mpas_init_reconstruct
-    use cice_advection_incremental_remap_tracers, only: &
-         cice_init_update_tracer_halo_exch_group
+    use seaice_advection_incremental_remap_tracers, only: &
+         seaice_init_update_tracer_halo_exch_group
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -279,15 +279,15 @@ contains
 
     if (verboseInit) then
        call mpas_log_write(' ')
-       call mpas_log_write('In cice_init_advection_incremental_remap')
+       call mpas_log_write('In seaice_init_advection_incremental_remap')
        call mpas_log_write('Add tracers to linked list')
     endif
 
     ! construct a linked list of tracers
-    call cice_add_tracers_to_linked_list(domain)
+    call seaice_add_tracers_to_linked_list(domain)
 
     ! set up halo exchange group
-    call cice_init_update_tracer_halo_exch_group(tracersHead, domain)
+    call seaice_init_update_tracer_halo_exch_group(tracersHead, domain)
 
     ! assign pointers
     block => domain % blocklist
@@ -820,7 +820,7 @@ contains
        enddo
     endif
 
-  end subroutine cice_init_advection_incremental_remap
+  end subroutine seaice_init_advection_incremental_remap
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1094,7 +1094,7 @@ contains
 !
 !  routine get_geometry_incremental_remap
 !
-!> \brief MPAS-CICE find various mesh-related quantities for incremental remapping
+!> \brief MPAS-Seaice find various mesh-related quantities for incremental remapping
 !> \author William Lipscomb
 !> \date   May 2015
 !> \details
@@ -1818,7 +1818,7 @@ contains
 !
 !  routine get_vertex_on_cell_coordinates
 !
-!> \brief MPAS-CICE get vertex coordinates relative to cell centers
+!> \brief MPAS-Seaice get vertex coordinates relative to cell centers
 !> \author William Lipscomb
 !> \date   April 2015
 !> \details
@@ -2046,7 +2046,7 @@ contains
 !
 !  routine get_incremental_remap_geometry_pointers
 !
-!> \brief MPAS-CICE get pointers to geometric quantities used for IR
+!> \brief MPAS-Seaice get pointers to geometric quantities used for IR
 !> \author William Lipscomb
 !> \date   April 2015
 !> \details
@@ -2092,7 +2092,7 @@ contains
 !
 !  routine compute_geometric_cell_averages
 !
-!> \brief MPAS-CICE compute some geometric averages over each cell for IR
+!> \brief MPAS-Seaice compute some geometric averages over each cell for IR
 !> \author William Lipscomb
 !> \date   March 2015
 !> \details
@@ -2331,9 +2331,9 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_run_advection_incremental_remap
+!  routine seaice_run_advection_incremental_remap
 !
-!> \brief MPAS-CICE incremental remapping driver
+!> \brief MPAS-Seaice incremental remapping driver
 !> \author William Lipscomb
 !> \date   March 2015
 !> \details
@@ -2342,7 +2342,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection_incremental_remap(&
+  subroutine seaice_run_advection_incremental_remap(&
        domain,      &
        clock,       &
        ierr,        &
@@ -2431,7 +2431,7 @@ contains
 
     if (verboseRun) then
        call mpas_log_write(' ')
-       call mpas_log_write('In cice_incremental remap: timeLevel = $i', intArgs=(/timeLevel/))
+       call mpas_log_write('In seaice_incremental remap: timeLevel = $i', intArgs=(/timeLevel/))
     endif
 
     ! halo updates
@@ -2489,7 +2489,7 @@ contains
        call seaice_load_balance_timers(domain, "advection after")
 
        ! mass and tracers
-       call cice_update_tracer_halo(tracersHead, domain, timeLevel)
+       call seaice_update_tracer_halo(tracersHead, domain, timeLevel)
        call mpas_timer_stop("incr remap init halo")
 
     endif  ! halo update
@@ -2519,7 +2519,7 @@ contains
        call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
 
        ! set pointers to tracer arrays
-       call cice_set_tracer_array_pointers(tracersHead, block, timeLevel)
+       call seaice_set_tracer_array_pointers(tracersHead, block, timeLevel)
 
        ! loop over tracers
        thisTracer => tracersHead
@@ -2628,7 +2628,7 @@ contains
        call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
 
        ! set pointers to tracer arrays
-       call cice_set_tracer_array_pointers(tracersHead, block, timeLevel)
+       call seaice_set_tracer_array_pointers(tracersHead, block, timeLevel)
 
        ! loop over tracers
        thisTracer => tracersHead
@@ -2668,20 +2668,20 @@ contains
 
        ! mass and tracers
        call mpas_timer_start("incr remap final halo")
-       call cice_update_tracer_halo(tracersHead, domain, timeLevel)
+       call seaice_update_tracer_halo(tracersHead, domain, timeLevel)
        call mpas_timer_stop("incr remap final halo")
 
     endif  ! halo update
 
     if (verboseRun) call mpas_log_write('Done in IR')
 
-  end subroutine cice_run_advection_incremental_remap
+  end subroutine seaice_run_advection_incremental_remap
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  routine incremental_remap_block
 !
-!> \brief MPAS-CICE incremental remapping driver
+!> \brief MPAS-Seaice incremental remapping driver
 !> \author William Lipscomb
 !> \date   March 2015
 !> \details
@@ -2702,7 +2702,7 @@ contains
 !  1341-1354.
 !
 ! The remapping routine is designed to transport a generic mass-like
-! field (in CICE, the ice fractional area) along with an arbitrary number
+! field (in MPAS-Seaice, the ice fractional area) along with an arbitrary number
 ! of tracers in two dimensions.  The velocity components are assumed
 ! to lie at cell vertices and the transported scalars at cell centers.
 ! Incremental remapping has the following desirable properties:
@@ -2732,7 +2732,7 @@ contains
 ! We say that T1 has one parent (the mass field m), T2 has two parents,
 ! and T3 has three parents.
 !
-! In CICE, m corresponds to ice fractional concentration.
+! In MPAS-Seaice, m corresponds to ice fractional concentration.
 ! The paradigm for T1 is ice or snow thickness, and the paradigm for T2
 ! (assuming constant density) is ice or snow enthalpy.
 ! If density is variable, then density is T2 and enthalpy is T3.
@@ -2882,7 +2882,7 @@ contains
 
     integer :: timeLevel
 
-    logical, parameter :: zapSmallMass = .true.  ! if true, remove mass values (i.e., fractional ice area in CICE)
+    logical, parameter :: zapSmallMass = .true.  ! if true, remove mass values (i.e., fractional ice area in MPAS-Seaice)
                                                  ! Note: The default threshold is 10^(-22), or eps11^2
                                                  !TODO - Turn off if this is handled elsewhere (e.g., in column package)
 
@@ -2917,7 +2917,7 @@ contains
     call mpas_pool_get_array(velocityPool, 'vVelocity', vVelocity)
 
     ! set pointers to tracer arrays
-    call cice_set_tracer_array_pointers(tracersHead, block, timeLevel)
+    call seaice_set_tracer_array_pointers(tracersHead, block, timeLevel)
 
     ! get mesh dimensions
     call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -3456,7 +3456,7 @@ contains
 
     ! Set tracer masks.
     ! The mask is set to 1 where tracer values are physically meaningful, else the mask = 0.
-    ! For the mass-like field (fractional ice concentration for CICE), the value is deemed physically meaningful everywhere.
+    ! For the mass-like field (fractional ice concentration for MPAS_Seaice), the value is deemed physically meaningful everywhere.
     ! For tracers with parents, the value is deemed physically meaningful wherever the parent tracer is > 0
     !  or some small threshold value.
     ! The reason for the optional threshold is as follows:
@@ -3713,7 +3713,7 @@ contains
        endif   ! ndims
 
        ! set parent tracer
-       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for MPAS-Seaice)
 
           ! This tracer has no parent, but create a dummy parent tracer with (xBarycenter, yBarycenter) at cell centroid.
           ! This ensures correct values for xBarycenter and yBarycenter below.
@@ -3815,7 +3815,7 @@ contains
 
           if (thisTracer % hasChild) then
 
-             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for CICE)
+             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for MPAS-Seaice)
 
                 do iCell = 1, nCells
                    if (maskCell(iCell) == 1) then
@@ -3995,7 +3995,7 @@ contains
 
           if (thisTracer % hasChild) then
 
-             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for CICE)
+             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for MPAS-Seaice)
 
                 do iCell = 1, nCells
                    if (maskCell(iCell) == 1) then
@@ -6791,7 +6791,7 @@ contains
        endif
 
        ! set parent tracer
-       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for MPAS-Seaice)
 
           ! This field has no parent, but set a parentTracer pointer to have value of 1 at each QP.
           ! This ensures correct values for triangleValue2D/3D below.
@@ -7094,7 +7094,7 @@ contains
        endif
 
        ! set parent tracer
-       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for MPAS-Seaice)
 
           ! Set a parentTracer pointer to have a mass-tracer product of 1 in each cell.
           ! This ensures correct values for massTracerProduct below.
@@ -7277,7 +7277,7 @@ contains
        endif
 
        ! set parent tracer
-       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for MPAS-Seaice)
 
           ! Set a parentTracer pointer to have a mass-tracer product of 1 in each cell.
           ! This ensures correct values for massTracerProduct below.
@@ -7315,7 +7315,7 @@ contains
     do while (associated(thisTracer))
 
        ! set parent tracer
-       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+       if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for MPAS-Seaice)
 
           parentTracer => dummyTracer
 
@@ -7587,7 +7587,7 @@ contains
 !
 !  routine recover_tracer_means
 !
-!> \brief MPAS-CICE check whether reconstructed tracer fields recover the means
+!> \brief MPAS-Seaice check whether reconstructed tracer fields recover the means
 !> \author William Lipscomb
 !> \date   September 2015
 !> \details
@@ -9310,7 +9310,7 @@ contains
        area,    &
        volumeToThickness)
 
-    !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
+    !Note: For the current version of MPAS-Seaice (as of Sept. 2015), ice and snow volume are in the tracer list.
     !      However, volume is not a tracer, but the product of area and thickness, where thickness is a tracer.
     !      This subroutine converts volume to thickness for purposes of IR.
 
@@ -9357,7 +9357,7 @@ contains
        area,       &
        thicknessToVolume)
 
-    !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
+    !Note: For the current version of MPAS-Seaice (as of Sept. 2015), ice and snow volume are in the tracer list.
     !      However, volume is not a tracer, but the product of area and thickness, where thickness is a tracer.
     !      This subroutine converts thickness back to volume for purposes of IR.
 
@@ -9384,4 +9384,4 @@ contains
 
   end subroutine thickness_to_volume
 
-end module cice_advection_incremental_remap
+end module seaice_advection_incremental_remap

@@ -51,7 +51,7 @@ contains
        dt)!{{{
 
     use seaice_mesh, only: seaice_init_mesh
-    use cice_advection, only: cice_init_advection
+    use seaice_advection, only: seaice_init_advection
     use seaice_velocity_solver, only: seaice_init_velocity_solver
     use cice_column, only: &
          cice_init_column_physics_package_parameters, &
@@ -105,7 +105,7 @@ contains
 
     ! init advection
     call mpas_log_write(" Initialize advection...")
-    call cice_init_advection(domain)
+    call seaice_init_advection(domain)
 
     ! column physics initialization
     call mpas_log_write(" Initialize column variables...")
