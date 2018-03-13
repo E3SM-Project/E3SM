@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_pointwise_stats
+!  seaice_pointwise_stats
 !
 !> \brief MPAS-seaice analysis mode member: pointwise_stats
 !> \author Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -22,7 +22,7 @@
 #define PWAM_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
 #define PWAM_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
-module cice_pointwise_stats
+module seaice_pointwise_stats
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -46,12 +46,12 @@ module cice_pointwise_stats
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_pointwise_stats, &
-             cice_init_pointwise_stats, &
-             cice_precompute_pointwise_stats, &
-             cice_compute_pointwise_stats, &
-             cice_restart_pointwise_stats, &
-             cice_finalize_pointwise_stats
+   public :: seaice_bootstrap_pointwise_stats, &
+             seaice_init_pointwise_stats, &
+             seaice_precompute_pointwise_stats, &
+             seaice_compute_pointwise_stats, &
+             seaice_restart_pointwise_stats, &
+             seaice_finalize_pointwise_stats
 
    !--------------------------------------------------------------------
    !
@@ -68,7 +68,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_pointwise_stats
+!  routine seaice_bootstrap_pointwise_stats
 !
 !> \brief   Bootstrap pointwise stats AM
 !> \author  Doug Jacobsen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -78,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_pointwise_stats(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_pointwise_stats(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -707,11 +707,11 @@ contains
       call mpas_pool_add_subpool(domain % blocklist % structs, trim(AMName) // trim(AMPoolSuffix), AMInputFields)
       nullify(AMInputFields)
 
-   end subroutine cice_bootstrap_pointwise_stats!}}}
+   end subroutine seaice_bootstrap_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_pointwise_stats
+!  routine seaice_init_pointwise_stats
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -722,7 +722,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_pointwise_stats(domain, instance, err)!{{{
+   subroutine seaice_init_pointwise_stats(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -823,11 +823,11 @@ contains
          block => block % next
       end do
 
-   end subroutine cice_init_pointwise_stats!}}}
+   end subroutine seaice_init_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_pointwise_stats
+!  routine seaice_precompute_pointwise_stats
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -838,7 +838,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_pointwise_stats(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_pointwise_stats(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -874,11 +874,11 @@ contains
 
       err = 0
 
-    end subroutine cice_precompute_pointwise_stats
+    end subroutine seaice_precompute_pointwise_stats
 
 !***********************************************************************
 !
-!  routine cice_compute_pointwise_stats
+!  routine seaice_compute_pointwise_stats
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -889,7 +889,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_pointwise_stats(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_pointwise_stats(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1417,11 +1417,11 @@ contains
          end if
       end do
 
-    end subroutine cice_compute_pointwise_stats!}}}
+    end subroutine seaice_compute_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_pointwise_stats
+!  routine seaice_restart_pointwise_stats
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -1432,7 +1432,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_pointwise_stats(domain, instance, err)!{{{
+   subroutine seaice_restart_pointwise_stats(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1466,11 +1466,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_pointwise_stats!}}}
+   end subroutine seaice_restart_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_pointwise_stats
+!  routine seaice_finalize_pointwise_stats
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Mark Petersen (adapted for MPAS-seaice by Adrian K. Turner)
@@ -1481,7 +1481,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_pointwise_stats(domain, instance, err)!{{{
+   subroutine seaice_finalize_pointwise_stats(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1515,8 +1515,8 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_pointwise_stats!}}}
+   end subroutine seaice_finalize_pointwise_stats!}}}
 
-end module cice_pointwise_stats
+end module seaice_pointwise_stats
 
 ! vim: foldmethod=marker

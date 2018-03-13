@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_ice_shelves
+!  seaice_ice_shelves
 !
 !> \brief MPAS sea ice analysis mode member: ice_shelves
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_ice_shelves
+module seaice_ice_shelves
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_ice_shelves
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_ice_shelves, &
-             cice_init_ice_shelves, &
-             cice_precompute_ice_shelves, &
-             cice_compute_ice_shelves, &
-             cice_restart_ice_shelves, &
-             cice_finalize_ice_shelves
+   public :: seaice_bootstrap_ice_shelves, &
+             seaice_init_ice_shelves, &
+             seaice_precompute_ice_shelves, &
+             seaice_compute_ice_shelves, &
+             seaice_restart_ice_shelves, &
+             seaice_finalize_ice_shelves
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_ice_shelves
+!  routine seaice_bootstrap_ice_shelves
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_ice_shelves(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_ice_shelves(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_ice_shelves!}}}
+   end subroutine seaice_bootstrap_ice_shelves!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_ice_shelves
+!  routine seaice_init_ice_shelves
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_ice_shelves(domain, instance, err)!{{{
+   subroutine seaice_init_ice_shelves(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_ice_shelves!}}}
+   end subroutine seaice_init_ice_shelves!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_ice_shelves
+!  routine seaice_precompute_ice_shelves
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_ice_shelves(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_ice_shelves(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_ice_shelves!}}}
+   end subroutine seaice_precompute_ice_shelves!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_ice_shelves
+!  routine seaice_compute_ice_shelves
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_ice_shelves(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_ice_shelves(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -317,11 +317,11 @@ contains
 
       call MPAS_dmpar_sum_real(domain % dminfo, iceAreaOverIceShelvesThisProc, iceAreaOverIceShelves)
 
-   end subroutine cice_compute_ice_shelves!}}}
+   end subroutine seaice_compute_ice_shelves!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_ice_shelves
+!  routine seaice_restart_ice_shelves
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -332,7 +332,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_ice_shelves(domain, instance, err)!{{{
+   subroutine seaice_restart_ice_shelves(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -366,11 +366,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_ice_shelves!}}}
+   end subroutine seaice_restart_ice_shelves!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_ice_shelves
+!  routine seaice_finalize_ice_shelves
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -381,7 +381,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_ice_shelves(domain, instance, err)!{{{
+   subroutine seaice_finalize_ice_shelves(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -415,10 +415,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_ice_shelves!}}}
+   end subroutine seaice_finalize_ice_shelves!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_ice_shelves
+end module seaice_ice_shelves
 
 ! vim: foldmethod=marker

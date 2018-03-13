@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_TEM_PLATE
+!  seaice_TEM_PLATE
 !
 !> \brief MPAS sea ice analysis mode member: TEM_PLATE
 !> \author FILL_IN_AUTHOR
@@ -16,19 +16,19 @@
 !>  MPAS sea ice analysis mode member: TEM_PLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     cp mpas_cice_TEMPLATE.F mpas_cice_your_new_name.F
-!>     cp Registry_cice_TEMPLATE.xml Registry_cice_your_new_name.xml
+!>     cp mpas_seaice_TEMPLATE.F mpas_cice_your_new_name.F
+!>     cp Registry_seaice_TEMPLATE.xml Registry_cice_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
 !>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
 !>     Typically tempLate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_cice_yourNewName.xml
+!>     note: do not replace 'filename_template' in Registry_seaice_yourNewName.xml
 !>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
-!>  4. In mpas_cice_analysis_driver.F, add a use statement for your new analysis member.
+!>  4. In mpas_seaice_analysis_driver.F, add a use statement for your new analysis member.
 !>     In addition, add lines for your analysis member, and replace TEM_PLATE
 !>     and temPlate as described in step 2. There should be 5 places that need additions:
 !>      - Adding the analysis member name to the analysis member list
@@ -45,7 +45,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_TEM_PLATE
+module seaice_TEM_PLATE
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -69,12 +69,12 @@ module cice_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_TEM_PLATE, &
-             cice_init_TEM_PLATE, &
-             cice_precompute_TEM_PLATE, &
-             cice_compute_TEM_PLATE, &
-             cice_restart_TEM_PLATE, &
-             cice_finalize_TEM_PLATE
+   public :: seaice_bootstrap_TEM_PLATE, &
+             seaice_init_TEM_PLATE, &
+             seaice_precompute_TEM_PLATE, &
+             seaice_compute_TEM_PLATE, &
+             seaice_restart_TEM_PLATE, &
+             seaice_finalize_TEM_PLATE
 
    !--------------------------------------------------------------------
    !
@@ -88,7 +88,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_TEM_PLATE
+!  routine seaice_bootstrap_TEM_PLATE
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -99,7 +99,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_TEM_PLATE(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_TEM_PLATE(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -133,11 +133,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_TEM_PLATE!}}}
+   end subroutine seaice_bootstrap_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_TEM_PLATE
+!  routine seaice_init_TEM_PLATE
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -148,7 +148,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_TEM_PLATE(domain, instance, err)!{{{
+   subroutine seaice_init_TEM_PLATE(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -182,11 +182,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_TEM_PLATE!}}}
+   end subroutine seaice_init_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_TEM_PLATE
+!  routine seaice_precompute_TEM_PLATE
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -197,7 +197,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_TEM_PLATE(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_TEM_PLATE(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -233,11 +233,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_TEM_PLATE!}}}
+   end subroutine seaice_precompute_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_TEM_PLATE
+!  routine seaice_compute_TEM_PLATE
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -248,7 +248,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_TEM_PLATE(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_TEM_PLATE(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -357,11 +357,11 @@ contains
          block => block % next
       end do
 
-   end subroutine cice_compute_TEM_PLATE!}}}
+   end subroutine seaice_compute_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_TEM_PLATE
+!  routine seaice_restart_TEM_PLATE
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -372,7 +372,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_TEM_PLATE(domain, instance, err)!{{{
+   subroutine seaice_restart_TEM_PLATE(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -406,11 +406,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_TEM_PLATE!}}}
+   end subroutine seaice_restart_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_TEM_PLATE
+!  routine seaice_finalize_TEM_PLATE
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
@@ -421,7 +421,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_TEM_PLATE(domain, instance, err)!{{{
+   subroutine seaice_finalize_TEM_PLATE(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -455,10 +455,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_TEM_PLATE!}}}
+   end subroutine seaice_finalize_TEM_PLATE!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_TEM_PLATE
+end module seaice_TEM_PLATE
 
 ! vim: foldmethod=marker
