@@ -267,8 +267,8 @@ contains
 
    subroutine cice_compute_load_balance(domain, instance, timeLevel, err)!{{{
 
-     use cice_constants, only: &
-          cicePuny
+     use seaice_constants, only: &
+          seaicePuny
 
       !-----------------------------------------------------------------
       !
@@ -346,7 +346,7 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            if (iceAreaCell(iCell) > cicePuny) then
+            if (iceAreaCell(iCell) > seaicePuny) then
 
                nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) = &
                     nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) + 1

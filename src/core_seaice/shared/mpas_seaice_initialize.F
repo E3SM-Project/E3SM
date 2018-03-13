@@ -436,8 +436,8 @@ contains
        block, &
        configs)!{{{
 
-    use cice_constants, only: &
-         ciceDegreesToRadians
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -500,8 +500,8 @@ contains
 
     do iCell = 1, nCellsSolve
 
-       if (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
-           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) then
+       if (latCell(iCell) > config_initial_latitude_north * seaiceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * seaiceDegreesToRadians) then
 
           ! has ice
           iceAreaCategory(1,:,iCell)    = config_initial_ice_area
@@ -547,8 +547,8 @@ contains
        block, &
        configs)!{{{
 
-    use cice_constants, only: &
-         ciceDegreesToRadians
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
 
     use ice_colpkg, only: &
          colpkg_init_trcr, &
@@ -656,8 +656,8 @@ contains
     do iCell = 1, nCellsSolve
 
        if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
-          (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
-           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) .and. &
+          (latCell(iCell) > config_initial_latitude_north * seaiceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * seaiceDegreesToRadians) .and. &
           landIceMask(iCell) == 0) then
 
           ! has ice
@@ -731,8 +731,8 @@ contains
        initialCategoryIceArea, &
        initialCategoryIceThickness)
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     use ice_colpkg, only: &
          colpkg_init_itd
@@ -844,7 +844,7 @@ contains
     do iCategory = 1, nCategories
 
        initialCategoryIceArea(iCategory) = initialCategoryIceArea(iCategory) / &
-            (areaCategorySum + cicePuny / nCategories)
+            (areaCategorySum + seaicePuny / nCategories)
 
     enddo ! iCategory
 
@@ -959,7 +959,7 @@ contains
        block, &
        configs)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          earthRadius
 
     type(block_type), intent(inout) :: &
@@ -1090,8 +1090,8 @@ contains
        block, &
        configs)!{{{
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -1210,8 +1210,8 @@ contains
        block, &
        configs)!{{{
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -1711,9 +1711,9 @@ contains
          colpkg_liquidus_temperature, &
          colpkg_init_ocean_conc
 
-    use cice_constants, only: &
-         ciceStefanBoltzmann, &
-         ciceFreshWaterFreezingPoint
+    use seaice_constants, only: &
+         seaiceStefanBoltzmann, &
+         seaiceFreshWaterFreezingPoint
 
     use cice_column, only: &
          cice_column_initial_air_drag_coefficient
@@ -1841,7 +1841,7 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxes)
           call MPAS_pool_get_array(atmosFluxes, "longwaveUp", longwaveUp)
-          longwaveUp = -ciceStefanBoltzmann * ciceFreshWaterFreezingPoint**4
+          longwaveUp = -seaiceStefanBoltzmann * seaiceFreshWaterFreezingPoint**4
 
           call MPAS_pool_get_subpool(block % structs, "drag", drag)
           call MPAS_pool_get_array(drag, "airDragCoefficient", airDragCoefficient)
@@ -1958,9 +1958,9 @@ contains
 
   subroutine init_test_ice_shelf_mask(domain)
 
-    use cice_constants, only: &
-         ciceDegreesToRadians, &
-         ciceRadiansToDegrees
+    use seaice_constants, only: &
+         seaiceDegreesToRadians, &
+         seaiceRadiansToDegrees
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2013,9 +2013,9 @@ contains
 
           do iCell = 1, nCells
 
-             if (lonCell(iCell) > lonLimitWest * ciceDegreesToRadians .and. &
-                 lonCell(iCell) < lonLimitEast * ciceDegreesToRadians .and. &
-                 latCell(iCell) < latLimit     * ciceDegreesToRadians) then
+             if (lonCell(iCell) > lonLimitWest * seaiceDegreesToRadians .and. &
+                 lonCell(iCell) < lonLimitEast * seaiceDegreesToRadians .and. &
+                 latCell(iCell) < latLimit     * seaiceDegreesToRadians) then
 
                 landIceMask(iCell) = 1
 

@@ -611,9 +611,9 @@ contains
 
   subroutine aggregate_mass_and_area(domain)!{{{
 
-    use cice_constants, only: &
-         ciceDensityIce, &
-         ciceDensitySnow
+    use seaice_constants, only: &
+         seaiceDensityIce, &
+         seaiceDensitySnow
 
     type(domain_type), intent(in) :: &
          domain
@@ -668,8 +668,8 @@ contains
           iceVolumeCell(iCell)  = sum(iceVolumeCategory(1,:,iCell))
           snowVolumeCell(iCell) = sum(snowVolumeCategory(1,:,iCell))
 
-          totalMassCell(iCell)  = iceVolumeCell(iCell)  * ciceDensityIce + &
-                                  snowVolumeCell(iCell) * ciceDensitySnow
+          totalMassCell(iCell)  = iceVolumeCell(iCell)  * seaiceDensityIce + &
+                                  snowVolumeCell(iCell) * seaiceDensitySnow
 
        enddo ! iCell
 
@@ -1267,9 +1267,9 @@ contains
     use ice_colpkg, only: &
          colpkg_ice_strength
 
-    use cice_constants, only: &
-         ciceIceStrengthConstantHiblerP, &
-         ciceIceStrengthConstantHiblerC
+    use seaice_constants, only: &
+         seaiceIceStrengthConstantHiblerP, &
+         seaiceIceStrengthConstantHiblerC
 
     use cice_diagnostics, only: &
          cice_load_balance_timers
@@ -1347,8 +1347,8 @@ contains
 
              if (solveStress(iCell) == 1) then
 
-                icePressure(iCell) = ciceIceStrengthConstantHiblerP * iceVolumeCell(iCell) * &
-                     exp(-ciceIceStrengthConstantHiblerC*(1.0_RKIND-iceAreaCell(iCell)))
+                icePressure(iCell) = seaiceIceStrengthConstantHiblerP * iceVolumeCell(iCell) * &
+                     exp(-seaiceIceStrengthConstantHiblerC*(1.0_RKIND-iceAreaCell(iCell)))
 
              else
 
@@ -1864,9 +1864,6 @@ contains
 
   subroutine surface_tilt_geostrophic(domain)
 
-    use cice_constants, only: &
-         ciceGravity
-
     type(domain_type), intent(inout) :: &
          domain
 
@@ -1953,8 +1950,8 @@ contains
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
 
-    use cice_constants, only: &
-         ciceGravity
+    use seaice_constants, only: &
+         seaiceGravity
 
     use cice_diagnostics, only: &
          cice_load_balance_timers
@@ -2078,8 +2075,8 @@ contains
 
           if (solveVelocity(iVertex) == 1) then
 
-             surfaceTiltForceU(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexU(iVertex)
-             surfaceTiltForceV(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexV(iVertex)
+             surfaceTiltForceU(iVertex) = -seaiceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexU(iVertex)
+             surfaceTiltForceV(iVertex) = -seaiceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexV(iVertex)
 
           else
 
@@ -2108,9 +2105,6 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine no_surface_tilt(domain)
-
-    use cice_constants, only: &
-         ciceGravity
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2509,9 +2503,9 @@ contains
 
   subroutine ocean_stress_coefficient(domain)
 
-    use cice_constants, only: &
-         ciceDensitySeaWater, &
-         ciceIceOceanDragCoefficient
+    use seaice_constants, only: &
+         seaiceDensitySeaWater, &
+         seaiceIceOceanDragCoefficient
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2569,7 +2563,7 @@ contains
 
              if (solveVelocity(iVertex) == 1) then
 
-                oceanStressCoeff(iVertex) = ciceIceOceanDragCoefficient * ciceDensitySeaWater * iceAreaVertex(iVertex) * &
+                oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
                      sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                           (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 
@@ -3082,8 +3076,8 @@ contains
        stress12, &
        replacementPressure)
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     real(kind=RKIND), intent(out) :: &
          principalStress1, & !< Output:
@@ -3098,7 +3092,7 @@ contains
     real(kind=RKIND) :: &
          sqrtContents
 
-    if (replacementPressure > cicePuny) then
+    if (replacementPressure > seaicePuny) then
 
        sqrtContents = (stress11 + stress22)**2 - &
                       4.0_RKIND * stress11 * stress22 + &

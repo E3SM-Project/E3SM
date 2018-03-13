@@ -222,8 +222,8 @@ contains
 
    subroutine cice_compute_maximum_ice_presence(domain, instance, timeLevel, err)!{{{
 
-     use cice_constants, only: &
-          cicePuny
+     use seaice_constants, only: &
+          seaicePuny
 
       !-----------------------------------------------------------------
       !
@@ -311,7 +311,7 @@ contains
 
             do iCell = 1, nCellsSolve
 
-               if (iceAreaCell(iCell) > cicePuny) then
+               if (iceAreaCell(iCell) > seaicePuny) then
 
                   maximumIcePresence(iMonth, iCell) = 1
                   maximumIcePresence(nMonths,iCell) = 1

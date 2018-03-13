@@ -200,7 +200,7 @@ contains
 
   subroutine define_tracer_connectivities(config_use_velocity_solver)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          iceAreaMinimum, &
          iceThicknessMinimum, &
          snowThicknessMinimum
@@ -882,7 +882,7 @@ contains
        parentTendencyNone, &
        parentEdgeFluxNone)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          iceAreaMinimum
 
     use cice_debug, only: &
@@ -1953,7 +1953,7 @@ contains
        tracers, &
        tracer_conservation)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          iceAreaMinimum
 
     use cice_debug, only: cice_time_output_variable_real
@@ -2056,7 +2056,7 @@ contains
        tracers, &
        tracer_conservation)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          iceAreaMinimum
 
     use cice_debug, only: cice_time_output_variable_real
@@ -2406,7 +2406,7 @@ contains
 
   subroutine clean_tracers(clock, mesh, tracers)
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          iceAreaMinimum
 
     type (MPAS_Clock_type), intent(in) :: &

@@ -190,8 +190,8 @@ contains
 
   subroutine store_timestep_counter(domain, itimestep)
 
-    use cice_constants, only: &
-         ciceSecondsPerDay
+    use seaice_constants, only: &
+         seaiceSecondsPerDay
 
     type(domain_type), intent(in) :: &
          domain
@@ -225,7 +225,7 @@ contains
 
        mesh_itimestep(1) = itimestep
 
-       timeAverageTestVariable = timeAverageTestVariable + config_dt / ciceSecondsPerDay
+       timeAverageTestVariable = timeAverageTestVariable + config_dt / seaiceSecondsPerDay
 
        block => block % next
     end do

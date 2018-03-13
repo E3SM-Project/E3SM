@@ -59,8 +59,8 @@ contains
        vVelocity, &
        interiorVertex)
 
-    use cice_constants, only: omega
-    use cice_constants, only: ciceDegreesToRadians
+    use seaice_constants, only: omega
+    use seaice_constants, only: seaiceDegreesToRadians
     use cice_debug, only: cice_init_ijpop_from_ivertex
 
     type(MPAS_pool_type), intent(inout) :: mesh
@@ -87,8 +87,8 @@ contains
          iVertex
 
     real(kind=RKIND), parameter :: &
-         initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * ciceDegreesToRadians, &
-         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * ciceDegreesToRadians, &
+         initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * seaiceDegreesToRadians, &
+         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * seaiceDegreesToRadians, &
          circle_radius = 1.0e6_RKIND
 
     real(kind=RKIND) :: &
@@ -363,7 +363,7 @@ contains
        yin, &
        time)
 
-    use cice_constants, only: pii
+    use seaice_constants, only: pii
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uAirVelocity, &
@@ -539,8 +539,8 @@ contains
 
   subroutine square_test_correct_positions(mesh)
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees
 
     type(MPAS_pool_type), intent(inout) :: &
          mesh
@@ -560,7 +560,7 @@ contains
          longitudeSquare = -156.5_RKIND, &
          latitudeSquare  = 71.35_RKIND, &
          radius          = 6.37e6_RKIND, &
-         distanceToAngle = ciceRadiansToDegrees / radius, &
+         distanceToAngle = seaiceRadiansToDegrees / radius, &
          omega           = 7.292e-5_RKIND
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -600,8 +600,8 @@ contains
     lonCell = xCell * distanceToAngle + longitudeSquare
     latCell = yCell * distanceToAngle + latitudeSquare
 
-    lonCell = lonCell / ciceRadiansToDegrees
-    latCell = latCell / ciceRadiansToDegrees
+    lonCell = lonCell / seaiceRadiansToDegrees
+    latCell = latCell / seaiceRadiansToDegrees
 
     ! Vertex
     xVertex = xVertex + dx
@@ -610,8 +610,8 @@ contains
     lonVertex = xVertex * distanceToAngle + longitudeSquare
     latVertex = yVertex * distanceToAngle + latitudeSquare
 
-    lonVertex = lonVertex / ciceRadiansToDegrees
-    latVertex = latVertex / ciceRadiansToDegrees
+    lonVertex = lonVertex / seaiceRadiansToDegrees
+    latVertex = latVertex / seaiceRadiansToDegrees
 
     ! Edge
     xEdge = xEdge + dx
@@ -620,8 +620,8 @@ contains
     lonEdge = xEdge * distanceToAngle + longitudeSquare
     latEdge = yEdge * distanceToAngle + latitudeSquare
 
-    lonEdge = lonEdge / ciceRadiansToDegrees
-    latEdge = latEdge / ciceRadiansToDegrees
+    lonEdge = lonEdge / seaiceRadiansToDegrees
+    latEdge = latEdge / seaiceRadiansToDegrees
 
     ! fvalues
     fVertex = 2.0_RKIND * omega * sin(latVertex)

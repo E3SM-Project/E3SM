@@ -84,7 +84,7 @@ contains
 
     use mpas_stream_manager
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          earthRadius
 
     type (domain_type), intent(inout) :: &
@@ -308,7 +308,7 @@ contains
   subroutine coriolis_parameter(&
        domain)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          omega
 
     type (domain_type), intent(inout) :: &
@@ -3275,7 +3275,7 @@ contains
 
   subroutine cice_test_mesh_conversions(domain)
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          pii
 
     type(domain_type) :: domain
