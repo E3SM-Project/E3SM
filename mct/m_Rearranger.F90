@@ -732,11 +732,6 @@
    if(present(AlltoAll)) then
     if(AlltoAll) usealltoall=.true.
    endif
-!pw++
-   ! forcing use of alltoall protocol until additional tuning
-   ! capabilities are added to calling routines
-!pw   usealltoall=.true.
-!pw--
 
    useswapm=.false.
    if (usealltoall) then
@@ -761,12 +756,6 @@
      useswapm=.true.
     endif
 
-!pw++
-    ! forcing use of swapm variant of alltoall protocol
-    ! until additional tuning capabilities are added to
-    ! calling routines
-!pw    useswapm=.true.
-!pw--
    endif
 
    DoSum=.false.
@@ -792,75 +781,53 @@
 
   ! ALLOCATE DATA STRUCTURES !
 
-  ! IF SENDING DATA
-  if(SendRout%nprocs > 0) then
+  ! IF SENDING OR RECEIVING INTEGER DATA
+  if (numi .ge. 1) then
 
-     ! IF SENDING INTEGER DATA
-     if(numi .ge. 1) then
+     ! allocate buffer to hold all outgoing data
+     ISendSize = 1
+     do proc=1,SendRout%nprocs
+        ISendLoc(proc) = ISendSize
+        ISendSize = ISendSize + SendRout%locsize(proc)*numi
+     enddo
+     if (ISendSize > 1) ISendSize = ISendSize - 1
+     allocate(ISendBuf(ISendSize),stat=ier)
+     if (ier/=0) call die(myname_,'allocate(ISendBuf)',ier)
 
-	! allocate buffer to hold all outgoing data
-        ISendSize = 1
-	do proc=1,SendRout%nprocs
-           ISendLoc(proc) = ISendSize
-           ISendSize = ISendSize + SendRout%locsize(proc)*numi
-	enddo
-        ISendSize = ISendSize - 1
-	allocate(ISendBuf(ISendSize),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(ISendBuf)',ier)
-
-     endif
-
-     ! IF SENDING REAL DATA
-     if(numr .ge. 1) then
-
-	! allocate buffer to hold all outgoing data
-        RSendSize = 1
-	do proc=1,SendRout%nprocs
-           RSendLoc(proc) = RSendSize
-           RSendSize = RSendSize + SendRout%locsize(proc)*numr
-	enddo
-        RSendSize = RSendSize - 1
-	allocate(RSendBuf(RSendSize),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(RSendBuf)',ier)
-
-
-     endif
+     ! allocate buffer to hold all incoming data
+     IRecvSize = 1
+     do proc=1,RecvRout%nprocs
+        IRecvLoc(proc) = IRecvSize
+        IRecvSize = IRecvSize + RecvRout%locsize(proc)*numi
+     enddo
+     if (IRecvSize > 1) IRecvSize = IRecvSize - 1
+     allocate(IRecvBuf(IRecvSize),stat=ier)
+     if(ier/=0) call die(myname_,'allocate(IRecvBuf)',ier)
 
   endif
 
-  ! IF RECEVING DATA
-  if(RecvRout%nprocs > 0) then
+  ! IF SENDING OR RECEIVING REAL DATA
+  if (numr .ge. 1) then
 
-     ! IF RECEIVING INTEGER DATA
-     if(numi .ge. 1) then
+     ! allocate buffer to hold all outgoing data
+     RSendSize = 1
+     do proc=1,SendRout%nprocs
+        RSendLoc(proc) = RSendSize
+        RSendSize = RSendSize + SendRout%locsize(proc)*numr
+     enddo
+     if (RSendSize > 1) RSendSize = RSendSize - 1
+     allocate(RSendBuf(RSendSize),stat=ier)
+     if (ier/=0) call die(myname_,'allocate(RSendBuf)',ier)
 
-	! allocate buffer to hold all outgoing data
-        IRecvSize = 1
-	do proc=1,RecvRout%nprocs
-           IRecvLoc(proc) = IRecvSize
-           IRecvSize = IRecvSize + RecvRout%locsize(proc)*numi
-	enddo
-        IRecvSize = IRecvSize - 1
-	allocate(IRecvBuf(IRecvSize),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(IRecvBuf)',ier)
-
-     endif
-
-     ! IF RECEIVING REAL DATA
-     if(numr .ge. 1) then
-
-	! allocate buffer to hold all outgoing data
-        RRecvSize = 1
-	do proc=1,RecvRout%nprocs
-           RRecvLoc(proc) = RRecvSize
-           RRecvSize = RRecvSize + RecvRout%locsize(proc)*numr
-	enddo
-        RRecvSize = RRecvSize - 1
-	allocate(RRecvBuf(RRecvSize),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(RRecvBuf)',ier)
-
-
-     endif
+     ! allocate buffer to hold all incoming data
+     RRecvSize = 1
+     do proc=1,RecvRout%nprocs
+        RRecvLoc(proc) = RRecvSize
+        RRecvSize = RRecvSize + RecvRout%locsize(proc)*numr
+     enddo
+     if (RRecvSize > 1) RRecvSize = RRecvSize - 1
+     allocate(RRecvBuf(RRecvSize),stat=ier)
+     if(ier/=0) call die(myname_,'allocate(RRecvBuf)',ier)
 
   endif
 
@@ -1333,43 +1300,27 @@ endif
 
   ! DEALLOCATE ALL STRUCTURES
 
-  if(SendRout%nprocs > 0) then
+  if (numi .ge. 1) then
 
-     if(numi .ge. 1) then
+     ! Deallocate the send buffer
+     deallocate(ISendBuf,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(ISendBuf)',ier)
 
-	! Deallocate the send buffer
-	deallocate(ISendBuf,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(ISendBuf)',ier)
-
-     endif
-
-     if(numr .ge. 1) then
-
-	! Deallocate the send buffer
-	deallocate(RSendBuf,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(RSendBuf)',ier)
-
-     endif
+     ! Deallocate the receive buffer
+     deallocate(IRecvBuf,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(IRecvBuf)',ier)
 
   endif
 
-  if(RecvRout%nprocs > 0) then
+  if (numr .ge. 1) then
 
-     if(numi .ge. 1) then
+     ! Deallocate the send buffer
+     deallocate(RSendBuf,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(RSendBuf)',ier)
 
-	! Deallocate the receive buffer
-	deallocate(IRecvBuf,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(IRecvBuf)',ier)
-
-     endif
-
-     if(numr .ge. 1) then
-
-	! Deallocate the receive buffer
-	deallocate(RRecvBuf,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(RRecvBuf)',ier)
-
-     endif
+     ! Deallocate the receive buffer
+     deallocate(RRecvBuf,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(RRecvBuf)',ier)
 
   endif
 
