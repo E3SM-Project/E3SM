@@ -22,9 +22,9 @@ module seaice_velocity_solver_unit_tests
   save
 
   public :: &
-       cice_strain_rate_operator_unit_test, &
-       cice_stress_divergence_operator_unit_test, &
-       cice_constitutive_relationship_unit_test
+       seaice_strain_rate_operator_unit_test, &
+       seaice_stress_divergence_operator_unit_test, &
+       seaice_constitutive_relationship_unit_test
 
 contains
 
@@ -34,7 +34,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_strain_rate_operator_unit_test
+!  seaice_strain_rate_operator_unit_test
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -44,7 +44,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_strain_rate_operator_unit_test(&
+  subroutine seaice_strain_rate_operator_unit_test(&
        domain, &
        unit_test_subtype)!{{{
 
@@ -70,7 +70,7 @@ contains
 
        do itest = 1, ntests
 
-          call cice_strain_rate_operator_unit_test_individual(&
+          call seaice_strain_rate_operator_unit_test_individual(&
                domain, &
                trim(test_names(itest)))
 
@@ -78,17 +78,17 @@ contains
 
     else
 
-       call cice_strain_rate_operator_unit_test_individual(&
+       call seaice_strain_rate_operator_unit_test_individual(&
             domain, &
             unit_test_subtype)
 
     endif
 
-  end subroutine cice_strain_rate_operator_unit_test
+  end subroutine seaice_strain_rate_operator_unit_test
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_strain_rate_operator_unit_test
+!  seaice_strain_rate_operator_unit_test
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -98,7 +98,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_strain_rate_operator_unit_test_individual(&
+  subroutine seaice_strain_rate_operator_unit_test_individual(&
        domain, &
        unit_test_subtype)!{{{
 
@@ -519,7 +519,7 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_strain_rate_operator_unit_test_individual!}}}
+  end subroutine seaice_strain_rate_operator_unit_test_individual!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -934,7 +934,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_divergence_operator_unit_test
+!  seaice_stress_divergence_operator_unit_test
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -944,7 +944,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_divergence_operator_unit_test(&
+  subroutine seaice_stress_divergence_operator_unit_test(&
        domain, &
        unit_test_subtype)!{{{
 
@@ -972,7 +972,7 @@ contains
 
        do itest = 1, ntests
 
-          call cice_stress_divergence_operator_unit_test_individual(&
+          call seaice_stress_divergence_operator_unit_test_individual(&
                domain, &
                trim(test_names(itest)))
 
@@ -980,17 +980,17 @@ contains
 
     else
 
-       call cice_stress_divergence_operator_unit_test_individual(&
+       call seaice_stress_divergence_operator_unit_test_individual(&
             domain, &
             unit_test_subtype)
 
     endif
 
-  end subroutine cice_stress_divergence_operator_unit_test
+  end subroutine seaice_stress_divergence_operator_unit_test
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_divergence_operator_unit_test_individual
+!  seaice_stress_divergence_operator_unit_test_individual
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1000,7 +1000,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_divergence_operator_unit_test_individual(&
+  subroutine seaice_stress_divergence_operator_unit_test_individual(&
        domain, &
        unit_test_subtype)!{{{
 
@@ -1390,7 +1390,7 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_stress_divergence_operator_unit_test_individual!}}}
+  end subroutine seaice_stress_divergence_operator_unit_test_individual!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1907,7 +1907,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_constitutive_relationship_unit_test
+!  seaice_constitutive_relationship_unit_test
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -1917,7 +1917,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_constitutive_relationship_unit_test(&
+  subroutine seaice_constitutive_relationship_unit_test(&
        domain)!{{{
 
     use seaice_velocity_solver_constitutive_relation, only: &
@@ -2025,7 +2025,7 @@ contains
        block => block % next
     enddo
 
-  end subroutine cice_constitutive_relationship_unit_test!}}}
+  end subroutine seaice_constitutive_relationship_unit_test!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
