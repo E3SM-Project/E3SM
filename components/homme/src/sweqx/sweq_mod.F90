@@ -20,7 +20,8 @@ contains
     !-----------------
     use dimensions_mod, only : np, nlev, npsq, nelemd
     !-----------------
-    use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
+    !balu
+    use shallow_water_mod, only : tc1_init_state, tc2_init_state2, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
          tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity,&
          toy_chemistry_forcing
@@ -313,7 +314,7 @@ contains
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
-             call tc2_init_state(elem,nets,nete,pmean)
+             call tc2_init_state2(elem,nets,nete,pmean) !balu
           else if (test_case(1:5) == "swtc5") then
              if (hybrid%masterthread) print *,"Restarting swtc5..."
              !==================================================
@@ -364,7 +365,7 @@ contains
              call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
           else if (test_case(1:5) == "swtc2") then
              if (hybrid%masterthread) print *,"initializing swtc2..."
-             call tc2_init_state(elem,nets,nete,pmean)
+             call tc2_init_state2(elem,nets,nete,pmean) !balu
           else if (test_case(1:5) == "swtc5") then
              if (hybrid%masterthread) print *,"initializing swtc5..."
              call tc5_init_state(elem,nets,nete,pmean,deriv)
@@ -812,7 +813,8 @@ contains
     !-----------------
     use dimensions_mod, only :  np, nlev, npsq
     !-----------------
-    use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, &
+    !balu
+    use shallow_water_mod, only : tc1_init_state, tc2_init_state2, tc5_init_state, &
          tc6_init_state, tc5_invariants, tc8_init_state, vortex_init_state, &
          vortex_errors, sj1_init_state, tc6_errors, tc1_errors, tc2_errors, &
          tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors,&
@@ -965,7 +967,7 @@ contains
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
-             call tc2_init_state(elem,nets,nete,pmean)
+             call tc2_init_state2(elem,nets,nete,pmean) !balu
           else if (test_case(1:5) == "swtc5") then
              if (hybrid%masterthread) print *,"Restarting swtc5..."
              !==================================================
@@ -1022,7 +1024,7 @@ contains
              call tc1_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc2") then
              if (hybrid%masterthread) print *,"initializing swtc2..."
-             call tc2_init_state(elem,nets,nete,pmean)
+             call tc2_init_state2(elem,nets,nete,pmean) !balu
           else if (test_case(1:5) == "swtc5") then
              if (hybrid%masterthread) print *,"initializing swtc5..."
              call tc5_init_state(elem,nets,nete,pmean,deriv)
@@ -1130,6 +1132,7 @@ contains
        call RkInit(cfl,RungeKutta)  ! number of stages: cfl+1
 
        if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt_rk)
+       !balu
        call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv,  hybrid, &
             dt_rk   , pmean, tl   , nets, nete)
        

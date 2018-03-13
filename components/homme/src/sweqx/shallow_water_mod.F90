@@ -185,6 +185,8 @@ module shallow_water_mod
   public  :: tc1_errors
 
   public  :: tc2_init_state  ! Initialize test case 2: Global steady state nonlinear geostrophic flow
+  public  :: tc2_init_state2 !balu
+
   public  :: tc2_init_pmean
   public  :: tc2_geopotential
   private :: tc2_coreolis_init
@@ -1246,6 +1248,47 @@ contains
     end do
 
   end subroutine tc2_init_state
+
+  !balu Peixoto, Thuburn, 2017 variation of Williamson, 1992 tc2
+  subroutine tc2_init_state2(elem,nets,nete,pmean)
+    type(element_t), intent(inout) :: elem(:)
+
+    integer, intent(in) :: nets
+    integer, intent(in) :: nete
+    real (kind=real_kind) :: pmean
+    real (kind=real_kind) :: coef
+
+    ! Local variables
+
+    integer :: ie,k
+    integer :: nm1 
+    integer :: n0 
+    integer :: np1
+
+    nm1= 1
+    n0 = 2
+    np1= 3
+
+
+    pmean = tc2_init_pmean() !9.8 ! h0=1m in Peixoto, 2017
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+
+    do ie=nets,nete
+       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       elem(ie)%state%ps(:,:)= coef + tc2_geopotential(elem(ie)%spherep(:,:))
+       do k=1,nlev
+          elem(ie)%state%p(:,:,k,n0)= 9.8e-3 !pmean-coef
+          elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
+          elem(ie)%state%p(:,:,k,np1)=0.0D0
+
+          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  ! tc2 vel same as tc1
+          elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
+          elem(ie)%state%v(:,:,:,k,np1)=0.0D0
+       end do
+    end do
+
+    pmean = 0
+  end subroutine tc2_init_state2
 
   ! ===========================================
   !

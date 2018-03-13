@@ -90,8 +90,8 @@ private
 !======================================================
        umax_local(ie) = MAXVAL(ulatlon(:,:,1))
        vmax_local(ie) = MAXVAL(ulatlon(:,:,2))
-       pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + MAXVAL(elem(ie)%state%ps(:,:))
+       pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) 
+       !balu removed ps. SW GW speed = sqrt(g*depth) not sqrt(g*depth+topo)
 !======================================================
        umin_local(ie) = MINVAL(ulatlon(:,:,1))
        vmin_local(ie) = MINVAL(ulatlon(:,:,2))

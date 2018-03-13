@@ -9,7 +9,6 @@ partmethod    = 4
 topology      = "cube"
 test_case     = "swtc2"
 ne=48
-ntrac=1
 ndays         = 12
 statefreq     = 1440
 tasknum       = 0
