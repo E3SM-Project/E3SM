@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_numerics
+!  seaice_numerics
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_numerics
+module seaice_numerics
 
   use mpas_derived_types
   use mpas_log, only: mpas_log_write
@@ -21,7 +21,7 @@ module cice_numerics
   save
 
   public :: &
-       cice_solve_linear_basis_system
+       seaice_solve_linear_basis_system
 
 contains
 
@@ -31,7 +31,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_solve_linear_basis_system
+!  seaice_solve_linear_basis_system
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -41,7 +41,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+  subroutine seaice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          leftMatrix
@@ -76,7 +76,7 @@ contains
     deallocate(b)
     deallocate(indices)
 
-  end subroutine cice_solve_linear_basis_system
+  end subroutine seaice_solve_linear_basis_system
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -295,4 +295,4 @@ contains
 
   !-------------------------------------------------------------
 
-end module cice_numerics
+end module seaice_numerics
