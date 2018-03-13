@@ -7,17 +7,17 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_cice_advection_incremental_remap_tracers
+!  mpas_seaice_advection_incremental_remap_tracers
 !
 !> \brief  tracer setup for incremental remapping transport scheme
 !> \author Adrian Turner and William Lipscomb
 !> \date   March 2015
 !> \details
 !>  This module contains routines for setting up the tracer data structures
-!>  required by the CICE incremental remapping scheme.
+!>  required by the incremental remapping scheme.
 !
 !-----------------------------------------------------------------------
-module cice_advection_incremental_remap_tracers
+module seaice_advection_incremental_remap_tracers
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -28,10 +28,10 @@ module cice_advection_incremental_remap_tracers
    private
    save
 
-   public :: cice_add_tracers_to_linked_list, &
-             cice_set_tracer_array_pointers,  &
-             cice_update_tracer_halo, &
-             cice_init_update_tracer_halo_exch_group
+   public :: seaice_add_tracers_to_linked_list, &
+             seaice_set_tracer_array_pointers,  &
+             seaice_update_tracer_halo, &
+             seaice_init_update_tracer_halo_exch_group
 
    ! the type that makes up each element in the linked list
    type, public :: tracer_type
@@ -152,7 +152,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_add_tracers_to_linked_list
+!  routine seaice_add_tracers_to_linked_list
 !
 !> \brief  construct a linked list of tracers
 !> \author Adrian Turner and William Lipscomb
@@ -162,7 +162,7 @@ contains
 !>  at the head of the list.
 !-----------------------------------------------------------------------
 
-  subroutine cice_add_tracers_to_linked_list(domain)
+  subroutine seaice_add_tracers_to_linked_list(domain)
 
     type(domain_type), intent(in) :: &
          domain   !< Input:
@@ -512,7 +512,7 @@ contains
        if (associated(tracersHead)) call mpas_log_write('tracersHead:'//trim(tracersHead % tracerName))
     endif
 
-  end subroutine cice_add_tracers_to_linked_list
+  end subroutine seaice_add_tracers_to_linked_list
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -912,7 +912,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_set_tracer_array_pointers
+!  routine seaice_set_tracer_array_pointers
 !
 !> \brief  set tracer pointers to the appropriate field objects
 !> \author Adrian Turner and William Lipscomb
@@ -922,7 +922,7 @@ contains
 !>  the appropriate pools.
 !-----------------------------------------------------------------------
 
-  subroutine cice_set_tracer_array_pointers(tracersHead, block, timeLevelIn)
+  subroutine seaice_set_tracer_array_pointers(tracersHead, block, timeLevelIn)
 
     type(tracer_type), pointer, intent(in) :: &
          tracersHead ! do not alter this pointer - it should always point to the first element
@@ -1104,11 +1104,11 @@ contains
 
     enddo   ! associated(tracer)
 
-  end subroutine cice_set_tracer_array_pointers
+  end subroutine seaice_set_tracer_array_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_update_tracer_halo
+!  routine seaice_update_tracer_halo
 !
 !> \brief  halo update for tracers
 !> \author William Lipscomb
@@ -1117,7 +1117,7 @@ contains
 !>  This routine does a halo update for each tracer in the linked list.
 !-----------------------------------------------------------------------
 
-  subroutine cice_update_tracer_halo(tracersHead, domain, timeLevelIn)
+  subroutine seaice_update_tracer_halo(tracersHead, domain, timeLevelIn)
 
     use mpas_dmpar
 
@@ -1155,11 +1155,11 @@ contains
 
     call seaice_load_balance_timers(domain, "advection after")
 
-  end subroutine cice_update_tracer_halo
+  end subroutine seaice_update_tracer_halo
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_update_tracer_halo
+!  routine seaice_update_tracer_halo
 !
 !> \brief  halo update for tracers
 !> \author William Lipscomb
@@ -1205,7 +1205,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_init_update_tracer_halo_exch_group
+!  routine seaice_init_update_tracer_halo_exch_group
 !
 !> \brief  halo update for tracers
 !> \author William Lipscomb
@@ -1214,7 +1214,7 @@ contains
 !>  This routine does a halo update for each tracer in the linked list.
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_update_tracer_halo_exch_group(tracersHead, domain)
+  subroutine seaice_init_update_tracer_halo_exch_group(tracersHead, domain)
 
     use mpas_dmpar
 
@@ -1279,11 +1279,11 @@ contains
 
     endif ! config_aggregate_halo_exch
 
-  end subroutine cice_init_update_tracer_halo_exch_group
+  end subroutine seaice_init_update_tracer_halo_exch_group
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine cice_update_tracer_halo
+!  routine seaice_update_tracer_halo
 !
 !> \brief  halo update for tracers
 !> \author William Lipscomb
@@ -1348,4 +1348,4 @@ contains
 
   !-----------------------------------------------
 
-end module cice_advection_incremental_remap_tracers
+end module seaice_advection_incremental_remap_tracers

@@ -59,8 +59,8 @@ contains
     use seaice_velocity_solver, only: &
          seaice_run_velocity_solver
 
-    use cice_advection, only: &
-         cice_run_advection
+    use seaice_advection, only: &
+         seaice_run_advection
 
     use cice_column, only: &
          cice_column_predynamics_time_integration, &
@@ -152,7 +152,7 @@ contains
        ! advection
        call mpas_timer_start("Advection")
        if (config_use_advection) &
-            call cice_run_advection(domain, clock, ierr)
+            call seaice_run_advection(domain, clock, ierr)
        call mpas_timer_stop("Advection")
        if (ierr > 0) return
 

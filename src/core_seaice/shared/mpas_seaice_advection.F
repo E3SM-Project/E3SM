@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_advection
+!  seaice_advection
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_advection
+module seaice_advection
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -22,14 +22,14 @@ module cice_advection
   save
 
   public :: &
-       cice_init_advection, &
-       cice_run_advection
+       seaice_init_advection, &
+       seaice_run_advection
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_advection
+!  seaice_init_advection
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -39,13 +39,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_advection(domain)
+  subroutine seaice_init_advection(domain)
 
-    use cice_advection_upwind, only: &
-         cice_init_advection_upwind
+    use seaice_advection_upwind, only: &
+         seaice_init_advection_upwind
 
-    use cice_advection_incremental_remap, only: &
-         cice_init_advection_incremental_remap
+    use seaice_advection_incremental_remap, only: &
+         seaice_init_advection_incremental_remap
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -63,21 +63,21 @@ contains
 
        if (trim(config_advection_type) == "upwind") then
 
-          call cice_init_advection_upwind(domain)
+          call seaice_init_advection_upwind(domain)
 
        else if (trim(config_advection_type) == "incremental_remap") then
 
-          call cice_init_advection_incremental_remap(domain)
+          call seaice_init_advection_incremental_remap(domain)
 
        endif
 
     endif
 
-  end subroutine cice_init_advection
+  end subroutine seaice_init_advection
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_run_advection
+!  seaice_run_advection
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -87,13 +87,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection(domain, clock, ierr)
+  subroutine seaice_run_advection(domain, clock, ierr)
 
-    use cice_advection_upwind, only: &
-         cice_run_advection_upwind
+    use seaice_advection_upwind, only: &
+         seaice_run_advection_upwind
 
-    use cice_advection_incremental_remap, only: &
-         cice_run_advection_incremental_remap
+    use seaice_advection_incremental_remap, only: &
+         seaice_run_advection_incremental_remap
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -118,7 +118,7 @@ contains
        if (trim(config_advection_type) == "upwind") then
 
           call mpas_timer_start("advection upwind")
-          call cice_run_advection_upwind(domain, clock)
+          call seaice_run_advection_upwind(domain, clock)
           call mpas_timer_stop("advection upwind")
 
        else if (trim(config_advection_type) == "incremental_remap") then
@@ -127,7 +127,7 @@ contains
           !           (Later, change volume to thickness throughout code?)
 
           call mpas_timer_start("advection incr remap")
-          call cice_run_advection_incremental_remap(domain, clock, ierr)
+          call seaice_run_advection_incremental_remap(domain, clock, ierr)
           call mpas_timer_stop("advection incr remap")
 
           !TODO WHL - Convert ice/snow thickness to volume here
@@ -136,8 +136,8 @@ contains
 
     endif
 
-  end subroutine cice_run_advection
+  end subroutine seaice_run_advection
 
 !-----------------------------------------------------------------------
 
-end module cice_advection
+end module seaice_advection
