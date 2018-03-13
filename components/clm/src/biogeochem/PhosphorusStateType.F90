@@ -1271,6 +1271,14 @@ contains
           end if
           this%deadstemp_patch(i)  = this%deadstemp_patch(i) * m_veg
           this%deadcrootp_patch(i) = this%deadcrootp_patch(i) * m_veg
+          if (nu_com == 'RD' .and. exit_spinup) then
+              !Initialize plant P storage pool when exiting spinup from CN only mode 
+              if (this%ppool_patch(i) .lt. this%leafp_patch(i)) then 
+                  this%ppool_patch(i) = this%leafp_patch(i)
+              else if (this%ppool_patch(i) .lt. this%leafp_storage_patch(i)) then 
+                  this%ppool_patch(i) = this%leafp_storage_patch(i)
+              end if
+          end if
        end do
 
        ! soil phosphorus initialization when exit AD spinup Qing Z. 2017

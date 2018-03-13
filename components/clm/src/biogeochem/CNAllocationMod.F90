@@ -3150,10 +3150,18 @@ contains
                    !sminn_to_npool(p) = plant_ndemand(p) * fpg(c)   / max((npool(p) / rc), 1.0_r8)  !limit uptake when pool is large
                    !sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c) / max((ppool(p) / rc_p), 1.0_r8)  !limit uptake when pool is large
                end if
-               r  = max(1._r8,rc/max(npool(p), 1e-15_r8))                         
+               if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then 
+                 r = 1.0_r8
+               else
+                 r  = max(1._r8,rc/max(npool(p), 1e-15_r8))                         
+               end if
                plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
 
-               r  = max(1._r8,rc_p/max(ppool(p), 1e-15_r8))
+               if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then 
+                 r = 1.0_r8
+               else
+                 r  = max(1._r8,rc_p/max(ppool(p), 1e-15_r8))
+               end if
                plant_palloc(p) = (plant_pdemand(p) + retransp_to_ppool(p)) / r
 
              else
