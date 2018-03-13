@@ -40,7 +40,7 @@
 	</var_struct>
 	<streams>
 		<stream name="loadBalanceOutput" type="output"
-				filename_template="analysis_members/cice_loadBalance.nc"
+				filename_template="analysis_members/seaice_loadBalance.nc"
 				filename_interval="none"
 				output_interval="00-00-00_01:00:00"
 				reference_time="0000-01-01_00:00:00"

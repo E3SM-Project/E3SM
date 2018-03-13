@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_unit_conversion
+!  seaice_unit_conversion
 !
 !> \brief MPAS sea ice analysis mode member: unit_conversion
 !> \author Adrian K. Turner
@@ -16,7 +16,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_unit_conversion
+module seaice_unit_conversion
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -40,12 +40,12 @@ module cice_unit_conversion
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_unit_conversion, &
-             cice_init_unit_conversion, &
-             cice_precompute_unit_conversion, &
-             cice_compute_unit_conversion, &
-             cice_restart_unit_conversion, &
-             cice_finalize_unit_conversion
+   public :: seaice_bootstrap_unit_conversion, &
+             seaice_init_unit_conversion, &
+             seaice_precompute_unit_conversion, &
+             seaice_compute_unit_conversion, &
+             seaice_restart_unit_conversion, &
+             seaice_finalize_unit_conversion
 
    !--------------------------------------------------------------------
    !
@@ -59,7 +59,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_unit_conversion
+!  routine seaice_bootstrap_unit_conversion
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -70,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_unit_conversion(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_unit_conversion(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -104,11 +104,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_unit_conversion!}}}
+   end subroutine seaice_bootstrap_unit_conversion!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_unit_conversion
+!  routine seaice_init_unit_conversion
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -119,7 +119,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_unit_conversion(domain, instance, err)!{{{
+   subroutine seaice_init_unit_conversion(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -153,11 +153,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_unit_conversion!}}}
+   end subroutine seaice_init_unit_conversion!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_unit_conversion
+!  routine seaice_precompute_unit_conversion
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -168,7 +168,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_unit_conversion(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_unit_conversion(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -204,11 +204,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_unit_conversion!}}}
+   end subroutine seaice_precompute_unit_conversion!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_unit_conversion
+!  routine seaice_compute_unit_conversion
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -219,7 +219,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_unit_conversion(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_unit_conversion(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -338,11 +338,11 @@ contains
          block => block % next
       enddo
 
-   end subroutine cice_compute_unit_conversion!}}}
+   end subroutine seaice_compute_unit_conversion!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_unit_conversion
+!  routine seaice_restart_unit_conversion
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -353,7 +353,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_unit_conversion(domain, instance, err)!{{{
+   subroutine seaice_restart_unit_conversion(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -387,11 +387,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_unit_conversion!}}}
+   end subroutine seaice_restart_unit_conversion!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_unit_conversion
+!  routine seaice_finalize_unit_conversion
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -402,7 +402,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_unit_conversion(domain, instance, err)!{{{
+   subroutine seaice_finalize_unit_conversion(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -436,10 +436,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_unit_conversion!}}}
+   end subroutine seaice_finalize_unit_conversion!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_unit_conversion
+end module seaice_unit_conversion
 
 ! vim: foldmethod=marker

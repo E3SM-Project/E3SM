@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_area_variables
+!  seaice_area_variables
 !
 !> \brief MPAS sea ice analysis mode member: area_variables
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_area_variables
+module seaice_area_variables
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_area_variables
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_area_variables, &
-             cice_init_area_variables, &
-             cice_precompute_area_variables, &
-             cice_compute_area_variables, &
-             cice_restart_area_variables, &
-             cice_finalize_area_variables
+   public :: seaice_bootstrap_area_variables, &
+             seaice_init_area_variables, &
+             seaice_precompute_area_variables, &
+             seaice_compute_area_variables, &
+             seaice_restart_area_variables, &
+             seaice_finalize_area_variables
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_area_variables
+!  routine seaice_bootstrap_area_variables
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_area_variables(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_area_variables(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_area_variables!}}}
+   end subroutine seaice_bootstrap_area_variables!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_area_variables
+!  routine seaice_init_area_variables
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,10 +120,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_area_variables(domain, instance, err)!{{{
+   subroutine seaice_init_area_variables(domain, instance, err)!{{{
 
-      use cice_deactivate_unneeded_fields, only: &
-          cice_deactivate_unneeded_stream_fields
+      use seaice_deactivate_unneeded_fields, only: &
+          seaice_deactivate_unneeded_stream_fields
 
       !-----------------------------------------------------------------
       !
@@ -157,13 +157,13 @@ contains
 
       err = 0
 
-      call cice_deactivate_unneeded_stream_fields(domain, "areaVariablesAM")
+      call seaice_deactivate_unneeded_stream_fields(domain, "areaVariablesAM")
 
-   end subroutine cice_init_area_variables!}}}
+   end subroutine seaice_init_area_variables!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_area_variables
+!  routine seaice_precompute_area_variables
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -174,7 +174,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_area_variables(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_area_variables(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -210,11 +210,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_area_variables!}}}
+   end subroutine seaice_precompute_area_variables!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_area_variables
+!  routine seaice_compute_area_variables
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -225,7 +225,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_area_variables(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_area_variables(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -453,11 +453,11 @@ contains
          block => block % next
       enddo
 
-   end subroutine cice_compute_area_variables!}}}
+   end subroutine seaice_compute_area_variables!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_area_variables
+!  routine seaice_restart_area_variables
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -468,7 +468,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_area_variables(domain, instance, err)!{{{
+   subroutine seaice_restart_area_variables(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -502,11 +502,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_area_variables!}}}
+   end subroutine seaice_restart_area_variables!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_area_variables
+!  routine seaice_finalize_area_variables
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -517,7 +517,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_area_variables(domain, instance, err)!{{{
+   subroutine seaice_finalize_area_variables(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -551,10 +551,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_area_variables!}}}
+   end subroutine seaice_finalize_area_variables!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_area_variables
+end module seaice_area_variables
 
 ! vim: foldmethod=marker

@@ -6,7 +6,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_deactivate_unneeded_fields
+!  seaice_deactivate_unneeded_fields
 !
 !> \brief
 !> \author Adrian K. Turner
@@ -15,7 +15,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_deactivate_unneeded_fields
+module seaice_deactivate_unneeded_fields
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -28,13 +28,13 @@ module cice_deactivate_unneeded_fields
    save
 
    public :: &
-        cice_deactivate_unneeded_stream_fields
+        seaice_deactivate_unneeded_stream_fields
 
 contains
 
 !***********************************************************************
 !
-!  routine cice_deactivate_unneeded_stream_fields
+!  routine seaice_deactivate_unneeded_stream_fields
 !
 !> \brief
 !> \author  Adrian K. Turner
@@ -43,7 +43,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_deactivate_unneeded_stream_fields(domain, poolName)
+  subroutine seaice_deactivate_unneeded_stream_fields(domain, poolName)
 
     type(domain_type), intent(inout) :: &
          domain
@@ -140,8 +140,8 @@ contains
 
     enddo ! area field iteration
 
-  end subroutine cice_deactivate_unneeded_stream_fields
+  end subroutine seaice_deactivate_unneeded_stream_fields
 
   !-----------------------------------------------------------------------
 
-end module cice_deactivate_unneeded_fields
+end module seaice_deactivate_unneeded_fields

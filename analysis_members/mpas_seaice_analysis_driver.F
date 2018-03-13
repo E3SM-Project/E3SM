@@ -26,23 +26,23 @@ module seaice_analysis_driver
    use mpas_stream_manager
    use mpas_log, only: mpas_log_write
 
-   use cice_high_frequency_output
-   use cice_temperatures
-   use cice_regional_statistics
-   use cice_ridging_diagnostics
-   use cice_conservation_check
-   use cice_geographical_vectors
-   use cice_load_balance
-   use cice_maximum_ice_presence
-   use cice_miscellaneous
-   use cice_area_variables
-   use cice_pond_diagnostics
-   use cice_ice_present
-   use cice_time_series_stats
-   use cice_pointwise_stats
-   use cice_unit_conversion
-   use cice_ice_shelves
-!   use cice_TEM_PLATE
+   use seaice_high_frequency_output
+   use seaice_temperatures
+   use seaice_regional_statistics
+   use seaice_ridging_diagnostics
+   use seaice_conservation_check
+   use seaice_geographical_vectors
+   use seaice_load_balance
+   use seaice_maximum_ice_presence
+   use seaice_miscellaneous
+   use seaice_area_variables
+   use seaice_pond_diagnostics
+   use seaice_ice_present
+   use seaice_time_series_stats
+   use seaice_pointwise_stats
+   use seaice_unit_conversion
+   use seaice_ice_shelves
+!   use seaice_TEM_PLATE
 
    implicit none
    private
@@ -1080,47 +1080,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_bootstrap_high_frequency_output(domain, '', err_tmp)
+         call seaice_bootstrap_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_bootstrap_temperatures(domain, '', err_tmp)
+         call seaice_bootstrap_temperatures(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_bootstrap_regional_statistics(domain, '', err_tmp)
+         call seaice_bootstrap_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_bootstrap_ridging_diagnostics(domain, '', err_tmp)
+         call seaice_bootstrap_ridging_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_bootstrap_conservation_check(domain, '', err_tmp)
+         call seaice_bootstrap_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_bootstrap_geographical_vectors(domain, '', err_tmp)
+         call seaice_bootstrap_geographical_vectors(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_bootstrap_load_balance(domain, '', err_tmp)
+         call seaice_bootstrap_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_bootstrap_maximum_ice_presence(domain, '', err_tmp)
+         call seaice_bootstrap_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_bootstrap_miscellaneous(domain, '', err_tmp)
+         call seaice_bootstrap_miscellaneous(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_bootstrap_area_variables(domain, '', err_tmp)
+         call seaice_bootstrap_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_bootstrap_pond_diagnostics(domain, '', err_tmp)
+         call seaice_bootstrap_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_bootstrap_pointwise_stats(domain, '', err_tmp)
+         call seaice_bootstrap_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_bootstrap_unit_conversion(domain, '', err_tmp)
+         call seaice_bootstrap_unit_conversion(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_bootstrap_ice_shelves(domain, '', err_tmp)
+         call seaice_bootstrap_ice_shelves(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_bootstrap_ice_present(domain, '', err_tmp)
+         call seaice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_bootstrap_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+         call seaice_bootstrap_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_bootstrap_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+         call seaice_bootstrap_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_bootstrap_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+         call seaice_bootstrap_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-         call cice_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+         call seaice_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_bootstrap_surface_area_weighted_averages(domain, '', err_tmp)
+!        call seaice_bootstrap_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_bootstrap_TEMP_LATE(domain, '', err_tmp)
+!        call seaice_bootstrap_TEMP_LATE(domain, '', err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1150,47 +1150,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_init_high_frequency_output(domain, '', err_tmp)
+         call seaice_init_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_init_temperatures(domain, '', err_tmp)
+         call seaice_init_temperatures(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_init_regional_statistics(domain, '', err_tmp)
+         call seaice_init_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_init_ridging_diagnostics(domain, '', err_tmp)
+         call seaice_init_ridging_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_init_conservation_check(domain, '', err_tmp)
+         call seaice_init_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_init_geographical_vectors(domain, '', err_tmp)
+         call seaice_init_geographical_vectors(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_init_load_balance(domain, '', err_tmp)
+         call seaice_init_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_init_maximum_ice_presence(domain, '', err_tmp)
+         call seaice_init_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_init_miscellaneous(domain, '', err_tmp)
+         call seaice_init_miscellaneous(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_init_area_variables(domain, '', err_tmp)
+         call seaice_init_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_init_pond_diagnostics(domain, '', err_tmp)
+         call seaice_init_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_init_pointwise_stats(domain, '', err_tmp)
+         call seaice_init_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_init_unit_conversion(domain, '', err_tmp)
+         call seaice_init_unit_conversion(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_init_ice_shelves(domain, '', err_tmp)
+         call seaice_init_ice_shelves(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_init_ice_present(domain, '', err_tmp)
+         call seaice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_init_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+         call seaice_init_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_init_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+         call seaice_init_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+         call seaice_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-         call cice_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+         call seaice_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_init_surface_area_weighted_averages(domain, '', err_tmp)
+!        call seaice_init_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_init_TEMP_LATE(domain, '', err_tmp)
+!        call seaice_init_TEMP_LATE(domain, '', err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1223,47 +1223,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_precompute_high_frequency_output(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_high_frequency_output(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_precompute_temperatures(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_temperatures(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_precompute_regional_statistics(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_regional_statistics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_precompute_ridging_diagnostics(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_ridging_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_precompute_conservation_check(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_precompute_geographical_vectors(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_geographical_vectors(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_precompute_load_balance(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_load_balance(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_precompute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_precompute_miscellaneous(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_miscellaneous(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_precompute_area_variables(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_area_variables(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_precompute_pond_diagnostics(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_pond_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_precompute_pointwise_stats(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_pointwise_stats(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_precompute_unit_conversion(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_unit_conversion(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_precompute_ice_shelves(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_ice_shelves(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
+         call seaice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-      !   call cice_precompute_time_series_stats(domain, timeSeriesDailyTAG, timeLevel, err_tmp)
+      !   call seaice_precompute_time_series_stats(domain, timeSeriesDailyTAG, timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-      !   call cice_precompute_time_series_stats(domain, timeSeriesMonthlyTAG, timeLevel, err_tmp)
+      !   call seaice_precompute_time_series_stats(domain, timeSeriesMonthlyTAG, timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-      !   call cice_precompute_time_series_stats(domain, timeSeriesClimatologyTAG, timeLevel, err_tmp)
+      !   call seaice_precompute_time_series_stats(domain, timeSeriesClimatologyTAG, timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-      !   call cice_precompute_time_series_stats(domain, timeSeriesCustomTAG, timeLevel, err_tmp)
+      !   call seaice_precompute_time_series_stats(domain, timeSeriesCustomTAG, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_precompute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
+!        call seaice_precompute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_precompute_TEMP_LATE(domain, '', timeLevel, err_tmp)
+!        call seaice_precompute_TEMP_LATE(domain, '', timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1294,47 +1294,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_compute_high_frequency_output(domain, '', timeLevel, err_tmp)
+         call seaice_compute_high_frequency_output(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_compute_temperatures(domain, '', timeLevel, err_tmp)
+         call seaice_compute_temperatures(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_compute_regional_statistics(domain, '', timeLevel, err_tmp)
+         call seaice_compute_regional_statistics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_compute_ridging_diagnostics(domain, '', timeLevel, err_tmp)
+         call seaice_compute_ridging_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_compute_conservation_check(domain, '', timeLevel, err_tmp)
+         call seaice_compute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_compute_geographical_vectors(domain, '', timeLevel, err_tmp)
+         call seaice_compute_geographical_vectors(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_compute_load_balance(domain, '', timeLevel, err_tmp)
+         call seaice_compute_load_balance(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_compute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
+         call seaice_compute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_compute_miscellaneous(domain, '', timeLevel, err_tmp)
+         call seaice_compute_miscellaneous(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_compute_area_variables(domain, '', timeLevel, err_tmp)
+         call seaice_compute_area_variables(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_compute_pond_diagnostics(domain, '', timeLevel, err_tmp)
+         call seaice_compute_pond_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_compute_pointwise_stats(domain, '', timeLevel, err_tmp)
+         call seaice_compute_pointwise_stats(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_compute_unit_conversion(domain, '', timeLevel, err_tmp)
+         call seaice_compute_unit_conversion(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_compute_ice_shelves(domain, '', timeLevel, err_tmp)
+         call seaice_compute_ice_shelves(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
+         call seaice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesDailyTAG, err_tmp)
+         call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesMonthlyTAG, err_tmp)
+         call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesClimatologyTAG, err_tmp)
+         call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesCustomTAG, err_tmp)
+         call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_compute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
+!        call seaice_compute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_compute_TEMP_LATE(domain, '', timeLevel, err_tmp)
+!        call seaice_compute_TEMP_LATE(domain, '', timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1364,47 +1364,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_restart_high_frequency_output(domain, '', err_tmp)
+         call seaice_restart_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_restart_temperatures(domain, '', err_tmp)
+         call seaice_restart_temperatures(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_restart_regional_statistics(domain, '', err_tmp)
+         call seaice_restart_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_restart_ridging_diagnostics(domain, '', err_tmp)
+         call seaice_restart_ridging_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_restart_conservation_check(domain, '', err_tmp)
+         call seaice_restart_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_restart_geographical_vectors(domain, '', err_tmp)
+         call seaice_restart_geographical_vectors(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_restart_load_balance(domain, '', err_tmp)
+         call seaice_restart_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_restart_maximum_ice_presence(domain, '', err_tmp)
+         call seaice_restart_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_restart_miscellaneous(domain, '', err_tmp)
+         call seaice_restart_miscellaneous(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_restart_area_variables(domain, '', err_tmp)
+         call seaice_restart_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_restart_pond_diagnostics(domain, '', err_tmp)
+         call seaice_restart_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_restart_pointwise_stats(domain, '', err_tmp)
+         call seaice_restart_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_restart_unit_conversion(domain, '', err_tmp)
+         call seaice_restart_unit_conversion(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_restart_ice_shelves(domain, '', err_tmp)
+         call seaice_restart_ice_shelves(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_restart_ice_present(domain, '', err_tmp)
+         call seaice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_restart_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+         call seaice_restart_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_restart_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+         call seaice_restart_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+         call seaice_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-         call cice_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+         call seaice_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_restart_surface_area_weighted_averages(domain, '', err_tmp)
+!        call seaice_restart_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_restart_TEMP_LATE(domain, '', err_tmp)
+!        call seaice_restart_TEMP_LATE(domain, '', err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1434,47 +1434,47 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_finalize_high_frequency_output(domain, '', err_tmp)
+         call seaice_finalize_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_finalize_temperatures(domain, '', err_tmp)
+         call seaice_finalize_temperatures(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_finalize_regional_statistics(domain, '', err_tmp)
+         call seaice_finalize_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_finalize_ridging_diagnostics(domain, '', err_tmp)
+         call seaice_finalize_ridging_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_finalize_conservation_check(domain, '', err_tmp)
+         call seaice_finalize_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_finalize_geographical_vectors(domain, '', err_tmp)
+         call seaice_finalize_geographical_vectors(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
-         call cice_finalize_load_balance(domain, '', err_tmp)
+         call seaice_finalize_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
-         call cice_finalize_maximum_ice_presence(domain, '', err_tmp)
+         call seaice_finalize_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
-         call cice_finalize_miscellaneous(domain, '', err_tmp)
+         call seaice_finalize_miscellaneous(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
-         call cice_finalize_area_variables(domain, '', err_tmp)
+         call seaice_finalize_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
-         call cice_finalize_pond_diagnostics(domain, '', err_tmp)
+         call seaice_finalize_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
-         call cice_finalize_pointwise_stats(domain, '', err_tmp)
+         call seaice_finalize_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'unitConversion' ) then
-         call cice_finalize_unit_conversion(domain, '', err_tmp)
+         call seaice_finalize_unit_conversion(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'iceShelves' ) then
-         call cice_finalize_ice_shelves(domain, '', err_tmp)
+         call seaice_finalize_ice_shelves(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
-         call cice_finalize_ice_present(domain, '', err_tmp)
+         call seaice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_finalize_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
+         call seaice_finalize_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_finalize_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
+         call seaice_finalize_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_finalize_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+         call seaice_finalize_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
-         call cice_finalize_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+         call seaice_finalize_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_finalize_surface_area_weighted_averages(domain, '', err_tmp)
+!        call seaice_finalize_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_finalize_TEMP_LATE(domain, '', err_tmp)
+!        call seaice_finalize_TEMP_LATE(domain, '', err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)

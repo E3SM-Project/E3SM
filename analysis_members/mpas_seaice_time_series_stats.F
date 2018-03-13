@@ -7,7 +7,7 @@
 !
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-! cice_time_series_stats
+! seaice_time_series_stats
 !
 !> \brief MPAS ocean analysis core member: time_series_stats
 !> \author Jon Woodring
@@ -15,7 +15,7 @@
 !> \details
 !>  Flexible time series averaging, mins, and maxes of fields.
 !-----------------------------------------------------------------------
-module cice_time_series_stats
+module seaice_time_series_stats
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_dmpar
@@ -32,11 +32,11 @@ module cice_time_series_stats
 
   ! Public member functions
   !--------------------------------------------------------------------
-  public :: cice_bootstrap_time_series_stats, &
-         cice_init_time_series_stats, &
-         cice_compute_time_series_stats, &
-         cice_restart_time_series_stats, &
-         cice_finalize_time_series_stats
+  public :: seaice_bootstrap_time_series_stats, &
+         seaice_init_time_series_stats, &
+         seaice_compute_time_series_stats, &
+         seaice_restart_time_series_stats, &
+         seaice_finalize_time_series_stats
 
   ! Private module variables
   !--------------------------------------------------------------------
@@ -168,7 +168,7 @@ module cice_time_series_stats
 contains
 
 !***********************************************************************
-! routine cice_bootstrap_time_series_stats
+! routine seaice_bootstrap_time_series_stats
 !
 !> \brief Bootstrap time_series_stats analysis member
 !> \author  Doug Jacobsen
@@ -178,7 +178,7 @@ contains
 !>  Specifically, it ensures the streams used for this instance are correctly
 !>  configured.
 !-----------------------------------------------------------------------
-subroutine cice_bootstrap_time_series_stats(domain, instance, err)!{{{
+subroutine seaice_bootstrap_time_series_stats(domain, instance, err)!{{{
   ! input variables
   character (len=StrKIND), intent(in) :: instance
 
@@ -209,10 +209,10 @@ subroutine cice_bootstrap_time_series_stats(domain, instance, err)!{{{
   end do
   deallocate(series % variables)
   deallocate(series % buffers)
-end subroutine cice_bootstrap_time_series_stats!}}}
+end subroutine seaice_bootstrap_time_series_stats!}}}
 
 !***********************************************************************
-! routine cice_init_time_series_stats
+! routine seaice_init_time_series_stats
 !
 !> \brief Initialize MPAS-Ocean analysis member
 !> \author  Jon Woodring
@@ -221,7 +221,7 @@ end subroutine cice_bootstrap_time_series_stats!}}}
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_init_time_series_stats(domain, instance, err)!{{{
+subroutine seaice_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
   character (len=StrKIND), intent(in) :: instance
 
@@ -270,11 +270,11 @@ subroutine cice_init_time_series_stats(domain, instance, err)!{{{
   end do
   deallocate(series % variables)
   deallocate(series % buffers)
-end subroutine cice_init_time_series_stats!}}}
+end subroutine seaice_init_time_series_stats!}}}
 
 
 !***********************************************************************
-! routine cice_compute_time_series_stats
+! routine seaice_compute_time_series_stats
 !
 !> \brief Compute MPAS-Ocean analysis member
 !> \author  Jon Woodring
@@ -283,7 +283,7 @@ end subroutine cice_init_time_series_stats!}}}
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
+subroutine seaice_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   ! input variables
   character (len=StrKIND), intent(in) :: instance
   integer, intent(in) :: timeLevel
@@ -349,12 +349,12 @@ subroutine cice_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   end do
   deallocate(series % variables)
   deallocate(series % buffers)
-end subroutine cice_compute_time_series_stats!}}}
+end subroutine seaice_compute_time_series_stats!}}}
 
 
 
 !***********************************************************************
-! routine cice_restart_time_series_stats
+! routine seaice_restart_time_series_stats
 !
 !> \brief Save restart for MPAS-Ocean analysis member
 !> \author  Jon Woodring
@@ -363,7 +363,7 @@ end subroutine cice_compute_time_series_stats!}}}
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_restart_time_series_stats(domain, instance, err)!{{{
+subroutine seaice_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
   character (len=StrKIND), intent(in) :: instance
 
@@ -378,12 +378,12 @@ subroutine cice_restart_time_series_stats(domain, instance, err)!{{{
   ! start procedure
   err = 0
 
-end subroutine cice_restart_time_series_stats!}}}
+end subroutine seaice_restart_time_series_stats!}}}
 
 
 
 !***********************************************************************
-! routine cice_finalize_time_series_stats
+! routine seaice_finalize_time_series_stats
 !
 !> \brief Finalize MPAS-Ocean analysis member
 !> \author  Jon Woodring
@@ -392,7 +392,7 @@ end subroutine cice_restart_time_series_stats!}}}
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_finalize_time_series_stats(domain, instance, err)!{{{
+subroutine seaice_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables
   character (len=StrKIND), intent(in) :: instance
 
@@ -407,7 +407,7 @@ subroutine cice_finalize_time_series_stats(domain, instance, err)!{{{
   ! start procedure
   err = 0
 
-end subroutine cice_finalize_time_series_stats!}}}
+end subroutine seaice_finalize_time_series_stats!}}}
 
 !
 ! local subroutines
@@ -2318,5 +2318,5 @@ subroutine operate5r_sos (start_block, variable, buffers)
 #include "time_series_inc/operate_3.inc"
 end subroutine operate5r_sos
 
-end module cice_time_series_stats
+end module seaice_time_series_stats
 ! vim: foldmethod=marker

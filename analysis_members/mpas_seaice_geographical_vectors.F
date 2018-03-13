@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_geographical_vectors
+!  seaice_geographical_vectors
 !
 !> \brief MPAS sea ice analysis mode member: geographical_vectors
 !> \authorAdrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_geographical_vectors
+module seaice_geographical_vectors
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_geographical_vectors
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_geographical_vectors, &
-             cice_init_geographical_vectors, &
-             cice_precompute_geographical_vectors, &
-             cice_compute_geographical_vectors, &
-             cice_restart_geographical_vectors, &
-             cice_finalize_geographical_vectors
+   public :: seaice_bootstrap_geographical_vectors, &
+             seaice_init_geographical_vectors, &
+             seaice_precompute_geographical_vectors, &
+             seaice_compute_geographical_vectors, &
+             seaice_restart_geographical_vectors, &
+             seaice_finalize_geographical_vectors
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_geographical_vectors
+!  routine seaice_bootstrap_geographical_vectors
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_geographical_vectors(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-    end subroutine cice_bootstrap_geographical_vectors!}}}
+    end subroutine seaice_bootstrap_geographical_vectors!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_geographical_vectors
+!  routine seaice_init_geographical_vectors
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_geographical_vectors(domain, instance, err)!{{{
+   subroutine seaice_init_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-    end subroutine cice_init_geographical_vectors!}}}
+    end subroutine seaice_init_geographical_vectors!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_geographical_vectors
+!  routine seaice_precompute_geographical_vectors
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_geographical_vectors(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_geographical_vectors!}}}
+   end subroutine seaice_precompute_geographical_vectors!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_geographical_vectors
+!  routine seaice_compute_geographical_vectors
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_geographical_vectors(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
      use seaice_mesh, only: &
           seaice_latlon_vector_rotation_backward
@@ -461,11 +461,11 @@ contains
          block => block % next
       end do
 
-   end subroutine cice_compute_geographical_vectors!}}}
+   end subroutine seaice_compute_geographical_vectors!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_geographical_vectors
+!  routine seaice_restart_geographical_vectors
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -476,7 +476,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_geographical_vectors(domain, instance, err)!{{{
+   subroutine seaice_restart_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -510,11 +510,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_geographical_vectors!}}}
+   end subroutine seaice_restart_geographical_vectors!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_geographical_vectors
+!  routine seaice_finalize_geographical_vectors
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -525,7 +525,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_geographical_vectors(domain, instance, err)!{{{
+   subroutine seaice_finalize_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -559,10 +559,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_geographical_vectors!}}}
+   end subroutine seaice_finalize_geographical_vectors!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_geographical_vectors
+end module seaice_geographical_vectors
 
 ! vim: foldmethod=marker

@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_load_balance
+!  seaice_load_balance
 !
 !> \brief MPAS sea ice analysis mode member: load_balance
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_load_balance
+module seaice_load_balance
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -42,12 +42,12 @@ module cice_load_balance
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_load_balance, &
-             cice_init_load_balance, &
-             cice_precompute_load_balance, &
-             cice_compute_load_balance, &
-             cice_restart_load_balance, &
-             cice_finalize_load_balance
+   public :: seaice_bootstrap_load_balance, &
+             seaice_init_load_balance, &
+             seaice_precompute_load_balance, &
+             seaice_compute_load_balance, &
+             seaice_restart_load_balance, &
+             seaice_finalize_load_balance
 
    !--------------------------------------------------------------------
    !
@@ -61,7 +61,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_load_balance
+!  routine seaice_bootstrap_load_balance
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_load_balance(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_load_balance(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,11 +106,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_load_balance!}}}
+   end subroutine seaice_bootstrap_load_balance!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_load_balance
+!  routine seaice_init_load_balance
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -121,7 +121,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_load_balance(domain, instance, err)!{{{
+   subroutine seaice_init_load_balance(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -173,7 +173,7 @@ contains
 
       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nProcs", nProcs)
       if (nProcs /= domain % dminfo % nprocs) then
-         call mpas_log_write('mpas_cice_load_balance: wrong nProcs set', MPAS_LOG_CRIT)
+         call mpas_log_write('mpas_seaice_load_balance: wrong nProcs set', MPAS_LOG_CRIT)
       endif
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "loadBalanceAM", loadBalanceAMPool)
@@ -199,11 +199,11 @@ contains
 
       deallocate(nCellsProcTmp)
 
-   end subroutine cice_init_load_balance!}}}
+   end subroutine seaice_init_load_balance!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_load_balance
+!  routine seaice_precompute_load_balance
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -214,7 +214,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_load_balance(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_load_balance(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -250,11 +250,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_load_balance!}}}
+   end subroutine seaice_precompute_load_balance!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_load_balance
+!  routine seaice_compute_load_balance
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -265,7 +265,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_load_balance(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_load_balance(domain, instance, timeLevel, err)!{{{
 
      use seaice_constants, only: &
           seaicePuny
@@ -362,11 +362,11 @@ contains
 
       deallocate(nCellsProcWithSeaIceTmp)
 
-   end subroutine cice_compute_load_balance!}}}
+   end subroutine seaice_compute_load_balance!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_load_balance
+!  routine seaice_restart_load_balance
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -377,7 +377,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_load_balance(domain, instance, err)!{{{
+   subroutine seaice_restart_load_balance(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -411,11 +411,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_load_balance!}}}
+   end subroutine seaice_restart_load_balance!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_load_balance
+!  routine seaice_finalize_load_balance
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -426,7 +426,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_load_balance(domain, instance, err)!{{{
+   subroutine seaice_finalize_load_balance(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -460,10 +460,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_load_balance!}}}
+   end subroutine seaice_finalize_load_balance!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_load_balance
+end module seaice_load_balance
 
 ! vim: foldmethod=marker

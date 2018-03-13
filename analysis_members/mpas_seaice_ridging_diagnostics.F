@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_ridging_diagnostics
+!  seaice_ridging_diagnostics
 !
 !> \brief MPAS sea ice analysis mode member: ridging_diagnostics
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_ridging_diagnostics
+module seaice_ridging_diagnostics
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -41,12 +41,12 @@ module cice_ridging_diagnostics
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_ridging_diagnostics, &
-             cice_init_ridging_diagnostics, &
-             cice_precompute_ridging_diagnostics, &
-             cice_compute_ridging_diagnostics, &
-             cice_restart_ridging_diagnostics, &
-             cice_finalize_ridging_diagnostics
+   public :: seaice_bootstrap_ridging_diagnostics, &
+             seaice_init_ridging_diagnostics, &
+             seaice_precompute_ridging_diagnostics, &
+             seaice_compute_ridging_diagnostics, &
+             seaice_restart_ridging_diagnostics, &
+             seaice_finalize_ridging_diagnostics
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_ridging_diagnostics
+!  routine seaice_bootstrap_ridging_diagnostics
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_ridging_diagnostics(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_ridging_diagnostics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_ridging_diagnostics!}}}
+   end subroutine seaice_bootstrap_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_ridging_diagnostics
+!  routine seaice_init_ridging_diagnostics
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_ridging_diagnostics(domain, instance, err)!{{{
+   subroutine seaice_init_ridging_diagnostics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,11 +154,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_ridging_diagnostics!}}}
+   end subroutine seaice_init_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_ridging_diagnostics
+!  routine seaice_precompute_ridging_diagnostics
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_ridging_diagnostics(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_ridging_diagnostics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -205,11 +205,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_ridging_diagnostics!}}}
+   end subroutine seaice_precompute_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_ridging_diagnostics
+!  routine seaice_compute_ridging_diagnostics
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_ridging_diagnostics(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_ridging_diagnostics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -335,11 +335,11 @@ contains
          block => block % next
       enddo
 
-   end subroutine cice_compute_ridging_diagnostics!}}}
+   end subroutine seaice_compute_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_ridging_diagnostics
+!  routine seaice_restart_ridging_diagnostics
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -350,7 +350,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_ridging_diagnostics(domain, instance, err)!{{{
+   subroutine seaice_restart_ridging_diagnostics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -384,11 +384,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_ridging_diagnostics!}}}
+   end subroutine seaice_restart_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_ridging_diagnostics
+!  routine seaice_finalize_ridging_diagnostics
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -399,7 +399,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_ridging_diagnostics(domain, instance, err)!{{{
+   subroutine seaice_finalize_ridging_diagnostics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -433,10 +433,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_ridging_diagnostics!}}}
+   end subroutine seaice_finalize_ridging_diagnostics!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_ridging_diagnostics
+end module seaice_ridging_diagnostics
 
 ! vim: foldmethod=marker

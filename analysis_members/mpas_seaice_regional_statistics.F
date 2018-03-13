@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_regional_statistics
+!  seaice_regional_statistics
 !
 !> \brief MPAS sea ice analysis mode member: regional_statistics
 !> \author Adrian K. Turner
@@ -18,7 +18,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_regional_statistics
+module seaice_regional_statistics
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -43,12 +43,12 @@ module cice_regional_statistics
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_regional_statistics, &
-             cice_init_regional_statistics, &
-             cice_precompute_regional_statistics, &
-             cice_compute_regional_statistics, &
-             cice_restart_regional_statistics, &
-             cice_finalize_regional_statistics
+   public :: seaice_bootstrap_regional_statistics, &
+             seaice_init_regional_statistics, &
+             seaice_precompute_regional_statistics, &
+             seaice_compute_regional_statistics, &
+             seaice_restart_regional_statistics, &
+             seaice_finalize_regional_statistics
 
    !--------------------------------------------------------------------
    !
@@ -101,7 +101,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_regional_statistics
+!  routine seaice_bootstrap_regional_statistics
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -112,7 +112,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_regional_statistics(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -146,11 +146,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_regional_statistics!}}}
+   end subroutine seaice_bootstrap_regional_statistics!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_regional_statistics
+!  routine seaice_init_regional_statistics
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -161,7 +161,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_regional_statistics(domain, instance, err)!{{{
+   subroutine seaice_init_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -209,7 +209,7 @@ contains
       ! initialize the runtime regional statistics system
       call init_runtime_regional_statistics(domain)
 
-   end subroutine cice_init_regional_statistics!}}}
+   end subroutine seaice_init_regional_statistics!}}}
 
 !***********************************************************************
 !
@@ -834,7 +834,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_precompute_regional_statistics
+!  routine seaice_precompute_regional_statistics
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -845,7 +845,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_regional_statistics(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -881,11 +881,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_regional_statistics!}}}
+   end subroutine seaice_precompute_regional_statistics!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_regional_statistics
+!  routine seaice_compute_regional_statistics
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -896,7 +896,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_regional_statistics(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -938,7 +938,7 @@ contains
       ! runtime regional statistics
       call runtime_regional_statistics(domain)
 
-   end subroutine cice_compute_regional_statistics!}}}
+   end subroutine seaice_compute_regional_statistics!}}}
 
 !***********************************************************************
 !
@@ -2818,7 +2818,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_restart_regional_statistics
+!  routine seaice_restart_regional_statistics
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -2829,7 +2829,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_regional_statistics(domain, instance, err)!{{{
+   subroutine seaice_restart_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -2863,11 +2863,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_regional_statistics!}}}
+   end subroutine seaice_restart_regional_statistics!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_regional_statistics
+!  routine seaice_finalize_regional_statistics
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -2878,7 +2878,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_regional_statistics(domain, instance, err)!{{{
+   subroutine seaice_finalize_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -2912,10 +2912,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_regional_statistics!}}}
+   end subroutine seaice_finalize_regional_statistics!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_regional_statistics
+end module seaice_regional_statistics
 
 ! vim: foldmethod=marker

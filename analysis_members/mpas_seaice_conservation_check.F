@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_conservation_check
+!  seaice_conservation_check
 !
 !> \brief MPAS sea ice analysis mode member: conservation_check
 !> \author Adrian K. Turner
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_conservation_check
+module seaice_conservation_check
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -42,12 +42,12 @@ module cice_conservation_check
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_conservation_check, &
-             cice_init_conservation_check, &
-             cice_precompute_conservation_check, &
-             cice_compute_conservation_check, &
-             cice_restart_conservation_check, &
-             cice_finalize_conservation_check
+   public :: seaice_bootstrap_conservation_check, &
+             seaice_init_conservation_check, &
+             seaice_precompute_conservation_check, &
+             seaice_compute_conservation_check, &
+             seaice_restart_conservation_check, &
+             seaice_finalize_conservation_check
 
    !--------------------------------------------------------------------
    !
@@ -61,7 +61,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_conservation_check
+!  routine seaice_bootstrap_conservation_check
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_conservation_check(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,11 +106,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_conservation_check!}}}
+   end subroutine seaice_bootstrap_conservation_check!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_conservation_check
+!  routine seaice_init_conservation_check
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -121,7 +121,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_conservation_check(domain, instance, err)!{{{
+   subroutine seaice_init_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -155,11 +155,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_conservation_check!}}}
+   end subroutine seaice_init_conservation_check!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_conservation_check
+!  routine seaice_precompute_conservation_check
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -170,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_conservation_check(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_conservation_check(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -250,11 +250,11 @@ contains
 
       endif
 
-   end subroutine cice_precompute_conservation_check!}}}
+   end subroutine seaice_precompute_conservation_check!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_conservation_check
+!  routine seaice_compute_conservation_check
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -265,7 +265,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_conservation_check(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_conservation_check(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -350,7 +350,7 @@ contains
 
       endif
 
-   end subroutine cice_compute_conservation_check!}}}
+   end subroutine seaice_compute_conservation_check!}}}
 
 !***********************************************************************
 !
@@ -1468,7 +1468,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_restart_conservation_check
+!  routine seaice_restart_conservation_check
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -1479,7 +1479,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_conservation_check(domain, instance, err)!{{{
+   subroutine seaice_restart_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1513,11 +1513,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_conservation_check!}}}
+   end subroutine seaice_restart_conservation_check!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_conservation_check
+!  routine seaice_finalize_conservation_check
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -1528,7 +1528,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_conservation_check(domain, instance, err)!{{{
+   subroutine seaice_finalize_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1562,10 +1562,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_conservation_check!}}}
+   end subroutine seaice_finalize_conservation_check!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_conservation_check
+end module seaice_conservation_check
 
 ! vim: foldmethod=marker

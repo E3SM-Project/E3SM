@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_high_frequency_output
+!  seaice_high_frequency_output
 !
 !> \brief MPAS CICE analysis mode member: high_frequency_output
 !> \author Todd Ringler
@@ -17,7 +17,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module cice_high_frequency_output
+module seaice_high_frequency_output
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -42,12 +42,12 @@ module cice_high_frequency_output
    !
    !--------------------------------------------------------------------
 
-   public :: cice_bootstrap_high_frequency_output, &
-             cice_init_high_frequency_output, &
-             cice_precompute_high_frequency_output, &
-             cice_compute_high_frequency_output, &
-             cice_restart_high_frequency_output, &
-             cice_finalize_high_frequency_output
+   public :: seaice_bootstrap_high_frequency_output, &
+             seaice_init_high_frequency_output, &
+             seaice_precompute_high_frequency_output, &
+             seaice_compute_high_frequency_output, &
+             seaice_restart_high_frequency_output, &
+             seaice_finalize_high_frequency_output
 
    !--------------------------------------------------------------------
    !
@@ -61,7 +61,7 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_bootstrap_high_frequency_output
+!  routine seaice_bootstrap_high_frequency_output
 !
 !> \brief   Bootstrap MPAS-CICE analysis member
 !> \author  Adrian Turner
@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_high_frequency_output(domain, instance, err)!{{{
+   subroutine seaice_bootstrap_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,11 +106,11 @@ contains
 
       err = 0
 
-   end subroutine cice_bootstrap_high_frequency_output!}}}
+   end subroutine seaice_bootstrap_high_frequency_output!}}}
 
 !***********************************************************************
 !
-!  routine cice_init_high_frequency_output
+!  routine seaice_init_high_frequency_output
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Todd Ringler
@@ -121,7 +121,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_high_frequency_output(domain, instance, err)!{{{
+   subroutine seaice_init_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -155,11 +155,11 @@ contains
 
       err = 0
 
-   end subroutine cice_init_high_frequency_output!}}}
+   end subroutine seaice_init_high_frequency_output!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_high_frequency_output
+!  routine seaice_precompute_high_frequency_output
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
@@ -170,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_high_frequency_output(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_precompute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -206,11 +206,11 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_high_frequency_output!}}}
+   end subroutine seaice_precompute_high_frequency_output!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_high_frequency_output
+!  routine seaice_compute_high_frequency_output
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Todd Ringler
@@ -221,7 +221,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_high_frequency_output(domain, instance, timeLevel, err)!{{{
+   subroutine seaice_compute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -289,11 +289,11 @@ contains
          block => block % next
       end do
 
-   end subroutine cice_compute_high_frequency_output!}}}
+   end subroutine seaice_compute_high_frequency_output!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_high_frequency_output
+!  routine seaice_restart_high_frequency_output
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Todd Ringler
@@ -304,7 +304,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_high_frequency_output(domain, instance, err)!{{{
+   subroutine seaice_restart_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -338,11 +338,11 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_high_frequency_output!}}}
+   end subroutine seaice_restart_high_frequency_output!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_high_frequency_output
+!  routine seaice_finalize_high_frequency_output
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Todd Ringler
@@ -353,7 +353,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_high_frequency_output(domain, instance, err)!{{{
+   subroutine seaice_finalize_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -387,8 +387,8 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_high_frequency_output!}}}
+   end subroutine seaice_finalize_high_frequency_output!}}}
 
-end module cice_high_frequency_output
+end module seaice_high_frequency_output
 
 ! vim: foldmethod=marker
