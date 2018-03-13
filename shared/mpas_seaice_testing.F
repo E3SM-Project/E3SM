@@ -61,7 +61,6 @@ contains
 
     use seaice_constants, only: omega
     use seaice_constants, only: seaiceDegreesToRadians
-    use cice_debug, only: cice_init_ijpop_from_ivertex
 
     type(MPAS_pool_type), intent(inout) :: mesh
 
@@ -121,7 +120,7 @@ contains
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
 
-    call cice_init_ijpop_from_ivertex(mesh)
+    call init_ijpop_from_ivertex(mesh)
 
     fVertex = 2.0_RKIND * omega * sin(latVertex)
 
@@ -1138,6 +1137,143 @@ contains
     enddo ! iCell
 
   end subroutine seaice_divergence_stress_test_stress_set_weak
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ijpop_from_ivertex
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ijpop_from_ivertex(mesh)!{{{
+
+    type(MPAS_pool_type), intent(inout) :: &
+         mesh !< Input/Output:
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         i, j, &
+         imin, jmin, &
+         imax, jmax, &
+         POP_nx_2
+
+    logical :: l_boundary
+
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree, &
+         POP_nx
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj, &
+         POPindxiv, &
+         POPindxjv
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle, &
+         areaCell, &
+         latVertex
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
+
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
+    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+
+    do iVertex = 1, nVertices
+
+       imin = 1000000000
+       jmin = 1000000000
+
+       imax = -1000000000
+       jmax = -1000000000
+
+       ! first we find the minimum and maximum POP i value of a cell surrounding the vertex point
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          i = POPindxi(iCell)
+          j = POPindxj(iCell)
+
+          imin = min(imin,i)
+          jmin = min(jmin,j)
+
+          imax = max(imax,i)
+          jmax = max(jmax,j)
+
+       enddo ! iVertexDegree
+
+       ! decide if at border
+       POP_nx_2 = nint(real(POP_nx,RKIND) / 2.0_RKIND)
+
+       l_boundary = .false.
+       if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.
+
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          i = POPindxi(iCell)
+          j = POPindxj(iCell)
+
+          if (l_boundary .and. i > POP_nx_2) i = i - POP_nx
+          imin = min(imin,i)
+
+          jmin = min(jmin,j)
+
+       enddo ! iVertexDegree
+
+       if (l_boundary .and. imin < 1) imin = imin + POP_nx
+
+       POPindxiv(iVertex) = imin
+       POPindxjv(iVertex) = jmin
+
+    enddo ! iVertex
+
+    !open(11,file="vertexareas.txt")
+    !do iVertex = 1, nVertices
+    !   write(11,*) POPindxiv(iVertex), POPindxjv(iVertex), &
+    !        areaTriangle(iVertex)
+    !enddo
+    !close(11)
+
+    !open(11,file="cellareas.txt")
+    !do iCell = 1, nCells
+    !   write(11,*) POPindxi(iCell), POPindxj(iCell), &
+    !        areaCell(iCell)
+    !enddo
+    !close(11)
+
+    !open(11,file="vertexlat.txt")
+    !do iVertex = 1, nVertices
+    !   write(11,*) POPindxiv(iVertex), POPindxjv(iVertex), &
+    !        latVertex(iVertex)
+    !enddo
+    !close(11)
+
+  end subroutine init_ijpop_from_ivertex!}}}
 
 !-----------------------------------------------------------------------
 

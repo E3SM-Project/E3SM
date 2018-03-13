@@ -19,7 +19,6 @@ module seaice_column
   use mpas_log, only: mpas_log_write
 
   use seaice_error
-  use cice_debug
 
   use ice_kinds_mod, only: &
        char_len_long

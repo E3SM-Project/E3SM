@@ -268,7 +268,6 @@ module seaice_core
            seaice_forcing_get, &
            seaice_forcing_write_restart_times
       use seaice_initialize, only: seaice_init_post_clock_advance
-      use cice_debug, only: istep
 
       implicit none
 
@@ -315,8 +314,6 @@ module seaice_core
 
       ! final initialization after clock advance
       call seaice_init_post_clock_advance(domain, clock)
-
-      istep = istep + 1
 
       timeLoop: do
 
@@ -371,7 +368,6 @@ module seaice_core
          ! advance the clock
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
-         istep = istep + 1
 
          ! forcing
          call seaice_forcing_get(domain % streamManager, domain, clock, .false.)
