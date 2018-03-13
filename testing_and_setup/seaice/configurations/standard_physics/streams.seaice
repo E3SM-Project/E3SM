@@ -139,7 +139,7 @@
 
 <stream name="loadBalanceOutput"
         type="output"
-        filename_template="analysis_members/cice_loadBalance.nc"
+        filename_template="analysis_members/seaice_loadBalance.nc"
         filename_interval="none"
         reference_time="0000-01-01_00:00:00"
         clobber_mode="truncate"
@@ -153,7 +153,7 @@
 
 <stream name="maximumIcePresenceOutput"
         type="output"
-        filename_template="analysis_members/cice_maximumIcePresence.$Y.nc"
+        filename_template="analysis_members/seaice_maximumIcePresence.$Y.nc"
         filename_interval="01-00-00_00:00:00"
         reference_time="0000-01-01_00:00:00"
         clobber_mode="truncate"
