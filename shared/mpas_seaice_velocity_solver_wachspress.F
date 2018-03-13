@@ -1886,7 +1886,7 @@ contains
        integrationWeights, &
        normalizationFactor)!{{{
 
-    use cice_constants, only: pii
+    use seaice_constants, only: pii
 
     use cice_velocity_solver_variational_shared, only: &
          cice_wrapped_index

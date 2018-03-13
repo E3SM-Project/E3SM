@@ -865,7 +865,7 @@ contains
 
   subroutine latlon_to_xyz(mesh, x, y, z, lat, lon)!{{{
 
-    use cice_constants, only: ciceDegreesToRadians
+    use seaice_constants, only: seaiceDegreesToRadians
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -885,9 +885,9 @@ contains
     ! init variables
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-    z = sphere_radius * sin(lat*ciceDegreesToRadians)
-    x = sphere_radius * cos(lon*ciceDegreesToRadians) * cos(lat*ciceDegreesToRadians)
-    y = sphere_radius * sin(lon*ciceDegreesToRadians) * cos(lat*ciceDegreesToRadians)
+    z = sphere_radius * sin(lat*seaiceDegreesToRadians)
+    x = sphere_radius * cos(lon*seaiceDegreesToRadians) * cos(lat*seaiceDegreesToRadians)
+    y = sphere_radius * sin(lon*seaiceDegreesToRadians) * cos(lat*seaiceDegreesToRadians)
 
   end subroutine latlon_to_xyz!}}}
 
@@ -905,8 +905,8 @@ contains
 
   subroutine perform_rotation(x, y, z)!{{{
 
-    use cice_constants, only: &
-         ciceDegreesToRadians
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
 
     real(kind=RKIND), intent(inout) :: &
          x, & !< Input/Output:
@@ -930,9 +930,9 @@ contains
 
     v1(1) = x ; v1(2) = y ; v1(3) = z
 
-    thetax = thetax * ciceDegreesToRadians
-    thetay = thetay * ciceDegreesToRadians
-    thetaz = thetaz * ciceDegreesToRadians
+    thetax = thetax * seaiceDegreesToRadians
+    thetay = thetay * seaiceDegreesToRadians
+    thetaz = thetaz * seaiceDegreesToRadians
 
     Rx(1,1) = 1.0_RKIND    ; Rx(1,2) = 0.0_RKIND    ; Rx(1,3) = 0.0_RKIND
     Rx(2,1) = 0.0_RKIND    ; Rx(2,2) =  cos(thetax) ; Rx(2,3) = -sin(thetax)
@@ -1655,7 +1655,7 @@ contains
 
   subroutine cice_plot_spherical_latlon(mesh, array, filename, tag)!{{{
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          pii
 
     type(MPAS_pool_type), pointer, intent(in) :: &
@@ -2797,7 +2797,7 @@ contains
 
   subroutine cice_debug_write_out_field(domain, poolname, fieldname, cicename)
 
-    use cice_constants, only: &
+    use seaice_constants, only: &
          pii
 
     type(domain_type) :: domain

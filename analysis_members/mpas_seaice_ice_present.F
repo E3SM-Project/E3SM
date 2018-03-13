@@ -222,8 +222,8 @@ contains
 
    subroutine cice_compute_ice_present(domain, instance, timeLevel, err)!{{{
 
-      use cice_constants, only: &
-           cicePuny
+      use seaice_constants, only: &
+           seaicePuny
 
       !-----------------------------------------------------------------
       !
@@ -289,7 +289,7 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            if (iceAreaCell(iCell) > cicePuny) then
+            if (iceAreaCell(iCell) > seaicePuny) then
 
                icePresent(iCell) = 1.0_RKIND
 

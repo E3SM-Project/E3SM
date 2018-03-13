@@ -105,8 +105,8 @@ contains
 
   subroutine cice_set_time_diagnostics(domain)!{{{
 
-    use cice_constants, only: &
-         ciceDaysPerSecond
+    use seaice_constants, only: &
+         seaiceDaysPerSecond
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -148,7 +148,7 @@ contains
        call mpas_set_time(xtime_timeType, dateTimeString=xtime)
        call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
        call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
-       daysSinceStartOfSim = daysSinceStartOfSim*ciceDaysPerSecond
+       daysSinceStartOfSim = daysSinceStartOfSim*seaiceDaysPerSecond
 
        block => block % next
     end do
@@ -169,8 +169,8 @@ contains
 
   subroutine cice_check_state(domain)
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees
 
     type (domain_type), intent(in) :: &
          domain !< Input/Output:
@@ -337,7 +337,7 @@ contains
                    if (iceVolumeCategory(1,iCategory,iCell) > iceVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
+                           ", lat=", latCell(iCell)*seaiceRadiansToDegrees, ", lon=", lonCell(iCell)*seaiceRadiansToDegrees, &
                            ", iceVolumeCategory=", iceVolumeCategory(1,iCategory,iCell)
 
                    endif ! seaice thickness check
@@ -346,7 +346,7 @@ contains
                    if (snowVolumeCategory(1,iCategory,iCell) > snowVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
+                           ", lat=", latCell(iCell)*seaiceRadiansToDegrees, ", lon=", lonCell(iCell)*seaiceRadiansToDegrees, &
                            ", snowVolumeCategory=", snowVolumeCategory(1,iCategory,iCell)
 
                    endif ! snow on seaice thickness check
@@ -356,7 +356,7 @@ contains
                        iceSalinity(1,iCategory,iCell) > iceSalinityUpperLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
+                           ", lat=", latCell(iCell)*seaiceRadiansToDegrees, ", lon=", lonCell(iCell)*seaiceRadiansToDegrees, &
                            ", iceSalinity=", iceSalinity(1,iCategory,iCell)
 
                    endif ! salinity check
@@ -372,7 +372,7 @@ contains
                 if (uVelocity(iVertex) >= velocityLimit .or. vVelocity(iVertex) >= velocityLimit) then
 
                    write(errorUnit,fmt=20) "Time=", trim(xtime), ", iVertex=", indexToVertexID(iVertex), &
-                        ", lat=", latVertex(iVertex)*ciceRadiansToDegrees, ", lon=", lonVertex(iVertex)*ciceRadiansToDegrees, &
+                        ", lat=", latVertex(iVertex)*seaiceRadiansToDegrees, ", lon=", lonVertex(iVertex)*seaiceRadiansToDegrees, &
                         ", uVelocity=", uVelocity(iVertex), ", vVelocity=", vVelocity(iVertex)
 
                 endif ! velocity check

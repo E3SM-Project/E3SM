@@ -417,10 +417,8 @@ contains
 
   subroutine prepare_atmospheric_coupling_variables_CORE(block)
 
-    use cice_constants, only: &
-         ciceFreshWaterFreezingPoint
-
-    use cice_constants, only: &
+    use seaice_constants, only: &
+         seaiceFreshWaterFreezingPoint, &
          pii
 
     type (block_type), pointer :: block
@@ -514,7 +512,7 @@ contains
 
        ! limit air temperature values where ice is present
        if (iceAreaCell(iCell) > 0.1_RKIND) then
-          airTemperature(iCell) = min(airTemperature(iCell), ciceFreshWaterFreezingPoint + 0.1_RKIND)
+          airTemperature(iCell) = min(airTemperature(iCell), seaiceFreshWaterFreezingPoint + 0.1_RKIND)
        endif
 
        ! prevent supersaturated humidity
@@ -692,9 +690,9 @@ contains
 
   subroutine post_atmospheric_forcing(block)
 
-    use cice_constants, only: &
-         ciceAirSpecificHeat, &
-         ciceLatentHeatSublimation
+    use seaice_constants, only: &
+         seaiceAirSpecificHeat, &
+         seaiceLatentHeatSublimation
 
     type (block_type), pointer :: block
 
@@ -741,8 +739,8 @@ contains
     do iCell = 1, nCellsSolve
 
        ! transfer coefficients
-       sensibleTransferCoefficient(iCell) = 1.20e-3_RKIND * ciceAirSpecificHeat       * airDensity(iCell) * windSpeed(iCell)
-       latentTransferCoefficient(iCell)   = 1.50e-3_RKIND * ciceLatentHeatSublimation * airDensity(iCell) * windSpeed(iCell)
+       sensibleTransferCoefficient(iCell) = 1.20e-3_RKIND * seaiceAirSpecificHeat       * airDensity(iCell) * windSpeed(iCell)
+       latentTransferCoefficient(iCell)   = 1.50e-3_RKIND * seaiceLatentHeatSublimation * airDensity(iCell) * windSpeed(iCell)
 
        ! air stresses
        airStressCoefficient = 0.0012_RKIND * airDensity(iCell) * windSpeed(iCell)
@@ -770,9 +768,9 @@ contains
        airTemperature, &
        airSpecificHumidity)
 
-    use cice_constants, only: &
-         ciceFreshWaterFreezingPoint, &
-         cicePuny
+    use seaice_constants, only: &
+         seaiceFreshWaterFreezingPoint, &
+         seaicePuny
 
     real(kind=RKIND), intent(in) :: &
          airTemperature
@@ -784,7 +782,7 @@ contains
          airSpecificHumidityMax
 
     ! convert air temperature from Kelvin to Celcius
-    airSpecificHumidityMax = airTemperature - ciceFreshWaterFreezingPoint
+    airSpecificHumidityMax = airTemperature - seaiceFreshWaterFreezingPoint
 
     airSpecificHumidityMax = 2.0_RKIND + &
          ((0.7859_RKIND + 0.03477_RKIND * airSpecificHumidityMax) / &
@@ -793,7 +791,7 @@ contains
 
     ! vapor pressure
     airSpecificHumidityMax = 10.0_RKIND**airSpecificHumidityMax ! saturated
-    airSpecificHumidityMax = max(airSpecificHumidityMax,cicePuny) ! prevent division by zero
+    airSpecificHumidityMax = max(airSpecificHumidityMax,seaicePuny) ! prevent division by zero
 
     ! specific humidity
     airSpecificHumidityMax = &
@@ -830,10 +828,10 @@ contains
        airSpecificHumidity, &
        airTemperature)
 
-    use cice_constants, only: &
-         ciceStefanBoltzmann, &
-         ciceFreshWaterFreezingPoint, &
-         ciceIceSnowEmissivity
+    use seaice_constants, only: &
+         seaiceStefanBoltzmann, &
+         seaiceFreshWaterFreezingPoint, &
+         seaiceIceSnowEmissivity
 
     real(kind=RKIND), intent(out) :: &
          longwaveDown
@@ -860,7 +858,7 @@ contains
     combinedSurfaceTemperature = &
          surfaceTemperature    * iceAreaCell               + &
          seaSurfaceTemperature * (1.0_RKIND - iceAreaCell) + &
-         ciceFreshWaterFreezingPoint
+         seaiceFreshWaterFreezingPoint
 
     ! square root of the vapour pressure
     vapourPressureSqrt = sqrt((1000.0_RKIND * airSpecificHumidity) / &
@@ -880,7 +878,7 @@ contains
          4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
 
     ! final longwave calculation from stefan-boltzmann law
-    longwaveDown = ciceIceSnowEmissivity * ciceStefanBoltzmann * &
+    longwaveDown = seaiceIceSnowEmissivity * seaiceStefanBoltzmann * &
                           (combinedSurfaceTemperature**4 - airSeaTemperatureDifferenceTerm)
 
   end subroutine longwave_rosati_miyakoda
@@ -902,9 +900,9 @@ contains
        airTemperature, &
        cloudFraction)
 
-    use cice_constants, only: &
-         ciceStefanBoltzmann, &
-         ciceFreshWaterFreezingPoint
+    use seaice_constants, only: &
+         seaiceStefanBoltzmann, &
+         seaiceFreshWaterFreezingPoint
 
     real(kind=RKIND), intent(out) :: &
          longWavedown
@@ -919,8 +917,8 @@ contains
     ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
 
     longWavedown = &
-         ciceStefanBoltzmann * airTemperature**4 * &
-         (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (ciceFreshWaterFreezingPoint - airTemperature)**2)) * &
+         seaiceStefanBoltzmann * airTemperature**4 * &
+         (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (seaiceFreshWaterFreezingPoint - airTemperature)**2)) * &
          (1.0_RKIND + 0.275_RKIND * cloudFraction)
 
   end subroutine longwave_parkinson_and_washington
@@ -939,9 +937,9 @@ contains
 
   subroutine init_precipitation_factor(domain)
 
-    use cice_constants, only: &
-         ciceSecondsPerYear, &
-         ciceSecondsPerDay
+    use seaice_constants, only: &
+         seaiceSecondsPerYear, &
+         seaiceSecondsPerDay
 
     type(domain_type) :: domain
 
@@ -952,9 +950,9 @@ contains
 
     select case (trim(config_forcing_precipitation_units))
     case ("mm_per_month")
-       precipitationFactor = 12.0_RKIND / real(ciceSecondsPerYear,RKIND)
+       precipitationFactor = 12.0_RKIND / real(seaiceSecondsPerYear,RKIND)
     case ("mm_per_day")
-       precipitationFactor = 1.0_RKIND / real(ciceSecondsPerDay,RKIND)
+       precipitationFactor = 1.0_RKIND / real(seaiceSecondsPerDay,RKIND)
     case ("mm_per_sec","mks")
        precipitationFactor = 1.0_RKIND
     case default
@@ -980,9 +978,8 @@ contains
        snowfallRate, &
        airTemperature)
 
-    use cice_constants, only: &
-         ciceSecondsPerYear, &
-         ciceFreshWaterFreezingPoint
+    use seaice_constants, only: &
+         seaiceFreshWaterFreezingPoint
 
     real(kind=RKIND), intent(inout) :: &
          rainfallRate
@@ -998,7 +995,7 @@ contains
     ! divide total precipitation between rain and snow
     snowfallRate = 0.0_RKIND
 
-    if (airTemperature < ciceFreshWaterFreezingPoint) then
+    if (airTemperature < seaiceFreshWaterFreezingPoint) then
 
        snowfallRate = rainfallRate
        rainfallRate = 0.0_RKIND
@@ -1066,11 +1063,9 @@ contains
        secondsToday, &
        dayOfYear)
 
-    use cice_constants, only: &
-         ciceDegreesToRadians, &
-         ciceSecondsPerDay
-
-    use cice_constants, only: &
+    use seaice_constants, only: &
+         seaiceDegreesToRadians, &
+         seaiceSecondsPerDay, &
          pii
 
     real(kind=RKIND), intent(out) :: &
@@ -1102,12 +1097,12 @@ contains
     longitude = longitudeIn
     if (longitude > pii) longitude = longitude - 2.0_RKIND * pii
 
-    solarTime = mod(real(secondsToday,kind=RKIND),ciceSecondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*longitude)
+    solarTime = mod(real(secondsToday,kind=RKIND),seaiceSecondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*longitude)
 
     hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
 
     ! solar declinatiom
-    declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
+    declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*seaiceDegreesToRadians
 
     ! solar zenith angle
     cosZ = sin(latitude)*sin(declination) + cos(latitude)*cos(declination)*cos(hourAngle)
