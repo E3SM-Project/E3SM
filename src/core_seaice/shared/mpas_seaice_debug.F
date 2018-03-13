@@ -2916,10 +2916,10 @@ contains
     integer, parameter :: locationDesired = 2
     integer, parameter :: iStepDesired = 24
 
-! cice_init_column_shortwave           1           0
+! seaice_init_column_shortwave           1           0
 ! column_radiation           1           0
 ! column_radiation           2           0
-! cice_init_column_shortwave           2           0
+! seaice_init_column_shortwave           2           0
 ! column_prep_radiation           1           1
 ! column_prep_radiation           2           1
 ! column_vertical_thermodynamics           1           1

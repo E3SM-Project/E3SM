@@ -62,14 +62,14 @@ contains
     use seaice_advection, only: &
          seaice_run_advection
 
-    use cice_column, only: &
-         cice_column_predynamics_time_integration, &
-         cice_column_dynamics_time_integration, &
-         cice_column_postdynamics_time_integration, &
-         cice_column_reinitialize_fluxes, &
-         cice_column_reinitialize_diagnostics_thermodynamics, &
-         cice_column_reinitialize_diagnostics_bgc, &
-         cice_column_reinitialize_diagnostics_dynamics
+    use seaice_column, only: &
+         seaice_column_predynamics_time_integration, &
+         seaice_column_dynamics_time_integration, &
+         seaice_column_postdynamics_time_integration, &
+         seaice_column_reinitialize_fluxes, &
+         seaice_column_reinitialize_diagnostics_thermodynamics, &
+         seaice_column_reinitialize_diagnostics_bgc, &
+         seaice_column_reinitialize_diagnostics_dynamics
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -115,8 +115,8 @@ contains
 
     ! reinitialize diagnostics
     call mpas_timer_start("Reinitialize diagnostics thermodynamics/bgc")
-    call cice_column_reinitialize_diagnostics_thermodynamics(domain)
-    call cice_column_reinitialize_diagnostics_bgc(domain)
+    call seaice_column_reinitialize_diagnostics_thermodynamics(domain)
+    call seaice_column_reinitialize_diagnostics_bgc(domain)
     call mpas_timer_stop("Reinitialize diagnostics thermodynamics/bgc")
 
     configs => domain % configs
@@ -131,7 +131,7 @@ contains
 
     ! pre dynamics column physics
     call mpas_timer_start("Column pre-dynamics")
-    call cice_column_predynamics_time_integration(domain, clock, ierr)
+    call seaice_column_predynamics_time_integration(domain, clock, ierr)
     if (ierr > 0) return
     call mpas_timer_stop("Column pre-dynamics")
 
@@ -141,7 +141,7 @@ contains
 
        ! reinitialize dynamics diagnostics
        call mpas_timer_start("Reinitialize diagnostics dynamics")
-       call cice_column_reinitialize_diagnostics_dynamics(domain)
+       call seaice_column_reinitialize_diagnostics_dynamics(domain)
        call mpas_timer_stop("Reinitialize diagnostics dynamics")
 
        ! velocity solve
@@ -158,7 +158,7 @@ contains
 
        ! ridging
        call mpas_timer_start("Column")
-       call cice_column_dynamics_time_integration(domain, clock, ierr)
+       call seaice_column_dynamics_time_integration(domain, clock, ierr)
        call mpas_timer_stop("Column")
        if (ierr > 0) return
 
@@ -166,7 +166,7 @@ contains
 
     ! shortwave
     call mpas_timer_start("Column post-dynamics")
-    call cice_column_postdynamics_time_integration(domain, clock)
+    call seaice_column_postdynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column post-dynamics")
 
     ! check the physical state of the model
@@ -245,13 +245,13 @@ contains
   subroutine seaice_timestep_finalize(&
        domain)!{{{
 
-    use cice_column, only: &
-         cice_column_reinitialize_fluxes
+    use seaice_column, only: &
+         seaice_column_reinitialize_fluxes
 
     type(domain_type), intent(in) :: &
          domain
 
-    call cice_column_reinitialize_fluxes(domain)
+    call seaice_column_reinitialize_fluxes(domain)
 
   end subroutine seaice_timestep_finalize
 
