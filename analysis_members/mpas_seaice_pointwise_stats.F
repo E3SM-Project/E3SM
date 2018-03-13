@@ -30,9 +30,6 @@ module cice_pointwise_stats
    use mpas_timekeeping
    use mpas_stream_manager
 
-   !use cice_constants
-   !use cice_diagnostics_routines
-
    implicit none
    private
    save

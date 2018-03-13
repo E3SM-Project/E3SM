@@ -112,9 +112,9 @@ contains
          cice_rms_difference, &
          cice_plot_spherical_latlon
 
-    use cice_mesh, only: &
-         cice_latlon_from_xyz, &
-         cice_grid_rotation_forward
+    use seaice_mesh, only: &
+         seaice_latlon_from_xyz, &
+         seaice_grid_rotation_forward
 
     use seaice_constants, only: &
          seaiceRadiansToDegrees, &
@@ -283,12 +283,12 @@ contains
 
        do iVertex = 1, nVertices
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xp,               yp,               zp, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                config_rotate_cartesian_grid)
 
-          call cice_latlon_from_xyz(&
+          call seaice_latlon_from_xyz(&
                latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
                xp, yp, zp, sphere_radius)
 
@@ -296,12 +296,12 @@ contains
 
        do iCell = 1, nCells
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xp,           yp,           zp, &
                xCell(iCell), yCell(iCell), zCell(iCell), &
                config_rotate_cartesian_grid)
 
-          call cice_latlon_from_xyz(&
+          call seaice_latlon_from_xyz(&
                latCellRotated0(iCell), lonCellRotated0(iCell), &
                xp, yp, zp, sphere_radius)
 
@@ -1014,9 +1014,9 @@ contains
          cice_rms_difference, &
          cice_plot_spherical_latlon
 
-    use cice_mesh, only: &
-         cice_grid_rotation_forward, &
-         cice_latlon_from_xyz
+    use seaice_mesh, only: &
+         seaice_grid_rotation_forward, &
+         seaice_latlon_from_xyz
 
     use seaice_constants, only: &
          seaiceRadiansToDegrees, &
@@ -1178,12 +1178,12 @@ contains
 
        do iVertex = 1, nVertices
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xp,               yp,               zp, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                config_rotate_cartesian_grid)
 
-          call cice_latlon_from_xyz(&
+          call seaice_latlon_from_xyz(&
                latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
                xp, yp, zp, sphere_radius)
 
@@ -1191,12 +1191,12 @@ contains
 
        do iCell = 1, nCells
 
-          call cice_grid_rotation_forward(&
+          call seaice_grid_rotation_forward(&
                xp,           yp,           zp, &
                xCell(iCell), yCell(iCell), zCell(iCell), &
                config_rotate_cartesian_grid)
 
-          call cice_latlon_from_xyz(&
+          call seaice_latlon_from_xyz(&
                latCellRotated0(iCell), lonCellRotated0(iCell), &
                xp, yp, zp, sphere_radius)
 

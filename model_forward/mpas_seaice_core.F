@@ -42,8 +42,8 @@ module seaice_core
       use mpas_derived_types
       use mpas_stream_manager
 
-      use cice_diagnostics, only: &
-           cice_initialize_time_diagnostics
+      use seaice_diagnostics, only: &
+           seaice_initialize_time_diagnostics
 
       implicit none
 
@@ -123,7 +123,7 @@ module seaice_core
       dt = config_dt
 
       ! initialize time diagnostics
-      call cice_initialize_time_diagnostics(domain)
+      call seaice_initialize_time_diagnostics(domain)
 
       ! initialize analysis members
       call seaice_analysis_init(domain, ierr)
@@ -394,7 +394,7 @@ module seaice_core
 
       use mpas_derived_types
       use seaice_time_integration
-      use cice_error, only: cice_check_critical_error
+      use seaice_error, only: seaice_check_critical_error
 
       implicit none
 
@@ -407,7 +407,7 @@ module seaice_core
       ierr = 0
       call seaice_timestep(domain, clock, itimestep, ierr)
 
-      call cice_check_critical_error(domain, ierr)
+      call seaice_check_critical_error(domain, ierr)
 
    end subroutine mpas_timestep
 

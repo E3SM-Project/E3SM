@@ -52,8 +52,8 @@ contains
        velocity_weak, &
        rotateCartesianGrid)!{{{
 
-    use cice_mesh, only: &
-         cice_normal_vectors
+    use seaice_mesh, only: &
+         seaice_normal_vectors
 
     type(MPAS_pool_type), pointer, intent(inout) :: &
          mesh !< Input/Output:
@@ -82,7 +82,7 @@ contains
     call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call cice_normal_vectors(&
+    call seaice_normal_vectors(&
          mesh, &
          normalVectorPolygon, &
          normalVectorTriangle, &

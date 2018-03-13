@@ -79,8 +79,8 @@ contains
     !use mpas_tracer_advection_mono, only: &
     !     mpas_tracer_advection_mono_init
 
-    use cice_mesh, only: &
-         cice_normal_vectors_polygon
+    use seaice_mesh, only: &
+         seaice_normal_vectors_polygon
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -175,7 +175,7 @@ contains
        call define_tracer_connectivities(&
             config_use_velocity_solver)
 
-       call cice_normal_vectors_polygon(&
+       call seaice_normal_vectors_polygon(&
             mesh, &
             normalVectorEdge, &
             config_rotate_cartesian_grid, &

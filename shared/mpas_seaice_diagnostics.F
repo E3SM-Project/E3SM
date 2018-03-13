@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_diagnostics
+!  seaice_diagnostics
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_diagnostics
+module seaice_diagnostics
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -24,17 +24,17 @@ module cice_diagnostics
   save
 
   public :: &
-       cice_initialize_time_diagnostics, &
-       cice_set_time_diagnostics, &
-       cice_check_state, &
-       cice_set_testing_system_test_arrays, &
-       cice_load_balance_timers
+       seaice_initialize_time_diagnostics, &
+       seaice_set_time_diagnostics, &
+       seaice_check_state, &
+       seaice_set_testing_system_test_arrays, &
+       seaice_load_balance_timers
 
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_initialize_time_diagnostics
+!  seaice_initialize_time_diagnostics
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -44,7 +44,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_initialize_time_diagnostics(domain)!{{{
+  subroutine seaice_initialize_time_diagnostics(domain)!{{{
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -89,11 +89,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_initialize_time_diagnostics!}}}
+  end subroutine seaice_initialize_time_diagnostics!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_initialize_time_diagnostics
+!  seaice_initialize_time_diagnostics
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -103,7 +103,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_set_time_diagnostics(domain)!{{{
+  subroutine seaice_set_time_diagnostics(domain)!{{{
 
     use seaice_constants, only: &
          seaiceDaysPerSecond
@@ -153,11 +153,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_set_time_diagnostics!}}}
+  end subroutine seaice_set_time_diagnostics!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_check_state
+!  seaice_check_state
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -167,7 +167,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_check_state(domain)
+  subroutine seaice_check_state(domain)
 
     use seaice_constants, only: &
          seaiceRadiansToDegrees
@@ -295,7 +295,7 @@ contains
           write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
           open(errorUnit, file=trim(filename), position="append", iostat=iostat)
           if (iostat /= 0) then
-             call mpas_log_write("cice_check_state: problem opening state check: $i", &
+             call mpas_log_write("seaice_check_state: problem opening state check: $i", &
                   messageType=MPAS_LOG_CRIT, intArgs=(/iostat/))
           endif
 
@@ -393,11 +393,11 @@ contains
 10  format(a,a,a,i9,a,i5,a,e12.4,a,e12.4,a,e12.4)
 20  format(a,a,a,i9,a,e12.4,a,e12.4,a,e12.4,a,e12.4)
 
-  end subroutine cice_check_state
+  end subroutine seaice_check_state
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_set_testing_system_test_arrays
+!  seaice_set_testing_system_test_arrays
 !
 !> \brief Set up arrays for testing the testing system
 !> \author Adrian K. Turner, LANL
@@ -408,7 +408,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_set_testing_system_test_arrays(domain)
+  subroutine seaice_set_testing_system_test_arrays(domain)
 
     type(domain_type), intent(in) :: &
          domain
@@ -487,11 +487,11 @@ contains
 
     endif
 
-  end subroutine cice_set_testing_system_test_arrays
+  end subroutine seaice_set_testing_system_test_arrays
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_load_balance_timers
+!  seaice_load_balance_timers
 !
 !> \brief Time load in-balance
 !> \author Adrian K. Turner, LANL
@@ -501,7 +501,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_load_balance_timers(domain, label)
+  subroutine seaice_load_balance_timers(domain, label)
 
 #ifdef _MPI
 #ifndef NOMPIMOD
@@ -533,8 +533,8 @@ contains
 
 #endif
 
-  end subroutine cice_load_balance_timers
+  end subroutine seaice_load_balance_timers
 
   !-----------------------------------------------------------------------
 
-end module cice_diagnostics
+end module seaice_diagnostics
