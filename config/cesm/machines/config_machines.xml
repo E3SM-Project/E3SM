@@ -906,7 +906,7 @@
 
   <machine MACH="hobart">
     <DESC>NCAR CGD Linux Cluster 48 pes/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
+    <NODENAME_REGEX>^h.*\.cgd\.ucar\.edu</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2,openmpi</MPILIBS>
