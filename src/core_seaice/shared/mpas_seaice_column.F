@@ -440,8 +440,8 @@ contains
          colpkg_get_warnings, &
          colpkg_clear_warnings
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -596,7 +596,7 @@ contains
           do iCategory = 1, nCategories
 
              ! aggregate albedos
-             if (iceAreaCategory(1,iCategory,iCell) > cicePuny) then
+             if (iceAreaCategory(1,iCategory,iCell) > seaicePuny) then
 
                 albedoVisibleDirectCell(iCell)  = albedoVisibleDirectCell(iCell)  + &
                      albedoVisibleDirectCategory(iCategory,iCell)  * iceAreaCategory(1,iCategory,iCell)
@@ -607,7 +607,7 @@ contains
                 albedoIRDiffuseCell(iCell)      = albedoIRDiffuseCell(iCell)      + &
                      albedoIRDiffuseCategory(iCategory,iCell)      * iceAreaCategory(1,iCategory,iCell)
 
-                if (solarZenithAngleCosine(iCell) > cicePuny) then ! sun above horizon
+                if (solarZenithAngleCosine(iCell) > seaicePuny) then ! sun above horizon
 
                    bareIceAlbedoCell(iCell) = bareIceAlbedoCell(iCell) + &
                         bareIceAlbedoCategory(iCategory,iCell) * iceAreaCategory(1,iCategory,iCell)
@@ -1069,8 +1069,8 @@ contains
          colpkg_clear_warnings, &
          colpkg_get_warnings
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -1636,11 +1636,11 @@ contains
              do iCategory = 1, nCategories
                 do iAerosol = 1, nAerosols
 
-                   if (snowVolumeCategory(1,iCategory,iCell) > cicePuny) &
+                   if (snowVolumeCategory(1,iCategory,iCell) > seaicePuny) &
                         specificSnowAerosol(iAerosol, :, iCategory) = &
                         specificSnowAerosol(iAerosol, :, iCategory) / snowVolumeCategory(1,iCategory,iCell)
 
-                   if (iceVolumeCategory(1,iCategory,iCell) > cicePuny) &
+                   if (iceVolumeCategory(1,iCategory,iCell) > seaicePuny) &
                         specificIceAerosol(iAerosol, :, iCategory)  = &
                         specificIceAerosol(iAerosol, :, iCategory)  / iceVolumeCategory(1,iCategory,iCell)
 
@@ -2123,7 +2123,8 @@ contains
          colpkg_get_warnings, &
          colpkg_clear_warnings
 
-    use cice_constants, only: pii
+    use seaice_constants, only: &
+         pii
 
     type(domain_type), intent(inout) :: domain
 
@@ -2786,8 +2787,8 @@ contains
          colpkg_get_warnings, &
          colpkg_clear_warnings
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -3238,7 +3239,7 @@ contains
           bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
 
           do iCategory = 1, nCategories
-             if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > cicePuny) then
+             if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > seaicePuny) then
                 do iAlgae = 1, nAlgae
                    totalSkeletalAlgae(iCell) = totalSkeletalAlgae(iCell) + &
                         skeletalAlgaeConc(iAlgae,iCategory,iCell) * &
@@ -3630,11 +3631,9 @@ contains
 
   subroutine cice_column_coupling_prep(domain)
 
-    use cice_constants, only: &
-         cicePuny
-
-    use cice_constants, only: &
-         ciceDensityFreshwater
+    use seaice_constants, only: &
+         seaicePuny, &
+         seaiceDensityFreshwater
 
     type(domain_type) :: domain
 
@@ -3874,7 +3873,7 @@ contains
                   albedoIRDiffuseCategory(iCategory,iCell) * iceAreaCategory(1,iCategory,iCell)
 
              ! sun above horizon
-             if (solarZenithAngleCosine(iCell) > cicePuny) then
+             if (solarZenithAngleCosine(iCell) > seaicePuny) then
 
                 bareIceAlbedoCell(iCell) = bareIceAlbedoCell(iCell) + &
                      bareIceAlbedoCategory(iCategory,iCell) * iceAreaCategory(1,iCategory,iCell)
@@ -3895,7 +3894,7 @@ contains
           !-------------------------------------------------------------------
 
           if (config_include_pond_freshwater_feedback) then
-             pondFreshWaterFlux(iCell)  = pondFreshWaterFlux(iCell) * ciceDensityFreshwater / config_dt
+             pondFreshWaterFlux(iCell)  = pondFreshWaterFlux(iCell) * seaiceDensityFreshwater / config_dt
              oceanFreshWaterFlux(iCell) = oceanFreshWaterFlux(iCell) - pondFreshWaterFlux(iCell)
           endif
 
@@ -4053,9 +4052,9 @@ contains
 
   subroutine cice_column_scale_fluxes(domain)
 
-    use cice_constants, only: &
-         ciceStefanBoltzmann, &
-         ciceFreshWaterFreezingPoint
+    use seaice_constants, only: &
+         seaiceStefanBoltzmann, &
+         seaiceFreshWaterFreezingPoint
 
     type(domain_type) :: domain
 
@@ -4264,7 +4263,7 @@ contains
              latentHeatFlux(iCell)              = 0.0_RKIND
              absorbedShortwaveFlux(iCell)       = 0.0_RKIND
              longwaveUp(iCell)                  = &
-                  -ciceStefanBoltzmann * (seaFreezingTemperature(iCell) + ciceFreshWaterFreezingPoint)**4
+                  -seaiceStefanBoltzmann * (seaFreezingTemperature(iCell) + seaiceFreshWaterFreezingPoint)**4
              evaporativeWaterFlux(iCell)        = 0.0_RKIND
              atmosReferenceTemperature2m(iCell) = airTemperature(iCell)
              atmosReferenceHumidity2m(iCell)    = airSpecificHumidity(iCell)
@@ -4322,8 +4321,8 @@ contains
          colpkg_atm_boundary, &
          colpkg_ocn_mixed_layer
 
-    use cice_constants, only: &
-         ciceOceanAlbedo
+    use seaice_constants, only: &
+         seaiceOceanAlbedo
 
     type(domain_type) :: domain
 
@@ -4473,10 +4472,10 @@ contains
                airDragCoefficient(iCell), &
                airOceanDragCoefficientRatio(iCell))
 
-          albedoVisibleDirectOcean(iCell)  = ciceOceanAlbedo
-          albedoIRDirectOcean(iCell)       = ciceOceanAlbedo
-          albedoVisibleDiffuseOcean(iCell) = ciceOceanAlbedo
-          albedoIRDiffuseOcean(iCell)      = ciceOceanAlbedo
+          albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
+          albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
+          albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
+          albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
 
           call colpkg_ocn_mixed_layer(&
                albedoVisibleDirectOcean(iCell), &
@@ -7839,8 +7838,8 @@ contains
 
   subroutine check_column_package_configs(domain)
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     type(domain_type), intent(inout) :: &
          domain
@@ -8060,7 +8059,7 @@ contains
     endif
 
     ! check config_snow_to_ice_transition_depth and level ponds
-    if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > cicePuny) then
+    if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > seaicePuny) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_level_meltponds = .true. and config_snow_to_ice_transition_depth /= 0", &
             messageType=MPAS_LOG_CRIT)
@@ -10975,16 +10974,16 @@ contains
 
   function cice_column_initial_air_drag_coefficient() result(airDragCoefficient)
 
-    use cice_constants, only: &
-         ciceVonKarmanConstant, &
-         ciceIceSurfaceRoughness, &
-         ciceStabilityReferenceHeight
+    use seaice_constants, only: &
+         seaiceVonKarmanConstant, &
+         seaiceIceSurfaceRoughness, &
+         seaiceStabilityReferenceHeight
 
     real(kind=RKIND) :: airDragCoefficient
 
     ! atmo drag for RASM
-    airDragCoefficient = (ciceVonKarmanConstant/log(ciceStabilityReferenceHeight/ciceIceSurfaceRoughness)) &
-                       * (ciceVonKarmanConstant/log(ciceStabilityReferenceHeight/ciceIceSurfaceRoughness))
+    airDragCoefficient = (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness)) &
+                       * (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness))
 
   end function cice_column_initial_air_drag_coefficient
 
@@ -11989,8 +11988,8 @@ contains
 
   subroutine cice_column_reinitialize_diagnostics_thermodynamics(domain)
 
-    use cice_constants, only: &
-         ciceIceOceanDragCoefficient
+    use seaice_constants, only: &
+         seaiceIceOceanDragCoefficient
 
     type(domain_type) :: domain
 
@@ -12169,7 +12168,7 @@ contains
           call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
-          oceanDragCoefficient = ciceIceOceanDragCoefficient
+          oceanDragCoefficient = seaiceIceOceanDragCoefficient
           airDragCoefficient   = cice_column_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)

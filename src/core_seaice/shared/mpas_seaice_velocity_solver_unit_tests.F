@@ -116,10 +116,8 @@ contains
          cice_latlon_from_xyz, &
          cice_grid_rotation_forward
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
-
-    use cice_constants, only: &
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees, &
          pii
 
     type(domain_type) :: &
@@ -427,13 +425,13 @@ contains
        open(56,file="strain22_"//trim(unit_test_subtype)//".txt")
        open(57,file="strain12_"//trim(unit_test_subtype)//".txt")
        do iCell = 1, nCells
-          write(55,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+          write(55,*) iCell, lonCell(iCell) * seaiceRadiansToDegrees, latCell(iCell) * seaiceRadiansToDegrees, &
                strain11(iCell), strain11_test(iCell), strain11_diff(iCell), &
                strain11_diff(iCell) * real(solveStress(iCell),RKIND)
-          write(56,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+          write(56,*) iCell, lonCell(iCell) * seaiceRadiansToDegrees, latCell(iCell) * seaiceRadiansToDegrees, &
                strain22(iCell), strain22_test(iCell), strain22_diff(iCell), &
                strain22_diff(iCell) * real(solveStress(iCell),RKIND)
-          write(57,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+          write(57,*) iCell, lonCell(iCell) * seaiceRadiansToDegrees, latCell(iCell) * seaiceRadiansToDegrees, &
                strain12(iCell), strain12_test(iCell), strain12_diff(iCell), &
                strain12_diff(iCell) * real(solveStress(iCell),RKIND)
        enddo ! iCell
@@ -1020,10 +1018,8 @@ contains
          cice_grid_rotation_forward, &
          cice_latlon_from_xyz
 
-    use cice_constants, only: &
-         ciceRadiansToDegrees
-
-    use cice_constants, only: &
+    use seaice_constants, only: &
+         seaiceRadiansToDegrees, &
          pii
 
     type(domain_type), intent(inout) :: &
@@ -1318,10 +1314,10 @@ contains
        open(55,file="divergenceu_"//trim(unit_test_subtype)//".txt")
        open(56,file="divergencev_"//trim(unit_test_subtype)//".txt")
        do iVertex = 1, nVertices
-          write(55,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
+          write(55,*) iVertex, lonVertex(iVertex) * seaiceRadiansToDegrees, latVertex(iVertex) * seaiceRadiansToDegrees, &
                stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
                stressDivergenceU_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
-          write(56,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
+          write(56,*) iVertex, lonVertex(iVertex) * seaiceRadiansToDegrees, latVertex(iVertex) * seaiceRadiansToDegrees, &
                stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
                stressDivergenceV_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
        enddo ! iVertex

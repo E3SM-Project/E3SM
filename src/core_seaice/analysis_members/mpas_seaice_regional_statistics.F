@@ -289,8 +289,8 @@ contains
 
    subroutine init_hemisphere_regions(domain)
 
-     use cice_constants, only: &
-          ciceDegreesToRadians
+     use seaice_constants, only: &
+          seaiceDegreesToRadians
 
      type(domain_type), intent(inout) :: &
           domain
@@ -344,18 +344,18 @@ contains
            regionCellMasks(:,iCell) = 0
 
            ! global
-           if (latCell(iCell) >= northernHemisphereLatitudeLimit * ciceDegreesToRadians .or. &
-               latCell(iCell) <= southernHemisphereLatitudeLimit * ciceDegreesToRadians) then
+           if (latCell(iCell) >= northernHemisphereLatitudeLimit * seaiceDegreesToRadians .or. &
+               latCell(iCell) <= southernHemisphereLatitudeLimit * seaiceDegreesToRadians) then
               regionCellMasks(1,iCell) = 1
            endif
 
            ! northern hemisphere
-           if (latCell(iCell) >= northernHemisphereLatitudeLimit * ciceDegreesToRadians) then
+           if (latCell(iCell) >= northernHemisphereLatitudeLimit * seaiceDegreesToRadians) then
               regionCellMasks(2,iCell) = 1
            endif
 
            ! southern hemisphere
-           if (latCell(iCell) <= southernHemisphereLatitudeLimit * ciceDegreesToRadians) then
+           if (latCell(iCell) <= southernHemisphereLatitudeLimit * seaiceDegreesToRadians) then
               regionCellMasks(3,iCell) = 1
            endif
 
