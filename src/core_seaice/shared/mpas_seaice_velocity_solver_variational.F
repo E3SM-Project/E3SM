@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_velocity_solver_variational
+!  seaice_velocity_solver_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_velocity_solver_variational
+module seaice_velocity_solver_variational
 
   use mpas_derived_types
   use mpas_pool_routines
@@ -22,11 +22,11 @@ module cice_velocity_solver_variational
   save
 
   public :: &
-       cice_init_velocity_solver_variational, &
-       cice_strain_tensor_variational, &
-       cice_stress_divergence_variational, &
-       cice_internal_stress_variational, &
-       cice_final_divergence_shear_variational
+       seaice_init_velocity_solver_variational, &
+       seaice_strain_tensor_variational, &
+       seaice_stress_divergence_variational, &
+       seaice_internal_stress_variational, &
+       seaice_final_divergence_shear_variational
 
 contains
 
@@ -36,7 +36,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_velocity_solver_variational
+!  seaice_init_velocity_solver_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -46,7 +46,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_velocity_solver_variational(&
+  subroutine seaice_init_velocity_solver_variational(&
        mesh, &
        velocity_variational, &
        boundary, &
@@ -56,11 +56,11 @@ contains
        integrationType, &
        integrationOrder)!{{{
 
-    use cice_velocity_solver_wachspress, only: &
-         cice_init_velocity_solver_wachspress
+    use seaice_velocity_solver_wachspress, only: &
+         seaice_init_velocity_solver_wachspress
 
-    use cice_velocity_solver_pwl, only: &
-         cice_init_velocity_solver_pwl
+    use seaice_velocity_solver_pwl, only: &
+         seaice_init_velocity_solver_pwl
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -82,7 +82,7 @@ contains
 
     if (trim(variationalBasisType) == "wachspress") then
 
-       call cice_init_velocity_solver_wachspress(&
+       call seaice_init_velocity_solver_wachspress(&
             mesh, &
             velocity_variational, &
             boundary, &
@@ -93,7 +93,7 @@ contains
 
     else if (trim(variationalBasisType) == "pwl") then
 
-       call cice_init_velocity_solver_pwl(&
+       call seaice_init_velocity_solver_pwl(&
             mesh, &
             velocity_variational, &
             boundary, &
@@ -102,7 +102,7 @@ contains
 
     endif
 
-  end subroutine cice_init_velocity_solver_variational
+  end subroutine seaice_init_velocity_solver_variational
 
 !-----------------------------------------------------------------------
 ! time step
@@ -110,7 +110,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_internal_stress_variational
+!  seaice_internal_stress_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_internal_stress_variational(domain)!{{{
+  subroutine seaice_internal_stress_variational(domain)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
@@ -206,7 +206,7 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressure)
 
        call mpas_timer_start("Velocity solver strain tensor")
-       call cice_strain_tensor_variational(&
+       call seaice_strain_tensor_variational(&
             meshPool, &
             strain11, &
             strain22, &
@@ -220,7 +220,7 @@ contains
        call mpas_timer_stop("Velocity solver strain tensor")
 
        call mpas_timer_start("Velocity solver stress tensor")
-       call cice_stress_tensor_variational(&
+       call seaice_stress_tensor_variational(&
             meshPool, &
             stress11, &
             stress22, &
@@ -236,7 +236,7 @@ contains
        call mpas_timer_stop("Velocity solver stress tensor")
 
        call mpas_timer_start("Velocity solver stress divergence")
-       call cice_stress_divergence_variational(&
+       call seaice_stress_divergence_variational(&
             meshPool, &
             stressDivergenceU, &
             stressDivergenceV, &
@@ -254,11 +254,11 @@ contains
        block => block % next
     end do
 
-  end subroutine cice_internal_stress_variational!}}}
+  end subroutine seaice_internal_stress_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_strain_tensor_variational
+!  seaice_strain_tensor_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -268,7 +268,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_strain_tensor_variational(&
+  subroutine seaice_strain_tensor_variational(&
        mesh, &
        strain11, &
        strain22, &
@@ -367,11 +367,11 @@ contains
 
     enddo ! iCell
 
-  end subroutine cice_strain_tensor_variational!}}}
+  end subroutine seaice_strain_tensor_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_tensor_variational
+!  seaice_stress_tensor_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -381,7 +381,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_tensor_variational(&
+  subroutine seaice_stress_tensor_variational(&
        mesh, &
        stress11, &
        stress22, &
@@ -395,9 +395,9 @@ contains
        dtElastic, &
        revisedEVP)!{{{
 
-    use cice_velocity_solver_constitutive_relation, only: &
-         cice_evp_constitutive_relation, &
-         cice_evp_constitutive_relation_revised
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_evp_constitutive_relation, &
+         seaice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -459,7 +459,7 @@ contains
 
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-                call cice_evp_constitutive_relation(&
+                call seaice_evp_constitutive_relation(&
                      stress11(iVertexOnCell,iCell), &
                      stress22(iVertexOnCell,iCell), &
                      stress12(iVertexOnCell,iCell), &
@@ -485,7 +485,7 @@ contains
 
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-                call cice_evp_constitutive_relation_revised(&
+                call seaice_evp_constitutive_relation_revised(&
                      stress11(iVertexOnCell,iCell), &
                      stress22(iVertexOnCell,iCell), &
                      stress12(iVertexOnCell,iCell), &
@@ -504,11 +504,11 @@ contains
 
     endif
 
-  end subroutine cice_stress_tensor_variational!}}}
+  end subroutine seaice_stress_tensor_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_stress_divergence_variational
+!  seaice_stress_divergence_variational
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -518,7 +518,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_stress_divergence_variational(&
+  subroutine seaice_stress_divergence_variational(&
        mesh, &
        stressDivergenceU, &
        stressDivergenceV, &
@@ -648,7 +648,7 @@ contains
 
     enddo ! iVertex
 
-  end subroutine cice_stress_divergence_variational!}}}
+  end subroutine seaice_stress_divergence_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -662,9 +662,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_final_divergence_shear_variational(block)
+  subroutine seaice_final_divergence_shear_variational(block)
 
-    use cice_velocity_solver_constitutive_relation, only: &
+    use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
 
     type(block_type), intent(inout) :: &
@@ -803,8 +803,8 @@ contains
     ! cleanup
     deallocate(DeltaAverage)
 
-  end subroutine cice_final_divergence_shear_variational
+  end subroutine seaice_final_divergence_shear_variational
 
 !-----------------------------------------------------------------------
 
-end module cice_velocity_solver_variational
+end module seaice_velocity_solver_variational

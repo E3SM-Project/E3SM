@@ -39,7 +39,7 @@ contains
   subroutine cice_perform_unit_test(&
        domain)!{{{
 
-    use cice_velocity_solver_unit_tests, only: &
+    use seaice_velocity_solver_unit_tests, only: &
          cice_strain_rate_operator_unit_test, &
          cice_stress_divergence_operator_unit_test, &
          cice_constitutive_relationship_unit_test

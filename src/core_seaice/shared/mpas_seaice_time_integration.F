@@ -56,8 +56,8 @@ contains
     use cice_unit_test, only: &
          cice_perform_unit_test
 
-    use cice_velocity_solver, only: &
-         cice_run_velocity_solver
+    use seaice_velocity_solver, only: &
+         seaice_run_velocity_solver
 
     use cice_advection, only: &
          cice_run_advection
@@ -146,7 +146,7 @@ contains
 
        ! velocity solve
        call mpas_timer_start("Velocity solver")
-       call cice_run_velocity_solver(domain, clock)
+       call seaice_run_velocity_solver(domain, clock)
        call mpas_timer_stop("Velocity solver")
 
        ! advection

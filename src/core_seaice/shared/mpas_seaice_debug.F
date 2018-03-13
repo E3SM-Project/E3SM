@@ -2931,7 +2931,7 @@ contains
 ! column_radiation           1           1
 ! column_radiation           2           1
 ! cice_timestep
-! cice_run_velocity_solver
+! seaice_run_velocity_solver
 
     write(*,*) trim(callingSubroutine), trim(callingSubroutineDesired), location, locationDesired, iStep, iStepDesired
 
