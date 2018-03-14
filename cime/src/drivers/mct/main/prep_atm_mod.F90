@@ -174,20 +174,16 @@ contains
                'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
                'mapper_So2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
-!          radius=1.
-!          radius2 = 2.
-!          eps1=1.e-8
-!          boxeps=1.e-6
           appname = "ATM_OCN_COU"//CHAR(0)
           ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
-!          ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa,&
-!           radius, radius2, eps1, boxeps);
-!           ! write the file after intx, just to see if it is right
-!           wopts = CHAR(0)
-!           call shr_mpi_commrank( mpicom_CPLID, rank )
-!           write(lnum,"(I0.2)")rank
-!           outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
-!           ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+          ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
+          wopts = CHAR(0)
+          call shr_mpi_commrank( mpicom_CPLID, rank )
+          if (rank .lt. 5) then
+            write(lnum,"(I0.2)")rank !
+            outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
+            ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+          endif
 #endif
        end if
 
