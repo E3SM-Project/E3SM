@@ -487,6 +487,12 @@ contains
     do j = 1, MetaVertex(1)%nmembers
        call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
     end do
+    do j = 1, MetaVertex(1)%nedges
+       deallocate(MetaVertex(1)%edges(j)%members
+       deallocate(MetaVertex(1)%edges(j)%edgeptrP
+       deallocate(MetaVertex(1)%edges(j)%edgeptrS
+       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost
+    end do
     deallocate(MetaVertex(1)%edges)
     deallocate(MetaVertex(1)%members)
     deallocate(MetaVertex)
