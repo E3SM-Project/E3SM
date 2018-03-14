@@ -2,7 +2,7 @@
 ! prim_driver_mod: 
 !
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
-!
+! 03/2018: M. Taylor  fix memory leak
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -487,6 +487,8 @@ contains
     do j = 1, MetaVertex(1)%nmembers
        call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
     end do
+    deallocate(MetaVertex(1)%edges)
+    deallocate(MetaVertex(1)%members)
     deallocate(MetaVertex)
     deallocate(TailPartition)
     deallocate(HeadPartition)
