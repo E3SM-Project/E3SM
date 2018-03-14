@@ -262,7 +262,7 @@ class EnvMachSpecific(EnvBase):
         #
         # Not all module commands support batching though and we enurmerate those
         # here.
-        actions_that_cannot_be_batched = ["swap"]
+        actions_that_cannot_be_batched = ["swap", "switch"]
 
         for action, argument in modules_to_load:
             if argument is None:
