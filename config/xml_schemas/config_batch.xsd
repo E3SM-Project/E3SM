@@ -142,7 +142,7 @@
   <xs:element name="directive">
     <xs:complexType mixed="true">
       <xs:attribute name="default"/>
-      <xs:attribute name="name"/>
+      <xs:attribute name="prefix"/>
     </xs:complexType>
   </xs:element>
 
