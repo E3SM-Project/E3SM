@@ -26,10 +26,6 @@ logger = logging.getLogger(__name__)
 
 import argparse
 
-
-# PE Layout Documentation:
-{{ pedocumentation }}
-
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################

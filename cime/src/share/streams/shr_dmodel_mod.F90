@@ -451,29 +451,51 @@ CONTAINS
           lon     = mod(lon   +1440.0_r8,360.0_r8)
 
           !--- start with wraparound ---
-          ni = 1
-          mind = abs(lscmlon - (lon(1,1)+360.0_r8))
-          do i=1,nxg
-             dist = abs(lscmlon - lon(i,1))
-             if (dist < mind) then
+
+          !--- determine whether dealing with 2D input files (typical of Eulerian 
+          !--- dynamical core) or 1D files (typical of Spectral Element)
+          if (nyg .ne. 1) then
+            ni = 1
+            mind = abs(lscmlon - (lon(1,1)+360.0_r8))
+            do i=1,nxg
+              dist = abs(lscmlon - lon(i,1))
+              if (dist < mind) then
                 mind = dist
                 ni = i
-             endif
-          enddo
+              endif
+            enddo
 
-          nj = -1
-          mind = 1.0e20
-          do j=1,nyg
-             dist = abs(scmlat - lat(1,j))
-             if (dist < mind) then
+            nj = -1
+            mind = 1.0e20
+            do j=1,nyg
+              dist = abs(scmlat - lat(1,j))
+              if (dist < mind) then
                 mind = dist
                 nj = j
-             endif
-          enddo
+              endif
+            enddo
+
+            j = nj
+
+          else ! lat and lon are on 1D arrays
+
+            !--- to deal with spectral element grids
+            mind = 1.0e20
+            do i=1,nxg
+              dist=abs(lscmlon - lon(i,1)) + abs(scmlat - lat(i,1))
+              if (dist < mind) then
+                mind = dist
+                ni = i
+              endif
+            enddo
+
+            j = 1
+
+          endif
 
           n = 1
           i = ni
-          j = nj
+
           gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
           gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
           gGridRoot%data%rAttr(narea,n) = area(i,j)

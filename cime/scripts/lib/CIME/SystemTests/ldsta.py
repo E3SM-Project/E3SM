@@ -17,6 +17,15 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
+# datetime objects can't be used anywhere else
+def _date_to_datetime(date_obj):
+    return datetime.datetime(year = date_obj.year(),
+                             month = date_obj.month(),
+                             day = date_obj.day(),
+                             hour = date_obj.hour(),
+                             minute = date_obj.minute(),
+                             second = date_obj.second())
+
 class LDSTA(SystemTestsCommon):
 
     def __init__(self, case):
@@ -31,7 +40,7 @@ class LDSTA(SystemTestsCommon):
             shutil.rmtree(archive_dir)
         self.run_indv()
         # finished running, so all archive files should exist
-        start_date = get_file_date(self._case.get_value('RUN_STARTDATE'))
+        start_date = _date_to_datetime(get_file_date(self._case.get_value('RUN_STARTDATE')))
         rest_dir = os.path.join(archive_dir, 'rest')
         delta_day = datetime.timedelta(1)
         current_date = start_date + delta_day
@@ -44,7 +53,7 @@ class LDSTA(SystemTestsCommon):
                                                           current_date.month,
                                                           current_date.day)
             case_st_archive(self._case, last_date_str=current_date_str, copy_only=False)
-            archive_dates = [get_file_date(fname)
+            archive_dates = [_date_to_datetime(get_file_date(fname))
                              for fname in glob.glob(os.path.join(rest_dir, '*'))]
             while next_datecheck <= current_date:
                 expect(next_datecheck in archive_dates,
