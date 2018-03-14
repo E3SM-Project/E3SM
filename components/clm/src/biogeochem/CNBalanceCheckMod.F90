@@ -86,6 +86,8 @@ contains
          col_begcb(c) = totcolc(c)
 !         if(c==5657 .and. .false.)then
 !           print*,'totbgc blgc',carbonstate_vars%totabgc_col(c),carbonstate_vars%totblgc_col(c)
+         carbonstate_vars%begabgc_col(c) = carbonstate_vars%totabgc_col(c)
+         carbonstate_vars%begblgc_col(c) = carbonstate_vars%totblgc_col(c)
 !         endif
 !         col_pp%debug_flag(c)=(get_nstep()==2)
       end do
@@ -167,6 +169,8 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begpb(c) = totcolp(c)
+         phosphorusstate_vars%begabgp_col(c) = phosphorusstate_vars%totabgp_col(c)
+         phosphorusstate_vars%begblgp_col(c) = phosphorusstate_vars%totblgp_col(c)
 !         col_begpb(c) = totpftp(c)
 !         col_begpb(c) = sminp(c)
 !         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
@@ -206,6 +210,7 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: col_cinputs
     real(r8) :: col_coutputs
+    real(r8) :: err_blg
     !-----------------------------------------------------------------------
 
     associate(                                                                   & 
@@ -291,7 +296,10 @@ contains
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
-
+            err_blg=carbonstate_vars%begblgc_col(c)+carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt-&
+               carbonflux_vars%fire_decomp_closs_col(c)*dt- &
+               carbonflux_vars%hr_col(c)*dt-som_c_leached(c)*dt-som_c_runoff_col(c)*dt-carbonstate_vars%totblgc_col(c)
+            write(iulog,*)'errlbg                = ',err_blg
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_fates
@@ -327,6 +335,7 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
+    real(r8):: err_blg
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
@@ -511,6 +520,11 @@ contains
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
+         err_blg=nitrogenstate_vars%begblgn_col(c)+ndep_to_sminn(c)*dt+nfix_to_sminn(c)*dt+supplement_to_sminn(c)*dt+&
+            fert_to_sminn(c)*dt+soyfixn_to_sminn(c)*dt-denit(c)*dt-f_n2o_nit(c)*dt-smin_no3_leached(c)*dt-&
+            smin_no3_runoff(c)*dt+som_n_leached(c)*dt-som_n_runoff_col(c)*dt-nitrogenflux_vars%fire_decomp_nloss_col(c)*dt+&
+            nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt-nitrogenflux_vars%sminn_to_plant_col(c)*dt-nitrogenstate_vars%totblgn_col(c)
+         write(iulog,*)'errblg =',err_blg
          call endrun(msg=errMsg(__FILE__, __LINE__))
 
       end if
@@ -550,6 +564,7 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
+    real(r8):: err_blg
     !-----------------------------------------------------------------------
 
     associate(                                                                   &
@@ -749,6 +764,11 @@ contains
          write(iulog,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
          write(iulog,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
          write(iulog,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
+         err_blg= phosphorusstate_vars%begblgp_col(c) + primp_to_labilep(c) * dt -  secondp_to_occlp(c) * dt - &
+           sminp_leached(c) * dt+phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt+ som_p_leached(c) * dt - &
+           som_p_runoff_col(c)*dt-phosphorusflux_vars%sminp_to_plant_col(c)*dt-phosphorusflux_vars%fire_decomp_ploss_col(c)*dt-&
+           phosphorusstate_vars%totblgp_col(c)
+         write(iulog,*)'err_blg =',err_blg
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

@@ -101,6 +101,8 @@ module PhosphorusStateType
      real(r8), pointer :: totpftp_col                  (:)     ! col (gP/m2) total pft-level phosphorus (p2c)
      real(r8), pointer :: totabgp_col                  (:)
      real(r8), pointer :: totblgp_col                  (:)
+     real(r8), pointer :: begabgp_col                  (:)
+     real(r8), pointer :: begblgp_col                  (:)
      ! col balance checks
      real(r8), pointer :: begpb_patch                  (:)     ! patch phosphorus mass, beginning of time step (gP/m**2)
      real(r8), pointer :: endpb_patch                  (:)     ! patch phosphorus mass, end of time step (gP/m**2)
@@ -228,6 +230,8 @@ contains
     allocate(this%plant_p_buffer_col       (begc:endc))                   ; this%plant_p_buffer_col      (:)   = nan
     allocate(this%totabgp_col             (begc:endc))                    ; this%totabgp_col              (:) = nan
     allocate(this%totblgp_col             (begc:endc))                    ; this%totblgp_col              (:) = nan
+    allocate(this%begabgp_col             (begc:endc))                    ; this%begabgp_col              (:) = nan
+    allocate(this%begblgp_col             (begc:endc))                    ; this%begblgp_col              (:) = nan
     allocate(this%ptrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr_col            (:,:) = nan
     
     allocate(this%solutionp_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col         (:,:) = nan  
