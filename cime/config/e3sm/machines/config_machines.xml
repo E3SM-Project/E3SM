@@ -1186,8 +1186,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"></env>
-      <env name="BGQ_STACKSIZE"></env>
+      <env name="BGQ_SMP_VARS"> </env>
+      <env name="BGQ_STACKSIZE"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
@@ -1423,8 +1423,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"></env>
-      <env name="BGQ_STACKSIZE"></env>
+      <env name="BGQ_SMP_VARS"> </env>
+      <env name="BGQ_STACKSIZE"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
@@ -1477,8 +1477,8 @@
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
-      <env name="labeling"></env>
-      <env name="SMP_VARS"></env>
+      <env name="labeling"> </env>
+      <env name="SMP_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
