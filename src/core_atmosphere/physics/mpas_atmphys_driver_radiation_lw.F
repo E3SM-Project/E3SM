@@ -343,9 +343,7 @@
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
- call mpas_pool_get_array(mesh,'m_hybi' ,m_hybi )
 
- call mpas_pool_get_array(state,'m_ps'    ,m_ps    ,time_lev)
  call mpas_pool_get_array(state,'aerosols',aerosols,time_lev)
 
  call mpas_pool_get_array(sfc_input,'skintemp',skintemp)
@@ -361,6 +359,8 @@
  call mpas_pool_get_array(diag_physics,'cldfrac'   ,cldfrac   )
  call mpas_pool_get_array(diag_physics,'o3clim'    ,o3clim    )
  call mpas_pool_get_array(diag_physics,'o3vmr'     ,o3vmr     )
+ call mpas_pool_get_array(diag_physics,'m_hybi'    ,m_hybi    )
+ call mpas_pool_get_array(diag_physics,'m_ps'      ,m_ps      )
 
  do j = jts,jte
  do i = its,ite
@@ -768,7 +768,7 @@
  end subroutine radiation_camlw_to_MPAS
 
 !=================================================================================================================
- subroutine init_radiation_lw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
+ subroutine init_radiation_lw(dminfo,configs,mesh,atm_input,diag,diag_physics,state,time_lev)
 !=================================================================================================================
 
 !input arguments:
@@ -776,6 +776,7 @@
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in),optional:: mesh
  type(mpas_pool_type),intent(in),optional:: diag
+ type(mpas_pool_type),intent(in),optional:: diag_physics
 
  integer,intent(in),optional:: time_lev
 
@@ -796,7 +797,7 @@
        call rrtmg_initlw_forMPAS(dminfo)
 
     case("cam_lw")
-       call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
+       call camradinit(dminfo,mesh,atm_input,diag,diag_physics,state,time_lev)
     
     case default
 
