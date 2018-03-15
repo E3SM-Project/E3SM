@@ -304,9 +304,9 @@ class EnvBatch(EnvBase):
 
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:
-                    if self._match_attribs(self.attrib(dnode), case, queue):
-                        nodes = self.get_children("directive", root=dnode)
-                        for node in nodes:
+                    nodes = self.get_children("directive", root=dnode)
+                    for node in nodes:
+                        if self._match_attribs(self.attrib(node), case, queue):
                             directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
                             default = self.get(node, "default")
                             if default is None:
