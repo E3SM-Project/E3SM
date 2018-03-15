@@ -258,6 +258,37 @@ class EnvBatch(EnvBase):
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
+    def _match_attribs(self, attribs, case, queue):
+        # check for matches with case-vars
+        for attrib in attribs:
+            if attrib in ["default", "prefix"]:
+                # These are not used for matching
+                continue
+
+            elif attrib == "queue":
+                if not self._match(queue, attribs["queue"]):
+                    return False
+
+            else:
+                val = case.get_value(attrib.upper())
+                expect(val is not None, "Cannot match attrib '%s', case has no value for it" % attrib.upper())
+                if not self._match(val, attribs[attrib]):
+                    return False
+
+        return True
+
+    def _match(self, my_value, xml_value):
+        if xml_value.startswith("!"):
+            result = re.match(xml_value[1:],str(my_value)) is None
+        elif isinstance(my_value, bool):
+            if my_value: result = xml_value == "TRUE"
+            else: result = xml_value == "FALSE"
+        else:
+            result = re.match(xml_value,str(my_value)) is not None
+
+        logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
+        return result
+
     def get_batch_directives(self, case, job, overrides=None):
         """
         """
@@ -273,21 +304,20 @@ class EnvBatch(EnvBase):
 
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:
-                    if self.has(dnode,"queue") and self.get(dnode, "queue") != queue:
-                        continue
                     nodes = self.get_children("directive", root=dnode)
                     for node in nodes:
-                        directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
-                        default = self.get(node, "default")
-                        if default is None:
-                            directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
-                        else:
-                            directive = transform_vars(directive, default=default)
+                        if self._match_attribs(self.attrib(node), case, queue):
+                            directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
+                            default = self.get(node, "default")
+                            if default is None:
+                                directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
+                            else:
+                                directive = transform_vars(directive, default=default)
 
-                        custom_prefix = self.get(node, "prefix")
-                        prefix = directive_prefix if custom_prefix is None else custom_prefix
+                            custom_prefix = self.get(node, "prefix")
+                            prefix = directive_prefix if custom_prefix is None else custom_prefix
 
-                        result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
+                            result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
 
         return "\n".join(result)
 
