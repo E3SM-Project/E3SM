@@ -34,6 +34,7 @@ CIME User's Guide Part 2: Intermediate - CIME Internals, Porting, Testing and Us
    :numbered:
 
    cime-internals.rst
+   creating-new-compsets.rst
    porting-cime.rst
    optimizing-processor-layout.rst
    testing.rst
@@ -49,4 +50,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

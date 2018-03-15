@@ -1,6 +1,315 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 3-06-2018
+Tag: cime5.4.0-alpha.25
+Answer Changes: Climate Changing for non-B 1850 compsets in CESM
+Tests:  scripts_regression_tests.py
+        hand test SMS_P1x4.f19_g16.X
+        code checker
+        edison build test for A,X, and B1850 compsets
+Dependencies:
+
+Brief Summary:
+    - Add support for environment and module to depend on job.
+    - Fix mistake in scripts-regression-tests help dump.
+    - Env batch cleanup
+    - Add queue attribute (small cheyenne jobs go to share queue).
+    - For Travis-CI build: kick off build on master whenever it's pushed.
+    - Reinstate ability to select queue by num tasks.
+    - Give st_archive an extra 10 min just to be sure.
+    - Refactor handling of small jobs.
+    - Report lock file info as debug output.
+    - Auto-regen batch files in case_submit.
+    - Add travis_ci testing.
+    - Supported attribute is string.
+    - Cleanup xml.
+    - Redo orb_year_defaults for cesm only.
+        Expected to change answers for non-B 1850 compsets in CESM
+    - Add supported flag to testlist.xml.
+    - Big upgrade to scripts_regression_tests argument handling.
+    - Update esmf module for edison.nersc.gov.
+    - New allow_error field for module system.
+    - Fix trivial pylint problem.
+    - Add the comment from config_pes.xml to the env_mach_pes.xml file.
+    - Refactor _get_datenames to count the correct number of cpl.r files.
+    - Change subtree split method.
+    - Jgfouca/branch for acme split 2018-02-22.
+    - Fix uninitialized variable.
+    - python2 needs an init file in Servers.
+    - Catch more errors in the testlist schema, remove generic GSW DATM_MODE ignore scripts/cases.
+    - Add support for ftp and wget.
+    - Add support for provenance in cesm.
+    - Swap command cannot be batched together.
+    - Add xml support for inputdata server.
+    - Fix bug when providing -p PROJECT flag to create_test.
+    - Rename acme to e3sm everywhere.
+    - Update components' communicator initialization.
+    - Make get_components return None instead of fail.
+
+User interface changes: 
+    - (cesm only) create_test and query_testlist now have --supported-only flag
+    - New allow_error attribute for module systems. 
+    - check_input_data replace --svn-loc with --server and --protocal
+    - Some Tools with "acme" in the name now say "e3sm".
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+c9c5695 Merge pull request #2341 from jedwards4b/mpirun_depends_on_queue
+7dff579 Fix mistake in scripts-regression-tests help dump
+bfb23dd Merge pull request #2339 from jedwards4b/env_batch_cleanup
+c19fd3f Merge pull request #2335 from jedwards4b/cheyenne_share_queue
+8311f8e Merge pull request #2333 from billsacks/travis_build_master
+a5ed418 Merge pull request #2327 from ESMCI/jgfouca/allow_queue_selection_by_task
+8f6f199 Give st_archive an extra 10 min just to be sure
+751c895 Merge pull request #2326 from ESMCI/jgfouca/refacor_small_jobs
+d4fc951 Merge pull request #2325 from ESMCI/jgfouca/adjust_lock_output
+a9607d7 Merge pull request #2320 from ESMCI/jgfouca/upgrade_batch_script_handling
+e93296a Merge pull request #2324 from jedwards4b/travis_ci
+41ef5a3 Merge pull request #2321 from jedwards4b/supported_flag_for_testlist
+a714422 Merge pull request #2323 from jedwards4b/cleanup_xml
+43c0308 Merge pull request #2290 from jedwards4b/orb_year_defaults
+c5aa74b Merge pull request #2316 from jedwards4b/supported_flag_for_testlist
+1ac42bb Merge pull request #2319 from ESMCI/jgfouca/script_regr_test_arg_upgrade
+fdf7757 Merge pull request #2318 from ESMCI/fischer/edison
+68e7b765 Merge pull request #2317 from ESMCI/jgfouca/allow_stderr_in_env_modules
+ab6d933 Fix trivial pylint problem
+93dde2b Merge pull request #2315 from jedwards4b/add_comment_pes_file
+cae9f9a Merge pull request #2285 from kdraeder/multi_drv_kdr
+7f8c26a Merge pull request #2314 from ESMCI/jgfouca/chg_subtree_split_method
+92ccb83 Merge pull request #2312 from ESMCI/jgfouca/branch-for-acme-split-2018-02-22
+c82664e fix uninitialized variable
+8a86965 python2 needs an init file in Servers
+5af94aa Merge pull request #2300 from ekluzek/testlistxsdgitig
+69e35b2 Merge pull request #2311 from jedwards4b/ftpandwget
+8baf2bb Merge pull request #2305 from jedwards4b/cesm_provenance
+8ac3dd2 Merge pull request #2310 from ESMCI/jgfouca/fix_env_module_operation_batching
+ec9483c Merge pull request #2309 from jedwards4b/inputdata
+ba3c1fb Merge pull request #2306 from ESMCI/jgfouca/fix_bug_when_setting_proj
+6405d72 Merge pull request #2296 from ESMCI/rljacob/acme2e3sm
+219ee5a Merge pull request #2299 from ESMCI/azamat/update-seq_comm_setcomm-calls
+6c3f484 Merge pull request #2298 from ESMCI/jgfouca/fix_query_config_again
+
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+A	.travis.yml
+D	config/acme/allactive/config_compsets.xml
+D	config/acme/allactive/config_pesall.xml
+D	config/acme/allactive/testlist_allactive.xml
+D	config/acme/allactive/usermods_dirs/b1850/shell_commands
+D	config/acme/allactive/usermods_dirs/b1850_cism/include_user_mods
+D	config/acme/allactive/usermods_dirs/b1850_cism/user_nl_cism
+D	config/acme/config_archive.xml
+D	config/acme/config_files.xml
+D	config/acme/config_grids.xml
+D	config/acme/machines/Depends.cetus
+D	config/acme/machines/Depends.cray
+D	config/acme/machines/Depends.gnu
+D	config/acme/machines/Depends.intel
+D	config/acme/machines/Depends.mira
+D	config/acme/machines/Depends.nag
+D	config/acme/machines/Depends.summitdev.ibm
+D	config/acme/machines/Depends.summitdev.pgiacc
+D	config/acme/machines/Depends.titan.cray
+D	config/acme/machines/Depends.titan.intel
+D	config/acme/machines/Depends.titan.pgi
+D	config/acme/machines/Depends.titan.pgiacc
+D	config/acme/machines/README
+D	config/acme/machines/config_batch.xml
+D	config/acme/machines/config_batch.xsd
+D	config/acme/machines/config_compilers.xml
+D	config/acme/machines/config_machines.xml
+D	config/acme/machines/config_pio.xml
+D	config/acme/machines/syslog.anvil
+D	config/acme/machines/syslog.cetus
+D	config/acme/machines/syslog.cori-haswell
+D	config/acme/machines/syslog.cori-knl
+D	config/acme/machines/syslog.edison
+D	config/acme/machines/syslog.mira
+D	config/acme/machines/syslog.noop
+D	config/acme/machines/syslog.theta
+D	config/acme/machines/syslog.titan
+D	config/acme/machines/template.case.run
+D	config/acme/machines/template.case.test
+D	config/acme/machines/template.ocn_diagnostics
+D	config/acme/machines/template.st_archive
+D	config/acme/machines/template.timeseries
+D	config/acme/machines/userdefined_laptop_template/README.md
+D	config/acme/machines/userdefined_laptop_template/config_compilers.xml
+D	config/acme/machines/userdefined_laptop_template/config_machines.xml
+D	config/acme/machines/userdefined_laptop_template/config_pes.xml
+D	config/acme/testmods_dirs/allactive/cam/cosplite/user_nl_cam
+D	config/acme/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/user_nl_cam
+D	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/cam/outfrq9s/user_nl_cam
+D	config/acme/testmods_dirs/allactive/cam/outfrq9s/user_nl_clm
+D	config/acme/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/cam/rtm_null/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/clm/betr/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/clm/bgcinterface/user_nl_clm
+D	config/acme/testmods_dirs/allactive/clm/eca/user_nl_clm
+D	config/acme/testmods_dirs/allactive/clm/fates/user_nl_clm
+D	config/acme/testmods_dirs/allactive/clm/rd/user_nl_clm
+D	config/acme/testmods_dirs/allactive/clm/vst/user_nl_clm
+D	config/acme/testmods_dirs/allactive/drv/y100k
+D	config/acme/testmods_dirs/allactive/force_netcdf_pio/shell_commands
+D	config/acme/testmods_dirs/allactive/force_netcdf_pio/xmlchange_cmnds
+D	config/acme/testmods_dirs/allactive/mach_mods/shell_commands
+M	config/cesm/config_files.xml
+A	config/cesm/config_inputdata.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+A	config/e3sm/allactive/config_compsets.xml
+A	config/e3sm/allactive/config_pesall.xml
+A	config/e3sm/allactive/testlist_allactive.xml
+A	config/e3sm/allactive/usermods_dirs/b1850/shell_commands
+A	config/e3sm/allactive/usermods_dirs/b1850_cism/include_user_mods
+A	config/e3sm/allactive/usermods_dirs/b1850_cism/user_nl_cism
+A	config/e3sm/config_archive.xml
+A	config/e3sm/config_files.xml
+A	config/e3sm/config_grids.xml
+A	config/e3sm/config_inputdata.xml
+A	config/e3sm/machines/Depends.cetus
+A	config/e3sm/machines/Depends.cray
+A	config/e3sm/machines/Depends.gnu
+A	config/e3sm/machines/Depends.intel
+A	config/e3sm/machines/Depends.mira
+A	config/e3sm/machines/Depends.nag
+A	config/e3sm/machines/Depends.summitdev.ibm
+A	config/e3sm/machines/Depends.summitdev.pgiacc
+A	config/e3sm/machines/Depends.titan.cray
+A	config/e3sm/machines/Depends.titan.intel
+A	config/e3sm/machines/Depends.titan.pgi
+A	config/e3sm/machines/Depends.titan.pgiacc
+A	config/e3sm/machines/README
+A	config/e3sm/machines/config_batch.xml
+A	config/e3sm/machines/config_compilers.xml
+A	config/e3sm/machines/config_machines.xml
+A	config/e3sm/machines/config_pio.xml
+A	config/e3sm/machines/syslog.anvil
+A	config/e3sm/machines/syslog.cetus
+A	config/e3sm/machines/syslog.cori-haswell
+A	config/e3sm/machines/syslog.cori-knl
+A	config/e3sm/machines/syslog.edison
+A	config/e3sm/machines/syslog.mira
+A	config/e3sm/machines/syslog.noop
+A	config/e3sm/machines/syslog.theta
+A	config/e3sm/machines/syslog.titan
+A	config/e3sm/machines/template.case.run
+A	config/e3sm/machines/template.case.test
+A	config/e3sm/machines/template.ocn_diagnostics
+A	config/e3sm/machines/template.st_archive
+A	config/e3sm/machines/template.timeseries
+A	config/e3sm/machines/userdefined_laptop_template/README.md
+A	config/e3sm/machines/userdefined_laptop_template/config_compilers.xml
+A	config/e3sm/machines/userdefined_laptop_template/config_machines.xml
+A	config/e3sm/machines/userdefined_laptop_template/config_pes.xml
+A	config/e3sm/testmods_dirs/allactive/cam/cosplite/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/cam/cosplite_nhtfrq5/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/cam/cosplite_nhtfrq5/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/cam/rtm_null/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/clm/betr/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/clm/bgcinterface/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/clm/eca/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/clm/fates/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/clm/rd/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/clm/vst/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/drv/y100k
+A	config/e3sm/testmods_dirs/allactive/force_netcdf_pio/shell_commands
+A	config/e3sm/testmods_dirs/allactive/force_netcdf_pio/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/mach_mods/shell_commands
+M	config/xml_schemas/config_batch.xsd
+A	config/xml_schemas/config_inputdata.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/env_batch.xsd
+M	config/xml_schemas/env_mach_pes.xsd
+M	config/xml_schemas/env_mach_specific.xsd
+M	config/xml_schemas/testlist.xsd
+D	scripts/Tools/acme_check_env
+D	scripts/Tools/acme_cime_merge
+D	scripts/Tools/acme_cime_split
+M	scripts/Tools/check_input_data
+M	scripts/Tools/code_checker
+A	scripts/Tools/e3sm_check_env
+A	scripts/Tools/e3sm_cime_merge
+A	scripts/Tools/e3sm_cime_split
+M	scripts/Tools/jenkins_generic_job
+D	scripts/Tools/list_acme_tests
+A	scripts/Tools/list_e3sm_tests
+M	scripts/Tools/preview_run
+D	scripts/Tools/update_acme_tests
+A	scripts/Tools/update_e3sm_tests
+M	scripts/Tools/wait_for_tests
+M	scripts/create_test
+M	scripts/lib/CIME/BuildTools/makemacroswriter.py
+A	scripts/lib/CIME/Servers/__init__.py
+A	scripts/lib/CIME/Servers/ftp.py
+A	scripts/lib/CIME/Servers/generic_server.py
+A	scripts/lib/CIME/Servers/svn.py
+A	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+A	scripts/lib/CIME/XML/inputdata.py
+M	scripts/lib/CIME/XML/namelist_definition.py
+M	scripts/lib/CIME/XML/pes.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/check_input_data.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+D	scripts/lib/acme_cime_mgmt.py
+A	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/jenkins_generic_job.py
+D	scripts/lib/update_acme_tests.py
+A	scripts/lib/update_e3sm_tests.py
+D	scripts/tests/run_acme_ctest/CMakeLists.txt
+D	scripts/tests/run_acme_ctest/CTestConfig.cmake
+D	scripts/tests/run_acme_ctest/runAcmeTest_template.sh
+A	scripts/tests/run_e3sm_ctest/CMakeLists.txt
+A	scripts/tests/run_e3sm_ctest/CTestConfig.cmake
+A	scripts/tests/run_e3sm_ctest/runE3smTest_template.sh
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+D	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+A	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 2-13-2018
 Tag: cime5.4.0-alpha.24
 Answer Changes: None

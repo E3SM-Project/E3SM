@@ -1,10 +1,10 @@
 <components version="2.0">
 
   <comp_archive_spec compname="cam" compclass="atm">
-    <rest_file_extension>\.[ri]\..*</rest_file_extension>
-     <rest_file_extension>\.rh\d\.*</rest_file_extension>
-     <rest_file_extension>\.rs\.*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_file_extension>[ri]</rest_file_extension>
+    <rest_file_extension>rh\d*</rest_file_extension>
+    <rest_file_extension>rs</rest_file_extension>
+    <hist_file_extension>[eh]</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
@@ -13,7 +13,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="datm" compclass="atm">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
@@ -22,9 +22,9 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="clm" compclass="lnd">
-    <rest_file_extension>\.[ri]\..*</rest_file_extension>
-    <rest_file_extension>\.rh.*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_file_extension>r</rest_file_extension>
+    <rest_file_extension>rh\d?</rest_file_extension>
+    <hist_file_extension>h\d*</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
@@ -33,7 +33,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="dlnd" compclass="lnd">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
@@ -42,8 +42,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="rtm" compclass="rof">
-    <rest_file_extension>\.r.*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_file_extension>r</rest_file_extension>
+    <hist_file_extension>h\d*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
@@ -52,8 +52,9 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="mosart" compclass="rof">
-    <rest_file_extension>\.r.*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_file_extension>r</rest_file_extension>
+    <rest_file_extension>rh\d*</rest_file_extension>
+    <hist_file_extension>h\d*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
@@ -62,7 +63,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="drof" compclass="rof">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
@@ -71,8 +72,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="cice" compclass="ice">
-    <rest_file_extension>\.[ri].*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_file_extension>[ri]</rest_file_extension>
+    <hist_file_extension>h\d*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
@@ -81,8 +82,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpascice" compclass="ice">
-    <rest_file_extension>\.rst.*</rest_file_extension>
-    <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
+    <rest_file_extension>rst</rest_file_extension>
+    <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
@@ -91,7 +92,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="dice" compclass="ice">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
@@ -100,22 +101,22 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="pop" compclass="ocn">
-    <rest_file_extension>\.r.*</rest_file_extension>
-    <hist_file_extension>\.h.*.nc$|\.d[dovt]\.</hist_file_extension>
+    <rest_file_extension>r</rest_file_extension>
+    <hist_file_extension>h\d*|d[dovt]</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer.ocn.restart$NINST_STRING</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.restart</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</rpointer_content>
     </rpointer>
     <rpointer>
-      <rpointer_file>rpointer.ocn.ovf$NINST_STRING</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpaso" compclass="ocn">
-    <rest_file_extension>\.rst.*</rest_file_extension>
-    <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
+    <rest_file_extension>rst</rest_file_extension>
+    <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
@@ -124,7 +125,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="docn" compclass="ocn">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
@@ -133,9 +134,9 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="cism" compclass="glc">
-    <rest_file_extension>\.[ri]\..*</rest_file_extension>
-    <hist_file_extension>\.h\..*\.nc$</hist_file_extension>
-    <hist_file_extension>\.initial_hist\..*\.nc$</hist_file_extension>
+    <rest_file_extension>[ri]</rest_file_extension>
+    <hist_file_extension>h\d*</hist_file_extension>
+    <hist_file_extension>initial_hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
@@ -144,8 +145,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpasli" compclass="glc">
-    <rest_file_extension>\.rst.*</rest_file_extension>
-    <hist_file_extension>\.hist.*</hist_file_extension>
+    <rest_file_extension>rst</rest_file_extension>
+    <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
@@ -154,8 +155,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>\.\..*</rest_file_extension>
-    <hist_file_extension>\.hi.*</hist_file_extension>
+    <rest_file_extension>\..*</rest_file_extension>
+    <hist_file_extension>hi</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
@@ -164,7 +165,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="dwav" compclass="wav">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>r</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
@@ -172,15 +173,9 @@
     </rpointer>
   </comp_archive_spec>
 
-
   <comp_archive_spec compclass="esp" compname="dart">
-    <rest_file_extension>inflate_restart.*</rest_file_extension>
-    <hist_file_extension>\.True_State.*</hist_file_extension>
-    <hist_file_extension>\.Prior_Diag.*</hist_file_extension>
-    <hist_file_extension>\.Posterior_Diag.*</hist_file_extension>
-    <hist_file_extension>\..+\.posterior*</hist_file_extension>
-    <hist_file_extension>\..+\.prior*</hist_file_extension>
-    <hist_file_extension>\..+$_obs_seq.*</hist_file_extension>
+    <rest_file_extension>e\.\w+inf\w+</rest_file_extension>
+    <hist_file_extension>[ei]</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.unset</rpointer_file>
