@@ -158,8 +158,9 @@ _TEST_SUITES = {
                            ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
-    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage", "e3sm_rrm"),None,
-                     () ),
+    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",), None,
+                             ("SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
+                              "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L")),
 
     #e3sm tests for hi-res
     "e3sm_hi_res" : (("e3sm_atm_hi_res",),None,
