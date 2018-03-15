@@ -29,12 +29,10 @@ def get_tag(prefix, expected_num=1):
     tags = run_cmd_no_fail("git tag").split()
     tags = [tag for tag in tags if tag.startswith(prefix)]
 
-    expect(len(tags) == expected_num, "Expected exactly {} {} tag, found {}".format(expected_num, prefix, ", ".join(tags)))
-
     if expected_num == 1:
-        return tags[0]
+        return tags[-1]
     else:
-        return tags
+        return tags[-expected_num:]
 
 ###############################################################################
 def get_split_tag(expected_num=1):
@@ -85,7 +83,7 @@ def do_subtree_split(new_split_tag, merge_tag):
 ###############################################################################
 def do_subtree_pull():
 ###############################################################################
-    stat = run_cmd("git subtree pull --prefix=cime {} master".format(ESMCI_REMOTE_NAME), verbose=True)[0]
+    stat = run_cmd("git subtree pull --squash --prefix=cime {} master".format(ESMCI_REMOTE_NAME), verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
         sys.exit(1)
@@ -132,7 +130,7 @@ def e3sm_cime_split(resume):
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
         except:
             # If unexpected failure happens, delete new split tag
-            logging.info("Abandoning merge due to unexpected failure")
+            logging.info("Abandoning split due to unexpected failure")
             delete_tag(new_split_tag)
             raise
 
@@ -144,13 +142,7 @@ def e3sm_cime_split(resume):
         logging.info("Resuming split with old tag {} and new tag {}".format(old_split_tag, new_split_tag))
         pr_branch = get_branch_from_tag(new_split_tag)
 
-    try:
-        run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch), verbose=True)
-    except:
-        delete_tag(old_split_tag)
-        raise
-
-    delete_tag(old_split_tag)
+    run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch), verbose=True)
 
 ###############################################################################
 def e3sm_cime_merge(resume):
@@ -177,18 +169,12 @@ def e3sm_cime_merge(resume):
         logging.info("Resuming merge with old tag {} and new tag {}".format(old_merge_tag, new_merge_tag))
         pr_branch = get_branch_from_tag(new_merge_tag)
 
-    try:
-        run_cmd_no_fail("git push -u origin {}".format(pr_branch))
-    except:
-        delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
-        raise
-
-    delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
+    run_cmd_no_fail("git push -u origin {}".format(pr_branch))
 
 ###############################################################################
 def abort_split():
 ###############################################################################
-    _, new_split_tag = get_split_tag(expected_num=2)
+    new_split_tag = get_split_tag()
     pr_branch = get_branch_from_tag(new_split_tag)
     delete_tag(new_split_tag)
     run_cmd_no_fail("git checkout master", verbose=True)
@@ -198,7 +184,7 @@ def abort_split():
 ###############################################################################
 def abort_merge():
 ###############################################################################
-    _, new_merge_tag = get_merge_tag(expected_num=2)
+    new_merge_tag = get_merge_tag()
     pr_branch = get_branch_from_tag(new_merge_tag)
     delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
     run_cmd_no_fail("git checkout master", verbose=True)
