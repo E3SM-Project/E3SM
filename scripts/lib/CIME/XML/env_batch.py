@@ -433,7 +433,10 @@ class EnvBatch(EnvBase):
 
             function_name = job.replace(".", "_")
             if not dry_run:
-                locals()[function_name](case)
+                if "archive" not in function_name:
+                    locals()[function_name](case, skip_pnl=skip_pnl)
+                else:
+                    locals()[function_name](case)
 
             return
 

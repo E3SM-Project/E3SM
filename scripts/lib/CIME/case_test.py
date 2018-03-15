@@ -42,7 +42,7 @@ def _set_up_signal_handlers():
         signum = getattr(signal, signame)
         signal.signal(signum, _signal_handler)
 
-def case_test(case, testname=None, reset=False):
+def case_test(case, testname=None, reset=False, skip_pnl=False):
     if testname is None:
         testname = case.get_value('TESTCASE')
 
@@ -69,6 +69,6 @@ def case_test(case, testname=None, reset=False):
         # pylint: disable=protected-access
         test._resetup_case(RUN_PHASE)
         return True
-    success = test.run()
+    success = test.run(skip_pnl=skip_pnl)
 
     return success
