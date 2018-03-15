@@ -309,7 +309,13 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in e3sm_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
+            try:
+                tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
+            except:
+                if "." not in testarg:
+                    expect(False, "Unrecognized test suite '{}'".format(testarg))
+                else:
+                    raise
 
     for negation in negations:
         if (negation in e3sm_test_suites):

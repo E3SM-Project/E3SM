@@ -23,7 +23,6 @@ def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     batchsubmit = case.get_value("BATCHSUBMIT")
-    mpilib = case.get_value("MPILIB")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
 
@@ -41,14 +40,9 @@ def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     logger.debug("build complete is {} ".format(build_complete))
 
     # load the module environment...
-    case.load_env()
+    case.load_env(job="case.run", reset=True)
 
     # set environment variables
-    # This is a requirement for yellowstone only
-    if mpilib == "mpi-serial" and "MP_MPILIB" in os.environ:
-        del os.environ["MP_MPILIB"]
-    else:
-        os.environ["MPILIB"] = mpilib
 
     if batchsubmit is None or len(batchsubmit) == 0:
         os.environ["LBQUERY"] = "FALSE"

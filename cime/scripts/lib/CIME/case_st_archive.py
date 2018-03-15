@@ -7,8 +7,8 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force
+from CIME.date                      import date
 from os.path                        import isdir, join
-import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def _get_archive_file_fn(copy_only):
 def _get_datenames(case):
 ###############################################################################
     """
-    Returns the datetime objects specifying the times of each file
+    Returns the date objects specifying the times of each file
     Note we are assuming that the coupler restart files exist and are consistent with other component datenames
     Not doc-testable due to filesystem dependence
     """
@@ -49,15 +49,15 @@ def _get_datenames(case):
 
     datenames = []
     for filename in files:
-        date = get_file_date(filename)
-        datenames.append(date)
+        file_date = get_file_date(filename)
+        datenames.append(file_date)
     return datenames
 
 ###############################################################################
 def get_file_date(filename):
 ###############################################################################
     """
-    Returns the date associated with the filename as a datetime object representing the correct date
+    Returns the date associated with the filename as a date object representing the correct date
     Formats supported:
     "%Y-%m-%d_%h.%M.%s
     "%Y-%m-%d_%05s"
@@ -67,29 +67,29 @@ def get_file_date(filename):
     "%Y.%m"
 
     >>> get_file_date("./ne4np4_oQU240.cam.r.0001-01-06-00435.nc")
-    datetime.datetime(1, 1, 6, 0, 7, 15)
+    date(1, 1, 6, 0, 7, 15)
     >>> get_file_date("./ne4np4_oQU240.cam.r.0010-1-06_00435.nc")
-    datetime.datetime(10, 1, 6, 0, 7, 15)
+    date(10, 1, 6, 0, 7, 15)
     >>> get_file_date("./ne4np4_oQU240.cam.r.0010-10.nc")
-    datetime.datetime(10, 10, 1, 0, 0)
+    date(10, 10, 1, 0, 0, 0)
     >>> get_file_date("0064-3-8_10.20.30.nc")
-    datetime.datetime(64, 3, 8, 10, 20, 30)
+    date(64, 3, 8, 10, 20, 30)
     >>> get_file_date("0140-3-5")
-    datetime.datetime(140, 3, 5, 0, 0)
+    date(140, 3, 5, 0, 0, 0)
     >>> get_file_date("0140-3")
-    datetime.datetime(140, 3, 1, 0, 0)
+    date(140, 3, 1, 0, 0, 0)
     >>> get_file_date("0140.3")
-    datetime.datetime(140, 3, 1, 0, 0)
+    date(140, 3, 1, 0, 0, 0)
     """
 
     #
     # TODO: Add these to config_archive.xml, instead of here
     # Note these must be in order of most specific to least
     # so that lesser specificities aren't used to parse greater ones
-    re_formats = [r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}", # yyyy-mm-dd_hh.MM.ss
-                  r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[\-_][0-9]{1,5}",                     # yyyy-mm-dd_sssss
-                  r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",                                    # yyyy-mm-dd
-                  r"[0-9]{4}[\-\.][0-9]{1,2}",                                          # yyyy-mm
+    re_formats = [r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}", # [yy...]yyyy-mm-dd_hh.MM.ss
+                  r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[\-_][0-9]{1,5}",                     # [yy...]yyyy-mm-dd_sssss
+                  r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",                                    # [yy...]yyyy-mm-dd
+                  r"[0-9]*[0-9]{4}[\-\.][0-9]{1,2}",                                          # [yy...]yyyy-mm
     ]
 
     for re_str in re_formats:
@@ -107,65 +107,50 @@ def get_file_date(filename):
             if len(date_tuple) == 4:
                 second = date_tuple[3]
             elif len(date_tuple) == 6:
-                # Create a datetime object with arbitrary year, month, day, but the correct time of day
+                # Create a date object with arbitrary year, month, day, but the correct time of day
                 # Then use _get_day_second to get the time of day in seconds
-                second = _get_day_second(datetime.datetime(1, 1, 1,
-                                                           hour = date_tuple[3],
-                                                           minute = date_tuple[4],
-                                                           second = date_tuple[5]))
-        return datetime.datetime(year, month, day) + datetime.timedelta(seconds = second)
+                second = date.hms_to_second(hour = date_tuple[3],
+                                            minute = date_tuple[4],
+                                            second = date_tuple[5])
+        return date(year, month, day, 0, 0, second)
 
     # Not a valid filename date format
     logger.debug("{} is a filename without a supported date!".format(filename))
     return None
 
-def _get_day_second(date):
-    """
-    Returns the total seconds that have elapsed since the beginning of the day
-    """
-    SECONDS_PER_HOUR = 3600
-    SECONDS_PER_MINUTE = 60
-    return (date.second
-            + date.minute * SECONDS_PER_MINUTE
-            + date.hour * SECONDS_PER_HOUR)
-
-def _datetime_str(date):
+def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
-    Note unfortunately datetime.datetime.strftime expects years > 1900
-    to support abbreviations, so we can't use that here
 
-    >>> _datetime_str(datetime.datetime(5, 8, 22))
+    >>> _datetime_str(date(5, 8, 22))
     '0005-08-22-00000'
     >>> _datetime_str(get_file_date("0011-12-09-00435"))
     '0011-12-09-00435'
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}-{seconds:05d}"
-    return format_string.format(year = date.year,
-                                month = date.month,
-                                day = date.day,
-                                seconds = _get_day_second(date))
+    return format_string.format(year = _date.year(),
+                                month = _date.month(),
+                                day = _date.day(),
+                                seconds = _date.second_of_day())
 
-def _datetime_str_mpas(date):
+def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
-    Note unfortunately datetime.datetime.strftime expects years > 1900
-    to support abbreviations, so we can't use that here
 
-    >>> _datetime_str_mpas(datetime.datetime(5, 8, 22))
+    >>> _datetime_str_mpas(date(5, 8, 22))
     '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(get_file_date("0011-12-09-00435"))
     '0011-12-09_00:07:15'
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
-    return format_string.format(year = date.year,
-                                month = date.month,
-                                day = date.day,
-                                hours = date.hour,
-                                minutes = date.minute,
-                                seconds = date.second)
+    return format_string.format(year = _date.year(),
+                                month = _date.month(),
+                                day = _date.day(),
+                                hours = _date.hour(),
+                                minutes = _date.minute(),
+                                seconds = _date.second())
 
 ###############################################################################
 def _get_ninst_info(case, compclass):
@@ -199,6 +184,7 @@ def _get_component_archive_entries(case, archive):
     compset_comps.append('dart')
 
     for compname in compset_comps:
+        logger.debug("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
             yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
@@ -313,19 +299,20 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 if compname.find('mpas') == 0:
                     # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix = compname + '.*' + suffix
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i] + r'\.' + suffix + r'\.'
             else:
                 if compname.find('mpas') == 0:
-                    newsuffix = compname + '.*' + suffix
+                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
                 else:
-                    newsuffix = casename + '.' + compname + ".*" + suffix
-
+                    newsuffix = casename + r'\.' + compname + r'\d*'                   + r'\.' + suffix + r'\.'
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
 
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            logger.debug("histfiles = {} ".format(histfiles))
+
             if histfiles:
                 for histfile in histfiles:
                     file_date = get_file_date(os.path.basename(histfile))
@@ -461,20 +448,20 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
         for i in range(ninst):
             restfiles = ""
             if compname.find("mpas") == 0:
-                pattern = compname + suffix + '_'.join(datename_str.rsplit('-', 1))
+                pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
-                pattern = r"{}\.{}\d*.*".format(casename, compname)
+                pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
-                    pattern = ninst_strings[i] + suffix + datename_str
+                    pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
                 else:
-                    pattern = suffix + datename_str
+                    pattern =                     r'\.' + suffix + r'\.' + datename_str
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
-            logger.debug("Pattern is {} restfiles {}".format(pattern, restfiles))
+                logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
@@ -648,10 +635,10 @@ def case_st_archive(case, last_date_str=None, archive_incomplete_logs=True, copy
     Create archive object and perform short term archiving
     """
     caseroot = case.get_value("CASEROOT")
-
+    case.load_env(job="case.st_archive")
     if last_date_str is not None:
         try:
-            last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d')
+            last_date = get_file_date(last_date_str)
         except ValueError:
             expect(False, 'Could not parse the last date to archive')
     else:

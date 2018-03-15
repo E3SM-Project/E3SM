@@ -99,8 +99,11 @@ class Case(object):
         self._component_classes = []
         self._component_description = {}
         self._is_env_loaded = False
+
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
+
+        # Derived attributes
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -108,6 +111,7 @@ class Case(object):
         self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
+
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
@@ -279,7 +283,7 @@ class Case(object):
                 if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    if vtype is not None or vtype != "char":
+                    if vtype is not None and vtype != "char":
                         result = convert_to_type(result, vtype, item)
 
                 return result
@@ -730,15 +734,7 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
             mach_pes_obj.set_value(pstrid_str, pstrid)
 
-        pesize = 1
-        max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
-        for val in totaltasks:
-            if val < 0:
-                val = -1*val*max_mpitasks_per_node
-            if val > pesize:
-                pesize = val
         if multi_driver:
-            pesize *= int(ninst)
             mach_pes_obj.set_value("MULTI_DRIVER", True)
 
         # Make sure that every component has been accounted for
@@ -755,8 +751,6 @@ class Case(object):
             key = "NTHRDS_{}".format(compclass)
             if compclass not in pes_nthrds:
                 mach_pes_obj.set_value(compclass,1)
-
-        return pesize
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
@@ -944,19 +938,21 @@ class Case(object):
         #--------------------------------------------
         # batch system (must come after initialize_derived_attributes)
         #--------------------------------------------
-        if walltime:
-            self.set_value("USER_REQUESTED_WALLTIME", walltime)
-        if queue:
-            self.set_value("USER_REQUESTED_QUEUE", queue)
-
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
+        logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
+
+        if walltime:
+            self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=("case.test" if test else "case.run"))
+        if queue:
+            self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=("case.test" if test else "case.run"))
+
         env_batch.set_job_defaults(bjobs, self)
         self.schedule_rewrite(env_batch)
 
@@ -1179,10 +1175,11 @@ class Case(object):
                     mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
+        result =  env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
                                      skip_pnl=skip_pnl, mail_user=mail_user,
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
+        return result
 
     def get_job_info(self):
         """
@@ -1235,6 +1232,7 @@ class Case(object):
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
             "threaded" : self.get_build_threaded(),
+            "queue" : self.get_value("JOB_QUEUE", subgroup=job),
             "unit_testing" : False
             }
 
@@ -1266,11 +1264,11 @@ class Case(object):
         else:
             logger.warning("WARNING: No {} Model version found.".format(model))
 
-    def load_env(self, reset=False):
+    def load_env(self, reset=False, job=None, verbose=False):
         if not self._is_env_loaded or reset:
             os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
-            env_module.load_env(self)
+            env_module.load_env(self, job=job, verbose=verbose)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
