@@ -145,7 +145,7 @@ directory structure.
    :widths: 150, 300
 
    "config/cesm/", "CESM-specific configuration options"
-   "config/acme/", "E3SM-specific configuration options"
+   "config/e3sm/", "E3SM-specific configuration options"
    "src/components/", "CIME-provided components including data and stub models"
    "src/drivers/", "CIME-provided main driver for a climate model"
    "src/externals/", "Software provided with CIME for building a climate model"
@@ -153,14 +153,76 @@ directory structure.
    "scripts/lib/", "Infrastructure source code for CIME scripts and functions"
    "scripts/Tools/", "Auxiliary tools; scripts and functions"
 
-Discovering available cases
-==============================
+Discovering available cases with **query_config**
+=================================================
 
-To identify which compsets, grids and machines your CIME-enabled model supports, use the **query_config** command found in **cime/scripts**.  See the **help** text for more information.
 
-::
+Use the utility **$CIMEROOT/scripts/query_config** to see which out-of-the-box compsets, components, grids and machines are available for a model.
 
-   > ./query_config --help
+Optional arguments include the following::
+
+  --compsets
+  --components
+  --grids
+  --machines
+
+If CIME is downloaded in standalone mode, only standalone CIME compsets can be queried. If CIME is part of CIME
+-driven model, **query_config** will allow you to query all prognostic component compsets.
+To see lists of available compsets, components, grids and machines, look at the **help** text::
+
+  > query_config --help
+
+**Usage examples**
+
+To run **query_config** for compset information, follow this example, where **drv** is the component name::
+
+  > query_config --compsets drv
+
+The output will be similar to this::
+
+     --------------------------------------
+     Compset Short Name: Compset Long Name
+     --------------------------------------
+   A                    : 2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV
+   ADWAV                : 2000_SATM_SLND_SICE_SOCN_SROF_SGLC_DWAV%CLIMO
+   S                    : 2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SESP
+   ADLND                : 2000_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV
+   ADESP_TEST           : 2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP%TEST
+   X                    : 2000_XATM_XLND_XICE_XOCN_XROF_XGLC_XWAV
+   ADESP                : 2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP
+   AIAF                 : 2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV
+
+Each model component specifies its own definitions of what can appear after the ``%`` modifier in the compset longname (for example, ``DOM`` in ``DOCN%DOM``).
+
+To see what supported modifiers are for ``DOCN``, run **query_config** as in this example::
+
+  > query_config --component docn
+
+The output will be similar to this::
+
+     =========================================
+     DOCN naming conventions
+     =========================================
+
+         _DOCN%AQP1 : docn prescribed aquaplanet sst - option 1
+        _DOCN%AQP10 : docn prescribed aquaplanet sst - option 10
+         _DOCN%AQP2 : docn prescribed aquaplanet sst - option 2
+         _DOCN%AQP3 : docn prescribed aquaplanet sst - option 3
+         _DOCN%AQP4 : docn prescribed aquaplanet sst - option 4
+         _DOCN%AQP5 : docn prescribed aquaplanet sst - option 5
+         _DOCN%AQP6 : docn prescribed aquaplanet sst - option 6
+         _DOCN%AQP7 : docn prescribed aquaplanet sst - option 7
+         _DOCN%AQP8 : docn prescribed aquaplanet sst - option 8
+         _DOCN%AQP9 : docn prescribed aquaplanet sst - option 9
+          _DOCN%DOM : docn prescribed ocean mode
+          _DOCN%IAF : docn interannual mode
+         _DOCN%NULL : docn null mode
+          _DOCN%SOM : docn slab ocean mode
+       _DOCN%SOMAQP : docn aquaplanet slab ocean mode
+    _DOCN%SST_AQUAP : docn aquaplanet mode:
+
+
+For more details on how CIME determines the output for **query_config**, see :ref:`cime-internals`.
 
 Quick start
 ==================
