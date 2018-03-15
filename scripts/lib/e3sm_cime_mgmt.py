@@ -81,9 +81,10 @@ def do_subtree_split(new_split_tag, merge_tag):
     return subtree_branch
 
 ###############################################################################
-def do_subtree_pull():
+def do_subtree_pull(squash=False):
 ###############################################################################
-    stat = run_cmd("git subtree pull --squash --prefix=cime {} master".format(ESMCI_REMOTE_NAME), verbose=True)[0]
+    stat = run_cmd("git subtree pull {} --prefix=cime {} master".format("--squash" if squash else "", ESMCI_REMOTE_NAME),
+                   verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
         sys.exit(1)
@@ -96,9 +97,10 @@ def make_pr_branch(branch, branch_head):
     return branch
 
 ###############################################################################
-def merge_branch(branch):
+def merge_branch(branch, squash=False):
 ###############################################################################
-    stat = run_cmd("git merge -m 'Merge {}' -X rename-threshold=25 {}".format(branch, branch), verbose=True)[0]
+    stat = run_cmd("git merge {} -m 'Merge {}' -X rename-threshold=25 {}".format("--squash" if squash else "", branch, branch),
+                   verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
         logging.info("If the histories are unrelated, you may need to rebase the branch manually:")
@@ -113,7 +115,7 @@ def delete_tag(tag, remote="origin"):
     run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag), verbose=True)
 
 ###############################################################################
-def e3sm_cime_split(resume):
+def e3sm_cime_split(resume, squash=False):
 ###############################################################################
     if not resume:
         setup()
@@ -134,8 +136,8 @@ def e3sm_cime_split(resume):
             delete_tag(new_split_tag)
             raise
 
-        # potential conflicts
-        merge_branch("{}/master".format(ESMCI_REMOTE_NAME))
+        # upstream merge, potential conflicts
+        merge_branch("{}/master".format(ESMCI_REMOTE_NAME), squash=squash)
 
     else:
         old_split_tag, new_split_tag = get_split_tag(expected_num=2)
@@ -145,7 +147,7 @@ def e3sm_cime_split(resume):
     run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch), verbose=True)
 
 ###############################################################################
-def e3sm_cime_merge(resume):
+def e3sm_cime_merge(resume, squash=False):
 ###############################################################################
     if not resume:
         setup()
@@ -162,7 +164,7 @@ def e3sm_cime_merge(resume):
             raise
 
         # potential conflicts
-        do_subtree_pull()
+        do_subtree_pull(squash=squash)
 
     else:
         old_merge_tag, new_merge_tag = get_merge_tag(expected_num=2)
@@ -177,8 +179,8 @@ def abort_split():
     new_split_tag = get_split_tag()
     pr_branch = get_branch_from_tag(new_split_tag)
     delete_tag(new_split_tag)
-    run_cmd_no_fail("git checkout master", verbose=True)
     run_cmd_no_fail("git reset --hard origin/master", verbose=True)
+    run_cmd_no_fail("git checkout master", verbose=True)
     run_cmd("git branch -D {}".format(pr_branch), verbose=True)
 
 ###############################################################################
@@ -187,6 +189,6 @@ def abort_merge():
     new_merge_tag = get_merge_tag()
     pr_branch = get_branch_from_tag(new_merge_tag)
     delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
-    run_cmd_no_fail("git checkout master", verbose=True)
     run_cmd_no_fail("git reset --hard origin/master", verbose=True)
+    run_cmd_no_fail("git checkout master", verbose=True)
     run_cmd("git branch -D {}".format(pr_branch), verbose=True)
