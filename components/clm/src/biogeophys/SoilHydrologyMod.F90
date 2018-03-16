@@ -1505,25 +1505,26 @@ contains
 #if (defined HUM_HOL)
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
-            if (zwt(c) < 0.7) then
+            if (zwt(c) < 0.7_r8) then
               rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
                 imped * rsub_top_max * exp(-fff(c)*0.7_r8)
             else
               rsub_top(c)    = 0_r8
             endif
           else           !hollow
-            if (zwt(c) < 0.4) then
+            if (zwt(c) < 0.4_r8) then
               if (zwt(c) .lt. 0.017) then
-                  rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3)-h2osfc(c)/1000.) - &
+                  rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3_r8-h2osfc(c)/1000_r8)) - &
                   imped * rsub_top_max * exp(-fff(c)*0.7_r8)
               else
-                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+0.3)) - &
+                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+0.3_r8)) - &
                   imped * rsub_top_max * exp(-fff(c)*0.7_r8)
               end if
             else
               rsub_top(c)    = 0_r8
             endif
           endif
+          !print*, c, zwt(c), rsub_top(c)
 #else
 
 
