@@ -43,8 +43,9 @@ OPTIONS
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
      -casebuild            CASEBUILD directory variable          
-     -cimeroot          CIMEROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -glc_grid             GLC_GRID variable
+     -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASLI configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
@@ -81,32 +82,34 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help        => 0,
-             test        => 0,
-             verbose     => 0,
-             preview     => 0,
-             caseroot    => undef,
-             casebuild   => undef,
-             cimeroot => undef,
-             inst_string => undef,
-             glc_grid    => undef,
-             date_stamp  => undef,
-             cfg_dir     => $cfgdir,
+my %opts = ( help          => 0,
+             test          => 0,
+             verbose       => 0,
+             preview       => 0,
+             caseroot      => undef,
+             casebuild     => undef,
+             cimeroot      => undef,
+             inst_string   => undef,
+             glc_grid      => undef,
+             decomp_prefix => undef,
+             date_stamp    => undef,
+             cfg_dir       => $cfgdir,
            );
 
 GetOptions(
-    "h|help"        => \$opts{'help'},
-    "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
-    "v|verbose"     => \$opts{'verbose'},
-    "caseroot=s"    => \$opts{'caseroot'},
-    "casebuild=s"   => \$opts{'casebuild'},
-    "cimeroot=s" => \$opts{'cimeroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
-    "glc_grid=s"    => \$opts{'glc_grid'},
-    "date_stamp=s"  => \$opts{'date_stamp'},
-    "cfg_dir=s"     => \$opts{'cfg_dir'},
-    "preview"       => \$opts{'preview'},
+    "h|help"          => \$opts{'help'},
+    "infile=s"        => \$opts{'infile'},
+    "namelist=s"      => \$opts{'namelist'},
+    "v|verbose"       => \$opts{'verbose'},
+    "caseroot=s"      => \$opts{'caseroot'},
+    "casebuild=s"     => \$opts{'casebuild'},
+    "cimeroot=s"      => \$opts{'cimeroot'},
+    "inst_string=s"   => \$opts{'inst_string'},	   
+    "glc_grid=s"      => \$opts{'glc_grid'},
+    "decomp_prefix=s" => \$opts{'decomp_prefix'},
+    "date_stamp=s"    => \$opts{'date_stamp'},
+    "cfg_dir=s"       => \$opts{'cfg_dir'},
+    "preview"         => \$opts{'preview'},
 )  or usage();
 
 # Give usage message.
@@ -130,13 +133,14 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MPASLI configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT    = $opts{'caseroot'};
-my $CASEBUILD   = $opts{'casebuild'};
-my $CIMEROOT = $opts{'cimeroot'};
-my $inst_string = $opts{'inst_string'};
-my $GLC_GRID    = $opts{'glc_grid'};
-my $date_stamp  = $opts{'date_stamp'};
-$cfgdir         = $opts{'cfg_dir'};
+my $CASEROOT      = $opts{'caseroot'};
+my $CASEBUILD     = $opts{'casebuild'};
+my $CIMEROOT      = $opts{'cimeroot'};
+my $inst_string   = $opts{'inst_string'};
+my $GLC_GRID      = $opts{'glc_grid'};
+my $decomp_prefix = $opts{'decomp_prefix'};
+my $date_stamp    = $opts{'date_stamp'};
+$cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -157,6 +161,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="glc_grid" value="$GLC_GRID">
+<entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
 EOF
@@ -513,7 +518,7 @@ add_default($nl, 'config_write_albany_ascii_mesh');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/mpasli.graph.info.${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');

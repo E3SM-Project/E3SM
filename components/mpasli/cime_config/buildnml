@@ -117,6 +117,7 @@ while ($inst_counter <= $NINST_GLC) {
 	$sysmod .= " -casebuild $CASEBUILD";
 	$sysmod .= " -cimeroot $CIMEROOT";
 	$sysmod .= " -inst_string '$inst_string'";
+	$sysmod .= " -decomp_prefix '$decomp_prefix'";
 	$sysmod .= " -date_stamp '$grid_date'";
 	$sysmod .= " -glc_grid '$GLC_GRID'";
 
