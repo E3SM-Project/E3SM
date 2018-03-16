@@ -33,6 +33,8 @@ parser.add_option("--hist_nhtfrq_spinup", dest="hist_nhtfrq_spinup", default="-9
                   help = 'output file timestep (transient only)')
 parser.add_option("--hist_nhtfrq_trans", dest="hist_nhtfrq", default="-24", \
                   help = 'output file timestep (transient only)')
+parser.add_option("--humhol", dest="humhol", default=False, \
+                  help = 'Use hummock/hollow microtopography', action="store_true")
 parser.add_option("--machine", dest="machine", default = 'oic2', \
                   help = "machine to use (default = oic2)")
 parser.add_option("--mpilib", dest="mpilib", default="mpi-serial", \
@@ -323,6 +325,8 @@ for row in AFdatareader:
             basecmd = basecmd+' --nofire'
         if (options.harvmod):
             basecmd = basecmd+' --harvmod'
+        if (options.humhol):
+            basecmd = basecmd+' --humhol'
         if (options.nopftdyn):
             basecmd = basecmd+' --nopftdyn'
         if (options.no_dynroot):

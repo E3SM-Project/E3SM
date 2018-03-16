@@ -37,6 +37,8 @@ parser.add_option("--lat_bounds", dest="lat_bounds", default='-999,-999', \
                   help = 'latitude range for regional run')
 parser.add_option("--lon_bounds", dest="lon_bounds", default='-999,-999', \
                   help = 'longitude range for regional run')
+parser.add_option("--humhol", dest="humhol", default=False, \
+                  help = 'Use hummock/hollow microtopography', action="store_true")
 parser.add_option("--mask", dest="mymask", default='', \
                   help = 'Mask file to use (regional only)')
 parser.add_option("--ilambvars", dest="ilambvars", default=False, \
@@ -560,12 +562,18 @@ if (options.parm_file != ''):
             values = s.split()
             thisvar = nffun.getvar(pftfile, values[0])
             if (len(values) == 2):
-                thisvar[:] = float(values[1])
+                if isinstance(thisvar,list):
+                    thisvar[:] = float(values[1])
+                else:
+                    thisvar = float(values[1])  #scalar
             elif (len(values) == 3):
                 if (float(values[1]) > 0):
                     thisvar[int(values[1])] = float(values[2])
                 else:
-                    thisvar[:] = float(values[2])
+                    if isinstance(thisvar,list):
+                        thisvar[:] = float(values[2])
+                    else:
+                        thisvar = float(values[2])
             ierr = nffun.putvar(pftfile, values[0], thisvar)
     input.close()
 if (options.parm_vals != ''):
@@ -907,6 +915,7 @@ for i in range(1,int(options.ninst)+1):
 
     if ('20TR' in compset and options.diags):
         output.write(" hist_dov2xy = .true., .true., .true., .false., .true.\n")
+        output.write(" hist_empty_htapes = .true.\n")
         output.write(" hist_mfilt = 1, 8760, 365, 365, 1\n")
         output.write(" hist_nhtfrq = 0, -1, -24, -24, -8760\n")
         h1varst = " hist_fincl2 = "
@@ -1117,6 +1126,8 @@ for s in infile:
             stemp = stemp[:-1]+' -DHARVMOD\n'
         if (cpl_bypass):
             stemp = stemp[:-1]+' -DCPL_BYPASS\n'
+        if (options.humhol):
+            stemp = stemp[:-1]+' -DHUM_HOL\n'
         outfile.write(stemp) 
     elif (s[0:13] == "NETCDF_PATH:=" and options.machine == 'userdefined'):
         try:

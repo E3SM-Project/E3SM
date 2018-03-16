@@ -337,6 +337,12 @@ for n in range(0,n_grids):
         monthly_height_top = nffun.getvar(surffile_new, 'MONTHLY_HEIGHT_TOP')
         monthly_height_bot = nffun.getvar(surffile_new, 'MONTHLY_HEIGHT_BOT')
 
+        labilep      = nffun.getvar(surffile_new, 'LABILE_P')
+        primp        = nffun.getvar(surffile_new, 'APATITE_P')
+        secondp      = nffun.getvar(surffile_new, 'SECONDARY_P')
+        occlp        = nffun.getvar(surffile_new, 'OCCLUDED_P')
+        
+
         npft = 17
 
         #read file for site-specific PFT information
@@ -379,6 +385,10 @@ for n in range(0,n_grids):
             pct_nat_veg[0][0] = 100.0
             if ('US-SPR' in options.site):
                 soil_order[0][0] = 3
+                labilep[0][0]    = 4.0
+                primp[0][0]      = 1.0
+                secondp[0][0]    = 10.0
+                occlp[0][0]      = 5.0
             for k in range(0,3):
                 pct_urban[k][0][0] = 0.0
             for k in range(0,10):
@@ -420,6 +430,10 @@ for n in range(0,n_grids):
         ierr = nffun.putvar(surffile_new, 'MONTHLY_HEIGHT_TOP', monthly_height_top)
         ierr = nffun.putvar(surffile_new, 'MONTHLY_HEIGHT_BOT', monthly_height_bot)
         ierr = nffun.putvar(surffile_new, 'MONTHLY_LAI', monthly_lai)
+        ierr = nffun.putvar(surffile_new, 'LABILE_P', labilep)
+        ierr = nffun.putvar(surffile_new, 'APATITE_P', primp)
+        ierr = nffun.putvar(surffile_new, 'SECONDARY_P', secondp)
+        ierr = nffun.putvar(surffile_new, 'OCCLUDED_P', occlp)
     surffile_list = surffile_list+' '+surffile_new
 
 surffile_new = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/surfdata.nc'
