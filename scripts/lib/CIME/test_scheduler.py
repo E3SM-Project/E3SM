@@ -230,9 +230,6 @@ class TestScheduler(object):
         if self._cime_model == "e3sm":
             _order_tests_by_runtime(test_names, self._baseline_root)
 
-            for test in test_names:
-                print test, _get_time_est(test, self._baseline_root, as_int=True, use_cache=True)
-
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
