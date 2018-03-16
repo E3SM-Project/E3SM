@@ -99,17 +99,9 @@ def _get_time_est(test, baseline_root, as_int=False, use_cache=False, raw=False)
     return recommended_time
 
 ###############################################################################
-def _list_compare_func(test1, test2, baseline_root):
-###############################################################################
-    time1 = _get_time_est(test1, baseline_root, as_int=True, use_cache=True, raw=True)
-    time2 = _get_time_est(test2, baseline_root, as_int=True, use_cache=True, raw=True)
-
-    return cmp(time1, time2)
-
-###############################################################################
 def _order_tests_by_runtime(tests, baseline_root):
 ###############################################################################
-    tests.sort(cmp=lambda x,y: _list_compare_func(x, y, baseline_root), reverse=True)
+    tests.sort(key=lambda x: _get_time_est(x, baseline_root, as_int=True, use_cache=True, raw=True), reverse=True)
 
 ###############################################################################
 class TestScheduler(object):
