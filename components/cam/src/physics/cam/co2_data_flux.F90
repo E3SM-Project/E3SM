@@ -8,13 +8,14 @@ module co2_data_flux
   use shr_kind_mod,   only : r8 => shr_kind_r8
   use spmd_utils,     only : masterproc
   use ppgrid,         only : begchunk, endchunk, pcols
-  use phys_grid,      only : scatter_field_to_chunk, get_ncols_p
+  use phys_grid,      only : scatter_field_to_chunk, get_ncols_p, get_rlat_all_p, get_rlon_all_p
   use error_messages, only : alloc_err, handle_ncerr, handle_err
   use cam_abortutils,     only : endrun
   use netcdf
   use error_messages, only : handle_ncerr  
   use cam_logfile,    only : iulog
-  
+  use interpolate_data,  only : lininterp_init, lininterp, interp_type, lininterp_finish
+  use mo_constants, only : pi, d2r
 #if ( defined SPMD )
   use mpishorthand, only: mpicom, mpiint, mpir8
 #endif
@@ -36,9 +37,8 @@ module co2_data_flux
 
   private
 !  integer,  parameter :: totsz=2000           ! number greater than data time sample
+  real(r8), parameter :: zero=0_r8, twopi=2_r8*pi !parameters required for interpolation
   real(r8), parameter :: daysperyear = 365.0_r8  ! Number of days in a year         
-  integer :: lonsiz  ! size of longitude dimension, dataset is 2d(lat,lon), in CAM grid
-  integer :: latsiz  ! size of latitude dimension
  
 !--------------------------------------------------------------------------------------------------
 TYPE :: read_interp          
@@ -53,8 +53,11 @@ TYPE :: read_interp
   integer :: np_f      ! Array indices for nxt. month data
   integer :: np1_f     ! current forward time index of dataset
   integer :: timesz    ! size of time dimension on dataset
+  integer :: lonsiz,latsiz           !size of lats and lons
   integer, pointer :: date_f(:)      ! Date on dataset (YYYYMMDD)
   integer, pointer :: sec_f(:)       ! seconds of date on dataset (0-86399) 
+  real(r8), pointer :: lon_f(:)      !lon values
+  real(r8), pointer :: lat_f(:)      !lat values
   character(len=256) :: locfn   ! dataset name
   integer :: ncid_f             ! netcdf id for dataset       
   integer :: fluxid             ! netcdf id for dataset flux      
@@ -85,6 +88,7 @@ subroutine read_data_flux (input_file, xin)
   character(len=*),   intent(in)    :: input_file
   TYPE(read_interp),  intent(inout) :: xin   
  
+  type(interp_type) :: lon_wgts, lat_wgts !weights -output from horizontal interpolation
   integer lonid                 ! netcdf id for longitude variable
   integer latid                 ! netcdf id for latitude variable
   integer timeid                ! netcdf id for time variable
@@ -102,6 +106,8 @@ subroutine read_data_flux (input_file, xin)
   integer  :: yr, mon, day      ! components of a date
   integer  :: ncdate            ! current date in integer format [yyyymmdd]
   integer  :: ncsec             ! current time of day [seconds]
+  integer :: ncol, lchnk
+  real(r8) ::  to_lats(pcols), to_lons(pcols)
   real(r8) calday               ! calendar day (includes yr if no cycling)
   real(r8) caldayloc            ! calendar day (includes yr if no cycling)
  
@@ -161,9 +167,9 @@ subroutine read_data_flux (input_file, xin)
      call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'time',  timeid ),&
        'co2_data_flux.F90:164')
 
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz     ),&
+     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=xin%lonsiz     ),&
        'co2_data_flux.F90:167')
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz     ),&
+     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=xin%latsiz     ),&
        'co2_data_flux.F90:169')
      call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, timeid,   len=xin%timesz ),&
        'co2_data_flux.F90:171')
@@ -185,13 +191,32 @@ subroutine read_data_flux (input_file, xin)
      call handle_ncerr( nf90_get_var ( xin%ncid_f, secid,  xin%sec_f  ),&
        'co2_data_flux.F90:203')
 
+!Retrieve lats and lons for horizontal interpolatio
+
+     allocate(xin%lon_f(xin%lonsiz), xin%lat_f(xin%latsiz)) !handle allocation error!!
+
+     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'lon',     lonid     ),&
+          'co2_data_flux.F90:192')
+     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'lat',     latid     ),&
+          'co2_data_flux.F90:192')
+
+     call handle_ncerr( nf90_get_var ( xin%ncid_f, lonid,  xin%lon_f  ),&
+          'co2_data_flux.F90:200_2')
+
+     call handle_ncerr( nf90_get_var ( xin%ncid_f, latid,  xin%lat_f  ),&
+          'co2_data_flux.F90:200_2')
+
+     !convert to radians
+     xin%lat_f = xin%lat_f * d2r !degree to radians
+     xin%lon_f = xin%lon_f * d2r !degree to radians
+
 ! initialize
  
      strt3(1) = 1
      strt3(2) = 1
      strt3(3) = 1
-     cnt3(1)  = lonsiz
-     cnt3(2)  = latsiz
+     cnt3(1)  = xin%lonsiz
+     cnt3(2)  = xin%latsiz
      cnt3(3)  = 1
 
   endif
@@ -242,23 +267,50 @@ subroutine read_data_flux (input_file, xin)
  
 #if (defined SPMD )
      call mpibcast( xin%timesz, 1,     mpiint, 0, mpicom )
+     call mpibcast( xin%lonsiz, 1,     mpiint, 0, mpicom )
+     call mpibcast( xin%latsiz, 1,     mpiint, 0, mpicom )
      call mpibcast( xin%date_f, xin%timesz, mpiint, 0, mpicom )
      call mpibcast( xin%sec_f,  xin%timesz, mpiint, 0, mpicom )
+     call mpibcast( xin%lon_f,  xin%lonsiz, mpir8, 0, mpicom )
+     call mpibcast( xin%lat_f,  xin%latsiz, mpir8, 0, mpicom )
      call mpibcast( xin%cdayfm, 1,     mpir8 , 0, mpicom )
      call mpibcast( xin%cdayfp, 1,     mpir8,  0, mpicom )
      call mpibcast( xin%np1_f,  1,     mpiint, 0, mpicom )
   else
      call mpibcast( xin%timesz, 1,     mpiint, 0, mpicom )
+     call mpibcast( xin%lonsiz, 1,     mpiint, 0, mpicom )
+     call mpibcast( xin%latsiz, 1,     mpiint, 0, mpicom )
      allocate(xin%date_f(xin%timesz), xin%sec_f(xin%timesz))
      call mpibcast( xin%date_f, xin%timesz, mpiint, 0, mpicom )
      call mpibcast( xin%sec_f,  xin%timesz, mpiint, 0, mpicom )
+     allocate(xin%lon_f(xin%lonsiz), xin%lat_f(xin%latsiz))
+     call mpibcast( xin%lon_f,  xin%lonsiz, mpir8, 0, mpicom )
+     call mpibcast( xin%lat_f,  xin%latsiz, mpir8, 0, mpicom )
      call mpibcast( xin%cdayfm, 1,     mpir8 , 0, mpicom )
      call mpibcast( xin%cdayfp, 1,     mpir8,  0, mpicom )
      call mpibcast( xin%np1_f,  1,     mpiint, 0, mpicom )
 #endif
   end if
 
-  call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
+  !comment out the following "scatter_field_to_chunk" as we need to do horizontal interpolation first
+  !Hosrizontal interpolation will take care of distributing the data to chunks and columns
+  !call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
+
+  !Following code is taken from tracer_data.F90
+  do lchnk=begchunk,endchunk
+     ncol = get_ncols_p(lchnk)
+     call get_rlat_all_p(lchnk, pcols, to_lats)
+     call get_rlon_all_p(lchnk, pcols, to_lons)
+
+     call lininterp_init(xin%lon_f,xin%lonsiz, to_lons, ncol, 2, lon_wgts, zero, twopi) !2 is for cyclic with limits 0 to 2pi
+     call lininterp_init(xin%lat_f,xin%latsiz, to_lats, ncol, 1, lat_wgts)
+     
+     call lininterp(xin%xvar(:,:,xin%nm_f), xin%lonsiz, xin%latsiz, xin%co2bdy(1:ncol,lchnk,xin%nm_f), ncol, lon_wgts, lat_wgts)
+     call lininterp(xin%xvar(:,:,xin%np_f), xin%lonsiz, xin%latsiz, xin%co2bdy(1:ncol,lchnk,xin%np_f), ncol, lon_wgts, lat_wgts)
+     
+     call lininterp_finish(lon_wgts)
+     call lininterp_finish(lat_wgts)
+  end do
 
   return
 end subroutine read_data_flux
@@ -281,6 +333,7 @@ subroutine interp_time_flux (xin, prev_timestep)
   TYPE(read_interp),  intent(inout) :: xin
 
 !---------------------------Local variables-----------------------------
+  type(interp_type) :: lon_wgts, lat_wgts     
   integer dtime          ! timestep size [seconds]
   integer cnt3(3)        ! array of counts for each dimension
   integer strt3(3)       ! array of starting indices
@@ -296,6 +349,10 @@ subroutine interp_time_flux (xin, prev_timestep)
   real(r8) deltat        ! time (days) between interpolating data
   logical :: previous
   logical :: co2cyc=.false.
+
+  real(r8) ::  to_lats(pcols), to_lons(pcols)
+
+
  
 !-----------------------------------------------------------------------
  
@@ -336,8 +393,8 @@ subroutine interp_time_flux (xin, prev_timestep)
         strt3(1) = 1
         strt3(2) = 1
         strt3(3) = 1
-        cnt3(1)  = lonsiz
-        cnt3(2)  = latsiz
+        cnt3(1)  = xin%lonsiz
+        cnt3(2)  = xin%latsiz
         cnt3(3)  = 1
 
      endif
@@ -385,7 +442,25 @@ subroutine interp_time_flux (xin, prev_timestep)
                      ' sec ', xin%sec_f(xin%np1_f)
         endif
  
-        call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
+       !comment out the following "scatter_field_to_chunk" as we need to do horizontal interpolation first
+       !Hosrizontal interpolation will take care of distributing the data to chunks and columns 
+       !call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
+
+       !Following code is taken from tracer_data.F90
+        do lchnk=begchunk,endchunk
+           ncol = get_ncols_p(lchnk)
+           call get_rlat_all_p(lchnk, pcols, to_lats)
+           call get_rlon_all_p(lchnk, pcols, to_lons)
+
+           call lininterp_init(xin%lon_f,xin%lonsiz, to_lons, ncol, 2, lon_wgts, zero, twopi) !2 is for cyclic with limits 0 to 2pi
+           call lininterp_init(xin%lat_f,xin%latsiz, to_lats, ncol, 1, lat_wgts)
+           
+           call lininterp(xin%xvar(:,:,xin%nm_f), xin%lonsiz, xin%latsiz, xin%co2bdy(1:ncol,lchnk,xin%nm_f), ncol, lon_wgts, lat_wgts)
+           call lininterp(xin%xvar(:,:,xin%np_f), xin%lonsiz, xin%latsiz, xin%co2bdy(1:ncol,lchnk,xin%np_f), ncol, lon_wgts, lat_wgts)
+           
+           call lininterp_finish(lon_wgts)
+           call lininterp_finish(lat_wgts)
+        end do
      end if
  
 ! Determine time interpolation factors.
