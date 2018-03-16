@@ -4,8 +4,8 @@
 
 module ll_mod
 !
-!
-! Updated 2018/3 Mark Taylor, fix memory leak
+! Revisions:
+! 2018/3 Mark Taylor, fix memory leak
 !
   implicit none
   private
