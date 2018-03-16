@@ -431,8 +431,23 @@ for row in AFdatareader:
                     startyear = 1901
                     endyear   = 1920
             else:
-                startyear = int(row[6]) #1901
-                endyear   = int(row[7])
+                startyear=int(row[6])
+                endyear=int(row[7])
+            alignyear = int(row[8])
+            if (options.diags):
+                timezone = int(row[9])
+            if ('US-SPR' in options.site):
+              numxpts=2
+            else:
+              numxpts=1
+            numypts=1
+else:
+    if (use_reanalysis):
+        startyear=1901
+        if ('20TR' in compset):
+            endyear = 2010
+            if (options.trans2):
+                startyear = 1921
         else:
             startyear=int(row[6])
             endyear=int(row[7])
