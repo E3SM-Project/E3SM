@@ -143,6 +143,7 @@ _TEST_SUITES = {
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration", "e3sm_rrm"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
+		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
                            "PET.f19_g16.X",
@@ -176,7 +177,9 @@ _TEST_SUITES = {
 
     #e3sm tests to mimic production runs
     "e3sm_prod" : (("e3sm_atm_prod",),None,
-                     () ),
+                     (
+		      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
+		      )),
 
     "fates" : (None, None,
                          ("ERS_Ld9.1x1_brazil.ICLM45ED",
