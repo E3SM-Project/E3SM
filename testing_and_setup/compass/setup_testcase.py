@@ -446,7 +446,6 @@ def write_streams_file(streams, config_file, filename, init_path):  # {{{
 
 
 # *** Script Generation Functions *** # {{{
-
 def generate_run_scripts(config_file, init_path, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()

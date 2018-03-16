@@ -144,16 +144,8 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
 # }}}
 
 
-def process_test_clean(test_tag, work_dir, suite_script, verbose):  # {{{
-    if verbose:
-        stdout = open(work_dir + '/manage_regression_suite.py.clean', 'a')
-        stderr = stdout
-        print '     Script setup outputs to {}'.format(
-            work_dir + '/manage_regression_suite.py.clean')
-    else:
-        dev_null = open('/dev/null', 'a')
-        stderr = dev_null
-        stdout = dev_null
+def process_test_clean(test_tag, work_dir, suite_script):  # {{{
+    dev_null = open('/dev/null', 'a')
 
     # Process test attributes
     try:
@@ -199,15 +191,12 @@ def process_test_clean(test_tag, work_dir, suite_script, verbose):  # {{{
     subprocess.check_call(
         ['./clean_testcase.py', '-q', '--work_dir', work_dir, '-o', test_core,
          '-c',  test_configuration, '-r', test_resolution, '-t', test_test],
-        stdout=stdout, stderr=stderr)
+        stdout=dev_null, stderr=dev_null)
 
     print "   -- Cleaned case '{}': -o {} -c {} -r {} -t {}".format(
         test_name, test_core, test_configuration, test_resolution, test_test)
 
-    if verbose:
-        stdout.close()
-    else:
-        dev_null.close()
+    dev_null.close()
 
 # }}}
 
@@ -270,7 +259,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("        runtime = np.ceil(float(subprocess."
                             "check_output(\n"
                             "                ['grep', 'real', outputfile])."
-                            "split()[1]))\n")
+                            "split('\\n')[-2].split()[1]))\n")
     regression_script.write("        totaltime += runtime\n")
     regression_script.write("        mins = int(np.floor(runtime/60.0))\n")
     regression_script.write("        secs = int(np.ceil(runtime - mins*60))\n")
@@ -296,21 +285,13 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
 # }}}
 
 
-def clean_suite(suite_tag, work_dir, verbose):  # {{{
+def clean_suite(suite_tag, work_dir):  # {{{
     try:
         suite_name = suite_tag.attrib['name']
     except KeyError:
         print "ERROR: <regression_suite> tag is missing 'name' attribute."
         print 'Exiting...'
         sys.exit(1)
-
-    if not os.path.exists(args.work_dir):
-        # the working directory doesn't exist, so nothing to do
-        return
-
-    if verbose:
-        # flush existing regression suite output file
-        open(work_dir + '/manage_regression_suite.py.clean', 'w').close()
 
     # Remove the regression suite script, if it exists
     regression_script = '{}/{}.py'.format(work_dir, suite_name)
@@ -320,7 +301,7 @@ def clean_suite(suite_tag, work_dir, verbose):  # {{{
     for child in suite_tag:
         # Process <test> children within the <regression_suite>
         if child.tag == 'test':
-            process_test_clean(child, work_dir, regression_script, verbose)
+            process_test_clean(child, work_dir, regression_script)
 # }}}
 
 
@@ -490,14 +471,7 @@ if __name__ == "__main__":
         # If cleaning, clean the suite
         if args.clean:
             print "Cleaning Test Cases:"
-            clean_suite(suite_root, args.work_dir, args.verbose)
-            if args.verbose:
-                output_file = args.work_dir + \
-                    '/manage_regression_suite.py.clean'
-                if os.path.exists(output_file):
-                    cmd = ['cat', output_file]
-                    print '\nCase cleanup output:'
-                    print subprocess.check_output(cmd)
+            clean_suite(suite_root, args.work_dir)
             write_history = True
         # If setting up, set up the suite
         if args.setup:
