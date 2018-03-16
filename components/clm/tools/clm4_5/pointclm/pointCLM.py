@@ -517,7 +517,10 @@ if (isglobal == False):
             alignyear = int(row[8])
             if (options.diags):
                 timezone = int(row[9])
-            numxpts=1
+            if ('US-SPR' in options.site):
+              numxpts=2
+            else:
+              numxpts=1
             numypts=1
 else:
     if (use_reanalysis):
