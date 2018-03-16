@@ -6800,8 +6800,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          do while (associated(exchGroupPtr))
             if ( nLen == exchGroupPtr % nLen) then
                if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
-                  call mpas_pool_add_config(exchGroupPtr % fieldPool, fieldName, timeLevelLocal)
-
                   ! Add field to exchange group's fieldList
                   if ( associated(exchGroupPtr % fieldList) ) then
                      ! If the field is already added, find it.
@@ -6923,9 +6921,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          do while (associated(exchGroupPtr))
             if ( nLen == exchGroupPtr % nLen) then
                if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
-                  ! Remove after the transition to exchange_field_lists is complete
-                  call mpas_pool_remove_config(exchGroupPtr % fieldPool, fieldName)
-
                   if ( associated(exchGroupPtr % fieldList) ) then
                      exchFieldListPtr => exchGroupPtr % fieldList
                      nullify(prevFieldListPtr)
@@ -7320,8 +7315,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                   else
                     exchFieldListPtr % haloLayers(:) = .true.
                   end if
-                  call mpas_pool_remove_config(exchGroupPtr % fieldPool, exchFieldListPtr % fieldName)
-                  call mpas_pool_add_config(exchGroupPtr % fieldPool, exchFieldListPtr % fieldName, timeLevelLocal)
                   exchFieldListPtr => exchFieldListPtr % next
                 end do
               end if
