@@ -382,22 +382,25 @@ _GLOBAL_MINUMUM_TIME    = 900
 _GLOBAL_WIGGLE          = 1000
 _WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
-def get_recommended_test_time_based_on_past(baseline_root, test):
+def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
     if baseline_root is not None:
         try:
             the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
             if os.path.exists(the_path):
                 last_line = int(open(the_path, "r").readlines()[-1])
-                best_walltime = None
-                for cutoff, tolerance in _WALLTIME_TOLERANCE:
-                    if last_line <= cutoff:
-                        best_walltime = int(float(last_line) * tolerance)
-                        break
+                if raw:
+                    best_walltime = last_line
+                else:
+                    best_walltime = None
+                    for cutoff, tolerance in _WALLTIME_TOLERANCE:
+                        if last_line <= cutoff:
+                            best_walltime = int(float(last_line) * tolerance)
+                            break
 
-                if best_walltime < _GLOBAL_MINUMUM_TIME:
-                    best_walltime = _GLOBAL_MINUMUM_TIME
+                    if best_walltime < _GLOBAL_MINUMUM_TIME:
+                        best_walltime = _GLOBAL_MINUMUM_TIME
 
-                best_walltime += _GLOBAL_WIGGLE
+                    best_walltime += _GLOBAL_WIGGLE
 
                 return convert_to_babylonian_time(best_walltime)
         except:
