@@ -65,7 +65,9 @@ def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
     # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
     # variable while the job is in the queue
-    if not skip_pnl:
+    if skip_pnl:
+        create_namelists(case, component='cpl')
+    else:
         create_namelists(case)
 
     logger.info("-------------------------------------------------------------------------")
@@ -124,10 +126,11 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 
                         case.set_value("CONTINUE_RUN",
                                        case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
-                        create_namelists(case)
 
                         lid = new_lid()
                         loop = True
+
+                        create_namelists(case)
 
                         case.spare_nodes -= num_fails
 

@@ -35,6 +35,7 @@ class SystemTestsCommon(object):
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
+        self._skip_pnl = False
 
     def _init_environment(self, caseroot):
         """
@@ -130,13 +131,14 @@ class SystemTestsCommon(object):
             comps = [x.lower() for x in self._case.get_values("COMP_CLASSES")]
         build.clean(self._case, cleanlist=comps)
 
-    def run(self):
+    def run(self, skip_pnl=False):
         """
         Do NOT override this method, this method is the framework that controls
         the run phase. run_phase is the extension point that subclasses should use.
         """
         success = True
         start_time = time.time()
+        self._skip_pnl = skip_pnl
         try:
             self._resetup_case(RUN_PHASE)
             with self._test_status:
@@ -223,7 +225,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        case_run(self._case)
+        case_run(self._case, skip_pnl=self._skip_pnl)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")

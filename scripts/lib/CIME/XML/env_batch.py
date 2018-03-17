@@ -463,7 +463,10 @@ class EnvBatch(EnvBase):
 
             function_name = job.replace(".", "_")
             if not dry_run:
-                locals()[function_name](case)
+                if "archive" not in function_name:
+                    locals()[function_name](case, skip_pnl=skip_pnl)
+                else:
+                    locals()[function_name](case)
 
             return
 
@@ -526,16 +529,23 @@ class EnvBatch(EnvBase):
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         submitcmd = ''
-        for string in (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job)):
-            if  string is not None:
-                submitcmd += string + " "
+        batch_env_flag = self.get_value("batch_env", subgroup=None)
+        if batch_env_flag:
+            sequence = (batchsubmit, submitargs, "skip_pnl", batchredirect, get_batch_script_for_job(job))
+        else:
+            sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), "skip_pnl")
 
-        if job == 'case.run' and skip_pnl:
-            batch_env_flag = self.get_value("batch_env", subgroup=None)
-            if not batch_env_flag:
-                submitcmd += " --skip-preview-namelist"
-            else:
-                submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist'".format(batch_env_flag)
+        for string in sequence:
+            if string == "skip_pnl":
+                if job in ['case.run', 'case.test'] and skip_pnl:
+                    batch_env_flag = self.get_value("batch_env", subgroup=None)
+                    if not batch_env_flag:
+                        submitcmd += " --skip-preview-namelist "
+                    else:
+                        submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist' ".format(batch_env_flag)
+
+            elif string is not None:
+                submitcmd += string + " "
 
         if dry_run:
             return submitcmd
