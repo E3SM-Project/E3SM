@@ -827,7 +827,7 @@ end function radiation_nextsw_cday
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
 
-! AeroCOM IND3 output +++mhwang
+    ! AeroCOM IND3 output +++mhwang
     real(r8) ::  aod400(pcols)        ! AOD at 400 nm 
     real(r8) ::  aod700(pcols)        ! AOD at 700 nm
     real(r8) ::  angstrm(pcols)       ! Angstrom coefficient
@@ -867,7 +867,7 @@ end function radiation_nextsw_cday
       cld_tau_idx = pbuf_get_index('cld_tau')
     end if
    
-!  For CRM, make cloud equal to input observations:
+    !  For CRM, make cloud equal to input observations:
     if (single_column.and.scm_crm_mode.and.have_cld) then
        do k = 1,pver
           cld(:ncol,k)= cldobs(k)
@@ -907,6 +907,8 @@ end function radiation_nextsw_cday
     dosw     = radiation_do('sw')      ! do shortwave heating calc this timestep?
     dolw     = radiation_do('lw')      ! do longwave heating calc this timestep?
 
+    call t_stopf ('radiation_tend_init')
+
     if (dosw .or. dolw) then
 
        ! construct an RRTMG state object
@@ -919,8 +921,6 @@ end function radiation_nextsw_cday
           !   cliqwp(:ncol,k) = clwpobs(k)
           !end do
        endif
-
-       call t_stopf ('radiation_tend_init')
 
        call t_startf('cldoptics')
 
@@ -1282,8 +1282,10 @@ end function radiation_nextsw_cday
           call t_stopf ('rad_lw')
        end if  !dolw
 
-       ! deconstruct the RRTMG state object
-       call rrtmg_state_destroy(r_state)
+       if (dosw .or. dolw) then
+          ! deconstruct the RRTMG state object
+          call rrtmg_state_destroy(r_state)
+       end if
 
        ! mji/hirsrtm - Add call to HIRSRTM package
        ! HIRS brightness temperature calculation in 7 infra-red channels and 4 microwave
