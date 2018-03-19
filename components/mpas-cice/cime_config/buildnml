@@ -157,7 +157,7 @@ my $input_file = "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.
 if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
     $input_file = "$RUNDIR/mpascice.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
     if (! -e "$input_file") {
-        die " ERROR mpas-cice buildnml: missing specified restart file for branch or hybrid run";
+        die " ERROR mpas-cice buildnml: missing specified restart file for branch or hybrid run: $input_file ";
     }
 }
 
@@ -646,7 +646,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
         print $stream_file "        filename_template=" . '"'
-                                                . "$input_file"
+                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
                                                 . '">' . "\n";
         print $stream_file '' . "\n";
         print $stream_file '       <var name="landIceMask"/>' . "\n";

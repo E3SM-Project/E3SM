@@ -172,7 +172,7 @@ my $input_file = "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc";
 if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
     $input_file = "$RUNDIR/mpaso.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
     if (! -e "$input_file") {
-        die " ERROR mpas-o buildnml: missing specified restart file for branch or hybrid run";
+        die " ERROR mpas-o buildnml: missing specified restart file for branch or hybrid run: $input_file ";
     }
 }
 
