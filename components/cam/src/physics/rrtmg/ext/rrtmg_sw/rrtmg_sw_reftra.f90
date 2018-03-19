@@ -174,17 +174,17 @@
 ! collimated beam
 
                ze1 = min ( zto1 / prmuz , 500._r8)
-               ze2 = exp( -ze1 )
+!               ze2 = exp( -ze1 )
 
 ! Use exponential lookup table for transmittance, or expansion of 
 ! exponential for low tau
-!               if (ze1 .le. od_lo) then 
-!                  ze2 = 1._r8 - ze1 + 0.5_r8 * ze1 * ze1
-!               else
-!                  tblind = ze1 / (bpade + ze1)
-!                  itind = tblint * tblind + 0.5_r8
-!                  ze2 = exp_tbl(itind)
-!               endif
+               if (ze1 .le. od_lo) then 
+                  ze2 = 1._r8 - ze1 + 0.5_r8 * ze1 * ze1
+               else
+                  tblind = ze1 / (bpade + ze1)
+                  itind = tblint * tblind + 0.5_r8
+                  ze2 = exp_tbl(itind)
+               endif
 !
 
                pref(jk) = (zgt - za1 * (1._r8 - ze2)) / (1._r8 + zgt)
@@ -241,32 +241,32 @@
 !              zem2 = exp(-ze2 )
 !
 ! Revised original, to reduce exponentials
-               zep1 = exp( ze1 )
-               zem1 = 1._r8 / zep1
-               zep2 = exp( ze2 )
-               zem2 = 1._r8 / zep2
+!              zep1 = exp( ze1 )
+!              zem1 = 1._r8 / zep1
+!              zep2 = exp( ze2 )
+!              zem2 = 1._r8 / zep2
 !
 ! Use exponential lookup table for transmittance, or expansion of 
 ! exponential for low tau
-!               if (ze1 .le. od_lo) then 
-!                  zem1 = 1._r8 - ze1 + 0.5_r8 * ze1 * ze1
-!                  zep1 = 1._r8 / zem1
-!               else
-!                  tblind = ze1 / (bpade + ze1)
-!                  itind = tblint * tblind + 0.5_r8
-!                  zem1 = exp_tbl(itind)
-!                  zep1 = 1._r8 / zem1
-!               endif
-!
-!               if (ze2 .le. od_lo) then 
-!                  zem2 = 1._r8 - ze2 + 0.5_r8 * ze2 * ze2
-!                  zep2 = 1._r8 / zem2
-!               else
-!                  tblind = ze2 / (bpade + ze2)
-!                  itind = tblint * tblind + 0.5_r8
-!                  zem2 = exp_tbl(itind)
-!                  zep2 = 1._r8 / zem2
-!               endif
+               if (ze1 .le. od_lo) then 
+                  zem1 = 1._r8 - ze1 + 0.5_r8 * ze1 * ze1
+                  zep1 = 1._r8 / zem1
+               else
+                  tblind = ze1 / (bpade + ze1)
+                  itind = tblint * tblind + 0.5_r8
+                  zem1 = exp_tbl(itind)
+                  zep1 = 1._r8 / zem1
+               endif
+
+               if (ze2 .le. od_lo) then 
+                  zem2 = 1._r8 - ze2 + 0.5_r8 * ze2 * ze2
+                  zep2 = 1._r8 / zem2
+               else
+                  tblind = ze2 / (bpade + ze2)
+                  itind = tblint * tblind + 0.5_r8
+                  zem2 = exp_tbl(itind)
+                  zep2 = 1._r8 / zem2
+               endif
 
 ! collimated beam
 
