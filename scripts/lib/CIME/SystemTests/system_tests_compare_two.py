@@ -40,6 +40,7 @@ from CIME.case import Case
 from CIME.case_submit import check_case
 from CIME.case_st_archive import archive_last_restarts
 from CIME.utils import get_model
+from CIME.case_setup import case_setup
 
 import shutil, os, glob
 
@@ -231,7 +232,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             with self._case2:
                 logger.info('Doing second run: ' + self._run_two_description)
                 self._activate_case2()
-                # we need to make sure run2 is properly staged.
+               # we need to make sure run2 is properly staged.
                 if run_type != "startup":
                     check_case(self._case2)
 
@@ -455,6 +456,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # note that we print a warning to the log file if that happens, in the
         # caller of this method).
         self._case.flush()
+        # This assures that case one namelists are populated
+        # and creates the case.test script 
+        case_setup(self._case, test_mode=False, reset=True)
 
         # Set up case 2
         self._activate_case2()
@@ -463,6 +467,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
+
+        # This assures that case two namelists are populated
+        case_setup(self._case, test_mode=True, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
