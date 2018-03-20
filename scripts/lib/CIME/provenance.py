@@ -215,7 +215,7 @@ def _save_prerun_timing_e3sm(case, lid):
     # Save state of repo
     from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
     desc = get_current_commit(tag=True, repo=from_repo)
-    with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid), "w")) as fd:
+    with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
         fd.write(desc)
 
     # What this block does is mysterious to me (JGF)
