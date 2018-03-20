@@ -11,22 +11,23 @@ import cdms2
 from acme_diags.derivations.default_regions import regions_specs
 
 
+SET_NAME_MAPPING = {
+    ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
+    ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
+    ('5', 'lat_lon'): 'lat_lon',
+    ('7', 'polar'): 'polar',
+    ('13', 'cosp_histogram'): 'cosp_histogram',
+}
+
+SET_NAMES = SET_NAME_MAPPING.values()
+
 def get_set_name(set_name):
     """Get the correct set name from the argument.
     Ex: '3' -> 'zonal_mean_xy', etc. """
-
-    names = {
-        ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
-        ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
-        ('5', 'lat_lon'): 'lat_lon',
-        ('7', 'polar'): 'polar',
-        ('13', 'cosp_histogram'): 'cosp_histogram',
-    }
-
     set_name = str(set_name)
-    for possible_names in names:
+    for possible_names in SET_NAME_MAPPING:
         if set_name in possible_names:
-            return names[possible_names]
+            return SET_NAME_MAPPING[possible_names]
 
     raise RuntimeError('Invalid set option: {}'.format(set_name))
 

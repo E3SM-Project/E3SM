@@ -195,7 +195,6 @@ def _add_to_lat_lon_metrics_table(metrics_path, season, row_name):
 
 def _create_csv_from_dict(output_dir, season, test_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
-    #table_path = os.path.abspath(os.path.join(output_dir, season + '_metrics_table.csv'))
     table_path = os.path.join(output_dir, season + '_metrics_table.csv')
 
     col_names = ['Variables', 'Unit', 'Model mean', 'Obs mean', 'Mean Bias', 'RMSE', 'correlation']
@@ -347,7 +346,7 @@ def _add_html_to_col(season, season_path, html_path):
         cols = tr.find_all("td")  # the cols are ['All variables', 'ANN', 'DJF', 'MAM', 'JJA', 'SON']
         td = cols[index]  # get the HTML element related to the season
 
-        url = os.path.join('..', '..', '..', season_path)
+        url = os.path.join('..', '..', season_path)
         a = soup.new_tag("a", href=url)
         a.append(season)
 
@@ -386,7 +385,7 @@ def _create_taylor_index(viewer, root_dir, season_to_png):
 
     for s in seasons:
         if s in season_to_png:
-            pth = os.path.join('..', '..', season_to_png[s])
+            pth = os.path.join('..', season_to_png[s])
             viewer.add_col(pth, is_file=True, title=s)
         else:
             viewer.add_col('-----', is_file=True, title='-----')
@@ -431,12 +430,6 @@ def _add_table_and_taylor_to_viewer_index(root_dir):
     with open(index_page, "wb") as f:
         f.write(html)
 
-def _make_relative_lat_lon_html_path(abs_html_path):
-    """If the given path is an absolute path, make it relative to output_dir"""
-    # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
-    # to this: output_dir/viewer/table-data/ANN_metrics_table.html
-    return '/'.join(abs_html_path.split('/')[-4:])
-
 def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
@@ -447,13 +440,18 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name)
         html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
-        LAT_LON_TABLE_INFO[season]['html_path'] = _make_relative_lat_lon_html_path(html_path)
+
+        # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
+        # to this: viewer/table-data/ANN_metrics_table.html
+        html_path = '/'.join(html_path.split('/')[-3:])
+
+        LAT_LON_TABLE_INFO[season]['html_path'] = html_path
 
     _create_lat_lon_table_index(viewer, root_dir)
 
 def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, plot using taylor diagram  and append that html to the viewer."""
-    taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram-data')  # output_dir/viewer/table-data
+    taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram-data')  # output_dir/viewer/taylor-diagram-data
 
     if not os.path.exists(taylor_diag_dir):
         os.mkdir(taylor_diag_dir)
@@ -461,6 +459,11 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
     season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
+        # Remove any reference to the results_dir when inserting the links into HTML pages.
+        # This is because that folder can be renamed.
+        csv_path = csv_path.split('/')[1:]  
+        csv_path = '/'.join(csv_path)
+
         season_to_png[season] = csv_path.replace('csv', 'png')
 
     _create_taylor_index(viewer, root_dir, season_to_png)
