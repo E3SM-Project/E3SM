@@ -1,5 +1,5 @@
 """
-case_clone is a member of the Case class from file case.py
+create_clone is a member of the Case class from file case.py
 """
 import os, glob, shutil
 from CIME.XML.standard_module_setup import *
