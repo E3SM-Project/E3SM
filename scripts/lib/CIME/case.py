@@ -36,6 +36,7 @@ from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
 from CIME.case_clone import create_case_clone
+from CIME.case_setup import case_setup
 
 logger = logging.getLogger(__name__)
 
@@ -1447,6 +1448,11 @@ class Case(object):
                                  project=project, cime_output_root=cime_output_root,
                                  exeroot=exeroot, rundir=rundir,
                                  user_mods_dir=user_mods_dir)
+
+
+    def case_setup(self, clean=False, test_mode=False, reset=False):
+        """ in case_setup """
+        return case_setup(self, clean, test_mod, reset)
 
     def is_save_timing_dir_project(self,project):
         """

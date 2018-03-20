@@ -40,7 +40,6 @@ from CIME.case import Case
 from CIME.case_submit import check_case
 from CIME.case_st_archive import archive_last_restarts
 from CIME.utils import get_model
-from CIME.case_setup import case_setup
 
 import shutil, os, glob
 
@@ -458,7 +457,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._case.flush()
         # This assures that case one namelists are populated
         # and creates the case.test script
-        case_setup(self._case, test_mode=False, reset=True)
+        self._case.case_setup(test_mode=False, reset=True)
 
         # Set up case 2
         self._activate_case2()
@@ -469,7 +468,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._case.flush()
 
         # This assures that case two namelists are populated
-        case_setup(self._case, test_mode=True, reset=True)
+        self._case.case_setup(test_mode=True, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
