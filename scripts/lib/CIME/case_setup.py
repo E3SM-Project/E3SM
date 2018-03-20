@@ -1,5 +1,6 @@
 """
 Library for case.setup.
+case_setup is a member of class Case from file case.py
 """
 
 from CIME.XML.standard_module_setup import *
