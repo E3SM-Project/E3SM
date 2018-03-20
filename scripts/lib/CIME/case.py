@@ -1452,7 +1452,7 @@ class Case(object):
 
     def case_setup(self, clean=False, test_mode=False, reset=False):
         """ in case_setup """
-        return case_setup(self, clean, test_mod, reset)
+        return case_setup(self, clean, test_mode, reset)
 
     def is_save_timing_dir_project(self,project):
         """
