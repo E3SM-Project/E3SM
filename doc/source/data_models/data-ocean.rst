@@ -205,8 +205,8 @@ DOCN defines a set of pre-defined internal field names as well as mappings for h
    "dhdx", "So_dhdx" 
    "dhdy", "So_dhdy" 
    "s", "So_s" 
-   "h", "strm_h" (internal to docn_comp_mod only)
-   "qbot", "strm_qbot" (internal to docn_comp_mod only)
+   "h", "strm_h (internal to docn_comp_mod only)"
+   "qbot", "strm_qbot (internal to docn_comp_mod only)"
 
 .. _creating-sstdata-input-from-prognostic-run:
 
