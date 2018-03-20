@@ -455,6 +455,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # note that we print a warning to the log file if that happens, in the
         # caller of this method).
         self._case.flush()
+        # This assures that case one namelists are populated
+        # and creates the case.test script
+        self._case.case_setup(test_mode=False, reset=True)
 
         # Set up case 2
         self._activate_case2()
@@ -463,6 +466,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
+
+        # This assures that case two namelists are populated
+        self._case.case_setup(test_mode=True, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()

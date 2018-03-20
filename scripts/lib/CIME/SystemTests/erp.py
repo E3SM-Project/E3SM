@@ -9,7 +9,6 @@ count are modified on retart.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.SystemTests.restart_tests import RestartTest
 from CIME.check_lockedfiles import *
 
@@ -43,7 +42,6 @@ class ERP(RestartTest):
         # Note, some components, like CESM-CICE, have
         # decomposition information in env_build.xml that
         # needs to be regenerated for the above new tasks and thread counts
-        case_setup(self._case, test_mode=True, reset=True)
 
     def _case_one_custom_postrun_action(self):
         self.copy_case1_restarts_to_case2()
