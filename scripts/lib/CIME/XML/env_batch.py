@@ -189,6 +189,7 @@ class EnvBatch(EnvBase):
             overrides["job_id"] = overrides["job_id"][:15]
 
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
+        overrides["mpirun"] = case.get_mpirun_cmd(job=job)
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
         output_name = get_batch_script_for_job(job)
 

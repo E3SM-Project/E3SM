@@ -65,7 +65,7 @@ def _main_func(description):
             print("    {} -> {}".format(job_id, case.get_resolved_value(cmd)))
             print("")
         if job in ["case.test", "case.run"]:
-            print("MPIRUN: {}".format(case.get_resolved_value(case.get_mpirun_cmd())))
+            print("MPIRUN: {}".format(case.get_mpirun_cmd()))
 
 if __name__ == "__main__":
     _main_func(__doc__)

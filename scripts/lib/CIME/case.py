@@ -1249,7 +1249,7 @@ class Case(object):
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
 
-        return "{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix)
+        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix))
 
     def set_model_version(self, model):
         version = "unknown"

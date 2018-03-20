@@ -91,7 +91,6 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     logger.info("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     cmd = case.get_mpirun_cmd(job="case.run")
-    cmd = case.get_resolved_value(cmd)
     logger.info("run command is {} ".format(cmd))
 
     rundir = case.get_value("RUNDIR")
