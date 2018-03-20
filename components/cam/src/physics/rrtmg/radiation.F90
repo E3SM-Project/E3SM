@@ -907,8 +907,6 @@ end function radiation_nextsw_cday
     dosw     = radiation_do('sw')      ! do shortwave heating calc this timestep?
     dolw     = radiation_do('lw')      ! do longwave heating calc this timestep?
 
-    call t_stopf ('radiation_tend_init')
-
     if (dosw .or. dolw) then
 
        ! construct an RRTMG state object
@@ -921,6 +919,8 @@ end function radiation_nextsw_cday
           !   cliqwp(:ncol,k) = clwpobs(k)
           !end do
        endif
+
+       call t_stopf ('radiation_tend_init')
 
        call t_startf('cldoptics')
 
