@@ -35,8 +35,6 @@ from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
-from CIME.case_clone import create_case_clone
-from CIME.case_setup import case_setup
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +63,12 @@ class Case(object):
     the case object creates and manipulates the Case env classes
     by reading and interpreting the CIME config classes.
 
+    This class extends across multiple files, class members external to this file
+    are listed in the following imports
     """
+    from CIME.case_setup import case_setup
+    from CIME.case_clone import create_clone
+
     def __init__(self, case_root=None, read_only=True):
 
         if case_root is None:
@@ -1439,20 +1442,6 @@ class Case(object):
                     logger.warning("Leaving broken case dir {}".format(self._caseroot))
 
             raise
-
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
-                     cime_output_root=None, exeroot=None, rundir=None,
-                     user_mods_dir=None):
-        """ moved to case_clone """
-        return create_case_clone(self, newcase, keepexe=keepexe, mach_dir=mach_dir,
-                                 project=project, cime_output_root=cime_output_root,
-                                 exeroot=exeroot, rundir=rundir,
-                                 user_mods_dir=user_mods_dir)
-
-
-    def case_setup(self, clean=False, test_mode=False, reset=False):
-        """ in case_setup """
-        return case_setup(self, clean, test_mode, reset)
 
     def is_save_timing_dir_project(self,project):
         """

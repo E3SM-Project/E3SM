@@ -210,14 +210,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False):
+def case_setup(self, clean=False, test_mode=False, reset=False):
 ###############################################################################
-    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
+    caseroot, casebaseid = self.get_value("CASEROOT"), self.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
+    functor = lambda: _case_setup_impl(self, caseroot, clean, test_mode, reset)
 
-    if case.get_value("TEST") and not test_mode:
-        test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+    if self.get_value("TEST") and not test_mode:
+        test_name = casebaseid if casebaseid is not None else self.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
                 run_and_log_case_status(functor, phase, caseroot=caseroot)
