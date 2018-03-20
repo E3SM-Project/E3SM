@@ -1,5 +1,7 @@
 """
 API for checking locked files
+check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild are members
+of Class case.py from file case.py
 """
 
 from CIME.XML.standard_module_setup import *
@@ -46,7 +48,7 @@ def is_locked(filename, caseroot=None):
     caseroot = os.getcwd() if caseroot is None else caseroot
     return os.path.exists(os.path.join(caseroot, LOCKED_DIR, filename))
 
-def check_pelayouts_require_rebuild(case, models):
+def check_pelayouts_require_rebuild(self, models):
     """
     Create if we require a rebuild, expects cwd is caseroot
     """
@@ -54,45 +56,45 @@ def check_pelayouts_require_rebuild(case, models):
     if os.path.exists(locked_pes):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
-        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
+        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=self.get_values("COMP_CLASSES"))
         for comp in models:
-            if case.get_value("{}_PE_CHANGE_REQUIRES_REBUILD".format(comp)):
+            if self.get_value("{}_PE_CHANGE_REQUIRES_REBUILD".format(comp)):
                 # Changing these values in env_mach_pes.xml will force
                 # you to clean the corresponding component
                 old_tasks   = env_mach_pes_locked.get_value("NTASKS_{}".format(comp))
                 old_threads = env_mach_pes_locked.get_value("NTHRDS_{}".format(comp))
                 old_inst    = env_mach_pes_locked.get_value("NINST_{}".format(comp))
 
-                new_tasks   = case.get_value("NTASKS_{}".format(comp))
-                new_threads = case.get_value("NTHRDS_{}".format(comp))
-                new_inst    = case.get_value("NINST_{}".format(comp))
+                new_tasks   = self.get_value("NTASKS_{}".format(comp))
+                new_threads = self.get_value("NTHRDS_{}".format(comp))
+                new_inst    = self.get_value("NINST_{}".format(comp))
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logging.warning("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
                     run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
 
-        unlock_file("env_mach_pes.xml", case.get_value("CASEROOT"))
+        unlock_file("env_mach_pes.xml", self.get_value("CASEROOT"))
 
-def check_lockedfile(case, filebase):
-    caseroot = case.get_value("CASEROOT")
+def check_lockedfile(self, filebase):
+    caseroot = self.get_value("CASEROOT")
 
     cfile = os.path.join(caseroot, filebase)
     lfile = os.path.join(caseroot, "LockedFiles", filebase)
-    components = case.get_values("COMP_CLASSES")
+    components = self.get_values("COMP_CLASSES")
     if os.path.isfile(cfile):
         objname = filebase.split('.')[0]
         if objname == "env_build":
-            f1obj = case.get_env('build')
+            f1obj = self.get_env('build')
             f2obj = EnvBuild(caseroot, lfile)
         elif objname == "env_mach_pes":
-            f1obj = case.get_env('mach_pes')
+            f1obj = self.get_env('mach_pes')
             f2obj = EnvMachPes(caseroot, lfile, components=components)
         elif objname == "env_case":
-            f1obj = case.get_env('case')
+            f1obj = self.get_env('case')
             f2obj = EnvCase(caseroot, lfile)
         elif objname == "env_batch":
-            f1obj = case.get_env('batch')
+            f1obj = self.get_env('batch')
             f2obj = EnvBatch(caseroot, lfile)
         else:
             logging.warning("Locked XML file '{}' is not current being handled".format(filebase))
@@ -116,26 +118,26 @@ def check_lockedfile(case, filebase):
             elif objname == "env_build":
                 if toggle_build_status:
                     logging.warning("Setting build complete to False")
-                    case.set_value("BUILD_COMPLETE", False)
+                    self.set_value("BUILD_COMPLETE", False)
                     if "PIO_VERSION" in diffs:
-                        case.set_value("BUILD_STATUS", 2)
+                        self.set_value("BUILD_STATUS", 2)
                         logging.critical("Changing PIO_VERSION requires running "
                                          "case.build --clean-all and rebuilding")
                     else:
-                        case.set_value("BUILD_STATUS", 1)
+                        self.set_value("BUILD_STATUS", 1)
                     f2obj.set_value("BUILD_COMPLETE", False)
             elif objname == "env_batch":
                 expect(False, "Batch configuration has changed, please run case.setup --reset")
             else:
                 expect(False, "'{}' diff was not handled".format(objname))
 
-def check_lockedfiles(case):
+def check_lockedfiles(self):
     """
     Check that all lockedfiles match what's in case
 
     If caseroot is not specified, it is set to the current working directory
     """
-    caseroot = case.get_value("CASEROOT")
+    caseroot = self.get_value("CASEROOT")
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
@@ -143,4 +145,4 @@ def check_lockedfiles(case):
         if fpart.count('.') > 1:
             continue
 
-        check_lockedfile(case, fpart)
+        self.check_lockedfile(fpart)
