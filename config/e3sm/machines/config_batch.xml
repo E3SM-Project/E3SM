@@ -507,11 +507,9 @@
    </batch_system>
 
    <batch_system MACH="lawrencium-lr2" type="slurm" >
-     <submit_args>
-       <arg flag="--qos" name="condo_esd2"/>
-     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--qos=condo_esd2 </directive>
      </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemin="0" nodemax="6" default="true">lr3</queue>
@@ -519,11 +517,9 @@
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" type="slurm" >
-     <submit_args>
-       <arg flag="--qos" name="condo_esd2"/>
-     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--qos=condo_esd2 </directive>
      </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemin="0" nodemax="4" default="true">lr3</queue>
