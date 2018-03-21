@@ -2556,6 +2556,7 @@
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
@@ -2619,6 +2620,7 @@
   <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
