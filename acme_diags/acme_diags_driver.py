@@ -79,7 +79,12 @@ if __name__ == '__main__':
 
     if args.parameters and not args.other_parameters:  # -p only
         cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
-        original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
+        # If just a -p with no command line parameters, check the py for errors
+        if not cmdline_parameter:
+            original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
+        # Otherwise don't check for errors, the command line args might have some missing ones
+        else:
+            original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False, check_values=False)
 
         if not hasattr(original_parameter, 'sets'):
             original_parameter.sets = SET_NAMES
