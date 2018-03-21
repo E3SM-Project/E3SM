@@ -5,7 +5,6 @@ create_dirs and create_namelists are members of Class case from file case.py
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import run_sub_or_cmd
-from CIME.check_input_data import stage_refcase
 import glob, shutil
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ def create_namelists(self, component=None):
     # Load modules
     self.load_env()
 
-    stage_refcase(self)
+    self.stage_refcase()
 
 
     logger.info("Creating component namelists")

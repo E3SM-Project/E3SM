@@ -3,7 +3,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.check_input_data import check_all_input_data
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -95,7 +94,7 @@ class ERI(SystemTestsCommon):
         clone1.case_setup(test_mode=True, reset=True)
 
         # if the initial case is hybrid this will put the reference data in the correct location
-        check_all_input_data(clone1)
+        clone1.check_all_input_data()
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
