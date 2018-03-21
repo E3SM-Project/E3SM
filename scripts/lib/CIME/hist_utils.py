@@ -256,7 +256,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     case - the case containing the files
     rundir - the rundir for the case
     outfile_suffix - if non-blank, then the output file name ends with this
-        suffix (with a '.' added before the given suffix)
+        suffix (with a '.' added before the given suffix).
+        Use None to avoid permissions issues in the case dir.
 
     returns (True if the files matched, log_name)
     """
