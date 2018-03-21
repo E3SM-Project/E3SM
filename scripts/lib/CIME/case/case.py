@@ -66,17 +66,17 @@ class Case(object):
     This class extends across multiple files, class members external to this file
     are listed in the following imports
     """
-    from CIME.case_members.case_setup import case_setup
-    from CIME.case_members.case_clone import create_clone
-    from CIME.case_members.case_test  import case_test
-    from CIME.case_members.case_submit import check_DA_settings, check_case, submit
-    from CIME.case_members.case_st_archive import case_st_archive, restore_from_archive, \
+    from CIME.case.case_setup import case_setup
+    from CIME.case.case_clone import create_clone
+    from CIME.case.case_test  import case_test
+    from CIME.case.case_submit import check_DA_settings, check_case, submit
+    from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
         archive_last_restarts
-    from CIME.case_members.case_run import case_run
-    from CIME.case_members.case_cmpgen_namelists import case_cmpgen_namelists
-    from CIME.case_members.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
-    from CIME.case_members.preview_namelists import create_dirs, create_namelists
-    from CIME.case_members.check_input_data import check_all_input_data, stage_refcase, check_input_data
+    from CIME.case.case_run import case_run
+    from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
+    from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
+    from CIME.case.preview_namelists import create_dirs, create_namelists
+    from CIME.case.check_input_data import check_all_input_data, stage_refcase, check_input_data
 
     def __init__(self, case_root=None, read_only=True):
 
