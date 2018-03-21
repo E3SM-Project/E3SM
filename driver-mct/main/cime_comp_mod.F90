@@ -3922,6 +3922,7 @@ contains
 
     use shr_pio_mod, only : shr_pio_finalize
     use shr_wv_sat_mod, only: shr_wv_sat_final
+    character(len=cs)        :: cime_model
 
     !------------------------------------------------------------------------
     ! Finalization of all models
@@ -3950,7 +3951,7 @@ contains
     !------------------------------------------------------------------------
 
     call shr_wv_sat_final()
-
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
     call shr_pio_finalize( )
 
     call shr_mpi_min(msize ,msize0,mpicom_GLOID,' driver msize0', all=.true.)
@@ -3962,7 +3963,7 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
        simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
        write(logunit,'(//)')
-       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-CESM'
+       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-'//trim(cime_model)
        write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
        write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
        write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
