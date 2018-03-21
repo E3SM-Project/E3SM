@@ -559,7 +559,7 @@
     </job>
     <job name="case.run.sh">
       <template>template.case.run.sh</template>
-      <prereq>FALSE</prereq>
+      <prereq>False</prereq>
     </job>
    <job name="case.test">
       <template>template.case.test</template>
