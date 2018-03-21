@@ -17,15 +17,15 @@ export PYTHONPATH=$LIBDIR:$PYTHONPATH
 lid=$(python -c 'import CIME.utils; print CIME.utils.new_lid()')
 export LID=$lid
 
+# setup environment
+source .env_mach_specific.sh
+
 # minimum namelist action
 ./preview_namelists --component cpl
 #./preview_namelists # uncomment for full namelist generation
 
 # uncomment for lockfile checking
 # ./check_lockedfiles
-
-# setup environment
-source .env_mach_specific.sh
 
 # setup OMP_NUM_THREADS
 export OMP_NUM_THREADS=$("./xmlquery THREAD_COUNT --value")

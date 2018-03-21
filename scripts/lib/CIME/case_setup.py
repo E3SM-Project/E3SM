@@ -66,7 +66,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, shell_batch=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -165,7 +165,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
             # create batch files
             env_batch = case.get_env("batch")
-            env_batch.make_all_batch_files(case, test_mode=test_mode, shell_batch=shell_batch)
+            env_batch.make_all_batch_files(case, test_mode=test_mode)
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
@@ -210,14 +210,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, shell_batch=False):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, shell_batch)
+    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
 
     if case.get_value("TEST") and not test_mode:
-        expect(not shell_batch, "Cannot make shell batch file for case.test")
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
