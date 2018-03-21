@@ -4,8 +4,6 @@ functions for building CIME models
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job
 from CIME.provenance            import save_build_provenance
-from CIME.preview_namelists     import create_namelists, create_dirs
-from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
@@ -197,12 +195,12 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.set_value("BUILD_COMPLETE", False)
 
     # User may have rm -rf their build directory
-    create_dirs(case)
+    case.create_dirs()
 
     case.flush()
     if not model_only and not buildlist:
         logger.info("Generating component namelists as part of build")
-        create_namelists(case)
+        case.create_namelists()
 
     return sharedpath
 
@@ -387,7 +385,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    check_lockedfiles(case)
+    case.check_lockedfiles()
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and

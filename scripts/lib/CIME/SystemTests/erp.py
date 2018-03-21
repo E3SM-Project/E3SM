@@ -10,7 +10,6 @@ count are modified on retart.
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.restart_tests import RestartTest
-from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
