@@ -5,7 +5,6 @@ case_cmpgen_namelists is a member of Class case from file case.py
 
 from CIME.XML.standard_module_setup import *
 
-from CIME.preview_namelists import create_namelists
 from CIME.compare_namelists import is_namelist_file, compare_namelist_files
 from CIME.simple_compare import compare_files
 from CIME.utils import append_status
@@ -100,7 +99,7 @@ def case_cmpgen_namelists(self, compare=False, generate=False, compare_name=None
     # create namelists for case if they haven't been already
     casedocs = os.path.join(caseroot, "CaseDocs")
     if not os.path.exists(os.path.join(casedocs, "drv_in")):
-        create_namelists(self)
+        self.create_namelists()
 
     test_name = casebaseid if casebaseid is not None else self.get_value("CASE")
     with TestStatus(test_dir=caseroot, test_name=test_name) as ts:

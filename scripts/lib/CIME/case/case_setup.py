@@ -5,13 +5,11 @@ case_setup is a member of class Case from file case.py
 
 from CIME.XML.standard_module_setup import *
 
-from CIME.check_lockedfiles import *
-from CIME.preview_namelists import create_dirs, create_namelists
-from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
 from CIME.test_status       import *
+from CIME.locked_files      import unlock_file, lock_file
 
 import shutil
 
@@ -149,13 +147,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("SMP_PRESENT", case.get_build_threaded())
 
         else:
-            check_pelayouts_require_rebuild(case, models)
+            case.check_pelayouts_require_rebuild(models)
 
             unlock_file("env_build.xml")
             unlock_file("env_batch.xml")
 
             case.flush()
-            check_lockedfiles(case)
+            case.check_lockedfiles()
 
             case.initialize_derived_attributes()
 
@@ -195,14 +193,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         _build_usernl_files(case, "drv", "cpl")
 
         # Create needed directories for case
-        create_dirs(case)
+        case.create_dirs()
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Some tests need namelists created here (ERP) - so do this if we are in test mode
         if test_mode or get_model() == "e3sm":
             logger.info("Generating component namelists as part of setup")
-            create_namelists(case)
+            case.create_namelists()
 
         # Record env information
         env_module = case.get_env("mach_specific")

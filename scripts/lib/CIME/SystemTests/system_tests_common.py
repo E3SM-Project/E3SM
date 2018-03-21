@@ -7,7 +7,7 @@ from CIME.utils import append_testlog, get_model
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
-
+from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
 import shutil, glob, gzip, time, traceback, six

@@ -8,7 +8,7 @@ import shutil, glob, re, os
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force
-from CIME.date                      import date, get_file_date
+from CIME.date                      import get_file_date
 from os.path                        import isdir, join
 
 logger = logging.getLogger(__name__)

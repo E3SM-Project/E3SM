@@ -5,8 +5,7 @@ import os, glob, shutil
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect
 from CIME.user_mod_support import apply_user_mods
-from CIME.check_lockedfiles         import lock_file
-from CIME.case_setup import case_setup
+from CIME.locked_files         import lock_file
 from CIME.simple_compare            import compare_files
 
 logger = logging.getLogger(__name__)
@@ -157,6 +156,6 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     clonename = self.get_value("CASE")
     logger.info(" Successfully created new case {} from clone case {} ".format(newcasename, clonename))
 
-    case_setup(newcase)
+    newcase.case_setup()
 
     return newcase
