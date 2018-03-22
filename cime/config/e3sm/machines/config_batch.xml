@@ -78,40 +78,8 @@
     </submit_args>
   </batch_system>
 
-  <batch_system type="lsf_old" version="10.1">
-    <batch_query args=" -w" >bjobs</batch_query>
-    <batch_submit>bsub</batch_submit>
-    <batch_cancel>bkill</batch_cancel>
-    <batch_redirect>&lt;</batch_redirect>
-    <batch_directive>#BSUB</batch_directive>
-    <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
-    <depend_string>-w 'done(jobid)'</depend_string>
-    <depend_separator>&amp;&amp;</depend_separator>
-    <walltime_format>%H:%M</walltime_format>
-    <batch_mail_flag>-u</batch_mail_flag>
-    <batch_mail_type_flag></batch_mail_type_flag>
-    <batch_mail_type></batch_mail_type>
-    <submit_args>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-P" name="$CHARGE_ACCOUNT"/>
-    </submit_args>
-    <directives>
-      <directive                       > -n {{ total_tasks }} </directive>
-      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
-      <directive                       > -N  </directive>
-	  <!-- The following option causes problems with lsf version on Summitdev.
-	  If desired, this should be in specific machine section. -->
-      <!-- <directive default="poe"         > -a {{ poe }} </directive> -->
-      <directive default="acme.stdout" > -o {{ job_id }}.%J  </directive>
-      <directive default="acme.stderr" > -e {{ job_id }}.%J  </directive>
-      <directive                       > -J {{ job_id }} </directive>
-    </directives>
-  </batch_system>
-
-  <!-- This is the version on Summitdev, released as IBM release beta2 on Oct 17, 2017.
-       Created a new section as it conflicts with previous LSF settings-->
-  <batch_system type="lsf" version="2">
+<!-- This is the new version on Summit, released as IBM 10.1.0.0 build 476197, Nov 21 2017.  -->
+  <batch_system type="lsf" version="10.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
@@ -131,8 +99,8 @@
     <directives>
       <directive                       > -nnodes {{ num_nodes }} </directive>
       <directive                       > -N  </directive>
-      <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
-      <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
+      <directive default="e3sm.stdout" > -o {{ output_error_path }}.%J  </directive>
+      <directive default="e3sm.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
     </directives>
   </batch_system>
@@ -488,6 +456,18 @@
        <queue walltimemax="01:00:00" nodemin="0" nodemax="18688" strict="true">debug</queue>
      </queues>
    </batch_system>
+
+   <batch_system MACH="summit" type="lsf" >
+     <directives>
+       <directive>-P {{ project }}</directive>
+       <directive>-alloc_flags gpumps</directive>
+       <directive>-alloc_flags smt2</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="02:00" nodemin="0" nodemax="64" default="true">batch</queue>
+     </queues>
+   </batch_system>
+
 
    <batch_system MACH="summitdev" type="lsf" >
      <directives>
