@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="5.2">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="5.3">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -1633,35 +1633,35 @@
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="tend_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of water vapor mixing ratio"/>
+                        <var name="tend_qv" name_in_code="qv" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of water vapor mass per unit volume divided by d(zeta)/dz"/>
 
-                        <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of cloud water mixing ratio"
+                        <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of cloud water mass per unit volume divided by d(zeta)/dz"
                              packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
-                        <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of rain water mixing ratio"
+                        <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of rain water mass per unit volume divided by d(zeta)/dz"
                              packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
 
-                        <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of ice mixing ratio"
+                        <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of ice mass per unit volume divided by d(zeta)/dz"
                              packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in"/>
 
-                        <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of snow ratio"
+                        <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of snow mass per unit volume divided by d(zeta)/dz"
                              packages="mp_thompson_in;mp_wsm6_in"/>
 
-                        <var name="tend_qg" name_in_code="qg" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             description="Tendency of graupel mixing ratio"
+                        <var name="tend_qg" name_in_code="qg" array_group="moist" units="kg m^{-3} s^{-1}"
+                             description="Tendency of graupel mass per unit volume divided by d(zeta)/dz"
                              packages="mp_thompson_in;mp_wsm6_in"/>
 
-                        <var name="tend_ni" name_in_code="ni" array_group="number" units="nb kg^{-1} s^{-1}"
-                             description="Tendency of cloud ice number concentration"
+                        <var name="tend_ni" name_in_code="ni" array_group="number" units="nb m^{-3} s^{-1}"
+                             description="Tendency of cloud ice number concentration multiplied by dry air density divided by d(zeta)/dz"
                              packages="bl_mynn_in;mp_thompson_in"/>
 
-                        <var name="tend_nr" name_in_code="nr" array_group="number" units="nb kg^{-1} s^{-1}" 
-                             description="Tendency of rain number concentration"
+                        <var name="tend_nr" name_in_code="nr" array_group="number" units="nb m^{-3} s^{-1}" 
+                             description="Tendency of rain number concentration multiplied by dry air density divided by d(zeta)/dz"
                              packages="mp_thompson_in"/>
                 </var_array>
         </var_struct>

@@ -4647,8 +4647,12 @@ write(0,*) 'PROCESSING OMLD'
 !              es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
 !              es = min(es,0.99*0.01*pressure(k,iCell))
 !              rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+
+               !
+               ! Note: the RH field provided by ungrib should always be with respect to liquid water,
+               !       hence, we can always call rslf; see the routine fix_gfs_rh in WPS/ungrib/src/rrpr.F .
+               !
                rs = rslf(pressure(k,iCell),t(k,iCell))
-               if(t(k,iCell) .lt. svpt0) rs = rsif(pressure(k,iCell),t(k,iCell))
                scalars(index_qv,k,iCell) = 0.01_RKIND*rs*relhum(k,iCell)
              enddo
          enddo
