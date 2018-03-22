@@ -326,6 +326,20 @@ contains
           term_B(:ncol,:pver) = 0._r8
         end where
 
+     case(12)
+     ! For testing only: replace Al with a*Av to investigate the impact of 
+     ! the intrisic properties of Al on the convergence rate. Al is noisier
+     ! than Av, and may not continuous at the moment when cloudy-clear/clear-cloud
+     ! conversion happens. here, we let a=0.1
+        term_B(:ncol,:pver) = - (1._r8 - ast(:ncol,:pver))*qtend(:ncol,:pver)*0.1_r8
+
+     case(13)
+     ! For testing only: replace Al with a*Av to investigate the impact of 
+     ! the intrisic properties of Al on the convergence rate. Al is noisier
+     ! than Av, and may not continuous at the moment when cloudy-clear/clear-cloud
+     ! conversion happens. here we let a=0.5 
+        term_B(:ncol,:pver) = - (1._r8 -ast(:ncol,:pver))*qtend(:ncol,:pver)*0.5_r8
+
      case(20) 
      !!Origionally, there are only two terms on the right side of RK98 formula, 
      !!thus, term B should be always zero at any time
