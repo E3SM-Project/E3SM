@@ -197,14 +197,14 @@ def _create_csv_from_dict(output_dir, season, test_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     table_path = os.path.join(output_dir, season + '_metrics_table.csv')
 
-    col_names = ['Variables', 'Unit', 'Model mean', 'Obs mean', 'Mean Bias', 'RMSE', 'correlation']
+    col_names = ['Variables', 'Unit', 'Test_mean', 'Ref._mean', 'Mean_Bias', 'Test_STD', 'Ref._STD', 'RMSE', 'Correlation']
 
     with open(table_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             metrics = metrics_dic['metrics']
-            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3),round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
             writer.writerow(row)
 
     return table_path
@@ -215,7 +215,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
     taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
     control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
 
-    col_names = ['Variables', 'Model std', 'Obs std', 'correlation']
+    col_names = ['Variables', 'Test_STD', 'Ref._STD', 'Correlation']
 
     with open(taylor_diag_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
