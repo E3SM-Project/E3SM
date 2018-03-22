@@ -2372,8 +2372,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !! hard-coded as average of hard-coded values used for deep/shallow convective detrainment (near line 1502/1505)
    ! this needs to be replaced by clubb_liq_deep and clubb_ice+deep accordingly
 
-   cvreffliq(:ncol,top_lev:pver) = 9.0_r8
-   cvreffice(:ncol,top_lev:pver) = 37.0_r8
+   cvreffliq(:ncol,:pver) = 9.0_r8
+   cvreffice(:ncol,:pver) = 37.0_r8
 
    ! Reassign rate1 if modal aerosols
    if (rate1_cw2pr_st_idx > 0) then
@@ -2789,8 +2789,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
-   mgreffrain_grid(:ngrdcol,top_lev:pver) = reff_rain_grid(:ngrdcol,top_lev:pver)
-   mgreffsnow_grid(:ngrdcol,top_lev:pver) = reff_snow_grid(:ngrdcol,top_lev:pver)
+   mgreffrain_grid(:ngrdcol,:pver) = reff_rain_grid(:ngrdcol,:pver)
+   mgreffsnow_grid(:ngrdcol,:pver) = reff_snow_grid(:ngrdcol,:pver)
 
    ! ------------------------------------- !
    ! Precipitation efficiency Calculation  !
