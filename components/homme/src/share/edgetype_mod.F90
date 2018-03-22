@@ -32,10 +32,11 @@ module edgetype_mod
      integer(kind=int_kind), pointer :: getmap(:,:) => null()
      logical(kind=log_kind), pointer :: reverse(:,:) => null()
      integer(kind=int_kind), pointer :: moveLength(:) => null()
-     integer(kind=int_kind), pointer :: movePtr(:) => null()
+     integer(kind=int_kind), pointer :: movePtr0(:) => null()
      integer(kind=int_kind), dimension(:), allocatable :: Rrequest,Srequest
      integer(kind=int_kind), dimension(:,:), allocatable :: status
-     integer :: nlyr ! Number of layers
+     integer :: nlyr ! Number of layers for the current pack/exchange/unpack
+     integer :: nlyr_max ! maximum number of layers allocated
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
      integer :: id
      integer :: tag

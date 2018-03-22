@@ -3,7 +3,12 @@
 #endif
 
 module edge_mod_base
-
+!
+! Revisions
+!   2018/3 Mark Taylor: update FreeEdgeBuffer to fix memory leak
+!   2018/3 Mark Taylor: update to only communicate data data packed in an edge buffer, instead
+!                       of the entire edge buffer
+!
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
@@ -184,7 +189,8 @@ contains
 
 
 !$OMP MASTER
-    edge%nlyr=nlyr
+    edge%nlyr=nlyr        ! number of layers used
+    edge%nlyr_max=nlyr    ! maximum number of layers allowed 
     edge%nbuf=nbuf
 !$OMP END MASTER
 !$OMP BARRIER
@@ -247,11 +253,11 @@ endif
     ! Determine the most optimal way to move data in the bndry_exchange call 
     pSchedule  => Schedule(1)
     if(present(NewMethod)) then 
-        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthS
-        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrS -1) + 1 
+        moveLength = pSchedule%MoveCycle(1)%lengthS
+        ptr       = (pSchedule%MoveCycle(1)%ptrS -1) 
     else
-        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
-        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
+        moveLength = pSchedule%MoveCycle(1)%lengthP
+        ptr       = (pSchedule%MoveCycle(1)%ptrP -1) 
     endif
 
 #if 0
@@ -275,32 +281,37 @@ endif
     endif
      
     allocate(edge%moveLength(nlen))
-    allocate(edge%movePtr(nlen))
+    allocate(edge%movePtr0(nlen))
 
     if (numthreads > 1) then 
        ! the master thread performs no data movement because it is busy with the
        ! MPI messaging 
        edge%moveLength(1) = -1
-       edge%movePtr(1) = 0
+       edge%movePtr0(1) = 0
        
        ! Calculate the length of the local copy in bndy_exchange
+!       llen = nlyr*ceiling(real(moveLength,kind=real_kind)/real(numthreads-1,kind=real_kind))
+!       iptr = ptr*nlyr
        llen = ceiling(real(moveLength,kind=real_kind)/real(numthreads-1,kind=real_kind))
        iptr = ptr
        mLen = 0
        do i=2,numthreads
+!         if( (mLen+llen) <= moveLength*nlyr)  then 
          if( (mLen+llen) <= moveLength)  then 
             tlen = llen 
          else
+!            tlen = moveLength*nlyr - mLen 
             tlen = moveLength - mLen 
          endif
-         edge%moveLength(i) = tlen
-         edge%movePtr(i)    = iptr
+         if (tlen<0) call abortmp('initEdgeBuffer: fatal pointer setup error')
+         edge%moveLength(i) = tlen  ! *nlyr
+         edge%movePtr0(i)    = iptr ! *nlyr 
          iptr = iptr + tlen
          mLen = mLen + tLen 
        enddo
     else
-       edge%moveLength(1) = moveLength
-       edge%movePtr(1) = ptr
+       edge%moveLength(1) = moveLength !*nlyr
+       edge%movePtr0(1) = ptr          !*nlyr
     endif
 
     ! allocate the MPI Send/Recv request handles
@@ -313,58 +324,14 @@ endif
     allocate(edge%receive(nbuf))   
     allocate(edge%buf(nbuf))
 
-!    ithr = omp_get_thread_num()+1
-!    ! first touch for message buffers
-!    iptr   = edge%moveptr(ithr)
-!    length = edge%moveLength(ithr)
-!    if(length>0) then
-!        edge%buf(iptr:iptr+length-1) = 0.0D0
-!        edge%receive(iptr:iptr+length-1) = 0.0D0
-!    endif
-
-!    dont do this, to improve first touch data placement
-!    edge%buf    (:)=0.0D0
-!    edge%receive(:)=0.0D0
 
 !$OMP END MASTER
-! MT: This next barrier is also needed - threads cannot start using edge()
-! until MASTER is done initializing it
+
+! threads cannot start using edge() until MASTER is done initializing it
 !$OMP BARRIER
-
-!JMD DEBUGGING print statements 
-!if(present(NewMethod)) then 
-!    nSendCycles = pSchedule%nSendCycles
-!    nRecvCycles = pSchedule%nRecvCycles
-!    do icycle=1,nRecvCycles
-!       pCycle => pSchedule%RecvCycle(icycle)
-!       length = nlyr * pCycle%lengthS
-!       iptr   = nlyr * (pCycle%ptrS - 1) + 1
-!       print *,'IAM: ', iam, 'RecvCycle: Pointer: ',iptr,' LENGTH: ',length
-!    enddo
-!    do icycle=1,nSendCycles
-!       pCycle => pSchedule%SendCycle(icycle)
-!       length = nlyr * pCycle%lengthS
-!!!       iptr   = nlyr * (pCycle%ptrS - 1) + 1
-!       print *,'IAM: ', iam, 'SendCycle: Pointer: ',iptr,' LENGTH: ',length
-!    enddo
-!    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrS - 1) + 1
-!    length = nlyr*pSchedule%MoveCycle(1)%lengthS
-!    print *,'IAM: ',iam,'MoveCycle: Pointers: ', iptr,' LENGTH: ',length 
-!endif
-!    print *,'IAM: ',iam,'MoveCycle: Pointers: ',edge%movePtr  
-!    print *,'IAM: ',iam,'MoveCycle: LENGTH: ',edge%moveLength  
-
-!    stop 'initNewEdgeBuffer'
-!    allocate(edge%buf(nbuf))
-!    allocate(edge%receive(nbuf))
-!    edge%buf    (:)=0.0D0
-!    edge%receive(:)=0.0D0
-
-
-!    call t_stopf('initedgebuffer')
-!    call t_adj_detailf(-3)
-
   end subroutine initEdgeBuffer
+
+
   ! =========================================
   ! initLongEdgeBuffer:
   !
@@ -434,6 +401,16 @@ endif
     deallocate(edge%putmap)
     deallocate(edge%getmap)
     deallocate(edge%reverse)
+
+    deallocate(edge%moveLength)
+    deallocate(edge%movePtr0)
+
+    deallocate(edge%Srequest)
+    deallocate(edge%Rrequest)
+    deallocate(edge%status)
+
+
+
 #if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
@@ -513,12 +490,12 @@ endif
     ie = edge%putmap(east,ielem)
     in = edge%putmap(north,ielem)
     iw = edge%putmap(west,ielem)
-    if (edge%nlyr < (kptr+vlyr) ) then
-       print *,'edge%nlyr = ',edge%nlyr
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       print *,'edge%nlyr_max = ',edge%nlyr_max
        print *,'kptr+vlyr = ',kptr+vlyr
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
-
+   
 !dir$ ivdep
     do k=1,vlyr
        iptr = np*(kptr+k-1)
@@ -645,7 +622,7 @@ endif
     ie = edge%putmap(east,ielem)
     in = edge%putmap(north,ielem)
     iw = edge%putmap(west,ielem)
-    if (edge%nlyr < (kptr+vlyr) ) then
+    if (edge%nlyr_max < (kptr+vlyr) ) then
        call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
 
