@@ -34,7 +34,8 @@ contains
   real(r8) :: rhpert, rhlim, rhdif(pcols,pver)  ! for the Slingo formula of cloud fraction
   real(r8) :: rhmin, cldrh, dv                  ! for Park's pdf scheme of cloud fraction
   real(r8),parameter :: pi = 3.141592653589793
-  real(r8),parameter :: fmax= 0.999_r8 ! upper limit for the cloud fraction
+ !real(r8),parameter :: fmax= 0.999_r8 ! upper limit for the cloud fraction
+  real(r8),parameter :: fmax= 1._r8 ! upper limit for the cloud fraction
  
   select case (smpl_frc_schm)
   case (0) ! Constant or binary
@@ -54,23 +55,16 @@ contains
 
     rhlim = 0.8_r8
     rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
-    ast(:ncol,:pver) = min(fmax,(max(rhdif(:ncol,:pver),0.0_r8))**2)
-    dastdrh(:ncol,:pver) = max(rhdif(:ncol,:pver),0.0_r8) /(1.0_r8-rhlim) *2._r8
-    where( ast(:ncol,:pver) .gt. fmax )
+    rhdif(:ncol,:pver) = max( min(rhdif(:ncol,:pver),1.0_r8), 0._r8)
+
+    ast(:ncol,:pver) = rhdif(:ncol,:pver)**2
+    ast(:ncol,:pver) = min(fmax,ast(:ncol,:pver))
+
+    dastdrh(:ncol,:pver) = rhdif(:ncol,:pver)/(1.0_r8-rhlim)*2._r8
+
+    where( ast(:ncol,:pver) .ge. fmax )
       dastdrh(:ncol,:pver) = 0._r8
     end where
-
-    rhu00 = rhlim
-
-  case (10) ! Slingo formula with upper limit is 1 for ast.
-
-    rhpert = 0._r8
-    gbmrh(:ncol,:pver) = q(:ncol,:pver) /qsat(:ncol,:pver)*(1.0_r8+real(0,r8)*rhpert)
-
-    rhlim = 0.8_r8
-    rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
-    ast(:ncol,:pver) = min(1.0_r8,(max(rhdif(:ncol,:pver),0.0_r8))**2)
-    dastdrh(:ncol,:pver) = max(rhdif(:ncol,:pver),0.0_r8) /(1.0_r8-rhlim) *2._r8
 
     rhu00 = rhlim
 
@@ -106,20 +100,27 @@ contains
     end do
     rhu00 = rhmin
 
-  case (3) ! like the slingo formula, but with a different functional form 
+  case (3) ! like the slingo formula, but with a different functional form that is C0-continuous and C1-continuous
 
     rhpert = 0._r8
     gbmrh(:ncol,:pver) = q(:ncol,:pver) /qsat(:ncol,:pver) *(1.0_r8+real(0,r8)*rhpert)
 
     rhlim = 0.8_r8
     rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
+    rhdif(:ncol,:pver) =  max( min(rhdif(:ncol,:pver),1.0_r8), 0._r8)
 
-    ztmp(:ncol,:pver) = ( max(rhdif(:ncol,:pver),0.0_r8) - 0.5_r8 )*pi 
-    ast (:ncol,:pver) = min(0.999_r8, 0.5_r8*(sin(ztmp(:ncol,:pver))+1._r8))
+    ztmp(:ncol,:pver) = ( rhdif(:ncol,:pver) - 0.5_r8 )*pi 
 
-    dastdrh(:ncol,:pver) = max(0._r8, 0.5_r8*cos(ztmp(:ncol,:pver))*pi/(1.0_r8-rhlim))
+    ast (:ncol,:pver) = 0.5_r8*( sin(ztmp(:ncol,:pver)) + 1._r8 )
+    ast (:ncol,:pver) = min(fmax, ast (:ncol,:pver) )
+
+    dastdrh(:ncol,:pver) =  0.5_r8* cos(ztmp(:ncol,:pver)) *pi/(1.0_r8-rhlim)
+    where( ast(:ncol,:pver) .ge. fmax )
+      dastdrh(:ncol,:pver) = 0._r8
+    end where
 
     rhu00 = rhlim
+
   end select
 
   end subroutine smpl_frc
