@@ -2,12 +2,9 @@
 case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
-from CIME.case_submit               import submit
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, run_sub_or_cmd
-from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
-from CIME.preview_namelists         import create_namelists
 
 import shutil, time, sys, os, glob
 
@@ -19,7 +16,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     # Pre run initialization code..
     if da_cycle > 0:
-        create_namelists(case, component='cpl')
+        case.create_namelists(component='cpl')
         return
 
     caseroot = case.get_value("CASEROOT")
@@ -33,7 +30,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
         shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
-    check_lockedfiles(case)
+    case.check_lockedfiles()
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
@@ -68,9 +65,9 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
     # variable while the job is in the queue
     if skip_pnl:
-        create_namelists(case, component='cpl')
+        case.create_namelists(component='cpl')
     else:
-        create_namelists(case)
+        case.create_namelists()
 
     logger.info("-------------------------------------------------------------------------")
     logger.info(" - Prestage required restarts into {}".format(rundir))
@@ -132,7 +129,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                         lid = new_lid()
                         loop = True
 
-                        create_namelists(case)
+                        case.create_namelists()
 
                         case.spare_nodes -= num_fails
 
@@ -235,7 +232,7 @@ def _resubmit_check(case):
         else:
             job = "case.run"
 
-        submit(case, job=job, resubmit=True)
+        case.submit(job=job, resubmit=True)
 
 ###############################################################################
 def _do_external(script_name, caseroot, rundir, lid, prefix):

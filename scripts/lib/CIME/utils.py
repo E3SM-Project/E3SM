@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, fnmatch
 import errno, signal, warnings, filecmp
 import stat as statlib
 import six
@@ -853,6 +853,18 @@ def get_charge_account(machobj=None):
 
     logger.info("No charge_account info available, using value from PROJECT")
     return get_project(machobj)
+
+def find_files(rootdir, pattern):
+    """
+    recursively find all files matching a pattern
+    """
+    result = []
+    for root, _, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
 
 
 def setup_standard_logging_options(parser):

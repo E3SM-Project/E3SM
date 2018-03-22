@@ -5,7 +5,6 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 """
 
 from standard_script_setup import *
-from CIME.case_submit import submit
 from CIME.case        import Case
 
 ###############################################################################
@@ -68,7 +67,7 @@ def _main_func(description):
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
 
     with Case(caseroot, read_only=False) as case:
-        submit(case, job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,
+        case.submit(job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,
                skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
                batch_args=batch_args)
 

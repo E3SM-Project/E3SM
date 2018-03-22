@@ -9,9 +9,7 @@ submit, check_case and check_da_settings are members of class Case in file case.
 import socket
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
-from CIME.preview_namelists         import create_namelists
-from CIME.check_lockedfiles         import check_lockedfiles, check_lockedfile, unlock_file, lock_file
-from CIME.check_input_data          import check_all_input_data
+from CIME.locked_files         import unlock_file, lock_file
 from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
@@ -59,7 +57,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
 
         env_batch_has_changed = False
         try:
-            check_lockedfile(case, os.path.basename(env_batch.filename))
+            case.check_lockedfile(os.path.basename(env_batch.filename))
         except SystemExit:
             env_batch_has_changed = True
 
@@ -76,8 +74,8 @@ manual edits to these file will be lost!
         lock_file(os.path.basename(env_batch.filename))
 
         if job in ("case.test","case.run"):
-            check_case(case)
-            check_DA_settings(case)
+            case.check_case()
+            case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
                     fd.write( socket.gethostname())
@@ -136,10 +134,10 @@ def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
         raise
 
 def check_case(self):
-    check_lockedfiles(self)
-    create_namelists(self) # Must be called before check_all_input_data
+    self.check_lockedfiles()
+    self.create_namelists() # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
-    check_all_input_data(self)
+    self.check_all_input_data()
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

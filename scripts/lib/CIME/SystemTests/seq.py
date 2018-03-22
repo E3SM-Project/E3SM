@@ -3,8 +3,6 @@ sequencing bfb test (10 day seq,conc tests)
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.check_lockedfiles import *
-import shutil
 
 logger = logging.getLogger(__name__)
 

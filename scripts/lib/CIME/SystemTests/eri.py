@@ -3,8 +3,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.check_input_data import check_all_input_data
-from CIME.case_setup import case_setup
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -93,10 +91,10 @@ class ERI(SystemTestsCommon):
         clone1.set_value("REST_N", rest_n1)
         clone1.set_value("HIST_OPTION", "never")
         clone1.flush()
-        case_setup(clone1, test_mode=True, reset=True)
+        clone1.case_setup(test_mode=True, reset=True)
 
         # if the initial case is hybrid this will put the reference data in the correct location
-        check_all_input_data(clone1)
+        clone1.check_all_input_data()
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
@@ -141,7 +139,7 @@ class ERI(SystemTestsCommon):
         clone2.set_value("HIST_OPTION",   stop_option)
         clone2.set_value("HIST_N",        hist_n)
         clone2.flush()
-        case_setup(clone2, test_mode=True, reset=True)
+        clone2.case_setup(test_mode=True, reset=True)
 
         rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
