@@ -1277,7 +1277,7 @@ contains
        elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)= coef + tc2_geopotential(elem(ie)%spherep(:,:))
        do k=1,nlev
-          elem(ie)%state%p(:,:,k,n0)= 9.8e-3 !pmean-coef
+          elem(ie)%state%p(:,:,k,n0)= 9.8e-6 !pmean-coef
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
