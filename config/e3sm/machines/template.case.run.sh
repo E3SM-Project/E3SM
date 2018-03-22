@@ -28,7 +28,7 @@ source .env_mach_specific.sh
 # ./check_lockedfiles
 
 # setup OMP_NUM_THREADS
-export OMP_NUM_THREADS=$("./xmlquery THREAD_COUNT --value")
+export OMP_NUM_THREADS=$(./xmlquery THREAD_COUNT --value)
 
 # save prerun provenance?
 
