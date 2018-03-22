@@ -91,6 +91,8 @@ contains
     call addfld ('RKZ_lmt5_flg',  (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger limiter 5')
     call addfld ('RKZ_lmt45_flg', (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger both limiter 4 and limiter 5')
 
+    call addfld ('RKZ_gam',  (/'lev'/), 'I', '1', 'coefficient for (dqsat/dT)*(lv/cp) or alpha*beta used in simple condensation model')
+
   end subroutine simple_RKZ_init
 
   !------------------------------------------------------------------------
@@ -215,6 +217,7 @@ contains
   logical :: lcondition4_ql(pcols,pver)  ! condition is met for triggering limiter 4 to prevent negative ql
   logical :: lcondition5   (pcols,pver)  ! condition is met for triggering limiter 5
 
+
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
   ncol  = state%ncol
@@ -230,6 +233,7 @@ contains
   end do
   call outfld('RKZ_qsat',    qsat,    pcols, lchnk)
   call outfld('RKZ_dqsatdT', dqsatdT, pcols, lchnk)
+  call outfld('RKZ_gam',     gam,     pcols, lchnk)
 
   ! Calculate the grid-box-mean relative humidity (rhgbm)
 
@@ -273,12 +277,19 @@ contains
 
      select case (rkz_term_A_opt) 
      case(0) ! omit this term
-        term_A = 0._r8
+        term_A(:ncol,:pver) = 0._r8
 
      case(1)
         term_A(:ncol,:pver) = ast(:ncol,:pver)     &
                            *( qtend(:ncol,:pver) - dqsatdT(:ncol,:pver)*ttend(:ncol,:pver) ) &
                            /( 1._r8 + gam(:ncol,:pver) )
+     case(21)
+     !use the RK98 formula,the first part on the right side of equation.           
+     !note that gam=alpha*beta
+        term_A(:ncol,:pver) = ast(:ncol,:pver)     &
+                           *( qtend(:ncol,:pver) - dqsatdT(:ncol,:pver)*ast(:ncol,:pver)*ttend(:ncol,:pver) ) &
+                           /( 1._r8 + ast(:ncol,:pver)*gam(:ncol,:pver))
+
      case default
          write(iulog,*) "Unrecognized value of rkz_term_A_opt:",rkz_term_A_opt,". Abort."
          call endrun
@@ -290,7 +301,7 @@ contains
 
      select case (rkz_term_B_opt) 
      case(0) ! omit this term
-        term_B = 0._r8
+        term_B(:ncol,:pver) = 0._r8
 
      case(1) 
      ! Following Zhang et al. (2003), assume the in-cloud A_l equals the grid-box mean A_l.
@@ -314,6 +325,11 @@ contains
         where( ltend(:ncol,:pver) .lt. 0._r8)
           term_B(:ncol,:pver) = 0._r8
         end where
+
+     case(20) 
+     !!Origionally, there are only two terms on the right side of RK98 formula, 
+     !!thus, term B should be always zero at any time
+        term_B(:ncol,:pver) = 0._r8
 
      case default
          write(iulog,*) "Unrecognized value of rkz_term_B_opt:",rkz_term_B_opt,". Abort."
@@ -351,7 +367,7 @@ contains
 
      select case (rkz_term_C_opt)
      case(0)  ! omit this term
-        term_C = 0._r8
+        term_C(:ncol,:pver) = 0._r8
 
      case(1) ! Use simple finite-difference to approximate df/dt
         term_C(:ncol,:pver) = ql_incld(:ncol,:pver)* rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) )
@@ -386,7 +402,7 @@ contains
         ! Now calculate the denominator of the grid-box mean condensation rate.
         ! rdenom = 1/denominator.
 
-        rdenom(:ncol,:pver) = 1._r8/( 1.+ ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)*zc3(:ncol,:pver) )
+        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)*zc3(:ncol,:pver) )
 
         ! Calculate term C, then use the same denominator to re-scale all three terms (A, B, and C). 
 
@@ -403,6 +419,37 @@ contains
         zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver) !C_gamma
         term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)* &
                               (zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver))
+
+     case(21) !!term C for RK98 scheme with the finite difference method the same as case (1)
+        ! use the finite difference to estimate df/dt, which is (fnew-fold)/(tn+1-tn)
+        ! term_C = ql_incld*(df/dt)/(1+f*alpha*beta)
+         term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) ) &
+                              /( 1._r8 + ast(:ncol,:pver)*gam(:ncol,:pver) )
+
+     case(22) !!term C for RK98 scheme with analytical method the same as case (2) 
+        ! df/dt = df/dRH * dRH/dt = df/dRH * (dRH/dqv + dRH/dT) 
+        ! The zforcing and zc3 are exactly the same as those in case (2) Copy and use them here
+        ! Refer to case(2) part for detailed information for these two variables 
+        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
+                                 -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver)) &
+                               /qsat(:ncol,:pver)
+
+        zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver) )/qsat(:ncol,:pver)
+
+        ! Now calculate the denominator of the grid-box mean condensation rate.
+        ! rdenom = 1/denominator. Note that this term is different to that in case(2)
+        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)*zc3(:ncol,:pver) &
+                                              /(1._r8 + ast(:ncol,:pver)*gam(:ncol,:pver)) )
+        ! Calculate term C, then use the same denominator to re-scale all
+        ! three terms (A, B, and C). 
+
+        term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)*zforcing(:ncol,:pver) &
+                             /(1._r8 + ast(:ncol,:pver)*gam(:ncol,:pver))
+
+        term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
+
      case default
          write(iulog,*) "Unrecognized value of rkz_term_C_opt:",rkz_term_C_opt,". Abort."
          call endrun
@@ -435,7 +482,14 @@ contains
      case(3)
          dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver) )
 
+     case(21)
+         dfdt(:ncol,:pver) = rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) )
+
+     case(22)
+         dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qme(:ncol,:pver) )
+
      end select
+
      call outfld('RKZ_dfdt', dfdt, pcols, lchnk)
 
 
