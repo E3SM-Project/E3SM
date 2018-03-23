@@ -209,7 +209,12 @@ class EnvBatch(EnvBase):
         if self._batchtype == 'none':
             return
 
+        known_jobs = self.get_jobs()
+
         for job, jsect in batch_jobs:
+            if job not in known_jobs:
+                continue
+
             walltime    = case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) if case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) else None
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
             logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
