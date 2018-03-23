@@ -193,29 +193,31 @@ def _add_to_lat_lon_metrics_table(metrics_path, season, row_name):
             LAT_LON_TABLE_INFO[season][row_name] = collections.OrderedDict()
         LAT_LON_TABLE_INFO[season][row_name]['metrics'] = metrics_dict
 
-def _create_csv_from_dict(output_dir, season, test_name):
+def _create_csv_from_dict(output_dir, season, test_name, run_type):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     table_path = os.path.join(output_dir, season + '_metrics_table.csv')
 
-    col_names = ['Variables', 'Unit', 'Model mean', 'Obs mean', 'Mean Bias', 'RMSE', 'correlation']
+    col_names = ['Variables', 'Unit', 'Test_mean', 'Ref._mean', 'Mean_Bias', 'Test_STD', 'Ref._STD', 'RMSE', 'Correlation']
 
     with open(table_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             metrics = metrics_dic['metrics']
-            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+            if run_type == 'model_vs_model':
+                key = key.split()[0] + ' ' +key.split()[1]
+            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3),round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
             writer.writerow(row)
 
     return table_path
 
-def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
+def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, ref_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it.
     Since the Taylor Diagram uses the same seasons as LAT_LON_TABLE_INFO, we can use that."""
     taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
     control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
 
-    col_names = ['Variables', 'Model std', 'Obs std', 'correlation']
+    col_names = ['Variables', 'Test_STD', 'Ref._STD', 'Correlation']
 
     with open(taylor_diag_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
@@ -223,10 +225,17 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
 
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             # only include variables in a a certain list for taylor diagram
-            if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:
-                metrics = metrics_dic['metrics']
-                row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
-                writer.writerow(row)
+            if run_type == 'model_vs_obs':
+                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:
+                    metrics = metrics_dic['metrics']
+                    row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
+                    writer.writerow(row)
+            else:
+                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF']:
+                    metrics = metrics_dic['metrics']
+                    row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
+                    writer.writerow(row)
+                  
     
     with open(taylor_diag_path, 'r') as taylor_csv:
         reader = csv.reader(taylor_csv, delimiter = ",")
@@ -251,7 +260,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
         matplotlib.rcParams.update({'font.size': 20})
         fig = plt.figure(figsize=(9,8))
         refstd =  1.0
-        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "OBS")
+        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "REF")
         ax = taylordiag._ax
         
         # Add samples to taylor diagram
@@ -267,18 +276,22 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
 
 
         # Add samples for baseline simulation:
-        for irow in range(1,row_count):
-            if data[irow][0] in keys_control_runs:
-                control_irow = keys_control_runs.index(data[irow][0])
-                #print control_irow
-                std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
-                #print std_norm, correlation
-                taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
+        if run_type == 'model_vs_obs':
+            for irow in range(1,row_count):
+                if data[irow][0] in keys_control_runs:
+                    control_irow = keys_control_runs.index(data[irow][0])
+                    #print control_irow
+                    std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
+                    #print std_norm, correlation
+                    taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
+    
+                baseline_text = 'E3SMv0_B1850'
+                ax.text(0.6, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
 
-        baseline_text = 'E3SMv0_B1850'
-        model_text = test_name
-        ax.text(0.7, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
-        ax.text(0.7, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
+        model_text = 'test model: ' +test_name
+        ax.text(0.6, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
+        if run_type == 'model_vs_model':
+            ax.text(0.6, 0.95, 'ref. model: '+ref_name, ha='left', va='center', transform=ax.transAxes,color='k', fontsize=12)
 
         plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
@@ -438,7 +451,7 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
         os.mkdir(table_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name)
+        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name, parameters[0].run_type)
         html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
 
         # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
@@ -458,11 +471,11 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
 
     season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, parameters[0].ref_name)
         # Remove any reference to the results_dir when inserting the links into HTML pages.
         # This is because that folder can be renamed.
-        csv_path = csv_path.split('/')[1:]  
-        csv_path = '/'.join(csv_path)
+        csv_path = csv_path.split('viewer')[-1]
+        csv_path = 'viewer' + csv_path
 
         season_to_png[season] = csv_path.replace('csv', 'png')
 
@@ -537,14 +550,21 @@ def create_viewer(root_dir, parameters, ext):
                         row_name_and_fnm = []
 
                         if parameter.plevs == []:  # 2d variables
-                            row_name = '{} {} {}'.format(var, region, ref_name)
+                            if parameter.run_type == 'model_vs_model':
+                                row_name = '{} {}'.format(var, region)
+                            else: 
+                                row_name = '{} {} {}'.format(var, region, ref_name)
                             fnm = '{}-{}-{}-{}'.format(ref_name,
                                                        var, season, region)
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{}-{} {} {}'.format(
-                                    var, str(int(plev)) + 'mb', region, ref_name)
+                                if parameter.run_type == 'model_vs_model':
+                                    row_name = '{}-{} {}'.format(
+                                        var, str(int(plev)) + 'mb', region)
+                                else:
+                                    row_name = '{}-{} {} {}'.format(
+                                        var, str(int(plev)) + 'mb', region, ref_name)
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
