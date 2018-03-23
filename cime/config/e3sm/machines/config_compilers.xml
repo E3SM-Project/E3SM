@@ -651,6 +651,47 @@ for mct, etc.
   <ADD_CFLAGS> -axMIC-AVX512 -xCORE-AVX2 </ADD_CFLAGS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="stampede2">
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</ADD_FFLAGS>
+  <!--ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -qopt-zmm-usage=high</ADD_FFLAGS-->
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+
+  <MPI_LIB_NAME>impi</MPI_LIB_NAME>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+
+  <!--ADD_FFLAGS> -xCORE-AVX512 </ADD_FFLAGS-->
+  <!--ADD_CFLAGS> -xCORE-AVX512 </ADD_CFLAGS-->
+  <ADD_FFLAGS> -xCORE-AVX2 </ADD_FFLAGS>
+  <ADD_CFLAGS> -xCORE-AVX2 </ADD_CFLAGS>
+
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+
+  <HDF5_PATH>$(TACC_HDF5_DIR)</HDF5_PATH>
+
+  <PNETCDF_PATH MPILIB="impi">$(TACC_PNETCDF_DIR)</PNETCDF_PATH>
+  <NETCDF_PATH MPILIB="impi">$(TACC_NETCDF_DIR)</NETCDF_PATH>
+  <ADD_SLIBS MPILIB="impi"> -L$(NETCDF_PATH) -lnetcdff -Wl,--as-needed,-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+
+  <NETCDF_PATH MPILIB="mpi-serial">$(TACC_NETCDF_DIR)</NETCDF_PATH>
+  <ADD_SLIBS MPILIB="mpi-serial"> -L$(NETCDF_PATH) -lnetcdff -Wl,--as-needed,-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
+
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
+</compiler>
+
 <compiler COMPILER="intel" MACH="eos">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
