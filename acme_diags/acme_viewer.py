@@ -385,7 +385,7 @@ def _create_lat_lon_table_index(viewer, root_dir):
 
     for s in seasons:
         if s in LAT_LON_TABLE_INFO:
-            viewer.add_col(LAT_LON_TABLE_INFO[s]['html_path'], is_file=False, title=s)
+            viewer.add_col(LAT_LON_TABLE_INFO[s]['html_path'], is_file=True, title=s)
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
