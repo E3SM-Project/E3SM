@@ -457,11 +457,14 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
 
             function_name = job.replace(".", "_")
+            function = getattr(case, function_name)
+            
             if not dry_run:
+                print "HERE function={} locals={} function_name={}".format(function, locals(), function_name)
                 if "archive" not in function_name:
-                    case.locals()[function_name](skip_pnl=skip_pnl)
+                    getattr(case,function_name)(skip_pnl=skip_pnl)
                 else:
-                    case.locals()[function_name]()
+                    getattr(case,function_name)()
 
             return
 
