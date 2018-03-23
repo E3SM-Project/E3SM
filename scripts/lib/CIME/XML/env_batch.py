@@ -114,7 +114,7 @@ class EnvBatch(EnvBase):
 
         return results
 
-    def create_job_groups(self, batch_jobs):
+    def create_job_groups(self, batch_jobs, is_test):
         # Subtle: in order to support dynamic batch jobs, we need to remove the
         # job_submission group and replace with job-based groups
 
@@ -129,14 +129,19 @@ class EnvBatch(EnvBase):
         self.remove_child(orig_group)
 
         for name, jdict in batch_jobs:
-            new_job_group = self.make_child("group", {"id":name})
-            for field in jdict.keys():
-                val = jdict[field]
-                node = self.make_child("entry", {"id":field,"value":val}, root=new_job_group)
-                self.make_child("type", root=node, text="char")
+            if name in ["case.run", "case.run.sh"] and is_test:
+                pass # skip
+            elif name == "case.test" and not is_test:
+                pass # skip
+            else:
+                new_job_group = self.make_child("group", {"id":name})
+                for field in jdict.keys():
+                    val = jdict[field]
+                    node = self.make_child("entry", {"id":field,"value":val}, root=new_job_group)
+                    self.make_child("type", root=node, text="char")
 
-            for child in childnodes:
-                self.add_child(self.copy(child), root=new_job_group)
+                for child in childnodes:
+                    self.add_child(self.copy(child), root=new_job_group)
 
     def cleanupnode(self, node):
         if self.get(node, "id") == "batch_system":
@@ -169,7 +174,6 @@ class EnvBatch(EnvBase):
         if batchobj.machine_node is not None:
             self.add_child(self.copy(batchobj.machine_node))
         self.set_value("BATCH_SYSTEM", batch_system_type)
-
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
@@ -743,7 +747,7 @@ class EnvBatch(EnvBase):
     def make_all_batch_files(self, case, test_mode=False):
         testcase = case.get_value("TESTCASE")
         machdir  = case.get_value("MACHDIR")
-        logger.info("Creating batch script case.run")
+        logger.info("Creating batch scripts")
         for job in self.get_jobs():
             input_batch_script = os.path.join(machdir,self.get_value('template', subgroup=job))
             if job == "case.test" and testcase is not None and not test_mode:

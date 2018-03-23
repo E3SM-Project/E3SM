@@ -959,7 +959,7 @@ class Case(object):
         bjobs = batch.get_batch_jobs()
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs)
+        env_batch.create_job_groups(bjobs, test)
 
         if walltime:
             self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=("case.test" if test else "case.run"))
