@@ -455,12 +455,8 @@ class EnvBatch(EnvBase):
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             logger.info("Starting job script {}".format(job))
-
             function_name = job.replace(".", "_")
-            function = getattr(case, function_name)
-            
             if not dry_run:
-                print "HERE function={} locals={} function_name={}".format(function, locals(), function_name)
                 if "archive" not in function_name:
                     getattr(case,function_name)(skip_pnl=skip_pnl)
                 else:
