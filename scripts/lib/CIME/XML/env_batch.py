@@ -756,15 +756,11 @@ class EnvBatch(EnvBase):
                                               root=node, otherroot=f2group))
         return xmldiffs
 
-    def make_all_batch_files(self, case, test_mode=False):
+    def make_all_batch_files(self, case):
         is_test = case.get_value("TEST")
         machdir  = case.get_value("MACHDIR")
         logger.info("Creating batch scripts")
         for job in self.get_jobs():
             input_batch_script = os.path.join(machdir,self.get_value('template', subgroup=job))
-            if job == "case.test" and is_test and not test_mode:
-                logger.info("Writing {} script".format(job))
-                self.make_batch_script(input_batch_script, job, case)
-            elif job != "case.test":
-                logger.info("Writing {} script from input template {}".format(job, input_batch_script))
-                self.make_batch_script(input_batch_script, job, case)
+            logger.info("Writing {} script from input template {}".format(job, input_batch_script))
+            self.make_batch_script(input_batch_script, job, case)
