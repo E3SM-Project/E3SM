@@ -385,7 +385,7 @@ def _create_lat_lon_table_index(viewer, root_dir):
 
     for s in seasons:
         if s in LAT_LON_TABLE_INFO:
-            viewer.add_col(LAT_LON_TABLE_INFO[s]['html_path'], is_file=True, title=s)
+            viewer.add_col(LAT_LON_TABLE_INFO[s]['html_path'], is_file=False, title=s)
         else:
             viewer.add_col('-----', is_file=True, title='-----')
 
@@ -474,8 +474,8 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
         csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, parameters[0].ref_name)
         # Remove any reference to the results_dir when inserting the links into HTML pages.
         # This is because that folder can be renamed.
-        csv_path = csv_path.split('/')[1:]  
-        csv_path = '/'.join(csv_path)
+        csv_path = csv_path.split('viewer')[-1]
+        csv_path = 'viewer' + csv_path
 
         season_to_png[season] = csv_path.replace('csv', 'png')
 
