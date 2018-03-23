@@ -18,7 +18,7 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random, reset_init_ql
   use random_xgc, only: init_ranx, ranx
   implicit none
   private
@@ -235,7 +235,7 @@ contains
        end if
        !!!!!!! Let the liquide water be zero in initial conditions.
        !!!!!!! This is used in convergence test of the simple condensation model.
-       if (m_cnst==2) tmp = 0.0_r8  !!!! m_cnst==2 is liquid water  
+       if ( reset_init_ql .and. (cnst_name(m_cnst).eq."CLDLIQ") ) tmp = 0.0_r8  !!!! m_cnst==2 is liquid water  
 
        if(.not. found) then
 

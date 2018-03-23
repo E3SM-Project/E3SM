@@ -31,6 +31,7 @@ module cam_control_mod
 !                             ! of perihelion plus pi (radians)
 !
 !------------------------------------------------------------
+  logical :: reset_init_ql = .false.    ! Reset initial ql to zero
 
 ! from perturb.h
       real(r8) :: pertlim     = 0.0_r8
