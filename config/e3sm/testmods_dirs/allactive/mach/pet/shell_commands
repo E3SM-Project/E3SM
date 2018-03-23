@@ -13,8 +13,7 @@ if [ `./xmlquery --value MACH` == theta ]&&
   fi
   ./xmlchange --id JOB_QUEUE --val default
   echo "new queue=default"
-  ./xmlchange --id JOB_WALLCLOCK_TIME --val 01:00:00
-  echo "new walltime=01:00:00"
+  # lnd on ne4 grid can't run with more than 128 tasks
   if [ `./xmlquery --value GRID | grep -Eo '.+l%ne4.+' | wc -l` -gt 0 ]; then
     echo "ne4 grid, setting NTASKS_LND to 128"
     ./xmlchange --id NTASKS_LND --val 128
