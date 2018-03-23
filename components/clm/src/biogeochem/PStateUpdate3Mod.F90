@@ -93,7 +93,8 @@ contains
         do j = 1, nlevdecomp
           do fc = 1,num_soilc
             c = filter_soilc(fc)
-            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - pf%primp_to_labilep_vr_col(c,j) *dt + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
+            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - pf%primp_to_labilep_vr_col(c,j) *dt &
+                 + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
           end do
         enddo
       else
@@ -138,13 +139,15 @@ contains
                smax_c = smax( isoilorder(c) )
                ks_sorption_c = ks_sorption( isoilorder(c) )
                temp_solutionp(c,j) = ps%solutionp_vr_col(c,j)
-               ps%solutionp_vr_col(c,j)      = ps%solutionp_vr_col(c,j)  + ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt &
+               ps%solutionp_vr_col(c,j)      = ps%solutionp_vr_col(c,j)  + ( flux_mineralization(c,j) &
+                    + pf%primp_to_labilep_vr_col(c,j)*dt &
                     + pf%secondp_to_labilep_vr_col(c,j)*dt &
                     + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
                     - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
                     (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
 
-               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
+               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + ((smax_c*ks_sorption_c)&
+                    /(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                     ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
                     + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
                     - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
@@ -225,10 +228,12 @@ contains
                ps%occlp_vr_col_prev(c,j)   = ps%occlp_vr_col(c,j)
                ps%primp_vr_col_prev(c,j)   = ps%primp_vr_col(c,j)
 
-               ps%secondp_vr_col(c,j) = ps%secondp_vr_col(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) - pf%secondp_to_labilep_vr_col(c,j) &
+               ps%secondp_vr_col(c,j) = ps%secondp_vr_col(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) &
+                    - pf%secondp_to_labilep_vr_col(c,j) &
                                      - pf%secondp_to_occlp_vr_col(c,j) )*dt
                ps%occlp_vr_col(c,j)   = ps%occlp_vr_col(c,j) + ( pf%secondp_to_occlp_vr_col(c,j) ) * dt
-               ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
+               ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt + pf%pdep_to_sminp_col(c)*dt &
+                    * pdep_prof(c,j)
 
                ps%secondp_vr_col_cur(c,j) = ps%secondp_vr_col(c,j)
                ps%occlp_vr_col_cur(c,j)   = ps%occlp_vr_col(c,j)

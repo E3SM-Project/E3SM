@@ -660,12 +660,18 @@ contains
 
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
-    allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
-    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
-    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
-    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
-    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 ; this%sminp_net_transport_vr_col        (:,:)   = spval
-    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
+    allocate(this%plant_pdemand_col                 (begc:endc))
+    this%plant_pdemand_col                 (:)     = nan
+    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))
+    this%plant_pdemand_vr_col (:,:) = nan
+    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools))
+    this%externalp_to_decomp_ppools_col    (:,:,:) = spval
+    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    
+    this%externalp_to_decomp_delta_col     (:)     = spval
+    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 
+    this%sminp_net_transport_vr_col        (:,:)   = spval
+    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    
+    this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
   end subroutine InitAllocate
 
