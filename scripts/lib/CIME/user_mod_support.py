@@ -93,7 +93,7 @@ def apply_user_mods(caseroot, user_mods_path, keepexe=None):
     for shell_command_file in case_shell_command_files:
         if os.path.isfile(shell_command_file):
             os.chmod(shell_command_file, 0o777)
-            run_cmd_no_fail(shell_command_file)
+            run_cmd_no_fail(shell_command_file,verbose=True)
 
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):
