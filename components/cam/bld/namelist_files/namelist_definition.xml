@@ -2697,6 +2697,14 @@ Turn on limiter 5 for condensation
 Default: FALSE
 </entry>
 
+<entry id="reset_init_ql" type="logical"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Reset initial ql in inidat.f90 in se dynamical core
+ql =0 at t=0 when this flag is .true.
+used in simple condensation model 
+Default: FALSE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
@@ -5771,12 +5779,6 @@ Default: TRUE
 
 
 <!-- SE dycore -->
-
-<entry id="reset_init_ql" type="logical" category="se"
-       group="ctl_nl" valid_values="" >
-Reset initial ql = 0. at t=0 when this flag is .true.
-Default: FALSE
-</entry>
 
 <entry id="se_nsplit" type="integer" category="se"
        group="ctl_nl" valid_values="" >
