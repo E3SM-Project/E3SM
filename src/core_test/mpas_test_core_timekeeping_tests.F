@@ -56,7 +56,7 @@ module test_core_timekeeping_tests
          call mpas_log_write(' Performing time interval tests')
 
          call mpas_log_write('  Test 1:')
-         call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 31, '0000_10:00:00', err_tmp)
+         call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 31_I8KIND, '0000_10:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
@@ -64,7 +64,7 @@ module test_core_timekeeping_tests
          end if
 
          call mpas_log_write('  Test 2:')
-         call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 31, '0000_00:00:00', err_tmp)
+         call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 31_I8KIND, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
@@ -72,7 +72,7 @@ module test_core_timekeeping_tests
          end if
 
          call mpas_log_write('  Test 3:')
-         call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 28, '0000_10:00:00', err_tmp)
+         call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 28_I8KIND, '0000_10:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
@@ -80,7 +80,7 @@ module test_core_timekeeping_tests
          end if
 
          call mpas_log_write('  Test 4:')
-         call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 28, '0000_00:00:00', err_tmp)
+         call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 28_I8KIND, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
@@ -88,7 +88,7 @@ module test_core_timekeeping_tests
          end if
 
          call mpas_log_write('  Test 5:')
-         call test_core_interval_test('0001-01-01_00:00:00', '0000-00-00_01:00:00', '0000_00:30:00', 2, '0000_00:00:00', err_tmp)
+         call test_core_interval_test('0001-01-01_00:00:00', '0000-00-00_01:00:00', '0000_00:30:00', 2_I8KIND, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
@@ -96,16 +96,23 @@ module test_core_timekeeping_tests
          end if
 
          call mpas_log_write('  Test 6:')
-         call test_core_interval_test('0001-01-01_00:00:00', '0001-01-00_00:00:00', '0001-00-00_00:00:00', 1, '0000-00-31_00:00:00', err_tmp)
+         call test_core_interval_test('0001-01-01_00:00:00', '0001-01-00_00:00:00', '0001-00-00_00:00:00', 1_I8KIND, '0000-00-31_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
             call mpas_log_write('   Result: PASSED')
          else
             call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-
+         call mpas_log_write('  Test 7:')
+         call test_core_interval_test('0000-01-01_00:00:00', '1850-00-00_00:00:00', '00:00:01', 58341600000_I8KIND, '0000-00-00_00:00:00', err_tmp)
+         if ( err_tmp == 0 ) then
+            call mpas_log_write('   Result: PASSED')
+         else
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
+         end if
 
          call mpas_log_write(' Completed time interval tests')
+
       end if
 
       call mpas_timer_stop('timekeeping tests')
@@ -114,13 +121,14 @@ module test_core_timekeeping_tests
 
    subroutine test_core_interval_test(ref_str, int1_str, int2_str, expected_divs, expected_remainder_str, ierr)!{{{
       character (len=*), intent(in) :: ref_str, int1_str, int2_str
-      integer, intent(in) :: expected_divs
+      integer (kind=I8KIND), intent(in) :: expected_divs
       character (len=*), intent(in) :: expected_remainder_str
       integer, intent(out) :: ierr
 
-      integer :: divs
+      integer (kind=I8KIND) :: divs
 
       character (len=StrKIND) :: remainder_str
+      character (len=StrKIND) :: temp_str
 
       type (mpas_time_type) :: ref_time
       type (mpas_timeinterval_type) :: int1, int2, remainder
@@ -148,7 +156,8 @@ module test_core_timekeeping_tests
       call mpas_get_timeinterval(remainder, startTimeIn=ref_time, timeString=remainder_str)
 
       call mpas_log_write('      Interval Division summary')
-      call mpas_log_write('          Divisions: $i', intArgs=(/divs/))
+      write(temp_str,*) '         Divisions: ', divs
+      call mpas_log_write(trim(temp_str))
       call mpas_log_write('          Remainder: ' // trim(remainder_str))
       call mpas_log_write('')
 
