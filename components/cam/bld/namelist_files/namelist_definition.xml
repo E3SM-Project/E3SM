@@ -5772,6 +5772,12 @@ Default: TRUE
 
 <!-- SE dycore -->
 
+<entry id="reset_init_ql" type="logical" category="se"
+       group="ctl_nl" valid_values="" >
+Reset initial ql = 0. at t=0 when this flag is .true.
+Default: FALSE
+</entry>
+
 <entry id="se_nsplit" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Number of dynamics steps per physics timestep.
