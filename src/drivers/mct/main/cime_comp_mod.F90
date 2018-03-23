@@ -2145,11 +2145,6 @@ contains
        !  (this is time that models should have before they return
        !  to the driver).  Write timestamp and run alarm status
        !----------------------------------------------------------
-       ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
-       ! of averaged fields - it does NOT control when glc is called currently -
-       ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
-       ! info if the time averaging period to accumulate information passed to glc is greater
-       ! than the glcrun interval
 
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
@@ -2160,7 +2155,6 @@ contains
        rofrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_rofrun)
        icerun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_icerun)
        glcrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun)
-       glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
        wavrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_wavrun)
        esprun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_esprun)
        ocnrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_ocnrun)
@@ -2175,16 +2169,27 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
-       ! Check alarm consistency
-       if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
-          write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
-          write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
-          write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
-          write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
-          write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
-          call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
+       if (glc_prognostic) then
+          ! Is it time to average fields to pass to glc?
+          !
+          ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
+          ! of averaged fields - it does NOT control when glc is called currently -
+          ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
+          ! info if the time averaging period to accumulate information passed to glc is greater
+          ! than the glcrun interval
+          glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
+          if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
+             write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
+             write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
+             write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
+             write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
+             write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
+             call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
+          end if
+       else
+          ! glcrun_avg_alarm shouldn't matter in this case
+          glcrun_avg_alarm = .false.
        end if
-
 
        ! this probably belongs in seq_timemgr somewhere using proper clocks
        t1hr_alarm = .false.
