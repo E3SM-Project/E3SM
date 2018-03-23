@@ -65,7 +65,7 @@ class EnvBatch(EnvBase):
         return val
 
     # pylint: disable=arguments-differ
-    def get_value(self, item, attribute=None, resolved=True, subgroup="case.run"):
+    def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
         """
         Must default subgroup to something in order to provide single return value
         """
@@ -80,13 +80,18 @@ class EnvBatch(EnvBase):
                     cnode = self.get_optional_child(item, attribute, root=bsnode)
                     if cnode is not None:
                         node = cnode
+
             if node is not None:
                 value = self.text(node)
                 if resolved:
                     value = self.get_resolved_value(value)
             else:
                 value = super(EnvBatch, self).get_value(item,attribute,resolved)
+
         else:
+            if subgroup == "PRIMARY":
+                subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
+
             value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
         return value
@@ -129,9 +134,11 @@ class EnvBatch(EnvBase):
         self.remove_child(orig_group)
 
         for name, jdict in batch_jobs:
-            if name in ["case.run", "case.run.sh"] and is_test:
+            if name == "case.run" and is_test:
                 pass # skip
             elif name == "case.test" and not is_test:
+                pass # skip
+            elif name == "case.run.sh":
                 pass # skip
             else:
                 new_job_group = self.make_child("group", {"id":name})
@@ -750,12 +757,12 @@ class EnvBatch(EnvBase):
         return xmldiffs
 
     def make_all_batch_files(self, case, test_mode=False):
-        testcase = case.get_value("TESTCASE")
+        is_test = case.get_value("TEST")
         machdir  = case.get_value("MACHDIR")
         logger.info("Creating batch scripts")
         for job in self.get_jobs():
             input_batch_script = os.path.join(machdir,self.get_value('template', subgroup=job))
-            if job == "case.test" and testcase is not None and not test_mode:
+            if job == "case.test" and is_test and not test_mode:
                 logger.info("Writing {} script".format(job))
                 self.make_batch_script(input_batch_script, job, case)
             elif job != "case.test":

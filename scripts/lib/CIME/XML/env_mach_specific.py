@@ -407,7 +407,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
         return self.text(cmd_nodes) if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
+    def get_mpirun(self, case, attribs, job, exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
