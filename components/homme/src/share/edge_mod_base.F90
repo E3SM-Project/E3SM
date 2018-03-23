@@ -15,7 +15,7 @@ module edge_mod_base
   use thread_mod, only: hthreads, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
-  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
+  use parallel_mod, only : abortmp, MPIreal_t, iam,parallel_t, &
       MAX_ACTIVE_MSG, HME_status_size, BNDRY_TAG_BASE
   use edgetype_mod, only : edgedescriptor_t, edgebuffer_t, &
       Longedgebuffer_t, Ghostbuffer3d_t, initedgebuffer_callid
@@ -211,6 +211,7 @@ contains
     allocate(edge%putmap(max_neigh_edges,nelemd))
     allocate(edge%getmap(max_neigh_edges,nelemd))
     allocate(edge%reverse(max_neigh_edges,nelemd))
+    allocate(edge%desc(nelemd))
 
 #if 0
 if(present(NewMethod)) then 
@@ -227,6 +228,7 @@ if(present(NewMethod)) then
 endif
 #endif
     do ie=1,nelemd
+       edge%desc(ie)=elem(ie)%desc
        do i=1,max_neigh_edges
           if(elem(ie)%desc%putmapP(i) == -1) then 
               edge%putmap(i,ie) = -1
@@ -349,7 +351,7 @@ endif
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
-       call haltmp('ERROR: initLongEdgeBuffer must be called before threaded reagion')
+       call abortmp('ERROR: initLongEdgeBuffer must be called before threaded reagion')
     endif
 
     nbuf=4*(np+max_corner_elem)*nelemd
@@ -401,6 +403,7 @@ endif
     deallocate(edge%putmap)
     deallocate(edge%getmap)
     deallocate(edge%reverse)
+    deallocate(edge%desc)
 
     deallocate(edge%moveLength)
     deallocate(edge%movePtr0)
@@ -476,25 +479,26 @@ endif
     real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
     integer,              intent(in)   :: kptr
     integer,              intent(in)   :: ielem
-!    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
+    integer :: i,k,ir,ll,llval,iptr, nlyr_tot
+    type (EdgeDescriptor_t), pointer  :: desc
 
     integer :: is,ie,in,iw
 
-    !call t_adj_detailf(+2)
-    !call t_startf('edgeVpack')
-
-    is = edge%putmap(south,ielem)
-    ie = edge%putmap(east,ielem)
-    in = edge%putmap(north,ielem)
-    iw = edge%putmap(west,ielem)
     if (edge%nlyr_max < (kptr+vlyr) ) then
        print *,'edge%nlyr_max = ',edge%nlyr_max
        print *,'kptr+vlyr = ',kptr+vlyr
-       call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
+       call abortmp('edgeVpack: Buffer overflow: edge%nlyr_max too small')
     endif
+
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr
+
+    is = nlyr_tot*desc%putmapP(south)
+    ie = nlyr_tot*desc%putmapP(east)
+    in = nlyr_tot*desc%putmapP(north)
+    iw = nlyr_tot*desc%putmapP(west)
    
 !dir$ ivdep
     do k=1,vlyr
@@ -509,7 +513,7 @@ endif
 
     !  This is really kludgy way to setup the index reversals
     !  But since it is so a rare event not real need to spend time optimizing
-    if(edge%reverse(south,ielem)) then
+    if(desc%reverse(south)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr = np*(kptr+k-1)+is
@@ -519,7 +523,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(east,ielem)) then
+    if(desc%reverse(east)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+ie
@@ -529,7 +533,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(north,ielem)) then
+    if(desc%reverse(north)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+in
@@ -539,7 +543,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(west,ielem)) then
+    if(desc%reverse(west)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+iw
@@ -551,52 +555,51 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(1  ,1 ,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(1  ,1 ,k)
             end do
         end if
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(np ,1 ,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(np ,1 ,k)
             end do
         end if
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(np ,np,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(np ,np,k)
             end do
         end if
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(1  ,np,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(1  ,np,k)
             end do
         end if
     end do
 
-    !call t_stopf('edgeVpack')
-    !call t_adj_detailf(-2)
-
   end subroutine edgeVpack
+
+
 
   subroutine edgeSpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
@@ -610,21 +613,23 @@ endif
 !    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
-
+    integer :: i,k,ir,ll,llval,iptr,nlyr_tot
+    type (EdgeDescriptor_t), pointer  :: desc
     integer :: is,ie,in,iw
     real (kind=real_kind) :: tmp
 
-!pw call t_adj_detailf(+2)
-!pw call t_startf('edgeSpack')
-
-    is = edge%putmap(south,ielem)
-    ie = edge%putmap(east,ielem)
-    in = edge%putmap(north,ielem)
-    iw = edge%putmap(west,ielem)
     if (edge%nlyr_max < (kptr+vlyr) ) then
-       call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+       call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
     endif
+
+
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr
+
+    is = nlyr_tot*desc%putmapS(south)
+    ie = nlyr_tot*desc%putmapS(east)
+    in = nlyr_tot*desc%putmapS(north)
+    iw = nlyr_tot*desc%putmapS(west)
 
 !dir$ ivdep
     do k=1,vlyr
@@ -636,52 +641,51 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
-!pw call t_stopf('edgeSpack')
-!pw call t_adj_detailf(-2)
-
   end subroutine edgeSpack
+
+
 
   ! =========================================
   ! LongEdgeVpack:
@@ -918,7 +922,7 @@ endif
         !      currently only supported for the uniform grid. If
         !      this is desired on a refined grid, a little bit of
         !      work will be required.
-        call haltmp("edgeVunpackVert should not be called with unstructured meshes")
+        call abortmp("edgeVunpackVert should not be called with unstructured meshes")
     end if
 
     is=edge%getmap(south,ielem)
@@ -1815,7 +1819,7 @@ endif
 
     ! make sure buffer is big enough:
     if ( (nc2-nc1+1) <  3*nc ) then
-       call haltmp("GhostVunpack:  insufficient ghost cell region")
+       call abortmp("GhostVunpack:  insufficient ghost cell region")
     endif
 
 
@@ -2080,7 +2084,7 @@ endif
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
-       call haltmp('ERROR: initGhostBuffer must be called before threaded region')
+       call abortmp('ERROR: initGhostBuffer must be called before threaded region')
     endif
 
     if (present(nhc_in)) then
