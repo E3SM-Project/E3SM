@@ -33,6 +33,7 @@ module edgetype_mod
      logical(kind=log_kind), pointer :: reverse(:,:) => null()
      integer(kind=int_kind), pointer :: moveLength(:) => null()
      integer(kind=int_kind), pointer :: movePtr0(:) => null()
+     type (EdgeDescriptor_t), pointer :: desc(:)  
      integer(kind=int_kind), dimension(:), allocatable :: Rrequest,Srequest
      integer(kind=int_kind), dimension(:,:), allocatable :: status
      integer :: nlyr ! Number of layers for the current pack/exchange/unpack
