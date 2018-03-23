@@ -44,7 +44,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
              parameter.test_name_yrs, ha='left', fontdict=plotSideTitle, color='black')
     fig.text(panel[0][0], panel[0][2] + 0.07, "Reference: " +
              parameter.reference_name, ha='left', fontdict=plotSideTitle, color='red')
-    fig.text(panel[1][0], panel[0][2] - 0.3, "Test-Reference",
+    fig.text(panel[1][0], panel[0][2] - 0.3, parameter.diff_title,
              ha='left', fontdict=plotSideTitle)
     ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # crs=ccrs.PlateCarree())
     ax.set_xlim(-90, 90)
