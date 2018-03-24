@@ -865,9 +865,10 @@ contains
 
       if (present(start)) then
         ! start and kount override other options and are not error checked
-        strt(1:2) = start
+        strt(1:2) = start(1:2)
         strt(3) = 1
-        cnt(1:2) = kount
+        cnt(1:2) = kount(1:2)
+        cnt(3) = 1
       else
         strt = 1   ! cnt set by cam_pio_var_info
         exists = use_scam_limits(File, strt, cnt)
@@ -1010,9 +1011,10 @@ contains
 
       if (present(start)) then
         ! start and kount override other options and are not error checked
-        strt(1:3) = start
+        strt(1:3) = start(1:3)
         strt(4) = 1
-        cnt(1:3) = kount
+        cnt(1:3) = kount(1:3)
+        cnt(4) = 1
       else
         strt = 1   ! cnt set by cam_pio_var_info
         exists = use_scam_limits(File, strt, cnt)
@@ -1023,7 +1025,7 @@ contains
         call calc_permutation(filedims(1:3), arraydims, perm, isperm)
         if (isperm) then
           allocate(tmp_fld(cnt(1), cnt(2), cnt(3)))
-          ierr = pio_get_var(File, varid, strt(1:3), cnt(1:3), tmp_fld)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), tmp_fld)
           do k = 1, cnt(3)
             ind(3) = k
             do j = 1, cnt(2)
@@ -1035,7 +1037,7 @@ contains
             end do
           end do
         else
-          ierr = pio_get_var(File, varid, strt(1:3), cnt(1:3), field)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), field)
         end if
       else
         call endrun(trim(subname)//': Incorrect variable rank')
