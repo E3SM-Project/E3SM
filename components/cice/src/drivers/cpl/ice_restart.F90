@@ -1446,12 +1446,12 @@
          call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
       endif
 
-      call pio_closefile(File)
-
       call PIO_freeDecomp(File,iodesc2d)
       call PIO_freeDecomp(File,iodesc3d_ncat)
       call PIO_freeDecomp(File,iodesc3d_ntilyr)
       call PIO_freeDecomp(File,iodesc3d_ntslyr)
+
+      call pio_closefile(File)
 
       call bound_state (aicen, trcrn, &
                         vicen, vsnon, &
