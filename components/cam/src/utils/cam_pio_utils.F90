@@ -37,7 +37,7 @@ module cam_pio_utils
   public :: clean_iodesc_list
 
   integer            :: pio_iotype
-  integer, parameter :: pio_rearranger = pio_rearr_subset
+  integer            :: pio_rearranger
 
   ! This variable should be private ?
   type(iosystem_desc_t), pointer, public :: pio_subsystem => null()
@@ -527,11 +527,15 @@ contains
 
   subroutine cam_pio_newdecomp(iodesc, dims, dof, dtype)
     use pio,          only: pio_initdecomp, pio_offset_kind
+    use shr_pio_mod,  only: shr_pio_getrearranger
+    use cam_instance, only: atm_id
 
     type(io_desc_t),          pointer              :: iodesc
     integer,                           intent(in)  :: dims(:)
     integer(kind=PIO_OFFSET_KIND),     intent(in)  :: dof(:)
     integer,                           intent(in)  :: dtype
+
+    pio_rearranger = shr_pio_getrearranger(atm_id)
 
     call pio_initdecomp(pio_subsystem, dtype, dims, dof, iodesc,              &
          rearr=pio_rearranger)
