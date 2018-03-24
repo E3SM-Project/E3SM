@@ -1051,7 +1051,7 @@ for mct, etc.
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.1/cnk-xl/current/</PNETCDF_PATH>
   <SCC> mpixlc_r </SCC>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
@@ -1629,7 +1629,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.1/cnk-xl/current/</PNETCDF_PATH>
   <SCC> mpixlc_r </SCC>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
