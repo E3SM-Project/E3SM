@@ -97,6 +97,9 @@ contains
     use clm_varpar     , only : numpft
     use pftvarcon      , only : allom1s, allom2s, allom1, allom2, allom3, reinickerp
     use pftvarcon      , only : ntree, nbrdlf_dcd_brl_shrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    use pftvarcon      , only : nshrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
     use pftvarcon      , only : pftpar20, pftpar28, pftpar29, pftpar30, pftpar31
     !
     ! !ARGUMENTS:
@@ -147,7 +150,10 @@ contains
        dgv_ecophyscon%allom2(m)        = allom2
        dgv_ecophyscon%allom3(m)        = allom3
        ! modification for shrubs by X.D.Z
-       if (m > ntree .and. m <= nbrdlf_dcd_brl_shrub ) then 
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+       !if (m > ntree .and. m <= nbrdlf_dcd_brl_shrub ) then
+       if (m > ntree .and. m <= nshrub ) then
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
           dgv_ecophyscon%allom1(m) = allom1s
           dgv_ecophyscon%allom2(m) = allom2s
        end if
