@@ -302,6 +302,9 @@ contains
     !
     ! !USES:
     use pftvarcon, only : noveg, nbrdlf_dcd_brl_shrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    use pftvarcon, only : nshrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                          
@@ -367,7 +370,10 @@ contains
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007. 
 
-         if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+         !if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nshrub ) then
+         !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else

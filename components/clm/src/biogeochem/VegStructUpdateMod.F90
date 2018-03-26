@@ -41,6 +41,9 @@ contains
     ! !USES:
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    use pftvarcon        , only : ntree, nshrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
     use clm_time_manager , only : get_rad_step_size
     use clm_varctl       , only : spinup_state, spinup_mortality_factor
     !
@@ -85,8 +88,9 @@ contains
     !-------------------------------------------------------------------------------
     
     associate(                                                            & 
-         ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
-         woody              =>  veg_vp%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
+         ivt                =>  veg_pp%itype                       ,      & ! Input:  [integer  (:) ] pft vegetation type
+         woody              =>  veg_vp%woody                       ,      & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
+         nonvascular        =>  veg_vp%nonvascular                 ,      & ! Input:  [integer  (:) ] nonvascluar lifeform (0 - vascular, 1=moss, 2=lichen, etc)
          slatop             =>  veg_vp%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
          dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]           
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
@@ -162,12 +166,14 @@ contains
             tsai_min = tsai_min * 0.5_r8
             tsai(p) = max(tsai_alpha*tsai_old+max(tlai_old-tlai(p),0._r8),tsai_min)
 
-            if (woody(ivt(p)) == 1._r8) then
+            !if (woody(ivt(p)) == 1._r8) then
+            if (woody(ivt(p)) >= 1._r8) then
 
                ! trees and shrubs
 
                ! if shrubs have a squat taper 
-               if (ivt(p) >= nbrdlf_evr_shrub .and. ivt(p) <= nbrdlf_dcd_brl_shrub) then
+               if ((ivt(p) >ntree .and. ivt(p) <= nshrub) .or. & ! CLM-style indexing for 'shrub'
+                   (woody(ivt(p)) == 2._r8) ) then  ! tree: 1, shrub: 2
                   taper = 10._r8
                   ! otherwise have a tall taper
                else
@@ -225,8 +231,17 @@ contains
 
                ! grasses
 
+               if(nonvascular(ivt(p)) == 1) then
+               ! moss: ranging from 0.02 - 0.1 m
+                 htop(p) = max(0.02_r8, min(0.10_r8, tlai(p) * 0.10_r8)) ! (TODO: requires further literature study on this)
+               elseif(nonvascular(ivt(p)) == 2) then
+               ! lichen: ususally composited onto/into surface (rock, bare soil, or even plant trunk/branch).
+               !         here only considering on bare/rock surface ones, i.e. distinguishable as fraction of land as one type of coverage.
+                 htop(p) = 0.01_r8
+               else
                ! height for grasses depends only on LAI
-               htop(p) = max(0.25_r8, tlai(p) * 0.25_r8)
+                 htop(p) = max(0.25_r8, tlai(p) * 0.25_r8)
+               endif
 
                htop(p) = min(htop(p),(forc_hgt_u_patch(p)/(displar(ivt(p))+z0mr(ivt(p))))-3._r8)
 
@@ -249,7 +264,10 @@ contains
          ! adjust lai and sai for burying by snow. 
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007.
-         if (ivt(p) > noveg .and. ivt(p) <= nbrdlf_dcd_brl_shrub ) then
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+         !if (ivt(p) > noveg .and. ivt(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (ivt(p) > noveg .and. woody(ivt(p)) == 1._r8 ) then
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else

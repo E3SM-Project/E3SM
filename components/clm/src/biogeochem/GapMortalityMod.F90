@@ -120,10 +120,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                              & 
-         ivt                                 =>    veg_pp%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type                                
-
-         woody                               =>    veg_vp%woody                                        & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
-         
+         ivt                                 =>    veg_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type
+         woody                               =>    veg_vp%woody                                             & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform
          )
 
       ! set the mortality rate based on annual rate
@@ -576,7 +574,7 @@ contains
 
 
     associate(                                                      &
-       ivt            =>    veg_pp%itype                             , & ! Input:[integer  (:)   ]  patch vegetation type                                
+       ivt            =>    veg_pp%itype                          , & ! Input:[integer  (:)   ]  patch vegetation type
        isoilorder     =>    cnstate_vars%isoilorder               , &
        r_mort_cal     =>    cnstate_vars%r_mort_cal_patch )
 

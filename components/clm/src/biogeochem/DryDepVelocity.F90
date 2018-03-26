@@ -143,6 +143,9 @@ CONTAINS
     use pftvarcon      , only : nbrdlf_dcd_brl_shrub,nc3_arctic_grass
     use pftvarcon      , only : nc3_nonarctic_grass, nc4_grass, nc3crop
     use pftvarcon      , only : nc3irrig, npcropmin, npcropmax
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    use pftvarcon        , only : nndllf_tree, ntree, nshrub, ngraminoid, nnonvascular
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -284,6 +287,12 @@ CONTAINS
             if (clmveg == nc3crop                             ) wesveg = 2 
             if (clmveg == nc3irrig                            ) wesveg = 2 
             if (clmveg >= npcropmin .and. clmveg <= npcropmax ) wesveg = 2 
+            !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+            if (clmveg > noveg .and. clmveg <= nndllf_tree    ) wesveg = 5
+            if (clmveg > nndllf_tree .and. clmveg <= ntree    ) wesveg = 4
+            if (clmveg > ntree .and. clmveg <= nshrub         ) wesveg = 11
+            if (clmveg > nshrub .and. clmveg <= nnonvascular  ) wesveg = 3 ! if regarding as 'grass'-alike; otherwise as 'nonveg' when put before 'tree'
+            !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
             if (wesveg == wveg_unset )then
                write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
                call endrun(decomp_index=pi, clmlevel=namep, &

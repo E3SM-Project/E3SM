@@ -9,13 +9,17 @@ module VOCEmissionMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use clm_varctl         , only : iulog
   use clm_varpar         , only : numpft, nlevcan
-  use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
-  use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
-  use pftvarcon          , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_brl_shrub
-  use pftvarcon          , only : nbrdlf_dcd_trp_tree, nbrdlf_dcd_tmp_tree
-  use pftvarcon          , only : nbrdlf_dcd_brl_tree, nbrdlf_evr_shrub
-  use pftvarcon          , only : nc3_arctic_grass   , nc3crop
+  !use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
+  !use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
+  !use pftvarcon          , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_brl_shrub
+  !use pftvarcon          , only : nbrdlf_dcd_trp_tree, nbrdlf_dcd_tmp_tree
+  !use pftvarcon          , only : nbrdlf_dcd_brl_tree, nbrdlf_evr_shrub
+  !use pftvarcon          , only : nc3_arctic_grass   , nc3crop
   use pftvarcon          , only : nc4_grass,           noveg
+  !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+  use pftvarcon          , only : ntree, nshrub, ngraminoid, nnonvascular, npcropmin, npcropmax
+  use pftvarcon          , only : needleleaf, evergreen
+  !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
   use shr_megan_mod      , only : shr_megan_megcomps_n, shr_megan_megcomp_t, shr_megan_linkedlist
   use shr_megan_mod      , only : shr_megan_mechcomps_n, shr_megan_mechcomps, shr_megan_mapped_emisfctrs
   use MEGANFactorsMod    , only : Agro, Amat, Anew, Aold, betaT, ct1, ct2, LDF, Ceo
@@ -688,23 +692,44 @@ contains
 
     get_map_EF = 0._r8
     
-    if (     ivt_in == ndllf_evr_tmp_tree  &
-         .or.     ivt_in == ndllf_evr_brl_tree) then   !fineleaf evergreen
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    !if (     ivt_in == ndllf_evr_tmp_tree  &
+    !     .or.     ivt_in == ndllf_evr_brl_tree) then   !fineleaf evergreen
+    !   get_map_EF = vocemis_vars%efisop_grc(2,g_in)
+    !else if (ivt_in == ndllf_dcd_brl_tree) then        !fineleaf deciduous
+    !   get_map_EF = vocemis_vars%efisop_grc(3,g_in)
+    !else if (ivt_in >= nbrdlf_evr_trp_tree &
+    !     .and.    ivt_in <= nbrdlf_dcd_brl_tree) then  !broadleaf trees
+    !   get_map_EF = vocemis_vars%efisop_grc(1,g_in)
+    !else if (ivt_in >= nbrdlf_evr_shrub &
+    !     .and.    ivt_in <= nbrdlf_dcd_brl_shrub) then !shrubs
+    !   get_map_EF = vocemis_vars%efisop_grc(4,g_in)
+    !else if (ivt_in >= nc3_arctic_grass &
+    !     .and.    ivt_in <= nc4_grass) then            !grass
+    !   get_map_EF = vocemis_vars%efisop_grc(5,g_in)
+    !else if (ivt_in >= nc3crop) then                   !crops
+    !   get_map_EF = vocemis_vars%efisop_grc(6,g_in)
+    !end if
+
+    ! note: index for a specific PFT as above is not a good approach, rather using PFT's type
+    if (     ivt_in <= ntree  ) then
+      if (needleleaf(ivt_in)>0 .and. evergreen(ivt_in)>0) then         !fineleaf evergreen
        get_map_EF = vocemis_vars%efisop_grc(2,g_in)
-    else if (ivt_in == ndllf_dcd_brl_tree) then        !fineleaf deciduous
+      else if (needleleaf(ivt_in)>0 .and. evergreen(ivt_in)<=0) then   !fineleaf deciduous
        get_map_EF = vocemis_vars%efisop_grc(3,g_in)
-    else if (ivt_in >= nbrdlf_evr_trp_tree &
-         .and.    ivt_in <= nbrdlf_dcd_brl_tree) then  !broadleaf trees
+      else if (needleleaf(ivt_in)<=0 ) then                            !broadleaf trees
        get_map_EF = vocemis_vars%efisop_grc(1,g_in)
-    else if (ivt_in >= nbrdlf_evr_shrub &
-         .and.    ivt_in <= nbrdlf_dcd_brl_shrub) then !shrubs
+      endif
+    else if (ivt_in > ntree &
+         .and.    ivt_in <= nshrub) then               !shrubs
        get_map_EF = vocemis_vars%efisop_grc(4,g_in)
-    else if (ivt_in >= nc3_arctic_grass &
-         .and.    ivt_in <= nc4_grass) then            !grass
+    else if (ivt_in > nshrub &
+         .and.    ivt_in < npcropmin) then             !grass
        get_map_EF = vocemis_vars%efisop_grc(5,g_in)
-    else if (ivt_in >= nc3crop) then                   !crops
+    else if (ivt_in >= npcropmin) then                 !crops
        get_map_EF = vocemis_vars%efisop_grc(6,g_in)
     end if
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
 
   end function get_map_EF
 
@@ -965,7 +990,8 @@ contains
     real(r8) :: elai_prev               ! lai for previous timestep
     real(r8) :: fnew, fgro, fmat, fold  ! fractions of leaves at different phenological stages
     !-----------------------------------------------------------------------
-    if ( (ivt_in == ndllf_dcd_brl_tree) .or. (ivt_in >= nbrdlf_dcd_trp_tree) ) then  ! non-evergreen
+    !if ( (ivt_in == ndllf_dcd_brl_tree) .or. (ivt_in >= nbrdlf_dcd_trp_tree) ) then  ! non-evergreen
+    if ( (ivt_in <= ntree) .and. (evergreen(ivt_in) <= 0) ) then  ! non-evergreen
        
        if ( (elai_p_in > 0.0_r8) .and. (elai_p_in < 1.e30_r8) )then 
           elai_prev = 2._r8*elai_p_in-elai_in  ! have accumulated average lai over last timestep
