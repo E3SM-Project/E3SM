@@ -65,5 +65,10 @@ setup(
     description="ACME Diagnostics.",
     scripts=["acme_diags/acme_diags_driver.py"],
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
-    data_files=data_files
+    data_files=data_files,
+    entry_points={
+        'console_scripts': [
+            'acme_diags=acme_diags.acme_diags_driver:main'
+    ]}
+
 )

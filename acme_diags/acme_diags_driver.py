@@ -73,7 +73,7 @@ def run_diag(parameters):
     return results
 
 
-if __name__ == '__main__':
+def main():
     parser = ACMEParser()
     args = parser.view_args()
 
@@ -153,4 +153,7 @@ if __name__ == '__main__':
 
     else:
         print('There was not a single valid diagnostics run, no viewer created')
+
+if __name__ == '__main__':
+    main()
 
