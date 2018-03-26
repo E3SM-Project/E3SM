@@ -11,7 +11,7 @@ module initSubgridMod
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog
-  use clm_varcon     , only : namep, namec, namel
+  use clm_varcon     , only : namep, namec, namel, namet
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc_pp                
   Use TopounitType   , only : top_pp
@@ -27,6 +27,7 @@ module initSubgridMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: clm_ptrs_compdown ! fill in data pointing down
   public :: clm_ptrs_check    ! checks and writes out a summary of subgrid data
+  public :: add_topounit      ! add an entry in the topounit-level arrays
   public :: add_landunit      ! add an entry in the landunit-level arrays
   public :: add_column        ! add an entry in the column-level arrays
   public :: add_patch         ! add an entry in the patch-level arrays

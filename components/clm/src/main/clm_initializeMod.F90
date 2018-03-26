@@ -54,7 +54,7 @@ contains
     use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
-    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
+    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
     use controlMod                , only: control_init, control_print, NLFilename

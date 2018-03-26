@@ -21,7 +21,7 @@ module initGridCellsMod
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
-  use initSubgridMod , only : add_landunit, add_column, add_patch
+  use initSubgridMod , only : add_topounit, add_landunit, add_column, add_patch
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -59,8 +59,9 @@ contains
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
-    integer :: nc,ti,li,ci,pi,gdc,topounit      ! indices
-    integer :: nclumps              ! number of clumps on this processor
+    integer :: nc,ti,li,ci,pi,gdc,topounit  ! indices
+    integer :: nclumps                      ! number of clumps on this processor
+    real(r8) :: wttopounit2gridcell         ! topounit weight on gridcell
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump
     !------------------------------------------------------------------------
@@ -127,7 +128,8 @@ contains
        ! and each topounit on the gridcell has an equal weight.
        do gdc = bounds_clump%begg, bounds_clump%endg
           do topounit = 1, max_topounits
-             call add_topounit(ti=ti, gi=gdc, wtgcell=1._r8/(max_topounits)
+             wttopounit2gridcell = 1._r8/(max_topounits)
+             call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell)
           end do
        end do
 

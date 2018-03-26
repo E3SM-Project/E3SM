@@ -95,7 +95,8 @@ module subgridWeightsMod
   use clm_varctl   , only : iulog, all_active
   use clm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc_pp                
+  use GridcellType , only : grc_pp
+  use TopounitType , only : top_pp  
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
