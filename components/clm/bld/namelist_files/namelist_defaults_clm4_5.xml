@@ -468,11 +468,11 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c171002.nc</fsurdat>
      RCP datasets contain the 1850-2000 period as well as the future period. -->
 
 <flanduse_timeseries hgrid="360x720cru"    sim_year_range="1850-2000"
- use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_360x720cru_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_360x720cru_hist_simyr1850-2015_c180220.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="0.9x1.25"      sim_year_range="1850-2000"
- use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_0.9x1.25_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.9x1.25_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="1.9x2.5"       sim_year_range="1850-2000"
- use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_1.9x2.5_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_1.9x2.5_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="10x15"         sim_year_range="1850-2000"
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_10x15_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="48x96"         sim_year_range="1850-2000"
@@ -484,7 +484,7 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c171002.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_1x1_brazil_rcp8.5_simyr1850-2100_c140610.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2000" 
- use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
