@@ -33,6 +33,11 @@ module VegetationType
   !   24 => irrigated soybean
   ! --------------------------------------------------------
   !
+  
+  ! ----------------------F.-M. Yuan (2018-03-23): user-defined parameter file ---------------------------------------------------------------------
+  ! NOTE: using 'mergetoclmpft' variable in nc parameter file as a flag
+  !       AND, the above index will be replaced by user-defined 'pft_num' and 'pft_name'
+
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varcon     , only : ispval, spval

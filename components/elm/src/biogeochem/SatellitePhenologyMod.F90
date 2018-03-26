@@ -310,6 +310,7 @@ contains
     ! (htop).
     !
     ! !USES:
+
     use clm_time_manager, only : get_curr_date, get_step_size, get_nstep
     use elm_varcon      , only : secspday
     use pftvarcon, only : noveg, nbrdlf_dcd_brl_shrub, season_decid, stress_decid
@@ -318,6 +319,10 @@ contains
     use pftvarcon, only : phen_cstar, phen_tforce, phen_tchil, phen_pstart, phen_tb, phen_ycrit 
     use pftvarcon, only : phen_spring, phen_autumn, phen_tbase, phen_crit_dayl
 !endif
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    use pftvarcon, only : nshrub
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                          
@@ -552,7 +557,10 @@ contains
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007. 
 
-         if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+         !if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nshrub ) then
+         !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else
