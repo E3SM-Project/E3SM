@@ -448,7 +448,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
         for i in range(ninst):
             restfiles = ""
             if compname.find("mpas") == 0:
-                pattern = compname + suffix + '_'.join(datename_str.rsplit('-', 1))
+                pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
