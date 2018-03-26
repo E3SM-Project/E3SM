@@ -9,11 +9,19 @@ module pftvarcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
+  use elm_varpar  , only : mxpft, numrad, ivis, inir
   use elm_varpar  , only:  mxpft_nc
   use elm_varctl  , only : iulog, use_vertsoilc
   use elm_varpar  , only : nlevdecomp_full, nsoilorder
   use elm_varctl  , only : nu_com
+  !-------------------------------------------------------------------------------------------
+  use elm_varpar  , only : crop_prog
+  use elm_varpar  , only : natpft_size, natpft_lb, natpft_ub
+  use elm_varpar  , only : cft_size, cft_lb, cft_ub
+  use elm_varpar  , only : surfpft_size, surfpft_lb, surfpft_ub
+  use elm_varpar  , only : numpft, numcft, maxpatch_pft, max_patch_per_col, maxpatch_urb
+  use elm_varctl  , only : create_crop_landunit
+  !-------------------------------------------------------------------------------------------
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -115,6 +123,7 @@ module pftvarcon
   real(r8), allocatable :: grperc(:)      !growth respiration parameter
   real(r8), allocatable :: grpnow(:)      !growth respiration parameter
   real(r8), allocatable :: rootprof_beta(:) !CLM rooting distribution parameter for C and N inputs [unitless]
+
 
   ! add pft dependent parameters for phosphorus -X.YANG
   real(r8), allocatable :: leafcp(:)      !leaf C:P [gC/gP]
@@ -303,6 +312,16 @@ module pftvarcon
   real(r8), allocatable :: gcbr_p(:)           !effectiveness of roots in reducing rainfall-driven erosion
   real(r8), allocatable :: gcbr_q(:)           !effectiveness of roots in reducing runoff-driven erosion
 
+  ! new pft properties, together with woody, crop, percrop, evergreen, stress_decid, season_decid, defined above,
+  ! are introduced to define vegetation properties. This will be well defineing a pft so that no indices needed for codes.
+  real(r8), allocatable :: climatezone(:)      ! distributed climate zone  (0 = any zone, 1 = tropical, 2 = temperate, 3 = boreal, 4 = arctic)
+  real(r8), allocatable :: nonvascular(:)      ! nonvascular lifeform flag (0 = vascular, 1 = moss, 2 = lichen)
+  real(r8), allocatable :: needleleaf(:)       ! needleleaf lifeform flag  (0 = broadleaf, 1 = needleleaf)
+  real(r8), allocatable :: graminoid(:)        ! graminoid lifeform flag   (0 = nonvascular+woody+crop+percrop, 1 = graminoid)
+  real(r8), allocatable :: generic_crop(:)     ! generic_crop   (0 = non_crop or prognostic crop, 1 = generic crop, i.e. crop when use_crop=false)
+  real(r8), allocatable :: nfixer(:)           ! nitrogen fixer flag  (0 = inable, 1 = able to nitrogen fixation from atm. N2)
+
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -347,6 +366,9 @@ contains
     integer :: dimid            ! netCDF dimension id
     integer :: npft             ! number of pfts on pft-physiology file
     logical :: readv            ! read variable in or not
+    logical :: PFT_DEFAULT      ! pft names are default, i.e. NOT user-defined
+    integer :: ncft0, ncft      ! crop pft index of first/last when 'create_crop_landunit' is true
+    integer :: noncropmax       ! max non-crop pft index (to check when 'create_crop_landunit' is true)
     character(len=32) :: subname = 'pftconrd'              ! subroutine name
     !
     ! Expected PFT names: The names expected on the paramfile file and the order they are expected to be in.
@@ -409,6 +431,24 @@ contains
     expected_pftnames(48) = 'irrigated_poplar                   '
     expected_pftnames(49) = 'willow                             '
     expected_pftnames(50) = 'irrigated_willow                   '
+
+    ! read actual 'npft' from parameter file
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read PFT physiological data .....'
+    end if
+    call getfil (paramfile, locfn, 0)
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+    call ncd_inqdid(ncid,'pft',dimid)
+    call ncd_inqdlen(ncid,dimid,npft)
+
+    ! now 'mxpft' in 'elm_varpar' updated by npft here
+    mxpft = npft - 1
+    mxpft_nc = npft - 1     ! when .not.use_crop, so here temporarily set and may be changed after read-through PFT-physiology
+
+    ! NOTES:
+    !    In parameter file, 'npft' (mxpft) [number of pfts in parameter file] can be greater than 'maxpatch_pft' [number of pfts in surfdata file] which also set by namelist 'maxpft',
+    !    but cannot be less, i.e. there cannot be more pfts in the surface file than there are set of pft parameters, if running the non-crop version of model.
+    if (npft<maxpatch_pft .and. .not.use_crop) call endrun(msg=' ERROR: pft number less than maxpatch_pft: '//errMsg(__FILE__, __LINE__))
 
     allocate( dleaf         (0:mxpft) )       
     allocate( c3psn         (0:mxpft) )       
@@ -597,19 +637,28 @@ contains
     allocate( gcbc_q             (0:mxpft) )
     allocate( gcbr_p             (0:mxpft) )
     allocate( gcbr_q             (0:mxpft) )
+    ! new pft properties
+    allocate( climatezone        (0:mxpft) )
+    allocate( nonvascular        (0:mxpft) )
+    allocate( graminoid          (0:mxpft) )
+    allocate( generic_crop       (0:mxpft) )
+    allocate( needleleaf         (0:mxpft) )
+    allocate( nfixer             (0:mxpft) )
 
     ! Set specific vegetation type values
 
-    if (masterproc) then
-       write(iulog,*) 'Attempting to read PFT physiological data .....'
-    end if
-    call getfil (paramfile, locfn, 0)
-    call ncd_pio_openfile (ncid, trim(locfn), 0)
-    call ncd_inqdid(ncid,'pft',dimid)
-    call ncd_inqdlen(ncid,dimid,npft)
 
     call ncd_io('pftname',pftname, 'read', ncid, readvar=readv, posNOTonfile=.true.) 
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
+    ! checking if using standard pft-names and default properties
+    PFT_DEFAULT = .TRUE.
+    do i = 0, min(npft,size(expected_pftnames))-1
+       if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
+          PFT_DEFAULT = .FALSE.
+       end if
+    end do
+
     call ncd_io('z0mr',z0mr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('displar',displar, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -736,6 +785,9 @@ contains
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
        call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    else
+       call ncd_io('percrop', percrop, 'read', ncid, readvar=readv)
+       if ( .not. readv ) percrop(:) = 0._r8
     end if
     if(use_dynroot)then
        call ncd_io('root_dmx',root_dmx, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -1012,7 +1064,9 @@ contains
     call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) gcbr_q(:) = 0._r8
        
-    call ncd_io('mergetoclmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
+    call ncd_io('mergetoclmpft', mergetoelmpft, 'read', ncid, readvar=readv)
+    ! in case parameter file is using 'mergetoelmpft'
+    if ( .not. readv ) call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)
     if ( .not. readv ) then
        do i = 0, mxpft
           mergetoelmpft(i) = i
@@ -1020,8 +1074,89 @@ contains
     end if
 
 
+    ! NOTE: the following 5 PFT flags/options are addtions to 'woody', 'stress_decid', 'season_decid',
+    !     'evergreen', and 'crop', 'percop'. For default ELM, will be hard-coded; while for user-defined
+    !      it must be included in physiology file.
+
+    ! if 'needleleaf' flag is defined for each PFT
+    call ncd_io('needleleaf', needleleaf, 'read', ncid, readvar=readv)
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          needleleaf(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    end if
+
+    ! if 'climatezone' flag is defined for each PFT
+    call ncd_io('climatezone', climatezone, 'read', ncid, readvar=readv)
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          climatezone(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    end if
+
+    ! if 'nfixer' flag is defined for each PFT
+    call ncd_io('nfixer', nfixer, 'read', ncid, readvar=readv)
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          nfixer(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    end if
+
+    ! if 'nonvascular' flag is defined for each PFT (0: vascular, 1: moss, 2: lichen)
+    call ncd_io('nonvascular', nonvascular, 'read', ncid, readvar=readv)
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          nonvascular(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    end if
+
+    call ncd_io('graminoid', graminoid, 'read', ncid, readvar=readv)
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          graminoid(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    end if
+
+    call ncd_io('iscft', generic_crop, 'read', ncid, readvar=readv)   ! read-in is 'CFT' or not for crop type
+    if ( .not. readv ) then
+       if (PFT_DEFAULT) then
+          generic_crop(:) = 0   ! will assign a value below
+       else
+          call endrun(msg='ERROR:  error in reading in user-defined pft data'//errMsg(__FILE__,__LINE__))
+       end if
+    else
+       do i = 0, npft-1
+          if ((crop(i)>=1 .or. percrop(i)>=1) .and. generic_crop(i)==0) then
+             ! at this moment, read-in 'generic_crop' is actually 'iscft' (i.e. crop as CFT or not)
+             ! So must re-assign
+             generic_crop(i) = 1
+          else
+             generic_crop(i) = 0
+          end if
+       end do
+    end if
+
+    ! woody=2 for shrub NOT YET ready in rest of ELM code
+    do i = 0, npft-1
+       if (woody(i)>1) woody(i) == 1
+    end do
 
     call ncd_pio_closefile(ncid)
+
+
+   if ( PFT_DEFAULT ) then
+   ! if still reading in default PFT physiology file,
+   ! pft indexing will be as old way
 
     do i = 0, mxpft
 
@@ -1032,13 +1167,13 @@ contains
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
 
        ! avd - this should be independent of FATES because it fails for non-crop config otherwise
-
-          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
+       if(.not. use_fates)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
              call endrun(msg='pftconrd: bad name for pft on paramfile dataset'//errMsg(__FILE__, __LINE__))
           end if
+       end if
 
        if ( trim(pftname(i)) == 'not_vegetated'                       ) noveg                = i
        if ( trim(pftname(i)) == 'needleleaf_evergreen_temperate_tree' ) ndllf_evr_tmp_tree   = i
@@ -1103,12 +1238,204 @@ contains
        nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
     end if
 
+   !-------------------------------------------------------------------------------------------
+    ! the following is initialized as 0 above for all PFT.
+    ! here the hard-coded values (or flags) for default ELM PFT physiology will be working as original
+    ! when not using those indexing of PFT orders anymore in other codes than here.
+    needleleaf(noveg+1:ndllf_dcd_brl_tree) = 1
+    graminoid(nc3_arctic_grass:nc4_grass) = 1
+    generic_crop(nc3crop:nc3irrig) = 1
+    nfixer(nsoybean)       = 1
+    nfixer(nsoybeanirrig)  = 1
+
+    climatezone(ndllf_evr_tmp_tree)  = 2
+    climatezone(ndllf_evr_brl_tree)  = 3
+    climatezone(ndllf_dcd_brl_tree)  = 3
+    climatezone(nbrdlf_evr_trp_tree) = 1
+    climatezone(nbrdlf_evr_tmp_tree) = 2
+    climatezone(nbrdlf_dcd_trp_tree) = 1
+    climatezone(nbrdlf_dcd_tmp_tree) = 2
+    climatezone(nbrdlf_dcd_brl_tree) = 3
+    climatezone(nbrdlf_dcd_tmp_shrub)= 2
+    climatezone(nbrdlf_dcd_brl_shrub)= 3
+    climatezone(nc3_arctic_grass)    = 4
+    !-------------------------------------------------------------------------------------------
+
+
+
+   ! NOT default PFT file
+   else
+
+       ! not vegetated checking
+       noveg = -1
+
+       ! when user-defined PFTs, if crop included, it must be the default way:
+       ! cropts must be in one block and after nat-pft if 'create_crop_landunit' or 'use_crop' is true
+       npcropmin            = -1                   ! first prognostic crop
+       npcropmax            = -1                   ! last prognostic crop in list
+       nppercropmin         = -1                   ! first prognostic perennial crop
+       nppercropmax         = -1                   ! last prognostic perennial crop in list
+
+       numcft = 0
+       ncft   = -1
+       ncft0  = -1
+       noncropmax = 0
+       do i = 0, npft-1
+          if (crop(i)>=1 .or. percrop(i)>=1 .or. generic_crop(i)>=1) then
+              numcft = numcft + 1
+
+              if(use_crop) then
+                 ! if 'generic_crop' specifically defined,
+                 ! 'crop' will not be counted into prognostic
+                 if (crop(i)>=1 .and. generic_crop(i)==0) then
+                    npcropmax = i
+                    if(npcropmin<=0) npcropmin = i
+                 end if
+
+                 ! NOTE: there is a misunderstanding in pft physiology parameter file: 'perennial crop' IS NOT 'crop',
+                 !       but still counted into 'numcft'
+                 if(percrop(i)==1) then
+                    nppercropmax = i
+                    if(nppercropmin<=0) nppercropmin = i
+                 end if
+
+              else
+                 if(crop(i)>=1 .or. generic_crop(i)>=1) then
+                    ! in case either 'crop' or 'generic_crop' or both defined when not use_crop=.true.
+                    generic_crop(i) = 1
+                 else
+                    generic_crop(i) = 0
+                 end if
+              end if
+
+              !
+              if (create_crop_landunit) then
+                 ! make sure all crop-pft are in one block and following nat-pft SO THAT creating crop landunit is possible
+                 ncft = ncft + 1
+                 if (ncft0<0) ncft0=i
+              end if
+
+          !
+          else if (create_crop_landunit) then
+              noncropmax = i
+
+          end if
+
+          ! need to check 'noveg'
+          if ( woody(i)<=0 .and. graminoid(i)<=0 .and. nonvascular(i)<=0 .and. &
+               generic_crop(i)<=0 .and. crop(i)<=0 .and. percrop(i)<=0) then
+              if (noveg>=0) then
+                 ! not yet support multiple non-vegetated PFT
+                 ! this also will catch error of no actual PFT if npft>1
+                 call endrun(msg=' ERROR: more than 1 not vegetated in physiology parameter nc file.'//errMsg(__FILE__, __LINE__))
+              else
+                 noveg = i
+              end if
+          end if
+
+          !
+       end do
+
+       ! make sure non-generic crop indices always beyond natural-pft, even if not available - used in filterMod.F90)
+       if (npcropmin < 0 .and. npcropmax < 0) then
+          npcropmin = npft
+          npcropmax = npft
+       end if
+
+       ! MUST re-do some constants which already set in 'elm_varpar.F90:elm_varpar_init()'
+       mxpft_nc     = min(maxpatch_pft,npft) - 1      ! user-defined is what max.
+       numpft       = min(maxpatch_pft,npft) - 1      ! actual # of patches (without bare)
+
+       if (create_crop_landunit) then
+          if (ncft0 /= noncropmax+1) then
+             call endrun(msg=' ERROR: when create_crop_landunit is true, crop must be following non-crop PFT .'//errMsg(__FILE__, __LINE__))
+          end if
+          if (ncft /= npft-1) then
+             call endrun(msg=' ERROR: when create_crop_landunit is true, last crop must be the last one of all PFTs .'//errMsg(__FILE__, __LINE__))
+          end if
+
+          natpft_size = (numpft + 1) - numcft    ! note that numpft doesn't include bare ground -- thus we add 1
+          cft_size    = numcft
+       else
+          natpft_size = numpft + 1               ! note that numpft doesn't include bare ground -- thus we add 1
+          cft_size    = 0
+       end if
+       natpft_lb = 0
+       natpft_ub = natpft_lb + natpft_size - 1
+       cft_lb = natpft_ub + 1
+       cft_ub = max(cft_lb, cft_lb + cft_size - 1)            ! NOTE: if cft_size is ZERO, could be issue (but so far so good)
+       surfpft_lb  = natpft_lb
+       surfpft_ub  = natpft_ub
+       surfpft_size = natpft_size
+       max_patch_per_col= max(numpft+1, numcft, maxpatch_urb)
+
+
+   end if  ! end if 'PFT_DEFAULT'
+
+     ! checking of pft flags' conflict
+     if ( .not. use_fates ) then
+        do i = 0, mxpft
+          if (i == noveg) then
+             if ( (nonvascular(i)+woody(i)+graminoid(i)+generic_crop(i)+crop(i)+percrop(i)) >= 1 .or. &
+                  (needleleaf(i)+evergreen(i)+stress_decid(i)+season_decid(i)+nfixer(i)) >= 1 ) then
+                print *, 'ERROR: Incorrect not-vegetated PFT flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: not_vegetated has at least one positive PFT flag '//errMsg(__FILE__, __LINE__))
+             end if
+
+          else if ( (nonvascular(i)+woody(i)+graminoid(i)+generic_crop(i)+crop(i)+percrop(i)) >= 1) then
+             if (nonvascular(i) >= 1 .and. (woody(i)+graminoid(i)+generic_crop(i)+crop(i)+percrop(i)) >= 1) then
+                print *, 'ERROR: Incorrect nonvasculr PFT flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: nonvascular PFT cannot be any of woody/graminoid/crop type '//errMsg(__FILE__, __LINE__))
+             else if (woody(i) >= 1 .and. (nonvascular(i)+graminoid(i)+generic_crop(i)+crop(i)+percrop(i)) >= 1) then
+                print *, 'ERROR: Incorrect woody PFT flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: woody PFT cannot be any of nonvascular/graminoid/crop type - '//errMsg(__FILE__, __LINE__))
+             else if (graminoid(i) >= 1 .and. (nonvascular(i)+woody(i)+generic_crop(i)+crop(i)+percrop(i)) >=1 ) then
+                print *, 'ERROR: Incorrect graminoid PFT flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: graminoid PFT cannot be any of nonvascular/woody/crop type - '//errMsg(__FILE__, __LINE__))
+             else if ( (generic_crop(i)+crop(i)+percrop(i)) >= 1 .and. (nonvascular(i)+woody(i)+graminoid(i)) >= 1) then
+                print *, 'ERROR: Incorrect crop PFT flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: crop PFT cannot be any of nonvascular/woody/graminoid type - '//errMsg(__FILE__, __LINE__))
+             end if
+
+             if( (stress_decid(i)*season_decid(i)) >= 1 ) then
+                print *, 'ERROR: Incorrect stress_decid or season_decid flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: stress_decid AND season_decid cannot be both 1 - '//errMsg(__FILE__, __LINE__))
+             elseif( (evergreen(i)*(stress_decid(i)+season_decid(i)) ) >= 1 ) then
+                print *, 'ERROR: Incorrect evergreen AND season_/stress_decid flags: ', i, ' ', trim(pftname(i))
+                call endrun(msg=' ERROR: evergreen AND (stress_decid OR season_decid) cannot be both 1 - '//errMsg(__FILE__, __LINE__))
+             end if
+
+          else
+
+             call endrun(msg=' ERROR: not_vegetated AND none of vegetation type for PFT - '//errMsg(__FILE__, __LINE__))
+
+          end if
+
+        end do
+     end if
+
+     ! information
+     if (masterproc) then
+           write(iulog,*)
+           write(iulog,*) 'Using PFT physiological parameters from: ', paramfile
+           write(iulog,*) '        -- index -- name                                 -- climate zone --    -- woody --     -- needleleaf --    -- evergreen --    -- stress_decid --    -- season_decid --    -- graminoid--    -- generic_crop --   -- crop --    -- perennial crop --    -- nfixer --'
+           do i = 0, npft-1
+               write(iulog,*) i, pftname(i), int(climatezone(i)), int(woody(i)), int(needleleaf(i)), &
+                int(evergreen(i)), int(stress_decid(i)), int(season_decid(i)), &
+                int(graminoid(i)), int(generic_crop(i)), int(crop(i)), int(percrop(i)), int(nfixer(i))
+           end do
+           write(iulog,*)
+     end if
+
+
+    !-------------------------------------------------------------------------------------------
+
     call set_is_pft_known_to_model()
-    call set_num_cfts_known_to_model()
+    if (cft_size>0) call set_num_cfts_known_to_model()
 
     if( .not. use_fates ) then
        if( .not. use_crop) then
-          if ( npcropmax /= mxpft_nc )then
+          if ( npcropmax /= mxpft_nc .and. crop_prog)then
              call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
           end if
        else
@@ -1118,6 +1445,7 @@ contains
        end if
        do i = 0, mxpft
           if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
+          if(.not.PFT_DEFAULT) EXIT  ! no checking of indexing PFTs for user-defined
           if( .not. use_crop) then
              if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
                                                  i == ncornirrig .or. &
