@@ -584,17 +584,17 @@ contains
 
     select case (clmlevel)
     case(grlnd)
-       gsmap => gsmap_lnd_gdc2glo
+       gsmap => gsMap_lnd_gdc2glo
     case(nameg)
-       gsmap => gsmap_gce_gdc2glo
+       gsmap => gsMap_gce_gdc2glo
     case(namet)
-       gsmap => gsmap_top_gdc2glo
+       gsmap => gsMap_top_gdc2glo
     case(namel)
-       gsmap => gsmap_lun_gdc2glo
+       gsmap => gsMap_lun_gdc2glo
     case(namec)
-       gsmap => gsmap_col_gdc2glo
+       gsmap => gsMap_col_gdc2glo
     case(namep)
-       gsmap => gsmap_patch_gdc2glo
+       gsmap => gsMap_patch_gdc2glo
     case(nameCohort)
        gsmap => gsMap_cohort_gdc2glo
     case default

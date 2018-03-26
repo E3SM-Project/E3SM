@@ -43,6 +43,7 @@ contains
     use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
+    use topounit_varcon  , only : max_topounits
     use FatesInterfaceMod, only : fates_maxElementsPerSite
 
     !
@@ -109,8 +110,8 @@ contains
     ! is a simple way to make the transition to topounits. We should return to this to see
     ! if there is a smarter way to allocate space that does not preclude land area transitions
     ! of interest.
-    ntopounits_per_gcell = 1   ! this will be replaced later with a constant > 1, or with a function call
-                               ! that sets the number of topounits uniquely for each gridcell.
+    ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
+                                          ! that sets the number of topounits uniquely for each gridcell.
     do t = 1, ntopounits_per_gcell
        
        itopounits = itopounits + 1

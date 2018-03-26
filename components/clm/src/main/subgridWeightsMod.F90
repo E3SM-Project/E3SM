@@ -214,8 +214,11 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming veg_pp%wtcol, col_pp%wtlunit and lun_pp%wtgcell have already been computed, compute
-    ! the "higher-order" weights: veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell, for all p and c
+    ! Assuming veg_pp%wtcol, col_pp%wtlunit and lun_pp%wttopounit have already been computed, compute
+    ! the "higher-order" weights: 
+    ! veg_pp%wtlunit, veg_pp%wttopounit, veg_pp%wtgcell,
+    ! col_pp%wttopounit, col_pp%wtgcell, and
+    ! lun_pp%wtgcell, for all p, c, and l
     !
     ! !USES:
     !
@@ -224,18 +227,25 @@ contains
     type(bounds_type), intent(in) :: bounds  ! clump bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p, c, l      ! indices for pft, col & landunit
+    integer :: p, c, l, t      ! indices for pft, col, landunit, and topounit
     !------------------------------------------------------------------------
+
+    do l = bounds%begl, bounds%endl
+       t = lun_pp%topounit(l)
+       lun_pp%wtgcell(l)    = lun_pp%wttopounit(l) * top_pp%wtgcell(t)
+    end do
 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       col_pp%wtgcell(c) = col_pp%wtlunit(c) * lun_pp%wtgcell(l)
+       col_pp%wttopounit(c) = col_pp%wtlunit(c) * lun_pp%wttopounit(l)
+       col_pp%wtgcell(c)    = col_pp%wtlunit(c) * lun_pp%wtgcell(l)
     end do
 
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
-       veg_pp%wtlunit(p) = veg_pp%wtcol(p) * col_pp%wtlunit(c)
-       veg_pp%wtgcell(p) = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+       veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+       veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+       veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
     end do
   end subroutine compute_higher_order_weights
 

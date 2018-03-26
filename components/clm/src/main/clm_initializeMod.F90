@@ -268,7 +268,7 @@ contains
     
 
     ! ------------------------------------------------------------------------
-    ! Determine decomposition of subgrid scale landunits, columns, patches
+    ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
@@ -319,9 +319,9 @@ contains
     ! Set global seg maps for gridcells, landlunits, columns and patches
 
     if (create_glacier_mec_landunit) then
-       call decompInit_glcp(ns, ni, nj, ldomain%glcmask)
+       call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
     else
-       call decompInit_glcp(ns, ni, nj)
+       call decompInit_gtlcp(ns, ni, nj)
     endif
 
     ! Set filters

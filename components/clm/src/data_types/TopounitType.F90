@@ -8,6 +8,7 @@ module TopounitType
   
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use landunit_varcon, only : max_lunit
   use clm_varcon     , only : ispval
   use clm_varpar     , only : numrad
 
@@ -32,6 +33,13 @@ module TopounitType
     integer , pointer :: pfti       (:) => null() ! beginning pft index for each landunit
     integer , pointer :: pftf       (:) => null() ! ending pft index for each landunit
     integer , pointer :: npfts      (:) => null() ! number of patches for each landunit
+
+    ! indices into landunit-level arrays for landunits in this topounit (ispval implies
+    ! this landunit doesn't exist on this topounit) [1:max_lunit, begt:endt]
+    ! (note that the spatial dimension is last here, in contrast to most 2-d variables;
+    ! this is for efficiency, since most loops will go over t in the outer loop, and
+    ! landunit type in the inner loop)
+    integer , pointer :: landunit_indices (:,:) => null() 
     
     ! physical properties
     real(r8), pointer :: area       (:) => null() ! land area (km^2)
@@ -92,6 +100,8 @@ module TopounitType
     allocate(this%pftf      (begt:endt)) ; this%pftf      (:) = ispval
     allocate(this%npfts     (begt:endt)) ; this%npfts     (:) = ispval
     
+    allocate(this%landunit_indices(1:max_lunit, begt:endt)); this%landunit_indices(:,:) = ispval
+
     allocate(this%area        (begt:endt)) ; this%area        (:) = nan
     allocate(this%lat         (begt:endt)) ; this%lat         (:) = nan
     allocate(this%lon         (begt:endt)) ; this%lon         (:) = nan
@@ -117,6 +127,7 @@ module TopounitType
     deallocate(this%pfti        )
     deallocate(this%pftf        )
     deallocate(this%npfts       )
+    deallocate(this%landunit_indices )
 
     deallocate(this%area        )
     deallocate(this%lat         )
