@@ -16,6 +16,9 @@ module VOCEmissionMod
   use pftvarcon          , only : nbrdlf_dcd_brl_tree, nbrdlf_evr_shrub
   use pftvarcon          , only : nc3_arctic_grass   , nc3crop
   use pftvarcon          , only : nc4_grass,           noveg
+  !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+  use pftvarcon          , only : ntree, nshrub, ngraminoid, nnonvascular, npcropmin, npcropmax
+  !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
   use shr_megan_mod      , only : shr_megan_megcomps_n, shr_megan_megcomp_t, shr_megan_linkedlist
   use shr_megan_mod      , only : shr_megan_mechcomps_n, shr_megan_mechcomps, shr_megan_mapped_emisfctrs
   use MEGANFactorsMod    , only : Agro, Amat, Anew, Aold, betaT, ct1, ct2, LDF, Ceo
@@ -696,15 +699,26 @@ contains
     else if (ivt_in >= nbrdlf_evr_trp_tree &
          .and.    ivt_in <= nbrdlf_dcd_brl_tree) then  !broadleaf trees
        get_map_EF = vocemis_vars%efisop_grc(1,g_in)
-    else if (ivt_in >= nbrdlf_evr_shrub &
-         .and.    ivt_in <= nbrdlf_dcd_brl_shrub) then !shrubs
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    !else if (ivt_in >= nbrdlf_evr_shrub &
+    !     .and.    ivt_in <= nbrdlf_dcd_brl_shrub) then !shrubs
+    !   get_map_EF = vocemis_vars%efisop_grc(4,g_in)
+    !else if (ivt_in >= nc3_arctic_grass &
+    !     .and.    ivt_in <= nc4_grass) then            !grass
+    !   get_map_EF = vocemis_vars%efisop_grc(5,g_in)
+    !else if (ivt_in >= nc3crop) then                   !crops
+    !   get_map_EF = vocemis_vars%efisop_grc(6,g_in)
+    !end if
+    else if (ivt_in > ntree &
+         .and.    ivt_in <= nshrub) then               !shrubs
        get_map_EF = vocemis_vars%efisop_grc(4,g_in)
-    else if (ivt_in >= nc3_arctic_grass &
-         .and.    ivt_in <= nc4_grass) then            !grass
+    else if (ivt_in > nshrub &
+         .and.    ivt_in < npcropmin) then             !grass
        get_map_EF = vocemis_vars%efisop_grc(5,g_in)
-    else if (ivt_in >= nc3crop) then                   !crops
+    else if (ivt_in >= npcropmax) then                 !crops
        get_map_EF = vocemis_vars%efisop_grc(6,g_in)
     end if
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
 
   end function get_map_EF
 

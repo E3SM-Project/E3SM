@@ -266,6 +266,18 @@ module pftvarcon
   real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
   real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
 
+
+  !----------------------F.-M. Yuan (2018-03-23): user-defined parameter file ---------------------------------------------------------------------
+  ! NOTE: using 'mergetoclmpft' variable in nc parameter file as a flag
+  integer :: nndllf_tree                       ! pft index for last type of needle-leaf tree
+  integer :: nshrub                            ! pft index for last type of shrub ('woody' type is 2, otherwise 1 for tree)
+  integer :: ngraminoid                        ! pft index for last type of graminoid ('woody' type is 0)
+  integer :: nnonvascular                      ! pft index for last type of non-vascular ('froot_leaf' not greater than 0)
+  integer, allocatable :: needleleaf(:)        ! needle-leaf flag (0 or 1)
+  integer, allocatable :: nonvascular(:)       ! nonvascular plant lifeform flag (0 or 1-moss or 2-lichen)
+  integer, allocatable :: nfixer(:)            ! N-fixer flag (0 or 1)
+  !----------------------F.-M. Yuan (2018-03-23): user-defined parameter file ---------------------------------------------------------------------
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -520,6 +532,12 @@ contains
     ! Ground cover for soil erosion
     allocate( gcpsi              (0:mxpft) )
     allocate( pftcc              (0:mxpft) )
+
+  !----------------------F.-M. Yuan (2018-03-23): user-defined parameter file ---------------------------------------------------------------------
+    allocate( needleleaf         (0:mxpft) )
+    allocate( nonvascular        (0:mxpft) )
+    allocate( nfixer             (0:mxpft) )
+  !----------------------F.-M. Yuan (2018-03-23): user-defined parameter file ---------------------------------------------------------------------
 
     ! Set specific vegetation type values
 
@@ -916,9 +934,13 @@ contains
        do i = 0, mxpft
           mergetoclmpft(i) = i
        end do
-    end if
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    ! 'mergetoclmpft' in the 'paramfile' is used as an indicator to user-defined parameter file
+    !end if
 
-    call ncd_pio_closefile(ncid)
+    !call ncd_pio_closefile(ncid)
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    ! 'mergetoclmpft' in the 'paramfile' is used as an indicator to user-defined parameter file
 
 
     do i = 0, mxpft
@@ -964,6 +986,66 @@ contains
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
     npcropmax            = nsoybeanirrig        ! last prognostic crop in list
+
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
+    nndllf_tree          = ndllf_dcd_brl_tree   ! value for last type of needle-leaf tree
+    nshrub               = nbrdlf_dcd_brl_shrub ! value for last type of shrub
+    ngraminoid           = nc4_grass            ! value for last type of grass
+
+    ! the following not available, but just in case called somewhere later
+    nnonvascular         = 0
+    nonvascular(0:mxpft) = 0
+    nfixer(0:mxpft)      = 0
+    needleleaf(0:mxpft)  = 0
+    needleleaf(noveg+1:nndllf_tree) = 1
+    ! 'mergetoclmpft' in the 'paramfile' is used as an indicator to user-defined parameter file
+    else
+       ! if 'nfixer' flag is defined for each PFT
+       call ncd_io('nfixer', nfixer, 'read', ncid, readvar=readv)
+       if ( .not. readv ) nfixer(0:mxpft) = 0
+
+       ! if 'nonvascular' flag is defined for each PFT (0: vascular, 1: moss, 2: lichen)
+       call ncd_io('nonvascular', nonvascular, 'read', ncid, readvar=readv)
+       if ( .not. readv ) nonvascular(0:mxpft) = 0
+
+       ! if 'needleleaf' flag is defined for each PFT
+       call ncd_io('needleleaf', needleleaf, 'read', ncid, readvar=readv)
+       if ( .not. readv ) needleleaf(0:mxpft) = 0
+
+       ! the following assumed PFTs are arranged by blocks:
+       !    not-vegetated (0), trees (needleleaf, broadleaf), shrubs, grasses, non-vasculars, and crops
+       nndllf_tree          = 0 ! index for last type of tree
+       ntree                = 0 ! index for last type of tree
+       nshrub               = 0 ! index for last type of shrub
+       ngraminoid           = 0 ! index for last type of graminoid
+       nnonvascular         = 0 ! index for last type of non-vascular
+       npcropmin            = 0 ! first prognostic crop
+       npcropmax            = mxpft ! last prognostic crop in list
+
+       do i = 1, mxpft
+          if(woody(i)==1) then
+              if (needleleaf(i)==1) nndllf_tree = i
+              ntree  = i
+          !
+          elseif(woody(i)==2) then
+              nshrub = i
+          !
+          elseif(woody(i)<1 .and. crop(i)<1) then
+              if (nonvascular(i)<1) then
+                ngraminoid = i
+              else
+                nnonvascular = i
+              endif
+          !
+          elseif(crop(i)==1 .and. npcropmin<=0) then
+             npcropmin = i
+          endif
+
+       end do
+    end if
+
+    call ncd_pio_closefile(ncid)
+    !----------------------F.-M. Yuan: 2018-03-23---------------------------------------------------------------------
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
