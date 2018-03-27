@@ -25,7 +25,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.main_title = ''
         # self.backend = 'vcs'  # No default backend for now, user needs to specify which one
         self.save_netcdf = False
-        self.output_file = 'output'
         self.output_format = ['png']
         self.canvas_size_w = 1212
         self.canvas_size_h = 1628
