@@ -275,6 +275,10 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    if ( allocated(londimnames) ) deallocate(londimnames)
    if ( allocated(vars)        ) deallocate( vars )
 
+   if (londimnames(1) .eq. 'ncol') then !-- Enforce for SE grids
+     closelatidx = 1
+   endif
+
    return
 
 end subroutine shr_scam_getCloseLatLonNC
