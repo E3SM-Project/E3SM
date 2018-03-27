@@ -33,6 +33,7 @@ export OMP_NUM_THREADS=$(./xmlquery THREAD_COUNT --value)
 # save prerun provenance?
 
 # MPIRUN!
+cd $(./xmlquery RUNDIR --value)
 {{ mpirun }}
 
 # save logs?
