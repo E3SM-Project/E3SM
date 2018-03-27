@@ -148,7 +148,7 @@ _TEST_SUITES = {
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
                            ("PET.f19_g16.X","mach-pet"),
                            ("PET.f45_g37_rx1.A","mach-pet"),
-                           ("PET_Ln9.ne30_oECv3_ICG.A_WCYCL1850S","mach-pet"),
+                           ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","mach-pet"),
                            "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
