@@ -6,11 +6,11 @@
    contain the root `toctree` directive.
 
 ####################
- CIME Data Models
+ Data Models
 ####################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    introduction.rst

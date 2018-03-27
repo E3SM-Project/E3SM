@@ -258,6 +258,37 @@ class EnvBatch(EnvBase):
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
+    def _match_attribs(self, attribs, case, queue):
+        # check for matches with case-vars
+        for attrib in attribs:
+            if attrib in ["default", "prefix"]:
+                # These are not used for matching
+                continue
+
+            elif attrib == "queue":
+                if not self._match(queue, attribs["queue"]):
+                    return False
+
+            else:
+                val = case.get_value(attrib.upper())
+                expect(val is not None, "Cannot match attrib '%s', case has no value for it" % attrib.upper())
+                if not self._match(val, attribs[attrib]):
+                    return False
+
+        return True
+
+    def _match(self, my_value, xml_value):
+        if xml_value.startswith("!"):
+            result = re.match(xml_value[1:],str(my_value)) is None
+        elif isinstance(my_value, bool):
+            if my_value: result = xml_value == "TRUE"
+            else: result = xml_value == "FALSE"
+        else:
+            result = re.match(xml_value,str(my_value)) is not None
+
+        logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
+        return result
+
     def get_batch_directives(self, case, job, overrides=None):
         """
         """
@@ -273,21 +304,20 @@ class EnvBatch(EnvBase):
 
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:
-                    if self.has(dnode,"queue") and self.get(dnode, "queue") != queue:
-                        continue
                     nodes = self.get_children("directive", root=dnode)
                     for node in nodes:
-                        directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
-                        default = self.get(node, "default")
-                        if default is None:
-                            directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
-                        else:
-                            directive = transform_vars(directive, default=default)
+                        if self._match_attribs(self.attrib(node), case, queue):
+                            directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
+                            default = self.get(node, "default")
+                            if default is None:
+                                directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
+                            else:
+                                directive = transform_vars(directive, default=default)
 
-                        custom_prefix = self.get(node, "prefix")
-                        prefix = directive_prefix if custom_prefix is None else custom_prefix
+                            custom_prefix = self.get(node, "prefix")
+                            prefix = directive_prefix if custom_prefix is None else custom_prefix
 
-                        result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
+                            result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
 
         return "\n".join(result)
 
@@ -424,16 +454,13 @@ class EnvBatch(EnvBase):
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
-            # Import here to avoid circular include
-            from CIME.case_test       import case_test # pylint: disable=unused-variable
-            from CIME.case_run        import case_run # pylint: disable=unused-variable
-            from CIME.case_st_archive import case_st_archive # pylint: disable=unused-variable
-
             logger.info("Starting job script {}".format(job))
-
             function_name = job.replace(".", "_")
             if not dry_run:
-                locals()[function_name](case)
+                if "archive" not in function_name:
+                    getattr(case,function_name)(skip_pnl=skip_pnl)
+                else:
+                    getattr(case,function_name)()
 
             return
 
@@ -496,16 +523,23 @@ class EnvBatch(EnvBase):
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         submitcmd = ''
-        for string in (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job)):
-            if  string is not None:
-                submitcmd += string + " "
+        batch_env_flag = self.get_value("batch_env", subgroup=None)
+        if batch_env_flag:
+            sequence = (batchsubmit, submitargs, "skip_pnl", batchredirect, get_batch_script_for_job(job))
+        else:
+            sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), "skip_pnl")
 
-        if job == 'case.run' and skip_pnl:
-            batch_env_flag = self.get_value("batch_env", subgroup=None)
-            if not batch_env_flag:
-                submitcmd += " --skip-preview-namelist"
-            else:
-                submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist'".format(batch_env_flag)
+        for string in sequence:
+            if string == "skip_pnl":
+                if job in ['case.run', 'case.test'] and skip_pnl:
+                    batch_env_flag = self.get_value("batch_env", subgroup=None)
+                    if not batch_env_flag:
+                        submitcmd += " --skip-preview-namelist "
+                    else:
+                        submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist' ".format(batch_env_flag)
+
+            elif string is not None:
+                submitcmd += string + " "
 
         if dry_run:
             return submitcmd

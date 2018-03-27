@@ -5,9 +5,9 @@
 
 .. _users-guide1:
 
-#################################################
-CIME User's Guide Part 1: Beginner - Basic Usage
-#################################################
+#######################################
+Case Control System Part 1: Basic Usage
+#######################################
 
 .. toctree::
    :maxdepth: 3
@@ -26,7 +26,7 @@ CIME User's Guide Part 1: Beginner - Basic Usage
 .. _users-guide2:
 
 #######################################################################################
-CIME User's Guide Part 2: Intermediate - CIME Internals, Porting, Testing and Use Cases
+Case Control System Part 2: Configuration, Porting, Testing and Use Cases
 #######################################################################################
 
 .. toctree::

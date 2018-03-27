@@ -4,7 +4,6 @@ This script compares xml files
 """
 
 from standard_script_setup import *
-from CIME.check_lockedfiles import check_lockedfiles
 from CIME.case import Case
 
 def parse_command_line(args, description):
@@ -36,7 +35,7 @@ def _main_func(description):
     caseroot = parse_command_line(sys.argv, description)
 
     with Case(case_root=caseroot, read_only=True) as case:
-        check_lockedfiles(case)
+        case.check_lockedfiles()
 
 if __name__ == "__main__":
     _main_func(__doc__)

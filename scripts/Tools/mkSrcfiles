@@ -32,6 +32,10 @@ foreach $dir (@paths) {
     @filenames = (glob("$dir/*.[Ffc]"), glob("$dir/*.[Ff]90"), glob("$dir/*.cpp"));
     foreach $filename (@filenames) {
 	$filename =~ s!.*/!!;                   # remove part before last slash
+	if ($filename =~ /^test_/){
+	    print "WARNING: Skipping file $dir/$filename Source files beginning in test_ are ignored\n";
+	    next;
+	}
 	$src{$filename} = 1;
     }
     @templates = glob("$dir/*.F90.in");

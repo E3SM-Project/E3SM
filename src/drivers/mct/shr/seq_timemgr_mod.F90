@@ -5,7 +5,7 @@
 ! !DESCRIPTION:
 !
 !     A module to create derived types to manage time and clock information
-!     for use with CCSM drivers and models.
+!     for use with CIME drivers and models.
 !
 ! !REMARKS:
 !
@@ -817,7 +817,7 @@ contains
        call shr_sys_abort( subname//'ERROR:: bad calendar for ESMF' )
     end if
 
-    seq_timemgr_cal = ESMF_CalendarCreate( name='CCSM_'//seq_timemgr_calendar, &
+    seq_timemgr_cal = ESMF_CalendarCreate( name='CIME_'//seq_timemgr_calendar, &
          calkindflag=esmf_caltype, rc=rc )
     call seq_timemgr_ESMFCodeCheck( rc, subname//': error return from ESMF_CalendarCreate' )
 
@@ -2340,7 +2340,7 @@ contains
   !
   ! Private method:
   !
-  ! Setup the ESMF clock inside the wrapped CCSM clock
+  ! Setup the ESMF clock inside the wrapped CIME clock
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -2366,7 +2366,7 @@ contains
     ! Notes:
     !-------------------------------------------------------------------------------
 
-    description = 'CCSM shared Time-manager clock'
+    description = 'CIME shared Time-manager clock'
 
     ! ------ Create ESMF Clock with input characteristics -------------------
     ! --- NOTE: StopTime is required in interface but not used, so use  -----
