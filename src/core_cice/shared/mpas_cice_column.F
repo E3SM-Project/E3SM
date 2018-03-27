@@ -2869,7 +2869,8 @@ contains
          oceanDMSConc, &
          oceanDMSPConc, &
          oceanHumicsConc, &
-         openWaterArea
+         openWaterArea, &
+         totalChlorophyll
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -3006,6 +3007,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "netNitrateUptake", netNitrateUptake)
        call MPAS_pool_get_array(biogeochemistry, "netAmmoniumUptake", netAmmoniumUptake)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalSalinity", totalVerticalSalinity)
+       call MPAS_pool_get_array(biogeochemistry, "totalChlorophyll", totalChlorophyll)
        call MPAS_pool_get_array(biogeochemistry, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
        call MPAS_pool_get_array(biogeochemistry, "primaryProduction", primaryProduction)
        call MPAS_pool_get_array(biogeochemistry, "netBrineHeight", netBrineHeight)
@@ -3173,6 +3175,7 @@ contains
                bioTemperature(:,:,iCell), &
                totalVerticalBiologyIce(:,iCell), &
                totalVerticalBiologySnow(:,iCell), &
+               totalChlorophyll(iCell), &
                penetratingShortwaveFlux(:,iCell), &
                rayleighCriteria, &
                zSalinityIceDensity(:,iCell), &
@@ -12414,7 +12417,8 @@ contains
          netSpecificAlgalGrowthRate, &
          netBrineHeight, &
          zSalinityFlux, &
-         zSalinityGDFlux
+         zSalinityGDFlux, &
+         totalChlorophyll
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanBioFluxes, &
@@ -12446,6 +12450,7 @@ contains
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
 
              call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
+             call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
              call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
              call MPAS_pool_get_array(biogeochemistryPool, "netBrineHeight", netBrineHeight)
              call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
@@ -12457,6 +12462,7 @@ contains
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
 
              primaryProduction          = 0.0_RKIND
+             totalChlorophyll           = 0.0_RKIND
              netSpecificAlgalGrowthRate = 0.0_RKIND
              netBrineHeight             = 0.0_RKIND
              zSalinityFlux              = 0.0_RKIND

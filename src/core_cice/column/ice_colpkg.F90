@@ -4888,7 +4888,7 @@
                            PP_net, hbri,dhbr_bot, dhbr_top, Zoo,&
                            fbio_snoice, fbio_atmice, ocean_bio, &
                            first_ice, fswpenln, bphi, bTiz, ice_bio_net,  &
-                           snow_bio_net, fswthrun, Rayleigh_criteria, &
+                           snow_bio_net, totalChla, fswthrun, Rayleigh_criteria, &
                            sice_rho, fzsal, fzsal_g, &
                            bgrid, igrid, icgrid, cgrid,  &
                            nblyr, nilyr, nslyr, n_algae, n_zaero, ncat, &
@@ -4940,7 +4940,7 @@
          sice_rho      , &  ! avg sea ice density  (kg/m^3) 
          ice_bio_net   , &  ! depth integrated tracer (mmol/m^2) 
          snow_bio_net  , &  ! depth integrated snow tracer (mmol/m^2) 
-         flux_bio     ! all bio fluxes to ocean
+         flux_bio           ! all bio fluxes to ocean
 
       logical (kind=log_kind), dimension (:), intent(inout) :: &
          first_ice      ! distinguishes ice that disappears (e.g. melts)
@@ -4966,7 +4966,8 @@
          fzsal          , & ! Total flux  of salt to ocean at time step for conservation
          fzsal_g        , & ! Total gravity drainage flux
          upNO           , & ! nitrate uptake rate (mmol/m^2/d) times aice
-         upNH         ! ammonium uptake rate (mmol/m^2/d) times aice
+         upNH           , & ! ammonium uptake rate (mmol/m^2/d) times aice
+         totalChla          ! ice integrated chla and summed over all algal groups (mg/m^2)
 
       logical (kind=log_kind), intent(inout) :: &
          Rayleigh_criteria    ! .true. means Ra_c was reached  
@@ -5226,6 +5227,7 @@
                           fbio_snoice,           fbio_atmice,            &
                           PP_net,                ice_bio_net (1:nbtrcr), &
                           snow_bio_net(1:nbtrcr),grow_net,               &
+                          totalChla,                                     &
                           l_stop,                stop_label)
             
                if (l_stop) return
@@ -5245,6 +5247,7 @@
                             trcrn    (1:ntrcr,n),    hin,                 &
                             PP_net,                  upNO,                &
                             upNH,                    grow_net,            &
+                            totalChla,                                    &
                             l_stop,                  stop_label)
 
                if (l_stop) return
