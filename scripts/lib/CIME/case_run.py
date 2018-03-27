@@ -54,9 +54,6 @@ def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
         os.environ["LBQUERY"] = "TRUE"
 
     # create the timing directories, optionally cleaning them if needed.
-    if not os.path.isdir(rundir):
-        os.mkdir(rundir)
-
     if os.path.isdir(os.path.join(rundir, "timing")):
         shutil.rmtree(os.path.join(rundir, "timing"))
 

@@ -20,6 +20,13 @@ export LID=$lid
 # setup environment
 source .env_mach_specific.sh
 
+# Clean/make timing dirs
+RUNDIR=$(./xmlquery RUNDIR --value)
+if [ -e $RUNDIR/timing ]; then
+    /bin/rm $RUNDIR/timing
+fi
+mkdir -p $RUNDIR/timing/checkpoints
+
 # minimum namelist action
 ./preview_namelists --component cpl
 #./preview_namelists # uncomment for full namelist generation
