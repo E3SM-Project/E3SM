@@ -126,7 +126,7 @@ contains
          cinput_rootfr(begp:endp, :)     = 0._r8
          col_cinput_rootfr(begc:endc, :) = 0._r8
 
-         if ( exponential_rooting_profile .and. .not. use_dynroot ) then
+         if ( exponential_rooting_profile ) then
             if ( .not. pftspecific_rootingprofile ) then
                ! define rooting profile from exponential parameters
                do j = 1, nlevdecomp
