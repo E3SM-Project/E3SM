@@ -61,6 +61,7 @@
                          fbio_snoice,  fbio_atmice, &
                          PP_net,       ice_bio_net, &
                          snow_bio_net, grow_net,    &
+                         totalChla,                 &
                          l_stop,       stop_label)
 
       use ice_aerosol, only: update_snow_bgc
@@ -158,7 +159,8 @@
          PP_net     , & ! net PP (mg C/m^2/d)  times aice
          grow_net   , & ! net specific growth (m/d) times vice
          upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice 
-         upNH           ! tot ammonium uptake rate (mmol/m^2/d) times aice
+         upNH       , & ! tot ammonium uptake rate (mmol/m^2/d) times aice
+         totalChla      ! total chla (mg chla/m^2)
 
       logical (kind=log_kind), intent(in) :: &
          first_ice      ! initialized values should be used
@@ -312,7 +314,7 @@
                                fbio_snoice,  fbio_atmice,&
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
-                               grow_net)
+                               grow_net,     totalChla)
  
       if (write_flux_diag) then
          if (aicen > c0) then
@@ -352,6 +354,7 @@
                                trcrn,    hin,        &
                                PP_net,   upNO,       &
                                upNH,     grow_net,   &
+                               totalChla,            &
                                l_stop,   stop_label)
 
       use ice_zbgc, only: merge_bgc_fluxes_skl
@@ -393,7 +396,8 @@
          PP_net  , & ! Bulk net PP (mg C/m^2/s)
          grow_net, & ! net specific growth (/s)
          upNO    , & ! tot nitrate uptake rate (mmol/m^2/s) 
-         upNH        ! tot ammonium uptake rate (mmol/m^2/s)
+         upNH    , & ! tot ammonium uptake rate (mmol/m^2/s)
+         totalChla   ! total Chla (mg chla/m^2)
 
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
@@ -436,7 +440,7 @@
                                    PP_net,    upNOn,       &
                                    upNHn,     upNO,        &
                                    upNH,      grow_net,    &
-                                   grow_alg)
+                                   grow_alg,  totalChla)
  
       end subroutine sklbio    
 

@@ -538,12 +538,12 @@
                                zbgc_snow,    zbgc_atm,   &
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
-                               grow_net)
+                               grow_net,     totalChla)
  
       use ice_constants_colpkg, only: c1, c0, p5, secday, puny
       use ice_colpkg_shared, only: solve_zbgc, max_nbtrcr, hs_ssl, R_C2N, &
-                             fr_resp
-      use ice_colpkg_tracers, only: nt_bgc_N, nt_fbri
+                             fr_resp, R_chl2N
+      use ice_colpkg_tracers, only: nt_bgc_N, nt_fbri, nlt_bgc_N
 
       real (kind=dbl_kind), intent(in) :: &          
          dt             ! timestep (s)
@@ -591,7 +591,8 @@
          PP_net     , & ! net PP (mg C/m^2/d)  times aice
          grow_net   , & ! net specific growth (m/d) times vice
          upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice 
-         upNH           ! tot ammonium uptake rate (mmol/m^2/d) times aice
+         upNH       , & ! tot ammonium uptake rate (mmol/m^2/d) times aice
+         totalChla      ! total Chla (mg chla/m^2)
 
       ! local variables
 
@@ -636,6 +637,7 @@
 
       if (solve_zbgc) then
          do mm = 1, n_algae
+            totalChla   = totalChla + ice_bio_net(nlt_bgc_N(mm))*R_chl2N(mm)
             do k = 1, nblyr+1
                tmp      = iphin(k)*trcrn(nt_fbri)*vicen*zspace(k)*secday 
                PP_net   = PP_net   + grow_alg(k,mm)*tmp &
@@ -664,11 +666,11 @@
                                PP_net,    upNOn,           &
                                upNHn,     upNO,            &
                                upNH,      grow_net,        &
-                               grow_alg)
+                               grow_alg,  totalChla)
 
       use ice_constants_colpkg, only: c1, secday, puny
       use ice_colpkg_tracers, only: nt_bgc_N
-      use ice_colpkg_shared, only: sk_l, R_C2N, fr_resp
+      use ice_colpkg_shared, only: sk_l, R_C2N, fr_resp, R_chl2N
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr   , & ! number of cells with aicen > puny
@@ -698,7 +700,8 @@
          PP_net  , & ! Bulk net PP (mg C/m^2/s)
          grow_net, & ! net specific growth (/s)
          upNO    , & ! tot nitrate uptake rate (mmol/m^2/s) 
-         upNH        ! tot ammonium uptake rate (mmol/m^2/s)
+         upNH    , & ! tot ammonium uptake rate (mmol/m^2/s)
+         totalChla   ! total algal chla (mg chla/m^2)
       
       ! local variables
 
@@ -724,6 +727,8 @@
          grow_net = grow_net &
                   + grow_alg(mm) * tmp &
                   / (trcrn(nt_bgc_N(mm))+puny)
+         totalChla = totalChla + trcrn(nt_bgc_N(mm))* sk_l * aicen * &
+                  R_chl2N(mm)
          upNO     = upNO  + upNOn(mm) * tmp
          upNH     = upNH  + upNHn(mm) * tmp
       enddo
