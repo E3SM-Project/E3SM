@@ -615,10 +615,8 @@ def get_current_commit(short=False, repo=None, tag=False):
         rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
         rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
-    if rc == 0:
-        return output
-    else:
-        return 'unknown'
+
+    return output if rc == 0 else "unknown"
 
 def get_scripts_location_within_cime():
     """

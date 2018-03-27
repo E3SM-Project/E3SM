@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -35,9 +35,9 @@ def _save_build_provenance_e3sm(case, lid):
 
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
-    if os.path.exists(describe_prov):
-        os.remove(describe_prov)
-    run_cmd_no_fail("git describe", arg_stdout=describe_prov, from_dir=cimeroot)
+    desc = get_current_commit(tag=True, repo=cimeroot)
+    with open(describe_prov, "w") as fd:
+        fd.write(desc)
 
     # Save HEAD
     headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
@@ -213,10 +213,10 @@ def _save_prerun_timing_e3sm(case, lid):
             copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
 
     # Save state of repo
-    if os.path.exists(os.path.join(cimeroot, ".git")):
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=cimeroot)
-    else:
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=os.path.dirname(cimeroot))
+    from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
+    desc = get_current_commit(tag=True, repo=from_repo)
+    with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
+        fd.write(desc)
 
     # What this block does is mysterious to me (JGF)
     if job_id is not None:

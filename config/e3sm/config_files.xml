@@ -214,7 +214,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/usermods_dirs</value>
+      <value component="allactive">$CIMEROOT/config/$MODEL/usermods_dirs</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/usermods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
