@@ -201,25 +201,16 @@ def run_model(runName, mpasDir, domainsDir, domain, configuration, nmlChanges, s
     os.chdir(runName)
 
     # sym link executable
-    if (os.path.isfile(mpasDir + "/seaice_model")):
-        os.symlink(mpasDir + "/seaice_model", "seaice_model")
-    else:
-        os.symlink(mpasDir + "/cice_model", "seaice_model")
+    os.symlink(mpasDir + "/seaice_model", "seaice_model")
 
     # get domain
     get_domain(domainsDir, domain)
 
     # create namelist file
-    try:
-        create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.seaice", "namelist.seaice", nmlChanges)
-    except:
-        create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.cice", "namelist.cice", nmlChanges)
+    create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.seaice", "namelist.seaice", nmlChanges)
 
     # create streams file
-    try:
-        create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.seaice", "streams.seaice", streamChanges)
-    except:
-        create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.cice", "streams.cice", streamChanges)
+    create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.seaice", "streams.seaice", streamChanges)
 
     # run the model
     returnCode = execute_model(nProcs, logfile)
@@ -270,26 +261,14 @@ def restart_model(runName, nmlChanges, streamChanges, nProcs, logfile):
     os.chdir(runName)
 
     # update namelist
-    try:
-        os.rename("namelist.seaice","namelist.seaice.prev")
-    except:
-        os.rename("namelist.cice","namelist.cice.prev")
-    try:
-        os.rename("streams.seaice","streams.seaice.prev")
-    except:
-        os.rename("streams.cice","streams.cice.prev")
+    os.rename("namelist.seaice","namelist.seaice.prev")
+    os.rename("streams.seaice","streams.seaice.prev")
 
     # update namelist
-    try:
-        create_new_namelist("namelist.seaice.prev", "namelist.seaice", nmlChanges)
-    except:
-        create_new_namelist("namelist.cice.prev", "namelist.cice", nmlChanges)
+    create_new_namelist("namelist.seaice.prev", "namelist.seaice", nmlChanges)
 
     # create streams file
-    try:
-        create_new_streams("streams.seaice.prev", "streams.seaice", streamChanges)
-    except:
-        create_new_streams("streams.cice.prev", "streams.cice", streamChanges)
+    create_new_streams("streams.seaice.prev", "streams.seaice", streamChanges)
 
     # run the model
     returnCode = execute_model(nProcs, logfile)
