@@ -43,7 +43,6 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
    testing.rst
    unit_testing.rst
    multi-instance.rst
-   adding-cases.rst
    use_cases/use-cases.rst
 
 
