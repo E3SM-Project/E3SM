@@ -34,7 +34,7 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
    :numbered:
 
    cime-internals.rst
-   creating-new-compsets.rst
+   compsets.rst
    porting-cime.rst
    optimizing-processor-layout.rst
    testing.rst
