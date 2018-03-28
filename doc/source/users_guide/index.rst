@@ -14,7 +14,6 @@ Case Control System Part 1: Basic Usage
    :numbered:
 
    introduction-and-overview.rst
-   case-basics.rst
    create-a-case.rst
    setting-up-a-case.rst
    building-a-case.rst

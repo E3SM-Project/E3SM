@@ -33,12 +33,49 @@ In the case of CESM, this xml element has the contents shown here, where ``$SRCR
        <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
      </entry>
 
+
+Every file listed in COMPSETS_SPEC_FILE will be searched for the compset specified in the call to create_newcase.
+
+.. _defining-compsets:
+
+Compset longname
+-------------------
+
+Each config_compsets.xml file has a list of allowed component sets in the form of a longname and an alias.
+
+A compset longname has this form::
+
+  TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys]_ESP[_BGC%phys]
+
+Supported values for each element of the longname::
+
+  TIME = model time period (e.g. 1850, 2000, 20TR, RCP8...)
+
+  CIME supports the following values for ATM,LND,ICE,OCN,ROF,GLC,WAV and ESP.
+  ATM  = [DATM, SATM, XATM]
+  LND  = [DLND, SLND, XLND]
+  ICE  = [DICE, SICE, SICE]
+  OCN  = [DOCN, SOCN, XOCN]
+  ROF  = [DROF, SROF, XROF]
+  GLC  = [SGLC, XGLC]
+  WAV  = [SWAV, XWAV]
+  ESP  = [SESP]
+
+A CIME-driven model may have other options available.  Use **query_config** to determine the available options.
+
+The OPTIONAL %phys attributes specify sub-modes of the given system.
+For example, DOCN%DOM is the DOCN data ocean (rather than slab-ocean) mode.
+ALL the possible %phys choices for each component are listed by
+calling **query_case** with the --compsets all argument.  ALL data models have
+a %phys option that corresponds to the data model mode.
+
+
 .. _defining-component-specific-compset-settings:
 
-How is the long compset name parsed?
-------------------------------------
+Component specific settings in a compset
+-----------------------------------------
 
-Every model component contains a **config_component.xml** file that has two functions:
+Every model component also contains a **config_component.xml** file that has two functions:
 
 1. Specifying the component-specific definitions of what can appear after the ``%`` in the compset longname, (for example, ``DOM`` in ``DOCN%DOM``).
 
