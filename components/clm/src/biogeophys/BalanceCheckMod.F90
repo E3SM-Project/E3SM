@@ -580,7 +580,11 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
+#ifdef APPLY_POST_DECK_BUGFIXES
+             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
+#else
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-3_r8) ) then
+#endif
                 found = .true.
                 indexp = p
                 indexg = veg_pp%gridcell(indexp)
@@ -588,9 +592,24 @@ contains
           end if
        end do
        if ( found  .and. (nstep > 2) ) then
-          write(iulog,*)'BalanceCheck: solar radiation balance error (W/m2)'
+          write(iulog,*)'WARNING:: BalanceCheck, solar radiation balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsol        = ',errsol(indexp)
+#ifdef APPLY_POST_DECK_BUGFIXES
+          if (abs(errsol(indexp)) > 1.e-5_r8 ) then
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'fsa           = ',fsa(indexp)
+             write(iulog,*)'fsr           = ',fsr(indexp)
+             write(iulog,*)'forc_solad(1) = ',forc_solad(indexg,1)
+             write(iulog,*)'forc_solad(2) = ',forc_solad(indexg,2)
+             write(iulog,*)'forc_solai(1) = ',forc_solai(indexg,1)
+             write(iulog,*)'forc_solai(2) = ',forc_solai(indexg,2)
+             write(iulog,*)'forc_tot      = ',forc_solad(indexg,1)+forc_solad(indexg,2) &
+               +forc_solai(indexg,1)+forc_solai(indexg,2)
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          end if
+#else
           write(iulog,*)'fsa           = ',fsa(indexp)
           write(iulog,*)'fsr           = ',fsr(indexp)
           write(iulog,*)'forc_solad(1) = ',forc_solad(indexg,1)
@@ -598,9 +617,10 @@ contains
           write(iulog,*)'forc_solai(1) = ',forc_solai(indexg,1)
           write(iulog,*)'forc_solai(2) = ',forc_solai(indexg,2)
           write(iulog,*)'forc_tot      = ',forc_solad(indexg,1)+forc_solad(indexg,2) &
-               +forc_solai(indexg,1)+forc_solai(indexg,2)
+            +forc_solai(indexg,1)+forc_solai(indexg,2)
           write(iulog,*)'clm model is stopping'
           call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+#endif
        end if
 
        ! Longwave radiation energy balance check
@@ -608,17 +628,28 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
+#ifdef APPLY_POST_DECK_BUGFIXES
+             if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-7_r8) ) then
+#else
              if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-3_r8) ) then
+#endif
                 found = .true.
                 indexp = p
              end if
           end if
        end do
        if ( found  .and. (nstep > 2) ) then
-          write(iulog,*)'BalanceCheck: longwave energy balance error (W/m2)'
-          write(iulog,*)'nstep        = ',nstep
+          write(iulog,*)'WARNING: BalanceCheck: longwave energy balance error (W/m2)' 
+          write(iulog,*)'nstep        = ',nstep 
           write(iulog,*)'errlon       = ',errlon(indexp)
+#ifdef APPLY_POST_DECK_BUGFIXES
+          if (abs(errlon(indexp)) > 1.e-5_r8 ) then
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          end if
+#else
           call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+#endif
        end if
 
        ! Surface energy balance check
@@ -626,7 +657,11 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
+#ifdef APPLY_POST_DECK_BUGFIXES
+             if (abs(errseb(p)) > 1.e-7_r8 ) then
+#else
              if (abs(errseb(p)) > 1.e-3_r8 ) then
+#endif
                 found = .true.
                 indexp = p
                 indexc = veg_pp%column(indexp)
@@ -634,9 +669,33 @@ contains
           end if
        end do
        if ( found  .and. (nstep > 2) ) then
-          write(iulog,*)'BalanceCheck: surface flux energy balance error (W/m2)'
+          write(iulog,*)'WARNING: BalanceCheck: surface flux energy balance error (W/m2)'
           write(iulog,*)'nstep          = ' ,nstep
           write(iulog,*)'errseb         = ' ,errseb(indexp)
+#ifdef APPLY_POST_DECK_BUGFIXES
+          if (abs(errseb(indexp)) > 1.e-5_r8 ) then
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'sabv           = ' ,sabv(indexp)
+
+             write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
+                  frac_sno(indexc)*sabg_snow(indexp)),sabg_chk(indexp)
+
+             write(iulog,*)'forc_tot      = '  ,forc_solad(indexg,1) + forc_solad(indexg,2) + &
+                  forc_solai(indexg,1) + forc_solai(indexg,2)
+
+             write(iulog,*)'eflx_lwrad_net = ' ,eflx_lwrad_net(indexp)
+             write(iulog,*)'eflx_sh_tot    = ' ,eflx_sh_tot(indexp)
+             write(iulog,*)'eflx_lh_tot    = ' ,eflx_lh_tot(indexp)
+             write(iulog,*)'eflx_soil_grnd = ' ,eflx_soil_grnd(indexp)
+             write(iulog,*)'fsa fsr = '        ,fsa(indexp),    fsr(indexp)
+             write(iulog,*)'fabd fabi = '      ,fabd(indexp,:), fabi(indexp,:)
+             write(iulog,*)'albd albi = '      ,albd(indexp,:), albi(indexp,:)
+             write(iulog,*)'ftii ftdd ftid = ' ,ftii(indexp,:), ftdd(indexp,:),ftid(indexp,:)
+             write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          end if
+#else
           write(iulog,*)'sabv           = ' ,sabv(indexp)
 
           write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
@@ -655,10 +714,8 @@ contains
           write(iulog,*)'ftii ftdd ftid = ' ,ftii(indexp,:), ftdd(indexp,:),ftid(indexp,:)
           write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
           write(iulog,*)'clm model is stopping'
-          !
-          ! FIX(RF, 082914) - commented out in ED branch
-          !
-          ! call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+#endif
        end if
 
        ! Soil energy balance check
@@ -666,23 +723,32 @@ contains
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c)) then
+#ifdef APPLY_POST_DECK_BUGFIXES
+             if (abs(errsoi_col(c)) > 1.0e-6_r8 ) then
+#else
              if (abs(errsoi_col(c)) > 1.0e-7_r8 ) then
+#endif
                 found = .true.
                 indexc = c
              end if
           end if
        end do
        if ( found ) then
-          if (abs(errsoi_col(indexc)) > 1.e-3_r8 .and. (nstep > 2) ) then
-             write(iulog,*)'BalanceCheck: soil balance error (mm)'
-             write(iulog,*)'nstep         = ',nstep
-             write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
+          write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
+          write(iulog,*)'nstep         = ',nstep
+          write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
+#ifdef APPLY_POST_DECK_BUGFIXES
+          if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'clm model is stopping'
-             !
-             ! FIX(RF, 082914) - commented out in ED branch
-             !
-             ! call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
+#else
+          if (abs(errsoi_col(indexc)) > 1.e-3_r8 .and. (nstep > 2) ) then
+             write(iulog,*)'clm model is stopping'
+          !  endrun commented out  though printing "clm model is stopping"
+          !  call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+          end if
+#endif
        end if
 
      end associate
