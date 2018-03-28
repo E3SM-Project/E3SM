@@ -163,6 +163,8 @@ contains
                 if(Checksum_l(ix,iy,k,i) .ne. Checksum_g(ix,iy,k,ig)) then
                    write(*,100) iam , INT(TestPattern_l(ix,iy,k,i)),   &
                         INT(Checksum_g(ix,iy,k,ig)), INT(Checksum_l(ix,iy,k,i))
+                   write(*,*) iam , ix,iy,k,ig,TestPattern_l(ix,iy,k,i),   &
+                        Checksum_g(ix,iy,k,ig), Checksum_l(ix,iy,k,i)
                    ChecksumError=.TRUE.
                 endif
              enddo
@@ -172,6 +174,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(i),'Verified'
        endif
+       if (ChecksumError) stop 'testchecksum: edgeVpack/exchange test failure'
     enddo
     ! =========================================
     ! Perform checksum for DG boundary exchange
@@ -181,13 +184,13 @@ contains
     !   Pack up the communication buffer
     !==================================================
 
-    if (par%masterproc) print *,'testchecksum: before call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeDGVpack'
     do ielem=1,nelemd
        kptr=0
        numlev=nlev
        call edgeDGVpack(buffer,Checksum_l(1,1,1,ielem),numlev,kptr,ielem)
     enddo
-    if (par%masterproc) print *,'testchecksum: after call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeDGVpack'
 
     !==================================================
     !  Perform the boundary exchange
@@ -199,7 +202,7 @@ contains
     !   UnPack and accumulate the communication buffer
     !==================================================
 
-    if (par%masterproc) print *,'testchecksum: before call to edgeVunpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeDGVunpack'
     do ielem=1,nelemd
        kptr   = 0
        numlev = nlev
@@ -258,6 +261,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(ie),'Verified'
        endif
+       if (ChecksumError) stop 'testchecksum: edgeDGVpack/exchange test failure'
     enddo
 
 
