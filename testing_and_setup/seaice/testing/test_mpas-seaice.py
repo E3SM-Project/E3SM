@@ -38,7 +38,7 @@ if (not os.path.exists(args.mpasDevelopmentDir)):
     print "Requested development MPAS directory does not exist"
     sys.exit()
 
-if (not os.path.exists(args.mpasDevelopmentDir + "/cice_model")):
+if (not os.path.exists(args.mpasDevelopmentDir + "/seaice_model")):
     print "Requested development MPAS executable does not exist"
     sys.exit()
 
