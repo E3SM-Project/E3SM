@@ -2861,7 +2861,7 @@
 	 <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
 	 <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
 	 <TESTS>e3sm_developer</TESTS>
-	 <COMPILERS>ibm,pgi,pgiacc</COMPILERS>
+	 <COMPILERS>ibm,pgi,pgiacc,gnu</COMPILERS>
 	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
 	 <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT>
 	 <!-- <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/scratch</CIME_OUTPUT_ROOT> -->
@@ -2924,7 +2924,6 @@
 
       <!-- Always execute -->
       <modules>
-		<command name="ls"/>
 		<command name="purge"/>
 		<command name="ls"/>
 		<command name="load">DefApps</command>
@@ -2937,16 +2936,13 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
-        <command name="rm">xl</command>
         <command name="load">pgi/18.1</command>
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="ls"/>
       </modules>
       <modules compiler="ibm">
-        <command name="rm">pgi</command>
         <command name="load">xl/20180223-beta</command>
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="ls"/>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/6.4.0</command>
       </modules>
 
       <!-- mpi lib settings -->
@@ -2956,12 +2952,21 @@
       </modules>
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
-      <modules compiler="pgi" mpilib="!mpi-serial">
+      <modules compiler="pgi*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">netcdf/4.4.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.0</command>
