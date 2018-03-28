@@ -386,6 +386,7 @@ contains
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
+        this%alpha_nfix(m)     = alpha_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
         this%vmax_ptase(m)     = vmax_ptase(m)
 

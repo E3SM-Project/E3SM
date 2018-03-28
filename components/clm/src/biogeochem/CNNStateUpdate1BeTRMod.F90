@@ -142,7 +142,7 @@ contains
 
          ! uptake from soil mineral N pool
          ns%npool_patch(p) = &
-              ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
+              ns%npool_patch(p) + (nf%sminn_to_npool_patch(p)+nf%nfix_to_plantn_patch(p))*dt
 
          ! update from surface layer supp nitrogen
          ns%npool_patch(p) = &

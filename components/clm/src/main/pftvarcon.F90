@@ -818,6 +818,9 @@ contains
         if ( .not. readv ) ncost_ptase(:)=0._r8
         call ncd_io('VMAX_NFIX',VMAX_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
+        call ncd_io('alpha_nfix',alpha_nfix, 'read', ncid, readvar=readv)
+        if ( .not. readv ) alpha_nfix(:)=0._r8
+        
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
         call ncd_io('VMAX_PTASE',VMAX_PTASE, 'read', ncid, readvar=readv)  

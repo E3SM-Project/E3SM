@@ -89,7 +89,8 @@ contains
          carbonstate_vars%begabgc_col(c) = carbonstate_vars%totabgc_col(c)
          carbonstate_vars%begblgc_col(c) = carbonstate_vars%totblgc_col(c)
 !         endif
-!         col_pp%debug_flag(c)=(get_nstep()==2)
+!         col_pp%debug_flag(c)=(get_nstep()>=412) .and. (c==20024)
+!         if(c==20024)print*,'flag',col_pp%debug_flag(c),get_nstep()
       end do
 !      if(iam==6)col_pp%debug_flag(17236)=.true.
     end associate
@@ -335,14 +336,14 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
-    real(r8):: err_blg
+    real(r8):: err_blg, err_abg
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
          totcoln             =>    nitrogenstate_vars%totcoln_col            , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
          ndep_to_sminn       =>    nitrogenflux_vars%ndep_to_sminn_col       , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn       =>    nitrogenflux_vars%nfix_to_sminn_col       , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
-         nfix_to_ecosysn     =>    nitrogenflux_vars%nfix_to_ecosysn_col     , &
+         nfix_to_ecosysn     =>    nitrogenflux_vars%nfix_to_ecosysn_col       , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          fert_to_sminn       =>    nitrogenflux_vars%fert_to_sminn_col       , & ! Input:  [real(r8) (:)]                                          
          soyfixn_to_sminn    =>    nitrogenflux_vars%soyfixn_to_sminn_col    , & ! Input:  [real(r8) (:)]                                          
          supplement_to_sminn =>    nitrogenflux_vars%supplement_to_sminn_col , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)         
@@ -443,7 +444,7 @@ contains
             ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
          end if
 
-         if (abs(col_errnb(c)) > 1e-8_r8) then
+         if (abs(col_errnb(c)) > 1e-8_r8 .or. nitrogenstate_vars%sminn_col(c)>1000._r8) then
             err_found = .true.
             err_index = c
             exit
@@ -496,7 +497,8 @@ contains
          write(iulog,*)'net_flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
          write(iulog,*)'input_mass            = ',col_ninputs(c)*dt
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
-         write(iulog,*)'nfix                  = ', nfix_to_sminn(c)*dt
+         write(iulog,*)'nfix_to_ecosys        = ',nfix_to_ecosysn(c)*dt
+         write(iulog,*)'nfix_to soil          = ',nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
@@ -525,6 +527,9 @@ contains
             smin_no3_runoff(c)*dt+som_n_leached(c)*dt-som_n_runoff_col(c)*dt-nitrogenflux_vars%fire_decomp_nloss_col(c)*dt+&
             nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt-nitrogenflux_vars%sminn_to_plant_col(c)*dt-nitrogenstate_vars%totblgn_col(c)
          write(iulog,*)'errblg =',err_blg
+         err_abg = nitrogenstate_vars%begabgn_col(c) + (nfix_to_ecosysn(c)-nfix_to_sminn(c))*dt-nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt + &
+           nitrogenflux_vars%sminn_to_plant_col(c)*dt +nitrogenflux_vars%supplement_to_sminn_surf_col(c)*dt- nitrogenstate_vars%totabgn_col(c)
+         write(iulog,*)'errabg =',err_abg
          call endrun(msg=errMsg(__FILE__, __LINE__))
 
       end if

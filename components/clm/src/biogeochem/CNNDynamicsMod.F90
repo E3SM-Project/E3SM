@@ -627,7 +627,7 @@ contains
     ! N2 fixation is based on Fisher 2010 GBC doi:10.1029/2009GB003621; Wang 2007 GBC doi:10.1029/2006GB002797; and Grand 2012 ecosys model
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_step_size
+    use clm_time_manager , only : get_days_per_year, get_step_size, get_nstep
     use shr_sys_mod      , only : shr_sys_flush
     use clm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
@@ -701,6 +701,7 @@ contains
                      nfix_to_plantn(p) = 0.0_r8
                      nfix_to_ecosysn(c) = nfix_to_ecosysn(c) + nfix_tmp  * veg_pp%wtcol(p)
                   end if
+
               end if
           end do
       end do

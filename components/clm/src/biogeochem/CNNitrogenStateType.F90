@@ -1155,6 +1155,28 @@ contains
             errMsg(__FILE__, __LINE__))
     end if
 
+    ptr1d =>  this%begabgn_col(:)
+    call restartvar(ncid=ncid, flag=flag, varname="begabgn", xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='',  units='', fill_value=spval, &
+         interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    if (flag=='read' .and. .not. readvar) then
+       varname='begabgn'
+       call endrun(msg='ERROR::'//trim(varname)//' is required on an initialization dataset'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
+    ptr1d =>  this%begblgn_col(:)
+    call restartvar(ncid=ncid, flag=flag, varname="begblgn", xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='',  units='', fill_value=spval, &
+         interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    if (flag=='read' .and. .not. readvar) then
+       varname='begblgn'
+       call endrun(msg='ERROR::'//trim(varname)//' is required on an initialization dataset'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
     ! decomposing N pools
     do k = 1, ndecomp_pools
        if(trim(decomp_cascade_con%decomp_pool_name_restart(k))=='')exit
@@ -1558,6 +1580,7 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
+    use clm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1609,7 +1632,13 @@ contains
             this%totlitn_col(c) + &
             this%totsomn_col(c) + &
             this%sminn_col(c)
-
+       if((this%totblgn_col(c))>1.e3_r8)then
+         print*,'col',c
+         print*,'cwdn',   this%cwdn_col(c) 
+         print*,'totlitn',   this%totlitn_col(c) 
+         print*,'totsomn',   this%totsomn_col(c) 
+         print*,'sminn',   this%sminn_col(c)
+       endif
     end do
 
   end subroutine Summary_betr

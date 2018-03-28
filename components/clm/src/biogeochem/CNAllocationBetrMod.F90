@@ -1100,7 +1100,7 @@ contains
          cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
 
          npool                        => nitrogenstate_vars%npool_patch                      , & ! Input:  [real(r8) (:)   ]  (gN/m3) plant N pool storage
-
+         nfix_to_plantn               => nitrogenflux_vars%nfix_to_plantn_patch              , & ! Input
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
          npool_to_grainn              => nitrogenflux_vars%npool_to_grainn_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)
@@ -1301,8 +1301,7 @@ contains
 
          retransn_to_npool(p) = avail_retransn(p)
          retransp_to_ppool(p) = avail_retransp(p)
-
-         plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+         plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
          plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
 
          mr = leaf_mr(p) + froot_mr(p)
