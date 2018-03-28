@@ -20,6 +20,7 @@ Case Control System Part 1: Basic Usage
    running-a-case.rst
    customizing-a-case.rst
    cloning-a-case.rst
+   cime-config.rst
    troubleshooting.rst
 
 .. _users-guide2:
