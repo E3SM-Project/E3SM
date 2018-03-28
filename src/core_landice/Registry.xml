@@ -528,10 +528,12 @@
 			<var name="thickness"/>
 			<var name="temperature"/>
                         <var name="surfaceAirTemperature"/>
+                        <var name="basalHeatFlux"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
-			<var name="floatingBasalMassBal"/>
+                        <var name="floatingBasalMassBal"/>
+                        <var name="eigencalvingParameter"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
