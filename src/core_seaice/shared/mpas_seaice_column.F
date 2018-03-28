@@ -2994,7 +2994,7 @@ contains
        call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
        call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
 
-       call MPAS_pool_get_dimension(mesh, "indexToCellID", indexToCellID)
+       call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
