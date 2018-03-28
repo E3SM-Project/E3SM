@@ -645,6 +645,11 @@ contains
          call calculate_strain_rates(meshPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
+         ! ---
+         ! --- Remove floating ice where velocity is unrealistically fast
+         ! --- (Removed ice is added to calving flux)
+         ! --- (TODO: make this a namelist option?)
+         ! ---
          call remove_fast_ice(surfaceSpeed, geometryPool)
 
          block => block % next
@@ -970,6 +975,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
 
       where (li_mask_is_floating_ice(cellMask) .and. (surfaceSpeed > highSpeed))
+         ! "fast" ice that is removed is added to the calving flux
          calvingThickness = calvingThickness + thickness
          thickness = 0.0_RKIND
       end where

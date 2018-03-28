@@ -1111,12 +1111,15 @@ module li_calving
          err = ior(err, err_tmp)
          call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
 
-         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated
-         ! the first commented version remove thin ice anywhere on the shelf.  in theory this seemed preferable,
-         ! but in practice it has the tendency to create 'holes' in relatively stagnant areas of ice shelves along
-         ! the grounding line.  once these holes developed they would grow and eventually collapse the shelf from behind.
+
+         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
+
          !where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. thickness<config_calving_thickness))
-         ! This criterion only removes too-thin ice at the new calving front,
+         ! The above commented version removed thin ice anywhere on the shelf.  In theory this seemed preferable,
+         ! but in practice it has the tendency to create 'holes' in relatively stagnant areas of ice shelves along
+         ! the grounding line.  Once these holes developed they would grow and eventually collapse the shelf from behind.
+
+         ! This criteria below only remove too-thin ice at the new calving front,
          ! meaning just one 'row' of cells per timestep.  This could be expanded to continue
          ! removing ice backward until all connected too-thin ice has been removed.
          ! Tests of the current implementation show reasonable behavior.
@@ -1129,8 +1132,8 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-         ! remove abandoned floating ice (i.e. icebergs)
-         ! defined as floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
+         ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
+         ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
          ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
          do iCell = 1, nCells
             if (li_mask_is_floating_ice(cellMask(iCell))) then
