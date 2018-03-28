@@ -51,7 +51,7 @@ if (args.mpasBaseDir != None):
         print "Requested base MPAS directory does not exist"
         sys.exit()
 
-    if (not os.path.exists(args.mpasBaseDir + "/cice_model")):
+    if (not os.path.exists(args.mpasBaseDir + "/seaice_model")):
         print "Requested base MPAS executable does not exist"
         sys.exit()
 
