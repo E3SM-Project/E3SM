@@ -36,7 +36,7 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, 
     # development run
     nProcs = 16
 
-    nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'}}
+    nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 
@@ -52,9 +52,9 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, 
     nProcs = 32
 
     if (not multipleBlocks):
-        nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'}}
+        nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     else:
-        nmlChanges = {"cice_model": {"config_run_duration":'24:00:00'},
+        nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'},
                      "decomposition": {"config_block_decomp_file_prefix":'graphs/graph.info.eq.part.',
                                        "config_number_of_blocks": 96,
                                        "config_explicit_proc_decomp": True,
