@@ -2893,13 +2893,6 @@
 	 <!-- <executable>jsrun</executable> -->
 	 <arguments>
 	     <arg name="num_tasks" > -n $TOTALPES -N $MAX_MPITASKS_PER_NODE </arg>
-		 <!-- By default 'jsrun' does not exit (i.e. hung) if any process / thread fails. -->
-		 <!-- To avoid this, pass the option '-X 1' to exit on error -->
-	     <!-- <arg name="num_tasks" > -X 1 - -nrs $SHELL{echo $NUM_NODES * 6 | bc} - -rs_per_host 6 - -tasks_per_rs 28 - -gpu_per_rs 1 - -cpu_per_rs 7 </arg> -->
-		 <!-- plane binding is number of tasks per socket -->
-		 <!-- <arg name="binding">- -latency_priority=cpu-cpu - -bind=proportional-packed:1 -d plane:84 </arg> -->
-		 <!-- The expression below calculates number of nodes (ceil of TOTALPES/MAX_MPITASKS_PER_NODE) -->
-		 <!-- $SHELL{echo "(($TOTALPES + $MAX_MPITASKS_PER_NODE - 1)/$MAX_MPITASKS_PER_NODE)" | bc} -->
 	 </arguments>
 	 </mpirun>
 		<!-- Useful jsrun options:
@@ -2945,30 +2938,19 @@
         <command name="load">gcc/6.4.0</command>
       </modules>
 
-      <!-- mpi lib settings -->
-      <modules mpilib="mpi-serial">
+      <modules>
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
       </modules>
+      <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
-      <modules compiler="ibm" mpilib="!mpi-serial">
+      <modules compiler="ibm,gnu" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="pgi*" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
@@ -2980,11 +2962,11 @@
 		  <env name="OMP_STACKSIZE">128M</env>
 		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
 		  <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
 		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
 		  <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       </environment_variables>
       <environment_variables mpilib="!mpi-serial">
+		<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
 </machine>
