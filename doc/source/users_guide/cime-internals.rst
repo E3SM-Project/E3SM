@@ -93,23 +93,6 @@ Given the various dependencies, CIME uses an order of precedence to determine th
 
 The **create_newcase** script outputs the matches that are found in determining the best out-of-the-box pe-layout.
 
-.. _defining-model-grids:
-
-Where are model grids defined?
-------------------------------
-
-CIME looks at the xml node ``GRIDS_SPEC_FILE`` in the **config_files.xml** file to identify supported out-of-the-box model grids for the target model. The node has the following contents:
-::
-
-   <entry id="GRIDS_SPEC_FILE">
-     <type>char</type>
-     <default_value>$CIMEROOT/cime_config/$MODEL/config_grids.xml</default_value>
-     <group>case_last</group>
-     <file>env_case.xml</file>
-     <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
-     <schema>$CIMEROOT/cime_config/xml_schemas/config_grids_v2.xsd</schema>
-   </entry>
-
 .. _defining-machines:
 
 Where are machines defined?
