@@ -10,7 +10,7 @@ module simple_cloud_fraction
 contains
 
 
-  subroutine smpl_frc( q, ql, qsat, ast, rhu00, dastdrh, &
+  subroutine smpl_frc( q, ql, qsat, ast, rhu00, dastdrh, dlnastdrh, &
                        smpl_frc_schm, smpl_frc_cld, smpl_frc_clr, pcols, pver, ncol )
 
   integer, intent(in) :: pcols, pver, ncol
@@ -18,12 +18,13 @@ contains
   real(r8),intent(in) :: smpl_frc_cld
   real(r8),intent(in) :: smpl_frc_clr
  
-  real(r8),intent(in)    ::    q(pcols,pver)
-  real(r8),intent(in)    ::   ql(pcols,pver)
+  real(r8),intent(in)    :: q(pcols,pver)
+  real(r8),intent(in)    :: ql(pcols,pver)
   real(r8),intent(in)    :: qsat(pcols,pver)
-  real(r8),intent(inout) ::  ast(pcols,pver)
-  real(r8),intent(out)   ::  dastdrh(pcols,pver)
-  real(r8),intent(out)   ::  rhu00 
+  real(r8),intent(inout) :: ast(pcols,pver)
+  real(r8),intent(out)   :: dastdrh(pcols,pver)
+  real(r8),intent(out)   :: rhu00 
+  real(r8),intent(out)   :: dlnastdrh(pcols,pver)
 
   integer :: i,k
 
@@ -36,7 +37,7 @@ contains
   real(r8),parameter :: pi = 3.141592653589793
  !real(r8),parameter :: fmax= 0.999_r8 ! upper limit for the cloud fraction
   real(r8),parameter :: fmax= 1._r8 ! upper limit for the cloud fraction
- 
+
   select case (smpl_frc_schm)
   case (0) ! Constant or binary
 
@@ -60,10 +61,9 @@ contains
     ast(:ncol,:pver) = rhdif(:ncol,:pver)**2
     ast(:ncol,:pver) = min(fmax,ast(:ncol,:pver))
 
-    dastdrh(:ncol,:pver) = rhdif(:ncol,:pver)/(1.0_r8-rhlim)*2._r8
-
-    where( ast(:ncol,:pver) .ge. fmax )
-      dastdrh(:ncol,:pver) = 0._r8
+    dastdrh(:ncol,:pver) = 0._r8
+    where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
+      dastdrh(:ncol,:pver) = rhdif(:ncol,:pver)/(1.0_r8-rhlim)*2._r8
     end where
 
     rhu00 = rhlim
@@ -120,6 +120,26 @@ contains
     end where
 
     rhu00 = rhlim
+
+  case (10) ! Like Slingo formula but we calculate dlnf/dRH instead of df/dRH when 0<f<1
+
+    rhpert = 0._r8
+    gbmrh(:ncol,:pver) = q(:ncol,:pver) /qsat(:ncol,:pver)*(1.0_r8+real(0,r8)*rhpert)
+
+    rhlim = 0.8_r8
+    rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
+    rhdif(:ncol,:pver) = max( min(rhdif(:ncol,:pver),1.0_r8), 0._r8)
+
+    ast(:ncol,:pver) = rhdif(:ncol,:pver)**2
+    ast(:ncol,:pver) = min(fmax,ast(:ncol,:pver))
+
+    dlnastdrh(:ncol,:pver) = 0._r8
+    where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
+      dlnastdrh(:ncol,:pver) = 2._r8/rhdif(:ncol,:pver)/(1.0_r8-rhlim)
+    end where
+
+    rhu00 = rhlim
+
 
   end select
 

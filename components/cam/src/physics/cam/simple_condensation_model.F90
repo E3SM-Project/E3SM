@@ -60,6 +60,7 @@ contains
     call addfld ('RKZ_RH',   (/'lev'/), 'I','1','grid-box mean relative humidity')
     call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
     call addfld ('RKZ_dfdRH',(/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity')
+    call addfld ('RKZ_dlnfdRH',(/'lev'/), 'I','1','derivative of logrithmic cloud fraction wrt relative humidity')
 
     call addfld ('RKZ_dfdt', (/'lev'/), 'I','1','estimated cloud fraction tendency')
 
@@ -92,6 +93,8 @@ contains
     call addfld ('RKZ_lmt45_flg', (/'lev'/), 'I', '1', 'flag indicating cells in which condition is met to trigger both limiter 4 and limiter 5')
 
     call addfld ('RKZ_gam',  (/'lev'/), 'I', '1', 'coefficient for (dqsat/dT)*(lv/cp) or alpha*beta used in simple condensation model')
+
+
 
   end subroutine simple_RKZ_init
 
@@ -177,6 +180,7 @@ contains
   real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
   real(r8) :: rhgbm(pcols,pver)      ! grid box mean relative humidity
   real(r8) :: dastdRH(pcols,pver)    ! df/dRH where f is the cloud fraction and RH the relative humidity
+  real(r8) :: dlnastdRH(pcols,pver)  ! dlnf/dRH where lnf is the logrithm of the cloud fraction and RH the relative humidity
 
   real(r8) :: qtend(pcols,pver)      ! Moisture tendency caused by other processes
   real(r8) :: ltend(pcols,pver)      ! liquid condensate tendency caused by other processes
@@ -216,7 +220,10 @@ contains
   logical :: lcondition4_qv(pcols,pver)  ! condition is met for triggering limiter 4 to prevent negative qv
   logical :: lcondition4_ql(pcols,pver)  ! condition is met for triggering limiter 4 to prevent negative ql
   logical :: lcondition5   (pcols,pver)  ! condition is met for triggering limiter 5
-
+  real(r8),parameter :: pi = 3.141592653589793
+  real(r8),parameter :: fmax= 1._r8 ! upper limit for the cloud fraction
+  real(r8) :: dastdb(pcols,pver)
+  real(r8) :: rhlim
 
   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rdtime = 1._r8/dtime
@@ -245,7 +252,7 @@ contains
   if (nstep > 1) ast_old(:ncol,:pver) = ast(:ncol,:pver)
 
   call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,      &! all in
-                  ast, rhu00, dastdRH,                              &! inout, out, out
+                  ast, rhu00, dastdRH, dlnastdRH,                   &! inout, out, out
                   rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! all in
 
   call outfld('RKZ_qv',    state%q(:,:,1),        pcols, lchnk)
@@ -255,6 +262,7 @@ contains
 
   call outfld('RKZ_f',     ast,      pcols, lchnk)
   call outfld('RKZ_dfdRH', dastdRH,  pcols, lchnk)
+  call outfld('RKZ_dlnfdRH', dlnastdRH,  pcols, lchnk)
 
   !===================================================================
   ! Condensation/evaporation rate
@@ -369,6 +377,12 @@ contains
      CASE (4,14)
        ql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
 
+     CASE (5,15)
+       ql_incld(:ncol,:pver) = 0.5_r8*state%q(:ncol,:pver,ixcldliq)
+
+     CASE (6,16)
+       ql_incld(:ncol,:pver) = 2.0_r8*state%q(:ncol,:pver,ixcldliq)
+
      CASE (7,17)
        ql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver),rkz_term_C_fmin)
 
@@ -434,6 +448,18 @@ contains
         term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)* &
                               (zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver))
 
+     case(4) ! test only for a different formula for df/dRH 
+     !!!here we use dlnf/dRH instead of df/dRH to make termC smoother 
+        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
+                                 -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver)) &
+                               /qsat(:ncol,:pver)
+        zc3(:ncol,:pver)    = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver)
+        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zc3(:ncol,:pver) )
+        term_C(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zforcing(:ncol,:pver)
+        term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
+
      case(21) !!term C for RK98 scheme with the finite difference method the same as case (1)
         ! use the finite difference to estimate df/dt, which is (fnew-fold)/(tn+1-tn)
         ! term_C = ql_incld*(df/dt)/(1+f*alpha*beta)
@@ -495,6 +521,9 @@ contains
 
      case(3)
          dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver) )
+
+     case(4)
+         dfdt(:ncol,:pver) = ast(:ncol,:pver)*dlnastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qme(:ncol,:pver) )
 
      case(21)
          dfdt(:ncol,:pver) = rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) )
