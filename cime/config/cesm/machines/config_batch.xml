@@ -30,6 +30,8 @@
  walltimemax: The maximum amount of walltime for a queue.
  nodemin:      The minimum node count required to use this queue.
  nodemax:      The maximum node count required to use this queue.
+ jobmin:      The minimum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemin.
+ jobmax:      The maximum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemax.
     -->
   <batch_system type="template" >
     <batch_query args=""></batch_query>
@@ -37,7 +39,7 @@
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
-      <directive name=""></directive>
+      <directive></directive>
     </directives>
   </batch_system>
 
@@ -47,7 +49,7 @@
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
-      <directive name=""></directive>
+      <directive></directive>
     </directives>
   </batch_system>
 
@@ -290,13 +292,24 @@
   </batch_system>
 
   <batch_system MACH="cheyenne" type="pbs">
-    <directives>
+    <directives queue="regular">
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
+
+    <directives queue="economy">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+
+    <directives queue="share">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select=1:mpiprocs={{ total_tasks }}:ompthreads={{ thread_count }}</directive>
+    </directives>
     <queues>
-      <queue default="true" walltimemax="12:00" nodemin="1" nodemax="32">regular</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="32">economy</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
+      <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
     </queues>
   </batch_system>
 
@@ -448,6 +461,32 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="lawrencium-lr3" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+      <directive>--qos=lr_normal</directive>
+      <directive>--partition=lr3</directive>
+      <directive>--account={{ project }}</directive>
+      <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
+    </queues>
+  </batch_system>
+  
+  <batch_system MACH="lawrencium-lr2" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
+    </queues>
+  </batch_system>
+  
   <batch_system MACH="stampede" type="slurm" >
     <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
@@ -556,6 +595,7 @@
     <job name="case.st_archive">
       <template>template.st_archive</template>
       <task_count>1</task_count>
+      <walltime>0:20:00</walltime>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
       <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>

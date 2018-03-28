@@ -839,28 +839,31 @@ contains
     !
     ! !LOCAL VARIABLES:
     logical          :: readvar   ! determine if variable is on initial file
+    logical          :: readrootfr = .false.
     !-----------------------------------------------------------------------
 
-if(use_dynroot) then
-    call restartvar(ncid=ncid, flag=flag, varname='root_depth', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='root depth', units='m', &
-         interpinic_flag='interp', readvar=readvar, data=this%root_depth_patch)
+    if(use_dynroot) then
+       call restartvar(ncid=ncid, flag=flag, varname='root_depth', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='root depth', units='m', &
+            interpinic_flag='interp', readvar=readvar, data=this%root_depth_patch)
 
-    call restartvar(ncid=ncid, flag=flag, varname='rootfr', xtype=ncd_double,  &
-         dim1name='pft', dim2name='levgrnd', switchdim=.true., &
-         long_name='root fraction', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%rootfr_patch)
-    if (flag=='read' .and. .not. readvar) then
+       call restartvar(ncid=ncid, flag=flag, varname='rootfr', xtype=ncd_double,  &
+            dim1name='pft', dim2name='levgrnd', switchdim=.true., &
+            long_name='root fraction', units='', &
+            interpinic_flag='interp', readvar=readrootfr, data=this%rootfr_patch)
+    else
+       readrootfr = .false.
+    end if
+    if (flag=='read' .and. .not. readrootfr) then
        if (masterproc) then
           write(iulog,*) "can't find rootfr in restart (or initial) file..."
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
             col_pp%nlevbed(bounds%begc:bounds%endc), &
-       	    this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
+            this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
-end if
   end subroutine Restart
 
 

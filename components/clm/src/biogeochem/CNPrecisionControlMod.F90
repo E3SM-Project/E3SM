@@ -782,8 +782,8 @@ contains
                   cn_eca = 0.0_r8
                   do l = 1,ndecomp_pools
                      if ( cs%decomp_cpools_vr_col(c,j,l) > 0.0_r8 .and.  &
-                          abs(cs%decomp_cpools_vr_col(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 .and.  &
-                          (.not. floating_cn_ratio_decomp_pools(l)) ) then
+                          abs(cs%decomp_cpools_vr_col(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
+                          .and. (.not. floating_cn_ratio_decomp_pools(l)) ) then
                         cn_eca = cn_eca - ( cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l) - ns%decomp_npools_vr_col(c,j,l) )
                         ns%decomp_npools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l)
                      end if

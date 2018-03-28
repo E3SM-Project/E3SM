@@ -49,7 +49,7 @@ _TEST_SUITES = {
                              "ERP.f45_g37_rx1.A",
                              "SMS_D_Ln9.f19_g16_rx1.A",
                              "DAE.f19_f19.A",
-                             "PET_P4.f19_f19.A",
+                             ("PET_P4.f19_f19.A","mach-pet"),
                              "SMS.T42_T42.S",
                              "PRE.f19_f19.ADESP",
                              "PRE.f19_f19.ADESP_TEST",
@@ -95,7 +95,7 @@ _TEST_SUITES = {
     "e3sm_atm_integration" : (None, None,
                               ("ERS_Ln9.ne4_ne4.FC5" ,
                                "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
-                               "PET_Ln5.ne4_ne4.FC5AV1C-L",
+                               ("PET_Ln5.ne4_ne4.FC5AV1C-L","mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
@@ -143,20 +143,24 @@ _TEST_SUITES = {
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
+		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-                           "PET.f19_g16.X",
-                           "PET.f45_g37_rx1.A",
-                           "PET_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
+                           ("PET.f19_g16.X","mach-pet"),
+                           ("PET.f45_g37_rx1.A","mach-pet"),
+                           ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","mach-pet"),
                            "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
-                           "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
-                           "SMS.f09_g16_a.MPASLIALB")
+                           "SMS.f09_g16_a.MPASLIALB",
+                           "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
+			   ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"),
+                           ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
-    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",),None,
-                     () ),
+    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",), None,
+                             ("SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
+                              "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L")),
 
     #e3sm tests for hi-res
     "e3sm_hi_res" : (("e3sm_atm_hi_res",),None,
@@ -165,9 +169,18 @@ _TEST_SUITES = {
                        "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
                      )),
 
+    #e3sm tests for RRM grids
+    "e3sm_rrm" : (None, None, 
+                  ("SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
+                   "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
+                   "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L")
+                 ),
+
     #e3sm tests to mimic production runs
     "e3sm_prod" : (("e3sm_atm_prod",),None,
-                     () ),
+                     (
+		      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
+		      )),
 
     "fates" : (None, None,
                          ("ERS_Ld9.1x1_brazil.ICLM45ED",
@@ -296,7 +309,13 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in e3sm_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
+            try:
+                tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
+            except:
+                if "." not in testarg:
+                    expect(False, "Unrecognized test suite '{}'".format(testarg))
+                else:
+                    raise
 
     for negation in negations:
         if (negation in e3sm_test_suites):

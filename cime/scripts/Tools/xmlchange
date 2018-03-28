@@ -85,6 +85,34 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.force , args.dryrun
 
+def xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun):
+    if xmlid in ["THREAD_COUNT", "TOTAL_TASKS", "TASKS_PER_NODE", "NUM_NODES", "SPARE_NODES", "TASKS_PER_NUMA", "CORES_PER_TASK"]:
+        expect(False, "Cannot xmlchange derived attribute {}".format(xmlid))
+
+    type_str = case.get_type_info(xmlid)
+    if append:
+        value = case.get_value(xmlid, resolved=False,
+                               subgroup=subgroup)
+        xmlval = "%s %s" % (value, xmlval)
+
+    if type_str is not None and not force:
+        xmlval = convert_to_type(xmlval, type_str, xmlid)
+
+    if not dryrun:
+        newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+        expect(newval is not None,"No variable \"%s\" found"%xmlid)
+    else:
+        logger.warning("'%s' = '%s'" , xmlid , xmlval )
+
+    # Subtle: If the user is making specific requests for walltime and queue, we need to
+    # store these choices in USER_REQUESTED_WALLTIME and/or USER_REQUESTED_QUEUE so they
+    # are not lost if the user does a case.setup --reset.
+    if xmlid == "JOB_WALLCLOCK_TIME":
+        case.set_value("USER_REQUESTED_WALLTIME", xmlval, subgroup)
+
+    if xmlid == "JOB_QUEUE":
+        case.set_value("USER_REQUESTED_QUEUE", xmlval, subgroup)
+
 def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
               append, noecho, force, dryrun):
 
@@ -103,40 +131,10 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
                 pair = setting.split("=",1)
                 expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) )
                 (xmlid, xmlval) = pair
-                type_str = case.get_type_info(xmlid)
-                if append:
-                    value = case.get_value(xmlid, resolved=False,
-                                           subgroup=subgroup)
-                    xmlval = "%s %s" % (value, xmlval)
 
-                if type_str is not None and not force:
-                    xmlval = convert_to_type(xmlval, type_str, xmlid)
-
-                if not dryrun:
-                    newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-                    expect(newval is not None,"No variable \"%s\" found"%xmlid)
-                else:
-                    logger.warning("'%s' = '%s'" , xmlid , xmlval )
+                xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun)
         else:
-            if append:
-                value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
-                xmlval = "%s %s" % (value, xmlval)
-
-            type_str = case.get_type_info(xmlid)
-            if type_str is not None and not force:
-                xmlval = convert_to_type(xmlval, type_str, xmlid)
-
-            newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-            expect(newval is not None,"No variable '%s' found" % xmlid)
-
-        # Subtle: If the user is making specific requests for walltime and queue, we need to
-        # store these choices in USER_REQUESTED_WALLTIME and/or USER_REQUESTED_QUEUE so they
-        # are not lost if the user does a case.setup --reset.
-        if xmlid == "JOB_WALLCLOCK_TIME":
-            case.set_value("USER_REQUESTED_WALLTIME", xmlval, subgroup)
-
-        if xmlid == "JOB_QUEUE":
-            case.set_value("USER_REQUESTED_QUEUE", xmlval, subgroup)
+            xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun)
 
     if not noecho:
         argstr = ""

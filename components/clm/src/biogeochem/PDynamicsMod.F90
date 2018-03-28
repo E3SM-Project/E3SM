@@ -673,7 +673,8 @@ contains
             end do
             do l = 1,ndecomp_pools
                 if (is_soil(l)) then
-                   biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)/dt),0._r8)
+                   biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l)&
+                        , decomp_ppools_vr_col(c,j,l)/dt),0._r8)
                 end if
             end do
         end do

@@ -231,7 +231,7 @@ contains
     allocate(this%qflx_drain_vr_col        (begc:endc,1:nlevgrnd))   ; this%qflx_drain_vr_col        (:,:) = nan
     allocate(this%qflx_adv_col             (begc:endc,0:nlevgrnd))   ; this%qflx_adv_col             (:,:) = nan
     allocate(this%qflx_rootsoi_col         (begc:endc,1:nlevgrnd))   ; this%qflx_rootsoi_col         (:,:) = nan
-    allocate(this%qflx_rootsoi_frac_patch  (begp:endp,1:nlevsoi))    ; this%qflx_rootsoi_frac_patch  (:,:) = nan 
+    allocate(this%qflx_rootsoi_frac_patch  (begp:endp,1:nlevgrnd))    ; this%qflx_rootsoi_frac_patch  (:,:) = nan 
     allocate(this%qflx_infl_col            (begc:endc))              ; this%qflx_infl_col            (:)   = nan
     allocate(this%qflx_surf_col            (begc:endc))              ; this%qflx_surf_col            (:)   = nan
     allocate(this%qflx_totdrain_col        (begc:endc))              ; this%qflx_totdrain_col        (:)   = nan

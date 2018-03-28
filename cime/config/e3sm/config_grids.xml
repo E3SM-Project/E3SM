@@ -1309,6 +1309,7 @@
       <support>For testing of the WAV model</support>
     </domain>
 
+    <!-- RRM grids -->
     <domain name="ne0np4_arm_x8v3_lowcon">
       <nx>92558</nx>
       <ny>1</ny>
@@ -1342,6 +1343,27 @@
       <file lnd_mask="oRRS18to6v3">domain.lnd.twpx4v1_oRRS18to6v3.170629.nc</file>
       <file ocn_mask="oRRS18to6v3">domain.ocn.twpx4v1_oRRS18to6v3.170629.nc</file>
     </domain>
+
+    <domain name="ne0np4_conus_x4v1_lowcon">
+      <nx>89147</nx>
+      <ny>1</ny>
+      <desc>1-deg with 1/4-deg over CONUS (version 1):</desc>
+      <file atm_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
+    </domain>
+
+    <!-- Old mask for CONUS grid -->
+    <domain name="tx0.1v2">
+      <nx>3600</nx>  <ny>2400</ny>
+      <file atm_mask="tx0.1v2">domain.ocn.tx0.1v2.090218.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.tx0.1v2.090218.nc</file>
+      <file lnd_mask="tx0.1v2">domain.ocn.tx0.1v2.090218.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.tx0.1v2.090218.nc</file>
+      <desc>tx0.1v2 is an old mask used for CONUS:</desc>
+    </domain>
+
 
     <domain name="oQU240">
       <nx>7153</nx>

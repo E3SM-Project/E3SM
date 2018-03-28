@@ -1228,10 +1228,6 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def assert_num_leftovers(self):
     ###########################################################################
-        # There should only be two directories matching the test_id in both
-        # the testroot (bld/run dump area) and jenkins root
-        if (test_id is None):
-            test_id = self._baseline_name
         num_tests_in_tiny = len(update_e3sm_tests.get_test_suite("cime_test_only_pass"))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
@@ -2686,7 +2682,7 @@ OR
 
     \033[1;32m# Run test test_wait_for_test_all_pass from class M_TestWaitForTests \033[0m
     > {0} M_TestWaitForTests.test_wait_for_test_all_pass
-"""
+""".format(os.path.basename(sys.argv[0]))
 
     parser = argparse.ArgumentParser(usage=help_str,
                                      description=description,

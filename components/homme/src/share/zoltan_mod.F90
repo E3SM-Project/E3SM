@@ -5,11 +5,15 @@
 module zoltan_mod
   use kinds, only : iulog, real_kind
   use parallel_mod, only : abortmp
-  use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
-                                       ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
+  use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, &
+                                       ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, &
+                                       ZOLTAN2PHG, ZOLTAN2METIS, &
+                                       ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, &
+                                       ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
                                        ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA, &
                                        ZOLTAN2MJRCB, ZOLTAN2_1PHASEMAP,  &
-                                       Z2_NO_TASK_MAPPING, Z2_TASK_MAPPING, Z2_OPTIMIZED_TASK_MAPPING
+                                       Z2_NO_TASK_MAPPING, Z2_TASK_MAPPING, &
+                                       Z2_OPTIMIZED_TASK_MAPPING
   implicit none
 
   private 

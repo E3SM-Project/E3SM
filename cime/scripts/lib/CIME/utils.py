@@ -615,10 +615,8 @@ def get_current_commit(short=False, repo=None, tag=False):
         rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
         rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
-    if rc == 0:
-        return output
-    else:
-        return 'unknown'
+
+    return output if rc == 0 else "unknown"
 
 def get_scripts_location_within_cime():
     """
@@ -1208,11 +1206,11 @@ def append_status(msg, sfile, caseroot='.'):
 
     # Reduce empty lines in CaseStatus. It's a very concise file
     # and does not need extra newlines for readability
-    line_ending = "" if sfile == "CaseStatus" else "\n"
+    line_ending = "\n"
 
     with open(os.path.join(caseroot, sfile), "a") as fd:
         fd.write(ctime + msg + line_ending)
-        fd.write("\n ---------------------------------------------------\n" + line_ending)
+        fd.write(" ---------------------------------------------------" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """

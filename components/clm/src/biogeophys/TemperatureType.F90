@@ -590,7 +590,8 @@ contains
                         this%t_soisno_col(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1)) 
                      end do
                      ! Set wall and roof layers to initial air temperature
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                       .or. col_pp%itype(c) == icol_roof) then
                      this%t_soisno_col(c,1:nlevurb) = 297.56
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
@@ -602,7 +603,8 @@ contains
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1)) 
                      end do
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                       .or. col_pp%itype(c) == icol_roof) then
                      ! Set wall and roof layers to initial air temperature
                      this%t_soisno_col(c,1:nlevurb) = 289.46
                   else
