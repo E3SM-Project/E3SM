@@ -45,6 +45,7 @@ module atm_core
       type (mpas_pool_type), pointer :: diag
       type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
       character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: initial_time1, initial_time2
       type (MPAS_Time_Type) :: startTime
 
       integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
@@ -152,6 +153,13 @@ module atm_core
 
          call mpas_pool_get_array(state, 'xtime', xtime, 1)
          xtime = startTimeStamp
+
+         ! Initialize initial_time in second time level. We need to do this because initial state
+         ! is read into time level 1, and if we write output from the set of state arrays that
+         ! represent the original time level 2, the initial_time field will be invalid.
+         call mpas_pool_get_array(state, 'initial_time', initial_time1, 1)
+         call mpas_pool_get_array(state, 'initial_time', initial_time2, 2)
+         initial_time2 = initial_time1
 
          block => block % next
       end do
