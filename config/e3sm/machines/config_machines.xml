@@ -2929,12 +2929,17 @@
       </modules>
       <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
-      <modules compiler="ibm,gnu" mpilib="!mpi-serial">
+      <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="pgi*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
