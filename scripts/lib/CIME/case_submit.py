@@ -9,7 +9,7 @@ import socket
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
 from CIME.preview_namelists         import create_namelists
-from CIME.check_lockedfiles         import check_lockedfiles, check_lockedfile, unlock_file
+from CIME.check_lockedfiles         import check_lockedfiles, check_lockedfile, unlock_file, lock_file
 from CIME.check_input_data          import check_all_input_data
 from CIME.test_status               import *
 
@@ -72,6 +72,7 @@ manual edits to these file will be lost!
             env_batch.make_all_batch_files(case)
 
         unlock_file(os.path.basename(env_batch.filename))
+        lock_file(os.path.basename(env_batch.filename))
 
         if job in ("case.test","case.run"):
             check_case(case)

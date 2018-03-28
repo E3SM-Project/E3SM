@@ -54,7 +54,12 @@ The file **$CIMEROOT/config/[cesm,acme]/config_files.xml** contains all model-sp
 Where are compsets defined?
 ---------------------------
 
-CIME looks at the xml element ``COMPSETS_SPEC_FILE`` in the **config_files.xml** file to determine which xml file to read in order to satisfy the configuration specifications defined in the compset longname.
+In CIME, multiple components can define compsets that are targeted to their model development needs.
+
+Each component supports a set of compset longnames that are used in testing and supported in out of the box configurations.
+
+To determine if the compset name to **create_newcase** is a supported component, CIME looks in the **config_files.xml** file and parses the
+the xml element ``COMPSETS_SPEC_FILE`` in order to determine which component is defining the compset.
 
 In the case of CESM, this xml element has the contents shown here, where ``$SRCROOT`` is the root of your CESM sandbox and contains ``$CIMEROOT`` as a subdirectory:
 
@@ -80,8 +85,8 @@ In the case of CESM, this xml element has the contents shown here, where ``$SRCR
 
 .. _defining-component-specific-compset-settings:
 
-Where are component-specific settings defined for the target compset?
----------------------------------------------------------------------
+How is the long compset name parsed?
+------------------------------------
 
 Every model component contains a **config_component.xml** file that has two functions:
 
@@ -257,4 +262,51 @@ CIME looks at the xml element ``COMPILERS_SPEC_FILE`` in the **config_files.xml*
 
 When porting, you will need to :ref:`customize the config_compilers.xml file <customizing-compiler-file>`.
 
+.. _customizing-cime:
 
+Customizing CIME For Your Needs
+-------------------------------
+
+CIME recognizes a user-created custom configuration directory, ``$HOME/.cime``. The contents of this directory may include any one of the following list of files:
+
+* ``config``
+
+   This file must have a format which follows the python config format. See `Python Config Parser Examples <https://wiki.python.org/moin/ConfigParserExamples>`_
+
+   In the [main] block you can set the following variables:
+
+   * ``CIME_MODEL=[e3sm, cesm]``
+
+   * ``PROJECT=<account number>``
+
+     This is your project account code for batch submission and/or directory priveleges
+
+   * ``CHARGE_ACCOUNT=<account number>``
+
+     An alternative to PROJECT for batch charging>
+
+   * ``MAIL_USER=<email address>``
+
+     Used request a non-default email for batch summary output
+
+   * ``MAIL_TYPE=[never,all,begin,fail,end]``
+
+    Any **or** all the above valid values can be set to list the batch events that emails will be sent for.
+
+   * **create_test** input arguments
+
+     Any argument to the **create_test** script can have its default changed by listing it here with the new default.
+
+* ``config_machines.xml``
+
+  This file must the same format as ``$CIMEROOT/config/$model/machines/config_machines.xml`` with the appropriate definitions for your machine.
+
+  If you have a customized version of this file in ``$HOME/.cime``, it will **append** to the file in ``$CIMEROOT/config/$model/machines/config_machines.xml``.
+
+* ``config_compilers.xml``
+
+  .. todo:: Add content for config_compilers.xml
+
+* ``config_batch.xml``
+
+  .. todo:: Add content for config_batch.xml

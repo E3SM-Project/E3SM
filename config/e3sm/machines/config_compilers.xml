@@ -867,27 +867,31 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> $(shell nf-config --flibs) -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2">$(shell nf-config --flibs)  -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> $(shell nf-config --flibs) -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> $(shell nf-config --flibs) -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> $(shell nf-config --flibs) -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> $(shell nf-config --flibs) -mkl=cluster </ADD_SLIBS>
+  <!-- mx: the cray-netcdf has wrong configuration on titan, so have to specify the lib path explicitly  -->
+  <ADD_SLIBS MPILIB="mpi-serial"> -L/opt/cray/netcdf/4.4.1.1.3/INTEL/16.0/lib -lnetcdff -L/opt/cray/hdf5/1.10.0.3/GNU/4.9/lib -lnetcdf -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="glc"> -target-cpu=istanbul </ADD_FFLAGS>
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>
-  <TRILINOS_PATH>/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-pgi-ci-nophal/install</TRILINOS_PATH>
+  <ADD_SLIBS MPILIB="mpich"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> $(shell nf-config --flibs) </ADD_SLIBS>
+  <!-- mx: the cray-netcdf has wrong configuration on titan, so have to specify the lib path explicitly  -->
+  <ADD_SLIBS MPILIB="mpi-serial"> -L/opt/cray/netcdf/4.4.1.1.3/PGI/15.3/lib -lnetcdff -L/opt/cray/hdf5/1.10.0.3/GNU/4.9/lib -lnetcdf </ADD_SLIBS>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <MPIFC> ftn </MPIFC>
@@ -1305,8 +1309,8 @@ for mct, etc.
       <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
       "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
  -->
- <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
- <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" >  -C=all  -g  -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
  <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler>
 
@@ -1334,6 +1338,19 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
+
+<compiler COMPILER="nag" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C=all  -g  -O0 -v </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
 
 <compiler MACH="grizzly" COMPILER="gnu">
 	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>

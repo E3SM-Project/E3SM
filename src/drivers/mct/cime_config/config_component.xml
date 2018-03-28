@@ -2030,7 +2030,8 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>The mpi processor stride associated with the mpi tasks</desc>
+    <desc>The mpi global processors stride associated with the mpi tasks for the a component</desc>
+
   </entry>
 
   <entry id="TOTALPES">
