@@ -10,7 +10,7 @@ Case Control System Part 1: Basic Usage
 #######################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    introduction-and-overview.rst
@@ -29,7 +29,7 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
 #######################################################################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    cime-internals.rst
@@ -38,7 +38,7 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
    machine.rst
    pes-threads.rst
    porting-cime.rst
-   optimizing-processor-layout.rst
+   timers.rst
    testing.rst
    unit_testing.rst
    multi-instance.rst
