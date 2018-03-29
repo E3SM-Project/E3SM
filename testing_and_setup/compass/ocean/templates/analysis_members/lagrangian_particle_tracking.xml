@@ -1,0 +1,158 @@
+<template>
+	<namelist>
+		<option name="config_AM_lagrPartTrack_enable">.true.</option>
+		<option name="config_AM_lagrPartTrack_compute_interval">'dt'</option>
+		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
+		<option name="config_AM_lagrPartTrack_output_stream">'lagrPartTrackOutput'</option>
+		<option name="config_AM_lagrPartTrack_restart_stream">'lagrPartTrackRestart'</option>
+		<option name="config_AM_lagrPartTrack_input_stream">'lagrPartTrackInput'</option>
+		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
+		<option name="config_AM_lagrPartTrack_filter_number">0</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'none'</option>
+		<option name="config_AM_lagrPartTrack_reset_global_timestamp">'0000_00:00:00'</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
+		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_if_inside_region">.false.</option>
+	</namelist>
+
+	<streams>
+		<stream name="lagrPartTrackOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">lagrPartTrackOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">stream:output:output_interval</attribute>
+			<attribute name="filename_template">analysis_members/lagrPartTrack.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">lagrPartTrackAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="indexToParticleID" type="var"/>
+				<member name="currentBlock" type="var"/>
+				<member name="currentCell" type="var"/>
+				<member name="xParticle" type="var"/>
+				<member name="yParticle" type="var"/>
+				<member name="zParticle" type="var"/>
+				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
+				<member name="buoyancyParticle" type="var"/>
+				<member name="vertexReconstMethod" type="var"/>
+				<member name="horizontalTreatment" type="var"/>
+				<member name="verticalTreatment" type="var"/>
+				<member name="dtParticle" type="var"/>
+				<member name="timeIntegration" type="var"/>
+				<member name="indexLevel" type="var"/>
+				<member name="uVertexVelocity" type="var"/>
+				<member name="vVertexVelocity" type="var"/>
+				<member name="wVertexVelocity" type="var"/>
+				<member name="filteredVelocityU" type="var"/>
+				<member name="filteredVelocityV" type="var"/>
+				<member name="filteredVelocityW" type="var"/>
+				<member name="cellOwnerBlock" type="var"/>
+				<member name="transfered" type="var"/>
+				<member name="buoyancySurfaceValues" type="var"/>
+				<member name="buoyancySurfaceVelocityMeridional" type="var"/>
+				<member name="buoyancySurfaceVelocityZonal" type="var"/>
+				<member name="buoyancySurfaceDepth" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<streams>
+		<stream name="lagrPartTrackRestart">
+			<attribute name="name">lagrPartTrackRestart</attribute>
+			<attribute name="filename_interval">output_interval</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+			<attribute name="filename_template">analysis_members/lagrangianParticleTrackingRestart.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">lagrPartTrackAMPKG</attribute>
+			<attribute name="type">input;output</attribute>
+			<attribute name="immutable">true</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="indexToParticleID" type="var"/>
+				<member name="currentBlock" type="var"/>
+				<member name="currentCell" type="var"/>
+				<member name="xParticle" type="var"/>
+				<member name="yParticle" type="var"/>
+				<member name="zParticle" type="var"/>
+				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
+				<member name="buoyancyParticle" type="var"/>
+				<member name="vertexReconstMethod" type="var"/>
+				<member name="horizontalTreatment" type="var"/>
+				<member name="verticalTreatment" type="var"/>
+				<member name="dtParticle" type="var"/>
+				<member name="timeIntegration" type="var"/>
+				<member name="indexLevel" type="var"/>
+				<member name="transfered" type="var"/>
+				<member name="buoyancySurfaceValues" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<streams>
+		<stream name="lagrPartTrackInput">
+			<attribute name="filename_template">analysis_members/lagrangianParticleTrackingInput.nc</attribute>
+			<attribute name="name">lagrPartTrackInput</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">lagrPartTrackAMPKG</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="immutable">true</attribute>
+			<add_contents>
+				<member name="indexToParticleID" type="var"/>
+				<member name="currentBlock" type="var"/>
+				<member name="currentCell" type="var"/>
+				<member name="xParticle" type="var"/>
+				<member name="yParticle" type="var"/>
+				<member name="zParticle" type="var"/>
+				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
+				<member name="buoyancyParticle" type="var"/>
+				<member name="vertexReconstMethod" type="var"/>
+				<member name="horizontalTreatment" type="var"/>
+				<member name="verticalTreatment" type="var"/>
+				<member name="dtParticle" type="var"/>
+				<member name="timeIntegration" type="var"/>
+				<member name="indexLevel" type="var"/>
+				<member name="transfered" type="var"/>
+				<member name="buoyancySurfaceValues" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="lagrPartTrackRegions">
+			<attribute name="type">none</attribute>
+			<attribute name="filename_template">particle_regions.nc</attribute>
+			<attribute name="name">lagrPartTrackRegions</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">lagrPartTrackAMPKG</attribute>
+			<add_contents>
+				<var name="resetOutsideRegionMaskValue1"/>
+				<var name="resetInsideRegionMaskValue1"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

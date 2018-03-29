@@ -9,19 +9,21 @@
 !
 !  ocn_vel_hmix_leith
 !
-!> \brief Ocean horizontal mixing - Leith parameterization 
+!> \brief Ocean horizontal mixing - Leith parameterization
 !> \author Mark Petersen
 !> \date   22 October 2012
 !> \details
-!>  This module contains routines for computing horizontal mixing 
+!>  This module contains routines for computing horizontal mixing
 !>  tendencies using the Leith parameterization.
 !
 !-----------------------------------------------------------------------
 
 module ocn_vel_hmix_leith
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_constants
    use ocn_constants
 
    implicit none
@@ -62,7 +64,7 @@ contains
 !> \brief  Computes tendency term for horizontal momentum mixing with Leith parameterization
 !> \author Mark Petersen, Todd Ringler
 !> \date   22 October 2012
-!> \details 
+!> \details
 !> This routine computes the horizontal mixing tendency for momentum
 !> based on the Leith closure.  The Leith closure is the
 !> enstrophy-cascade analogy to the Smagorinsky (1963) energy-cascade
@@ -70,10 +72,10 @@ contains
 !> moving toward the mesh scale. The assumption of an enstrophy cascade
 !> and dimensional analysis produces right-hand-side dissipation,
 !> $\bf{D}$, of velocity of the form
-!> $ {\bf D} = \nabla \cdot \left( \nu_\ast \nabla {\bf u} \right) 
-!>    = \nabla \cdot \left( \gamma \left| \nabla \omega  \right| 
+!> $ {\bf D} = \nabla \cdot \left( \nu_\ast \nabla {\bf u} \right)
+!>    = \nabla \cdot \left( \gamma \left| \nabla \omega  \right|
 !>      \left( \Delta x \right)^3 \nabla \bf{u} \right)
-!> where $\omega$ is the relative vorticity and $\gamma$ is a non-dimensional, 
+!> where $\omega$ is the relative vorticity and $\gamma$ is a non-dimensional,
 !> $O(1)$ parameter. We set $\gamma=1$.
 
 !
@@ -122,12 +124,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, cell1, cell2, vertex1, vertex2, k
-      integer, pointer :: nEdgesSolve
+      integer :: iEdge, cell1, cell2, vertex1, vertex2, k, nEdges
+      integer, dimension(:), pointer :: nEdgesArray
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
 
-      real (kind=RKIND) :: u_diffusion, invLength1, invLength2, visc2
+      real (kind=RKIND) :: u_diffusion, invLength_dc, invLength_dv, visc2
       real (kind=RKIND), dimension(:), pointer :: meshScaling, &
               dcEdge, dvEdge
 
@@ -143,11 +145,13 @@ contains
 
       if(.not.hmixLeithOn) return
 
+      call mpas_timer_start("vel leith")
+
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_parameter', config_leith_parameter)
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_dx', config_leith_dx)
       call mpas_pool_get_config(ocnConfigs, 'config_Leith_visc2_max', config_leith_visc2_max)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -157,29 +161,32 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
-      do iEdge = 1, nEdgesSolve
+      nEdges = nEdgesArray( 1 )
+
+      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invLength_dc, invLength_dv, k, u_diffusion, visc2)
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invLength1 = 1.0 / dcEdge(iEdge)
-         invLength2 = 1.0 / dvEdge(iEdge)
+         invLength_dc = 1.0_RKIND / dcEdge(iEdge)
+         invLength_dv = 1.0_RKIND / dvEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
-            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently 
+            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently
             !    + k \times \nabla relativeVorticity pointing from cell1 to cell2.
 
-            u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength1 &
-                         -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength2
+            u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength_dc &
+                         -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength_dv
 
             ! Here the first line is (\delta x)^3
             ! the second line is |\nabla \omega|
             ! and u_diffusion is \nabla^2 u (see formula for $\bf{D}$ above).
-            visc2 = ( config_leith_parameter * config_leith_dx * meshScaling(iEdge) / 3.14)**3 &
-                     * abs( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength1 * sqrt(3.0)
+            visc2 = ( config_leith_parameter * config_leith_dx * meshScaling(iEdge) / pii)**3 &
+                     * abs( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength_dc * sqrt(3.0_RKIND)
             visc2 = min(visc2, config_leith_visc2_max)
 
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * visc2 * u_diffusion
@@ -188,6 +195,9 @@ contains
 
          end do
       end do
+      !$omp end do
+
+      call mpas_timer_stop("vel leith")
 
    !--------------------------------------------------------------------
 
@@ -200,9 +210,9 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing with Leith parameterization
 !> \author Mark Petersen
 !> \date   22 October 2012
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  Leith parameterization for horizontal momentum mixing in the ocean.  
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  Leith parameterization for horizontal momentum mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 

@@ -1,0 +1,41 @@
+{
+    "type": "FeatureCollection", 
+    "groupName": "enterGroupName", 
+    "features": [
+        {
+            "type": "Feature", 
+            "properties": {
+                "name": "Land Coverage", 
+                "tags": "", 
+                "object": "region", 
+                "component": "natural_earth", 
+                "author": "http://www.naturalearthdata.com/"
+            }, 
+            "geometry": {
+                "type": "MultiPolygon", 
+                "coordinates": [
+                    [
+                        [
+                            [
+                                -156.5,
+                                  71.25
+                            ], 
+                            [
+                                -156.3,
+                                  71.25
+                            ], 
+                            [
+                                -156.3,
+                                  71.55
+                            ], 
+                            [
+                                -156.5,
+                                  71.55
+                            ]
+                        ]
+                    ]
+                ]
+            }
+        }
+    ]
+}

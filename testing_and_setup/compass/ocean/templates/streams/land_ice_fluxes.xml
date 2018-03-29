@@ -1,0 +1,34 @@
+<template>
+	<streams>
+		<stream name="land_ice_fluxes">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">land_ice_fluxes.nc</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<add_contents>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="landIceDraft" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
+				<member name="landIceFrictionVelocity" type="var"/>
+				<member name="topDrag" type="var"/>
+				<member name="topDragMagnitude" type="var"/>
+				<member name="landIceFreshwaterFlux" type="var"/>
+				<member name="landIceHeatFlux" type="var"/>
+				<member name="heatFluxToLandIce" type="var"/>
+				<member name="effectiveDensityInLandIce" type="var"/>
+				<member name="landIceBoundaryLayerTracers" type="var_array"/>
+				<member name="landIceTracerTransferVelocities" type="var_array"/>
+				<member name="landIceInterfaceTracers" type="var_array"/>
+				<member name="accumulatedLandIceMass" type="var"/>
+				<member name="accumulatedLandIceHeat" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

@@ -41,7 +41,6 @@ RM = rm -f
 CPP = cpp -P -traditional
 FC=$(MPIFC)
 CC=$(MPICC)
-CXX=$(MPICXX)
 NETCDF=$(NETCDF_PATH)
 PNETCDF=$(PNETCDF_PATH)
 PIO=$(EXEROOT)/pio
@@ -71,7 +70,7 @@ all:
 	@echo $(CPPINCLUDES)
 	@echo $(FCINCLUDES)
 	( $(MAKE) mpas RM="$(RM)" CPP="$(CPP)" NETCDF="$(NETCDF)" PNETCDF="$(PNETCDF)" \
-	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" CXX="$(CXX)" SFC="$(SFC)" SCC="$(SCC)" \
+	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" SFC="$(SFC)" SCC="$(SCC)" \
 	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
 	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
 
@@ -83,7 +82,7 @@ mpas: externals frame ops dycore drver
 	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
 
 externals:
-	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" CXX="$(CXX)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
+	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
 
 drver: externals frame ops dycore
 	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 

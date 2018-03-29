@@ -13,13 +13,14 @@
 !> \author Doug Jacobsen
 !> \date   16 September 2011
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencies for thickness from vertical advection
 !
 !-----------------------------------------------------------------------
 
 module ocn_thick_vadv
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -62,7 +63,7 @@ contains
 !> \brief   Computes tendency term from vertical advection of thickness
 !> \author  Doug Jacobsen
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical advection tendency for
 !>  thicknes based on current state and user choices of forcings.
 !
@@ -105,14 +106,15 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: MaxLevelCell
 
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -121,16 +123,24 @@ contains
 
       if(.not.thickVadvOn) return
 
+      call mpas_timer_start("thick vadv")
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+      nCells = nCellsArray( 1 )
+
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
             tend(k,iCell) = tend(k,iCell) + vertAleTransportTop(k+1,iCell) - vertAleTransportTop(k,iCell)
          end do
       end do
+      !$omp end do
+
+      call mpas_timer_stop("thick vadv")
 
    !--------------------------------------------------------------------
 
@@ -143,9 +153,9 @@ contains
 !> \brief   Initializes ocean thickness vertical advection
 !> \author  Doug Jacobsen
 !> \date    16 September 2011
-!> \details 
-!>  This routine initializes quantities related to vertical advection of 
-!>  thickness in the ocean. 
+!> \details
+!>  This routine initializes quantities related to vertical advection of
+!>  thickness in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -168,7 +178,7 @@ contains
       thickVadvOn = .true.
 
       if(config_disable_thick_vadv) thickVadvOn = .false.
-      
+
       err = 0
 
    !--------------------------------------------------------------------

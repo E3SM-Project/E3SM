@@ -1,0 +1,31 @@
+<template>
+	<namelist>
+		<option name="config_AM_layerVolumeWeightedAverage_enable">.true.</option>
+		<option name="config_AM_layerVolumeWeightedAverage_compute_interval">'output_interval'</option>
+		<option name="config_AM_layerVolumeWeightedAverage_compute_on_startup">.false.</option>
+		<option name="config_AM_layerVolumeWeightedAverage_write_on_startup">.false.</option>
+		<option name="config_AM_layerVolumeWeightedAverage_output_stream">'layerVolumeWeightedAverageOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="layerVolumeWeightedAverageOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">layerVolumeWeightedAverageOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/layerVolumeWeightedAverage.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="packages">layerVolumeWeightedAverageAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="minValueWithinOceanLayerRegion" type="var_array"/>
+				<member name="maxValueWithinOceanLayerRegion" type="var_array"/>
+				<member name="avgValueWithinOceanLayerRegion" type="var_array"/>
+				<member name="minValueWithinOceanVolumeRegion" type="var_array"/>
+				<member name="maxValueWithinOceanVolumeRegion" type="var_array"/>
+				<member name="avgValueWithinOceanVolumeRegion" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

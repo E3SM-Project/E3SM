@@ -13,13 +13,14 @@
 !> \author Doug Jacobsen
 !> \date   12/17/12
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencies for thickness from surface fluxes
 !
 !-----------------------------------------------------------------------
 
 module ocn_thick_surface_flux
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -64,13 +65,14 @@ contains
 !> \brief   Computes tendency term from horizontal advection of thickness
 !> \author  Doug Jacobsen
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal advection tendency for
 !>  thicknes based on current state and user choices of forcings.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceThicknessFlux, tend, err)!{{{
+   subroutine ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, transmissionCoefficientsRunoff, &
+      layerThickness, surfaceThicknessFlux, surfaceThicknessFluxRunoff, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -81,13 +83,15 @@ contains
          meshPool              !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         transmissionCoefficients !< Input: Coefficients for the transmission of surface fluxes
+         transmissionCoefficients,     &!< Input: Coefficients for the transmission of surface fluxes
+         transmissionCoefficientsRunoff !< Input: Coefficients for the transmission of surface fluxes due to river runoff
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness   !< Input: Layer thickness
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceThicknessFlux   !< Input: surface flux of thickness
+         surfaceThicknessFlux,       &!< Input: surface flux of thickness
+         surfaceThicknessFluxRunoff   !< Input: surface flux of thickness due to river runoff
 
 
       !-----------------------------------------------------------------
@@ -113,34 +117,49 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:,:), pointer :: cellMask
 
-      real (kind=RKIND) :: remainingFlux
+      real (kind=RKIND) :: remainingFlux, remainingFluxRunoff
 
       err = 0
 
       if (.not. surfaceThicknessFluxOn) return
 
+      call mpas_timer_start("thick surface flux")
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
+      nCells = nCellsArray( 1 )
+
+      !$omp do schedule(runtime) private(remainingFlux, remainingFluxRunoff, k)
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
+        remainingFluxRunoff = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
+          remainingFluxRunoff = remainingFluxRunoff - transmissionCoefficientsRunoff(k, iCell)
 
-          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)
+          tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)  &
+                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux * surfaceThicknessFlux(iCell)
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + remainingFlux * surfaceThicknessFlux(iCell)
+        end if
+
+        if(maxLevelCell(iCell) > 0 .and. remainingFluxRunoff > 0.0_RKIND) then
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
+             + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
         end if
       end do
+      !$omp end do
+
+      call mpas_timer_stop("thick surface flux")
 
    !--------------------------------------------------------------------
 
@@ -153,9 +172,9 @@ contains
 !> \brief   Initializes ocean horizontal thickness surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
-!>  This routine initializes quantities related to thickness 
-!>  surface fluxes in the ocean. 
+!> \details
+!>  This routine initializes quantities related to thickness
+!>  surface fluxes in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -172,23 +191,16 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       logical, pointer :: config_disable_thick_sflux
-      character (len=StrKIND), pointer :: config_forcing_type
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_sflux', config_disable_thick_sflux)
-      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       surfaceThicknessFluxOn = .true.
 
       if (config_disable_thick_sflux) then
          surfaceThicknessFluxOn = .false.
       end if
-
-      if (config_forcing_type == trim('off')) then
-         surfaceThicknessFluxOn = .false.
-      end if
-
 
    !--------------------------------------------------------------------
 

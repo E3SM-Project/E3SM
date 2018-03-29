@@ -13,13 +13,14 @@
 !> \author  Mark Petersen
 !> \date    July 2013
 !> \details
-!>  This module contains the main driver routine for computing 
+!>  This module contains the main driver routine for computing
 !>  horizontal mixing tendencies for high frequency thickness mixing
 !
 !-----------------------------------------------------------------------
 
 module ocn_high_freq_thickness_hmix_del2
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -64,8 +65,8 @@ contains
 !> \brief   Computes Laplacian tendency term for horizontal highFreqThickness mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
-!>  This routine computes the horizontal mixing tendency for 
+!> \details
+!>  This routine computes the horizontal mixing tendency for
 !>  high frequency thickness
 !>  based on current state using a Laplacian parameterization.
 !
@@ -122,6 +123,8 @@ contains
 
       if(.not.config_use_highFreqThick_del2) return
 
+      call mpas_timer_start("thick hmix del2")
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
@@ -137,15 +140,16 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, hhf_turb_flux, flux)
       do iCell = 1, nCells
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOncell(iCell)
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
 
             r_tmp = meshScalingDel2(iEdge) * config_highFreqThick_del2 * dvEdge(iEdge) / dcEdge(iEdge)
-           
+
             do k = 1, maxLevelEdgeTop(iEdge)
                ! \nabla h^{hf} on edge
                hhf_turb_flux = highFreqThickness(k,cell2) - highFreqThickness(k,cell1)
@@ -158,6 +162,9 @@ contains
 
          end do
       end do
+      !$omp end do
+
+      call mpas_timer_stop("thick hmix del2")
 
    end subroutine ocn_high_freq_thickness_hmix_del2_tend!}}}
 
@@ -168,10 +175,10 @@ contains
 !> \brief   Initializes horizontal highFreqThickness mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
-!>  This routine initializes the module for horizontal mixing of 
+!> \details
+!>  This routine initializes the module for horizontal mixing of
 !>  high frequency thickness
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

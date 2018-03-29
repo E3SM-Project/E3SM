@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<template>
+	<namelist>
+		<option name="config_use_debugTracers">.true.</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_use_rx1_constraint">.true.</option>
+		<option name="config_rx1_max">5.0</option>
+		<option name="config_global_ocean_topography_file">'topography.nc'</option>
+		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
+		<option name="config_global_ocean_topography_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_topography_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_topography_lat_varname">'lat'</option>
+		<option name="config_global_ocean_topography_lon_varname">'lon'</option>
+		<option name="config_global_ocean_topography_varname">'bathymetry'</option>
+		<option name="config_global_ocean_topography_has_ocean_frac">.false.</option>
+		<option name="config_global_ocean_topography_ocean_frac_varname">'ocean_mask'</option>
+		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_depress_by_land_ice">.true.</option>
+		<option name="config_global_ocean_land_ice_topo_file">'topography.nc'</option>
+		<option name="config_global_ocean_land_ice_topo_nlat_dimname">'y'</option>
+		<option name="config_global_ocean_land_ice_topo_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_land_ice_topo_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_land_ice_topo_lat_varname">'lat'</option>
+		<option name="config_global_ocean_land_ice_topo_lon_varname">'lon'</option>
+		<option name="config_global_ocean_land_ice_topo_draft_varname">'ice_draft'</option>
+		<option name="config_global_ocean_land_ice_topo_thickness_varname">'thickness'</option>
+		<option name="config_global_ocean_land_ice_topo_ice_frac_varname">'ice_mask'</option>
+		<option name="config_global_ocean_land_ice_topo_grounded_frac_varname">'grounded_mask'</option>
+		<option name="config_global_ocean_land_ice_topo_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_use_constant_land_ice_cavity_temperature">.true.</option>
+		<option name="config_global_ocean_constant_land_ice_cavity_temperature">-1.8</option>
+	</namelist>
+</template>
