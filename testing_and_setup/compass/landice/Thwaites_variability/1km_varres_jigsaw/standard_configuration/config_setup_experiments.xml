@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<config case="1km_varres_jigsaw">
+
+        <!-- Set up needed files and executables -->
+        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+        <add_executable source="mask_creator" dest="MpasMaskCreator.x"/>
+        <add_executable source="jigsaw_converter" dest="triangle_to_netcdf.py"/>
+        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
+        <add_executable source="model" dest="landice_model"/>
+        <add_executable source="metis" dest="metis"/>
+        <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
+        <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
+        <add_executable source="mark_domain_boundaries_dirichlet" dest="mark_domain_boundaries_dirichlet.py"/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <!--        <add_link source_path="script_configuration_dir" source="ais14to4km.20160713.nc" dest="ais_input_data.nc"/>-->
+      <add_link source_path="script_configuration_dir" source="ais30to1.20160713.nc" dest="ais_input_data.nc"/>
+        <add_link source_path="script_configuration_dir" source="thwaites_minimal.geojson" dest="."/>
+        <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
+        <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.py" dest="."/>
+        <add_link source_path="script_test_dir" source="thwaites_jigsaw_mesh.msh" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+                <stream name="input">
+                   <attribute name="filename_template">thwaites_1-8km_resolution.nc</attribute>
+                </stream>
+        </streams>
+
+
+        <run_script name="setup_test.py">
+
+
+                <!-- convert from jigsaw to basic netcdf format-->
+                <step executable="./triangle_to_netcdf.py" >
+                        <argument flag="-m">thwaites_jigsaw_mesh.msh</argument>
+                        <argument flag="-o">thwaites_jigsaw_netcdf.nc</argument>
+                </step>
+
+                <!-- convert basic netcdf format to MPAS format -->
+                <step executable="./MpasMeshConverter.x" >
+                        <argument flag="">thwaites_jigsaw_netcdf.nc</argument>
+                        <argument flag="">mpas.nc</argument>
+                </step>
+
+                <!-- Add lat/lon  -->
+                <step executable="./set_lat_lon_fields_in_planar_grid.py" >
+                        <argument flag="-f">mpas.nc</argument>
+                        <argument flag="-p">ais-bedmap2</argument>
+                </step>
+
+                <!-- Make regional culling mask -->
+                <step executable="./MpasMaskCreator.x" >
+                        <argument flag="">mpas.nc</argument>
+                        <argument flag="">thwaites_mask.nc</argument>
+                        <argument flag="-f">thwaites_minimal.geojson</argument>
+                </step>
+
+                <!-- cull cells to mask -->
+                <step executable="./MpasCellCuller.x" >
+                        <argument flag="">mpas.nc</argument>
+                        <argument flag="">culled_grid.nc</argument>
+                        <argument flag="-i">thwaites_mask.nc</argument>
+                </step>
+
+                <!-- run through mesh converter again to get quality stats, etc.  -->
+                <step executable="./MpasMeshConverter.x" >
+                        <argument flag="">culled_grid.nc</argument>
+                        <argument flag="">culled_grid_converted.nc</argument>
+                </step>
+
+                <!-- Convert from basic MPAS mesh to MPASLI mesh -->
+                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                        <argument flag="-i">culled_grid_converted.nc</argument>
+                        <argument flag="-o">thwaites_1-8km_resolution.nc</argument>
+                        <argument flag="-l">10</argument>
+                        <argument flag="--diri"></argument>
+                        <argument flag="--beta"></argument>
+                        <argument flag="--thermal"></argument>
+                </step>
+
+                <!-- Set up initial condition on to landice mesh -->
+                <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                        <argument flag="-s">ais_input_data.nc</argument>
+                        <argument flag="-d">thwaites_1-8km_resolution.nc</argument>
+                        <argument flag="-m">d</argument>
+                </step>
+
+                <!-- mark edges of domain as dirichlet -->
+                <step executable="./mark_domain_boundaries_dirichlet.py">
+                        <argument flag="-f">thwaites_1-8km_resolution.nc</argument>
+                </step>
+
+                <!-- Set up SMB and beta modifications -->
+                <step executable="./finalize_thwaites_initial_conditions.py">
+                        <argument flag="">thwaites_1-8km_resolution.nc</argument>
+                </step>
+
+                <!-- Set up a graph file
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">16</argument>
+                </step> -->
+
+        </run_script>
+
+</config>

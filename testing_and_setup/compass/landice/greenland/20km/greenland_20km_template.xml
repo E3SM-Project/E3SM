@@ -1,0 +1,50 @@
+<template>
+        <namelist>
+                <option name="config_dt">'0000-00-01_00:00:00'</option>
+                <option name="config_run_duration">'0000-00-05_00:00:00'</option>
+                <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+                <option name="config_calving">'thickness_threshold'</option>
+                <option name="config_calving_thickness">300.0</option>
+                <option name="config_restore_calving_front">.true.</option>
+        </namelist>
+
+        <streams>
+
+                <stream name="input">
+                        <attribute name="filename_template">landice_grid.nc</attribute>
+                </stream>
+
+                <stream name="output">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output.nc</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="normalVelocity" type="var"/>
+                                <member name="thickness" type="var"/>
+                                <member name="upperSurface" type="var"/>
+                                <member name="cellMask" type="var"/>
+                                <member name="edgeMask" type="var"/>
+                                <member name="vertexMask" type="var"/>
+                                <member name="surfaceSpeed" type="var"/>
+                                <member name="basalSpeed" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="restart">
+                        <attribute name="type">input;output</attribute>
+                        <attribute name="filename_template">restart.$Y-$M-$D.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="precision">double</attribute>
+                        <attribute name="input_interal">initial_only</attribute>
+                </stream>
+
+        </streams>
+
+</template>
+
