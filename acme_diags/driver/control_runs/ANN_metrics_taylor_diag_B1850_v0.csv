@@ -1,5 +1,6 @@
-Variables,Model std,Obs std,correlation
+Variables,Test_STD,Ref._STD,Correlation
 PRECT global GPCP_v2.2,2.083,1.922,0.892
+TREFHT land_60S90N CRU,13.076,13.086,0.992
 SWCF global ceres_ebaf_toa_v2.8,23.221,20.346,0.874
 LWCF global ceres_ebaf_toa_v2.8,11.847,11.054,0.914
 SWCF global ceres_ebaf_toa_v4.0,23.221,20.424,0.863
