@@ -757,7 +757,6 @@ class EnvBatch(EnvBase):
         return xmldiffs
 
     def make_all_batch_files(self, case):
-        is_test = case.get_value("TEST")
         machdir  = case.get_value("MACHDIR")
         logger.info("Creating batch scripts")
         for job in self.get_jobs():
