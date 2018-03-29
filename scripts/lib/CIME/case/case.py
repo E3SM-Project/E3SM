@@ -13,7 +13,7 @@ from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
 from CIME.utils                     import get_current_commit
-from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
+from CIME.locked_files         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -35,8 +35,6 @@ from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
-from CIME.case_clone import create_case_clone
-from CIME.case_setup import case_setup
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +63,21 @@ class Case(object):
     the case object creates and manipulates the Case env classes
     by reading and interpreting the CIME config classes.
 
+    This class extends across multiple files, class members external to this file
+    are listed in the following imports
     """
+    from CIME.case.case_setup import case_setup
+    from CIME.case.case_clone import create_clone
+    from CIME.case.case_test  import case_test
+    from CIME.case.case_submit import check_DA_settings, check_case, submit
+    from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
+        archive_last_restarts
+    from CIME.case.case_run import case_run
+    from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
+    from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
+    from CIME.case.preview_namelists import create_dirs, create_namelists
+    from CIME.case.check_input_data import check_all_input_data, stage_refcase, check_input_data
+
     def __init__(self, case_root=None, read_only=True):
 
         if case_root is None:
@@ -1437,20 +1449,6 @@ class Case(object):
                     logger.warning("Leaving broken case dir {}".format(self._caseroot))
 
             raise
-
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
-                     cime_output_root=None, exeroot=None, rundir=None,
-                     user_mods_dir=None):
-        """ moved to case_clone """
-        return create_case_clone(self, newcase, keepexe=keepexe, mach_dir=mach_dir,
-                                 project=project, cime_output_root=cime_output_root,
-                                 exeroot=exeroot, rundir=rundir,
-                                 user_mods_dir=user_mods_dir)
-
-
-    def case_setup(self, clean=False, test_mode=False, reset=False):
-        """ in case_setup """
-        return case_setup(self, clean, test_mode, reset)
 
     def is_save_timing_dir_project(self,project):
         """

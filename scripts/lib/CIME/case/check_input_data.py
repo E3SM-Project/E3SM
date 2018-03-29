@@ -2,13 +2,13 @@
 API for checking input for testcase
 """
 from CIME.XML.standard_module_setup import *
-from CIME.utils import SharedArea
+from CIME.utils import SharedArea, find_files
 from CIME.XML.inputdata import Inputdata
 from CIME.Servers.ftp import FTP
 from CIME.Servers.svn import SVN
 from CIME.Servers.wget import WGET
 
-import fnmatch, glob, shutil
+import glob, shutil
 
 logger = logging.getLogger(__name__)
 
@@ -30,24 +30,12 @@ def _download_if_in_repo(server, input_data_root, rel_path):
     with SharedArea():
         return server.getfile(rel_path, full_path)
 
-def find_files(rootdir, pattern):
-    """
-    recursively find all files matching a pattern
-    """
-    result = []
-    for root, _, files in os.walk(rootdir):
-        for filename in files:
-            if (fnmatch.fnmatch(filename, pattern)):
-                result.append(os.path.join(root, filename))
-
-    return result
-
 ###############################################################################
-def check_all_input_data(case, protocal=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
+def check_all_input_data(self, protocal=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
 ###############################################################################
     success = False
     if protocal is not None and address is not None:
-        success = check_input_data(case=case, protocal=protocal, address=address, download=download,
+        success = self.check_input_data(protocal=protocal, address=address, download=download,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
         inputdata = Inputdata()
@@ -57,15 +45,15 @@ def check_all_input_data(case, protocal=None, address=None, input_data_root=None
                 protocal, address = inputdata.get_next_server()
                 expect(protocal is not None, "Failed to find input data")
                 logger.info("Checking server {} with protocal {}".format(address, protocal))
-            success = check_input_data(case=case, protocal=protocal, address=address, download=download,
+            success = self.check_input_data(protocal=protocal, address=address, download=download,
                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
 
-    stage_refcase(case)
+    self.stage_refcase()
 
-def stage_refcase(case):
-    get_refcase  = case.get_value("GET_REFCASE")
-    run_type     = case.get_value("RUN_TYPE")
-    continue_run = case.get_value("CONTINUE_RUN")
+def stage_refcase(self):
+    get_refcase  = self.get_value("GET_REFCASE")
+    run_type     = self.get_value("RUN_TYPE")
+    continue_run = self.get_value("CONTINUE_RUN")
 
     # We do not fully populate the inputdata directory on every
     # machine and do not expect every user to download the 3TB+ of
@@ -74,11 +62,11 @@ def stage_refcase(case):
     # attempts to download data from the server if it's needed and
     # missing.
     if get_refcase and run_type != "startup" and not continue_run:
-        din_loc_root = case.get_value("DIN_LOC_ROOT")
-        run_refdate  = case.get_value("RUN_REFDATE")
-        run_refcase  = case.get_value("RUN_REFCASE")
-        run_refdir   = case.get_value("RUN_REFDIR")
-        rundir       = case.get_value("RUNDIR")
+        din_loc_root = self.get_value("DIN_LOC_ROOT")
+        run_refdate  = self.get_value("RUN_REFDATE")
+        run_refcase  = self.get_value("RUN_REFCASE")
+        run_refdir   = self.get_value("RUN_REFDIR")
+        rundir       = self.get_value("RUNDIR")
 
         refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
         expect(os.path.isdir(refdir),

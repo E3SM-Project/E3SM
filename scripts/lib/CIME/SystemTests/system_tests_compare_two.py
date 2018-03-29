@@ -37,8 +37,6 @@ In addition, they MAY require the following methods:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
-from CIME.case_submit import check_case
-from CIME.case_st_archive import archive_last_restarts
 from CIME.utils import get_model
 
 import shutil, os, glob
@@ -233,7 +231,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 self._activate_case2()
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
-                    check_case(self._case2)
+                    self._case2.check_case()
 
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
@@ -254,9 +252,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         files.
         """
         rundir2 = self._case2.get_value("RUNDIR")
-        archive_last_restarts(case = self._case1,
-                              archive_restdir = rundir2,
-                              link_to_restart_files = True)
+        self._case1.archive_last_restarts(archive_restdir = rundir2,
+                                          link_to_restart_files = True)
 
     # ========================================================================
     # Private methods

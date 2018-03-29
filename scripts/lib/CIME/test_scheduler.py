@@ -25,8 +25,8 @@ from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
-from CIME.check_lockedfiles import lock_file
 from CIME.provenance import get_recommended_test_time_based_on_past
+from CIME.locked_files import lock_file
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)

@@ -4,14 +4,10 @@ Base class for CIME system tests
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
 from CIME.utils import append_testlog, get_model
-from CIME.case_setup import case_setup
-from CIME.case_run import case_run
-from CIME.case_st_archive import case_st_archive
 from CIME.test_status import *
-from CIME.check_lockedfiles import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
-
+from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
 import shutil, glob, gzip, time, traceback, six
@@ -67,7 +63,7 @@ class SystemTestsCommon(object):
             logging.warning("Resetting case due to detected re-run of phase {}".format(phase))
             self._case.set_initial_test_values()
 
-            case_setup(self._case, reset=True, test_mode=True)
+            self._case.case_setup(reset=True, test_mode=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -225,7 +221,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        case_run(self._case, skip_pnl=self._skip_pnl)
+        self._case.case_run(skip_pnl=self._skip_pnl)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
@@ -234,7 +230,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            case_st_archive(self._case)
+            self._case.case_st_archive()
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfiles = self._get_latest_cpl_logs()

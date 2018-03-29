@@ -235,7 +235,7 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
 
-    namelist /ccsm_pes/  &
+    namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
          lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
          ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout, &
@@ -321,7 +321,7 @@ contains
        if (ierr == 0) then
           ierr = 1
           do while( ierr > 0 )
-             read(nu, nml=ccsm_pes, iostat=ierr)
+             read(nu, nml=cime_pes, iostat=ierr)
           end do
           close(nu)
        end if

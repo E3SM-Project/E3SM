@@ -455,19 +455,13 @@ class EnvBatch(EnvBase):
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
-            # Import here to avoid circular include
-            from CIME.case_test       import case_test # pylint: disable=unused-variable
-            from CIME.case_run        import case_run # pylint: disable=unused-variable
-            from CIME.case_st_archive import case_st_archive # pylint: disable=unused-variable
-
             logger.info("Starting job script {}".format(job))
-
             function_name = job.replace(".", "_")
             if not dry_run:
                 if "archive" not in function_name:
-                    locals()[function_name](case, skip_pnl=skip_pnl)
+                    getattr(case,function_name)(skip_pnl=skip_pnl)
                 else:
-                    locals()[function_name](case)
+                    getattr(case,function_name)()
 
             return
 

@@ -10,7 +10,6 @@ NOTE: This is currently untested, and may not be working properly
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
