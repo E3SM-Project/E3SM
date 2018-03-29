@@ -9,6 +9,7 @@
  module mpas_atmphys_driver_cloudiness
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants, only: ep_2
  use mpas_atmphys_vars
@@ -195,12 +196,17 @@
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
     case("cld_incidence")
+      call mpas_timer_start('calc_cldincidence')
       call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi,its,ite)
+      call mpas_timer_stop('calc_cldincidence')
 
     case("cld_fraction")
+      call mpas_timer_start('calc_cldfraction')
       call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p,its,ite)
+      call mpas_timer_stop('calc_cldfraction')
 
     case("cld_fraction_thompson")
+      call mpas_timer_start('cal_cldfra3')
       call cal_cldfra3( &
            cldfra = cldfrac_p , qv     = qvrad_p    , qc = qcrad_p , qi  = qirad_p , &
            qs     = qsrad_p   , p      = pres_hyd_p , t  = t_p     , rho = rho_p   , &
@@ -209,6 +215,7 @@
            ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme ,   &
            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                       )
+      call mpas_timer_stop('cal_cldfra3')
 
     case default
 

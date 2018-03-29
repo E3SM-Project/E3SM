@@ -9,6 +9,7 @@
  module mpas_atmphys_driver_pbl
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -610,6 +611,7 @@
  pbl_select: select case (trim(pbl_scheme))
 
     case("bl_ysu")
+       call mpas_timer_start('YSU')
        call ysu ( &
                  p3d      = pres_hyd_p , p3di     = pres2_hyd_p , psfc     = psfc_p     , &
                  th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
@@ -635,8 +637,10 @@
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                 )
+       call mpas_timer_stop('YSU')
 
     case("bl_mynn")
+       call mpas_timer_start('MYNN_pbl')
        call  mynn_bl_driver ( &
                  p        = pres_hyd_p  , exner    = pi_p        , ps       = psfc_p     , &
                  th       = th_p        , dz       = dz_p        , u        = u_p        , &
@@ -666,6 +670,7 @@
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                             )
+       call mpas_timer_stop('MYNN_pbl')
 
     case default
 
