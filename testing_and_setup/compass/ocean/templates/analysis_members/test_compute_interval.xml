@@ -1,0 +1,27 @@
+<template>
+	<namelist>
+		<option name="config_AM_testComputeInterval_enable">.true.</option>
+		<option name="config_AM_testComputeInterval_compute_interval">'00-00-01_00:00:00'</option>
+		<option name="config_AM_testComputeInterval_compute_on_startup">.true.</option>
+		<option name="config_AM_testComputeInterval_write_on_startup">.true.</option>
+		<option name="config_AM_testComputeInterval_output_stream">'testComputeIntervalOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="testComputeIntervalOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">testComputeIntervalOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/testComputeInterval.$Y-$M-$D.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">testComputeIntervalAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="testComputeIntervalCounter" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

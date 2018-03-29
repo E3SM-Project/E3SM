@@ -23,6 +23,7 @@ module ocn_time_integration
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_timekeeping
    use mpas_dmpar
    use mpas_vector_reconstruction
    use mpas_spline_interpolation
@@ -80,9 +81,9 @@ module ocn_time_integration
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Advance model state forward in time by the specified time step
    !
-   ! Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:)) 
+   ! Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:))
    !                 plus mesh meta-data
-   ! Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains 
+   ! Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains
    !                  model state advanced forward in time by dt seconds
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -92,15 +93,15 @@ module ocn_time_integration
       real (kind=RKIND), intent(in) :: dt
       character(len=*), intent(in) :: timeStamp
 
-      real (kind=RKIND) :: nanCheck
-
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: diagnosticsPool, statePool
+      type (mpas_pool_type), pointer :: diagnosticsPool, statePool, meshPool
 
       character (len=StrKIND), pointer :: xtime
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
+      character (len=StrKIND), pointer :: simulationStartTime
+      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
 
 
       if (rk4On) then
@@ -113,17 +114,22 @@ module ocn_time_integration
      do while (associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
         xtime = timeStamp
 
-        nanCheck = sum(normalVelocity)
+        ! compute time since start of simulation, in days
+        call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', simulationStartTime)
+        call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
+        call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+        call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+        call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
 
-        if (nanCheck /= nanCheck) then
-           call mpas_log_write('Abort: NaN detected', MPAS_LOG_CRIT)
-        endif
+        !$omp single
+        daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+        !$omp end single
 
         block => block % next
      end do

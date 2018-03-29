@@ -1,6 +1,8 @@
 # Ignore all cvmix code.
 cvmix
 .cvmix_all
+BGC
+.BGC_all
 .*.zip
 
 # Ignore processed registry files.

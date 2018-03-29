@@ -1,0 +1,59 @@
+<template>
+	<namelist>
+		<option name="config_AM_timeSeriesStats_enable">.true.</option>
+		<option name="config_AM_timeSeriesStats_compute_on_startup">.false.</option>
+		<option name="config_AM_timeSeriesStats_write_on_startup">.false.</option>
+		<option name="config_AM_timeSeriesStats_compute_interval">'dt'</option>
+		<option name="config_AM_timeSeriesStats_output_stream">'timeSeriesStatsOutput'</option>
+		<option name="config_AM_timeSeriesStats_restart_stream">'timeSeriesStatsRestart'</option>
+		<option name="config_AM_timeSeriesStats_add_mesh">.false.</option>
+		<option name="config_AM_timeSeriesStats_operation">'avg'</option>
+		<option name="config_AM_timeSeriesStats_reference_times">'initial_time'</option>
+		<option name="config_AM_timeSeriesStats_duration_intervals">'repeat_interval'</option>
+		<option name="config_AM_timeSeriesStats_repeat_intervals">'reset_interval'</option>
+		<option name="config_AM_timeSeriesStats_reset_intervals">'00-00-01_00:00:00'</option>
+	</namelist>
+
+	<streams>
+		<stream name="timeSeriesStatsOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">timeSeriesStatsOutput</attribute>
+			<attribute name="filename_interval">00-01-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/timeSeriesStats.$Y-$M-$D.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">timeSeriesStatsAMPKG</attribute>
+			<attribute name="type">none</attribute>
+			<add_contents>
+				<member name="tracersSurfaceValue" type="var_array"/>
+				<member name="surfaceVelocity" type="var_array"/>
+				<member name="SSHGradient" type="var_array"/>
+				<member name="ssh" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="vertVelocityTop" type="var"/>
+				<member name="normalTransportVelocity" type="var"/>
+				<member name="transportVelocityZonal" type="var"/>
+				<member name="transportVelocityMeridional" type="var"/>
+				<member name="vertTransportVelocityTop" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<streams>
+		<stream name="timeSeriesStatsRestart">
+			<attribute name="name">timeSeriesStatsRestart</attribute>
+			<attribute name="filename_interval">output_interval</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+			<attribute name="filename_template">restarts/restart.AM.timeSeriesStats.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input;output</attribute>
+			<attribute name="immutable">true</attribute>
+			<add_contents>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

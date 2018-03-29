@@ -1,0 +1,160 @@
+<template>
+	<namelist>
+		<option name="config_init_configuration">'global_ocean'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_write_cull_cell_mask">.false.</option>
+
+		<option name="config_eos_type">'jm'</option>
+
+		<option name="config_expand_sphere">.true.</option>
+		<option name="config_realistic_coriolis_parameter">.true.</option>
+
+		<option name="config_alter_ICs_for_pbcs">.true.</option>
+		<option name="config_pbc_alteration_type">'partial_cell'</option>
+
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+
+		<option name="config_global_ocean_minimum_depth">15</option>
+		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
+		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_depth_varname">'depth_t'</option>
+		<option name="config_global_ocean_depth_conversion_factor">1.0</option>
+		<option name="config_global_ocean_temperature_file">'temperature.nc'</option>
+		<option name="config_global_ocean_salinity_file">'salinity.nc'</option>
+		<option name="config_global_ocean_tracer_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_ndepth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_tracer_depth_conversion_factor">1.0</option>
+		<option name="config_global_ocean_temperature_varname">'TEMP'</option>
+		<option name="config_global_ocean_salinity_varname">'SALT'</option>
+		<option name="config_global_ocean_tracer_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_tracer_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_depth_varname">'depth_t'</option>
+		<option name="config_global_ocean_tracer_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_smooth_TS_iterations">5</option>
+		<option name="config_global_ocean_piston_velocity">5.0e-5</option>
+		<option name="config_global_ocean_swData_file">'swData.nc'</option>
+		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_swData_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_swData_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_swData_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_swData_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_chlorophyll_varname">'Chlorophyll'</option>
+		<option name="config_global_ocean_zenithAngle_varname">'zenithAngle'</option>
+		<option name="config_global_ocean_clearSky_varname">'clearSky'</option>
+		<option name="config_global_ocean_interior_restore_rate">1.0e-7</option>
+		<option name="config_global_ocean_topography_file">'topography.nc'</option>
+		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
+		<option name="config_global_ocean_topography_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_topography_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_topography_lat_varname">'y'</option>
+		<option name="config_global_ocean_topography_lon_varname">'x'</option>
+		<option name="config_global_ocean_topography_varname">'z'</option>
+		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_cull_inland_seas">.false.</option>
+		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
+		<option name="config_global_ocean_windstress_nlat_dimname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_nlon_dimname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_windstress_lat_varname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_lon_varname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_zonal_varname">'TAUX'</option>
+		<option name="config_global_ocean_windstress_meridional_varname">'TAUY'</option>
+		<option name="config_global_ocean_windstress_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_windstress_conversion_factor">1</option>
+		<option name="config_global_ocean_ecosys_file">'ecosys.nc'</option>
+		<option name="config_global_ocean_ecosys_forcing_file">'ecosys_forcing.nc'</option>
+		<option name="config_global_ocean_ecosys_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_ecosys_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_ndepth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_ecosys_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_ecosys_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_ecosys_depth_varname">'depth_t'</option>
+		<option name="config_global_ocean_ecosys_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_ecosys_method">'bilinear_interpolation'</option>
+		<option name="config_global_ecosys_forcing_time_dimname">'record'</option>
+	</namelist>
+	<streams>
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="oceanFracObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="edgeMask" type="var"/>
+				<member name="cullCell" type="var"/>
+				<member name="landIceDraftObserved" type="var"/>
+				<member name="landIceThkObserved" type="var"/>
+				<member name="landIceFracObserved" type="var"/>
+				<member name="landIceGroundedFracObserved" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="landIceDraft" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="modifySSHMask" type="var"/>
+				<member name="rx1Cell" type="var"/>
+				<member name="rx1Edge" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="rx1MaxEdge" type="var"/>
+				<member name="globalRx1Max" type="var"/>
+				<member name="density" type="var"/>
+				<member name="rx1InitSmoothingMask" type="var"/>
+				<member name="verticalStretch" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">init_mode_forcing_data.nc</attribute>
+			<add_contents>
+				<member name="tracersSurfaceRestoringFields" type="var_struct"/>
+				<member name="tracersInteriorRestoringFields" type="var_struct"/>
+				<member name="tracersExponentialDecayFields" type="var_struct"/>
+				<member name="tracersIdealAgeFields" type="var_struct"/>
+				<member name="tracersTTDFields" type="var_struct"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="shortwave_forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000-00-00_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">init_mode_shortwaveData.nc</attribute>
+			<add_contents>
+				<member name="chlorophyllData" type="var" />
+				<member name="zenithAngle" type="var"/>
+				<member name="clearSkyRadiation" type="var"/>
+				<member name="xtime" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

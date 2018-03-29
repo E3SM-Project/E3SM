@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data_init.nc"/>
+	<add_link source="../adjust_ssh/init.nc" dest="init.nc"/>
+	<add_link source="forcing_data_init.nc" dest="forcing_data.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<add_link source_path="script_configuration_dir" source="viz" dest="viz"/>
+	<add_link source_path="script_configuration_dir" source="update_evaporationFlux.py" dest="update_evaporationFlux.py"/>
+	<add_link source_path="utility_scripts" source="setup_restart.py" dest="setup_restart.py"/>
+	<add_link source_path="utility_scripts" source="check_progress.py" dest="check_progress.py"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./update_evaporationFlux.py">
+			<argument flag="--in_fluxes_file">land_ice_fluxes.nc</argument>
+			<argument flag="--in_forcing_file">forcing_data_init.nc</argument>
+			<argument flag="--out_forcing_file">forcing_data_updated.nc</argument>
+			<argument flag="--out_forcing_link">forcing_data.nc</argument>
+			<argument flag="--avg_years">0.25</argument>
+		</step>
+	</run_script>
+</config>

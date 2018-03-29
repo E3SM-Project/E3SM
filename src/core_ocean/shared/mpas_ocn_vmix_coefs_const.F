@@ -13,8 +13,8 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module contains the routines for computing 
-!>  constant vertical mixing coefficients.  
+!>  This module contains the routines for computing
+!>  constant vertical mixing coefficients.
 !>
 !
 !-----------------------------------------------------------------------
@@ -70,7 +70,7 @@ contains
 !> \brief   Computes coefficients for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
 !
@@ -125,7 +125,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -157,7 +157,7 @@ contains
 !> \brief   Computes coefficients for vertical momentum mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the constant vertical mixing coefficients for momentum
 !
 !-----------------------------------------------------------------------
@@ -187,6 +187,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(out) :: vertViscTopOfEdge !< Output: vertical viscosity
 
+      integer :: iEdge, nEdges
+      integer, pointer :: nEdgesSolve
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -199,7 +202,18 @@ contains
 
       if ( .not. constViscOn ) return
 
-      vertViscTopOfEdge = vertViscTopOfEdge + constVisc
+      call mpas_timer_start('vel const coef')
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+      nEdges = nEdgesSolve
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         vertViscTopOfEdge(:, iEdge) = vertViscTopOfEdge(:, iEdge) + constVisc
+      end do
+      !$omp end do
+
+      call mpas_timer_stop('vel const coef')
 
    !--------------------------------------------------------------------
 
@@ -212,7 +226,7 @@ contains
 !> \brief   Computes coefficients for vertical tracer mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the constant vertical mixing coefficients for tracers
 !
 !-----------------------------------------------------------------------
@@ -242,6 +256,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(out) :: vertDiffTopOfCell !< Output: Vertical diffusion
 
+      integer :: iCell, nCells
+      integer, pointer :: nCellsSolve
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -254,7 +271,19 @@ contains
 
       if ( .not. constDiffOn ) return
 
-      vertDiffTopOfCell = vertDiffTopOfCell + constDiff
+      call mpas_timer_start('tracer const coef')
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      nCells = nCellsSolve
+
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + constDiff
+      end do
+      !$omp end do
+
+      call mpas_timer_stop('tracer const coef')
 
    !--------------------------------------------------------------------
 
@@ -267,11 +296,11 @@ contains
 !> \brief   Initializes ocean momentum vertical mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  vertical velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  vertical velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 
