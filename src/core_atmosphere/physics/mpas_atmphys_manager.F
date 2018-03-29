@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_manager
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
  use mpas_timekeeping
  use mpas_stream_manager
@@ -97,7 +96,34 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 ! * added initialization of variables has_reqc,has_reqi,and has_reqs needed in the calls to radiation codes
 !   rrtmg_lwrad and rrmtg_swrad.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-07-007.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+! * in subroutine physics_run_init, removed the initialization of the local variable gwdo_scheme. gwdo_scheme
+!   is no longer needed and can be replaced with config_gwdo_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable lsm_scheme. lsm_scheme
+!   is no longer needed and can be replaced with config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable sfclayer_scheme.
+!   sfclayer_scheme is no longer needed and can be replaced with config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable pbl_scheme. pbl_scheme
+!   is no longer needed and can be replaced with config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_cld_scheme.
+!   radt_cld_scheme is no longer needed and can be replaced with config_radt_cld_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_lw_scheme.
+!   radt_lw_scheme is no longer needed and can be replaced with config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_sw_scheme.
+!   radt_sw_scheme is no longer needed and can be replaced with config_radt_sw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable convection_scheme.
+!   convection_scheme is no longer needed and can be replaced with config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable microp_scheme.
+!   microp_scheme is no longer needed and can be replaced with config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -357,14 +383,10 @@
 
 !local pointers:
  character(len=StrKIND),pointer:: config_convection_scheme,      &
-                                  config_gwdo_scheme,            &
                                   config_lsm_scheme,             &
                                   config_microp_scheme,          &
-                                  config_pbl_scheme,             &
-                                  config_radt_cld_scheme,        &
                                   config_radt_lw_scheme,         &
-                                  config_radt_sw_scheme,         &
-                                  config_sfclayer_scheme
+                                  config_radt_sw_scheme
 
  character(len=StrKIND),pointer:: config_conv_interval,          &
                                   config_pbl_interval,           &
@@ -397,14 +419,10 @@
 !call mpas_log_write('--- enter subroutine physics_run_init:')
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
- call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
  call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
- call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
- call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
  call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
- call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  call mpas_pool_get_config(configs,'config_conv_interval'    ,config_conv_interval    )
  call mpas_pool_get_config(configs,'config_pbl_interval'     ,config_pbl_interval     )
@@ -654,16 +672,6 @@
  num_months = nMonths
  num_soils  = nSoilLevels
 
- convection_scheme = trim(config_convection_scheme)
- lsm_scheme        = trim(config_lsm_scheme)
- microp_scheme     = trim(config_microp_scheme)
- pbl_scheme        = trim(config_pbl_scheme)
- gwdo_scheme       = trim(config_gwdo_scheme)
- radt_cld_scheme   = trim(config_radt_cld_scheme)
- radt_lw_scheme    = trim(config_radt_lw_scheme)
- radt_sw_scheme    = trim(config_radt_sw_scheme)
- sfclayer_scheme   = trim(config_sfclayer_scheme)
-
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 
 !initialization of local physics time-steps:
@@ -672,13 +680,13 @@
 !... cloud microphysics:
  dt_microp = dt_dyn
  n_microp  = 1
- if(trim(microp_scheme)=='mp_thompson') then
+ if(trim(config_microp_scheme)=='mp_thompson') then
     dt_microp = 90._RKIND
     n_microp  = max(nint(dt_dyn/dt_microp),1)
     dt_microp = dt_dyn / n_microp
     if(dt_dyn <= dt_microp) dt_microp = dt_dyn
  endif
- call mpas_log_write('--- specifics on cloud microphysics option microp_scheme = '//trim(microp_scheme))
+ call mpas_log_write('--- specifics on cloud microphysics option microp_scheme = '//trim(config_microp_scheme))
  call mpas_log_write('--- dt_microp = $r', realArgs=(/dt_microp/))
  call mpas_log_write('--- n_microp  = $i', intArgs=(/n_microp/))
 !... convection:
@@ -733,9 +741,9 @@
  has_reqi = 0
  has_reqs = 0
  if(config_microp_re) then
-    if(trim(microp_scheme)=='mp_thompson' .or. &
-       trim(microp_scheme)=='mp_wsm6') then
-       if(trim(radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
+    if(trim(config_microp_scheme)=='mp_thompson' .or. &
+       trim(config_microp_scheme)=='mp_wsm6') then
+       if(trim(config_radt_lw_scheme)=='rrtmg_lw' .and. trim(config_radt_sw_scheme)=='rrtmg_sw') then
           has_reqc = 1
           has_reqi = 1
           has_reqs = 1
