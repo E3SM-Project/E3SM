@@ -1,6 +1,8 @@
 module simple_cloud_fraction
 
   use shr_kind_mod, only: r8=>shr_kind_r8
+  use cam_abortutils, only: endrun
+  use cam_logfile,    only: iulog
 
   implicit none
   private
@@ -58,12 +60,20 @@ contains
     rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
     rhdif(:ncol,:pver) = max( min(rhdif(:ncol,:pver),1.0_r8), 0._r8)
 
+    ! Cloud fraction f
     ast(:ncol,:pver) = rhdif(:ncol,:pver)**2
     ast(:ncol,:pver) = min(fmax,ast(:ncol,:pver))
 
+    ! df/dRH
     dastdrh(:ncol,:pver) = 0._r8
     where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
       dastdrh(:ncol,:pver) = rhdif(:ncol,:pver)/(1.0_r8-rhlim)*2._r8
+    end where
+
+    ! dln(f)/dRH
+    dlnastdrh(:ncol,:pver) = 0._r8
+    where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
+      dlnastdrh(:ncol,:pver) = 2._r8/rhdif(:ncol,:pver)/(1.0_r8-rhlim)
     end where
 
     rhu00 = rhlim
@@ -111,36 +121,27 @@ contains
 
     ztmp(:ncol,:pver) = ( rhdif(:ncol,:pver) - 0.5_r8 )*pi 
 
+    ! Cloud fraction f
     ast (:ncol,:pver) = 0.5_r8*( sin(ztmp(:ncol,:pver)) + 1._r8 )
     ast (:ncol,:pver) = min(fmax, ast (:ncol,:pver) )
 
-    dastdrh(:ncol,:pver) =  0.5_r8* cos(ztmp(:ncol,:pver)) *pi/(1.0_r8-rhlim)
-    where( ast(:ncol,:pver) .ge. fmax )
-      dastdrh(:ncol,:pver) = 0._r8
+    ! df/dRH
+    dastdrh(:ncol,:pver) = 0._r8
+    where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
+      dastdrh(:ncol,:pver) =  0.5_r8* cos(ztmp(:ncol,:pver)) *pi/(1.0_r8-rhlim)
     end where
 
-    rhu00 = rhlim
-
-  case (10) ! Like Slingo formula but we calculate dlnf/dRH instead of df/dRH when 0<f<1
-
-    rhpert = 0._r8
-    gbmrh(:ncol,:pver) = q(:ncol,:pver) /qsat(:ncol,:pver)*(1.0_r8+real(0,r8)*rhpert)
-
-    rhlim = 0.8_r8
-    rhdif(:ncol,:pver) = (gbmrh(:ncol,:pver) - rhlim)/(1.0_r8-rhlim)
-    rhdif(:ncol,:pver) = max( min(rhdif(:ncol,:pver),1.0_r8), 0._r8)
-
-    ast(:ncol,:pver) = rhdif(:ncol,:pver)**2
-    ast(:ncol,:pver) = min(fmax,ast(:ncol,:pver))
-
+    ! dln(f)/dRH
     dlnastdrh(:ncol,:pver) = 0._r8
     where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
-      dlnastdrh(:ncol,:pver) = 2._r8/rhdif(:ncol,:pver)/(1.0_r8-rhlim)
+      dlnastdrh(:ncol,:pver) = 1._r8/ast(:ncol,:pver) * dastdrh(:ncol,:pver) 
     end where
 
     rhu00 = rhlim
 
-
+  case default
+    write(iulog,*) "Unrecognized value of smpl_frc_schm:",smpl_frc_schm,". Abort."
+    call endrun
   end select
 
   end subroutine smpl_frc
