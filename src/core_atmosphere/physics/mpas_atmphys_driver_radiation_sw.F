@@ -9,6 +9,7 @@
  module mpas_atmphys_driver_radiation_sw
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_manager, only: gmt,curr_julday,julday,year
@@ -739,6 +740,7 @@
        o3input = 0
        if(config_o3climatology) o3input = 2
 
+       call mpas_timer_start('RRTMG_sw')
        call rrtmg_swrad( &
               p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d     = pi_p     , &
               t3d        = t_p          , t8w        = t2_p          , dz8w     = dz_p     , &
@@ -762,8 +764,10 @@
               ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,        &
               its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte          &
                        )
+       call mpas_timer_stop('RRTMG_sw')
 
     case ("cam_sw")
+       call mpas_timer_start('CAMRAD_sw')
        call camrad( dolw = .false. , dosw = .true. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -812,6 +816,7 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                   )
+       call mpas_timer_stop('CAMRAD_sw')
 
     case default
 

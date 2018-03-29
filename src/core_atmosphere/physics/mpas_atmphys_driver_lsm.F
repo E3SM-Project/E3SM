@@ -9,6 +9,7 @@
  module mpas_atmphys_driver_lsm
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_landuse
@@ -741,6 +742,7 @@
  lsm_select: select case (trim(lsm_scheme))
 
     case("noah")
+       call mpas_timer_start('Noah')
        call lsm( &
                 dz8w      = dz_p      , p8w3d     = pres2_hyd_p  , t3d       = t_p          , &  
                 qv3d      = qv_p      , xland     = xland_p      , xice      = xice_p       , &
@@ -787,6 +789,7 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,           &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
                     )
+       call mpas_timer_stop('Noah')
                 
 
     case default
