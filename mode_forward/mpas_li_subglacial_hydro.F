@@ -1,4 +1,4 @@
-! Copyright (c) 2016,  Los Alamos National Security, LLC (LANS)
+! Copyright (c) 2016-2018,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
