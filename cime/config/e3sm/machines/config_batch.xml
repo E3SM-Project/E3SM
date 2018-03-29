@@ -110,8 +110,8 @@
     <depend_separator>&amp;&amp;</depend_separator>
     <walltime_format>%H:%M</walltime_format>
     <batch_mail_flag>-u</batch_mail_flag>
-    <batch_mail_type_flag></batch_mail_type_flag>
-    <batch_mail_type></batch_mail_type>
+    <batch_mail_type_flag> </batch_mail_type_flag>
+    <batch_mail_type>, -BN, -B,-N,-N</batch_mail_type>
     <submit_args>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
@@ -119,7 +119,6 @@
     </submit_args>
     <directives>
       <directive                       > -nnodes {{ num_nodes }} </directive>
-      <directive                       > -N  </directive>
       <directive default="e3sm.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="e3sm.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
