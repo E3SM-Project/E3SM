@@ -568,12 +568,12 @@ derived_variables = {
 #        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
 #            convert_units(trefht, target_units="K"), landfrac, low_limit=0.65))
 #    ]),
-    'TREFHT_LAND': OrderedDict([
-        (('TREFHT_LAND'), rename),
-        (('tas'), lambda t: convert_units(t, target_units="DegC")), #special case for GHCN data provided by Jerry
-        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
-            convert_units(trefht, target_units="DegC"), landfrac, low_limit=0.65))
-    ]),
+#    'TREFHT_LAND': OrderedDict([
+#        (('TREFHT_LAND'), lambda t: convert_units(rename(t), target_units="DegC")),
+#        (('tas'), lambda t: convert_units(t, target_units="DegC")), #special case for GHCN data provided by Jerry
+#        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
+#            convert_units(trefht, target_units="DegC"), landfrac, low_limit=0.65))
+#    ]),
     'PRECT_LAND': OrderedDict([
         (('PRECIP_LAND'), rename),
         # 0.5 just to match amwg
@@ -600,10 +600,11 @@ derived_variables = {
         (('va'), rename),
         (('V'), lambda u: convert_units(u, target_units="m/s"))
     ]),
-#    'TREFHT': OrderedDict([
-#        (('TREFHT'), lambda t: convert_units(t, target_units="DegC")),
-#        (('tas'), lambda t: convert_units(t, target_units="DegC"))
-#    ]),
+    'TREFHT': OrderedDict([
+        (('TREFHT'), lambda t: convert_units(t, target_units="DegC")),
+        (('TREFHT_LAND'), lambda t: convert_units(t, target_units="DegC")),
+        (('tas'), lambda t: convert_units(t, target_units="DegC"))
+    ]),
     'QFLX': OrderedDict([
         (('QFLX'), lambda qflx: qflxconvert_units(qflx))
     ]),

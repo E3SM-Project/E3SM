@@ -226,12 +226,12 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             # only include variables in a a certain list for taylor diagram
             if run_type == 'model_vs_obs':
-                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:
+                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF', 'TREFHT'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres', 'TREFHT_CRU']:
                     metrics = metrics_dic['metrics']
                     row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
                     writer.writerow(row)
             else:
-                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF']:
+                if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF', 'TREFHT']:
                     metrics = metrics_dic['metrics']
                     row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
                     writer.writerow(row)
@@ -250,7 +250,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
     keys_control_runs = []
     for i in range(0, len(control_runs_data)):
         keys_control_runs.append(control_runs_data[i][0])
-    print keys_control_runs
+    #print keys_control_runs
    
     # generate taylor diagram plot if there is metrics saved for any variable within the list.
     marker = ['o', 'd', '+', 's', '>', '<', 'v' , '^'] 
