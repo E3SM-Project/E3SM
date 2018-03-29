@@ -4,6 +4,7 @@ API for checking input for testcase
 from CIME.XML.standard_module_setup import *
 from CIME.utils import SharedArea, find_files
 from CIME.XML.inputdata import Inputdata
+from CIME.Servers.gftp import GridFTP
 from CIME.Servers.ftp import FTP
 from CIME.Servers.svn import SVN
 from CIME.Servers.wget import WGET
@@ -125,6 +126,8 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
     if download:
         if protocal == "svn":
             server = SVN(address)
+        elif protocal == "gftp":
+            server = GridFTP(address)
         elif protocal == "ftp":
             server = FTP(address)
         elif protocal == "wget":

@@ -2,10 +2,14 @@
 
 <inputdata>
 <!-- server precidence is order in this file.  Highest preference at top -->
-  <server>
-    <protocal>svn</protocal>
-    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
-  </server>
+<server>
+  <protocal>gftp</protocal>
+  <address>gridanon.cgd.ucar.edu:2811</address>
+</server>
+<server>
+  <protocal>svn</protocal>
+  <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
+</server>
 
 <!-- test servers ftp and wget are tested and supported, grid-ftp not yet
   <server>
