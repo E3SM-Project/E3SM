@@ -1,0 +1,41 @@
+	<packages>
+		<package name="regionalStatsDailyAMPKG" description="This package includes variables required for the regional stats analysis member."/>
+		<package name="regionalStatsWeeklyAMPKG" description="This package includes variables required for the regional stats analysis member."/>
+		<package name="regionalStatsMonthlyAMPKG" description="This package includes variables required for the regional stats analysis member."/>
+		<package name="regionalStatsCustomAMPKG" description="This package includes variables required for the regional stats analysis member."/>
+	</packages>
+
+	<var_struct name="regionalStatsAM"
+				time_levs="1"
+				packages="regionalStatsDailyAMPKG;regionalStatsWeeklyAMPKG;regionalStatsMonthlyAMPKG;regionalStatsCustomAMPKG">
+		<var name="regionalStatsOneString"
+			 type="text"
+			 dimensions="Time"
+			 units="unitless"
+			 description="a placeholder string so that regionalStats has a memory to duplicate per instance"
+		/>
+		<var name="regionalStatsOneInteger"
+			 type="integer"
+			 dimensions="Time"
+			 units="unitless"
+			 description="a placeholder integer so that regionalStats has a memory to duplicate per instance"
+		/>
+		<var name="regionalStatsOneReal"
+			 type="real"
+			 dimensions="Time"
+			 units="unitless"
+			 description="a placeholder real so that regionalStats has a memory to duplicate per instance"
+		/>
+	</var_struct>
+
+	<streams>
+		<stream name="regionalMasksInput"
+			type="input"
+			mode="forward;analysis"
+			filename_template="restarts/masks.nc"
+			input_interval="initial_only"
+			runtime_format="single_file">
+
+			<var_struct name="regions"/>
+		</stream>
+	</streams>

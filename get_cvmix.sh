@@ -1,8 +1,7 @@
 #!/bin/bash
 
 ## CVMix Tag for build
-CVMIX_TAG=v0.64-beta
-
+CVMIX_TAG=v0.84-beta
 ## Subdirectory in CVMix repo to use
 CVMIX_SUBDIR=src/shared
 
@@ -16,21 +15,26 @@ GIT=`which git`
 SVN=`which svn`
 PROTOCOL=""
 
-# CVMix exists. Need to make sure it's updated if it is git.
+# CVMix exists. Check to see if it is the correct version.
 # Otherwise, flush the directory to ensure it's updated.
 if [ -d cvmix ]; then
-	unlink cvmix
 
 	if [ -d .cvmix_all/.git ]; then
 		cd .cvmix_all
-		git fetch origin &> /dev/null
-		git checkout ${CVMIX_TAG} &> /dev/null
+		CURR_TAG=$(git describe --tags)
 		cd ../
-		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
+		if [ "${CURR_TAG}" == "${CVMIX_TAG}" ]; then
+			echo "CVmix version is current. Skip update"
+		else
+			unlink cvmix
+			rm -rf .cvmix_all
+		fi
 	else
+		unlink cvmix
 		rm -rf .cvmix_all
 	fi
 fi
+
 
 # CVmix Doesn't exist, need to acquire souce code
 # If might have been flushed from the above if, in the case where it was svn or wget that acquired the source.
@@ -41,16 +45,16 @@ if [ ! -d cvmix ]; then
 
 	if [ "${GIT}" != "" ]; then 
 		echo " ** Using git to acquire cvmix source. ** "
-		PROTOCOL="git https"
-		git clone ${CVMIX_GIT_HTTP_ADDRESS} .cvmix_all &> /dev/null
+		PROTOCOL="git ssh"
+		git clone ${CVMIX_GIT_SSH_ADDRESS} .cvmix_all &> /dev/null
 		if [ -d .cvmix_all ]; then 
 			cd .cvmix_all 
 			git checkout ${CVMIX_TAG} &> /dev/null
 			cd ../ 
 			ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix 
 		else 
-			git clone ${CVMIX_GIT_SSH_ADDRESS} .cvmix_all &> /dev/null
-			PROTOCOL="git ssh"
+			git clone ${CVMIX_GIT_HTTP_ADDRESS} .cvmix_all &> /dev/null
+			PROTOCOL="git http"
 			if [ -d .cvmix_all ]; then 
 				cd .cvmix_all 
 				git checkout ${CVMIX_TAG} &> /dev/null
