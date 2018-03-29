@@ -53,9 +53,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
         os.environ["LBQUERY"] = "TRUE"
 
     # create the timing directories, optionally cleaning them if needed.
-    if not os.path.isdir(rundir):
-        os.mkdir(rundir)
-
     if os.path.isdir(os.path.join(rundir, "timing")):
         shutil.rmtree(os.path.join(rundir, "timing"))
 
@@ -84,16 +81,12 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     model = case.get_value("MODEL")
 
     # Set OMP_NUM_THREADS
-    env_mach_pes = case.get_env("mach_pes")
-    comp_classes = case.get_values("COMP_CLASSES")
-    thread_count = env_mach_pes.get_max_thread_count(comp_classes)
-    os.environ["OMP_NUM_THREADS"] = str(thread_count)
+    os.environ["OMP_NUM_THREADS"] = str(case.thread_count)
 
     # Run the model
     logger.info("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     cmd = case.get_mpirun_cmd(job="case.run")
-    cmd = case.get_resolved_value(cmd)
     logger.info("run command is {} ".format(cmd))
 
     rundir = case.get_value("RUNDIR")

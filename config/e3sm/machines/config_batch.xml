@@ -533,6 +533,10 @@
       <template>template.case.run</template>
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
+    <job name="case.run.sh">
+      <template>template.case.run.sh</template>
+      <prereq>False</prereq>
+    </job>
    <job name="case.test">
       <template>template.case.test</template>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
