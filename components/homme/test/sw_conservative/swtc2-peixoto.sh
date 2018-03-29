@@ -11,9 +11,9 @@
 #  Shallow water test case 6 Runge-Kutta test
 #  used to check stability of m-stage RK schemes
 #
-set wdir = /lustre/scratch2/turquoise/balu/acme/lorenz2
-set HOMME = /users/balu/acme/components/homme
-set MACH = /users/balu/acme-balu/grizzly.cmake
+set wdir = /lustre/scratch3/turquoise/jrub/acme/lorenz2
+set HOMME = /turquoise/usr/projects/climate/jrub/FRONTS/acme/components/homme
+set MACH = /turquoise/usr/projects/climate/jrub/FRONTS/acme-balu/grizzly.cmake
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 set input = $HOMME/test/sw_conservative
@@ -83,6 +83,8 @@ set NE = 80
 
 ### leapfrog
 set smooth = 0.05 ; set LFTfreq = 0
+set ndays = 36 #12
+set output_end_time  = 36
 set tstep = 144
 
 
@@ -109,6 +111,8 @@ set sfreq = `echo "$sfreq / $tstep" | bc`
 
 
 sed s/ne=.\*/"ne = $NE"/  $input/swtc2.nl |\
+sed s/ndays.\*/"ndays = $ndays"/  |\
+sed s/output_end_time.\*/"output_end_time = $output_end_time"/  |\
 sed s/tstep.\*/"tstep = $tstep"/  |\
 sed s/smooth.\*/"smooth = $smooth"/  |\
 sed s/test_case.\*/"test_case = \'$test_case\'"/  |\

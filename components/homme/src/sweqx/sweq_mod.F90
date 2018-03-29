@@ -520,8 +520,10 @@ contains
        if(Debug) print *,'homme: point #12'
 
        if      (integration == "explicit") then
+          !JRUB this part is called
           call advance_nonstag( elem,  edge2, edge3, deriv, hybrid, &
                dt   , pmean, tl   , nets, nete)
+
        else if (integration == "full_imp") then
             dt=tstep
 #ifdef TRILINOS

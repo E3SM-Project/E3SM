@@ -50,8 +50,6 @@ contains
     ! Thread private working set ...
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-
-
     real (kind=real_kind) :: dt2, real_time
 
     integer    :: i,j,k,ie
@@ -66,6 +64,9 @@ contains
     dt2 = 2.0d0*dt
 
     real_time = dt*real(nstep,kind=real_kind)
+
+
+
 
     call t_startf('advance_nonstag')
 
@@ -92,9 +93,9 @@ contains
     if (nstep==0) steptype=0
 
     if (steptype==0) then   
-
        ! Leapfrog timestep: u(np1) = u(nm1) + dt2*DSS [ RHS(u(n0)) ]
-       call compute_and_apply_rhs(np1,nm1,n0,dt2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+       !call compute_and_apply_rhs(np1,nm1,n0,dt2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete) !JRUB
+       call compute_and_apply_rhs_power(np1,nm1,n0,dt2,nstep,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)  !JRUB
 
        ! ====================================================
        ! apply viscosity  
@@ -273,6 +274,8 @@ contains
        end do
     enddo
     real_time = dt*real(nstep,kind=real_kind)
+
+
 
     do s=1,MyRk%Stages
        dtstage = dt*(MyRk%beta(s)/MyRk%alpha(s))
@@ -1017,6 +1020,8 @@ contains
 
   call t_startf('compute_and_apply_rhs')
 
+  
+
 
   ! ===================================
   ! construct v tendencies and v.grad(p)
@@ -1081,7 +1086,7 @@ contains
 #if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
-  
+
   do ie=nets,nete
      rspheremp     => elem(ie)%rspheremp
      
@@ -1112,6 +1117,7 @@ contains
      end do
      
      if (dt2/=0) then
+
      do k=1,nlev
         ! ====================================================
         ! Update
@@ -1128,6 +1134,252 @@ contains
   end do
   call t_stopf('compute_and_apply_rhs')
   end subroutine compute_and_apply_rhs
+
+
+  subroutine compute_and_apply_rhs_power(np1,nm1,n0,dt2,nstep,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+  ! ===================================
+  ! compute the RHS, accumulate into u(np1) and apply DSS
+  !
+  !           u(np1) = u(nm1) + dt2*DSS[ RHS(u(n0)) ]
+  !
+  ! This subroutine is normally called to compute a leapfrog timestep
+  ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
+  ! accomodated.  For exaple, setting nm1=np1=n0 this routine will
+  ! take a forward euler step, overwriting the input with the output.
+  !
+  ! if  dt2=0, then the DSS'd RHS is returned in vtens,ptens
+  ! and u(np1) is not changed.  
+  !
+  ! Combining the RHS and DSS pack operation in one routine 
+  ! allows us to fuse these two loops for more cache reuse
+  !
+  ! Combining the dt advance and DSS unpack operation in one routine 
+  ! allows us to fuse these two loops for more cache reuse
+  !
+  ! note: for prescribed velocity case, velocity will be computed at
+  ! "real_time", which should be the time of timelevel n0.  
+  ! ===================================
+  use kinds, only : real_kind
+  use dimensions_mod, only : np, nlev
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+  use edge_mod, only : edgevpack, edgevunpack
+  use edgetype_mod, only : EdgeBuffer_t
+  use bndry_mod, only : bndry_exchangev
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+  use global_norms_mod, only : l2_vnorm  !JRUB
+  implicit none
+
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  integer :: nm1,np1,n0,nets,nete
+  integer :: nstep !JRUB
+  real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
+  real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
+  type (EdgeBuffer_t)  , intent(inout) :: edge3
+  type (derivative_t)  , intent(in) :: deriv
+  real (kind=real_kind) :: dt2,pmean,real_time
+  real (kind=real_kind) :: xx !JRUB
+
+  ! local
+  ! pointer ...
+  real (kind=real_kind), dimension(:,:), pointer :: fcor,rspheremp,spheremp
+  real (kind=real_kind), dimension(np,np,2)    :: grade   ! strong kinetic energy gradient
+  real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
+  real (kind=real_kind), dimension(np,np)                     :: E          ! kinetic energy term
+  real (kind=real_kind), dimension(np,np)                     :: zeta       ! relative vorticity
+  real (kind=real_kind), dimension(np,np)      :: div  
+  real (kind=real_kind), dimension(np,np,2)      :: ulatlon
+
+  integer i,j,k,kptr,ie
+  real (kind=real_kind) ::  v1,v2
+  real (kind=real_kind) ::  vtens1,vtens2
+  real (kind=real_kind) :: vt(np,np,2,nets:nete)      !JRUB                                                 
+  real (kind=real_kind) :: v(np,np,2,nets:nete)       !JRUB
+  real (kind=real_kind) :: alpha,l2           !JRUB
+  real (kind=real_kind), parameter :: epsilon = 1D-5  !JRUB
+
+  call t_startf('compute_and_apply_rhs')
+
+  
+
+
+  ! ===================================
+  ! construct v tendencies and v.grad(p)
+  ! on the velocity grid...
+  ! ===================================
+  do ie=nets,nete
+     fcor   => elem(ie)%fcor
+     spheremp     => elem(ie)%spheremp
+
+     call set_prescribed_velocity(elem(ie),n0,real_time)
+
+     do k=1,nlev
+        ! ==============================================
+        ! Compute kinetic energy term
+        ! ==============================================
+        do j=1,np
+           do i=1,np
+              
+              v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
+              v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
+              ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+              ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
+              
+              E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
+                   elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
+              
+              pv(i,j,1) = ulatlon(i,j,1)*(pmean+elem(ie)%state%p(i,j,k,n0))
+              pv(i,j,2) = ulatlon(i,j,2)*(pmean+elem(ie)%state%p(i,j,k,n0))
+           end do
+        end do
+        grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
+        zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
+        div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar 
+        
+        ! ==============================================
+        ! Compute velocity tendency terms
+        ! ==============================================
+        do j=1,np
+           do i=1,np
+              ! accumulate strong form terms, apply mass matrix
+              vtens(i,j,1,k,ie)=spheremp(i,j)*(ulatlon(i,j,2)*(fcor(i,j) + zeta(i,j))  - grade(i,j,1))
+              vtens(i,j,2,k,ie)=spheremp(i,j)*(-ulatlon(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
+              ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
+           end do
+        end do
+     end do
+     
+     ! ===================================================
+     ! Pack cube edges of tendencies, rotate velocities
+     ! ===================================================
+     kptr=0
+     call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
+     kptr=nlev
+     call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+  end do
+  
+  
+#if (defined HORIZ_OPENMP)
+  !$OMP BARRIER
+#endif
+  call bndry_exchangeV(hybrid,edge3)
+#if (defined HORIZ_OPENMP)
+  !$OMP BARRIER
+#endif
+
+  do ie=nets,nete
+     rspheremp     => elem(ie)%rspheremp
+     
+     ! ===========================================================
+     ! Unpack the edges for vgradp and vtens
+     ! ===========================================================
+     kptr=0
+     call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
+     
+     kptr=nlev
+     call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+     
+     ! ===========================================================
+     ! Compute velocity and pressure tendencies for all levels
+     ! ===========================================================
+     do k=1,nlev
+        do j=1,np
+           do i=1,np
+              ptens(i,j,k,ie) = rspheremp(i,j)*ptens(i,j,k,ie)
+              vtens1=rspheremp(i,j)*vtens(i,j,1,k,ie)
+              vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
+              
+              ! lat-lon -> contra
+              vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
+              vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
+           end do
+        end do
+     end do
+     
+     if (dt2/=0) then
+
+     do k=1,nlev
+        ! ====================================================
+        ! Update
+        ! ====================================================
+        do j=1,np
+           do i=1,np
+              elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%state%v(i,j,1,k,nm1) + dt2*vtens(i,j,1,k,ie)
+              elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%state%v(i,j,2,k,nm1) + dt2*vtens(i,j,2,k,ie)
+              elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,nm1) + dt2*ptens(i,j,k,ie)
+
+              !begin JRUB
+              if (nstep==1) then 
+                 elem(ie)%state%Fv(i,j,1) = elem(ie)%state%v(i,j,1,k,nm1) - elem(ie)%state%v(i,j,1,k,np1) !get constant forcing
+                 elem(ie)%state%v0(i,j,1) = elem(ie)%state%v(i,j,1,k,nm1)  !get basic state xbar
+                 elem(ie)%state%Fv(i,j,2) = elem(ie)%state%v(i,j,2,k,nm1) - elem(ie)%state%v(i,j,2,k,np1) !get constant forcing
+                 elem(ie)%state%v0(i,j,2) = elem(ie)%state%v(i,j,2,k,nm1)  !get basic state xbar
+
+                 !elem(ie)%state%Fp(i,j) = elem(ie)%state%p(i,j,k,nm1) - elem(ie)%state%p(i,j,k,np1) !get constant forcing
+                 !elem(ie)%state%p0(i,j) = elem(ie)%state%p(i,j,k,nm1)  !get basic state, xbar
+
+                 !if ((nstep==1).AND.(ie==10).AND.(i==2).AND.(j==2)) then 
+                 !   xx = elem(ie)%state%p0(2,2)
+                 !   print *,nstep,xx,SHAPE(elem(ie)%state%p0),'this is xx JRUB at nstep=1'
+                 !end if
+              end if
+
+              if (nstep.GE.1) then 
+                 !if ((nstep==10).AND.(ie==10).AND.(i==2).AND.(j==2)) then 
+                 !   xx = elem(ie)%state%p0(2,2)
+                 !   print *,nstep,xx,'this is xx JRUB at nstep=10'
+                 !end if
+                 elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%state%Fv(i,j,1) !this is actually x*
+                 elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%state%v(i,j,2,k,np1) + elem(ie)%state%Fv(i,j,2) !this is actually x*
+                 !elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,np1) + elem(ie)%state%Fp(i,j) !this is actually x*
+                 !elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,np1) - elem(ie)%state%p0(i,j) !and this the perturbation r
+              end if
+              !end JRUB
+           end do
+        end do
+     end do
+     endif
+  end do
+
+
+  !JRUB begin compute norm of r = x* - xbar, then adjust
+  if (nstep.GE.1) then
+     do k=1,nlev                                                                                  
+        do ie=nets,nete                                                                           
+           vt(:,:,1,ie)=elem(ie)%state%v0(:,:,1)  
+           vt(:,:,2,ie)=elem(ie)%state%v0(:,:,2)  
+           v(:,:,1,ie)=elem(ie)%state%v(:,:,1,k,np1)  
+           v(:,:,2,ie)=elem(ie)%state%v(:,:,2,k,np1)  
+        end do
+        l2   = l2_vnorm(elem, v(:,:,:,nets:nete),vt(:,:,:,nets:nete),hybrid,np,nets,nete)
+        alpha  = epsilon / l2
+
+        if (MOD(nstep,1000)==0) print *,'nstep = ',nstep,'  alpha = ',alpha,'   JRUB'
+     end do
+
+     ! ====================================================                                                              
+     !JRUB adjust and update x estimates from x*,r, and xbar
+     ! Adjust accroding to Peixoto Eq. B5-B6
+     !====================================================                                                                
+     do ie=nets,nete   
+        do k=1,nlev                                                                                                             
+           do j=1,np                                                                                                             
+              do i=1,np                                                                                                         
+                 elem(ie)%state%v(i,j,1,k,np1) =  alpha * (elem(ie)%state%v(i,j,1,k,np1) - elem(ie)%state%v0(i,j,1)) &
+                                                        + elem(ie)%state%v0(i,j,1)
+                 elem(ie)%state%v(i,j,2,k,np1) =  alpha * (elem(ie)%state%v(i,j,2,k,np1) - elem(ie)%state%v0(i,j,2)) &
+                                                        + elem(ie)%state%v0(i,j,2)
+               end do
+           end do
+        end do
+     end do
+  end if
+  !JRUB end compute norm of r = x* - xbar, then adjust
+
+  call t_stopf('compute_and_apply_rhs')
+  end subroutine compute_and_apply_rhs_power
   
 
 

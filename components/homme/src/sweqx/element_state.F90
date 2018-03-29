@@ -19,7 +19,10 @@ module element_state
      real (kind=real_kind) :: ps(np,np)                               ! surface geopotential
      real (kind=real_kind) :: gradps(np,np,2)                         ! gradient of surface geopotential
      real (kind=real_kind) :: v(np,np,2,nlev,timelevels)              ! contravarient comp
-
+     real (kind=real_kind) :: Fp(np,np)                               ! JRUB F-forcing to p
+     real (kind=real_kind) :: p0(np,np)                               ! JRUB p-basic state 
+     real (kind=real_kind) :: Fv(np,np,2)                             ! JRUB F-forcing to p
+     real (kind=real_kind) :: v0(np,np,2)                             ! JRUB p-basic state 
   end type elem_state_t
 
   !___________________________________________________________________
