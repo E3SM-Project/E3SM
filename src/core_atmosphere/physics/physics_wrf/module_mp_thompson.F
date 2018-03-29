@@ -61,7 +61,7 @@
       MODULE module_mp_thompson
 
       use mpas_kind_types
-      use mpas_atmphys_functions
+      use mpas_atmphys_functions, only: gammp,wgamma,rslf,rsif
       use mpas_atmphys_utilities
       use module_mp_radar
 

@@ -15,7 +15,6 @@
  module mpas_atmphys_camrad_init
  use mpas_dmpar
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
  
  use mpas_atmphys_constants,only: cp,degrad,ep_2,gravity,R_d,R_v,stbolt
@@ -67,13 +66,14 @@
 
 
 !=================================================================================================================
- subroutine camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
+ subroutine camradinit(dminfo,mesh,atm_input,diag,diag_physics,state,time_lev)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: diag
+ type(mpas_pool_type),intent(in):: diag_physics
 
  integer,intent(in):: time_lev
 
@@ -146,7 +146,7 @@
 ! call mpas_log_write('    end subroutine oznini')
 
 !initialization of aerosol concentrations:
- call aerosol_init(dminfo,mesh,diag,state,time_lev)
+ call aerosol_init(dminfo,mesh,diag,diag_physics,state,time_lev)
 ! call mpas_log_write('    end subroutine aerosol_init')
 
  end subroutine camradinit
@@ -394,7 +394,7 @@
  end subroutine radaeini
 
 !=================================================================================================================
- subroutine aerosol_init(dminfo,mesh,diag,state,time_lev)
+ subroutine aerosol_init(dminfo,mesh,diag,diag_physics,state,time_lev)
 !=================================================================================================================
 
 !This subroutine assumes a uniform aerosol distribution in both time and space. It should be
@@ -404,6 +404,7 @@
  type(dm_info),intent(in)  :: dminfo
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: diag
+ type(mpas_pool_type),intent(in):: diag_physics
 
  integer,intent(in):: time_lev
 
@@ -446,11 +447,12 @@
  call mpas_pool_get_dimension(mesh,'nAerLevels',nAerLevels)
  call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- call mpas_pool_get_array(mesh,'m_hybi',m_hybi)
+ call mpas_pool_get_array(diag_physics,'m_hybi',m_hybi)
+ call mpas_pool_get_array(diag_physics,'m_ps',m_psp)
+ call mpas_pool_get_array(diag_physics,'m_ps',m_psn)
+
  call mpas_pool_get_array(diag,'pressure_base',pressure_b)
 
- call mpas_pool_get_array(state,'m_ps',m_psp,1)
- call mpas_pool_get_array(state,'m_ps',m_psn,2)
  call mpas_pool_get_array(state,'aerosols',aerosolcp,1)
  call mpas_pool_get_array(state,'aerosols',aerosolcn,2)
 
@@ -464,7 +466,8 @@
  psurf = 1.e05
  do iCell = 1, nCells
     m_psp(iCell) = psurf
-    m_psn(iCell) = psurf
+!    m_psn(iCell) = psurf    ! m_psp and m_psn both point to the same array for m_ps, so we only
+                             ! need to initialize one of them
  enddo
 
 !mxaerl = max number of levels (from bottom) for background aerosol. Limit background aerosol

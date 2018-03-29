@@ -133,6 +133,11 @@
                      description="The land use classification to use (case 7 only)"
                      possible_values="`USGS' or `MODIFIED\_IGBP\_MODIS\_NOAH'"/>
 
+                <nml_option name="config_topo_data"             type="character"     default_value="GTOPO30"
+                     units="-"
+                     description="The topography dataset to use for the model terrain and for GWDO static fields (case 7 only)"
+                     possible_values="`GTOPO30' or `GMTED2010'"/>
+
                 <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
                      units="-"
                      description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."
@@ -379,6 +384,7 @@
                         packages="initial_conds"
                         immutable="true">
 
+                        <var name="initial_time" packages="met_stage_out"/>
                         <var name="xtime"/>
                         <var name="latCell"/>
                         <var name="lonCell"/>
@@ -653,6 +659,8 @@
         </var_struct>
 
         <var_struct name="state" time_levs="1">
+                <var name="initial_time" type="text" dimensions="" units="YYYY-MM-DD_hh:mm:ss"
+                     description="Model initialization time"/>
                 <var name="xtime"                      type="text"     dimensions="Time"/>
                 <var name="u"                          type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="w"                          type="real"     dimensions="nVertLevelsP1 nCells Time"/>
