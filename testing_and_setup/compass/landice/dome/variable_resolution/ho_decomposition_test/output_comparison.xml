@@ -1,0 +1,9 @@
+<template>
+        <validation>
+                <compare_fields>
+                        <field name="normalVelocity" l2_norm="1.0e-14"/>
+                        <!-- HO decomp is not BFB, but should be small -->
+                </compare_fields>
+        </validation>
+</template>
+

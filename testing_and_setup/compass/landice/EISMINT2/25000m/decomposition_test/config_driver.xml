@@ -1,0 +1,17 @@
+<driver_script name="setup_and_run_EISMINT2_decomp_testcase.py">
+        <case name="setup_mesh">
+                <step executable="./setup_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_F_1p">
+                <step executable="./1proc_run.py" quiet="false" pre_message=" * Running 1proc_run step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_F_4p">
+                <step executable="./4proc_run.py" quiet="false" pre_message=" * Running 4proc_run step" post_message="     Complete"/>
+        </case>
+        <validation>
+                <compare_fields file1="experiment_F_1p/output.nc" file2="experiment_F_4p/output.nc">
+                        <template file="output_comparison.xml" path_base="script_test_dir"/>
+                </compare_fields>
+        </validation>
+</driver_script>
+
