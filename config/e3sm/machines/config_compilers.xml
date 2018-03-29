@@ -987,6 +987,47 @@ for mct, etc.
   <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="ibm" MACH="summit">
+  <SFC> xlf_r </SFC>
+  <SCC> xlc_r </SCC>
+  <MPIFC> mpixlf </MPIFC>
+  <MPICC> mpixlc </MPICC>
+  <MPICXX> mpixlC </MPICXX>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib64 -llapack</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="summit">
+  <SFC> pgfortran </SFC>
+  <SCC> pgcc </SCC>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </ADD_FFLAGS>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="pgiacc" MACH="summit">
+  <SFC> pgfortran </SFC>
+  <SCC> pgcc </SCC>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </ADD_FFLAGS>
+  <ADD_LDFLAGS>-ta=tesla:cc70,pinned</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+</compiler>
+
+
 <compiler COMPILER="ibm" MACH="summitdev">
   <SFC> xlf_r </SFC>
   <SCC> xlc_r </SCC>
@@ -1257,8 +1298,8 @@ for mct, etc.
       <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
       "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
  -->
- <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
- <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" >  -C=all  -g  -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
  <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler>
 
@@ -1286,6 +1327,19 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
+
+<compiler COMPILER="nag" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C=all  -g  -O0 -v </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
 
 <compiler MACH="grizzly" COMPILER="gnu">
 	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>

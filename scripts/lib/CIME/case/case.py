@@ -155,8 +155,6 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
-        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
-
         job = self.get_primary_job()
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job, exe_only=True)[0]
         if executable is not None and "aprun" in executable:
@@ -1267,7 +1265,7 @@ class Case(object):
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
 
-        return "{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix)
+        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix))
 
     def set_model_version(self, model):
         version = "unknown"

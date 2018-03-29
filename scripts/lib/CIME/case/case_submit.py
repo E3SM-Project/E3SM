@@ -9,7 +9,7 @@ submit, check_case and check_da_settings are members of class Case in file case.
 import socket
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
-from CIME.locked_files         import unlock_file, lock_file
+from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)

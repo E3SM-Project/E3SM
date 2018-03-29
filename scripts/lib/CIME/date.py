@@ -66,7 +66,6 @@ def get_file_date(filename):
     logger.debug("{} is a filename without a supported date!".format(filename))
     return None
 
-
 class date:
     """
     Simple struct for holding dates and the time of day and performing comparisons
