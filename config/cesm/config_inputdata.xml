@@ -2,10 +2,12 @@
 
 <inputdata>
 <!-- server precidence is order in this file.  Highest preference at top -->
+
 <server>
   <protocal>gftp</protocal>
   <address>gridanon.cgd.ucar.edu:2811</address>
 </server>
+
 <server>
   <protocal>svn</protocal>
   <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
