@@ -39,7 +39,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     logger.debug("build complete is {} ".format(build_complete))
 
     # load the module environment...
-    case.load_env(job="case.run", reset=True)
+    case.load_env(reset=True)
 
     # set environment variables
 
@@ -86,7 +86,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     # Run the model
     logger.info("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-    cmd = case.get_mpirun_cmd(job="case.run")
+    cmd = case.get_mpirun_cmd()
     logger.info("run command is {} ".format(cmd))
 
     rundir = case.get_value("RUNDIR")
@@ -205,7 +205,6 @@ def _resubmit_check(case):
     logger.warning("dout_s {} ".format(dout_s))
     mach = case.get_value("MACH")
     logger.warning("mach {} ".format(mach))
-    testcase = case.get_value("TESTCASE")
     resubmit_num = case.get_value("RESUBMIT")
     logger.warning("resubmit_num {}".format(resubmit_num))
     # If dout_s is True than short-term archiving handles the resubmit
@@ -220,10 +219,7 @@ def _resubmit_check(case):
         run_cmd(cmd, verbose=True)
 
     if resubmit:
-        if testcase is not None:
-            job = "case.test"
-        else:
-            job = "case.run"
+        job = case.get_primary_job()
 
         case.submit(job=job, resubmit=True)
 

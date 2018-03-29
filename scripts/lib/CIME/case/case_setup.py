@@ -77,20 +77,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        case_run, case_test = get_batch_script_for_job("case.run"), get_batch_script_for_job("case.test")
-        if os.path.exists(case_run):
-            os.remove(case_run)
+        # clean batch script
+        batch_script = get_batch_script_for_job(case.get_primary_job())
+        if os.path.exists(batch_script):
+            os.remove(batch_script)
+            logger.info("Successfully cleaned batch script {}".format(batch_script))
 
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
-
-            # backup and then clean test script
-            if os.path.exists(case_test):
-                os.remove(case_test)
-                logger.info("Successfully cleaned test script {}".format(case_test))
-
-        logger.info("Successfully cleaned batch script case.run")
 
     if not clean:
         case.load_env()
@@ -139,7 +134,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         if nthrds > 1:
             case.set_value("BUILD_THREADED",True)
 
-        if os.path.exists(get_batch_script_for_job("case.run")):
+        if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
@@ -164,10 +159,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             # create batch files
             env_batch = case.get_env("batch")
-            env_batch.make_all_batch_files(case, test_mode=test_mode)
+            env_batch.make_all_batch_files(case)
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
-            env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
+            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
             case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able

@@ -17,10 +17,7 @@ logger = logging.getLogger(__name__)
 def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
             skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
-        if case.get_value("TEST"):
-            job = "case.test"
-        else:
-            job = "case.run"
+        job = case.get_primary_job()
 
     rundir = case.get_value("RUNDIR")
     continue_run = case.get_value("CONTINUE_RUN")
@@ -73,7 +70,7 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
-        if job in ("case.test","case.run"):
+        if job == case.get_primary_job():
             case.check_case()
             case.check_DA_settings()
             if case.get_value("MACH") == "mira":

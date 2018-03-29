@@ -102,7 +102,7 @@ def save_build_provenance(case, lid=None):
             _save_build_provenance_cesm(case, lid)
 
 def _save_prerun_timing_e3sm(case, lid):
-    project = case.get_value("PROJECT", subgroup="case.run")
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 
@@ -293,7 +293,7 @@ def _save_postrun_timing_e3sm(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
-    project = case.get_value("PROJECT", subgroup="case.run")
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 

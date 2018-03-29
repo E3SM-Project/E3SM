@@ -155,7 +155,8 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
-        executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
+        job = self.get_primary_job()
+        executable = env_mach_spec.get_mpirun(self, mpi_attribs, job, exe_only=True)[0]
         if executable is not None and "aprun" in executable:
             _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "e3sm.exe")
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
@@ -957,12 +958,12 @@ class Case(object):
         bjobs = batch.get_batch_jobs()
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs)
+        env_batch.create_job_groups(bjobs, test)
 
         if walltime:
-            self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=("case.test" if test else "case.run"))
+            self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=self.get_primary_job())
         if queue:
-            self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=("case.test" if test else "case.run"))
+            self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
 
         env_batch.set_job_defaults(bjobs, self)
         self.schedule_rewrite(env_batch)
@@ -1227,7 +1228,10 @@ class Case(object):
             if not success:
                 logger.warning("Failed to kill {}".format(jobid))
 
-    def get_mpirun_cmd(self, job="case.run"):
+    def get_mpirun_cmd(self, job=None):
+        if job is None:
+            job = self.get_primary_job()
+
         env_mach_specific = self.get_env('mach_specific')
         run_exe = env_mach_specific.get_value("run_exe")
         run_misc_suffix = env_mach_specific.get_value("run_misc_suffix")
@@ -1247,7 +1251,7 @@ class Case(object):
             "unit_testing" : False
             }
 
-        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job)
 
         # special case for aprun
         if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
@@ -1277,6 +1281,8 @@ class Case(object):
 
     def load_env(self, reset=False, job=None, verbose=False):
         if not self._is_env_loaded or reset:
+            if job is None:
+                job = self.get_primary_job()
             os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
             env_module.load_env(self, job=job, verbose=verbose)
@@ -1466,3 +1472,6 @@ class Case(object):
                     return True
 
             return False
+
+    def get_primary_job(self):
+        return "case.test" if self.get_value("TEST") else "case.run"

@@ -379,7 +379,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     expect(os.path.isdir(caseroot), "'{}' is not a valid directory".format(caseroot))
     os.chdir(caseroot)
 
-    expect(os.path.exists(get_batch_script_for_job("case.run")),
+    expect(os.path.exists(get_batch_script_for_job(case.get_primary_job())),
            "ERROR: must invoke case.setup script before calling build script ")
 
     cimeroot = case.get_value("CIMEROOT")

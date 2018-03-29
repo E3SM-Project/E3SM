@@ -93,7 +93,7 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     # user's case. However, note that, if a project is not given, the fallback will
     # be to copy it from the clone, just like other xml variables are copied.
     if project is None:
-        project = self.get_value("PROJECT", subgroup="case.run")
+        project = self.get_value("PROJECT", subgroup=self.get_primary_job())
     if project is not None:
         newcase.set_value("PROJECT", project)
 
