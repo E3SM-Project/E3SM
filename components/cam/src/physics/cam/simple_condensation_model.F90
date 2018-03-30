@@ -234,6 +234,8 @@ contains
   nstep = get_nstep()
   lchnk = state%lchnk  ! needed by "call outfld" for model output
 
+  call outfld('RKZ_fac',    astwat,    pcols, lchnk)
+
   ! Calculate saturation specific humidity (qsat) and its derivative wrt temperature (dqsatdT)
 
   do k=1,pver
@@ -404,6 +406,9 @@ contains
 
      CASE (8,18)
        ql_incld(:ncol,:pver) = lcwat(:ncol,:pver)/max(ast(:ncol,:pver),rkz_term_C_fmin)
+
+     CASE (9,19)
+       ql_incld(:ncol,:pver) = lcwat(:ncol,:pver)/max(astwat(:ncol,:pver),rkz_term_C_fmin)
 
      CASE DEFAULT
        write(iulog,*) "Unrecognized value of rkz_term_C_ql_opt:",rkz_term_C_ql_opt,". Abort."
