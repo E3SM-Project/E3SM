@@ -59,8 +59,7 @@ contains
 
     call addfld ('RKZ_RH',   (/'lev'/), 'I','1','grid-box mean relative humidity')
     call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
-    call addfld ('RKZ_RHac', (/'lev'/), 'I','1','grid-box mean relative humidity after the simple RKZ scheme')
-    call addfld ('RKZ_fac',  (/'lev'/), 'I','1','cloud fraction after the simple RKZ scheme')
+    call addfld ('RKZ_fac',  (/'lev'/), 'I','1','cloud fraction after macro- and microphysics calculation in the previous time step')
      
     call addfld ('RKZ_dfdRH',(/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity')
     call addfld ('RKZ_dlnfdRH',(/'lev'/), 'I','1','derivative of logrithmic cloud fraction wrt relative humidity')
@@ -139,7 +138,8 @@ contains
 
   real(r8), intent(inout) :: tcwat(:,:)       ! temperature after macro- and microphysics calculation in the previous time step
   real(r8), intent(inout) :: qcwat(:,:)       ! qv          after macro- and microphysics calculation in the previous time step
-  real(r8), intent(inout) :: lcwat(:,:)       ! ql          macro- and microphysics calculation in the previous time step
+  real(r8), intent(inout) :: lcwat(:,:)       ! ql          after macro- and microphysics calculation in the previous time step
+  real(r8), intent(inout) :: astwat(:,:)      ! f           after macro- and microphysics calculation in the previous time step 
 
   real(r8), intent(inout) ::   ast(:,:)       ! cloud fraction
   real(r8), intent(inout) ::   qmeold(:,:)    ! total condensation rate calculation in previous time step 
@@ -173,7 +173,7 @@ contains
   logical  :: lq(pcnst)              ! logical array used when calling subroutine physics_ptend_init indicating 
                                      ! which tracers are affected by this parameterization
 
-  real(r8) :: ast_old(pcols,pver)    ! cloud fraction of previous time step
+  real(r8) :: ast_old(pcols,pver)    ! cloud fraction of previous time step before condensation
 
   real(r8) :: qsat(pcols,pver)       ! saturation specific humidity
   real(r8) :: esl(pcols,pver)        ! saturation vapor pressure (output from subroutine qsat_water, not used)
