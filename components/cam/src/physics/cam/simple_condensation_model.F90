@@ -105,7 +105,7 @@ contains
   ! Calculate condensation rate and the resulting tendencies of the model 
   ! state variables
   !------------------------------------------------------------------------
-  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast, qmeold, &
+  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast, qmeold, astwat, &
                              dtime, ixcldliq, &
                              rkz_cldfrc_opt, &
                              rkz_term_A_opt, &

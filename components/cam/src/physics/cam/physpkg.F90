@@ -2050,6 +2050,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
     real(r8) :: dastdRH(pcols,pver)    ! df/dRH where f is the cloud fraction and RH the relative humidity
     real(r8) :: dlnastdRH(pcols,pver)  ! dlnf/dRH where lnf is the logrithm of the cloud fraction and RH the relative humidity cloud fraction and RH the relative humidity
+    real(r8) :: rhgbm(pcols,pver)  ! grid-box mean relative humidity 
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2715,7 +2716,7 @@ end if
              end do
              ! Calculate the cloud fraction (astwat) 
              call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,      &! all in
-                             astwat, rhu00, dastdRH, dlnastdRH,                &! inout, out, out
+                             astwat, rhu00, rhgbm, dastdRH, dlnastdRH,         &! inout, out, out
                              rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! all in
          end if
 
