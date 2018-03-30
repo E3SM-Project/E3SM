@@ -174,7 +174,11 @@
 ! collimated beam
 
                ze1 = min ( zto1 / prmuz , 500._r8)
+#ifdef APPLY_POST_DECK_BUGFIXES
                ze2 = exp( -ze1 )
+#else
+!              ze2 = exp( -ze1 )
+#endif
 
 ! Use exponential lookup table for transmittance, or expansion of 
 ! exponential for low tau
