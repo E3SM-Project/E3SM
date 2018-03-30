@@ -231,7 +231,7 @@ def _do_external(script_name, caseroot, rundir, lid, prefix):
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
     append_status("Starting script {}".format(script_name), "CaseStatus")
-    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile)
+    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile)
     append_status("Completed script {}".format(script_name), "CaseStatus")
 
 ###############################################################################
