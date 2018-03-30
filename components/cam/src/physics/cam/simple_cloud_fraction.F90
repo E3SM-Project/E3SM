@@ -12,7 +12,7 @@ module simple_cloud_fraction
 contains
 
 
-  subroutine smpl_frc( q, ql, qsat, ast, rhu00, dastdrh, dlnastdrh, &
+  subroutine smpl_frc( q, ql, qsat, ast, rhu00, gbmrh, dastdrh, dlnastdrh, &
                        smpl_frc_schm, smpl_frc_cld, smpl_frc_clr, pcols, pver, ncol )
 
   integer, intent(in) :: pcols, pver, ncol
@@ -24,13 +24,13 @@ contains
   real(r8),intent(in)    :: ql(pcols,pver)
   real(r8),intent(in)    :: qsat(pcols,pver)
   real(r8),intent(inout) :: ast(pcols,pver)
+  real(r8),intent(inout) :: gbmrh(pcols,pver)
   real(r8),intent(out)   :: dastdrh(pcols,pver)
   real(r8),intent(out)   :: rhu00 
   real(r8),intent(out)   :: dlnastdrh(pcols,pver)
 
   integer :: i,k
 
-  real(r8) :: gbmrh(pcols,pver)
   real(r8) :: ztmp (pcols,pver)
 
   real(r8),parameter :: cnst_qlmin = 1.e-18_r8  ! for the simple constant/binary cloud fraction scheme

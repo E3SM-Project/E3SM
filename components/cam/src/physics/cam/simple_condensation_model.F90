@@ -245,11 +245,6 @@ contains
   call outfld('RKZ_dqsatdT', dqsatdT, pcols, lchnk)
   call outfld('RKZ_gam',     gam,     pcols, lchnk)
 
-  ! Calculate the grid-box-mean relative humidity (rhgbm)
-
-  rhgbm(:ncol,:pver) = state%q(:ncol,:pver,1)/qsat(:ncol,:pver)
-  call outfld('RKZ_RH', rhgbm, pcols, lchnk)
-
   ! Cloud fraction (ast): save old values, diagnose new values
 
   if (nstep > 1) ast_old(:ncol,:pver) = ast(:ncol,:pver)
@@ -261,7 +256,7 @@ contains
   end if
 
   call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,      &! all in
-                  ast, rhu00, dastdRH, dlnastdRH,                   &! inout, out, out
+                  ast, rhu00, rhgbm, dastdRH, dlnastdRH,            &! inout, out, out
                   rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! all in
  
  !!!add bounded condition for dln(f)/dt (case1)!!!
@@ -272,6 +267,9 @@ contains
   where ( ast(:ncol,:pver) .le. rkz_term_C_fmin )
     dlnastdRH(:ncol,:pver) = 100._r8
   end where
+
+ !Output the grid-box-mean relative humidity (rhgbm)
+  call outfld('RKZ_RH', rhgbm, pcols, lchnk)
 
   call outfld('RKZ_qv',    state%q(:,:,1),        pcols, lchnk)
   call outfld('RKZ_ql',    state%q(:,:,ixcldliq), pcols, lchnk)
