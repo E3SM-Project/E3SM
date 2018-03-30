@@ -59,6 +59,9 @@ contains
 
     call addfld ('RKZ_RH',   (/'lev'/), 'I','1','grid-box mean relative humidity')
     call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
+    call addfld ('RKZ_RHac', (/'lev'/), 'I','1','grid-box mean relative humidity after the simple RKZ scheme')
+    call addfld ('RKZ_fac',  (/'lev'/), 'I','1','cloud fraction after the simple RKZ scheme')
+     
     call addfld ('RKZ_dfdRH',(/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity')
     call addfld ('RKZ_dlnfdRH',(/'lev'/), 'I','1','derivative of logrithmic cloud fraction wrt relative humidity')
 

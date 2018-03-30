@@ -1923,7 +1923,6 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: qcwat
     real(r8), pointer, dimension(:,:) :: lcwat
     real(r8), pointer, dimension(:,:) :: tcwat
-    real(r8), pointer, dimension(:,:) :: qmeold     ! total condensation rate in previous step 
 
 !<songxl 2011-09-20----------------------------
 ! physics buffer fields to compute tendencies for deep convection scheme
@@ -2041,6 +2040,16 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rkz_lmt_3
     logical :: l_rkz_lmt_4
     logical :: l_rkz_lmt_5
+    !Shixuan Zhang (2018/03): added for simple condensation model convergence test 
+    real(r8), pointer, dimension(:,:) :: qmeold     ! total condensation rate in previous step 
+    real(r8), pointer, dimension(:,:) :: astwat     ! cloud fraction after condensation      
+    real(r8) :: qsat(pcols,pver)       ! saturation specific humidity
+    real(r8) :: esl(pcols,pver)        ! saturation vapor pressure (output from subroutine qsat_water, not used)
+    real(r8) :: dqsatdT(pcols,pver)    ! dqsat/dT
+    real(r8) :: gam(pcols,pver)        ! L/cpair * dqsat/dT
+    real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
+    real(r8) :: dastdRH(pcols,pver)    ! df/dRH where f is the cloud fraction and RH the relative humidity
+    real(r8) :: dlnastdRH(pcols,pver)  ! dlnf/dRH where lnf is the logrithm of the cloud fraction and RH the relative humidity cloud fraction and RH the relative humidity
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2494,7 +2503,10 @@ end if
                ifld = pbuf_get_index('QMEOLD')
                call pbuf_get_field(pbuf, ifld, qmeold, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-               call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast, qmeold, &
+               ifld = pbuf_get_index('ASTWAT')
+               call pbuf_get_field(pbuf, ifld, astwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+               call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast, qmeold, astwat, &
                                      cld_macmic_ztodt, ixcldliq, &
                                      rkz_cldfrc_opt, &
                                      rkz_term_A_opt, &
@@ -2673,8 +2685,8 @@ end if
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
 
           if (l_st_mac.and. simple_macrop_opt==2) then 
-          !save tcwat, qcwat, lcwat for the next call of macrophysics
-
+          !save tcwat, qcwat, lcwat, astwat for the next call of macrophysics
+          
              itim_old  = pbuf_old_tim_idx()
 
              ifld = pbuf_get_index('TCWAT')
@@ -2686,10 +2698,25 @@ end if
              ifld = pbuf_get_index('LCWAT')
              call pbuf_get_field(pbuf, ifld, lcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
+             ifld = pbuf_get_index('ASTWAT')
+             call pbuf_get_field(pbuf, ifld, astwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
              tcwat(:ncol,:pver) = state%t(:ncol,:pver)
              qcwat(:ncol,:pver) = state%q(:ncol,:pver,1)
              lcwat(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
 
+         !recalculate the cloud fraction after the condensation for the next call of macrophysics 
+             ! Calculate saturation specific humidity (qsat) and its
+             ! derivative wrt temperature (dqsatdT)
+             do k=1,pver
+             do i=1,ncol
+               call qsat_water( state%t(i,k), state%pmid(i,k), esl(i,k), qsat(i,k), gam(i,k), dqsatdT(i,k) )
+             end do
+             end do
+             ! Calculate the cloud fraction (astwat) 
+             call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,      &! all in
+                             astwat, rhu00, dastdRH, dlnastdRH,                &! inout, out, out
+                             rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! all in
          end if
 
        end do ! end substepping over macrophysics/microphysics
