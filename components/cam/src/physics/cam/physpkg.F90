@@ -1856,6 +1856,9 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+    !Shixuan Zhang (2018/03) for simple condensation model convergence test
+    use wv_saturation, only: qsat_water
+    use simple_cloud_fraction, only: smpl_frc
 
     implicit none
 
