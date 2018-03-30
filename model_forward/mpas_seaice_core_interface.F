@@ -555,6 +555,8 @@ module seaice_core_interface
           pkgForcingActive, &
           pkgTestingSystemTestActive
 
+     ierr = 0
+
      ! pkgForcing
 
      call MPAS_pool_get_config(configPool, "config_use_forcing", config_use_forcing)
