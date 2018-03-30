@@ -5,7 +5,7 @@
 
 <server>
   <protocal>gftp</protocal>
-  <address>gridanon.cgd.ucar.edu:2811</address>
+  <address>ftp://gridanon.cgd.ucar.edu:2811/cesm/inputdata/</address>
 </server>
 
 <server>
