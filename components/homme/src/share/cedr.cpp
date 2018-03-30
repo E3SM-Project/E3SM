@@ -3957,7 +3957,7 @@ void QLT<ES>::run () {
     // Send.
     if (lvl.kids.size())
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp master
+#   pragma omp master
 #endif
     {
       for (size_t i = 0; i < lvl.kids.size(); ++i) {
@@ -4395,20 +4395,25 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
               cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
             }
           } else {
-            for (Int j = 0, cnt = 0; j < np; ++j)
-              for (Int i = 0; i < np; ++i, ++cnt) {
-                qlo[cnt] = q_min(i,j,k,q,ie0);
-                qhi[cnt] = q_max(i,j,k,q,ie0);
+            for (int trial = 0; trial < 2; ++trial) {
+              int info;
+              for (Int j = 0, cnt = 0; j < np; ++j)
+                for (Int i = 0; i < np; ++i, ++cnt) {
+                  qlo[cnt] = q_min(i,j,k,q,ie0);
+                  qhi[cnt] = q_max(i,j,k,q,ie0);
+                }
+              if (limiter_option == 8)
+                info = cedr::local::solve_1eq_bc_qp(
+                  np2, wa, wa, Qm, qlo, qhi, y, x);
+              else {
+                info = 0;
+                cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
               }
-            int info = cedr::local::solve_1eq_bc_qp(
-              np2, wa, wa, Qm, qlo, qhi, y, x);
-            if (info < 0) {
+              if (info == 0 || trial == 1) break;
               const Real q = Qm / rhom;
               const Int N = std::min(max_np2, np2);
               for (Int i = 0; i < N; ++i) qlo[i] = std::min(qlo[i], q);
               for (Int i = 0; i < N; ++i) qhi[i] = std::max(qhi[i], q);
-              cedr::local::solve_1eq_bc_qp(
-                np2, wa, wa, Qm, qlo, qhi, y, x);
             }          
           }
         

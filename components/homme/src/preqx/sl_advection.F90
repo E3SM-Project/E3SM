@@ -49,8 +49,10 @@ subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
   use control_mod,            only : transport_alg, semi_lagrange_cdr_alg
   use element_state,          only : timelevels
-  type(parallel_t) :: par
+  use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
+  type (parallel_t) :: par
   type (element_t) :: elem(:)
+  type (cartesian3D_t) :: pinside
   integer :: nslots, ie, num_neighbors, need_conservation
   logical :: slmm, cisl
   
@@ -69,8 +71,11 @@ subroutine sl_init1(par, elem)
      if (slmm) then
         call slmm_init(np, size(elem), transport_alg)
         do ie = 1, size(elem)
+           ! Provide a point inside the target element.
+           pinside = change_coordinates(elem(ie)%spherep(2,2))
            num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
-           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors)
+           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
+                pinside)
         end do
      end if
      if (semi_lagrange_cdr_alg > 1) then
@@ -324,7 +329,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         do ie = nets, nete
            do k = 1, nlev
               do q = 1, qsize
-                 elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
+                 elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * &
+                      elem(ie)%state%dp3d(:,:,k,tl%np1)
               enddo
            enddo
         end do

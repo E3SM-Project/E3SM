@@ -46,14 +46,14 @@ static void prarr (const std::string& name, const T* const v, const size_t n) {
       std::stringstream _ss_;                                           \
       _ss_ << __FILE__ << ":" << __LINE__ << ": The condition:\n" << #condition \
         "\nled to the exception\n" << message << "\n";                  \
-      throw std::logic_error(_ss_.str());                               \
+        throw std::logic_error(_ss_.str());                             \
     }                                                                   \
   } while (0)
 
-#define SIQK_STDERR_IF(condition, message) do { \
-  try { SIQK_THROW_IF(condition, message); } \
-  catch (const std::logic_error& e) { std::cerr << e.what(); } \
-} while (0)
+#define SIQK_STDERR_IF(condition, message) do {                   \
+    try { SIQK_THROW_IF(condition, message); }                    \
+    catch (const std::logic_error& e) { std::cerr << e.what(); }  \
+  } while (0)
 
 KOKKOS_INLINE_FUNCTION static void error (const char* const msg)
 { ko::abort(msg); }
@@ -2150,7 +2150,7 @@ int unittest () {
 #include <Kokkos_Core.hpp>
 
 #ifndef NDEBUG
-# define ir_assert(condition) do {                                      \
+# define slmm_assert(condition) do {                                    \
     if ( ! (condition)) {                                               \
       std::stringstream _ss_;                                           \
       _ss_ << __FILE__ << ":" << __LINE__ << ": FAIL:\n" << #condition  \
@@ -2159,7 +2159,7 @@ int unittest () {
     }                                                                   \
   } while (0)
 #else
-# define ir_assert(condition)
+# define slmm_assert(condition)
 #endif
 #define ir_throw_if(condition, message) do {                            \
     if (condition) {                                                    \
@@ -2175,6 +2175,15 @@ dpotrf_(const char* uplo, const int* n, double* a, const int* lda, int* info);
 extern "C" void
 dpotrs_(const char* uplo, const int* n, const int* nrhs, const double* a,
         const int* lda, double* b, const int* ldb, int* info);
+
+namespace csl {
+using siqk::Int;
+using siqk::Real;
+typedef Int Size;
+
+Int get_src_cell(const siqk::sh::Mesh<siqk::ko::HostSpace>& m, const Real* v,
+                 const Int tgt_elem = -1);
+}
 
 namespace ir {
 using siqk::Int;
@@ -2375,7 +2384,7 @@ struct Advecter {
       case 2: return jct;
       case 10: return csl_gll;
       case 11: return csl_gll_subgrid;
-      case 12: return csl_gll_exp;
+      case 19: case 12: return csl_gll_exp;
       default: ir_throw_if(true, "transport_alg " << alg << " is invalid.");
       }
     }
@@ -2388,6 +2397,7 @@ struct Advecter {
       np_(np), np2_(np*np), np4_(np2_*np2_), tq_order_(12)
   {
     local_mesh_.resize(nelem);
+    local_mesh_tgt_elem_.resize(nelem);
     if (Alg::is_cisl(alg_))
       mass_mix_.resize(np4_);
   }
@@ -2395,13 +2405,15 @@ struct Advecter {
   Int np  () const { return np_ ; }
   Int np2 () const { return np2_; }
   Int np4 () const { return np4_; }
+  Int nelem () const { return local_mesh_.size(); }
   Int tq_order () const { return tq_order_; }
   Alg::Enum alg () const { return alg_; }
   bool is_cisl () const { return Alg::is_cisl(alg_); }
 
   template <typename Array3D>
-  void init_local_mesh_if_needed (const Int ie, const Array3D& corners) {
-    ir_assert(ie < static_cast<Int>(local_mesh_.size()));
+  void init_local_mesh_if_needed (const Int ie, const Array3D& corners,
+                                  const Real* p_inside) {
+    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
     if (local_mesh_[ie].p.dimension_0() != 0) return;
     auto& m = local_mesh_[ie];
     const Int
@@ -2418,6 +2430,9 @@ struct Advecter {
         m.e(ci,vi) = k;
       }
     siqk::test::fill_normals<siqk::SphereGeometry>(m);
+    local_mesh_tgt_elem_[ie] = csl::get_src_cell(m, p_inside);
+    slmm_assert(local_mesh_tgt_elem_[ie] >= 0 &&
+                local_mesh_tgt_elem_[ie] < ncell);
   }
 
   void init_M_tgt_if_needed () {
@@ -2464,13 +2479,17 @@ struct Advecter {
     }
 
     int info = ir::dpotrf('L', np2_, M_tgt, np2_);
-    ir_assert(info == 0);
+    slmm_assert(info == 0);
   }
 
   const Mesh& local_mesh (const Int ie) const {
-    ir_assert(ie < static_cast<Int>(local_mesh_.size()));
+    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
     return local_mesh_[ie];
   };
+
+  Int local_mesh_tgt_elem (const Int ie) const {
+    return local_mesh_tgt_elem_[ie];
+  }
 
   std::vector<Real>& rhs_buffer (const Int qsize) {
     rhs_.resize(np2_*qsize);
@@ -2484,10 +2503,11 @@ private:
 
   const Alg::Enum alg_;
   const Int np_, np2_, np4_;
+  std::vector<Mesh> local_mesh_;
+  std::vector<Int> local_mesh_tgt_elem_;
   // For JCT:
   const Int tq_order_;
   std::vector<Real> mass_tgt_, mass_mix_, rhs_;
-  std::vector<Mesh> local_mesh_;
 };
 
 static Int test_gll () {
@@ -2548,10 +2568,6 @@ int unittest () {
 } // namespace ir
 
 namespace csl {
-using siqk::Int;
-using siqk::Real;
-typedef Int Size;
-
 static const Real sqrt5 = std::sqrt(5.0);
 static const Real oosqrt5 = 1.0 / sqrt5;
 
@@ -2594,8 +2610,8 @@ void gll_np4_subgrid_eval (const Real& x, Real v[4]) {
 
 void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
   static constexpr Real
-    alpha = 0.5527864045000421,
-    v = 0.426*(1 + alpha),
+    alpha = 0.5527864045000416708,
+    v = 0.427*(1 + alpha),
     x2 = 0.4472135954999579277,
     x3 = 1 - x2,
     det = x2*x3*(x2 - x3),
@@ -2620,31 +2636,74 @@ void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
     gll_np4_eval(x, y);
 }
 
-//todo Might speed up a little by searching the middle element first.
-Int get_src_cell (const ir::Advecter::Mesh& m, const Real* v) {
+inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
+                       const Real* v, const Real& tol, const Int& ic) {
+  using ir::slice;
+  const auto cell = slice(m.e, ic);
+  const auto celln = slice(m.en, ic);
+  const Int ne = 4;
+  bool inside = true;
+  for (Int ie = 0; ie < ne; ++ie)
+    if (siqk::SphereGeometry::dot_c_amb(slice(m.nml, celln[ie]), v,
+                                        slice(m.p, cell[ie]))
+        <= tol) {
+      inside = false;
+      break;
+    }
+  return inside;
+}
+
+int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, const Real* v,
+                  const Int my_ic) {
+  using ir::len;
+  const Int nc = len(m.e);
+  Real tol = 0;
+  for (Int trial = 0; trial < 2; ++trial) {
+    // If !inside in the first sweep, pad each cell.
+    if (trial == 1) tol = -1e-8;
+    if (my_ic != -1 && is_inside(m, v, tol, my_ic)) return my_ic;
+    for (Int ic = 0; ic < nc; ++ic) {
+      if (ic == my_ic) continue;
+      if (is_inside(m, v, tol, ic)) return ic;
+    }
+  }
+  return -1;
+}
+
+Int unittest (const ir::Advecter::Mesh& m, const Int& tgt_elem) {
+  Int nerr = 0;
+
   using ir::slice;
   using ir::len;
 
   const Int nc = len(m.e);
   for (Int ic = 0; ic < nc; ++ic) {
     const auto cell = slice(m.e, ic);
-    const auto celln = slice(m.en, ic);
-    const Int ne = 4;
-    bool inside = true;
-    for (Int ie = 0; ie < ne; ++ie)
-      if ( ! siqk::SphereGeometry::inside(v, slice(m.p, cell[ie]),
-                                          slice(m.nml, celln[ie]))) {
-        inside = false;
-        break;
+    static const Real alphas[] = { 0.01, 0.99, 0, 1 };
+    static const int nalphas = sizeof(alphas)/sizeof(*alphas);
+    for (Int i = 0; i < nalphas; ++i)
+      for (Int j = 0; j < nalphas; ++j) {
+        const Real a = alphas[i], oma = 1-a, b = alphas[j], omb = 1-b;
+        Real v[3] = {0};
+        for (Int d = 0; d < 3; ++d)
+          v[d] = (b  *(a*m.p(cell[0], d) + oma*m.p(cell[1], d)) + 
+                  omb*(a*m.p(cell[3], d) + oma*m.p(cell[2], d)));
+        if (i < 2 && j < 2) {
+          if (get_src_cell(m, v, tgt_elem) != ic) ++nerr;
+        } else {
+          if (get_src_cell(m, v, tgt_elem) == -1) ++nerr;
+        }
       }
-    if (inside) return ic;
   }
 
-  return -1;
+  return nerr;
 }
 } // namespace csl
 
 #ifdef IR_MAIN
+/*
+  mpicxx -O3 -g -DIR_MAIN -Wall -pedantic -fopenmp -std=c++11 -I/home/ambradl/lib/kokkos/cpu/include slmm.cpp -L/home/ambradl/lib/kokkos/cpu/lib -lkokkos -ldl -llapack -lblas; if [ $? == 0 ]; then OMP_PROC_BIND=false OMP_NUM_THREADS=2 mpirun -np 14 ./a.out; fi
+ */
 int main (int argc, char** argv) {
   int ret = 0;
   Kokkos::initialize(argc, argv);
@@ -2722,7 +2781,7 @@ void slmm_project_np4 (
   const Real* dep_points_r, const Real* Qj_src_r, const Real* jac_tgt_r,
   const Real* rho_tgt_r, const Int tl_np1, Real* q_r, Real* q_min_r, Real* q_max_r)
 {
-  ir_assert(g_advecter);
+  slmm_assert(g_advecter);
   using ir::slice;
 
   static constexpr Int max_num_vertices = 4;
@@ -2791,7 +2850,7 @@ void slmm_project_np4 (
 
     // If the intersection is empty, move on.
     if (no == 0) continue;
-    ir_assert(no <= max_num_intersections);
+    slmm_assert(no <= max_num_intersections);
 
     // Update q_min, q_max with this cell's q source data, since it's in the
     // domain of dependence of the target cell.
@@ -2896,7 +2955,7 @@ void slmm_project_np4 (
 
   // Solve M_tgt Qj_tgt = b.
   int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
-  ir_assert(info == 0);
+  slmm_assert(info == 0);
 
   // Load q with Qj_tgt / (jac_tgt rho_tgt).
   for (Int tq = 0; tq < qsize; ++tq)
@@ -2938,7 +2997,7 @@ void slmm_project (
   Real* q_r,                      // q(1:np, 1:np, lev, 1:qsize)
   Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
-  ir_assert(g_advecter);
+  slmm_assert(g_advecter);
 
   if (np == 4) {
     // This version is thread safe.
@@ -3008,7 +3067,7 @@ void slmm_project (
 
     // If the intersection is empty, move on.
     if (no == 0) continue;
-    ir_assert(no <= max_num_intersections);
+    slmm_assert(no <= max_num_intersections);
 
     // Update q_min, q_max with this cell's q source data, since it's in the
     // domain of dependence of the target cell.
@@ -3102,7 +3161,7 @@ void slmm_project (
 
   // Solve M_tgt Qj_tgt = b.
   int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs.data(), np2);
-  ir_assert(info == 0);
+  slmm_assert(info == 0);
 
   // Load q with Qj_tgt / (jac_tgt rho_tgt).
   for (Int tq = 0; tq < qsize; ++tq)
@@ -3121,11 +3180,12 @@ void slmm_project (
         q_max(i,j,lev,q,ie0) = q_max(0,0,lev,q,ie0);
 }
 
+template <int np>
 void slmm_csl (
   const Int lev, const Int nets, const Int ie,
-  const Int nnc, const Int np, const Int nlev, const Int qsize,
+  const Int nnc, const Int nlev, const Int qsize,
   // Geometry.
-  const Cartesian3D* dep_points_r,     // dep_points(1:np, 1:np)
+  const Cartesian3D* dep_points_r,     // dep_points(1:3, 1:np, 1:np)
   // Fields.
   const Real* q_src_r,                 // q_src(1:np, 1:np, 1:qsize, 1:nnc)
   const Real* jac_tgt_r,               // jac_tgt(1:np, 1:np) [unused]
@@ -3162,7 +3222,8 @@ void slmm_csl (
 
     // Determine which cell the departure point is in.
     const Real* dep_point = dep_points.data() + 3*tvi;
-    const Int sci = csl::get_src_cell(m, dep_point);
+    const Int sci = csl::get_src_cell(m, dep_point,
+                                      g_advecter->local_mesh_tgt_elem(ie));
     ir_throw_if(sci == -1, "Departure point is outside of halo.");
 
     // Get reference point.
@@ -3186,32 +3247,47 @@ void slmm_csl (
       csl::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
       break;
     }
-    for (Int q = 0; q < qsize; ++q) {
-      Real accum = 0;
-      for (Int j = 0; j < np; ++j)
-        for (Int i = 0; i < np; ++i)
-          accum += rx[i] * ry[j] * q_src(i,j,q,sci);
-      q_tgt(ti,tj,lev,q) = accum;
-    }
 
-    //todo Could rm redundant computations of this by storing array of sci and
-    // then uniq'ing it.
-    for (Int q = 0; q < qsize; ++q) {
-      Real q_min_s, q_max_s;
-      q_min_s = q_max_s = q_src(0,0,q,sci);
-      for (Int j = 0; j < np; ++j)
-        for (Int i = 0; i < np; ++i) {
-          const Real q_s = q_src(i,j,q,sci);
-          q_min_s = std::min(q_min_s, q_s);
-          q_max_s = std::max(q_max_s, q_s);
+    {
+      const Real* const qs0 = &q_src(0,0,0,sci);
+      for (Int q = 0; q < qsize; ++q) {
+        const Real* const qs = qs0 + q*np*np;
+        q_tgt(ti,tj,lev,q) =
+          (ry[0]*(rx[0]*qs[ 0] + rx[1]*qs[ 1] + rx[2]*qs[ 2] + rx[3]*qs[ 3]) +
+           ry[1]*(rx[0]*qs[ 4] + rx[1]*qs[ 5] + rx[2]*qs[ 6] + rx[3]*qs[ 7]) +
+           ry[2]*(rx[0]*qs[ 8] + rx[1]*qs[ 9] + rx[2]*qs[10] + rx[3]*qs[11]) +
+           ry[3]*(rx[0]*qs[12] + rx[1]*qs[13] + rx[2]*qs[14] + rx[3]*qs[15]));
+        //todo Could rm redundant computations of this by storing array
+        // of sci and then uniq'ing it.
+        Real q_min_s, q_max_s;
+        q_min_s = q_max_s = qs[0];
+        for (int k = 1; k < 16; ++k) {
+          q_min_s = std::min(q_min_s, qs[k]);
+          q_max_s = std::max(q_max_s, qs[k]);
         }
-      q_min(ti,tj,lev,q,ie0) = q_min_s;
-      q_max(ti,tj,lev,q,ie0) = q_max_s;
+        q_min(ti,tj,lev,q,ie0) = q_min_s;
+        q_max(ti,tj,lev,q,ie0) = q_max_s;
+      }
     }
   }
 }
 
 } // namespace homme
+
+// Valid after slmm_init_local_mesh_ is called.
+int slmm_unittest () {
+  int nerr = 0, ne;
+  {
+    ne = 0;
+    for (int i = 0; i < homme::g_advecter->nelem(); ++i)
+      ne += csl::unittest(homme::g_advecter->local_mesh(i),
+                          homme::g_advecter->local_mesh_tgt_elem(i));
+    if (ne)
+      fprintf(stderr, "slmm_unittest: csl::unittest returned %d\n", ne);
+    nerr += ne;
+  }
+  return nerr;
+}
 
 extern "C" void slmm_init_ (homme::Int* np, homme::Int* nelem,
                             homme::Int* transport_alg) {
@@ -3231,11 +3307,13 @@ extern "C" void slmm_study_ (
 }
 
 extern "C" void slmm_init_local_mesh_ (
-  homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc)
+  homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc,
+  homme::Cartesian3D* p_inside)
 {
   homme::g_advecter->init_local_mesh_if_needed(
     *ie - 1, homme::FA3<const homme::Real>(
-      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc));
+      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc),
+    reinterpret_cast<const homme::Real*>(p_inside));
   homme::g_advecter->init_M_tgt_if_needed();
 }
 
@@ -3249,7 +3327,9 @@ extern "C" void slmm_advect_ (
   if (homme::g_advecter->is_cisl())
     homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
                         dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
-  else
-    homme::slmm_csl(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
-                    dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+  else {
+    slmm_assert(*np == 4);
+    homme::slmm_csl<4>(*lev - 1, *nets - 1, *ie - 1, *nnc, *nlev, *qsize,
+                       dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+  }
 }

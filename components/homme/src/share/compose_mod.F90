@@ -96,10 +96,10 @@ module compose_mod
        integer, intent(in) :: np, nelem, transport_alg
      end subroutine slmm_init
 
-     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors)
+     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside)
        use coordinate_systems_mod, only : cartesian3D_t
        integer, intent(in) :: ie, num_neighbors
-       type(cartesian3D_t), intent(in) :: neigh_corners(:,:)
+       type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
 
      subroutine slmm_study(globalID, corners, globalIDs, neigh_corners, n)
