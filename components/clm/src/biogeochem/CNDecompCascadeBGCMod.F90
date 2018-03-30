@@ -605,14 +605,14 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-       canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+       canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
     !
     ! !DESCRIPTION:
     !  calculate rate constants and decomposition pathways for teh CENTURY decomposition cascade model
     !  written by C. Koven based on original CLM4 decomposition cascade
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year
+    use clm_time_manager , only : get_days_per_year, get_curr_date, get_step_size
     use shr_const_mod    , only : SHR_CONST_PI
     use clm_varcon       , only : secspday
     !
@@ -625,6 +625,8 @@ contains
     type(temperature_type) , intent(in)    :: temperature_vars
     type(ch4_type)         , intent(in)    :: ch4_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+    type(cnstate_type)     , intent(inout) :: cnstate_vars
+
     !
     ! !LOCAL VARIABLES:
     real(r8):: frw(bounds%begc:bounds%endc) ! rooting fraction weight
@@ -664,6 +666,8 @@ contains
     real(r8):: days_per_year                ! days per year
     real(r8):: depth_scalar(bounds%begc:bounds%endc,1:nlevdecomp) 
     real(r8):: mino2lim                     !minimum anaerobic decomposition rate
+    integer :: year, mon, day, sec          ! fraction of potential aerobic rate
+    real(r8):: dt                           ! decomp timestep (seconds) 
     !-----------------------------------------------------------------------
 
     !----- CENTURY T response function
@@ -696,6 +700,7 @@ contains
       endif
 
       days_per_year = get_days_per_year()
+      dt = real( get_step_size(), r8 ) 
 
       ! the belowground parameters from century
       tau_l1 = 1./18.5
@@ -1004,6 +1009,23 @@ contains
          end do
       end if
 
+      call get_curr_date(year, mon, day, sec)
+      !Calcluate location and depth-specific acceleration factors
+      do fc=1,num_soilc
+          c = filter_soilc(fc)
+          if (year < 20 .and. spinup_state == 1) then
+              cnstate_vars%scalaravg_col(c,:) = 0._r8
+          else if (year < 40 .and. spinup_state == 1) then
+              cnstate_vars%scalaravg_col(c,:) = cnstate_vars%scalaravg_col(c,:) + &
+                    (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(c,4) ) &
+                    * dt / (86400._r8 * 365._r8 * 20._r8)
+          else
+              if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then
+                   cnstate_vars%scalaravg_col(c,:) = 1.0_r8
+              end if
+          end if
+      end do
+
       if (use_vertsoilc) then
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -1045,6 +1067,31 @@ contains
             end do
          end if
       end if
+
+      if (spinup_state == 1 .and. year >= 40) then
+         !adjust decomposition factors based on scalar factors from first 20 years of simulation
+         do j=1,nlevdecomp
+           do fc = 1, num_soilc
+             c = filter_soilc(fc)
+             if ( decomp_cascade_con%spinup_factor(i_litr1) > 1._r8) decomp_k(c,j,i_litr1) = decomp_k(c,j,i_litr1)  &
+               / cnstate_vars%scalaravg_col(c,j)
+             if ( decomp_cascade_con%spinup_factor(i_litr2) > 1._r8) decomp_k(c,j,i_litr2) = decomp_k(c,j,i_litr2)  &
+               / cnstate_vars%scalaravg_col(c,j)
+             if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
+                  / cnstate_vars%scalaravg_col(c,j)
+             if ( .not. use_ed ) then
+                if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
+                     / cnstate_vars%scalaravg_col(c,j)
+             endif
+             if ( decomp_cascade_con%spinup_factor(i_soil1) > 1._r8) decomp_k(c,j,i_soil1) = decomp_k(c,j,i_soil1)  &
+               / cnstate_vars%scalaravg_col(c,j)
+             if ( decomp_cascade_con%spinup_factor(i_soil2) > 1._r8) decomp_k(c,j,i_soil2) = decomp_k(c,j,i_soil2)  &
+               / cnstate_vars%scalaravg_col(c,j)
+             if ( decomp_cascade_con%spinup_factor(i_soil3) > 1._r8) decomp_k(c,j,i_soil3) = decomp_k(c,j,i_soil3)  &
+               / cnstate_vars%scalaravg_col(c,j)
+           end do
+         end do
+       end if
 
     end associate
 
