@@ -41,7 +41,7 @@ function ais_2km_jigsaw()
     
 %------------------------------------ compute HFUN over GEOM
         
-%%
+%%  read density function from a file 
 % densFile='density.nc';
 % xpos=ncread(densFile, 'x');
 % ypos=ncread(densFile, 'y');
@@ -63,7 +63,7 @@ function ais_2km_jigsaw()
 %     savemsh(opts.hfun_file,hmat) ;
 
     
-%% calculate density based on new criteria
+%% calculate density based on new criteria related to geometry
 
 %% load AIS data file
 
@@ -123,9 +123,9 @@ while (length(lastSearchList) > 0)
                     marineElevation = marineElevationWAIS;
                 end                    
 
-                if (topg(ii, jj) < marineElevationWAIS & x1(j) < -500.0e3 ) | ...
-                        (topg(ii, jj) < marineElevationEAIS & x1(j) > -500.0e3 & thk(ii,jj)<2500.0 ) | ...
-                        (thk(ii,jj) ==0.0);  % check if this location is below the elevation threshold OR there is no ice here.
+                if (topg(ii, jj) < marineElevationWAIS & x1(j) < -500.0e3 ) | ...  % check bed elevation for WAIS
+                        (topg(ii, jj) < marineElevationEAIS & x1(j) > -500.0e3 & thk(ii,jj)<2500.0 ) | ...   % check bed elevation AND ice thickness for EAIS 
+                        (thk(ii,jj) ==0.0);  % include ice-free areas in marine mask (most connected ice-free areas are open ocean)
                     marineMask(ii,jj) = 1;  % mark as marine
                     newSearchList = [newSearchList, sub2ind(maskSize, ii, jj)];  % add to list of newly found marine cells
                 end
@@ -144,34 +144,51 @@ axis equal
 
 
 
-%% make mask of 'grounding line'
+%% make masks
+
+
 neighbors=[[1,0]; [-1,0]; [0,1]; [0,-1];   [1,1]; [-1,-1]; [-1,1]; [1,-1]]';
+
+groundedMask = (thk > -1028.0/910.0 * topg);
+floatingMask = ~groundedMask & thk>0.0;
+
 
 groundedNeighborMask = marineMask*0;
 for n=neighbors;
    groundedNeighborMask = groundedNeighborMask | ~(circshift(marineMask, n));
 end
-GLmask = marineMask & groundedNeighborMask;
+marineEdgeMask = marineMask & groundedNeighborMask;  % where ice is floating and neighboring non-floating locations
 
 
-% ice front mask
+% ice margin mask
 marginMask = marineMask*0;
 iceMask = thk>0;
 for n=neighbors;
    marginMask = marginMask | ~(circshift(iceMask, n));
 end
-marginMask = marginMask & iceMask;
-
-% add in ice margin to the "GL" mask
-GLmask = GLmask | marginMask;
+marginMask = marginMask & iceMask;  % where ice exists and neighbors non-ice locations
 
 
+% GL  mask
+GLMask = marineMask*0;
+for n=neighbors;
+   GLMask = GLMask | (circshift(groundedMask, n));
+end
+GLMask = floatingMask & GLMask;  % where ice exists and neighbors non-ice locations
 
-GLind = find(GLmask==1);
+
+
+% == define edgeMask as the locations from which distance is calculated ===
+%edgeMask = marineEdgeMask; % just edge of the marine ice sheet 
+%edgeMask = marineEdgeMask | marginMask;  % edge of marine ice sheet or edge of entire ice sheet
+edgeMask = marineEdgeMask | GLMask; % edge of marine ice sheet or GL
+
+
+GLind = find(edgeMask==1);
 nGL = length(GLind);
 
 figure(98); clf; hold all
-pcolor(GLmask)
+pcolor(edgeMask)
 shading flat
 colorbar
 axis equal
@@ -182,9 +199,17 @@ axis equal
 %% calculate distance to marine-based bed
 distToMarine = thk*0.0;
 
-d=80;
+% -- KEY PARAMETER: how big of a search 'box' (one-directional) to use.  
+% Bigger number makes search slower, but if too small, the transition zone
+% could get truncated.
+% (could automatically set this from maxDist variables used in next section.)
+windowSize = 400.0e3; 
+% ---
+
+d = int32(ceil(windowSize / dx))
+%d=80;   
 rng = [-1*d:d];
-maxdist = d * dx
+maxdist = double(d) * dx
 
 ind = find( (marineMask==0) | (thk<(-1028/910*topg)));  % just look over non-marine areas
 for iii=1:length(ind);
@@ -198,7 +223,7 @@ for iii=1:length(ind);
     jrng = jrng(find(jrng>0 & jrng < ny));
         
     dist2Here = ((XPOS(irng,jrng)-x1(i)).^2 + (YPOS(irng,jrng)-y1(j)).^2).^0.5;
-    dist2Here(GLmask(irng,jrng)==0) = maxdist;
+    dist2Here(edgeMask(irng,jrng)==0) = maxdist;
     distToMarine(i,j) = min(dist2Here(:));
 %     minDist = 1.0e12;
 %     for g = 1:nGL;
@@ -218,32 +243,35 @@ axis equal
 
 %% make spacing a fn of distance to GL
 
-    groundedMask = (thk > -1028.0/910.0 * topg);
-    floatingMask = ~groundedMask & thk>0.0;
 
     
     minSpacing = 10.0e3;
     maxSpacing = 100.0e3;
+    maxShelfSpacing = minSpacing * 3.0;
     
     minDist = 0.0;
     maxDist = 400.0e3;
     
-    % linear
+    % linear - this is what should be used to get uniform 'doubling rate'
     m = (maxSpacing-minSpacing) / (maxDist-minDist) 
     b = minSpacing - m * minDist;
-    hfun = m * distToMarine + b;
+    % apply same density change rate everywhere
+    %hfun = m * distToMarine + b;  
     
+    % apply slower density change rate where there is not grounded ice (floating ice and ice-free areas)
     hfun = (m * groundedMask + 0.5 * m * ~groundedMask) .* distToMarine + b;
 
-%     % power law  (e.g. doubling every 100 km)
+%     % power law  (e.g. doubling every 100 km)  - doesn't work well.
 %     hfun = minSpacing * 2.^(distToMarine/100.0e3);
 
 
+     % apply min/max spacing values  
      hfun(hfun<minSpacing) = minSpacing;
      hfun(hfun>maxSpacing) = maxSpacing;
-     hfun(hfun>3.0*minSpacing & floatingMask) = 3.0*minSpacing;
+     % apply max spacing for ice shelves
+     hfun(floatingMask & hfun > maxShelfSpacing) = maxShelfSpacing;
 
-    hmat.value = hfun ;
+     hmat.value = hfun ;
 
    
     
@@ -297,9 +325,9 @@ axis equal
         'linewidth',1.5) ;
     hold on; axis image;
     title('JIGSAW GEOM data') ;
-
+%%
     figure(2); clf; hold all;
-    pcolor(XPOS,YPOS,hmat.value);
+    pcolor(XPOS,YPOS,(hmat.value)');
     axis equal; 
     shading interp ;
     title('JIGSAW HFUN data') ;
@@ -309,7 +337,7 @@ axis equal
         'edgecolor',[1,.1,.1], ...
         'linewidth',1.5) ;
     colorbar();
-
+%%
 
     figure(3); clf;
     patch ('faces',mesh.tria3.index(:,1:3), ...
