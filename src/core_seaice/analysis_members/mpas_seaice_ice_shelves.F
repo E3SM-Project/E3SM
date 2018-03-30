@@ -282,6 +282,8 @@ contains
       integer :: &
            iCell
 
+      err = 0
+
       iceAreaOverIceShelvesThisProc = 0.0_RKIND
 
       block => domain % blocklist
