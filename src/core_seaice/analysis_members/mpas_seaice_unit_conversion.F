@@ -289,6 +289,8 @@ contains
       real(kind=RKIND) :: &
            meltGrowthRateConversionFactor
 
+      err = 0
+
       block => domain % blocklist
       do while(associated(block))
 
