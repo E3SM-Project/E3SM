@@ -74,7 +74,6 @@ contains
     dlnastdrh(:ncol,:pver) = 0._r8
     where( (ast(:ncol,:pver).gt. 0._r8) .and. (ast(:ncol,:pver).lt.fmax) )
       dlnastdrh(:ncol,:pver) = 2._r8/rhdif(:ncol,:pver)/(1.0_r8-rhlim)
-     !dlnastdrh(:ncol,:pver) = 2._r8*(1.0_r8-rhlim)/rhdif(:ncol,:pver)
     end where
 
     rhu00 = rhlim
