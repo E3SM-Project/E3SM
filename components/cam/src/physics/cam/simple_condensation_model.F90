@@ -260,6 +260,11 @@ contains
   call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,      &! all in
                   ast, rhu00, dastdRH, dlnastdRH,                   &! inout, out, out
                   rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! all in
+ 
+ !use rkz_term_C_fmin to bound dlnastdRH 
+  where ( ast(:ncol,:pver) .le. rkz_term_C_fmin )
+    dlnastdRH(:ncol,:pver) = 300._r8
+  end where
 
   call outfld('RKZ_qv',    state%q(:,:,1),        pcols, lchnk)
   call outfld('RKZ_ql',    state%q(:,:,ixcldliq), pcols, lchnk)
@@ -391,6 +396,9 @@ contains
 
      CASE (7,17)
        ql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver),rkz_term_C_fmin)
+
+     CASE (8,18)
+       ql_incld(:ncol,:pver) = lcwat(:ncol,:pver)/max(ast(:ncol,:pver),rkz_term_C_fmin)
 
      CASE DEFAULT
        write(iulog,*) "Unrecognized value of rkz_term_C_ql_opt:",rkz_term_C_ql_opt,". Abort."
