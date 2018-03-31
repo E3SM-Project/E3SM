@@ -17,7 +17,6 @@ module checksum_mod
   ! and these buffers have to be thread-shared
   type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
-  type (edgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost
   private :: genchecksum
@@ -174,7 +173,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(i),'Verified'
        endif
-       if (ChecksumError) stop 'testchecksum: edgeVpack/exchange test failure'
+       if (ChecksumError) print *,'testchecksum: edgeVpack/exchange test failure'
     enddo
     ! =========================================
     ! Perform checksum for DG boundary exchange
@@ -261,7 +260,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(ie),'Verified'
        endif
-       if (ChecksumError) stop 'testchecksum: edgeDGVpack/exchange test failure'
+       if (ChecksumError) print *, 'testchecksum: edgeDGVpack/exchange test failure'
     enddo
 
 
@@ -420,26 +419,6 @@ contains
   enddo
   pout=0
   cout=0
-
-#if 0
-  ! DSS pin, to make all edge points agree exactly:
-  call initedgebuffer(edge1,elem,nlev)
-  do ie=nets,nete
-     kptr=0
-     do k=1,nlev
-        pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%spheremp(:,:)
-     enddo
-     call edgeVpack(edge1, pin(:,:,:,ie),nlev,kptr,ie)
-  end do
-  call bndry_exchangeV(hybrid,edge1)
-  do ie=nets,nete
-     kptr=0
-     call edgeVunpack(edge1, pin(:,:,:,ie), nlev, kptr, ie)
-     do k=1,nlev
-        pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-     enddo
-  enddo
-#endif
 
 
 
