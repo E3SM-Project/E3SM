@@ -1632,13 +1632,6 @@ contains
             this%totlitn_col(c) + &
             this%totsomn_col(c) + &
             this%sminn_col(c)
-       if((this%totblgn_col(c))>1.e3_r8)then
-         print*,'col',c
-         print*,'cwdn',   this%cwdn_col(c) 
-         print*,'totlitn',   this%totlitn_col(c) 
-         print*,'totsomn',   this%totsomn_col(c) 
-         print*,'sminn',   this%sminn_col(c)
-       endif
     end do
 
   end subroutine Summary_betr
