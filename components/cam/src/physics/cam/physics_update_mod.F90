@@ -48,7 +48,8 @@ module physics_update_mod
   !   construct in get_var function in this module
 
   integer, public, parameter :: nvars_prtrb_hist = 11
-  character(len=fieldname_len), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s', 't', 'Q', 'v', 'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3']
+  character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ', &
+       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3']
   
 contains 
 

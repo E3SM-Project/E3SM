@@ -2845,14 +2845,14 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=fieldname_len), parameter :: vlist(27) = (/ 'topphysbc', &
-       'chkenergyfix'  ,'dadadj'              ,'zm_convr'         ,'zm_conv_evap'        , &
-       'momtran'       ,'zm_conv_tend'        ,'UWSHCU'           ,'convect_shallow'     , &
-       'pcwdetrain_mac','macro_park'          ,'macrop'           ,'micro_mg'            , &
-       'cldwat_mic'    ,'aero_model_wetdep_ma','convtran2'        ,'cam_radheat'         , &
-       'chemistry'     ,'vdiff'               ,'rayleigh_friction','aero_model_drydep_ma', &
-       'Grav_wave_drag','convect_shallow_off' ,'clubb_ice1'       ,'clubb_det'           , &
-       'clubb_ice4'    ,'clubb_srf' /)
+  character(len=20), parameter :: vlist(27) = (/     'topphysbc           '                       ,&
+       'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
+       'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
+       'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&
+       'cldwat_mic          ','aero_model_wetdep_ma','convtran2           ','cam_radheat         ',&
+       'chemistry           ','vdiff               ','rayleigh_friction   ','aero_model_drydep_ma',&
+       'Grav_wave_drag      ','convect_shallow_off ','clubb_ice1          ','clubb_det           ',&
+       'clubb_ice4          ','clubb_srf           ' /)
 
 
 
