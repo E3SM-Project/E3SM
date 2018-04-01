@@ -6,8 +6,10 @@ module checksum_mod
   use edgetype_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem
-
-
+!
+! Revisions
+! Mark Taylor 2018/3   disable testchecksum - test is broken and always fails
+!
   implicit none
 
   private
@@ -68,6 +70,8 @@ contains
     allocate(TestPattern_g(np,np,nlev,nelem))
     allocate(Checksum_g(np,np,nlev,nelem))
 
+    ! Code to generate Checksum_g is commented out in genchecksum().  it needs to be updated
+    stop 'testchecksum() not working'
     call genchecksum(TestPattern_g,Checksum_g,GridEdge)
 
 
