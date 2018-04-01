@@ -52,6 +52,89 @@ Given the various dependencies, CIME uses an order of precedence to determine th
 
 The **create_newcase** script outputs the matches that are found in determining the best out-of-the-box pe-layout.
 
+Changing default PE layout
+--------------------------
+
+Settings in the **env_mach_pes.xml** file determine:
+
+- the number of MPI tasks and OpenMP threads for each component.
+- the number of instances of each component.
+- the layout of the components across the hardware processors.
+
+Optimizing the throughput and efficiency of a CIME experiment often involves customizing the processor (PE) layout. (See :ref:`load balancing <optimizing-processor-layout>`.)
+CIME provides significant flexibility with respect to the layout of components across different hardware processors. In general, the CIME components -- atm, lnd, ocn, and so on -- can run on overlapping or mutually unique processors. While each component is associated with a unique MPI communicator, the CIME driver runs on the union of all processors and controls the sequencing and hardware partitioning.
+
+The component processor layout is determined by the following settings:
+
+- the number of MPI tasks.
+- the number of OpenMP threads per task.
+- the root MPI task number from the global communicator.
+- the maximum number of MPI tasks per node.
+
+The entries in **env_mach_pes.xml** have the following meanings:
+
+.. csv-table:: "Entries in env_mach_pes.xml"
+   :header: "xml variable", "description"
+   :widths: 25, 75
+
+   "MAX_TASKS_PER_MODE",  "The total number of (MPI tasks) * (OpenMP threads) allowed on a node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "MAX_MPITASKS_PER_NODE", "The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "NTASKS", "Total number of MPI tasks. A negative value indicates nodes rather than tasks, where MAX_MPITASKS_PER_NODE * -NTASKS equals the number of MPI tasks."
+   "NTHRDS", "Number of OpenMP threads per MPI task."
+   "ROOTPE", "The global MPI task of the component root task; if negative, indicates nodes rather than tasks."
+   "PSTRID", "The stride of MPI tasks across the global set of pes (for now set to 1)."
+   "NINST", "The number of component instances, which are spread evenly across NTASKS."
+
+**Example 1**
+~~~~~~~~~~~~~~~
+
+If a component has **NTASKS=16**, **NTHRDS=4** and **ROOTPE=32**, it will run on 64 hardware processors using 16 MPI tasks and 4 threads per task starting at global MPI task 32.
+
+Each CIME component has corresponding entries for ``NTASKS``, ``NTHRDS``, ``ROOTPE`` and ``NINST`` in the **env_mach_pes.xml** file.
+
+**Note:**
+
+- ``NTASKS`` must be greater or equal to 1 even for inactive (stub) components.
+- ``NTHRDS`` must be greater or equal to 1.
+- If ``NTHRDS`` = 1, this generally means threading parallelization will be off for that component.
+- ``NTHRDS`` should never be set to zero.
+- The total number of hardware processors allocated to a component is ``NTASKS`` * ``NTHRDS``.
+- The coupler processor inputs specify the pes used by coupler computation such as mapping, merging, diagnostics, and flux calculation. This is distinct from the driver, which automatically runs on the union of all processors to manage model concurrency and sequencing.
+- The root processor is set relative to the MPI global communicator, not the hardware processors counts. An example of this is below.
+- The layout of components on processors has no impact on the science.
+- If all components have identical ``NTASKS``, ``NTHRDS``, and ``ROOTPE`` settings, all components will run sequentially on the same hardware processors.
+
+The scientific sequencing is hardwired into the driver. Changing processor layouts does not change intrinsic coupling lags or coupling sequencing.
+
+For a **fully active configuration**, the atmosphere component is hardwired in the driver to never run concurrently with the land or ice component. Performance improvements associated with processor layout concurrency therefore are constrained in this case such that there is never a performance reason not to overlap the atmosphere component with the land and ice components. Beyond that constraint, the land, ice, coupler and ocean models can run concurrently, and the ocean model can also run concurrently with the atmosphere model.
+
+An important but often misunderstood point: The root processor for any given component is set relative to the MPI global communicator, not the hardware processor counts. For instance, in the following example, the atmosphere and ocean will run concurrently, each on 64 processors with the atmosphere running on MPI tasks 0-15 and the ocean running on MPI tasks 16-79.
+::
+
+   NTASKS(ATM)=6  NTHRRDS(ATM)=4  ROOTPE(ATM)=0
+   NTASKS(OCN)=64 NTHRDS(OCN)=1   ROOTPE(OCN)=16
+
+The first 16 tasks are each threaded 4 ways for the atmosphere. CIME ensures that the batch submission script (**$CASE.run**) automatically requests 128 hardware processors, and the first 16 MPI tasks will be laid out on the first 64 hardware processors with a stride of 4. The next 64 MPI tasks are laid out on the second set of 64 hardware processors.
+
+If you had set ``ROOTPE_OCN`` to 64 in this example, a total of 176 processors would be requested, the atmosphere would be laid out on the first 64 hardware processors in 16x4 fashion, and the ocean model would be laid out on hardware processors 113-176. Hardware processors 65-112 would be allocated but completely idle.
+
+**Example 2**
+~~~~~~~~~~~~~~~
+
+If a component has **NTASKS=-2**, **NTHRDS=4** and **ROOTPE=0**, **MAX_MPITASKS_PER_NODE=4**, **MAX_TASKS_PER_NODE=4**, it will run on (8 MPI tasks * 4 threads) = 32 hardware processors on 8 nodes.
+
+If you intended 2 nodes INSTEAD of 8 nodes, then you would change **MAX_MPITASKS_PER_NODE=1** (using **xmlchange**).
+
+
+**Note**: **env_mach_pes.xml** *cannot* be modified after **case.setup** has been invoked without first running the following:
+::
+
+   case.setup --clean
+
+
+
+
+
 Threading control
 -------------------------
 

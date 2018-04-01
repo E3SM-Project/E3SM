@@ -18,8 +18,8 @@ Case Control System Part 1: Basic Usage
    setting-up-a-case.rst
    building-a-case.rst
    running-a-case.rst
-   customizing-a-case.rst
    cloning-a-case.rst
+   use_cases/use-cases.rst
    cime-config.rst
    troubleshooting.rst
 
@@ -43,7 +43,6 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
    testing.rst
    unit_testing.rst
    multi-instance.rst
-   use_cases/use-cases.rst
 
 
 Indices and tables
