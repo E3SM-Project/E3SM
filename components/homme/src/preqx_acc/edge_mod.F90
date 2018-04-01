@@ -4,10 +4,11 @@
 #endif
 
 module edge_mod
-  use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+  use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, &
+                           edgeVpack, edgeVunpack, edgeVpack_nlyr, edgeVunpack_nlyr,       &
                            edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
                            ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, &
-                           edgeSpack, edgeSunpackMin, edgeSunpackMax
+                           edgeSpack, edgeSunpackMin, edgeSunpackMax, edge_g
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd, np
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
@@ -21,10 +22,11 @@ module edge_mod
   implicit none
   private
 
-  public :: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+  public :: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer,&
+       edgeVpack, edgeVunpack, edgeVpack_nlyr, edgeVunpack_nlyr,      &
        edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
        ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, &
-       edgeSpack, edgeSunpackMin, edgeSunpackMax
+       edgeSpack, edgeSunpackMin, edgeSunpackMax, edge_g
   public :: edgeSpack_openacc
   public :: edgeSunpackMin_openacc
   public :: edgeSunpackMax_openacc

@@ -100,6 +100,8 @@ contains
     ! --------------------------------
     use bndry_mod, only : sort_neighbor_buffer_mapping
     ! --------------------------------
+    use edge_mod, only : initedgebuffer, edge_g
+    ! --------------------------------
 #ifndef CAM
     use repro_sum_mod,      only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
 #else
@@ -490,6 +492,12 @@ contains
     deallocate(MetaVertex)
     deallocate(TailPartition)
     deallocate(HeadPartition)
+
+    ! single global edge buffer for all models:
+    ! hydrostatic 4*nlev      NH:  6*nlev
+    ! SL tracers: (qsize+1)*nlev
+    ! if this is too small, code will abort with an error message
+    call initEdgeBuffer(par,edge_g,elem,max(qsize+1,6)*nlev)
 
 
     allocate(dom_mt(0:hthreads-1))
