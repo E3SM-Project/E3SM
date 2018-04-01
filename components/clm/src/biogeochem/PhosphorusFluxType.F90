@@ -231,7 +231,9 @@ module PhosphorusFluxType
 
      real(r8), pointer :: biochem_pmin_ppools_vr_col                (:,:,:) ! col vertically-resolved biochemical P mineralization for each soi pool (gP/m3/s)
      real(r8), pointer :: biochem_pmin_vr_col                       (:,:)   ! col vertically-resolved total biochemical P mineralization (gP/m3/s)
-     real(r8), pointer :: biochem_pmin_col                          (:)   ! col vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
+     real(r8), pointer :: biochem_pmin_to_plant_patch               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
+     real(r8), pointer :: biochem_pmin_to_ecosysp_vr_col            (:,:)   ! biochemical P mineralization directly goes to soil (gP/m3/s)
+     real(r8), pointer :: biochem_pmin_col                          (:)     ! col vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
 
 
      ! new variables for phosphorus code
@@ -469,6 +471,7 @@ contains
     allocate(this%frootp_to_litter_patch                    (begp:endp)) ; this%frootp_to_litter_patch                    (:) = nan
     allocate(this%retransp_to_ppool_patch                   (begp:endp)) ; this%retransp_to_ppool_patch                   (:) = nan
     allocate(this%sminp_to_ppool_patch                      (begp:endp)) ; this%sminp_to_ppool_patch                      (:) = nan
+    allocate(this%biochem_pmin_to_plant_patch               (begp:endp)) ; this%biochem_pmin_to_plant_patch               (:) = nan
 
     allocate(this%ppool_to_leafp_patch              (begp:endp)) ; this%ppool_to_leafp_patch              (:) = nan
     allocate(this%ppool_to_leafp_storage_patch      (begp:endp)) ; this%ppool_to_leafp_storage_patch      (:) = nan
@@ -537,6 +540,7 @@ contains
     allocate(this%supplement_to_sminp_vr_col (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr_col (:,:) = nan
     allocate(this%gross_pmin_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%gross_pmin_vr_col          (:,:) = nan
     allocate(this%net_pmin_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%net_pmin_vr_col            (:,:) = nan
+    allocate(this%biochem_pmin_to_ecosysp_vr_col(begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_to_ecosysp_vr_col(:,:) = nan
 
     allocate(this%biochem_pmin_ppools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     allocate(this%biochem_pmin_vr_col       (begc:endc,1:nlevdecomp_full))
@@ -1933,6 +1937,7 @@ contains
        this%poutputs_patch(i)                            = value_patch
        this%wood_harvestp_patch(i)                       = value_patch
        this%fire_ploss_patch(i)                          = value_patch
+       this%biochem_pmin_to_plant_patch(i)               = value_patch
     end do
 
     if ( crop_prog )then
@@ -1989,6 +1994,7 @@ contains
           this%gross_pmin_vr_col(i,j)                    = value_column
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
+          this%biochem_pmin_to_ecosysp_vr_col(i,j)       = value_column
 
           ! bgc interface & pflotran
           this%plant_pdemand_vr_col(i,j)                 = value_column
