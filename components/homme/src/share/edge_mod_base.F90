@@ -36,7 +36,8 @@ module edge_mod_base
   !--------------------------------------------------------- 
   ! Pack/unpack routines that use the New format Edge buffer
   !--------------------------------------------------------- 
-  public :: edgeVpack, edgeVunpack, edgeVpack_nlyr
+  public :: edgeVpack, edgeVunpack            ! old interface
+  public :: edgeVpack_nlyr, edgeVunpack_nlyr  ! new interface, allows setting nlyr_tot
   public :: edgeVunpackMIN, edgeVunpackMAX
   public :: edgeDGVpack, edgeDGVunpack
   public :: edgeVunpackVert
@@ -48,6 +49,10 @@ module edge_mod_base
   !----------------------------------------------------------------
   public :: edgeSpack
   public :: edgeSunpackMIN, edgeSunpackMAX
+
+  ! A global edge buffer that can be used by all models
+  type (EdgeBuffer_t) :: edge_g
+  public :: edge_g
 
   logical, private :: threadsafe=.true.
 
@@ -849,7 +854,23 @@ endif
 !$dir assume_aligned v:64
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
-    type (EdgeDescriptor_t), pointer   :: desc
+
+    call edgeVunpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr)
+  end subroutine edgeVunpack
+
+
+  subroutine edgeVunpack_nlyr(edge,desc,v,vlyr,kptr)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    type (EdgeBuffer_t),         intent(in)  :: edge
+
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
+    type (EdgeDescriptor_t)  :: desc
+
+!$dir assume_aligned v:64
+    integer,               intent(in)  :: kptr
+
 
     ! Local
     integer :: i,k,ll,iptr
@@ -859,7 +880,6 @@ endif
     integer :: getmapL, nlyr_tot
 
 
-    desc => edge%desc(ielem)
     nlyr_tot = edge%nlyr
 
     is = nlyr_tot*desc%getmapP(south)
@@ -923,7 +943,7 @@ endif
     end do
 
 
-  end subroutine edgeVunpack
+  end subroutine edgeVunpack_nlyr
 
 
   subroutine edgeVunpackVert(edge,v,ielem)

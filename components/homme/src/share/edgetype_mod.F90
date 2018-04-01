@@ -37,7 +37,7 @@ module edgetype_mod
      integer(kind=int_kind), dimension(:), allocatable :: Rrequest,Srequest
      integer(kind=int_kind), dimension(:,:), allocatable :: status
      integer :: nlyr ! Number of layers for the current pack/exchange/unpack
-     integer :: nlyr_max ! maximum number of layers allocated
+     integer :: nlyr_max = 0 ! maximum number of layers allocated
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
      integer :: id
      integer :: tag

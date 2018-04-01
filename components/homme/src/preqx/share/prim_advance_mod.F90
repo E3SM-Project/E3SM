@@ -12,6 +12,7 @@ module prim_advance_mod
   use derivative_mod, only: derivative_t
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
+  use edge_mod,       only: edge_g
   use element_mod,    only: element_t
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
@@ -539,7 +540,7 @@ contains
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     if (method<=10) then ! not implicit
        ! forward-in-time, hypervis applied to dp3d
-       call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
+       call advance_hypervis_dp(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
     endif
 
 #ifdef ENERGY_DIAGNOSTICS
@@ -693,7 +694,7 @@ contains
 
 
 
-  subroutine advance_hypervis_dp(edge3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
+  subroutine advance_hypervis_dp(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
   !
   !  take one timestep of:
   !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
@@ -715,7 +716,6 @@ contains
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
-  type (EdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
 
@@ -784,21 +784,21 @@ contains
            enddo
 
            kptr=0
-           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
+           call edgeVpack(edge_g, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
+           call edgeVpack(edge_g,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
         call t_startf('ahdp_bexchV1')
-        call bndry_exchangeV(hybrid,edge3)
+        call bndry_exchangeV(hybrid,edge_g)
         call t_stopf('ahdp_bexchV1')
 
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
+           call edgeVunpack(edge_g, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
+           call edgeVunpack(edge_g, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
            ! apply inverse mass matrix
 #if (defined COLUMN_OPENMP)
@@ -835,7 +835,7 @@ contains
 !
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
-        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
 
         do ie=nets,nete
 
@@ -895,25 +895,25 @@ contains
 
 
            kptr=0
-           call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,ie)
+           call edgeVpack(edge_g, ttens(:,:,:,ie),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+           call edgeVpack(edge_g,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
            kptr=3*nlev
-           call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
+           call edgeVpack(edge_g,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
         enddo
 
         call t_startf('ahdp_bexchV2')
-        call bndry_exchangeV(hybrid,edge3)
+        call bndry_exchangeV(hybrid,edge_g)
         call t_stopf('ahdp_bexchV2')
 
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, ttens(:,:,:,ie), nlev, kptr, ie)
+           call edgeVunpack(edge_g, ttens(:,:,:,ie), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+           call edgeVunpack(edge_g, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
-           call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
+           call edgeVunpack(edge_g, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
 
 
 
