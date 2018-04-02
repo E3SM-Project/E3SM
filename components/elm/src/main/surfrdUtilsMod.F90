@@ -254,7 +254,7 @@ contains
     ! !USES:
     use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
-    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
+    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft, npcropmin
     use topounit_varcon      , only : max_topounits   ! TKT
     use GridcellType   , only : grc_pp                ! TKT
     !
@@ -311,9 +311,9 @@ contains
           do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
              t2 = t - grc_pp%topi(g) + 1
           
-             wt_cft(g,t2, nc3crop:npcropmax-1:2) = &
-               wt_cft(g,t2, nc3crop:npcropmax-1:2) + wt_cft(g,t2, nc3irrig:npcropmax:2)     ! TKT
-             wt_cft(g,t2, nc3irrig:npcropmax:2)  = 0._r8   
+             wt_cft(g,t2, npcropmin:npcropmax-1:2) = &
+               wt_cft(g,t2, npcropmin:npcropmax-1:2) + wt_cft(g,t2, npcropmin+1:npcropmax:2)     ! TKT
+             wt_cft(g,t2, npcropmin+1:npcropmax:2)  = 0._r8   
           end do                                                                            ! TKT
        end do
 
@@ -334,7 +334,7 @@ contains
        !ntpu(g) = grc_pp%ntopounits(g)
        do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
           t2 = t - grc_pp%topi(g) + 1
-          do m = 1, npcropmax
+          do m = npcropmin, npcropmax
              if (m /= mergetoelmpft(m)) then
                 wt_cft_to                   = wt_cft(g,t2, mergetoelmpft(m))
                 wt_cft_from                 = wt_cft(g,t2, m)
