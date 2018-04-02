@@ -237,6 +237,13 @@ class EnvBatch(EnvBase):
             if force_queue:
                 if not self.queue_meets_spec(force_queue, node_count, task_count, walltime=walltime, job=job):
                     logger.warning("WARNING: User-requested queue '{}' does not meet requirements for job '{}'".format(force_queue, job))
+                    if self.queue_meets_spec(force_queue, node_count, task_count, walltime=None, job=job):
+                        if case.get_value("TEST"):
+                            walltime = self.get_queue_specs(force_queue)[3]
+                            logger.warning("  Using walltime '{}' instead".format(walltime))
+                        else:
+                            logger.warning("  Continuing with suspect walltime, batch submission may fail")
+
                 queue = force_queue
             else:
                 queue = self.select_best_queue(node_count, task_count, walltime=walltime, job=job)
