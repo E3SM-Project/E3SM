@@ -1007,6 +1007,7 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
   <ADD_LDFLAGS>  -Wl,--relax -Wl,--allow-multiple-definition </ADD_LDFLAGS>
   <ADD_SLIBS compile_threaded="true"> -lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="summit">
