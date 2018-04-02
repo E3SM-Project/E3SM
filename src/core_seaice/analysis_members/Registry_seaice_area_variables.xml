@@ -1,0 +1,66 @@
+	<nml_record name="AM_areaVariables">
+		<nml_option name="config_AM_areaVariables_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member areaVariables is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_areaVariables_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_areaVariables_output_stream" type="character" default_value="none" units="unitless"
+			description="Name of the stream that the areaVariables analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_areaVariables_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_areaVariables_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="areaVariablesAMPKG" description="This package includes variables required for the areaVariables analysis member."/>
+	</packages>
+	<var_struct name="areaVariablesAM" time_levs="1" packages="areaVariablesAMPKG">
+		<var name="snowfallRateInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="rainfallRateInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="absorbedShortwaveFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="latentHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="sensibleHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="longwaveUpInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="evaporativeWaterFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="surfaceHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="surfaceConductiveFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="surfaceHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="surfaceConductiveFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="latentHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+		<var name="sensibleHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+	</var_struct>

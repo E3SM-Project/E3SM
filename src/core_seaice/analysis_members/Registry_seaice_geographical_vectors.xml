@@ -1,0 +1,63 @@
+	<nml_record name="AM_geographicalVectors" mode="forward;analysis">
+		<nml_option name="config_AM_geographicalVectors_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member geographicalVectors is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_geographicalVectors_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_geographicalVectors_output_stream" type="character" default_value="output" units="unitless"
+			description="Name of the stream that the geographicalVectors analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_geographicalVectors_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_geographicalVectors_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="geographicalVectorsAMPKG" description="This package includes variables required for the geographicalVectors analysis member."/>
+	</packages>
+	<var_struct name="geographicalVectorsAM" time_levs="1" packages="geographicalVectorsAMPKG">
+		<var name="uVelocityGeo" type="real" dimensions="nVertices Time" units="m/s"
+			description="True eastwards ice velocity"
+		/>
+		<var name="vVelocityGeo" type="real" dimensions="nVertices Time" units="m/s"
+			description="True northwards ice velocity"
+		/>
+		<var name="stressDivergenceUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True eastwards stress divergence"
+		/>
+		<var name="stressDivergenceVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True northwards stress divergence"
+		/>
+		<var name="airStressVertexUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True eastwards sea ice-air stress"
+		/>
+		<var name="airStressVertexVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True northwards sea ice-air stress"
+		/>
+		<var name="oceanStressUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True eastwards sea ice-ocean stress"
+		/>
+		<var name="oceanStressVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True northwards sea ice-ocean stress"
+		/>
+		<var name="surfaceTiltForceUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True eastwards sea surface tilt stress"
+		/>
+		<var name="surfaceTiltForceVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
+			description="True northwards sea surface tilt stress"
+		/>
+		<var name="uOceanVelocityVertexGeo" type="real" dimensions="nVertices Time" units="m/s"
+			description="True eastwards ocean velocity"
+		/>
+		<var name="vOceanVelocityVertexGeo" type="real" dimensions="nVertices Time" units="m/s"
+			description="True northwards ocean velocity"
+		/>
+	</var_struct>
