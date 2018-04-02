@@ -280,24 +280,27 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
         cmd = "ncdump -v {} {} ".format(rest_hist_varname, os.path.join(rundir, restfile))
         rc, out, error = run_cmd(cmd)
         if rc != 0:
-            logger.debug(" WARNING: {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, error))
+            logger.info(" WARNING: {} failed rc={:d}\n    out={}\n    err={}".format(cmd, rc, out, error))
+        logger.debug(" get_histfiles_for_restarts: \n    out={}".format(out))
 
         searchname = "{} =".format(rest_hist_varname)
         if searchname in out:
             offset = out.index(searchname)
             items = out[offset:].split(",")
             for item in items:
-                # the following match has an option of having a './' at the beginning of
-                # the history filename
-                matchobj = re.search(r"\"(\.*\/*\w.*)\s?\"", item)
+                # the following match has an option of having any number of '.'s and '/'s 
+                # at the beginning of the history filename
+                matchobj = re.search(r"\"\S+\s*\"", item)
                 if matchobj:
-                    histfile = matchobj.group(1).strip()
+                    histfile = matchobj.group(0).strip('" ')
                     histfile = os.path.basename(histfile)
                     # append histfile to the list ONLY if it exists in rundir before the archiving
                     if histfile in histfiles:
                         logger.warning("WARNING, tried to add a duplicate file to histfiles")
                     if os.path.isfile(os.path.join(rundir,histfile)):
                         histfiles.add(histfile)
+                    else:
+                        logger.debug(" get_histfiles_for_restarts: histfile {} does not exist ".format(histfile))
     return histfiles
 
 ###############################################################################
