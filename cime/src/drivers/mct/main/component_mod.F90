@@ -402,7 +402,7 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gGridInit(comp(1))
-                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*100+1*10+1)
+                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*10000+1*10+1)
              else if (eci > 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'comparing comp domain ensemble number ',eci
@@ -586,7 +586,7 @@ contains
 
           ! Map component domain from coupler to component processes
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, &
-               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*100+eci*10+5)
+               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*10000+eci*10+5)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -605,7 +605,7 @@ contains
 
           ! Map corrected initial component AVs from component to coupler pes
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, &
-               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*100+eci*10+7)
+               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*10000+eci*10+7)
 
        endif
     enddo
@@ -864,10 +864,10 @@ contains
 
           if (flow == 'x2c') then ! coupler to component
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+2)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+2)
           else if (flow == 'c2x') then ! component to coupler
              call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+4)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+4)
           end if
 
           if (present(timer_map_exch)) then
