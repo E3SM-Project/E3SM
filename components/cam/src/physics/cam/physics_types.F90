@@ -29,7 +29,7 @@ module physics_types
   
 ! Public interfaces
 
-  public physics_update
+  public physics_update_main
   public physics_state_check ! Check state object for invalid data.
   public physics_ptend_reset
   public physics_ptend_init
@@ -200,7 +200,7 @@ contains
 
   end subroutine physics_type_alloc
 !===============================================================================
-  subroutine physics_update(state, ptend, dt, tend)
+  subroutine physics_update_main(state, ptend, dt, tend)
 !-----------------------------------------------------------------------
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
@@ -257,7 +257,7 @@ contains
     !-----------------------------------------------------------------------
     ! If no fields are set, then return
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
-       ptend%name  = "none"
+       ptend%name  = "ptend_return"
        ptend%psetcols = 0
        return
     end if
@@ -265,18 +265,18 @@ contains
     !-----------------------------------------------------------------------
     ! Check that the state/tend/ptend are all dimensioned with the same number of columns
     if (state%psetcols /= ptend%psetcols) then
-       call endrun('ERROR in physics_update with ptend%name='//trim(ptend%name) &
+       call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
             //': state and ptend must have the same number of psetcols.')
     end if
 
     if (present(tend)) then
        if (state%psetcols /= tend%psetcols) then
-          call endrun('ERROR in physics_update with ptend%name='//trim(ptend%name) &
+          call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
                //': state and tend must have the same number of psetcols.')
        end if
     end if
 
-    call t_startf ('physics_update')
+    call t_startf ('physics_update_main')
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
@@ -288,7 +288,7 @@ contains
        allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpair
     else
-       call endrun('physics_update: cpairv is not allowed to vary when subcolumns are turned on')
+       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
     end if
     if (state%psetcols == pcols) then
        allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
@@ -297,7 +297,7 @@ contains
        allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
        rairv_loc(:,:,:) = rair
     else
-       call endrun('physics_update: rairv_loc is not allowed to vary when subcolumns are turned on')
+       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
     end if
 
     !-----------------------------------------------------------------------
@@ -453,13 +453,13 @@ contains
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
 
-    ptend%name  = "none"
+    ptend%name  = "default"
     ptend%lq(:) = .false.
     ptend%ls    = .false.
     ptend%lu    = .false.
     ptend%lv    = .false.
     ptend%psetcols = 0
-    call t_stopf ('physics_update')
+    call t_stopf ('physics_update_main')
 
   contains
 
@@ -491,7 +491,7 @@ contains
     end subroutine state_cnst_min_nz
 
 
-  end subroutine physics_update
+  end subroutine physics_update_main
 
 !===============================================================================
 
