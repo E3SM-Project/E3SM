@@ -25,6 +25,10 @@
       <value compset="_CLM50"                >-phys clm5_0</value>
       <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
       <value compset="1950_CAM5%CMIP6-HR_CLM45"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="1950_CAM5%CMIP6-LR_CLM45"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="1950_CAM5%CMIP6-LRtunedHR_CLM45"         >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+
+
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>
