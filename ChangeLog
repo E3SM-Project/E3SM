@@ -13,6 +13,7 @@ Tests: scripts_regression_tests
 Dependencies:
 
 Brief Summary:
+    - Remove the run_e3sm testing scripts from the CIME repo.
     - Fix pylint
     - Update hobart queue limits.
     - Allow env vars to be unresolved.
