@@ -2,7 +2,8 @@
 case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, run_sub_or_cmd
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
+from CIME.utils                     import run_sub_or_cmd, append_status
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -229,7 +230,9 @@ def _do_external(script_name, caseroot, rundir, lid, prefix):
     expect(os.path.isfile(script_name), "External script {} not found".format(script_name))
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile)
+    append_status("Starting script {}".format(script_name), "CaseStatus")
+    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile)
+    append_status("Completed script {}".format(script_name), "CaseStatus")
 
 ###############################################################################
 def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
