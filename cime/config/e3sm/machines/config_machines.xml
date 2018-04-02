@@ -2848,8 +2848,8 @@
 	 <TESTS>e3sm_developer</TESTS>
 	 <COMPILERS>ibm,pgi,pgiacc,gnu</COMPILERS>
 	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
-	 <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT>
-	 <!-- <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/scratch</CIME_OUTPUT_ROOT> -->
+	 <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
+	 <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm_scratch</CIME_OUTPUT_ROOT>
 	 <RUNDIR>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
 	 <DIN_LOC_ROOT>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/inputdata</DIN_LOC_ROOT>
@@ -2866,7 +2866,7 @@
 	 <GMAKE_J>32</GMAKE_J>
 	 <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
 	 <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
-	 <MAX_TASKS_PER_NODE>168</MAX_TASKS_PER_NODE>
+	 <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc190</PROJECT>
 	 <CHARGE_ACCOUNT>CSC190ACME</CHARGE_ACCOUNT>
