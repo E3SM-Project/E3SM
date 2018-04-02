@@ -1230,7 +1230,7 @@ class Case(object):
             if not success:
                 logger.warning("Failed to kill {}".format(jobid))
 
-    def get_mpirun_cmd(self, job=None):
+    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True):
         if job is None:
             job = self.get_primary_job()
 
