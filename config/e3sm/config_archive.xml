@@ -81,7 +81,7 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpascice" compclass="ice">
+  <comp_archive_spec compname="mpassi" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
@@ -144,13 +144,13 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpasli" compclass="glc">
+  <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
-      <rpointer_content>./mpasli$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
+      <rpointer_content>./mali$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
