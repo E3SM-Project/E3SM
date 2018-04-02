@@ -61,9 +61,13 @@ module ocn_time_average_coupled
                             config_use_DMSTracers,    &
                             config_use_MacroMoleculesTracers
 
+        type (mpas_pool_type), pointer :: ecosysAuxiliary
+
         type (mpas_pool_type), pointer :: ecosysSeaIceCoupling, &
                                           DMSSeaIceCoupling,    &
                                           MacroMoleculesSeaIceCoupling
+
+        real (kind=RKIND), dimension(:), pointer :: avgCO2_gas_flux
 
         real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
                                                     avgOceanSurfaceDON, &
@@ -116,6 +120,9 @@ module ocn_time_average_coupled
 
         if (config_use_ecosysTracers) then
 
+           call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+           call mpas_pool_get_array(ecosysAuxiliary, 'avgCO2_gas_flux', avgCO2_gas_flux)
+
            call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
 
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
@@ -129,6 +136,8 @@ module ocn_time_average_coupled
 
            !$omp do schedule(runtime)
            do iCell = 1, nCells
+              avgCO2_gas_flux(iCell) = 0.0_RKIND
+
               avgOceanSurfacePhytoC(:,iCell) = 0.0_RKIND
 
               avgOceanSurfaceDIC(iCell) = 0.0_RKIND
@@ -222,6 +231,9 @@ module ocn_time_average_coupled
                                           DMSSeaIceCoupling,    &
                                           MacroMoleculesSeaIceCoupling
 
+        type (mpas_pool_type), pointer :: ecosysAuxiliary
+        real (kind=RKIND), dimension(:), pointer :: CO2_gas_flux, avgCO2_gas_flux
+
         real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
                                                     avgOceanSurfaceDON, &
                                                     avgOceanSurfaceNO3, &
@@ -297,6 +309,10 @@ module ocn_time_average_coupled
 
         if (config_use_ecosysTracers) then
 
+         call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+         call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
+         call mpas_pool_get_array(ecosysAuxiliary, 'avgCO2_gas_flux', avgCO2_gas_flux)
+
          call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
 
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
@@ -313,6 +329,9 @@ module ocn_time_average_coupled
 
            !$omp do schedule(runtime)
            do iCell = 1, nCells
+
+           avgCO2_gas_flux(iCell) = ( avgCO2_gas_flux(iCell) * nAccumulatedCoupled &
+              + CO2_gas_flux(iCell) ) / ( nAccumulatedCoupled + 1)
 
            avgOceanSurfacePhytoC(1,iCell) = ( avgOceanSurfacePhytoC(1,iCell) * nAccumulatedCoupled &
               + ecosysTracers(ecosysIndices%diatC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
