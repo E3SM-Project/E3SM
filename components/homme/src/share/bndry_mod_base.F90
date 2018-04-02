@@ -156,6 +156,7 @@ contains
           endif
        enddo
     else
+
        iptr   = nlyr*buffer%moveptr0(ithr+1) + 1   ! 1 based indexing
        length = nlyr*buffer%moveLength(ithr+1)
        if(length>0) then 

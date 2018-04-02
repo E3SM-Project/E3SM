@@ -122,7 +122,7 @@ logical var_coef1
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-        call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1))
+        call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
@@ -727,9 +727,11 @@ integer :: ie,k,q
           ! max - min - crude approximation to TV within the element:
           Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
        enddo
-       call edgeVpack_nlyr(edge3,elem(ie)%desc,Qmax,nlev,0,3*nlev)
-       call edgeVpack_nlyr(edge3,elem(ie)%desc,Qmin,nlev,nlev,3*nlev)
-       call edgeVpack_nlyr(edge3,elem(ie)%desc,Qvar,nlev,2*nlev,3*nlev)
+       ! cant use more efficient edgeVpack_nlyr() interface because below we use the old
+       ! edgeVunpackMin/Max interface
+       call edgeVpack(edge3,Qmax,nlev,0,ie)
+       call edgeVpack(edge3,Qmin,nlev,nlev,ie)
+       call edgeVpack(edge3,Qvar,nlev,2*nlev,ie)
     enddo
     
     call t_startf('nmm_bexchV')

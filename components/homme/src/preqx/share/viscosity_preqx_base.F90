@@ -18,7 +18,7 @@ use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-use edge_mod, only : edgevpack, edgevunpack
+use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
 
 use bndry_mod, only : bndry_exchangev
 use control_mod, only : hypervis_scaling, nu, nu_div
@@ -99,11 +99,11 @@ logical var_coef1
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
-      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
+      call edgeVpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie),nlev,kptr,4*nlev)
       kptr=nlev
-      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+      call edgeVpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie),2*nlev,kptr,4*nlev)
       kptr=3*nlev
-      call edgeVpack(edge3, dptens(1,1,1,ie),nlev,kptr,ie)
+      call edgeVpack_nlyr(edge3, elem(ie)%desc, dptens(1,1,1,ie),nlev,kptr,4*nlev)
 
    enddo
    
@@ -115,11 +115,11 @@ logical var_coef1
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
+      call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie), nlev, kptr, 4*nlev)
       kptr=nlev
-      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+      call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie), 2*nlev, kptr, 4*nlev)
       kptr=3*nlev
-      call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
+      call edgeVunpack_nlyr(edge3, elem(ie)%desc, dptens(1,1,1,ie), nlev, kptr, 4*nlev)
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)

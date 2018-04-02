@@ -524,7 +524,7 @@ OMP_SIMD
     if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
-    call edgeVunpack_nlyr(edge_g , elem(ie)%desc, DSSvar(:,:,1:nlev) , nlev , qsize*nlev)
+    call edgeVunpack_nlyr(edge_g , elem(ie)%desc, DSSvar(:,:,1:nlev) , nlev , qsize*nlev, (qsize+1)*nlev)
 OMP_SIMD
     do k = 1 , nlev
       DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
@@ -534,7 +534,7 @@ OMP_SIMD
 !$omp parallel do private(q,k)
 #endif
     do q = 1 , qsize
-      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1))
+      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1), (qsize+1)*nlev)
       do k = 1 , nlev    !  Potential loop inversion (AAM)
         elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
       enddo
@@ -712,7 +712,7 @@ OMP_SIMD
     call t_stopf('ah_scalar_bexchV')
 
     do ie = nets , nete
-      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0)
+      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0, qsize*nlev)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k) collapse(2)
 #endif
@@ -806,7 +806,7 @@ OMP_SIMD
     call bndry_exchangeV( hybrid,edge_g )
 
     do ie=nets,nete
-      call edgeVunpack_nlyr(edge_g,elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0)
+      call edgeVunpack_nlyr(edge_g,elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,qsize*nlev)
       do q=1,qsize
         ! apply inverse mass matrix
         do k=1,nlev

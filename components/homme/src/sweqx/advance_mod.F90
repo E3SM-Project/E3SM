@@ -825,9 +825,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr,3*nlev)
              kptr=nlev
-             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr,3*nlev)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -879,9 +879,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr,3*nlev)
              kptr=nlev
-             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr,3*nlev)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -1086,10 +1086,10 @@ contains
      ! Unpack the edges for vgradp and vtens
      ! ===========================================================
      kptr=0
-     call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie), nlev, kptr)
+     call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie), nlev, kptr,3*nlev)
      
      kptr=nlev
-     call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie), 2*nlev, kptr)
+     call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie), 2*nlev, kptr, 3*nlev)
      
      ! ===========================================================
      ! Compute velocity and pressure tendencies for all levels
