@@ -2846,10 +2846,10 @@
 	 <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
 	 <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
 	 <TESTS>e3sm_developer</TESTS>
-	 <COMPILERS>ibm,pgi,pgiacc</COMPILERS>
+	 <COMPILERS>ibm,pgi,pgiacc,gnu</COMPILERS>
 	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
-	 <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT>
-	 <!-- <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/scratch</CIME_OUTPUT_ROOT> -->
+	 <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
+	 <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm_scratch</CIME_OUTPUT_ROOT>
 	 <RUNDIR>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
 	 <DIN_LOC_ROOT>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/inputdata</DIN_LOC_ROOT>
@@ -2866,7 +2866,7 @@
 	 <GMAKE_J>32</GMAKE_J>
 	 <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
 	 <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
-	 <MAX_TASKS_PER_NODE>168</MAX_TASKS_PER_NODE>
+	 <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc190</PROJECT>
 	 <CHARGE_ACCOUNT>CSC190ACME</CHARGE_ACCOUNT>
@@ -2878,13 +2878,6 @@
 	 <!-- <executable>jsrun</executable> -->
 	 <arguments>
 	     <arg name="num_tasks" > -n $TOTALPES -N $MAX_MPITASKS_PER_NODE </arg>
-		 <!-- By default 'jsrun' does not exit (i.e. hung) if any process / thread fails. -->
-		 <!-- To avoid this, pass the option '-X 1' to exit on error -->
-	     <!-- <arg name="num_tasks" > -X 1 - -nrs $SHELL{echo $NUM_NODES * 6 | bc} - -rs_per_host 6 - -tasks_per_rs 28 - -gpu_per_rs 1 - -cpu_per_rs 7 </arg> -->
-		 <!-- plane binding is number of tasks per socket -->
-		 <!-- <arg name="binding">- -latency_priority=cpu-cpu - -bind=proportional-packed:1 -d plane:84 </arg> -->
-		 <!-- The expression below calculates number of nodes (ceil of TOTALPES/MAX_MPITASKS_PER_NODE) -->
-		 <!-- $SHELL{echo "(($TOTALPES + $MAX_MPITASKS_PER_NODE - 1)/$MAX_MPITASKS_PER_NODE)" | bc} -->
 	 </arguments>
 	 </mpirun>
 		<!-- Useful jsrun options:
@@ -2909,7 +2902,6 @@
 
       <!-- Always execute -->
       <modules>
-		<command name="ls"/>
 		<command name="purge"/>
 		<command name="ls"/>
 		<command name="load">DefApps</command>
@@ -2922,33 +2914,33 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
-        <command name="rm">xl</command>
         <command name="load">pgi/18.1</command>
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="ls"/>
       </modules>
       <modules compiler="ibm">
-        <command name="rm">pgi</command>
         <command name="load">xl/20180223-beta</command>
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
-        <command name="ls"/>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/6.4.0</command>
       </modules>
 
-      <!-- mpi lib settings -->
-      <modules mpilib="mpi-serial">
+      <modules>
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
       </modules>
+      <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
-      <modules compiler="pgi" mpilib="!mpi-serial">
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
+      <modules compiler="pgi*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
@@ -2960,11 +2952,11 @@
 		  <env name="OMP_STACKSIZE">128M</env>
 		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
 		  <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
 		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
 		  <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       </environment_variables>
       <environment_variables mpilib="!mpi-serial">
+		<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
 </machine>
