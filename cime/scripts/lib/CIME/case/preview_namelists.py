@@ -1,27 +1,27 @@
 """
 API for preview namelist
+create_dirs and create_namelists are members of Class case from file case.py
 """
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import run_sub_or_cmd
-from CIME.check_input_data import stage_refcase
 import glob, shutil
 logger = logging.getLogger(__name__)
 
-def create_dirs(case):
+def create_dirs(self):
     """
     Make necessary directories for case
     """
     # Get data from XML
-    exeroot  = case.get_value("EXEROOT")
-    libroot  = case.get_value("LIBROOT")
-    incroot  = case.get_value("INCROOT")
-    rundir   = case.get_value("RUNDIR")
-    caseroot = case.get_value("CASEROOT")
+    exeroot  = self.get_value("EXEROOT")
+    libroot  = self.get_value("LIBROOT")
+    incroot  = self.get_value("INCROOT")
+    rundir   = self.get_value("RUNDIR")
+    caseroot = self.get_value("CASEROOT")
 
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
-    models = case.get_values("COMP_CLASSES")
+    models = self.get_values("COMP_CLASSES")
     for model in models:
         dirname = model.lower()
         dirs_to_make.append(os.path.join(exeroot, dirname, "obj"))
@@ -41,24 +41,24 @@ def create_dirs(case):
         with open(os.path.join(dir_,"CASEROOT"),"w+") as fd:
             fd.write(caseroot+"\n")
 
-def create_namelists(case, component=None):
+def create_namelists(self, component=None):
     """
     Create component namelists
     """
-    case.flush()
+    self.flush()
 
-    create_dirs(case)
+    create_dirs(self)
 
-    casebuild = case.get_value("CASEBUILD")
-    caseroot = case.get_value("CASEROOT")
-    rundir = case.get_value("RUNDIR")
+    casebuild = self.get_value("CASEBUILD")
+    caseroot = self.get_value("CASEROOT")
+    rundir = self.get_value("RUNDIR")
 
     docdir = os.path.join(caseroot, "CaseDocs")
 
     # Load modules
-    case.load_env()
+    self.load_env()
 
-    stage_refcase(case)
+    self.stage_refcase()
 
 
     logger.info("Creating component namelists")
@@ -66,16 +66,16 @@ def create_namelists(case, component=None):
     # Create namelists - must have cpl last in the list below
     # Note - cpl must be last in the loop below so that in generating its namelist,
     # it can use xml vars potentially set by other component's buildnml scripts
-    models = case.get_values("COMP_CLASSES")
+    models = self.get_values("COMP_CLASSES")
     models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
-        config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper()))
+        config_file = self.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":
             compname = "drv"
         else:
-            compname = case.get_value("COMP_{}".format(model_str.upper()))
+            compname = self.get_value("COMP_{}".format(model_str.upper()))
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
@@ -85,7 +85,7 @@ def create_namelists(case, component=None):
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
+            run_sub_or_cmd(cmd, (caseroot), "buildnml", (self, caseroot, compname), case=self)
 
     logger.info("Finished creating component namelists")
 

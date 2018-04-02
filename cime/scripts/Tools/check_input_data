@@ -6,8 +6,6 @@ Check (and optionally download) input data files.
 Should be run from case.
 """
 from standard_script_setup import *
-
-from CIME.check_input_data import check_all_input_data
 from CIME.case import Case
 
 import argparse
@@ -60,12 +58,11 @@ def _main_func(description):
     protocal, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
     with Case() as case:
-        sys.exit(0 if check_all_input_data(case,
-                                       protocal=protocal,
-                                       address=address,
-                                       input_data_root=input_data_root,
-                                       data_list_dir=data_list_dir,
-                                       download=download) else 1)
+        sys.exit(0 if case.check_all_input_data(protocal=protocal,
+                                                address=address,
+                                                input_data_root=input_data_root,
+                                                data_list_dir=data_list_dir,
+                                                download=download) else 1)
 
 ###############################################################################
 

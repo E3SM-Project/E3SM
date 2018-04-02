@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, fnmatch
 import errno, signal, warnings, filecmp
 import stat as statlib
 import six
@@ -271,24 +271,33 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
-    do_run_cmd = False
+    do_run_cmd = True
     stat = 0
     output = ""
     errput = ""
-    try:
-        mod = imp.load_source(subname, cmd)
-        logger.info("   Calling {}".format(cmd))
-        if logfile:
-            with redirect_logger(open(logfile,"w"), subname):
+    # Before attempting to load the script make sure it contains the subroutine
+    # we are expecting
+    with open(cmd, 'r') as fd:
+        for line in fd.readlines():
+            if re.search(r"^def {}\(".format(subname), line):
+                do_run_cmd = False
+                break
+
+    if not do_run_cmd:
+        try:
+            mod = imp.load_source(subname, cmd)
+            logger.info("   Calling {}".format(cmd))
+            if logfile:
+                with redirect_stdout_stderr(open(logfile,"w")):
+                    getattr(mod, subname)(*subargs)
+            else:
                 getattr(mod, subname)(*subargs)
-        else:
-            getattr(mod, subname)(*subargs)
 
-    except SyntaxError:
-        do_run_cmd = True
+        except SyntaxError:
+            do_run_cmd = True
 
-    except AttributeError:
-        do_run_cmd = True
+        except AttributeError:
+            do_run_cmd = True
 
     if do_run_cmd:
         logger.info("   Running {} ".format(cmd))
@@ -851,6 +860,18 @@ def get_charge_account(machobj=None):
 
     logger.info("No charge_account info available, using value from PROJECT")
     return get_project(machobj)
+
+def find_files(rootdir, pattern):
+    """
+    recursively find all files matching a pattern
+    """
+    result = []
+    for root, _, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
 
 
 def setup_standard_logging_options(parser):

@@ -1,5 +1,6 @@
 """
 Run a testcase.
+case_test is a member of class Case from case.py
 """
 
 from CIME.XML.standard_module_setup import *
@@ -42,9 +43,9 @@ def _set_up_signal_handlers():
         signum = getattr(signal, signame)
         signal.signal(signum, _signal_handler)
 
-def case_test(case, testname=None, reset=False):
+def case_test(self, testname=None, reset=False, skip_pnl=False):
     if testname is None:
-        testname = case.get_value('TESTCASE')
+        testname = self.get_value('TESTCASE')
 
     expect(testname is not None, "testname argument not resolved")
     logging.warning("Running test for {}".format(testname))
@@ -56,9 +57,9 @@ def case_test(case, testname=None, reset=False):
         # not found or the test constructor throws. We need to be
         # sure to leave TestStatus in the appropriate state if that
         # happens.
-        test = find_system_test(testname, case)(case)
+        test = find_system_test(testname, self)(self)
     except:
-        caseroot = case.get_value("CASEROOT")
+        caseroot = self.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
         append_testlog(str(sys.exc_info()[1]))
@@ -69,6 +70,6 @@ def case_test(case, testname=None, reset=False):
         # pylint: disable=protected-access
         test._resetup_case(RUN_PHASE)
         return True
-    success = test.run()
+    success = test.run(skip_pnl=skip_pnl)
 
     return success

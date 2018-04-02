@@ -53,6 +53,7 @@
 
   <comp_archive_spec compname="mosart" compclass="rof">
     <rest_file_extension>r</rest_file_extension>
+    <rest_file_extension>rh\d*</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
@@ -112,9 +113,15 @@
     </rpointer>
     </comp_archive_spec>
     <comp_archive_spec compclass="esp" compname="dart">
+<<<<<<< HEAD
       <rest_file_extension>e\.\w+inf\w+</rest_file_extension>
       <hist_file_extension>[ei]</hist_file_extension>
       <rest_history_varname>unset</rest_history_varname>
+=======
+      <rest_file_extension>r</rest_file_extension>
+      <hist_file_extension>[ei]</hist_file_extension>
+      <rest_history_varname>restart_hist</rest_history_varname>
+>>>>>>> de9dc732a6361c3ad8a75cb56bd83feb22880574
       <rpointer>
         <rpointer_file>rpointer.unset</rpointer_file>
         <rpointer_content>unset</rpointer_content>

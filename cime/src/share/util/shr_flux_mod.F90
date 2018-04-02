@@ -385,6 +385,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
            qstar = re * delq
         enddo
         if (iter < 1) then
+           write(s_logunit,*) ustar,ustar_prev,flux_con_tol,flux_con_max_iter
            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
         end if
         !------------------------------------------------------------

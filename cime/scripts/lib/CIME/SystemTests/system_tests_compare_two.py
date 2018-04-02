@@ -37,8 +37,6 @@ In addition, they MAY require the following methods:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
-from CIME.case_submit import check_case
-from CIME.case_st_archive import archive_last_restarts
 from CIME.utils import get_model
 
 import shutil, os, glob
@@ -233,7 +231,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 self._activate_case2()
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
-                    check_case(self._case2)
+                    self._case2.check_case()
 
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
@@ -254,9 +252,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         files.
         """
         rundir2 = self._case2.get_value("RUNDIR")
-        archive_last_restarts(case = self._case1,
-                              archive_restdir = rundir2,
-                              link_to_restart_files = True)
+        self._case1.archive_last_restarts(archive_restdir = rundir2,
+                                          link_to_restart_files = True)
 
     # ========================================================================
     # Private methods
@@ -455,6 +452,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # note that we print a warning to the log file if that happens, in the
         # caller of this method).
         self._case.flush()
+        # This assures that case one namelists are populated
+        # and creates the case.test script
+        self._case.case_setup(test_mode=False, reset=True)
 
         # Set up case 2
         self._activate_case2()
@@ -463,6 +463,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
+
+        # This assures that case two namelists are populated
+        self._case.case_setup(test_mode=True, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()

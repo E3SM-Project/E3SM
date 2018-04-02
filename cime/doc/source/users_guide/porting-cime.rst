@@ -104,7 +104,7 @@ Each ``<machine>`` tag requires the following input:
 - ``MPILIBS``: mpilibs supported on the machine, in comma-separated list, default first
 - ``PROJECT``: a project or account number used for batch jobs; can be overridden in environment or in **$HOME/.cime/config**
 - ``SAVE_TIMING_DIR``: (E3SM only) target directory for archiving timing output
-- ``SAVE_TIMING_DIR_PROJECTS``: (ACME only) projects whose jobs archive timing output
+- ``SAVE_TIMING_DIR_PROJECTS``: (E3SM only) projects whose jobs archive timing output
 - ``CIME_OUTPUT_ROOT``: Base directory for case output; the **bld** and **run** directories are written below here
 - ``DIN_LOC_ROOT``: location of the input data directory
 - ``DIN_LOC_ROOT_CLMFORC``: optional input location for clm forcing data

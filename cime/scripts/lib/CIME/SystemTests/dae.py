@@ -14,7 +14,6 @@ import gzip
 import CIME.XML.standard_module_setup as sms
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.utils import expect
-from CIME.case_setup import case_setup
 
 ###############################################################################
 class DAE(SystemTestsCompareTwo):
@@ -40,7 +39,7 @@ class DAE(SystemTestsCompareTwo):
     ###########################################################################
     def _case_one_setup(self):
     ###########################################################################
-        case_setup(self._case, test_mode=True, reset=True)
+        pass
 
     ###########################################################################
     def _case_two_setup(self):

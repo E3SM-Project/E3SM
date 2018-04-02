@@ -8,7 +8,6 @@ copies those files to the CaseDocs subdirectory for inspection
 
 from standard_script_setup import *
 
-from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
 from CIME.utils             import expect
 
@@ -37,7 +36,7 @@ def _main_func(description):
     expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
            "case.setup must be run prior to running preview_namelists")
     with Case(args.caseroot, read_only=False) as case:
-        create_namelists(case, component=args.component)
+        case.create_namelists(component=args.component)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
