@@ -170,6 +170,9 @@ contains
                                         ecosysDiagFieldsLevel5
 
       logical, pointer ::  &
+         config_ecosys_atm_alt_co2_use_eco
+
+      logical, pointer ::  &
          config_ecosysTracers_diagnostic_fields_level1,  &
          config_ecosysTracers_diagnostic_fields_level2,  &
          config_ecosysTracers_diagnostic_fields_level3,  &
@@ -357,6 +360,9 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'PAR_surface', PAR_surface)
 
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
+
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosys_atm_alt_co2_use_eco', &
+              config_ecosys_atm_alt_co2_use_eco)
 
 !maltrud change to diagnostics pool at some point (needs to be passed in)
 
@@ -596,7 +602,7 @@ contains
 
          call BGC_SourceSink(autotrophs, BGC_indices, BGC_input, BGC_forcing,   &
                              BGC_output, BGC_diagnostic_fields, nVertLevels,   &
-                             numColumnsMax, numColumns)
+                             numColumnsMax, numColumns, config_ecosys_atm_alt_co2_use_eco)
 
          do iLevel=1,maxLevelCell(iCell)
 
