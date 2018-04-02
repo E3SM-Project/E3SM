@@ -195,7 +195,7 @@ contains
 
 
 !$OMP MASTER
-    edge%nlyr=nlyr        ! number of layers used
+    edge%nlyr=0           ! number of layers used
     edge%nlyr_max=nlyr    ! maximum number of layers allowed 
     edge%nbuf=nbuf
 !$OMP END MASTER
@@ -524,8 +524,6 @@ endif
        call abortmp('edgeVpack: Buffer overflow: edge%nlyr_max too small for nlyr_tot')
     endif
 
-    edge%nlyr = nlyr_tot  ! set total amount of data for bndry exchange and unpack
-
     is = nlyr_tot*desc%putmapP(south)
     ie = nlyr_tot*desc%putmapP(east)
     in = nlyr_tot*desc%putmapP(north)
@@ -628,6 +626,8 @@ endif
         end if
     end do
 
+    edge%nlyr = nlyr_tot  ! set total amount of data for bndry exchange 
+
   end subroutine edgeVpack_nlyr
 
 
@@ -649,13 +649,14 @@ endif
     integer :: is,ie,in,iw
     real (kind=real_kind) :: tmp
 
-    if (edge%nlyr < (kptr+vlyr) ) then
+    if (edge%nlyr_max < (kptr+vlyr) ) then
        call abortmp('edgeSpack: Buffer overflow: edge%nlyr too small')
     endif
 
 
     desc => edge%desc(ielem)
     nlyr_tot = edge%nlyr_max      ! this will be changing to an input paramemter
+    edge%nlyr = nlyr_tot          ! set size actually used
 
     is = nlyr_tot*desc%putmapS(south)
     ie = nlyr_tot*desc%putmapS(east)
@@ -855,16 +856,16 @@ endif
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
 
-    call edgeVunpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr)
+    call edgeVunpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr,edge%nlyr_max)
   end subroutine edgeVunpack
 
 
-  subroutine edgeVunpack_nlyr(edge,desc,v,vlyr,kptr)
+  subroutine edgeVunpack_nlyr(edge,desc,v,vlyr,kptr,nlyr_tot)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (EdgeBuffer_t),         intent(in)  :: edge
 
-    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: vlyr,nlyr_tot
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
     type (EdgeDescriptor_t)  :: desc
 
@@ -876,11 +877,10 @@ endif
     integer :: i,k,ll,iptr
     integer :: is,ie,in,iw
     integer :: ks,ke,kblock
-    logical :: done
-    integer :: getmapL, nlyr_tot
+    integer :: getmapL
 
-
-    nlyr_tot = edge%nlyr
+    ! for nlyr_tot, dont use edge%nlyr, since some threads may be ahead of this thread
+    ! and will change edge%nlyr and start packing into the send buffer
 
     is = nlyr_tot*desc%getmapP(south)
     ie = nlyr_tot*desc%getmapP(east)
@@ -972,7 +972,7 @@ endif
     end if
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapP(south)
     ie=nlyr_tot*desc%getmapP(east)
@@ -1212,7 +1212,7 @@ endif
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapP(south)
     ie=nlyr_tot*desc%getmapP(east)
@@ -1256,7 +1256,7 @@ endif
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapP(south)
     ie=nlyr_tot*desc%getmapP(east)
@@ -1338,7 +1338,7 @@ endif
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapS(south)
     ie=nlyr_tot*desc%getmapS(east)
@@ -1423,7 +1423,7 @@ endif
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapS(south)
     ie=nlyr_tot*desc%getmapS(east)
@@ -1502,7 +1502,7 @@ endif
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr
+    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapP(south)
     ie=nlyr_tot*desc%getmapP(east)

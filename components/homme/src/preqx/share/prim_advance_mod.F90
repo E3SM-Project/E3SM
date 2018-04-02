@@ -12,7 +12,7 @@ module prim_advance_mod
   use derivative_mod, only: derivative_t
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
-  use edge_mod,       only: edge_g
+  use edge_mod,       only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use element_mod,    only: element_t
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
@@ -836,7 +836,6 @@ contains
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
         call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
-
         do ie=nets,nete
 
            ! comptue mean flux
@@ -895,11 +894,12 @@ contains
 
 
            kptr=0
-           call edgeVpack(edge_g, ttens(:,:,:,ie),nlev,kptr,ie)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,ttens(:,:,:,ie),nlev,kptr,4*nlev) ! edge_g%nlyr_max)
            kptr=nlev
-           call edgeVpack(edge_g,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,4*nlev) ! edge_g%nlyr_max)
            kptr=3*nlev
-           call edgeVpack(edge_g,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,4*nlev) ! edge_g%nlyr_max)
+
         enddo
 
         call t_startf('ahdp_bexchV2')
@@ -909,12 +909,11 @@ contains
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge_g, ttens(:,:,:,ie), nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g, elem(ie)%desc, ttens(:,:,:,ie), nlev, kptr, 4*nlev)
            kptr=nlev
-           call edgeVunpack(edge_g, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g, elem(ie)%desc, vtens(:,:,:,:,ie), 2*nlev, kptr, 4*nlev)
            kptr=3*nlev
-           call edgeVunpack(edge_g, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
-
+           call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, 4*nlev)
 
 
            ! apply inverse mass matrix, accumulate tendencies

@@ -55,7 +55,8 @@ contains
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
     call t_startf('edge_s_pack')
-    if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+    edge%nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
@@ -221,7 +222,8 @@ contains
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
     call t_startf('edge_pack')
-    if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
+    edge%nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
