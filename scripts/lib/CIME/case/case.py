@@ -358,16 +358,18 @@ class Case(object):
 
         return result
 
-    def get_resolved_value(self, item, recurse=0):
+    def get_resolved_value(self, item, recurse=0, allow_unresolved_envvars=False):
         num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                item = env_file.get_resolved_value(item)
+                item = env_file.get_resolved_value(item, 
+                                                   allow_unresolved_envvars=allow_unresolved_envvars)
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item, recurse=recurse+1)
+                item = self.get_resolved_value(item, recurse=recurse+1, 
+                                               allow_unresolved_envvars=allow_unresolved_envvars)
 
         return item
 
@@ -1228,7 +1230,7 @@ class Case(object):
             if not success:
                 logger.warning("Failed to kill {}".format(jobid))
 
-    def get_mpirun_cmd(self, job=None):
+    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True):
         if job is None:
             job = self.get_primary_job()
 
@@ -1265,7 +1267,7 @@ class Case(object):
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
 
-        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix))
+        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix), allow_unresolved_envvars=True)
 
     def set_model_version(self, model):
         version = "unknown"
