@@ -16,8 +16,8 @@ module mpas_subdriver
 #ifdef CORE_ATMOSPHERE
    use atm_core_interface
 #endif
-#ifdef CORE_CICE
-   use cice_core_interface
+#ifdef CORE_SEAICE
+   use seaice_core_interface
 #endif
 #ifdef CORE_INIT_ATMOSPHERE
    use init_atm_core_interface
@@ -161,9 +161,9 @@ module mpas_subdriver
       call atm_setup_core(corelist)
       call atm_setup_domain(domain_ptr)
 #endif
-#ifdef CORE_CICE
-      call cice_setup_core(corelist)
-      call cice_setup_domain(domain_ptr)
+#ifdef CORE_SEAICE
+      call seaice_setup_core(corelist)
+      call seaice_setup_domain(domain_ptr)
 #endif
 #ifdef CORE_INIT_ATMOSPHERE
       call init_atm_setup_core(corelist)
