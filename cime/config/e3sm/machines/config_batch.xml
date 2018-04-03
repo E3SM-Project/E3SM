@@ -325,6 +325,17 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="stampede2" type="slurm">
+    <directives>
+      <directive>-n {{ total_tasks }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="4" strict="true">skx-dev</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="868" strict="true">skx-large</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="128" default="true">skx-normal</queue>
+    </queues>
+  </batch_system>
+
     <batch_system MACH="mira" type="cobalt">
       <queues>
         <queue walltimemax="03:00:00" nodemin="1" nodemax="12288" default="true">default</queue>
