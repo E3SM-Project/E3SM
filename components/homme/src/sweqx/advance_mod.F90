@@ -1199,7 +1199,8 @@ contains
   real (kind=real_kind) :: v(np,np,2,nets:nete)       !JRUB
   real (kind=real_kind) :: alpha,l2           !JRUB
   real (kind=real_kind), parameter :: epsilon = 1D-5  !JRUB
-  integer, parameter               :: dupdate = 25  !JRUB
+  integer, parameter               :: dupdate = 25  !JRUB time step frequency to apply power method update
+  integer, parameter               :: supdate = 120000  !JRUB time step at which power method update is switched off (200 days with step of 144 sec.)
 
   call t_startf('compute_and_apply_rhs')
 
@@ -1362,7 +1363,7 @@ contains
      ! Adjust accroding to Peixoto Eq. B5-B6
      !====================================================                                                                
 
-     if (MOD(nstep,dupdate).EQ.0) then  !begin adjust and update every dupdate JRUB
+     if ((MOD(nstep,dupdate).EQ.0).AND.(nstep.LT.supdate)) then  !begin adjust and update every dupdate JRUB
         do ie=nets,nete   
            do k=1,nlev                                                                                                             
               do j=1,np                                                                                                             
