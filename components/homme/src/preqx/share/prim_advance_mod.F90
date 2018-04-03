@@ -27,7 +27,6 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_init1, &
        applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
 
-  type (EdgeBuffer_t) :: edge3p1
   real (kind=real_kind), allocatable :: ur_weights(:)
 
 contains
@@ -41,8 +40,6 @@ contains
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*), intent(in) :: integration
     integer :: i, ie
-
-    call initEdgeBuffer(par,edge3p1,elem,4*nlev)
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
@@ -135,7 +132,6 @@ contains
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
-    use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
     use time_mod,       only: timelevel_qdp
@@ -707,7 +703,6 @@ contains
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
@@ -784,9 +779,9 @@ contains
            enddo
 
            kptr=0
-           call edgeVpack(edge_g, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
+           call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%T(:,:,:,nt),nlev,kptr,3*nlev)
            kptr=nlev
-           call edgeVpack(edge_g,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
+           call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,3*nlev)
         enddo
 
         call t_startf('ahdp_bexchV1')
@@ -796,9 +791,9 @@ contains
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge_g, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%T(:,:,:,nt), nlev, kptr, 3*nlev)
            kptr=nlev
-           call edgeVunpack(edge_g, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, 3*nlev)
 
            ! apply inverse mass matrix
 #if (defined COLUMN_OPENMP)
@@ -894,11 +889,11 @@ contains
 
 
            kptr=0
-           call edgeVpack_nlyr(edge_g, elem(ie)%desc,ttens(:,:,:,ie),nlev,kptr,4*nlev) ! edge_g%nlyr_max)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,ttens(:,:,:,ie),nlev,kptr,4*nlev)
            kptr=nlev
-           call edgeVpack_nlyr(edge_g, elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,4*nlev) ! edge_g%nlyr_max)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,4*nlev)
            kptr=3*nlev
-           call edgeVpack_nlyr(edge_g, elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,4*nlev) ! edge_g%nlyr_max)
+           call edgeVpack_nlyr(edge_g, elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,4*nlev)
 
         enddo
 
@@ -1015,7 +1010,6 @@ contains
   use kinds,          only : real_kind
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod,   only : edgedescriptor_t
   use bndry_mod,      only : bndry_exchangev
   use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
@@ -1482,13 +1476,13 @@ contains
      !
      ! =========================================================
      kptr=0
-     call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%T(:,:,:,np1),nlev,kptr,4*nlev)
 
      kptr=kptr+nlev
-     call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,4*nlev)
 
      kptr=kptr+2*nlev
-     call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,4*nlev)
   end do
 
   ! =============================================================
@@ -1497,7 +1491,7 @@ contains
   ! =============================================================
 
   call t_startf('caar_bexchV')
-  call bndry_exchangeV(hybrid,edge3p1)
+  call bndry_exchangeV(hybrid,edge_g)
   call t_stopf('caar_bexchV')
 
   do ie=nets,nete
@@ -1505,13 +1499,13 @@ contains
      ! Unpack the edges for vgrad_T and v tendencies...
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%T(:,:,:,np1), nlev, kptr,4*nlev)
 
      kptr=kptr+nlev
-     call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr,4*nlev)
 
      kptr=kptr+2*nlev
-     call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,4*nlev)
      
      ! ====================================================
      ! Scale tendencies by inverse mass matrix
