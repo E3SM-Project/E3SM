@@ -160,6 +160,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             # create batch files
             env_batch = case.get_env("batch")
             env_batch.make_all_batch_files(case)
+            if get_model() == "e3sm" and not case.get_value("TEST"):
+                input_batch_script = os.path.join(case.get_value("MACHDIR"), "template.case.run.sh")
+                env_batch.make_batch_script(input_batch_script, "case.run", case, outfile=get_batch_script_for_job("case.run.sh"))
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch.set_job_defaults([(case.get_primary_job(), {})], case)

@@ -182,7 +182,7 @@ class EnvBatch(EnvBase):
             self.add_child(self.copy(batchobj.machine_node))
         self.set_value("BATCH_SYSTEM", batch_system_type)
 
-    def make_batch_script(self, input_template, job, case):
+    def make_batch_script(self, input_template, job, case, outfile=None):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
         task_count = self.get_value("task_count", subgroup=job)
         overrides = {}
@@ -202,7 +202,7 @@ class EnvBatch(EnvBase):
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
         overrides["mpirun"] = case.get_mpirun_cmd(job=job)
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
-        output_name = get_batch_script_for_job(job)
+        output_name = get_batch_script_for_job(job) if outfile is None else outfile
         logger.info("Creating file {}".format(output_name))
         with open(output_name, "w") as fd:
             fd.write(output_text)
