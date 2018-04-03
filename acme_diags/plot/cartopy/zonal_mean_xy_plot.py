@@ -40,10 +40,16 @@ def plot(reference, test, diff, metrics_dict, parameter):
     ax1 = fig.add_axes(panel[1])
     ax1.plot(diff.getLatitude()[:], ma.squeeze(diff.asma()), 'k', linewidth=2)
     ax1.axhline(y=0, color='0.5')
-    fig.text(panel[0][0], panel[0][2] + 0.095, "Test: " +
-             parameter.test_name_yrs, ha='left', fontdict=plotSideTitle, color='black')
-    fig.text(panel[0][0], panel[0][2] + 0.07, "Reference: " +
-             parameter.reference_name, ha='left', fontdict=plotSideTitle, color='red')
+
+    test_title = "Test" if parameter.test_title == '' else parameter.test_title
+    test_title += ' : {}'.format(parameter.test_name_yrs)
+    fig.text(panel[0][0], panel[0][2] + 0.095, test_title,
+             ha='left', fontdict=plotSideTitle, color='black')
+
+    ref_title = "Reference" if parameter.reference_title == '' else parameter.reference_title
+    ref_title += ' : {}'.format(parameter.reference_name)
+    fig.text(panel[0][0], panel[0][2] + 0.07, ref_title,
+             ha='left', fontdict=plotSideTitle, color='red')
     fig.text(panel[1][0], panel[0][2] - 0.3, parameter.diff_title,
              ha='left', fontdict=plotSideTitle)
     ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # crs=ccrs.PlateCarree())
