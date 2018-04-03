@@ -94,7 +94,6 @@
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
- integer, dimension(:), pointer :: soilcat_bot
  integer, dimension(:), pointer :: landmask
  character(len=StrKIND), pointer :: mminlu
 
@@ -149,7 +148,6 @@
  call mpas_pool_get_array(mesh, 'lu_index', lu_index)
  call mpas_pool_get_array(mesh, 'mminlu', mminlu)
  call mpas_pool_get_array(mesh, 'soilcat_top', soilcat_top)
- call mpas_pool_get_array(mesh, 'soilcat_bot', soilcat_bot)
  call mpas_pool_get_array(mesh, 'landmask', landmask)
  call mpas_pool_get_array(mesh, 'soiltemp', soiltemp)
  call mpas_pool_get_array(mesh, 'snoalb', snoalb)
@@ -436,78 +434,17 @@ if (rarray(i,j,1) == 0) cycle
  call mpas_log_write('--- end interpolate SOILCAT_TOP')
 
 
-!
-! Interpolate SOILCAT_BOT
-!
- nx = 1200
- ny = 1200
- nz = 1
- isigned  = 1
- endian   = 0
- wordsize = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(ncat(16,nCells))
- ncat(:,:) = 0
- soilcat_bot(:) = 0.0
-
- do jTileStart = 1,20401,ny
-    jTileEnd = jTileStart + ny - 1
-
-    do iTileStart = 1,42001,nx
-       iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-             'soiltype_bot_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       call mpas_log_write(trim(fname))
-
-       call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
-                         scalefactor,wordsize,istatus)
-       call init_atm_check_read_error(istatus, fname)
-
-       iPoint = 1
-       do j=1,ny
-       do i=1,nx
-          lat_pt = -89.99583  + (jTileStart + j - 2) * 0.0083333333
-          lon_pt = -179.99583 + (iTileStart + i - 2) * 0.0083333333
-          lat_pt = lat_pt * PI / 180.0
-          lon_pt = lon_pt * PI / 180.0
-
-          iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                nEdgesOnCell,cellsOnCell, &
-                                latCell,lonCell)
-          ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
-       end do
-       end do
-
-    end do
- end do
-
- do iCell =1,nCells
-    soilcat_bot(iCell) = 1
-    do i = 2,16
-       if(ncat(i,iCell) > ncat(soilcat_bot(iCell),iCell)) then
-          soilcat_bot(iCell) = i
-       end if
-    end do
- end do
- deallocate(rarray)
- deallocate(ncat)
- call mpas_log_write('--- end interpolate SOILCAT_BOT')
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! KLUDGE TO FIX SOIL TYPE OVER ANTARCTICA
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  where (lu_index == isice_lu) soilcat_top = 16
- where (lu_index == isice_lu) soilcat_bot = 16
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! CORRECT INCONSISTENT SOIL AND LAND USE DATA
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  do iCell = 1,nCells
     if (lu_index(iCell) == iswater_lu .or. &
-        soilcat_top(iCell) == 14 .or. &
-        soilcat_bot(iCell) == 14) then
+        soilcat_top(iCell) == 14) then
         if (lu_index(iCell) /= iswater_lu) then
             call mpas_log_write('Turning lu_index into water at $i', intArgs=(/iCell/))
             lu_index(iCell) = iswater_lu
@@ -515,10 +452,6 @@ if (rarray(i,j,1) == 0) cycle
         if (soilcat_top(iCell) /= 14) then
             call mpas_log_write('Turning soilcat_top into water at $i', intArgs=(/iCell/))
             soilcat_top(iCell) = 14
-        end if
-        if (soilcat_bot(iCell) /= 14) then
-            call mpas_log_write('Turning soilcat_bot into water at $i', intArgs=(/iCell/))
-            soilcat_bot(iCell) = 14
         end if
     end if
  end do

@@ -436,8 +436,6 @@
 			<var name="rho"/>
 			<var name="theta"/>
 			<var name="relhum"/>
-			<var name="exner_base"/>
-			<var name="pressure_base"/>
 			<var name="rho_base"/>
 			<var name="theta_base"/>
 			<var name="surface_pressure"/>
