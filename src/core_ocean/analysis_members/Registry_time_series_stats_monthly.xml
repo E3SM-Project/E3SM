@@ -91,7 +91,7 @@
 		<stream name="timeSeriesStatsMonthlyRestart"
 				runtime_format="single_file"
 				type="input;output"
-				filename_template="restarts/restart.AM.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc"
+				filename_template="restarts/mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"
 				filename_interval="output_interval"
 				reference_time="0001-01-01_00:00:00"
 				clobber_mode="truncate"
@@ -158,7 +158,7 @@
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
-			<var name="vertNonLocalFlux"/>
+			<var_array name="vertNonLocalFlux"/>
 			<var_array name="activeTracersTend"/>
 			<var name="salinitySurfaceRestoringTendency"/>
 			<var_array name="activeTracerHorizontalAdvectionTendency"/>
