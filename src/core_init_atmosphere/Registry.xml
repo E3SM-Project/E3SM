@@ -582,7 +582,6 @@
                 <var name="ivgtyp"   name_in_code="lu_index"     type="integer"  dimensions="nCells"/>
                 <var name="mminlu"                               type="text"     dimensions=""/>
                 <var name="isltyp"   name_in_code="soilcat_top"  type="integer"  dimensions="nCells"/>
-                <var name="soilcat_bot"                          type="integer"  dimensions="nCells"/>
                 <var name="snoalb"                               type="real"     dimensions="nCells"/>
                 <var name="soiltemp"                             type="real"     dimensions="nCells"/>
                 <var name="greenfrac"                            type="real"     dimensions="nMonths nCells"/>
