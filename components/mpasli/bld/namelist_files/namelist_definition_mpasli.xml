@@ -134,7 +134,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice.
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold' 
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -151,6 +151,22 @@ Default: Defined in namelist_defaults.xml
 Defines the ice thickness below which ice calves (for thickness_threshold option).
 
 Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_eigencalving_parameter_source" type="char*1024"
+	category="calving" group="calving">
+Source of the eigencalving parameter value
+
+Valid values: 'data' ('eigencalvingParameter' field read from input file), 'scalar' (specified by config_calving_eigencalving_parameter_scalar_value)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_eigencalving_parameter_scalar_value" type="real"
+	category="calving" group="calving">
+Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 ma converted to units used here.)
+
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -189,6 +205,14 @@ Valid values: 'none', 'temperature', 'enthalpy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_thermal_calculate_bmb" type="logical"
+	category="thermal_solver" group="thermal_solver">
+Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_temperature_init" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
 Selection of the method for initializing the ice temperature.
@@ -207,9 +231,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_surface_air_temperature_source" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for setting the surface air temperature.
+Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate.
 
-Valid values: 'constant', 'file'  'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler.
+Valid values: 'constant', 'file', 'lapse'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -218,6 +242,14 @@ Default: Defined in namelist_defaults.xml
 Constant value of the surface air temperature.
 
 Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_surface_air_temperature_lapse_rate" type="real"
+	category="thermal_solver" group="thermal_solver">
+Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations.
+
+Valid values: Any real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -239,9 +271,33 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_basal_mass_bal_float" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' and 'mismip' use hardcoded fields defined in the code.
+Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code.
 
-Valid values: 'none', 'file', 'constant', 'mismip'
+Valid values: 'none', 'file', 'constant', 'mismip', 'seroussi'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_amplitude" type="real"
+	category="thermal_solver" group="thermal_solver">
+amplitude on the depth adjustment applied to the Seroussi subglacial melt param.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_period" type="real"
+	category="thermal_solver" group="thermal_solver">
+period of the periodic depth adjustment applied to the Seroussi subglacial melt param.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_phase" type="real"
+	category="thermal_solver" group="thermal_solver">
+phase of the periodic depth adjustment applied to the Seroussi subglacial melt param. Units are cycles, i.e., 0-1
+
+Valid values: any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
