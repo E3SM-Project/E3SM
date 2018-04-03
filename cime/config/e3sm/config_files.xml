@@ -102,9 +102,9 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_compsets.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_compsets.xml</value>
-      <value component="mpaso"    >$SRCROOT/components/mpaso/cime_config/config_compsets.xml</value>
-      <value component="mali"     >$SRCROOT/components/mali/cime_config/config_compsets.xml</value>
-      <value component="mpassi"   >$SRCROOT/components/mpassi/cime_config/config_compsets.xml</value>
+      <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_compsets.xml</value>
+      <value component="mali"     >$SRCROOT/components/mpas-albany-landice/cime_config/config_compsets.xml</value>
+      <value component="mpassi"   >$SRCROOT/components/mpas-seaice/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -339,7 +339,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="mpassi">$SRCROOT/components/mpassi/cime_config/config_component.xml</value>
+      <value component="mpassi">$SRCROOT/components/mpas-seaice/cime_config/config_component.xml</value>
       <value component="cice">$SRCROOT/components/cice/cime_config/config_component.xml</value>
       <value component="dice">$CIMEROOT/src/components/data_comps/dice/cime_config/config_component.xml</value>
       <value component="sice">$CIMEROOT/src/components/stub_comps/sice/cime_config/config_component.xml</value>
@@ -356,7 +356,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="mpaso"  >$SRCROOT/components/mpaso/cime_config/config_component.xml</value>
+      <value component="mpaso"  >$SRCROOT/components/mpas-ocean/cime_config/config_component.xml</value>
       <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
       <value component="aqp">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
       <value component="docn" >$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml</value>
@@ -374,8 +374,8 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="mali">$SRCROOT/components/mali/cime_config/config_component.xml</value>
-      <value component="malisia">$SRCROOT/components/mali/cime_config/config_component.xml</value>
+      <value component="mali">$SRCROOT/components/mpas-albany-landice/cime_config/config_component.xml</value>
+      <value component="malisia">$SRCROOT/components/mpas-albany-landice/cime_config/config_component.xml</value>
       <value component="cism">$SRCROOT/components/cism/cime_config/config_component.xml</value>
       <value component="dglc">$CIMEROOT/src/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml</value>
