@@ -59,7 +59,7 @@
   <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>edison</NODENAME_REGEX>
   <TESTS>e3sm_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
+  <COMPILERS>intel,intel18,gnu,gnu7</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -154,6 +154,15 @@
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.06.1</command>
+    </modules>
+
+    <modules compiler="gnu7">
+      <command name="rm">PrgEnv-intel</command>
+      <command name="load">PrgEnv-gnu</command>
+      <command name="rm">gcc</command>
+      <command name="load">gcc/7.2.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.12.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
@@ -333,7 +342,7 @@
   <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
   <NODENAME_REGEX>cori</NODENAME_REGEX>
   <TESTS>e3sm_developer</TESTS>
-  <COMPILERS>intel,gnu</COMPILERS>
+  <COMPILERS>intel,gnu,gnu7</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -427,6 +436,15 @@
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
+    </modules>
+
+    <modules compiler="gnu7">
+      <command name="rm">PrgEnv-intel</command>
+      <command name="load">PrgEnv-gnu</command>
+      <command name="rm">gcc</command>
+      <command name="load">gcc/7.2.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.12.1</command>
     </modules>
 
     <modules>
