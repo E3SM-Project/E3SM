@@ -29,7 +29,7 @@ module viscosity_mod
 
 contains
 
-  subroutine biharmonic_wk_scalar_openacc(elem,qtens,grads,deriv,edgeq,hybrid,nets,nete)
+  subroutine biharmonic_wk_scalar_openacc(elem,qtens,grads,deriv,edgeq,hybrid,nets,nete,asyncid)
     use hybrid_mod            , only: hybrid_t
     use element_mod           , only: element_t
     use edgetype_mod          , only: edgeBuffer_t
@@ -51,7 +51,7 @@ contains
     type (derivative_t)  , intent(in   ) :: deriv
     type (EdgeBuffer_t)  , intent(inout) :: edgeq
     type (hybrid_t)      , intent(in   ) :: hybrid
-    integer              , intent(in   ) :: nets,nete
+    integer              , intent(in   ) :: nets,nete,asyncid
     ! local
     integer :: k,kptr,i,j,ie,ic,q
     logical :: var_coef1
@@ -61,9 +61,10 @@ contains
     if(hypervis_scaling > 0) var_coef1 = .false.
     !$omp barrier
     !$omp master
-    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1,asyncid)
     call t_startf('biwksc_PEU')
-    call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1,asyncid)
+    !$acc wait(asyncid)
     !$omp end master
     !$omp barrier
 
@@ -73,9 +74,9 @@ contains
     
     !$omp barrier
     !$omp master
-    call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1,asyncid)
     call t_stopf('biwksc_PEU')
-    !$acc parallel loop gang vector collapse(5) present(qtens,elem(:))
+    !$acc parallel loop gang vector collapse(5) present(qtens,elem(:)) async(asyncid)
     do ie = nets , nete
       ! apply inverse mass matrix, then apply laplace again
       do q = 1 , qsize      
@@ -88,12 +89,12 @@ contains
         enddo
       enddo
     enddo
-    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1,asyncid)
     !$omp end master
     !$omp barrier
   end subroutine biharmonic_wk_scalar_openacc
 
-  subroutine neighbor_minmax_openacc(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+  subroutine neighbor_minmax_openacc(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh,asyncid)
     use hybrid_mod       , only: hybrid_t
     use element_mod      , only: element_t
     use perf_mod         , only: t_startf, t_stopf
@@ -108,14 +109,16 @@ contains
     type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
     real (kind=real_kind), intent(inout) :: min_neigh(nlev,qsize,nelemd)
     real (kind=real_kind), intent(inout) :: max_neigh(nlev,qsize,nelemd)
+    integer              , intent(in   ) :: asyncid
     ! local
     integer :: ie,k,q,j,i
     ! compute Qmin, Qmax
     !$omp barrier
     !$omp master
     call t_startf('nmm_PEU')
-    call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1,asyncid)
+    call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1,asyncid)
+    !$acc wait(asyncid)
     !$omp end master
     !$omp barrier
 
@@ -125,8 +128,8 @@ contains
        
     !$omp barrier
     !$omp master
-    call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSunpackMax_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1,asyncid)
+    call edgeSunpackMax_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1,asyncid)
     call t_stopf('nmm_PEU')
     !$omp end master
     !$omp barrier

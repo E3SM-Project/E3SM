@@ -34,7 +34,7 @@ module derivative_mod
 
 contains
 
-  subroutine laplace_sphere_wk_openacc(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl,tl)
+  subroutine laplace_sphere_wk_openacc(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl,tl,asyncid)
     use element_mod, only: element_t
     use control_mod, only: hypervis_scaling, hypervis_power
     implicit none
@@ -47,12 +47,12 @@ contains
     type (element_t)     , intent(in   ) :: elem(:)
     logical              , intent(in   ) :: var_coef
     real(kind=real_kind) , intent(  out) :: laplace(np,np,len,ntl,nelemd)
-    integer              , intent(in   ) :: len,nets,nete,ntl,tl
+    integer              , intent(in   ) :: len,nets,nete,ntl,tl, asyncid
     integer :: i,j,k,ie
     ! Local
     real(kind=real_kind) :: oldgrads(2)
-    call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl,tl)
-    !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads)
+    call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl,tl,asyncid)
+    !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads) async(asyncid)
     do ie = nets , nete
       do k = 1 , len
         do j = 1 , np
@@ -74,10 +74,11 @@ contains
     enddo
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
     ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
-    call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,ntl,tl)
+    call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,ntl,tl,asyncid)
   end subroutine laplace_sphere_wk_openacc
 
-  subroutine divergence_sphere_wk_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl)
+  subroutine divergence_sphere_wk_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl,asyncid)
+    use element_state, only: deriv_dvv
     use element_mod, only: element_t
     use physical_constants, only: rrearth
     implicit none
@@ -92,16 +93,16 @@ contains
     type (element_t)    , intent(in) :: elem(:)
     real(kind=real_kind), intent(out):: div(np,np,len,ntl,nelemd)
     integer             , intent(in) :: len
-    integer             , intent(in) :: nets , nete , ntl , tl
+    integer             , intent(in) :: nets , nete , ntl , tl, asyncid
     ! Local
     integer, parameter :: kchunk = 8
     integer :: i,j,l,k,ie,kc,kk
-    real(kind=real_kind) :: vtemp(np,np,2,kchunk), tmp, deriv_tmp(np,np)
+    real(kind=real_kind) :: vtemp(np,np,2,kchunk), tmp
     ! latlon- > contra
-    !$acc parallel loop gang collapse(2) present(v,elem(:),div,deriv) private(vtemp,deriv_tmp)
+    !$acc parallel loop gang collapse(2) present(v,elem(:),div,deriv_dvv) private(vtemp) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
-        !$acc cache(vtemp,deriv_tmp)
+        !$acc cache(vtemp)
         !$acc loop vector collapse(3)
         do kk = 1 , kchunk
           do j = 1 , np
@@ -111,7 +112,6 @@ contains
                 vtemp(i,j,1,kk)=elem(ie)%spheremp(i,j)*(elem(ie)%Dinv(i,j,1,1)*v(i,j,1,k,tl,ie) + elem(ie)%Dinv(i,j,1,2)*v(i,j,2,k,tl,ie))
                 vtemp(i,j,2,kk)=elem(ie)%spheremp(i,j)*(elem(ie)%Dinv(i,j,2,1)*v(i,j,1,k,tl,ie) + elem(ie)%Dinv(i,j,2,2)*v(i,j,2,k,tl,ie))
               endif
-              if (kk == 1) deriv_tmp(i,j) = deriv%Dvv(i,j)
             enddo
           enddo
         enddo
@@ -123,7 +123,7 @@ contains
               if (k <= len) then
                 tmp = 0.
                 do l = 1 , np
-                  tmp = tmp - ( vtemp(l,j,1,kk)*deriv_tmp(i,l) + vtemp(i,l,2,kk)*deriv_tmp(j,l) )
+                  tmp = tmp - ( vtemp(l,j,1,kk)*deriv_dvv(i,l) + vtemp(i,l,2,kk)*deriv_dvv(j,l) )
                 enddo
                 div(i,j,k,tl,ie) = tmp * rrearth
               endif
@@ -134,7 +134,7 @@ contains
     enddo
   end subroutine divergence_sphere_wk_openacc
 
-  subroutine gradient_sphere_openacc(s,deriv,elem,ds,len,nets,nete,ntl,tl)
+  subroutine gradient_sphere_openacc(s,deriv,elem,ds,len,nets,nete,ntl,tl,asyncid)
     use element_state, only: deriv_dvv
     use element_mod, only: element_t
     use physical_constants, only: rrearth
@@ -146,12 +146,12 @@ contains
     type(element_t)     , intent(in) :: elem(:)
     real(kind=real_kind), intent(out):: ds(np,np,2,len,ntl,nelemd)
     integer             , intent(in) :: len
-    integer             , intent(in) :: nets,nete,ntl,tl
+    integer             , intent(in) :: nets,nete,ntl,tl,asyncid
     integer, parameter :: kchunk = 8
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) :: dsdx00, dsdy00
     real(kind=real_kind) :: stmp(np,np,kchunk)
-    !$acc parallel loop gang collapse(2) present(ds,elem(:),s,deriv_dvv) private(stmp)
+    !$acc parallel loop gang collapse(2) present(ds,elem(:),s,deriv_dvv) private(stmp) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(stmp)
