@@ -1199,6 +1199,7 @@ contains
   real (kind=real_kind) :: v(np,np,2,nets:nete)       !JRUB
   real (kind=real_kind) :: alpha,l2           !JRUB
   real (kind=real_kind), parameter :: epsilon = 1D-5  !JRUB
+  integer, parameter               :: dupdate = 25  !JRUB
 
   call t_startf('compute_and_apply_rhs')
 
@@ -1316,10 +1317,8 @@ contains
                  elem(ie)%state%v0(i,j,1) = elem(ie)%state%v(i,j,1,k,nm1)  !get basic state xbar
                  elem(ie)%state%Fv(i,j,2) = elem(ie)%state%v(i,j,2,k,nm1) - elem(ie)%state%v(i,j,2,k,np1) !get constant forcing
                  elem(ie)%state%v0(i,j,2) = elem(ie)%state%v(i,j,2,k,nm1)  !get basic state xbar
-
-                 !elem(ie)%state%Fp(i,j) = elem(ie)%state%p(i,j,k,nm1) - elem(ie)%state%p(i,j,k,np1) !get constant forcing
-                 !elem(ie)%state%p0(i,j) = elem(ie)%state%p(i,j,k,nm1)  !get basic state, xbar
-
+                 elem(ie)%state%Fp(i,j) = elem(ie)%state%p(i,j,k,nm1) - elem(ie)%state%p(i,j,k,np1) !get constant forcing
+                 elem(ie)%state%p0(i,j) = elem(ie)%state%p(i,j,k,nm1)  !get basic state, xbar
                  !if ((nstep==1).AND.(ie==10).AND.(i==2).AND.(j==2)) then 
                  !   xx = elem(ie)%state%p0(2,2)
                  !   print *,nstep,xx,SHAPE(elem(ie)%state%p0),'this is xx JRUB at nstep=1'
@@ -1333,8 +1332,7 @@ contains
                  !end if
                  elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%state%Fv(i,j,1) !this is actually x*
                  elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%state%v(i,j,2,k,np1) + elem(ie)%state%Fv(i,j,2) !this is actually x*
-                 !elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,np1) + elem(ie)%state%Fp(i,j) !this is actually x*
-                 !elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,np1) - elem(ie)%state%p0(i,j) !and this the perturbation r
+                 elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,np1) + elem(ie)%state%Fp(i,j) !this is actually x*
               end if
               !end JRUB
            end do
@@ -1363,18 +1361,23 @@ contains
      !JRUB adjust and update x estimates from x*,r, and xbar
      ! Adjust accroding to Peixoto Eq. B5-B6
      !====================================================                                                                
-     do ie=nets,nete   
-        do k=1,nlev                                                                                                             
-           do j=1,np                                                                                                             
-              do i=1,np                                                                                                         
-                 elem(ie)%state%v(i,j,1,k,np1) =  alpha * (elem(ie)%state%v(i,j,1,k,np1) - elem(ie)%state%v0(i,j,1)) &
-                                                        + elem(ie)%state%v0(i,j,1)
-                 elem(ie)%state%v(i,j,2,k,np1) =  alpha * (elem(ie)%state%v(i,j,2,k,np1) - elem(ie)%state%v0(i,j,2)) &
-                                                        + elem(ie)%state%v0(i,j,2)
-               end do
+
+     if (MOD(nstep,dupdate).EQ.0) then  !begin adjust and update every dupdate JRUB
+        do ie=nets,nete   
+           do k=1,nlev                                                                                                             
+              do j=1,np                                                                                                             
+                 do i=1,np                                                                                                         
+                    elem(ie)%state%v(i,j,1,k,np1) =  alpha * (elem(ie)%state%v(i,j,1,k,np1) - elem(ie)%state%v0(i,j,1)) &
+                         + elem(ie)%state%v0(i,j,1)
+                    elem(ie)%state%v(i,j,2,k,np1) =  alpha * (elem(ie)%state%v(i,j,2,k,np1) - elem(ie)%state%v0(i,j,2)) &
+                         + elem(ie)%state%v0(i,j,2)
+                    elem(ie)%state%p(i,j,k,np1) =  alpha * (elem(ie)%state%p(i,j,k,np1) - elem(ie)%state%p0(i,j)) &
+                         + elem(ie)%state%p0(i,j)
+                 end do
+              end do
            end do
         end do
-     end do
+     end if  !end !adjust and update every dupdate JRUB
   end if
   !JRUB end compute norm of r = x* - xbar, then adjust
 
