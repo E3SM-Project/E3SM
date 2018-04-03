@@ -1,5 +1,28 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 4-03-2018
+Tag: cime5.4.0-alpha.27
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Avoid encode error.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+018c8e9 avoid encode error
+
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/test_scheduler.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 4-02-2018
 Tag: cime5.4.0-alpha.26
