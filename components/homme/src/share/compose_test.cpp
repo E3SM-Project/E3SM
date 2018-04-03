@@ -1,8 +1,28 @@
+#include <mpi.h>
 #include <cassert>
+#include <memory>
+
+#include "config.h.c"
 
 #include <Kokkos_Core.hpp>
 
 #include "compose_test.hpp"
+
+#define pr(m) do {                              \
+    std::stringstream _ss_;                     \
+    _ss_ << m << std::endl;                     \
+    std::cerr << _ss_.str();                    \
+  } while (0)
+#define prc(m) pr(#m << " | " << (m))
+#define puf(m)"(" << #m << " " << (m) << ")"
+#define pu(m) << " " << puf(m)
+template<typename T>
+static void prarr (const std::string& name, const T* const v, const size_t n) {
+  std::cerr << name << ": ";
+  for (size_t i = 0; i < n; ++i) std::cerr << " " << v[i];
+  std::cerr << "\n";
+}
+#define mprarr(m) siqk::prarr(#m, m.data(), m.size())
 
 namespace {
 typedef double Real;
@@ -13,7 +33,7 @@ template <typename T> inline constexpr T square (const T& x) { return x*x; }
 template<typename T> inline constexpr T cube (const T& x) { return x*x*x; }
 
 struct consts {
-  static constexpr Real earth_radius_m = 6.37122e6;
+  static constexpr Real earth_radius_m = 6.376e6;
 };
 
 template<typename T> inline T sign (const T& a) { return a >= 0 ? 1 : -1; }
@@ -85,14 +105,11 @@ std::string format_strings_as_list (const char** strings, const Size n) {
 
 class OdeFn {
   mutable int ne_;
-  bool xyz_form_;
 public:
-  OdeFn () : ne_(0), xyz_form_(false) {}
+  OdeFn () : ne_(0) {}
   virtual bool eval (const Real t, const Real* const d, Real* const f) const = 0;
   virtual void record (const Real t, const Real* const y) const { ++ne_; }
   int ne () const { return ne_; }
-  void set_xyz_form (const bool use_xyz_form) { xyz_form_ = use_xyz_form; }
-  bool use_xyz_form () const { return xyz_form_; }
 };
 
 // From Lauritzen et al, A standard test case suite for two-dimensional linear
@@ -114,9 +131,9 @@ class InitialCondition {
   }
 
 public:
-  enum Shape {
-    XYZTrig, GaussianHills, CosineBells, SlottedCylinders,
-    CorrelatedCosineBells, Constant
+  enum Shape : int {
+    XYZTrig = 0, GaussianHills, CosineBells, SlottedCylinders,
+    CorrelatedCosineBells, nshapes
   };
 
   static Shape from_string (const std::string& si) {
@@ -127,7 +144,6 @@ public:
     if (s == inputs[2]) return CosineBells;
     if (s == inputs[3]) return SlottedCylinders;
     if (s == inputs[4]) return CorrelatedCosineBells;
-    if (s == inputs[5]) return Constant;
     throw std::runtime_error(si + " is not an initial condition.");
   }
 
@@ -138,7 +154,6 @@ public:
     case CosineBells: return inputs[2];
     case SlottedCylinders: return inputs[3];
     case CorrelatedCosineBells: return inputs[4];
-    case Constant: return inputs[5];
     }
     throw std::runtime_error("Should not be here.");
   }
@@ -215,10 +230,6 @@ public:
       for (Size i = 0; i < n; ++i)
         u[i] = a*square(u[i]) + b;
     } break;
-    case Constant: {
-      for (Size i = 0; i < n; ++i)
-        u[i] = 0.42;
-    } break;
     default: assert(0);
     }
   }
@@ -264,30 +275,19 @@ inline void uv2xyz (
 // Also from Lauritzen et al.
 struct NonDivergentWindField : public OdeFn {
   bool eval (const Real t, const Real* const d, Real* const f) const override {
-    Real theta, lambda;
-    if (use_xyz_form())
-      xyz2ll(d[0], d[1], d[2], theta, lambda);
-    else {
-      theta = d[0];  // latitude
-      lambda = d[1]; // longitude
-    }
+    const Real theta = d[0];  // latitude
+    const Real lambda = d[1]; // longitude
     const Real
       T = day2sec(12),
       R = consts::earth_radius_m,
       lambda_p = lambda - 2*M_PI*t/T,
       costh = std::cos(theta),
       cost = std::cos(M_PI*t/T);
-    // v
-    f[0] = 10*R/T*std::sin(2*lambda_p)*costh*cost;
     // u
-    f[1] = R/T*(10*square(std::sin(lambda_p))*std::sin(2*theta)*cost +
+    f[0] = R/T*(10*square(std::sin(lambda_p))*std::sin(2*theta)*cost +
                 2*M_PI*costh);
-    if (use_xyz_form())
-      uv2xyz(d[0], d[1], d[2], f[1]/R, f[0]/R, f[0], f[1], f[2]);
-    else {  
-      f[0] = m2radlat(f[0]);
-      f[1] = m2radlon(theta, f[1]);
-    }
+    // v
+    f[1] = 10*R/T*std::sin(2*lambda_p)*costh*cost;
     return true;
   }
 };
@@ -295,30 +295,19 @@ struct NonDivergentWindField : public OdeFn {
 // Also from Lauritzen et al.
 struct DivergentWindField : public OdeFn {
   bool eval (const Real t, const Real* const d, Real* const f) const override {
-    Real theta, lambda;
-    if (use_xyz_form())
-      xyz2ll(d[0], d[1], d[2], theta, lambda);
-    else {
-      theta = d[0];  // latitude
-      lambda = d[1]; // longitude
-    }
     const Real
+      theta = d[0],  // latitude
+      lambda = d[1], // longitude
       T = day2sec(12),
       R = consts::earth_radius_m,
       lambda_p = lambda - 2*M_PI*t/T,
       costh = std::cos(theta),
       cost = std::cos(M_PI*t/T);
-    // v
-    f[0] = 2.5*R/T*std::sin(lambda_p)*cube(costh)*cost;
     // u
-    f[1] = R/T*(-5*square(std::sin(0.5*lambda_p))*std::sin(2*theta)*
+    f[0] = R/T*(-5*square(std::sin(0.5*lambda_p))*std::sin(2*theta)*
                 square(costh)*cost + 2*M_PI*costh);
-    if (use_xyz_form())
-      uv2xyz(d[0], d[1], d[2], f[1]/R, f[0]/R, f[0], f[1], f[2]);
-    else {  
-      f[0] = m2radlat(f[0]);
-      f[1] = m2radlon(theta, f[1]);
-    }
+    // v
+    f[1] = 2.5*R/T*std::sin(lambda_p)*cube(costh)*cost;
     return true;
   }
 };
@@ -340,18 +329,253 @@ public:
 
 const char* WindFieldType::inputs[] =
   {"nondivergent", "divergent"};
- 
-struct Input {
 
+namespace ko = Kokkos;
+
+// Fortran array wrappers.
+template <typename T> using FA2 = ko::View<T**,   ko::LayoutLeft,ko::HostSpace>;
+template <typename T> using FA3 = ko::View<T***,  ko::LayoutLeft,ko::HostSpace>;
+template <typename T> using FA4 = ko::View<T****, ko::LayoutLeft,ko::HostSpace>;
+template <typename T> using FA5 = ko::View<T*****,ko::LayoutLeft,ko::HostSpace>;
+
+struct StandaloneTracersTester {
+  typedef std::shared_ptr<StandaloneTracersTester> Ptr;
+
+  const Int np, nlev, qsize, qsize_d, nelemd;
+
+  StandaloneTracersTester (Int np_, Int nlev_, Int qsize_, Int qsize_d_,
+                           Int nelemd_)
+    : np(np_), nlev(nlev_), qsize(qsize_), qsize_d(qsize_d_), nelemd(nelemd_)
+  {}
+
+  void fill_uniform_density (const Int ie, Real* rdp) const {
+    for (int i = 0; i < np*np*nlev; ++i)
+      rdp[i] = 1;
+  }
+
+  InitialCondition::Shape get_ic (const Int k, const Int q) const {
+    return static_cast<InitialCondition::Shape>((k*qsize + q) %
+                                                InitialCondition::nshapes);
+  }
+
+  void fill_ics (const Int ie, const Real* rp_elem, const Real* rdp,
+                 Real* rqdp) const {
+    const FA3<const Real> p_elem(rp_elem, 3, np, np); // (rad, lon, lat)
+    const FA3<const Real> dp(rdp, np, np, nlev);
+    const FA4<Real> qdp(rqdp, np, np, nlev, qsize_d);
+    for (Int q = 0; q < qsize; ++q)
+      for (Int k = 0; k < nlev; ++k)
+        for (Int j = 0; j < np; ++j)
+          for (Int i = 0; i < np; ++i) {
+            InitialCondition::init(get_ic(k,q), 1,
+                                   &p_elem(2,i,j), &p_elem(1,i,j),
+                                   &qdp(i,j,k,q));
+            if (rdp)
+              qdp(i,j,k,q) *= dp(i,j,k);
+          }
+  }
+
+  void fill_v (const Int ie, const Real* rp_elem, const Real t, Real* rv) const {
+    const FA3<const Real> p_elem(rp_elem, 3, np, np);
+    const FA4<Real> v(rv, np, np, 2, nlev);
+    NonDivergentWindField f;
+    for (Int k = 0; k < nlev; ++k)
+      for (Int j = 0; j < np; ++j)
+        for (Int i = 0; i < np; ++i) {
+          const Real latlon[] = {p_elem(2,i,j),
+                                 p_elem(1,i,j) + k*(0.2/nlev)};
+          Real uv[2];
+          f.eval(t, latlon, uv);
+          v(i,j,0,k) = uv[0];
+          v(i,j,1,k) = uv[1];
+        }
+  }
+
+#if 0
+  // Debug output on a single rank.
+  std::vector<Real> d_;
+
+  void record_begin () {
+#ifdef HORIZ_OPENMP
+# pragma omp master
+#endif
+    d_.resize(3 * nelemd * np*np);
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif
+  }
+
+  void record (const Int ie, const Real* rp_elem, const Real* spheremp,
+               const Real* rdp, const Real* rqdp) {
+    const FA3<const Real> p_elem(rp_elem, 3, np, np);
+    const FA4<const Real> qdp(rqdp, np, np, nlev, qsize_d);
+    const Int q = 0, k = 0;
+    Real* d = d_.data() + 3*np*np*ie;
+    for (Int j = 0; j < np; ++j)
+      for (Int i = 0; i < np; ++i) {
+        d[3*(np*j + i) + 0] = p_elem(2,i,j);
+        d[3*(np*j + i) + 1] = p_elem(1,i,j);
+        d[3*(np*j + i) + 2] = qdp(i,j,k,q);
+      }
+  }
+
+  void record_end () {
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+    {
+#endif
+      FILE* fid = fopen("ct.txt", "w");
+      for (size_t i = 0; i < d_.size()/3; ++i)
+        fprintf(fid, "%1.15e %1.15e %1.15e\n",
+                d_[3*i+0], d_[3*i+1], d_[3*i+2]);
+      fclose(fid);
+#ifdef HORIZ_OPENMP
+    }
+#endif
+  }
+#else
+  // Error norm data.
+  std::vector<Real> l2_err_, wrk_;
+
+  void record_begin () {
+    int nthr = 1;
+#ifdef HORIZ_OPENMP
+    nthr = omp_get_num_threads();
+# pragma omp master
+#endif
+    l2_err_.resize(2*nlev*qsize*nthr, 0);
+    wrk_.resize(np*np*nlev*qsize*nthr);
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif
+  }
+
+  void record (const Int ie, const Real* rp_elem, const Real* rspheremp,
+               const Real* rdp, const Real* rqdp) {
+    const int tid =
+#ifdef HORIZ_OPENMP
+      omp_get_thread_num()
+#else
+      0
+#endif
+      ;
+    const FA3<const Real> p_elem(rp_elem, 3, np, np);
+    const FA2<const Real> spheremp(rspheremp, np, np);
+    const FA3<const Real> dp(rdp, np, np, nlev);
+    const FA4<const Real> qdp(rqdp, np, np, nlev, qsize_d);
+    Real* const l2_err = l2_err_.data() + 2*nlev*qsize*tid;
+    Real* const wrk = wrk_.data() + np*np*nlev*qsize*tid;
+    fill_ics(ie, rp_elem, nullptr, wrk);
+    const FA4<const Real> qdp_t(wrk, np, np, nlev, qsize_d);
+    for (Int q = 0; q < qsize; ++q)
+      for (Int k = 0; k < nlev; ++k) {
+        Real num = 0, den = 0;
+        for (Int j = 0; j < np; ++j)
+          for (Int i = 0; i < np; ++i) {
+            num += spheremp(i,j)*square(qdp(i,j,k,q)/dp(i,j,k) -
+                                        qdp_t(i,j,k,q));
+            den += spheremp(i,j)*square(qdp_t(i,j,k,q));
+          }
+        l2_err[2*nlev*q + 2*k    ] += num;
+        l2_err[2*nlev*q + 2*k + 1] += den;
+      }
+  }
+
+  void record_end (MPI_Comm comm, const Int root, const Int rank) {
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif
+    // The way I've written this chunk probably looks funny. But if I put the
+    // two pragmas directly adjacent, just in this section of code, Intel 17
+    // gives "internal error: assertion failed: find_assoc_pragma: pragma not
+    // found (shared/cfe/edgcpfe/il.c, line 23535)".
+    const int nr = 2*nlev*qsize;
+#ifdef HORIZ_OPENMP
+# pragma omp master
+    {
+#endif
+      const int nthr = wrk_.size()/(np*np*nlev*qsize);
+      for (int i = 1; i < nthr; ++i)
+        for (int j = 0; j < nr; ++j)
+          l2_err_[j] += l2_err_[nr*i + j];
+      MPI_Reduce(l2_err_.data(), wrk_.data(), nr, MPI_DOUBLE, MPI_SUM,
+                 root, comm);
+      if (rank == root)
+        for (int q = 0; q < qsize; ++q) {
+          printf("COMPOSE>");
+          for (int k = 0; k < nlev; ++k)
+            printf("%9.2e", std::sqrt(wrk_[2*nlev*q + 2*k] /
+                                      wrk_[2*nlev*q + 2*k + 1]));
+          printf("\n");
+        }
+#ifdef HORIZ_OPENMP
+    }
+#endif
+  }
+#endif
 };
-
-void run_time_integration (const Input& in) {
-
-}
+ 
+static StandaloneTracersTester::Ptr g_stt;
 } // namespace anon
 
 extern "C" void compose_unittest_ () {
   slmm_unittest();
-  Input in;
-  run_time_integration(in);
+}
+
+extern "C" void compose_stt_init_ (
+  Int* np, Int* nlev, Int* qsize, Int* qsize_d, Int* nelemd)
+{
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+#endif
+    g_stt = std::make_shared<StandaloneTracersTester>(
+      *np, *nlev, *qsize, *qsize_d, *nelemd);
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif
+}
+
+extern "C" void compose_stt_fill_uniform_density_ (
+  Int* ie, Int* np1, Real* dp3d, Real* dp)
+{
+  const size_t os = square(g_stt->np) * g_stt->nlev * (*np1 - 1);
+  g_stt->fill_uniform_density(*ie-1, dp3d + os);
+  g_stt->fill_uniform_density(*ie-1, dp);
+}
+
+extern "C" void compose_stt_fill_ics_ (
+  Int* ie, Real* p_elem, Real* dp, Int* n0_qdp, Real* qdp)
+{
+  g_stt->fill_ics(*ie-1, reinterpret_cast<const Real*>(p_elem), dp,
+                  qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
+                  (*n0_qdp - 1));
+}
+
+extern "C" void compose_stt_fill_v_ ( Int* ie, Real* p_elem, Real* t, Real* v) {
+  g_stt->fill_v(*ie-1, reinterpret_cast<const Real*>(p_elem), *t, v);
+}
+
+extern "C" void compose_stt_begin_record_ () {
+  g_stt->record_begin();
+}
+
+extern "C" void compose_stt_record_q_ (
+  Int* ie, Real* p_elem, Real* spheremp, Int* np1, Real* dp3d, Int* n0_qdp,
+  Real* qdp)
+{
+  g_stt->record(*ie-1, reinterpret_cast<const Real*>(p_elem), spheremp,
+                dp3d + square(g_stt->np) * g_stt->nlev * (*np1 - 1),
+                qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
+                (*n0_qdp - 1));
+}
+
+extern "C" void compose_stt_finish_ (Int* fcomm, Int* root, Int* rank) {
+  g_stt->record_end(MPI_Comm_f2c(*fcomm), *root, *rank);
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+#endif
+  g_stt = nullptr;
 }

@@ -3196,7 +3196,7 @@ void slmm_csl (
   Real* q_r,                      // q(1:np, 1:np, lev, 1:qsize)
   Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
-  ir_throw_if(np != 4, "SLMM CSL is supported for np 4 only.");
+  static_assert(np == 4, "SLMM CSL is supported for np 4 only.");
   using ir::slice;
 
   const Int np2 = np*np;

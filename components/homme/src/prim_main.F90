@@ -208,7 +208,7 @@ program prim_main
 
   if (transport_alg == 19) then
      nEndStep = -1
-     call compose_test(par, dom_mt, elem, tl)
+     call compose_test(par, dom_mt, elem)
   end if
 
   if(par%masterproc) print *,"Entering main timestepping loop"
