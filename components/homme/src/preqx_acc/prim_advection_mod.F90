@@ -475,7 +475,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -604,12 +604,12 @@ contains
       if ( nu_p > 0 ) then
         !$omp barrier
         !$omp master
-        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord%dp0)
+        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord_dp0)
         do ie = 1 , nelemd
           do k = 1 , nlev    
             do j = 1 , np
               do i = 1 , np
-                tmp = elem(ie)%derived%dpdiss_ave(i,j,k) / hvcoord%dp0(k)
+                tmp = elem(ie)%derived%dpdiss_ave(i,j,k) / hvcoord_dp0(k)
                 do q = 1 , qsize
                   ! NOTE: divide by dp0 since we multiply by dp0 below
                   Qtens_biharmonic(i,j,k,q,ie) = Qtens_biharmonic(i,j,k,q,ie) * tmp
@@ -625,12 +625,12 @@ contains
       call neighbor_minmax_openacc( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,hvcoord%dp0,elem(:))
+      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,hvcoord_dp0,elem(:))
       do ie = 1 , nelemd
         do k = 1 , nlev    !  Loop inversion (AAM)
           do j = 1 , np
             do i = 1 , np
-              tmp = -rhs_viss*dt*nu_q*hvcoord%dp0(k) / elem(ie)%spheremp(i,j)
+              tmp = -rhs_viss*dt*nu_q*hvcoord_dp0(k) / elem(ie)%spheremp(i,j)
               do q = 1 , qsize
                 ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
                 qtens_biharmonic(i,j,k,q,ie) = tmp*Qtens_biharmonic(i,j,k,q,ie)
@@ -667,7 +667,6 @@ contains
         enddo
       enddo
     enddo
-    !$acc wait(1)
     !$omp end master
     !$omp barrier
   endif
@@ -675,10 +674,10 @@ contains
   !$omp barrier
   !$omp master
   if (limiter_option == 8) then
-    !$acc update device(derived_divdp)
+    !$acc update device(derived_divdp) async(1)
   endif
   !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,derived_vn0,dp_star,derived_divdp,grads_tracer,state_qdp) &
-  !$acc& private(dp,vstar)
+  !$acc& private(dp,vstar) async(1)
   do ie = 1 , nelemd
     do k = 1 , nlev    !  Loop index added (AAM)
       do j = 1 , np
@@ -704,8 +703,8 @@ contains
       enddo
     enddo
   enddo
-  call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 )
-  !$acc parallel loop gang vector collapse(5) present(qtens,state_qdp,qtens_biharmonic)
+  call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 , asyncid=1 )
+  !$acc parallel loop gang vector collapse(5) present(qtens,state_qdp,qtens_biharmonic) async(1)
   do ie = 1 , nelemd
     ! advance Qdp
     do q = 1 , qsize
@@ -721,6 +720,7 @@ contains
       enddo
     enddo
   enddo
+  !$acc wait(1)
   if ( limiter_option == 8 ) then
     call limiter_optim_iter_full( Qtens , elem(:) , qmin , qmax , dp_star )   ! apply limiter to Q = Qtens / dp_star 
   endif
@@ -942,8 +942,9 @@ contains
     call copy_qdp1_h2d(elem,n0_qdp,nets,nete)
     !$omp barrier
     !$omp master
-    !$acc update device(derived_vn0)
-    call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1)
+    !$acc update device(derived_vn0) async(1)
+    call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1,asyncid=1)
+    !$acc wait(1)
     call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
     !$acc update host(derived_divdp,derived_divdp_proj)
     !$omp end master

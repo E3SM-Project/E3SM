@@ -16,6 +16,8 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_vn0              (:,:,:,:,:)      ! (np,np,2,nlev,nelemd)                   velocity for SE tracer advection
   real (kind=real_kind), allocatable, target, public :: derived_divdp            (:,:,:,:)        ! (np,np,nlev,nelemd)                     divergence of dp
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
+  real (kind=real_kind), allocatable, target, public :: deriv_dvv                (:,:)            ! (np,np)
+  real (kind=real_kind), allocatable, target, public :: hvcoord_dp0              (:)              ! (plev)
 
 
   type, public :: elem_state_t

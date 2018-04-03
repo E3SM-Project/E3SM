@@ -37,7 +37,7 @@ setenv OMP_STACKSIZE 64M
 #setenv PGI_ACC_DEBUG 3
 
 set NUM_NODES=1
-set TASKS_PER_NODE=21
+set TASKS_PER_NODE=6
 setenv OMP_NUM_THREADS 1
 
 set NTASKS = $NUM_NODES
@@ -133,6 +133,6 @@ sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 cp $exedir/$exe .
 
 date
-$mpirun ./$exe < input.nl
+$mpirun nvprof --print-gpu-summary ./$exe < input.nl
 date
 

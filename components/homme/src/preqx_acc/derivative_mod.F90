@@ -135,6 +135,7 @@ contains
   end subroutine divergence_sphere_wk_openacc
 
   subroutine gradient_sphere_openacc(s,deriv,elem,ds,len,nets,nete,ntl,tl)
+    use element_state, only: deriv_dvv
     use element_mod, only: element_t
     use physical_constants, only: rrearth
     implicit none
@@ -149,11 +150,11 @@ contains
     integer, parameter :: kchunk = 8
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) :: dsdx00, dsdy00
-    real(kind=real_kind) :: stmp(np,np,kchunk), deriv_tmp(np,np)
-    !$acc parallel loop gang collapse(2) present(ds,elem(:),s,deriv%Dvv) private(stmp,deriv_tmp)
+    real(kind=real_kind) :: stmp(np,np,kchunk)
+    !$acc parallel loop gang collapse(2) present(ds,elem(:),s,deriv_dvv) private(stmp)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
-        !$acc cache(stmp,deriv_tmp)
+        !$acc cache(stmp)
         !$acc loop vector collapse(3)
         do kk = 1 , kchunk
           do j = 1 , np
@@ -161,7 +162,6 @@ contains
               k = (kc-1)*kchunk+kk
               if (k > len) k = len
               stmp(i,j,kk) = s(i,j,k,tl,ie)
-              if (kk == 1) deriv_tmp(i,j) = deriv%Dvv(i,j)
             enddo
           enddo
         enddo
@@ -174,8 +174,8 @@ contains
                 dsdx00=0.0d0
                 dsdy00=0.0d0
                 do l = 1 , np
-                  dsdx00 = dsdx00 + deriv_tmp(l,i)*stmp(l,j,kk)
-                  dsdy00 = dsdy00 + deriv_tmp(l,j)*stmp(i,l,kk)
+                  dsdx00 = dsdx00 + deriv_dvv(l,i)*stmp(l,j,kk)
+                  dsdy00 = dsdy00 + deriv_dvv(l,j)*stmp(i,l,kk)
                 enddo
                 ds(i,j,1,k,tl,ie) = ( elem(ie)%Dinv(i,j,1,1)*dsdx00 + elem(ie)%Dinv(i,j,2,1)*dsdy00 ) * rrearth
                 ds(i,j,2,k,tl,ie) = ( elem(ie)%Dinv(i,j,1,2)*dsdx00 + elem(ie)%Dinv(i,j,2,2)*dsdy00 ) * rrearth
@@ -187,9 +187,10 @@ contains
     enddo
   end subroutine gradient_sphere_openacc
 
-  subroutine divergence_sphere_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl)
+  subroutine divergence_sphere_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl,asyncid)
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  div(v)  spherical divergence of v
+    use element_state, only: deriv_dvv
     use element_mod   , only: element_t
     use physical_constants, only: rrearth
     implicit none
@@ -197,16 +198,16 @@ contains
     type(derivative_t)  , intent(in   ) :: deriv
     type(element_t)     , intent(in   ) :: elem(:)
     real(kind=real_kind), intent(  out) :: div(np,np,len,ntl,nelemd)
-    integer             , intent(in   ) :: len , nets , nete , ntl , tl
+    integer             , intent(in   ) :: len , nets , nete , ntl , tl, asyncid
     ! Local
     integer, parameter :: kchunk = 8
     integer :: i, j, l, k, ie, kc, kk
-    real(kind=real_kind) ::  dudx00, dvdy00, gv(np,np,kchunk,2), deriv_tmp(np,np)
+    real(kind=real_kind) ::  dudx00, dvdy00, gv(np,np,kchunk,2)
     ! convert to contra variant form and multiply by g
-    !$acc parallel loop gang collapse(2) private(gv,deriv_tmp) present(v,deriv,div,elem(:))
+    !$acc parallel loop gang collapse(2) private(gv) present(v,deriv_dvv,div,elem(:)) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
-        !$acc cache(gv,deriv_tmp)
+        !$acc cache(gv)
         !$acc loop vector collapse(3) private(k)
         do kk = 1 , kchunk
           do j = 1 , np
@@ -216,7 +217,6 @@ contains
                 gv(i,j,kk,1)=elem(ie)%metdet(i,j)*(elem(ie)%Dinv(i,j,1,1)*v(i,j,1,k,tl,ie) + elem(ie)%Dinv(i,j,1,2)*v(i,j,2,k,tl,ie))
                 gv(i,j,kk,2)=elem(ie)%metdet(i,j)*(elem(ie)%Dinv(i,j,2,1)*v(i,j,1,k,tl,ie) + elem(ie)%Dinv(i,j,2,2)*v(i,j,2,k,tl,ie))
               endif
-              if (kk == 1) deriv_tmp(i,j) = deriv%dvv(i,j)
             enddo
           enddo
         enddo
@@ -230,8 +230,8 @@ contains
                 dudx00=0.0d0
                 dvdy00=0.0d0
                 do l = 1 , np
-                  dudx00 = dudx00 + deriv_tmp(l,i)*gv(l,j,kk,1)
-                  dvdy00 = dvdy00 + deriv_tmp(l,j)*gv(i,l,kk,2)
+                  dudx00 = dudx00 + deriv_dvv(l,i)*gv(l,j,kk,1)
+                  dvdy00 = dvdy00 + deriv_dvv(l,j)*gv(i,l,kk,2)
                 enddo
                 div(i,j,k,tl,ie)=(dudx00+dvdy00)*(elem(ie)%rmetdet(i,j)*rrearth)
               endif

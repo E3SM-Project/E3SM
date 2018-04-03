@@ -7,7 +7,7 @@ u_perturb      = 1
 rotate_grid = 0
 ne=16
 qsize         = 4
-ndays         = 1
+ndays         = 2
 nmax          = 20
 statefreq     = 1200
 restartfreq   = 43200
@@ -67,8 +67,8 @@ profile_single_file		= .true.
 ! interp_nlon = 1024
  interp_gridtype=2
  
- output_timeunits=1,1
- output_frequency=1,1
+ output_timeunits=2,2   ! 1=days, 2=hours, 3=seconds, 0=timesteps
+ output_frequency=3,3
  output_start_time=0,0
  output_end_time=30000,30000
  output_varnames1='ps','zeta','dp3d'
