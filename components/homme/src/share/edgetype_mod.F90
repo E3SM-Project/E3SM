@@ -28,9 +28,9 @@ module edgetype_mod
   type, public :: EdgeBuffer_t
      real (kind=real_kind), dimension(:), allocatable :: buf
      real (kind=real_kind), dimension(:), allocatable :: receive
-     integer(kind=int_kind), pointer :: putmap(:,:) => null()
-     integer(kind=int_kind), pointer :: getmap(:,:) => null()
-     logical(kind=log_kind), pointer :: reverse(:,:) => null()
+!     integer(kind=int_kind), pointer :: putmap(:,:) => null()
+!     integer(kind=int_kind), pointer :: getmap(:,:) => null()
+!     logical(kind=log_kind), pointer :: reverse(:,:) => null()
      integer(kind=int_kind), pointer :: moveLength(:) => null()
      integer(kind=int_kind), pointer :: movePtr0(:) => null()
      type (EdgeDescriptor_t), pointer :: desc(:)  

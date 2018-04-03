@@ -214,9 +214,9 @@ contains
     edge%tag = BNDRY_TAG_BASE + MODULO(edge%id, MAX_ACTIVE_MSG) 
 
     iam = par%rank
-    allocate(edge%putmap(max_neigh_edges,nelemd))
-    allocate(edge%getmap(max_neigh_edges,nelemd))
-    allocate(edge%reverse(max_neigh_edges,nelemd))
+!    allocate(edge%putmap(max_neigh_edges,nelemd))
+!    allocate(edge%getmap(max_neigh_edges,nelemd))
+!    allocate(edge%reverse(max_neigh_edges,nelemd))
     allocate(edge%desc(nelemd))
 
 #if 0
@@ -235,6 +235,7 @@ endif
 #endif
     do ie=1,nelemd
        edge%desc(ie)=elem(ie)%desc
+#if 0
        do i=1,max_neigh_edges
           if(elem(ie)%desc%putmapP(i) == -1) then 
               edge%putmap(i,ie) = -1
@@ -256,6 +257,7 @@ endif
           endif
           edge%reverse(i,ie) = elem(ie)%desc%reverse(i) 
        enddo
+#endif
     enddo
 
     ! Determine the most optimal way to move data in the bndry_exchange call 
@@ -427,9 +429,9 @@ endif
 #endif
     deallocate(edge%buf)
     deallocate(edge%receive)
-    deallocate(edge%putmap)
-    deallocate(edge%getmap)
-    deallocate(edge%reverse)
+!    deallocate(edge%putmap)
+!    deallocate(edge%getmap)
+!    deallocate(edge%reverse)
     deallocate(edge%desc)
 
     deallocate(edge%moveLength)
