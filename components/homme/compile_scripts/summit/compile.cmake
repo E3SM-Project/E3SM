@@ -34,7 +34,7 @@ cmake                                                                           
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                   \
   -DENABLE_OPENMP=FALSE                                                          \
   -DCMAKE_EXE_LINKER_FLAGS="${NCLIBS}"                                           \
-  -DOPENACC_Linker_FLAGS="-ta=nvidia,cuda9.0,pinned,cc60"                        \
+  -DOPENACC_Linker_FLAGS="-ta=nvidia,cuda9.0,pinned,cc70"                        \
   $HOMME_ROOT                                                       || exit -1                                              
 fi
 #APPEND_LIBRARIES is a hack because CMake is really really stupid
