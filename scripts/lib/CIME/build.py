@@ -239,11 +239,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.{}".format(lib))
         logger.info("Building {} with output to file {}".format(lib,file_build))
 
-        stat,_,_ = run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
-                                  [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
+        run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
+                       [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
-        expect(stat == 0, "BUILD FAIL: buildlib.{} failed, cat {}".format(lib, file_build))
         logs.append(file_build)
         if lib == "pio":
             bldlog = open(file_build, "r")

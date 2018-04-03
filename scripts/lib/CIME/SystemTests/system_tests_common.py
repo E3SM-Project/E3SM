@@ -86,8 +86,8 @@ class SystemTestsCommon(object):
                 except BaseException as e:
                     success = False
                     msg = e.__str__()
-                    if "BUILD FAIL" in msg:
-                        # Don't want to print stacktrace for a model failure since that
+                    if "FAILED, cat" in msg or "BUILD FAIL" in msg:
+                        # Don't want to print stacktrace for a build failure since that
                         # is not a CIME/infrastructure problem.
                         excmsg = msg
                     else:
