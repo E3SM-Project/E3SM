@@ -118,7 +118,7 @@
 		<stream name="timeSeriesStatsCustomRestart"
 				runtime_format="single_file"
 				type="input;output"
-				filename_template="restarts/restart.AM.timeSeriesStatsCustom.$Y-$M-$D_$h.$m.$s.nc"
+				filename_template="restarts/mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"
 				filename_interval="output_interval"
 				reference_time="0001-01-01_00:00:00"
 				clobber_mode="truncate"
