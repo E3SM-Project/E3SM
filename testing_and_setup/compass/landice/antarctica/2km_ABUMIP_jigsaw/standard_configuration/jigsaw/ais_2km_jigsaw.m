@@ -3,7 +3,7 @@ function ais_2km_jigsaw()
 
     name = 'ais2km';
 
-    addpath('dual-mesh');
+    %addpath('dual-mesh');
 
 %------------------------------------ setup files for JIGSAW
 
@@ -245,8 +245,11 @@ axis equal
 
 
     
-    minSpacing = 10.0e3;
-    maxSpacing = 100.0e3;
+%    minSpacing = 10.0e3;
+%    maxSpacing = 100.0e3;
+    minSpacing = 2.0e3;
+    maxSpacing = 20.0e3;
+    
     maxShelfSpacing = minSpacing * 3.0;
     
     minDist = 0.0;
