@@ -207,7 +207,7 @@ lnd/clm2/surfdata_map/surfdata_48x96_simyr2000_c130927.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_64x128_simyr2000_c170111.nc</fsurdat>
 
 <fsurdat hgrid="0.9x1.25"  sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c180306.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c180404.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr2000_c180306.nc</fsurdat>
 <fsurdat hgrid="4x5"       sim_year="2000" use_crop=".false." >
