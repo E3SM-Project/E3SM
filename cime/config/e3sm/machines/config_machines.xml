@@ -3061,6 +3061,9 @@
 		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
 		  <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       </environment_variables>
+      <environment_variables SMP_PRESENT="TRUE">
+		  <env name="OMP_NUM_THREADS">$ENV{OMP_NUM_THREADS}</env>
+      </environment_variables>
       <environment_variables mpilib="!mpi-serial">
 		<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
