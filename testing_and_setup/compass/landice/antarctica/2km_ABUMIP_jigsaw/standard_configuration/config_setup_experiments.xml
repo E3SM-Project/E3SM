@@ -73,7 +73,7 @@
                 <step executable="./define_cullMask.py" >
                         <argument flag="-f">li_full.nc</argument>
                         <argument flag="-m">distance</argument>
-                        <argument flag="-d">100.0</argument>
+                        <argument flag="-d">200.0</argument>
                 </step>
 
                 <!-- cull cells -->
