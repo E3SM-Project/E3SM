@@ -16,6 +16,7 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_vn0              (:,:,:,:,:)      ! (np,np,2,nlev,nelemd)                   velocity for SE tracer advection
   real (kind=real_kind), allocatable, target, public :: derived_divdp            (:,:,:,:)        ! (np,np,nlev,nelemd)                     divergence of dp
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
+  real (kind=real_kind), allocatable, target, public :: derived_dpdiss_ave       (:,:,:,:)        ! (np,np,nlev,nelemd)                    
   real (kind=real_kind), allocatable, target, public :: deriv_dvv                (:,:)            ! (np,np)
   real (kind=real_kind), allocatable, target, public :: hvcoord_dp0              (:)              ! (plev)
 
@@ -38,10 +39,10 @@ module element_state
     ! diagnostic variables for preqx solver
     ! storage for subcycling tracers/dynamics
     ! if (compute_mean_flux==1) vn0=time_avg(U*dp) else vn0=U at tracer-time t
-  real (kind=real_kind), pointer :: vn0              (:,:,:,:)       ! (np,np,2,nlev)                  velocity for SE tracer advection
+  real (kind=real_kind), pointer :: vn0              (:,:,:,:)        ! (np,np,2,nlev)                  velocity for SE tracer advection
     real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces
     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
-    real (kind=real_kind) :: dpdiss_ave(np,np,nlev)                   ! mean dp used to compute psdiss_tens
+    real (kind=real_kind), pointer :: dpdiss_ave(:,:,:)               ! mean dp used to compute psdiss_tens
 
     ! diagnostics for explicit timestep
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential

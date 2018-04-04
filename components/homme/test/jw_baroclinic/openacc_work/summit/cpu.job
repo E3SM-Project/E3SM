@@ -47,7 +47,7 @@ echo $mpirun
 
 set u_perturb = 1
 set rotate = 0
-set ne    = 16     # horizontal resolution   4,16,30,60,120,240
+set ne    =  8     # horizontal resolution   4,16,30,60,120,240
 set nlev  = 72     # vertical resolution  26,30,60,64,96
 set qsize = 40     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
