@@ -37,8 +37,8 @@ class ERS(SystemTestsCommon):
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
-        logger.info("doing an {} {} restart test, skip_pnl={}".format(str(stop_new), stop_option, self._skip_pnl))
-        self._case.create_namelists()
+        logger.info("doing an {} {} restart test".format(str(stop_new), stop_option))
+        self._skip_pnl=False
         self.run_indv(suffix="rest")
 
         # Compare restart file
