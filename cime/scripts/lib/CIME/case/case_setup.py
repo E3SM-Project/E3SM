@@ -1,16 +1,15 @@
 """
 Library for case.setup.
+case_setup is a member of class Case from file case.py
 """
 
 from CIME.XML.standard_module_setup import *
 
-from CIME.check_lockedfiles import *
-from CIME.preview_namelists import create_dirs, create_namelists
-from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
 from CIME.test_status       import *
+from CIME.locked_files      import unlock_file, lock_file
 
 import shutil
 
@@ -78,20 +77,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        case_run, case_test = get_batch_script_for_job("case.run"), get_batch_script_for_job("case.test")
-        if os.path.exists(case_run):
-            os.remove(case_run)
+        # clean batch script
+        batch_script = get_batch_script_for_job(case.get_primary_job())
+        if os.path.exists(batch_script):
+            os.remove(batch_script)
+            logger.info("Successfully cleaned batch script {}".format(batch_script))
 
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
-
-            # backup and then clean test script
-            if os.path.exists(case_test):
-                os.remove(case_test)
-                logger.info("Successfully cleaned test script {}".format(case_test))
-
-        logger.info("Successfully cleaned batch script case.run")
 
     if not clean:
         case.load_env()
@@ -140,7 +134,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         if nthrds > 1:
             case.set_value("BUILD_THREADED",True)
 
-        if os.path.exists(get_batch_script_for_job("case.run")):
+        if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
@@ -148,13 +142,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("SMP_PRESENT", case.get_build_threaded())
 
         else:
-            check_pelayouts_require_rebuild(case, models)
+            case.check_pelayouts_require_rebuild(models)
 
             unlock_file("env_build.xml")
             unlock_file("env_batch.xml")
 
             case.flush()
-            check_lockedfiles(case)
+            case.check_lockedfiles()
 
             case.initialize_derived_attributes()
 
@@ -165,10 +159,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             # create batch files
             env_batch = case.get_env("batch")
-            env_batch.make_all_batch_files(case, test_mode=test_mode)
+            env_batch.make_all_batch_files(case)
+            if get_model() == "e3sm" and not case.get_value("TEST"):
+                input_batch_script = os.path.join(case.get_value("MACHDIR"), "template.case.run.sh")
+                env_batch.make_batch_script(input_batch_script, "case.run", case, outfile=get_batch_script_for_job("case.run.sh"))
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
-            env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
+            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
             case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able
@@ -194,14 +191,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         _build_usernl_files(case, "drv", "cpl")
 
         # Create needed directories for case
-        create_dirs(case)
+        case.create_dirs()
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Some tests need namelists created here (ERP) - so do this if we are in test mode
         if test_mode or get_model() == "e3sm":
             logger.info("Generating component namelists as part of setup")
-            create_namelists(case)
+            case.create_namelists()
 
         # Record env information
         env_module = case.get_env("mach_specific")
@@ -210,14 +207,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False):
+def case_setup(self, clean=False, test_mode=False, reset=False):
 ###############################################################################
-    caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
+    caseroot, casebaseid = self.get_value("CASEROOT"), self.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
+    functor = lambda: _case_setup_impl(self, caseroot, clean, test_mode, reset)
 
-    if case.get_value("TEST") and not test_mode:
-        test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
+    if self.get_value("TEST") and not test_mode:
+        test_name = casebaseid if casebaseid is not None else self.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
                 run_and_log_case_status(functor, phase, caseroot=caseroot)

@@ -15,7 +15,6 @@ sys.path.append(_LIBDIR)
 
 from standard_script_setup import *
 
-from CIME.case_test import case_test
 from CIME.case import Case
 
 import argparse
@@ -49,21 +48,24 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--reset", action="store_true",
                         help="Reset the case to its original state as defined by config_tests.xml")
 
+    parser.add_argument("--skip-preview-namelist", action="store_true",
+                        help="Skip calling preview-namelist during case.run")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.caseroot is not None:
         os.chdir(args.caseroot)
 
-    return args.caseroot, args.testname, args.reset
+    return args.caseroot, args.testname, args.reset, args.skip_preview_namelist
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
 
-    caseroot, testname, reset = parse_command_line(sys.argv, description)
+    caseroot, testname, reset, skip_pnl = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        success = case_test(case, testname, reset)
+        success = case.case_test(testname=testname, reset=reset, skip_pnl=skip_pnl)
 
     sys.exit(0 if success else 1)
 

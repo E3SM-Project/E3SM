@@ -376,7 +376,7 @@ class GenericXML(object):
         for node in valnodes:
             self.set_text(node, value)
 
-    def get_resolved_value(self, raw_value):
+    def get_resolved_value(self, raw_value, allow_unresolved_envvars=False):
         """
         A value in the xml file may contain references to other xml
         variables or to environment variables. These are refered to in
@@ -411,8 +411,10 @@ class GenericXML(object):
             logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
             env_var_exists = env_var in os.environ
-            expect(env_var_exists, "Undefined env var '{}'".format(env_var))
-            item_data = item_data.replace(m.group(), os.environ[env_var])
+            if not allow_unresolved_envvars:
+                expect(env_var_exists, "Undefined env var '{}'".format(env_var))
+            if env_var_exists:
+                item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):
             logger.debug("execute {} in shell".format(item_data))

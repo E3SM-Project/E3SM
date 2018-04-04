@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, fnmatch
 import errno, signal, warnings, filecmp
 import stat as statlib
 import six
@@ -21,7 +21,6 @@ def redirect_stdout(new_target):
         yield new_target # run some code with the replaced stdout
     finally:
         sys.stdout = old_target # restore to the previous value
-
 
 @contextmanager
 def redirect_stderr(new_target):
@@ -268,52 +267,76 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
 _hack=object()
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
+    """
+    This code will try to import and run each cmd as a subroutine
+    if that fails it will run it as a program in a seperate shell
 
-    # This code will try to import and run each buildnml as a subroutine
-    # if that fails it will run it as a program in a seperate shell
-    do_run_cmd = False
-    stat = 0
-    output = ""
-    errput = ""
-    try:
-        mod = imp.load_source(subname, cmd)
-        logger.info("   Calling {}".format(cmd))
-        if logfile:
-            with redirect_logger(open(logfile,"w"), subname):
+    Raises exception on failure.
+    """
+    do_run_cmd = True
+
+    # Before attempting to load the script make sure it contains the subroutine
+    # we are expecting
+    with open(cmd, 'r') as fd:
+        for line in fd.readlines():
+            if re.search(r"^def {}\(".format(subname), line):
+                do_run_cmd = False
+                break
+
+    if not do_run_cmd:
+        try:
+            mod = imp.load_source(subname, cmd)
+            logger.info("   Calling {}".format(cmd))
+            if logfile:
+                with open(logfile,"w") as log_fd:
+                    with redirect_logger(log_fd, subname):
+                        with redirect_stdout_stderr(log_fd):
+                            getattr(mod, subname)(*subargs)
+            else:
                 getattr(mod, subname)(*subargs)
+
+        except (SyntaxError, AttributeError) as _:
+            pass # Need to try to run as shell command
+
+        except:
+            if logfile:
+                with open(logfile, "a") as log_fd:
+                    log_fd.write(str(sys.exc_info()[1]))
+
+                expect(False, "{} FAILED, cat {}".format(cmd, logfile))
+            else:
+                raise
+
         else:
-            getattr(mod, subname)(*subargs)
+            return # Running as python function worked, we're done
 
-    except SyntaxError:
-        do_run_cmd = True
+    logger.info("   Running {} ".format(cmd))
+    if case is not None:
+        case.flush()
 
-    except AttributeError:
-        do_run_cmd = True
+    fullcmd = cmd
+    if isinstance(cmdargs, list):
+        for arg in cmdargs:
+            fullcmd += " " + str(arg)
+    else:
+        fullcmd += " " + cmdargs
 
-    if do_run_cmd:
-        logger.info("   Running {} ".format(cmd))
-        if case is not None:
-            case.flush()
+    if logfile:
+        fullcmd += " >& {} ".format(logfile)
 
-        fullcmd = cmd
-        if isinstance(cmdargs, list):
-            for arg in cmdargs:
-                fullcmd += " " + str(arg)
-        else:
-            fullcmd += " " + cmdargs
-
-        if logfile:
-            fullcmd += " > {} ".format(logfile)
-
-        output = run_cmd_no_fail("{}".format(fullcmd),
-                                 combine_output=True,
-                                 from_dir=from_dir)
+    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True, from_dir=from_dir)
+    if output: # Will be empty if logfile
         logger.info(output)
-        # refresh case xml object from file
-        if case is not None:
-            case.read_xml()
 
-    return stat, output, errput
+    if stat != 0:
+        if logfile:
+            expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
+        else:
+            expect(False, "{} FAILED, see above")
+
+    # refresh case xml object from file
+    if case is not None:
+        case.read_xml()
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
@@ -851,6 +874,18 @@ def get_charge_account(machobj=None):
 
     logger.info("No charge_account info available, using value from PROJECT")
     return get_project(machobj)
+
+def find_files(rootdir, pattern):
+    """
+    recursively find all files matching a pattern
+    """
+    result = []
+    for root, _, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
 
 
 def setup_standard_logging_options(parser):

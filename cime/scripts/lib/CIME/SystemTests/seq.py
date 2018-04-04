@@ -3,9 +3,6 @@ sequencing bfb test (10 day seq,conc tests)
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.case_setup import case_setup
-from CIME.check_lockedfiles import *
-import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -49,4 +46,4 @@ class SEQ(SystemTestsCompareTwo):
                     rootpe += newntasks
 
         self._case.flush()
-        case_setup(self._case, test_mode=True, reset=True)
+        self._case.case_setup(test_mode=True, reset=True)
