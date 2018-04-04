@@ -60,7 +60,8 @@ contains
     call addfld ('RKZ_RH',   (/'lev'/), 'I','1','grid-box mean relative humidity')
     call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
     call addfld ('RKZ_fac',  (/'lev'/), 'I','1','cloud fraction after macro- and microphysics calculation in the previous time step')
-     
+    call addfld ('RKZ_dfacdRH',  (/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity after macro- and microphysics calculation in the previous time step')
+
     call addfld ('RKZ_dfdRH',(/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity')
     call addfld ('RKZ_dlnfdRH',(/'lev'/), 'I','1','derivative of logrithmic cloud fraction wrt relative humidity')
 
@@ -104,7 +105,7 @@ contains
   ! Calculate condensation rate and the resulting tendencies of the model 
   ! state variables
   !------------------------------------------------------------------------
-  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast, qmeold, astwat, &
+  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast, qmeold, astwat, dfacdRH,&
                              dtime, ixcldliq, &
                              rkz_cldfrc_opt, &
                              rkz_term_A_opt, &
@@ -140,6 +141,8 @@ contains
   real(r8), intent(inout) :: qcwat(:,:)       ! qv          after macro- and microphysics calculation in the previous time step
   real(r8), intent(inout) :: lcwat(:,:)       ! ql          after macro- and microphysics calculation in the previous time step
   real(r8), intent(inout) :: astwat(:,:)      ! f           after macro- and microphysics calculation in the previous time step 
+  real(r8), intent(inout) :: dfacdRH(:,:)     ! df/dRH      after macro- and microphysics calculation in the previous time step 
+                                              !             where f is the cloud fraction and RH the relative humidity
 
   real(r8), intent(inout) ::   ast(:,:)       ! cloud fraction
   real(r8), intent(inout) ::   qmeold(:,:)    ! total condensation rate calculation in previous time step 
@@ -234,7 +237,8 @@ contains
   nstep = get_nstep()
   lchnk = state%lchnk  ! needed by "call outfld" for model output
 
-  call outfld('RKZ_fac',    astwat,    pcols, lchnk)
+  call outfld('RKZ_fac',     astwat,    pcols, lchnk)
+  call outfld('RKZ_dfacdRH', dfacdRH,   pcols, lchnk)
 
   ! Calculate saturation specific humidity (qsat) and its derivative wrt temperature (dqsatdT)
 
@@ -480,6 +484,21 @@ contains
         zc3(:ncol,:pver)    = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver)
         rdenom(:ncol,:pver) = 1._r8/( 1._r8 + state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zc3(:ncol,:pver) )
         term_C(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zforcing(:ncol,:pver)
+        term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
+        term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
+
+     case(5) ! The same as case (2) except that df/dRH is estimated after the condensation model
+        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
+                                 -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver) ) &
+                               /qsat(:ncol,:pver)
+
+        zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver) )/qsat(:ncol,:pver)
+
+        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + ql_incld(:ncol,:pver)*dfacdRH(:ncol,:pver)*zc3(:ncol,:pver) )
+
+        term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dfacdRH(:ncol,:pver)*zforcing(:ncol,:pver)
+
         term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
         term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
         term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
