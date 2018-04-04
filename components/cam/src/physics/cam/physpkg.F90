@@ -2047,12 +2047,13 @@ subroutine tphysbc (ztodt,               &
     !Shixuan Zhang (2018/03): added for simple condensation model convergence test 
     real(r8), pointer, dimension(:,:) :: qmeold     ! total condensation rate in previous step 
     real(r8), pointer, dimension(:,:) :: astwat     ! cloud fraction after condensation      
+    real(r8), pointer, dimension(:,:) :: dfacdRH    ! df/dRH where f is the cloud fraction and RH the relative humidity
+
     real(r8) :: qsat(pcols,pver)       ! saturation specific humidity
     real(r8) :: esl(pcols,pver)        ! saturation vapor pressure (output from subroutine qsat_water, not used)
     real(r8) :: dqsatdT(pcols,pver)    ! dqsat/dT
     real(r8) :: gam(pcols,pver)        ! L/cpair * dqsat/dT
     real(r8) :: rhu00                  ! threshold grid-box-mean RH used in the diagnostic cldfrc scheme
-    real(r8) :: dfacdRH(pcols,pver)    ! df/dRH where f is the cloud fraction and RH the relative humidity
     real(r8) :: dlnastdRH(pcols,pver)  ! dlnf/dRH where lnf is the logrithm of the cloud fraction and RH the relative humidity cloud fraction and RH the relative humidity
     real(r8) :: rhgbm(pcols,pver)  ! grid-box mean relative humidity 
 
