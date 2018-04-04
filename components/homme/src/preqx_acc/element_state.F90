@@ -17,6 +17,7 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_divdp            (:,:,:,:)        ! (np,np,nlev,nelemd)                     divergence of dp
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
   real (kind=real_kind), allocatable, target, public :: derived_dpdiss_ave       (:,:,:,:)        ! (np,np,nlev,nelemd)                    
+  real (kind=real_kind), allocatable, target, public :: derived_dp               (:,:,:,:)        ! (np,np,nlev,nelemd)                    
   real (kind=real_kind), allocatable, target, public :: deriv_dvv                (:,:)            ! (np,np)
   real (kind=real_kind), allocatable, target, public :: hvcoord_dp0              (:)              ! (plev)
 
@@ -56,7 +57,7 @@ module element_state
     real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence                          
 
     ! tracer advection fields used for consistency and limiters
-    real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
+    real (kind=real_kind), pointer :: dp(:,:,:)                           ! for dp_tracers at physics timestep
     real (kind=real_kind), pointer :: divdp            (:,:,:)         ! (np,np,nlev)                    divergence of dp
     real (kind=real_kind), pointer :: divdp_proj       (:,:,:)         ! (np,np,nlev)                    DSSed divdp
 

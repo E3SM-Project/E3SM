@@ -304,7 +304,7 @@ contains
     use dimensions_mod       , only: np, nlev
     use hybrid_mod           , only: hybrid_t
     use element_mod          , only: element_t
-    use element_state        , only: derived_divdp_proj, state_qdp, derived_dpdiss_ave
+    use element_state        , only: derived_divdp_proj, state_qdp, derived_dpdiss_ave, derived_dp
     use derivative_mod       , only: derivative_t
     use perf_mod             , only: t_startf, t_stopf                          ! _EXTERNAL
     use hybvcoord_mod        , only: hvcoord_t
@@ -342,7 +342,7 @@ contains
     do ic = 1 , hypervis_subcycle_q
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,hvcoord%dp0,qtens_biharmonic,qtens,derived_dpdiss_ave) async(1)
+      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,hvcoord%dp0,qtens_biharmonic,qtens,derived_dpdiss_ave,derived_dp) async(1)
       do ie = 1 , nelemd
         ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
         do k = 1 , nlev
@@ -355,7 +355,7 @@ contains
           ! contribution from dynamics.
           do j = 1 , np
             do i = 1 , np
-              dp = elem(ie)%derived%dp(i,j,k) - dt2 * derived_divdp_proj(i,j,k,ie)
+              dp = derived_dp(i,j,k,ie) - dt2 * derived_divdp_proj(i,j,k,ie)
               if (nu_p > 0) then
                 do q = 1 , qsize
                   Qtens(i,j,k,q,ie) = derived_dpdiss_ave(i,j,k,ie)*state_Qdp(i,j,k,q,nt_qdp,ie) / dp 
@@ -473,7 +473,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0, derived_dpdiss_ave
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0, derived_dpdiss_ave, derived_dp
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -495,26 +495,9 @@ contains
   integer :: ie,q,i,j,k
   integer :: rhs_viss
 
-
-  do ie = nets , nete
-    data_pack (:,:,:,ie) = derived_dpdiss_ave(:,:,:,ie)
-    data_pack2(:,:,:,ie) = elem(ie)%derived%dp       
-  enddo
   !$omp barrier
   !$omp master
-  !$acc update device(data_pack,data_pack2) async(1)
-  !$acc update device(derived_divdp_proj,derived_vn0) async(1)
-  !$acc parallel loop gang vector collapse(4) present(data_pack,elem) async(1)
-  do ie = 1 , nelemd
-    do k = 1 , nlev
-      do j = 1 , np
-        do i = 1 , np
-          derived_dpdiss_ave(i,j,k,ie) = data_pack (i,j,k,ie)
-          elem(ie)%derived%dp        (i,j,k) = data_pack2(i,j,k,ie)
-        enddo
-      enddo
-    enddo
-  enddo
+  !$acc update device(derived_dpdiss_ave,derived_dp) async(1)
   !$omp end master
   !$omp barrier
 
@@ -553,13 +536,13 @@ contains
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     !$omp barrier
     !$omp master
-    !$acc parallel loop gang vector collapse(4) private(tmp) present(elem(:),derived_divdp_proj,state_qdp,qtens_biharmonic) async(1)
+    !$acc parallel loop gang vector collapse(4) private(tmp) present(elem(:),derived_divdp_proj,state_qdp,qtens_biharmonic,derived_dp) async(1)
     do ie = 1 , nelemd
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         do j = 1 , np
           do i = 1 , np
-            tmp = elem(ie)%derived%dp(i,j,k) - rhs_multiplier*dt*derived_divdp_proj(i,j,k,ie) 
+            tmp = derived_dp(i,j,k,ie) - rhs_multiplier*dt*derived_divdp_proj(i,j,k,ie) 
             do q = 1 , qsize
               Qtens_biharmonic(i,j,k,q,ie) = state_Qdp(i,j,k,q,n0_qdp,ie) / tmp
             enddo
@@ -674,7 +657,7 @@ contains
   if (limiter_option == 8) then
     !$acc update device(derived_divdp) async(1)
   endif
-  !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,derived_vn0,dp_star,derived_divdp,grads_tracer,state_qdp) &
+  !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,derived_vn0,dp_star,derived_divdp,grads_tracer,state_qdp,derived_dp) &
   !$acc& private(dp,vstar) async(1)
   do ie = 1 , nelemd
     do k = 1 , nlev    !  Loop index added (AAM)
@@ -682,7 +665,7 @@ contains
         do i = 1 , np
           ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
           ! but that's ok because rhs_multiplier=0 on the first stage:
-          dp = elem(ie)%derived%dp(i,j,k) - rhs_multiplier * dt * derived_divdp_proj(i,j,k,ie)
+          dp = derived_dp(i,j,k,ie) - rhs_multiplier * dt * derived_divdp_proj(i,j,k,ie)
           Vstar(1) = derived_vn0(i,j,1,k,ie) / dp
           Vstar(2) = derived_vn0(i,j,2,k,ie) / dp
           if ( limiter_option == 8 ) then

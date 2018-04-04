@@ -133,6 +133,6 @@ sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 cp $exedir/$exe .
 
 date
-$mpirun ./$exe < input.nl
+$mpirun nvprof -o homme.%h.%p.nvvp ./$exe < input.nl
 date
 
