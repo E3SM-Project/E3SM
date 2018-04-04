@@ -38,6 +38,7 @@ class ERP(RestartTest):
                 self._case.set_value("ROOTPE_{}".format(comp), int(rootpe/2))
 
         RestartTest._case_two_setup(self)
+        self._case.case_setup(test_mode=True, reset=True)
         # Note, some components, like CESM-CICE, have
         # decomposition information in env_build.xml that
         # needs to be regenerated for the above new tasks and thread counts
