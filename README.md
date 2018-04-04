@@ -1,4 +1,4 @@
-# ACME Diagnostics Package
+# E3SM Diagnostics Package
 
 [![Install](https://anaconda.org/acme/acme_diags/badges/installer/conda.svg)](https://anaconda.org/acme/acme_diags)
 [![Downloads](https://anaconda.org/acme/acme_diags/badges/downloads.svg)](https://anaconda.org/acme/acme_diags)
@@ -20,7 +20,7 @@
   * [Model vs Observation: comparing temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
-This diagnostics package is constructed for supporting the diagnostics task of DOE's [Accelerated Climate Modeling for Energy (ACME) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
+This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
 
 * fully integrates the functionality of NCAR's AMWG diagnostics package.
 * utilizes most updated observational datasets, including remote sensing, reanalysis and in-situ datasets. 
@@ -29,7 +29,7 @@ This diagnostics package is constructed for supporting the diagnostics task of D
 * is flexible for user specified diagnostics and being configured for use by other climate models.
 
 ## Current State <a name="current-state"></a>
-Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) to summarize metrics for climatology seasonal means, are implemented. 
+Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented. 
 
 The package features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension. 
 
