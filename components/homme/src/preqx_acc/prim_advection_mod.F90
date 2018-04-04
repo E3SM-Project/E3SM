@@ -497,7 +497,7 @@ contains
 
   !$omp barrier
   !$omp master
-  !$acc update device(derived_dpdiss_ave,derived_dp) async(1)
+  !$acc update device(derived_dpdiss_ave,derived_dp,derived_divdp_proj,derived_vn0) async(1)
   !$omp end master
   !$omp barrier
 
