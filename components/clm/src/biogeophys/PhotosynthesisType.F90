@@ -25,6 +25,7 @@ module PhotosynthesisType
      real(r8), pointer :: ag_patch          (:,:) ! patch co-limited gross leaf photosynthesis (umol CO2/m**2/s)
      real(r8), pointer :: an_patch          (:,:) ! patch net leaf photosynthesis (umol CO2/m**2/s)   
      real(r8), pointer :: vcmax_z_patch     (:,:) ! patch maximum rate of carboxylation (umol co2/m**2/s)
+     real(r8), pointer :: vcmax25_top_patch (:)   ! patch maximum rate of carboxylation at top canopy at 25oC (umol co2/m**2/s)
      real(r8), pointer :: cp_patch          (:)   ! patch CO2 compensation point (Pa)
      real(r8), pointer :: kc_patch          (:)   ! patch Michaelis-Menten constant for CO2 (Pa)
      real(r8), pointer :: ko_patch          (:)   ! patch Michaelis-Menten constant for O2 (Pa)
@@ -132,6 +133,7 @@ contains
     allocate(this%ag_patch          (begp:endp,1:nlevcan)) ; this%ag_patch          (:,:) = nan
     allocate(this%an_patch          (begp:endp,1:nlevcan)) ; this%an_patch          (:,:) = nan
     allocate(this%vcmax_z_patch     (begp:endp,1:nlevcan)) ; this%vcmax_z_patch     (:,:) = nan
+    allocate(this%vcmax25_top_patch (begp:endp))           ; this%vcmax25_top_patch (:)   = nan
     allocate(this%cp_patch          (begp:endp))           ; this%cp_patch          (:)   = nan
     allocate(this%kc_patch          (begp:endp))           ; this%kc_patch          (:)   = nan
     allocate(this%ko_patch          (begp:endp))           ; this%ko_patch          (:)   = nan
@@ -241,6 +243,12 @@ contains
        call hist_addfld1d (fname='PSNSHA', units='umolCO2/m^2/s', &
             avgflag='A', long_name='shaded leaf photosynthesis', &
             ptr_patch=this%psnsha_patch)
+
+       this%vcmax25_top_patch(begp:endp) = spval
+       call hist_addfld1d (fname='VCMAX25TOP', units='umolCO2/m^2/s', &
+            avgflag='A', long_name='vcmax at top canopy at 25oC', &
+            ptr_patch=this%vcmax25_top_patch)
+
     end if
 
     if ( use_c13 ) then
@@ -402,6 +410,8 @@ contains
           this%psnsun_wc_patch(p) = 0._r8
           this%psnsun_wj_patch(p) = 0._r8
           this%psnsun_wp_patch(p) = 0._r8
+
+          this%vcmax25_top_patch(p) = 0._r8
 
           this%psnsha_patch(p)    = 0._r8
           this%psnsha_wc_patch(p) = 0._r8
