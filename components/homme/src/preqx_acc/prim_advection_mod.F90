@@ -904,7 +904,7 @@ contains
 
   subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
     use element_mod           , only: element_t
-    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p
+    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
     use edge_mod              , only: edgeVpack, edgeVunpack
@@ -936,25 +936,25 @@ contains
       ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
       ! all zero so we only have to DSS 1:nlev
       do k = 1 , nlev
-        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k) 
-        derived_omega_p(:,:,k,ie)      = elem(ie)%spheremp(:,:) * derived_omega_p(:,:,k,ie)
-        elem(ie)%derived%divdp_proj(:,:,k)   = elem(ie)%spheremp(:,:) * elem(ie)%derived%divdp_proj(:,:,k)   
+        derived_eta_dot_dpdn(:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_eta_dot_dpdn(:,:,k,ie) 
+        derived_omega_p     (:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_omega_p     (:,:,k,ie)
+        derived_divdp_proj  (:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_divdp_proj  (:,:,k,ie)   
       enddo
-      call edgeVpack( edgeAdv3 , elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , ie )
+      call edgeVpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlev,ie) , nlev , 0      , ie )
       call edgeVpack( edgeAdv3 , derived_omega_p(:,:,1:nlev,ie)      , nlev , nlev   , ie )
-      call edgeVpack( edgeAdv3 , elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , ie )
+      call edgeVpack( edgeAdv3 , derived_divdp_proj(:,:,1:nlev,ie)   , nlev , nlev*2 , ie )
     enddo
 
     call bndry_exchangeV( hybrid , edgeAdv3   )
 
     do ie = nets , nete
-      call edgeVunpack( edgeAdv3 , elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , ie )
+      call edgeVunpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlev,ie) , nlev , 0      , ie )
       call edgeVunpack( edgeAdv3 , derived_omega_p(:,:,1:nlev,ie)      , nlev , nlev   , ie )
-      call edgeVunpack( edgeAdv3 , elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , ie )
+      call edgeVunpack( edgeAdv3 , derived_divdp_proj(:,:,1:nlev,ie)   , nlev , nlev*2 , ie )
       do k = 1 , nlev
-        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%rspheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k) 
-        derived_omega_p(:,:,k,ie)      = elem(ie)%rspheremp(:,:) * derived_omega_p(:,:,k,ie)
-        elem(ie)%derived%divdp_proj(:,:,k)   = elem(ie)%rspheremp(:,:) * elem(ie)%derived%divdp_proj(:,:,k)   
+        derived_eta_dot_dpdn(:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_eta_dot_dpdn(:,:,k,ie) 
+        derived_omega_p     (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_omega_p     (:,:,k,ie)
+        derived_divdp_proj  (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_divdp_proj  (:,:,k,ie)   
       enddo
     enddo
     call t_stopf('derived PEU')

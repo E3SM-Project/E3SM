@@ -21,7 +21,7 @@ contains
 
 
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
-    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, deriv_dvv, hvcoord_dp0, derived_dpdiss_ave, derived_dp, derived_omega_p
+    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, deriv_dvv, hvcoord_dp0, derived_dpdiss_ave, derived_dp, derived_omega_p, derived_eta_dot_dpdn
     use dimensions_mod, only: nelemd
 
     implicit none
@@ -42,7 +42,7 @@ contains
     deriv_dvv = deriv%dvv
     hvcoord_dp0 = hvcoord%dp0
   
-    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_dpdiss_ave,derived_dp,derived_omega_p)
+    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_dpdiss_ave,derived_dp,derived_omega_p,derived_eta_dot_dpdn)
     !$acc enter data pcopyin(elem(1:nelemd),deriv,deriv_dvv,hvcoord_dp0)
     do ie = 1 , nelemd
       !$acc enter data pcopyin(elem(ie)%desc)
