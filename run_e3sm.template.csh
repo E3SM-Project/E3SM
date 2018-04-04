@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.18
+set script_ver = 3.0.20
 
 #===========================================
 # DEFINE ALIASES
@@ -1067,6 +1067,17 @@ if ( `lowercase $short_term_archive_root_dir` != default ) then
   $xmlchange_exe --id DOUT_S_ROOT --val $short_term_archive_root_dir
 endif
 
+short_term_archive_root_dir = `$xmlquery_exe DOUT_S_ROOT --value`
+
+#============================================
+# SETUP SHORT TERM ARCHIVING
+#============================================
+
+setfacl -Rdm g:${project}:r-x ${case_run_dir}
+setfacl -Rdm g:${project}:r-x ${short_term_archive_root_dir}
+
+e3sm_print "All project members have been given access to the results of this simulation"
+
 #============================================
 # COUPLER HISTORY OUTPUT
 #============================================
@@ -1351,6 +1362,7 @@ e3sm_newline
 # 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
 # 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
 # 3.0.19   2017-12-07    Remove all references to ACME except for online links. Also updates the case.st_archive name again (MD)
+# 3.0.20   2018-04-03    Add in a setfacl command for the run and short term archiving directory (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
