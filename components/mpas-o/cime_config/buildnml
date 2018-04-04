@@ -23,6 +23,7 @@ my $OCN_CO2_TYPE	= `./xmlquery  OCN_CO2_TYPE	-value`;
 my $ATM_CO2_CONST_VAL	= `./xmlquery  CCSM_CO2_PPMV	-value`;
 my $ICE_BGC		= `./xmlquery  MPASI_BGC	-value`;
 my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN	-value`;
+my $NTHRDS_OCN		= `./xmlquery  NTHRDS_OCN	-value`;
 my $OCN_PIO_TYPENAME	= `./xmlquery  OCN_PIO_TYPENAME	-value`;
 #my $NINST_OCN		= `./xmlquery  NINST_OCN	-value`;
 my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
@@ -37,6 +38,14 @@ my $sysmod;
 if (! -d "$CASEBUILD/mpas-oconf" ) {
     $sysmod = "mkdir $CASEBUILD/mpas-oconf";
     system($sysmod) == 0 or die "ERROR mpas-o buildnml: $sysmod failed: $?\n";
+}
+
+#--------------------------------------------------------------------
+# MPAS-O with active BGC fails bfb restart with more than 1 thread
+# DO NOT run with ocean bgc turned on with more than 1 thread
+#--------------------------------------------------------------------
+if ($NTHRDS_OCN != 1 && $OCN_BGC) {
+    die " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n";
 }
 
 #--------------------------------------------------------------------
