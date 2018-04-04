@@ -8,7 +8,7 @@ module sl_advection
 !  classic semi-lagrange advection
 !  with optional global iteration for pseudo-local mass conservation
 !
-!  Author:  James Overfelt   3/2015
+!  Author (transport_alg = 1, semi_lagrange_cdr_alg = 1):  James Overfelt   3/2015
 !
   use kinds, only              : real_kind, int_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, qsize_d
@@ -27,6 +27,7 @@ module sl_advection
                                  neighbor_minmax_start, neighbor_minmax_finish
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only       : abortmp, parallel_t
+  use coordinate_systems_mod, only : cartesian3D_t
   use compose_mod
 
   implicit none
@@ -36,6 +37,9 @@ module sl_advection
 
   type (ghostBuffer3D_t)   :: ghostbuf_tr
   type (EdgeBuffer_t)      :: edgeveloc, edgeQdp
+
+  integer :: sl_mpi
+  type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
 
   public :: Prim_Advec_Tracers_remap_ALE, sl_init1
 
@@ -61,15 +65,19 @@ subroutine sl_init1(par, elem)
      cisl = transport_alg == 2 .or. transport_alg >= 20
      call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
      nslots = nlev*qsize
-     if (cisl) then
-        nslots = nslots + nlev
-     end if
-     call initghostbuffer3D(ghostbuf_tr,nslots,np)
+     if (cisl) nslots = nslots + nlev
+     sl_mpi = 0
+     if (slmm .and. .not. cisl) call slmm_get_mpi_pattern(sl_mpi)
+     if (sl_mpi == 0) call initghostbuffer3D(ghostbuf_tr,nslots,np)
      call interpolate_tracers_init()
      ! All methods should DSS.
      call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
      if (slmm) then
-        call slmm_init(np, size(elem), transport_alg)
+        if (sl_mpi > 0) then
+           ! Technically a memory leak, but the array persists for the entire
+           ! run, so not a big deal for now.
+           allocate(dep_points_all(np,np,nlev,size(elem)))
+        end if
         do ie = 1, size(elem)
            ! Provide a point inside the target element.
            pinside = change_coordinates(elem(ie)%spherep(2,2))
@@ -144,7 +152,35 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   ! compute displacements for departure grid store in elem%derived%vstar
   call ALE_RKdss (elem, nets, nete, hybrid, deriv, dt, tl)
 
-  if (slmm) then
+  if (slmm .and. sl_mpi == 1) then
+
+     if (barrier) call perf_barrier(hybrid)
+     call t_startf('SLMM_v2x')
+     do ie = nets, nete
+        num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k,kptr,u,neigh_q)
+#endif
+        do k = 1, nlev
+           call ALE_departure_from_gll(dep_points_all(:,:,k,ie), &
+                elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+        end do
+     end do
+     call t_stopf('SLMM_v2x')
+
+     call t_startf('SLMM_csl')
+     !todo Here and in the set-pointer loop for CEDR, do just in the first call.
+     do ie = nets, nete
+        call slmm_csl_set_elem_data(ie, elem(ie)%metdet, &
+             elem(ie)%state%Qdp(:,:,:,:,n0_qdp), &
+             elem(ie)%derived%dp, elem(ie)%state%Q, &
+             elem(ie)%desc%actual_neigh_edges + 1)
+     end do
+     call slmm_csl(nets, nete, dep_points_all, minq, maxq)
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('SLMM_csl')
+
+  elseif (slmm) then
 
      if (barrier) call perf_barrier(hybrid)
      call t_startf('SLMM_ghost_pack')

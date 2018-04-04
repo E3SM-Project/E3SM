@@ -358,6 +358,11 @@ struct StandaloneTracersTester {
                                                 InitialCondition::nshapes);
   }
 
+  // Make the winds differ by elevation.
+  void offset_latlon (const Int k, Real& lat, Real& lon) const {
+    lon += k*(0.4/nlev);
+  }
+
   void fill_ics (const Int ie, const Real* rp_elem, const Real* rdp,
                  Real* rqdp) const {
     const FA3<const Real> p_elem(rp_elem, 3, np, np); // (rad, lon, lat)
@@ -367,9 +372,9 @@ struct StandaloneTracersTester {
       for (Int k = 0; k < nlev; ++k)
         for (Int j = 0; j < np; ++j)
           for (Int i = 0; i < np; ++i) {
-            InitialCondition::init(get_ic(k,q), 1,
-                                   &p_elem(2,i,j), &p_elem(1,i,j),
-                                   &qdp(i,j,k,q));
+            Real lat = p_elem(2,i,j), lon = p_elem(1,i,j);
+            offset_latlon(k, lat, lon);
+            InitialCondition::init(get_ic(k,q), 1, &lat, &lon, &qdp(i,j,k,q));
             if (rdp)
               qdp(i,j,k,q) *= dp(i,j,k);
           }
@@ -382,8 +387,9 @@ struct StandaloneTracersTester {
     for (Int k = 0; k < nlev; ++k)
       for (Int j = 0; j < np; ++j)
         for (Int i = 0; i < np; ++i) {
-          const Real latlon[] = {p_elem(2,i,j),
-                                 p_elem(1,i,j) + k*(0.2/nlev)};
+          Real lat = p_elem(2,i,j), lon = p_elem(1,i,j);
+          offset_latlon(k, lat, lon);
+          const Real latlon[] = {lat, lon};
           Real uv[2];
           f.eval(t, latlon, uv);
           v(i,j,0,k) = uv[0];
@@ -444,8 +450,10 @@ struct StandaloneTracersTester {
     nthr = omp_get_num_threads();
 # pragma omp master
 #endif
-    l2_err_.resize(2*nlev*qsize*nthr, 0);
-    wrk_.resize(np*np*nlev*qsize*nthr);
+    {
+      l2_err_.resize(2*nlev*qsize*nthr, 0);
+      wrk_.resize(np*np*nlev*qsize*nthr);
+    }
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 #endif

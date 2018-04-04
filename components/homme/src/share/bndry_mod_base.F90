@@ -1052,6 +1052,7 @@ contains
      endif
 
      ALLOCATE(elem(ie)%desc%neigh_corners(4,patch_size))
+     allocate(elem(ie)%desc%globalID_neigh_corners(patch_size))
      ! unpack corner data into array
      do l=1,patch_size
         k=0
@@ -1063,6 +1064,7 @@ contains
            elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l,ie) 
         enddo
         enddo
+        elem(ie)%desc%globalID_neigh_corners(l) = cout(1,1,nlev,l,ie)
      enddo
   enddo
 

@@ -1,3 +1,9 @@
+// Homme doesn't define this, probably b/c Fortran code doesn't use it that
+// much, so define it here.
+#ifndef NDEBUG
+# define NDEBUG
+#endif
+
 //>> cedr_kokkos.hpp
 #ifndef INCLUDE_CEDR_KOKKOS_HPP
 #define INCLUDE_CEDR_KOKKOS_HPP

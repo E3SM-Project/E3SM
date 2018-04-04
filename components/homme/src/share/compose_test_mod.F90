@@ -97,13 +97,13 @@ contains
 
     ! 2. Standalone tracer advection test, useful as a basic but comprehensive
     ! correctness test and also as part of a convergence test.
-    call compose_stt(par, hybrid, nets, nete, deriv, elem)
+    call compose_stt(hybrid, nets, nete, deriv, elem)
 #if (defined HORIZ_OPENMP)
     !$omp end parallel
 #endif
   end subroutine compose_test
 
-  subroutine compose_stt(par, hybrid, nets, nete, deriv, elem)
+  subroutine compose_stt(hybrid, nets, nete, deriv, elem)
     use parallel_mod, only: parallel_t
     use hybrid_mod, only: hybrid_t
     use element_mod, only: element_t
@@ -114,10 +114,10 @@ contains
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
     use control_mod, only: qsplit
+    use time_mod, only: nmax
     use sl_advection
     implicit none
 
-    type (parallel_t), intent(in) :: par
     type (hybrid_t), intent(in) :: hybrid
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(inout) :: elem(:)
@@ -144,7 +144,11 @@ contains
     ! divergent flow field will require providing a useful density.
     !   6*ne gives the large time step, which is said to be CN ~5.5. The
     ! corresponding qsplit is 15.
-    nsteps = nint(6*ne*(15.d0/qsplit))
+    !   nsteps = nint(6*ne*(15.d0/qsplit))
+    nsteps = nmax
+    if (hybrid%par%masterproc .and. hybrid%masterthread) then
+       print *, 'COMPOSE> nsteps', nsteps
+    end if
     dt = twelve_days / nsteps
     do i = 1, nsteps
        tprev = dt*(i-1)
@@ -166,7 +170,7 @@ contains
             tl%np1, elem(ie)%state%dp3d, np1_qdp, elem(ie)%state%qdp)
     end do
     ! Do the global reductions, print diagnostic information, and clean up.
-    call compose_stt_finish(par%comm, par%root, par%rank)
+    call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank)
   end subroutine compose_stt
 
 end module compose_test_mod

@@ -111,7 +111,7 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
-    use compose_mod, only: cedr_init, cedr_unittest, cedr_set_ie2gci
+    use compose_mod, only: compose_init, cedr_unittest, cedr_set_ie2gci
 
     implicit none
 
@@ -477,9 +477,13 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
+    if (transport_alg > 0) then
+       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
     call kokkos_init()
     if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
-       call cedr_init(par%comm, nelemd, GridVertex)
+       call compose_init(par%comm, elem, GridVertex)
        call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then
           write(iulog,*) "CEDR unittest returned", ierr
@@ -509,10 +513,6 @@ contains
     ith=0
     nets=1
     nete=nelemd
-
-    if (transport_alg > 0) then
-       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
-    end if
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS

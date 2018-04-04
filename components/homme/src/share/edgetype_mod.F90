@@ -21,6 +21,7 @@ module edgetype_mod
      integer(kind=int_kind), pointer  :: globalID(:) => null()
      integer(kind=int_kind), pointer  :: loc2buf(:) => null()
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
+     integer(kind=int_kind), pointer  :: globalID_neigh_corners(:) => null() ! GID in the order of neigh_corners
      integer                          :: actual_neigh_edges
      logical(kind=log_kind), pointer  :: reverse(:) => null()
   end type EdgeDescriptor_t
