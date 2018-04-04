@@ -11,7 +11,8 @@
         <add_executable source="define_cull_mask" dest="define_cullMask.py"/>
         <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
         <!--        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/> -->
-        <add_link source_path="script_test_dir" source="antarctica_8km_2014_01_14.nc" dest="ais_input_data.nc"/>
+        <add_link source_path="script_test_dir" source="Antarctica-1km.BISICLES.CISM-style.nc" dest="ais_input_data.nc"/>
+        <add_link source_path="script_test_dir" source="antarctica_8km_2014_01_14.nc" dest="ais_lowres_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais2km-MESH.msh" dest="."/>
 
 <!--
@@ -38,6 +39,12 @@
                 <!-- convert basic netcdf format to MPAS format -->
                 <step executable="./MpasMeshConverter.x"  pre_message="\n\n### Converting to MPAS format\n\n" post_message="\n\n### Converting to MPAS format complete\n\n">
                         <argument flag="">ais2km_jigsaw_netcdf.nc</argument>
+                        <argument flag="">mpas_uncleaned.nc</argument>
+                </step>
+
+                <!-- cull cells to remove negative area cells -->
+                <step executable="./MpasCellCuller.x"  pre_message="\n\n### Cleaning MPAS mesh\n\n" post_message="\n\n### Cleaning MPAS mesh complete\n\n">
+                        <argument flag="">mpas_uncleaned.nc</argument>
                         <argument flag="">mpas.nc</argument>
                 </step>
 
@@ -56,7 +63,7 @@
 
                 <!-- Add thickness to landice mesh -->
                 <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
-                        <argument flag="-s">ais_input_data.nc</argument>
+                        <argument flag="-s">ais_lowres_input_data.nc</argument>
                         <argument flag="-d">li_full.nc</argument>
                         <argument flag="-m">d</argument>
                         <argument flag="--thickness-only"></argument>
@@ -65,7 +72,8 @@
                 <!-- define cull mask -->
                 <step executable="./define_cullMask.py" >
                         <argument flag="-f">li_full.nc</argument>
-                        <argument flag="-m">numCells</argument>
+                        <argument flag="-m">distance</argument>
+                        <argument flag="-d">100.0</argument>
                 </step>
 
                 <!-- cull cells -->
