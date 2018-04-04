@@ -272,7 +272,7 @@ contains
   subroutine setup_element_pointers(elem)
     use dimensions_mod, only: nelemd, qsize
 #if USE_OPENACC
-    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_dpdiss_ave, derived_dp
+    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_dpdiss_ave, derived_dp, derived_omega_p
 #endif
     implicit none
     type(element_t), intent(inout) :: elem(:)
@@ -284,6 +284,7 @@ contains
     allocate( derived_divdp_proj       (np,np,nlev,nelemd)                    )
     allocate( derived_dpdiss_ave       (np,np,nlev,nelemd)                    )
     allocate( derived_dp               (np,np,nlev,nelemd)                    )
+    allocate( derived_omega_p          (np,np,nlev,nelemd)                    )
     do ie = 1 , nelemd
       elem(ie)%state%Qdp                 => state_Qdp                (:,:,:,:,:,ie)
       elem(ie)%derived%vn0               => derived_vn0              (:,:,:,:,ie)  
@@ -291,6 +292,7 @@ contains
       elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)    
       elem(ie)%derived%dpdiss_ave        => derived_dpdiss_ave       (:,:,:,ie)    
       elem(ie)%derived%dp                => derived_dp               (:,:,:,ie)    
+      elem(ie)%derived%omega_p           => derived_omega_p          (:,:,:,ie)    
     enddo
 #endif
   end subroutine setup_element_pointers

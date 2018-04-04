@@ -18,6 +18,7 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
   real (kind=real_kind), allocatable, target, public :: derived_dpdiss_ave       (:,:,:,:)        ! (np,np,nlev,nelemd)                    
   real (kind=real_kind), allocatable, target, public :: derived_dp               (:,:,:,:)        ! (np,np,nlev,nelemd)                    
+  real (kind=real_kind), allocatable, target, public :: derived_omega_p          (:,:,:,:)        ! (np,np,nlev,nelemd)                    
   real (kind=real_kind), allocatable, target, public :: deriv_dvv                (:,:)            ! (np,np)
   real (kind=real_kind), allocatable, target, public :: hvcoord_dp0              (:)              ! (plev)
 
@@ -47,7 +48,7 @@ module element_state
 
     ! diagnostics for explicit timestep
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
-    real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)       
+    real (kind=real_kind), pointer :: omega_p(:,:,:)                      ! vertical tendency (derived)       
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
     real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
 
