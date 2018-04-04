@@ -229,6 +229,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             with self._case2:
                 logger.info('Doing second run: ' + self._run_two_description)
                 self._activate_case2()
+                # This assures that case two namelists are populated
+                self._case2.case_setup(test_mode=True, reset=True)
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
                     self._case2.check_case()
@@ -463,9 +465,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # Flush the case so that, if errors occur later, then at least case2 is
         # in a correct, post-setup state
         self._case.flush()
-
-        # This assures that case two namelists are populated
-        self._case.case_setup(test_mode=True, reset=True)
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()

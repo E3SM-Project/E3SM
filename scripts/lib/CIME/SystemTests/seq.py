@@ -46,3 +46,4 @@ class SEQ(SystemTestsCompareTwo):
                     rootpe += newntasks
 
         self._case.flush()
+        self._case.case_setup(test_mode=True, reset=True)

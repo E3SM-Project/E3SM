@@ -51,4 +51,4 @@ class NCK(SystemTestsCompareTwo):
 
             ntasks = self._case.get_value("NTASKS_{}".format(comp))
             self._case.set_value("NTASKS_{}".format(comp), ntasks*2)
-
+        self._case.case_setup(test_mode=True, reset=True)

@@ -139,7 +139,6 @@ class ERI(SystemTestsCommon):
         clone2.set_value("HIST_OPTION",   stop_option)
         clone2.set_value("HIST_N",        hist_n)
         clone2.flush()
-        clone2.case_setup(test_mode=True, reset=True)
 
         rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
@@ -149,6 +148,7 @@ class ERI(SystemTestsCommon):
 
         _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
+        clone2.case_setup(test_mode=True, reset=True)
         # run ref2 case (all component history files will go to short term archiving)
 
         self.run_indv(suffix="hybrid", st_archive=True)
