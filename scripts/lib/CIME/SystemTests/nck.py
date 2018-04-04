@@ -36,6 +36,10 @@ class NCK(SystemTestsCompareTwo):
             ntasks = self._case.get_value("NTASKS_{}".format(comp))
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_{}".format(comp), int(ntasks/2))
+            # the following assures that both cases use the same number of total tasks
+            rootpe = self._case.get_value("ROOTPE_{}".format(comp))
+            if ( rootpe > 1 ):
+                self._case.set_value("ROOTPE_{}".format(comp), int(rootpe+ntasks/2))
 
     def _case_one_setup(self):
         for comp in self._comp_classes:
@@ -50,5 +54,8 @@ class NCK(SystemTestsCompareTwo):
                 self._case.set_value("NINST_{}".format(comp), 2)
 
             ntasks = self._case.get_value("NTASKS_{}".format(comp))
+            rootpe = self._case.get_value("ROOTPE_{}".format(comp))
+            if ( rootpe > 1 ):
+                self._case.set_value("ROOTPE_{}".format(comp), int(rootpe-ntasks))
             self._case.set_value("NTASKS_{}".format(comp), ntasks*2)
         self._case.case_setup(test_mode=True, reset=True)

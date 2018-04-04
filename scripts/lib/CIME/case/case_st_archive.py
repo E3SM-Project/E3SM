@@ -235,14 +235,18 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 if compname.find('mpas') == 0:
                     # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
+                    newsuffix =                    compname + r'\d*'
                 else:
-                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i] + r'\.' + suffix + r'\.'
+                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i]
             else:
                 if compname.find('mpas') == 0:
-                    newsuffix =                    compname + r'\d*'                   + r'\.' + suffix + r'\.'
+                    newsuffix =                    compname + r'\d*'
                 else:
-                    newsuffix = casename + r'\.' + compname + r'\d*'                   + r'\.' + suffix + r'\.'
+                    newsuffix = casename + r'\.' + compname + r'\d*'
+            newsuffix += r'\.' + suffix
+            if not suffix.endswith('$'):
+                newsuffix += r'\.'
+
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
 
             pfile = re.compile(newsuffix)
@@ -288,7 +292,7 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
             offset = out.index(searchname)
             items = out[offset:].split(",")
             for item in items:
-                # the following match has an option of having any number of '.'s and '/'s 
+                # the following match has an option of having any number of '.'s and '/'s
                 # at the beginning of the history filename
                 matchobj = re.search(r"\"\S+\s*\"", item)
                 if matchobj:
