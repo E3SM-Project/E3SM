@@ -6,7 +6,7 @@
    contain the root `toctree` directive.
 
 #######################
-  CIME Driver/Coupler
+  Driver/Coupler
 #######################
 
 .. toctree::

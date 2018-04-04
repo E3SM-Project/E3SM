@@ -134,7 +134,7 @@ The steps for adding a new component grid to the model system follow. gain, this
 
 7. Create grid file needed for create_newcase.
    The next step is to add the necessary new entries in the appropriate ``config_grids.xml`` file.
-   You will need to modify ``$CIMEROOT/config/cesm/config_grids.xml`` or ``$CIMEROOT/config/acme/config_grids.xml`` depending on the value of ``$CIME_MODEL``.
+   You will need to modify ``$CIMEROOT/config/cesm/config_grids.xml`` or ``$CIMEROOT/config/e3sm/config_grids.xml`` depending on the value of ``$CIME_MODEL``.
    You will need to:
 
    - add a single  ``<model_grid>`` entry

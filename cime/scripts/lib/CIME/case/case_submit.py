@@ -4,13 +4,12 @@
 case.submit - Submit a cesm workflow to the queueing system or run it
 if there is no queueing system.  A cesm workflow may include multiple
 jobs.
+submit, check_case and check_da_settings are members of class Case in file case.py
 """
 import socket
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
-from CIME.preview_namelists         import create_namelists
-from CIME.check_lockedfiles         import check_lockedfiles, check_lockedfile, unlock_file, lock_file
-from CIME.check_input_data          import check_all_input_data
+from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
@@ -18,10 +17,7 @@ logger = logging.getLogger(__name__)
 def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
             skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
-        if case.get_value("TEST"):
-            job = "case.test"
-        else:
-            job = "case.run"
+        job = case.get_primary_job()
 
     rundir = case.get_value("RUNDIR")
     continue_run = case.get_value("CONTINUE_RUN")
@@ -58,7 +54,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
 
         env_batch_has_changed = False
         try:
-            check_lockedfile(case, os.path.basename(env_batch.filename))
+            case.check_lockedfile(os.path.basename(env_batch.filename))
         except SystemExit:
             env_batch_has_changed = True
 
@@ -74,9 +70,9 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
-        if job in ("case.test","case.run"):
-            check_case(case)
-            check_DA_settings(case)
+        if job == case.get_primary_job():
+            case.check_case()
+            case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
                     fd.write( socket.gethostname())
@@ -103,11 +99,11 @@ manual edits to these file will be lost!
 
     return xml_jobid_text
 
-def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
+def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
-    if case.get_value("TEST"):
-        caseroot = case.get_value("CASEROOT")
-        casebaseid = case.get_value("CASEBASEID")
+    if self.get_value("TEST"):
+        caseroot = self.get_value("CASEROOT")
+        casebaseid = self.get_value("CASEBASEID")
         # This should take care of the race condition where the submitted job
         # begins immediately and tries to set RUN phase. We proactively assume
         # a passed SUBMIT phase. If this state is already PASS, don't set it again
@@ -119,33 +115,33 @@ def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
                 ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
     try:
-        functor = lambda: _submit(case, job=job, no_batch=no_batch, prereq=prereq,
+        functor = lambda: _submit(self, job=job, no_batch=no_batch, prereq=prereq,
                                   resubmit=resubmit, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
                                   batch_args=batch_args)
-        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"),
+        run_and_log_case_status(functor, "case.submit", caseroot=self.get_value("CASEROOT"),
                                 custom_success_msg_functor=verbatim_success_msg)
     except:
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
-        if case.get_value("TEST"):
+        if self.get_value("TEST"):
             with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
                 ts.set_status(SUBMIT_PHASE, TEST_FAIL_STATUS)
 
         raise
 
-def check_case(case):
-    check_lockedfiles(case)
-    create_namelists(case) # Must be called before check_all_input_data
+def check_case(self):
+    self.check_lockedfiles()
+    self.create_namelists() # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
-    check_all_input_data(case)
+    self.check_all_input_data()
 
-    expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
+    expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")
 
-def check_DA_settings(case):
-    script = case.get_value("DATA_ASSIMILATION_SCRIPT")
-    cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+def check_DA_settings(self):
+    script = self.get_value("DATA_ASSIMILATION_SCRIPT")
+    cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     if len(script) > 0 and os.path.isfile(script) and cycles > 0:
         logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
