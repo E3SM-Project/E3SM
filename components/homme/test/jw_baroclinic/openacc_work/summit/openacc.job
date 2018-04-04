@@ -37,7 +37,7 @@ setenv OMP_STACKSIZE 64M
 #setenv PGI_ACC_DEBUG 3
 
 set NUM_NODES=1
-set TASKS_PER_NODE=6
+set TASKS_PER_NODE=42
 setenv OMP_NUM_THREADS 1
 
 set NTASKS = $NUM_NODES
@@ -47,7 +47,7 @@ echo $mpirun
 
 set u_perturb = 1
 set rotate = 0
-set ne    =  8     # horizontal resolution   4,16,30,60,120,240
+set ne    = 30     # horizontal resolution   4,16,30,60,120,240
 set nlev  = 72     # vertical resolution  26,30,60,64,96
 set qsize = 40     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
@@ -133,6 +133,6 @@ sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 cp $exedir/$exe .
 
 date
-$mpirun nvprof -o homme.%h.%p.nvvp ./$exe < input.nl
+$mpirun ./$exe < input.nl
 date
 

@@ -907,8 +907,8 @@ contains
     use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
-    use edge_mod              , only: edgeVpack, edgeVunpack
-    use bndry_mod             , only: bndry_exchangeV
+    use edge_mod              , only: edgeVpack_openacc, edgeVunpack_openacc
+    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
     use openacc_utils_mod     , only: copy_ondev_async
@@ -941,29 +941,35 @@ contains
         enddo
       enddo
     enddo
-    !$acc update host(derived_divdp,derived_divdp_proj,derived_omega_p,derived_eta_dot_dpdn) async(1)
+    call edgeVpack_openacc( edgeAdv3 , derived_eta_dot_dpdn , nlevp , 0          , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
+    call edgeVpack_openacc( edgeAdv3 , derived_omega_p      , nlev  , nlevp      , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
+    call edgeVpack_openacc( edgeAdv3 , derived_divdp_proj   , nlev  , nlevp+nlev , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
     !$acc wait(1)
     !$omp end master
     !$omp barrier
-    !call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp , asyncid=1)
-    do ie = nets , nete
-      call edgeVpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlevp,ie) , nlevp , 0          , ie )
-      call edgeVpack( edgeAdv3 , derived_omega_p     (:,:,1:nlev ,ie) , nlev  , nlevp      , ie )
-      call edgeVpack( edgeAdv3 , derived_divdp_proj  (:,:,1:nlev ,ie) , nlev  , nlevp+nlev , ie )
-    enddo
 
     call bndry_exchangeV( hybrid , edgeAdv3   )
 
-    do ie = nets , nete
-      call edgeVunpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlevp,ie) , nlevp , 0          , ie )
-      call edgeVunpack( edgeAdv3 , derived_omega_p     (:,:,1:nlev ,ie) , nlev  , nlevp      , ie )
-      call edgeVunpack( edgeAdv3 , derived_divdp_proj  (:,:,1:nlev ,ie) , nlev  , nlevp+nlev , ie )
+    !$omp barrier
+    !$omp master
+    call edgeVunpack_openacc( edgeAdv3 , derived_eta_dot_dpdn , nlevp , 0          , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
+    call edgeVunpack_openacc( edgeAdv3 , derived_omega_p      , nlev  , nlevp      , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
+    call edgeVunpack_openacc( edgeAdv3 , derived_divdp_proj   , nlev  , nlevp+nlev , elem(:) , 1 , nelemd , 1 , 1 , asyncid=1 )
+    !$acc parallel loop gang vector collapse(4) present(derived_eta_dot_dpdn,derived_omega_p,derived_divdp_proj,elem) async(1)
+    do ie = 1 , nelemd
       do k = 1 , nlev
-        derived_eta_dot_dpdn(:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_eta_dot_dpdn(:,:,k,ie) 
-        derived_omega_p     (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_omega_p     (:,:,k,ie)
-        derived_divdp_proj  (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_divdp_proj  (:,:,k,ie)   
+        do j = 1 , np
+          do i = 1 , np
+            derived_eta_dot_dpdn(i,j,k,ie) = elem(ie)%rspheremp(i,j) * derived_eta_dot_dpdn(i,j,k,ie) 
+            derived_omega_p     (i,j,k,ie) = elem(ie)%rspheremp(i,j) * derived_omega_p     (i,j,k,ie)
+            derived_divdp_proj  (i,j,k,ie) = elem(ie)%rspheremp(i,j) * derived_divdp_proj  (i,j,k,ie)   
+          enddo
+        enddo
       enddo
     enddo
+    !$acc update host(derived_divdp,derived_divdp_proj,derived_omega_p,derived_eta_dot_dpdn) async(1)
+    !$omp end master
+    !$omp barrier
   end subroutine precompute_divdp
 
 end module prim_advection_mod
