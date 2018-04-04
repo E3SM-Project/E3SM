@@ -4781,35 +4781,42 @@ call mpas_log_write('Done with soil consistency check')
       end do
 
 
-      rw= 0.0
-      w = 0.0
-      do iEdge = 1,nEdges
+      rw(:,:) = 0.0
 
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
+      do iCell=1,nCellsSolve
 
-         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
-         do k = 2, nVertLevels
-            flux =  (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
-            rw(k,cell2) = rw(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux
-            rw(k,cell1) = rw(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux
+         do i=1,nEdgesOnCell(iCell)
+            iEdge=edgesOnCell(i,iCell)
 
-            if (config_theta_adv_order ==3) then 
-               rw(k,cell2) = rw(k,cell2)    &
-                            - sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
-                              (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb3(k,2,iEdge)*flux
-               rw(k,cell1) = rw(k,cell1)    &
-                            + sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
-                              (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb3(k,1,iEdge)*flux
-            end if
+            do k = 2, nVertLevels
+               flux =  (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
+               if (iCell == cellsOnEdge(1,iEdge)) then
+                  rw(k,iCell) = rw(k,iCell) - (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))*zb(k,1,iEdge)*flux
+               else
+                  rw(k,iCell) = rw(k,iCell) + (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))*zb(k,2,iEdge)*flux
+               end if
+
+               if (config_theta_adv_order ==3) then 
+                  if (iCell == cellsOnEdge(1,iEdge)) then
+                     rw(k,iCell) = rw(k,iCell)    &
+                                  + sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
+                                    (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))*zb3(k,1,iEdge)*flux
+                  else
+                     rw(k,iCell) = rw(k,iCell)    &
+                                  - sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
+                                    (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))*zb3(k,2,iEdge)*flux
+                  end if
+               end if
+
+            end do
 
          end do
-         end if
 
       end do
 
+
       ! Compute w from rho_zz and rw
-      do iCell=1,nCells
+      do iCell=1,nCellsSolve
          do k=2,nVertLevels
             w(k,iCell) = rw(k,iCell) / (fzp(k) * rho_zz(k-1,iCell) + fzm(k) * rho_zz(k,iCell))
          end do
