@@ -170,8 +170,8 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 #--------------------------------------------------------------------
 if ( $OCN_GRID eq 'oEC60to30v3') {
         if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
-	$ic_date = '180328';
-	$ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0049-01-01.no-xtime';
+	$ic_date = '180403';
+	$ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0061-01-01.no-xtime';
         }
 }
 

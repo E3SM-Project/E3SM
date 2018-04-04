@@ -155,8 +155,8 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 #  modify initial condition file if ice BGC is turned on
 #--------------------------------------------------------------------
 if ( $ICE_GRID eq 'oEC60to30v3' && $ICE_BGC eq 'ice_bgc') {
-        $grid_date = '180328';
-        $grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0049-01-01.no-xtime';
+        $grid_date = '180403';
+        $grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0061-01-01.no-xtime';
 }
 
 chdir "$CASEBUILD/mpas-ciceconf";
