@@ -252,7 +252,7 @@ contains
     call initEdgeBuffer (par,edgeAdv   ,elem(:),qsize*nlev            )
     call initEdgeBuffer (par,edgeAdv_p1,elem(:),qsize*nlev + nlev     ) 
     call initEdgeBuffer (par,edgeAdvQ2 ,elem(:),qsize*nlev*2          )
-    call initEdgeBuffer (par,edgeAdv3  ,elem(:),nlev*3                )
+    call initEdgeBuffer (par,edgeAdv3  ,elem(:),nlev*3+1              )
     call initEdgeSBuffer(par,edgeMinMax,elem(:),qsize*nlev*2          )
 
     allocate(dp_star(np,np,nlev,nelemd))
@@ -281,15 +281,15 @@ contains
 
     !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens,data_pack,data_pack2)
     !$acc enter data pcopyin(hvcoord%dp0)
-    !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
-    !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
-    !$acc enter data pcopyin(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
-    !$acc enter data pcopyin(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
-    !$acc enter data pcopyin(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
-    !$acc enter data pcopyin(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
-    !$acc enter data pcopyin(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
-    !$acc enter data pcopyin(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
-    !$acc enter data pcopyin(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
+    !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1         ,edgeAdv         ,edgeAdv_p1         ,edgeAdvQ2         ,edgeAdv3         )
+    !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf     ,edgeAdv%buf     ,edgeAdv_p1%buf     ,edgeAdvQ2%buf     ,edgeAdv3%buf     )
+    !$acc enter data pcopyin(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive ,edgeAdv%receive ,edgeAdv_p1%receive ,edgeAdvQ2%receive ,edgeAdv3%receive )
+    !$acc enter data pcopyin(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap  ,edgeAdv%putmap  ,edgeAdv_p1%putmap  ,edgeAdvQ2%putmap  ,edgeAdv3%putmap  )
+    !$acc enter data pcopyin(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap  ,edgeAdv%getmap  ,edgeAdv_p1%getmap  ,edgeAdvQ2%getmap  ,edgeAdv3%getmap  )
+    !$acc enter data pcopyin(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse ,edgeAdv%reverse ,edgeAdv_p1%reverse ,edgeAdvQ2%reverse ,edgeAdv3%reverse )
+    !$acc enter data pcopyin(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag     ,edgeAdv%tag     ,edgeAdv_p1%tag     ,edgeAdvQ2%tag     ,edgeAdv3%tag     )
+    !$acc enter data pcopyin(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest,edgeAdv3%srequest)
+    !$acc enter data pcopyin(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest,edgeAdv3%rrequest)
 
     !$omp end master
     !$omp barrier
@@ -945,18 +945,19 @@ contains
     !$acc wait(1)
     !$omp end master
     !$omp barrier
+    !call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp , asyncid=1)
     do ie = nets , nete
-      call edgeVpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlev,ie) , nlev , 0      , ie )
-      call edgeVpack( edgeAdv3 , derived_omega_p(:,:,1:nlev,ie)      , nlev , nlev   , ie )
-      call edgeVpack( edgeAdv3 , derived_divdp_proj(:,:,1:nlev,ie)   , nlev , nlev*2 , ie )
+      call edgeVpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlevp,ie) , nlevp , 0          , ie )
+      call edgeVpack( edgeAdv3 , derived_omega_p     (:,:,1:nlev ,ie) , nlev  , nlevp      , ie )
+      call edgeVpack( edgeAdv3 , derived_divdp_proj  (:,:,1:nlev ,ie) , nlev  , nlevp+nlev , ie )
     enddo
 
     call bndry_exchangeV( hybrid , edgeAdv3   )
 
     do ie = nets , nete
-      call edgeVunpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlev,ie) , nlev , 0      , ie )
-      call edgeVunpack( edgeAdv3 , derived_omega_p(:,:,1:nlev,ie)      , nlev , nlev   , ie )
-      call edgeVunpack( edgeAdv3 , derived_divdp_proj(:,:,1:nlev,ie)   , nlev , nlev*2 , ie )
+      call edgeVunpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlevp,ie) , nlevp , 0          , ie )
+      call edgeVunpack( edgeAdv3 , derived_omega_p     (:,:,1:nlev ,ie) , nlev  , nlevp      , ie )
+      call edgeVunpack( edgeAdv3 , derived_divdp_proj  (:,:,1:nlev ,ie) , nlev  , nlevp+nlev , ie )
       do k = 1 , nlev
         derived_eta_dot_dpdn(:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_eta_dot_dpdn(:,:,k,ie) 
         derived_omega_p     (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_omega_p     (:,:,k,ie)
