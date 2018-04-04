@@ -74,6 +74,7 @@ contains
     integer          :: lxtype   ! local external type (in case logical variable)
     !----------------------------------------------------
 
+    readvar = .false.
     if (flag == 'define') then
 
        if ( xtype == ncd_log )then
