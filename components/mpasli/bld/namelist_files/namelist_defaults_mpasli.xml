@@ -21,19 +21,26 @@
 <config_calving>'thickness_threshold'</config_calving>
 <config_calving_topography>-500.0</config_calving_topography>
 <config_calving_thickness>300.0</config_calving_thickness>
+<config_calving_eigencalving_parameter_source>'scalar'</config_calving_eigencalving_parameter_source>
+<config_calving_eigencalving_parameter_scalar_value>3.14e16</config_calving_eigencalving_parameter_scalar_value>
 <config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
 
 <!-- thermal_solver -->
 <config_thermal_solver>'none'</config_thermal_solver>
+<config_thermal_calculate_bmb>.true.</config_thermal_calculate_bmb>
 <config_temperature_init>'file'</config_temperature_init>
 <config_thermal_thickness>1.0</config_thermal_thickness>
 <config_surface_air_temperature_source>'file'</config_surface_air_temperature_source>
 <config_surface_air_temperature_value>273.15</config_surface_air_temperature_value>
+<config_surface_air_temperature_lapse_rate>0.01</config_surface_air_temperature_lapse_rate>
 <config_basal_heat_flux_source>'file'</config_basal_heat_flux_source>
 <config_basal_heat_flux_value>0.0</config_basal_heat_flux_value>
 <config_basal_mass_bal_float>'file'</config_basal_mass_bal_float>
+<config_basal_mass_bal_seroussi_amplitude>0.0</config_basal_mass_bal_seroussi_amplitude>
+<config_basal_mass_bal_seroussi_period>1.0</config_basal_mass_bal_seroussi_period>
+<config_basal_mass_bal_seroussi_phase>0.0</config_basal_mass_bal_seroussi_phase>
 <config_bmlt_float_flux>0.0</config_bmlt_float_flux>
 <config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 
