@@ -1,7 +1,7 @@
 #!/bin/bash
 
-do_cmake=0
-do_clean=0
+do_cmake=1
+do_clean=1
 do_make=1
  
 HOMME_ROOT=/ccs/home/$USER/ACME_summit/components/homme
@@ -32,7 +32,7 @@ cmake                                                                           
   -DBUILD_HOMME_SWEQX=FALSE                                                      \
   -DBUILD_HOMME_PREQX=TRUE                                                       \
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                   \
-  -DENABLE_OPENMP=FALSE                                                          \
+  -DENABLE_OPENMP=TRUE                                                           \
   -DCMAKE_EXE_LINKER_FLAGS="${NCLIBS}"                                           \
   -DOPENACC_Linker_FLAGS="-ta=nvidia,cuda9.0,pinned,cc70"                        \
   $HOMME_ROOT                                                       || exit -1                                              

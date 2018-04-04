@@ -60,6 +60,9 @@ done
 [ "$EXE"            == ""   ] && echo "Must specify an executable"                        && exit -1
 [ "$TASKS_PER_NODE" == "-1" ] && echo "-N not specified. Defaulting to 84 tasks per node (smt2)" && TASKS_PER_NODE=84
 
+#Set OMP NUM THREADS
+[ "$OMP_NUM_THREADS" == "" ] && export OMP_NUM_THREADS=1
+
 if [ "$GPU" == "1" ]; then
 # NUM_NODES=`echo "$NTASKS/$TASKS_PER_NODE" | bc`
 # Calculates ceil of NTASKS/TASKS_PER_NODE 
@@ -70,7 +73,7 @@ if [ "$GPU" == "1" ]; then
   CPU_PER_RS=7
 # By default 'jsrun' does not exit (i.e. hung) if any process / thread fails.
 # To avoid this, pass the option '-X 1' to exit on error
-  mpirun="jsrun -X 1 --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --gpu_per_rs 1 --latency_priority gpu-cpu $EXE"
+  mpirun="jsrun -X 1 --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --gpu_per_rs 1 -b packed:$OMP_NUM_THREADS -d packed --latency_priority gpu-cpu $EXE"
   echo "Running: $mpirun"
 else
 # Calculates ceil of NTASKS/TASKS_PER_NODE 
@@ -79,7 +82,7 @@ else
   NRS=`echo "$NUM_NODES*$RS_PER_NODE" | bc`
   TASKS_PER_RS=`echo "$TASKS_PER_NODE/$RS_PER_NODE" | bc`
   CPU_PER_RS=21
-  mpirun="jsrun -X 1 --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --latency_priority cpu-cpu --bind=proportional-packed:1 -d plane:$TASKS_PER_RS $EXE"
+  mpirun="jsrun -X 1 --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS                -b packed:$OMP_NUM_THREADS -d packed --latency_priority cpu-cpu $EXE"
   echo "Running: $mpirun"
 fi
 

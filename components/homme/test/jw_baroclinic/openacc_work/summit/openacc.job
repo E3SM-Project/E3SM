@@ -2,11 +2,11 @@
 #BSUB -P stf006accept
 #BSUB -nnodes 1
 #BSUB -W 15
-#BSUB -alloc_flags gpumps
+#BSUB -alloc_flags "gpumps smt2"
 #BSUB -J baroclinic
-#BSUB -q new
 #BSUB -o .o%J
 #BSUB -e .o%J
+#BSUB -q new
 
 #  The goal is to configure HOMME to be identical to how it is used in CAM. We propose two configuations:
 #  (1) CAM5, with 30 levels and 25 tracers
@@ -38,7 +38,7 @@ setenv OMP_STACKSIZE 64M
 
 set NUM_NODES=1
 set TASKS_PER_NODE=42
-setenv OMP_NUM_THREADS 1
+setenv OMP_NUM_THREADS 2
 
 set NTASKS = $NUM_NODES
 @ NTASKS *= $TASKS_PER_NODE
@@ -47,7 +47,7 @@ echo $mpirun
 
 set u_perturb = 1
 set rotate = 0
-set ne    = 30     # horizontal resolution   4,16,30,60,120,240
+set ne    =  8     # horizontal resolution   4,16,30,60,120,240
 set nlev  = 72     # vertical resolution  26,30,60,64,96
 set qsize = 40     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
