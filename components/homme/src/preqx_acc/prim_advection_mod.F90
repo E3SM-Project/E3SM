@@ -911,7 +911,7 @@ contains
     use bndry_mod             , only: bndry_exchangeV
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
-    use openacc_utils_mod     , only: copy_ondev
+    use openacc_utils_mod     , only: copy_ondev_async
     use perf_mod              , only: t_startf, t_stopf
     implicit none
     type(element_t)      , intent(inout) :: elem(:)
@@ -919,27 +919,33 @@ contains
     type (derivative_t)  , intent(in   ) :: deriv
     real(kind=real_kind) , intent(in   ) :: dt
     integer              , intent(in   ) :: nets , nete , n0_qdp
-    integer :: ie , k
+    integer :: ie , k, j, i
     real(kind=real_kind), pointer, dimension(:,:,:) :: DSSvar
     call copy_qdp1_h2d(elem,n0_qdp,nets,nete)
     !$omp barrier
     !$omp master
     !$acc update device(derived_vn0) async(1)
     call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1,asyncid=1)
-    !$acc wait(1)
-    call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
-    !$acc update host(derived_divdp,derived_divdp_proj)
-    !$omp end master
-    !$omp barrier
-    call t_startf('derived PEU')
-    do ie = nets , nete
+    call copy_ondev_async(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)),1)
+    !$acc parallel loop gang vector collapse(4) present(derived_eta_dot_dpdn,derived_omega_p,derived_divdp_proj,elem) async(1)
+    do ie = 1,nelemd
       ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
       ! all zero so we only have to DSS 1:nlev
       do k = 1 , nlev
-        derived_eta_dot_dpdn(:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_eta_dot_dpdn(:,:,k,ie) 
-        derived_omega_p     (:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_omega_p     (:,:,k,ie)
-        derived_divdp_proj  (:,:,k,ie) = elem(ie)%spheremp(:,:) * derived_divdp_proj  (:,:,k,ie)   
+        do j = 1 , np
+          do i = 1 , np
+            derived_eta_dot_dpdn(i,j,k,ie) = elem(ie)%spheremp(i,j) * derived_eta_dot_dpdn(i,j,k,ie) 
+            derived_omega_p     (i,j,k,ie) = elem(ie)%spheremp(i,j) * derived_omega_p     (i,j,k,ie)
+            derived_divdp_proj  (i,j,k,ie) = elem(ie)%spheremp(i,j) * derived_divdp_proj  (i,j,k,ie)   
+          enddo
+        enddo
       enddo
+    enddo
+    !$acc update host(derived_divdp,derived_divdp_proj,derived_omega_p,derived_eta_dot_dpdn) async(1)
+    !$acc wait(1)
+    !$omp end master
+    !$omp barrier
+    do ie = nets , nete
       call edgeVpack( edgeAdv3 , derived_eta_dot_dpdn(:,:,1:nlev,ie) , nlev , 0      , ie )
       call edgeVpack( edgeAdv3 , derived_omega_p(:,:,1:nlev,ie)      , nlev , nlev   , ie )
       call edgeVpack( edgeAdv3 , derived_divdp_proj(:,:,1:nlev,ie)   , nlev , nlev*2 , ie )
@@ -957,7 +963,6 @@ contains
         derived_divdp_proj  (:,:,k,ie) = elem(ie)%rspheremp(:,:) * derived_divdp_proj  (:,:,k,ie)   
       enddo
     enddo
-    call t_stopf('derived PEU')
   end subroutine precompute_divdp
 
 end module prim_advection_mod
