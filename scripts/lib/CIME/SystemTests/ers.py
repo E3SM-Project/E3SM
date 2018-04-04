@@ -43,6 +43,11 @@ class ERS(SystemTestsCommon):
         # Compare restart file
         self._component_compare_test("base", "rest")
 
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        if not model_only:
+            self._case.case_setup(test_mode=True, reset=True)
+        super(ERS, self).build_phase(sharedlib_only=sharedlib_only, model_only=model_only)
+
     def run_phase(self):
         self._ers_first_phase()
         self._ers_second_phase()
