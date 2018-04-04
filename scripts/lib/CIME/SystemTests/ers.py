@@ -37,16 +37,12 @@ class ERS(SystemTestsCommon):
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
-        logger.info("doing an {} {} restart test".format(str(stop_new), stop_option))
+        logger.info("doing an {} {} restart test, skip_pnl={}".format(str(stop_new), stop_option, self._skip_pnl))
+        self._case.create_namelists()
         self.run_indv(suffix="rest")
 
         # Compare restart file
         self._component_compare_test("base", "rest")
-
-    def build_phase(self, sharedlib_only=False, model_only=False):
-        if not model_only:
-            self._case.case_setup(test_mode=True, reset=True)
-        super(ERS, self).build_phase(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run_phase(self):
         self._ers_first_phase()

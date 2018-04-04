@@ -91,10 +91,6 @@ class ERI(SystemTestsCommon):
         clone1.set_value("REST_N", rest_n1)
         clone1.set_value("HIST_OPTION", "never")
         clone1.flush()
-        clone1.case_setup(test_mode=True, reset=True)
-
-        # if the initial case is hybrid this will put the reference data in the correct location
-        clone1.check_all_input_data()
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
@@ -103,6 +99,9 @@ class ERI(SystemTestsCommon):
             if "inithist" not in open("user_nl_cam", "r").read():
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
+        clone1.case_setup(test_mode=True, reset=True)
+        # if the initial case is hybrid this will put the reference data in the correct location
+        clone1.check_all_input_data()
 
         self.run_indv(st_archive=True, suffix=None)
 
