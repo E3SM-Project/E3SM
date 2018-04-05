@@ -3,7 +3,7 @@ package:
     version: {{ environ['VERSION'] }}
 
 source:
-    git_url: git://github.com/ACME-Climate/acme_diags
+    git_url: https://github.com/ACME-Climate/acme_diags
 
 build:
     script: python setup.py install
@@ -13,21 +13,23 @@ build:
 
 requirements:
   build:
-    - python
+    - python 2
     - setuptools
 
   run:
+    - python 2
     - cdp 1.3.0
-    - vcs 2.12
-    - vtk-cdat 7.1.0.2.12
-    - vcsaddons 2.12
-    - dv3d 2.12
-    - cdms2 2.12
-    - cdutil 2.12
-    - genutil 2.12
-    - cdtime 2.12
+    - vcs 8.0
+    - vtk-cdat 8.0.1.8.0
+    - vcsaddons 8.0
+    - dv3d 8.0
+    - mesalib
+    - cdms2 3.0
+    - cdutil 8.0
+    - genutil 8.0
+    - cdtime 3.0
     - numpy
-    - matplotlib <2.1.0
+    - matplotlib
     - cartopy
     - beautifulsoup4
     - lxml
