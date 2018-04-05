@@ -9,7 +9,7 @@ my $core = "landice";
 my $esm = "ACME";
 
 if ($#ARGV == -1) {
-    die " ERROR $component.buildlib: must specify a caseroot input argument";
+    die " ERROR $component buildlib: must specify a caseroot input argument";
 }
 
 my ($CASEROOT) = @ARGV;
@@ -33,10 +33,10 @@ my $MALI_USE_ALBANY = `./xmlquery MALI_USE_ALBANY -value`;
 my $srccpy = "cp -fpR $SRCROOT/components/$component/model/src/* $OBJROOT/$component_dir/source/.";
 mkdir "$OBJROOT/$component_dir";
 mkdir "$OBJROOT/$component_dir/source";
-system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
 
 my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
-system($drvcpy) == 0 or die "ERROR: $component.buildlib $drvcpy failed: $?\n";
+system($drvcpy) == 0 or die "ERROR: $component buildlib $drvcpy failed: $?\n";
 
 my $root_path = "$OBJROOT/$component_dir/source";
 
@@ -63,12 +63,12 @@ if ( $MALI_USE_ALBANY eq "TRUE" ) {
 
 print "Compiling MALI with this command: $bldcmd \n";
 
-system($bldcmd) == 0 or die "ERROR: $component.buildlib $bldcmd failed: $?\n";
+system($bldcmd) == 0 or die "ERROR: $component buildlib $bldcmd failed: $?\n";
 
 my $cpyobjs = "find $root_path -name *.mod -exec cp -p {} $OBJROOT/$component_dir/obj/. \\\;";
 
-system($cpyobjs) == 0 or die "ERROR: $component.buildlib $cpyobjs failed: $?\n";
+system($cpyobjs) == 0 or die "ERROR: $component buildlib $cpyobjs failed: $?\n";
 
 my $cpylib = "cp -p $root_path/lib$component_dir.a ${LIBROOT}/lib$component_dir.a";
 
-system($cpylib) == 0 or die "ERROR: $component.buildlib $cpylib failed: $?\n";
+system($cpylib) == 0 or die "ERROR: $component buildlib $cpylib failed: $?\n";
