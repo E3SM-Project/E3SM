@@ -27,6 +27,7 @@ class ERI(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
         self._testname = "ERI"
+        self._skip_pnl = False
 
     def run_phase(self):
         caseroot = self._case.get_value("CASEROOT")
@@ -142,13 +143,10 @@ class ERI(SystemTestsCommon):
         rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
 
-        if not os.path.exists(rundir2):
-            os.makedirs(rundir2)
-
         _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
-        self._skip_pnl = False
         # run ref2 case (all component history files will go to short term archiving)
+        clone2.case_setup(test_mode=True, reset=True)
 
         self.run_indv(suffix="hybrid", st_archive=True)
 
