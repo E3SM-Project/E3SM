@@ -221,7 +221,7 @@
 		            possible_values="Any real value"
 		/>
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
-		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
+		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr$^{-1}$ Pa$^{-3}$."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_enhancementFactor" type="real" default_value="1.0" units="none"

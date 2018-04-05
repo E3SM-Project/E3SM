@@ -54,31 +54,31 @@
 		<var name="iceThicknessMin" type="real" dimensions="Time" units="m"
 			description="minimum ice thickness in domain"
 		/>
-		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total, area integrated surface mass balance. Positive values are ice gain."
 		/>
-		<var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}^"
+		<var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}"
 			description="average sfcMassBal, as a thickness rate. Positive values are ice gain."
 		/>
-		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total, area integrated basal mass balance. Positive values are ice gain."
 		/>
-		<var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total, area integrated grounded basal mass balance. Positive values are ice gain."
 		/>
-		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}"
 			description="average groundedBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
-		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total, area integrated floating basal mass balance. Positive values are ice gain."
 		/>
-		<var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+		<var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}"
 			description="average floatingBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
-		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total, area integrated mass loss due to calving. Positive values are ice loss."
 		/>
-		<var name="groundingLineFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="groundingLineFlux" type="real" dimensions="Time" units="kg yr^{-1}"
 			description="total mass flux across all grounding lines.  Note that flux from floating to grounded ice makes a negative contribution to this metric."
 		/>
                 <var name="surfaceSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
