@@ -1,4 +1,4 @@
-# ACME Diagnostics Package
+# E3SM Diagnostics Package
 
 [![Install](https://anaconda.org/acme/acme_diags/badges/installer/conda.svg)](https://anaconda.org/acme/acme_diags)
 [![Downloads](https://anaconda.org/acme/acme_diags/badges/downloads.svg)](https://anaconda.org/acme/acme_diags)
@@ -20,7 +20,7 @@
   * [Model vs Observation: comparing temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
-This diagnostics package is constructed for supporting the diagnostics task of DOE's [Accelerated Climate Modeling for Energy (ACME) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
+This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
 
 * fully integrates the functionality of NCAR's AMWG diagnostics package.
 * utilizes most updated observational datasets, including remote sensing, reanalysis and in-situ datasets. 
@@ -29,9 +29,11 @@ This diagnostics package is constructed for supporting the diagnostics task of D
 * is flexible for user specified diagnostics and being configured for use by other climate models.
 
 ## Current State <a name="current-state"></a>
-Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3, 13 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), and 2d joint histogram for COSP cloud simulator output (Figure 5), for climatology seasonal means, are done for testing. 
+Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented. 
 
 The package features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension. 
+
+In addition to default model versus observation comparison, the package also provide support for model versus model and obs versus obs comparisons. 
 
 <img src="misc/example_fig1.png" alt="Figure1" style="width: 280px;"/>
 <h5 align="center">Figure 1: An example of the lat-lon contour plots for air temperature at 850 mb with tropical ocean region considered</h5> 
@@ -47,3 +49,11 @@ The package features built-in user diagnostics, by specifying user desired diagn
 
 <img src="misc/example_fig5.png" alt="Figure5" style="width: 280px;"/>
 <h5 align="center">Figure 5: An example of 2d joint histogram plot using COSP simulator output</h5>
+
+<img src="misc/example_fig6.png" alt="Figure6" style="width: 280px;"/>
+<h5 align="center">Figure 6: An example of table summarizing metrics calculated based on lat-lon contour plots diagnostics</h5>
+
+<img src="misc/example_fig7.png" alt="Figure7" style="width: 280px;"/>
+<h5 align="center">Figure 7: An example of Taylor diagram summarizing metrics calculated based on lat-lon contour plots diagnostics of several key variables</h5>
+
+
