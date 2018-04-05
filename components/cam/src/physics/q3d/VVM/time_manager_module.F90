@@ -1,9 +1,9 @@
 MODULE time_manager_module
 ! Defines the year and fractional Julian day of the current time step.
 
-USE shr_kind_mod, only: dbl_kind => shr_kind_r8
+USE shr_kind_mod, only: r8 => shr_kind_r8
 
-USE constld,  only: d0_0,dt
+USE constld,  only: dt
 USE timeinfo, only: rjday0,rjday,utc_time,iyr,imonth,iday
 
 IMPLICIT NONE
@@ -33,34 +33,34 @@ CONTAINS
       INTEGER, INTENT(IN) :: itt   ! time step count
 
       INTEGER :: iyear0,imonth0,iday0,jday0, ntspr
-      REAL (KIND=dbl_kind) :: remder, hour0, secday
-      DATA SECDAY/86400._dbl_kind/
+      REAL (KIND=r8) :: remder, hour0, secday
+      DATA SECDAY/86400.0_r8/
 
 ! Specify year, month, day, and hour of initial time step
 
       iyear0  = 1
       imonth0 = 1
       iday0   = 1
-      hour0   = D0_0
+      hour0   = 0.0_r8
 
 !  Get Julian day
       CALL JULIAN(iyear0,imonth0,iday0,jday0)
 
 !  Specify model start time in fractional Julian day
-      rjday0 = REAL(jday0) + hour0/24._dbl_kind
+      rjday0 = REAL(jday0) + hour0/24.0_r8
 
 !  Julian day of current time step
       rjday = rjday0 + (ITT-1) * DT / SECDAY
       iyr = iyear0
 
-      IF (rjday .GE. 366.0_dbl_kind) THEN
-        rjday = rjday - 365.0_dbl_kind
+      IF (rjday .GE. 366.0_r8) THEN
+        rjday = rjday - 365.0_r8
         iyr = iyr + 1
       ENDIF
 
 !  Month, day, and UTC time of current time step
       CALL MODAY(iyr,imonth,iday,INT(rjday))
-      utc_time = (rjday - INT(rjday)) * 24.0_dbl_kind
+      utc_time = (rjday - INT(rjday)) * 24.0_r8
 
    END SUBROUTINE time_manager
 

@@ -1,7 +1,7 @@
 MODULE halo_q
 ! Map the halo values from neighboring cube surface (data at the q-point). 
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t 
 
 USE parmsld,        only: ntracer,nk1,nk2,nhalo
@@ -225,7 +225,7 @@ CONTAINS
                               channel%seg(num_seg)%jhalo_loc_t,                &
                               channel%seg(num_seg)%cbeta_t,                    &
                               channel%seg(num_seg)%hbeta_t,                    &
-                              channel%seg(num_seg)%QT3D(:,:,2:nk2))   
+                              channel%seg(num_seg)%QT3D(:,:,2:nk2,nt))   
           ENDDO                           
         ELSE
           ! y-array
@@ -234,7 +234,7 @@ CONTAINS
                               channel%seg(num_seg)%ihalo_loc_t,                &
                               channel%seg(num_seg)%calpha_t,                   &
                               channel%seg(num_seg)%halpha_t,                   &
-                              channel%seg(num_seg)%QT3D(:,:,2:nk2))
+                              channel%seg(num_seg)%QT3D(:,:,2:nk2,nt))
           ENDDO 
         ENDIF                      
         endif                        
@@ -395,17 +395,17 @@ CONTAINS
       INTEGER,DIMENSION(mim:mip,nhalo),INTENT(IN) :: IHALO_LOC 
       
       ! alpha values of the regular q-grid points   
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip),INTENT(IN) :: CALPHA
+      REAL (KIND=r8),DIMENSION(mim:mip),INTENT(IN) :: CALPHA
         
       ! alpha values of the target points 
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,nhalo),INTENT(IN) :: HALPHA
+      REAL (KIND=r8),DIMENSION(mim:mip,nhalo),INTENT(IN) :: HALPHA
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,KDIMN) :: HMV,HPV  
+      REAL (KIND=r8),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mim:mip,KDIMN) :: HMV,HPV  
       INTEGER :: I,J,K,I1VAL,I2VAL
       
       IF (MODE.EQ.2)  THEN
@@ -500,17 +500,17 @@ CONTAINS
       INTEGER,DIMENSION(mim:mip,nhalo),INTENT(IN) :: IHALO_LOC 
       
       ! alpha values of the regular q-grid points   
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip),INTENT(IN) :: CALPHA
+      REAL (KIND=r8),DIMENSION(mim:mip),INTENT(IN) :: CALPHA
         
       ! alpha values of the target points 
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,nhalo),INTENT(IN) :: HALPHA
+      REAL (KIND=r8),DIMENSION(mim:mip,nhalo),INTENT(IN) :: HALPHA
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip) :: HMV,HPV  
+      REAL (KIND=r8),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mim:mip) :: HMV,HPV  
       INTEGER :: I,J,I1VAL,I2VAL
       
       IF (MODE.EQ.2)  THEN
@@ -532,12 +532,10 @@ CONTAINS
           I1VAL = IHALO_LOC(I,J)
           I2VAL = I1VAL + 1
        
-          DO K=1,KDIMN 
            HMV(I)= FINTRP (1,HALPHA(I,J),CALPHA(I1VAL),A(I1VAL,1-J)   &
                                         ,CALPHA(I2VAL),A(I2VAL,1-J))
            HPV(I)= FINTRP (1,HALPHA(I,J),CALPHA(I1VAL),A(I1VAL,MJ1+J) &
-                                        ,CALPHA(I2VAL),A(I2VAL,MJ1+J)) 
-          ENDDO                        
+                                        ,CALPHA(I2VAL),A(I2VAL,MJ1+J))                        
          ENDDO                                                                     
 
          DO I=mim,mip
@@ -598,17 +596,17 @@ CONTAINS
       INTEGER,DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: JHALO_LOC 
       
       ! beta values of the regular q-grid points       
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp),INTENT(IN) :: CBETA
+      REAL (KIND=r8),DIMENSION(mjm:mjp),INTENT(IN) :: CBETA
       
       ! beta values of the target points 
-      REAL (KIND=dbl_kind),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: HBETA
+      REAL (KIND=r8),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: HBETA
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp,KDIMN) :: HMV,HPV    
+      REAL (KIND=r8),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mjm:mjp,KDIMN) :: HMV,HPV    
       INTEGER :: I,J,K,J1VAL,J2VAL
       
       IF (MODE.EQ.2)  THEN
@@ -702,17 +700,17 @@ CONTAINS
       INTEGER,DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: JHALO_LOC 
       
       ! beta values of the regular q-grid points       
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp),INTENT(IN) :: CBETA
+      REAL (KIND=r8),DIMENSION(mjm:mjp),INTENT(IN) :: CBETA
       
       ! beta values of the target points 
-      REAL (KIND=dbl_kind),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: HBETA
+      REAL (KIND=r8),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: HBETA
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp) :: HMV,HPV    
+      REAL (KIND=r8),DIMENSION(NLEN) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mjm:mjp) :: HMV,HPV    
       INTEGER :: I,J,J1VAL,J2VAL
       
       IF (MODE.EQ.2)  THEN

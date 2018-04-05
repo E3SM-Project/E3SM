@@ -2,11 +2,11 @@ MODULE q_chk_module
 ! 1. Filling holes of qc, qi, qr, qs, qg (vertical borrowing only)
 ! 2. Call saturation adjustment
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
-USE parmsld, only: nk2,nk3,nhalo_adv
-USE constld, only: d0_0,dt,rho,fnt,pbar,pibar,nomap
+USE parmsld, only: nk2,nk3,nhalo,nhalo_adv
+USE constld, only: dt,rho,fnt,pbar,pibar,nomap
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel
@@ -32,9 +32,9 @@ CONTAINS
       type(channel_t), intent(inout) :: channel   ! channel data
 
       ! Local variables
-      REAL (KIND=dbl_kind) :: PBAR8(nk2),PIBAR8(nk2),INVFNT, &
+      REAL (KIND=r8) :: PBAR8(nk2),PIBAR8(nk2),INVFNT, &
                               TSTAR,QVSTAR,QCSTAR,QISTAR,QFREEZE
-      REAL (KIND=dbl_kind), DIMENSION(nk2) :: TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
+      REAL (KIND=r8), DIMENSION(nk2) :: TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
       
       LOGICAL :: FILL_CHK = .FALSE.
       INTEGER, DIMENSION(4) :: QCNC1,QINC1,QRNC1,QSNC1,QGNC1   ! check purpose
@@ -47,7 +47,7 @@ CONTAINS
 
       ! Used for saturation adjustment
       DO K = 2, NK2
-       PBAR8(K)  = PBAR(K) * 0.01_dbl_kind
+       PBAR8(K)  = PBAR(K) * 0.01_r8
        PIBAR8(K) = PIBAR(K)
       ENDDO
             
@@ -192,16 +192,16 @@ CONTAINS
    SUBROUTINE FILL_VERT(A,mi1,mj1,mim,mip,mjm,mjp,ksize,NCOUNT1,NCOUNT2)
 !=======================================================================
       INTEGER,  INTENT(IN) :: mi1,mj1,mim,mip,mjm,mjp,ksize  
-      REAL(KIND=dbl_kind), INTENT(INOUT) :: A(mim:mip,mjm:mjp,ksize)
+      REAL(KIND=r8), INTENT(INOUT) :: A(mim:mip,mjm:mjp,ksize)
       INTEGER, INTENT(OUT) :: NCOUNT1,NCOUNT2
 
       ! Local variables
       INTEGER :: I,J,K
-      REAL(KIND=dbl_kind) :: DDX(mi1,mj1,ksize)
-      REAL(KIND=dbl_kind) :: FRAC,PL5,PU5,SUMA,TEM
+      REAL(KIND=r8) :: DDX(mi1,mj1,ksize)
+      REAL(KIND=r8) :: FRAC,PL5,PU5,SUMA,TEM
 
 !     INITIALIZE BORROW (DDX) TO ZERO.
-      DDX = D0_0
+      DDX = 0.0_r8
 
 !-------------------------------------------
 !     CALCULATE APPORTIONMENT OF BORROWING
@@ -212,21 +212,21 @@ CONTAINS
        DO J = 1, mj1
         DO I = 1, mi1
 
-        IF ( A(I,J,K) .GE. D0_0 ) CYCLE
+        IF ( A(I,J,K) .GE. 0.0_r8 ) CYCLE
 
 !       BORROW LOCALLY ONLY FROM POSITIVE POINTS.
-        PL5 = MAX( D0_0, A(I,J,K-1) )
-        PU5 = MAX( D0_0, A(I,J,K+1) )
+        PL5 = MAX( 0.0_r8, A(I,J,K-1) )
+        PU5 = MAX( 0.0_r8, A(I,J,K+1) )
 
-        IF ( K == 2 ) PL5 = D0_0
-        IF ( K == ksize-1 ) PU5 = D0_0
+        IF ( K == 2 ) PL5 = 0.0_r8
+        IF ( K == ksize-1 ) PU5 = 0.0_r8
 
         SUMA = PL5 + PU5
 
 !       IS THERE ENOUGH LOCALLY TO FILL HOLE?
         TEM = SUMA + A(I,J,K)
 
-        IF ( TEM .le. D0_0) THEN
+        IF ( TEM .le. 0.0_r8) THEN
 !         NOT ENOUGH, SO TAKE EVERYTHING AVAILABLE LOCALLY
           FRAC = 1.
         ELSE
@@ -239,7 +239,7 @@ CONTAINS
         DDX(I,J,K+1) = DDX(I,J,K+1) + FRAC * PU5
 
 !       FILL HOLE ( RESET TO ZERO ).
-        A(I,J,K) = D0_0
+        A(I,J,K) = 0.0_r8
         NCOUNT1 = NCOUNT1 + 1
 
         ENDDO
@@ -261,8 +261,8 @@ CONTAINS
        DO J = 1, mj1
         DO I = 1, mi1
 
-         IF ( A(I,J,K) .GE. D0_0 ) CYCLE
-         A(I,J,K) = D0_0
+         IF ( A(I,J,K) .GE. 0.0_r8 ) CYCLE
+         A(I,J,K) = 0.0_r8
          NCOUNT2 = NCOUNT2 + 1
 
         ENDDO

@@ -1,11 +1,11 @@
 MODULE q3d_rtime_module
 ! Contains the program that calculates the relaxation time scale (CRM fields toward GCM)
 
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t
       
       USE parmsld,      only: nVGCM_seg,netsz,nk1,nk2,nk3
-      USE constld,      only: d0_0,d0_5,dx_gcm 
+      USE constld,      only: dx_gcm 
       
 IMPLICIT NONE
 PRIVATE
@@ -28,16 +28,16 @@ CONTAINS
 !-------------------------------------------------------------------------
       type(channel_t), intent(inout) :: channel  ! Channel data
 
-#ifdef FIXTHIS
+!JUNG #ifdef FIXTHIS
 
       ! Local 
       LOGICAL :: INTERPOL = .FALSE.
       INTEGER mi1,mim,mip,mj1,mjm,mjp
       INTEGER k,num_seg,num_gcm
 
-      REAL (KIND=dbl_kind), DIMENSION(nk2,0:nVGCM_seg+1,4) :: MN_SPEED
-      REAL (KIND=dbl_kind), DIMENSION(nk2,0:nVGCM_seg+1,4) :: MN_SPEED_Z
-      REAL (KIND=dbl_kind), DIMENSION(1,0:nVGCM_seg+1,4)   :: MN_SPEED_ZZ
+      REAL (KIND=r8), DIMENSION(nk2,0:nVGCM_seg+1,4) :: MN_SPEED
+      REAL (KIND=r8), DIMENSION(nk2,0:nVGCM_seg+1,4) :: MN_SPEED_Z
+      REAL (KIND=r8), DIMENSION(1,0:nVGCM_seg+1,4)   :: MN_SPEED_ZZ
         
 !=======================================================================   
       DO num_seg = 1, 4
@@ -60,10 +60,10 @@ CONTAINS
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk1     
         MN_SPEED_Z(K,num_gcm,num_seg) = &
-                D0_5*(MN_SPEED(K,num_gcm,num_seg)+MN_SPEED(K+1,num_gcm,num_seg))
+                0.5_r8*(MN_SPEED(K,num_gcm,num_seg)+MN_SPEED(K+1,num_gcm,num_seg))
        ENDDO 
-        MN_SPEED_Z(1,num_gcm,num_seg)   = D0_0
-        MN_SPEED_Z(nk2,num_gcm,num_seg) = D0_0
+        MN_SPEED_Z(1,num_gcm,num_seg)   = 0.0_r8
+        MN_SPEED_Z(nk2,num_gcm,num_seg) = 0.0_r8
       ENDDO
       
       DO num_gcm = 1,nVGCM_seg    
@@ -97,25 +97,25 @@ CONTAINS
       ENDIF
       
       ! TAU_RX_TQ
-      CALL CSECT_DIST (INTERPOL,D0_0,D0_0,channel%seg(num_seg)%lcen,        &
+      CALL CSECT_DIST (INTERPOL,0.0_r8,0.0_r8,channel%seg(num_seg)%lcen,    &
                        channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend, &
                        mi1,mj1,nk1,MN_SPEED(2:nk2,:,num_seg),               &
                        channel%seg(num_seg)%TAU_RX_TQ)
        
       ! TAU_RX_ZX
-      CALL CSECT_DIST (INTERPOL,D0_0,D0_5,channel%seg(num_seg)%lcen,        &
+      CALL CSECT_DIST (INTERPOL,0.0_r8,0.5_r8,channel%seg(num_seg)%lcen,    &
                        channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend, &
                        mi1,mj1,nk1-1,MN_SPEED_Z(2:nk1,:,num_seg),           &
                        channel%seg(num_seg)%TAU_RX_ZX)
        
       ! TAU_RX_ZY
-      CALL CSECT_DIST (INTERPOL,D0_5,D0_0,channel%seg(num_seg)%lcen,        &
+      CALL CSECT_DIST (INTERPOL,0.5_r8,0.0_r8,channel%seg(num_seg)%lcen,    &
                        channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend, &
                        mi1,mj1,nk1-1,MN_SPEED_Z(2:nk1,:,num_seg),           &
                        channel%seg(num_seg)%TAU_RX_ZY)
                            
       ! TAU_RX_ZZ
-      CALL CSECT_DIST (INTERPOL,D0_5,D0_5,channel%seg(num_seg)%lcen,        &
+      CALL CSECT_DIST (INTERPOL,0.5_r8,0.5_r8,channel%seg(num_seg)%lcen,    &
                        channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend, &
                        mi1,mj1,1,MN_SPEED_ZZ(:,:,num_seg),                  &
                        channel%seg(num_seg)%TAU_RX_ZZ)                     
@@ -135,23 +135,23 @@ CONTAINS
        
        integer, intent(in) :: mim,mip,mjm,mjp
        
-       real (kind=dbl_kind), INTENT(IN)  :: U(mim:mip,mjm:mjp,nk3)
-       real (kind=dbl_kind), INTENT(IN)  :: V(mim:mip,mjm:mjp,nk3)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: U(mim:mip,mjm:mjp,nk3)
+       real (kind=r8), INTENT(IN)  :: V(mim:mip,mjm:mjp,nk3)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k,chp
-       real (kind=dbl_kind) :: SUM,TEMP
+       real (kind=r8) :: SUM,TEMP
        
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk2
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          TEMP = D0_5*(U(CHP,1,K)**2 + U(CHP-1,1,K)**2)   &
-               + D0_5*(V(CHP,1,K)**2 + V(CHP,0,K)**2)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          TEMP = 0.5_r8*(U(CHP,1,K)**2 + U(CHP-1,1,K)**2)   &
+               + 0.5_r8*(V(CHP,1,K)**2 + V(CHP,0,K)**2)
                
           SUM = SUM + SQRT(TEMP) 
          ENDDO       
@@ -163,10 +163,10 @@ CONTAINS
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk2
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          TEMP = D0_5*(U(1,CHP,K)**2 + U(0,CHP,K)**2)   &
-               + D0_5*(V(1,CHP,K)**2 + V(1,CHP-1,K)**2)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          TEMP = 0.5_r8*(U(1,CHP,K)**2 + U(0,CHP,K)**2)   &
+               + 0.5_r8*(V(1,CHP,K)**2 + V(1,CHP-1,K)**2)
                 
           SUM = SUM + SQRT(TEMP) 
          ENDDO       
@@ -183,7 +183,7 @@ CONTAINS
 !     Filling the halos along the channel (Group1) 
 
       INTEGER,INTENT(IN) :: kdim     
-      REAL (KIND=dbl_kind),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
 
@@ -210,7 +210,7 @@ CONTAINS
 !     Filling the halos along the channel (Group2) 
 
       INTEGER,INTENT(IN) :: kdim         
-      REAL (KIND=dbl_kind),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
 
@@ -234,8 +234,10 @@ CONTAINS
       END SUBROUTINE bound_g2
 
       SUBROUTINE BOUND_G3 (kdim,A)
-!     Filling the halos along the channel (Group3)      
-      REAL (KIND=dbl_kind),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+!     Filling the halos along the channel (Group3)  
+
+      INTEGER, INTENT(IN) :: kdim    ! vertical size of A   
+      REAL (KIND=r8),DIMENSION(kdim,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
   
@@ -265,8 +267,8 @@ CONTAINS
        IMPLICIT NONE 
        
        LOGICAL, INTENT(IN) :: INTERPOL 
-       REAL (kind=dbl_kind), INTENT(IN) :: x_cor,y_cor  ! depending on the input variable location
-       REAL (kind=dbl_kind), INTENT(IN) :: lcen(nVGCM_seg)  ! center CRM point of a vGCM cell 
+       REAL (kind=r8), INTENT(IN) :: x_cor,y_cor  ! depending on the input variable location
+       REAL (kind=r8), INTENT(IN) :: lcen(nVGCM_seg)  ! center CRM point of a vGCM cell 
        INTEGER, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
        INTEGER, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
        
@@ -274,12 +276,12 @@ CONTAINS
        INTEGER, INTENT(IN) :: mj1               ! y-size of a channel-segment
        INTEGER, INTENT(IN) :: kdim              ! vertical size of a channel-segment
        
-       REAL (kind=dbl_kind), INTENT(IN)  :: A(kdim,0:nVGCM_seg+1)
-       REAL (kind=dbl_kind), INTENT(OUT) :: AOUT(mi1,mj1,kdim)
+       REAL (kind=r8), INTENT(IN)  :: A(kdim,0:nVGCM_seg+1)
+       REAL (kind=r8), INTENT(OUT) :: AOUT(mi1,mj1,kdim)
        
        ! Local
        INTEGER ng,k,chl,chn,npo
-       REAL (KIND=dbl_kind) :: dist,dist1,dist2
+       REAL (KIND=r8) :: dist,dist1,dist2
        
        chn = 1
 !---------------------------------       
@@ -292,7 +294,7 @@ CONTAINS
         IF (INTERPOL) THEN
          
          DIST1 = lcen(ng) - (float(chl) + x_cor)
-         IF (DIST1.GE.D0_0) THEN
+         IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
            DIST  = DIST1
            NPO   = ng - 1
@@ -307,7 +309,7 @@ CONTAINS
          ENDDO 
          
          DO k = 1, kdim
-          IF (AOUT(chl,chn,K).NE.D0_0) THEN
+          IF (AOUT(chl,chn,K).NE.0.0_r8) THEN
             AOUT(chl,chn,K) = DX_GCM/AOUT(chl,chn,K)
           ENDIF
          ENDDO 
@@ -315,8 +317,8 @@ CONTAINS
         ELSE   ! INTERPOL
 
          DO k = 1, kdim
-           IF A(K,ng).EQ.D0_0) THEN
-             AOUT(chl,chn,K) = D0_0
+           IF (A(K,ng).EQ.0.0_r8) THEN
+             AOUT(chl,chn,K) = 0.0_r8
            ELSE
              AOUT(chl,chn,K) = DX_GCM/A(K,ng)
            ENDIF
@@ -335,8 +337,8 @@ CONTAINS
 
         IF (INTERPOL) THEN
 
-         DIST1 = lcen - (float(chl) + y_cor)
-         IF (DIST1.GE.D0_0) THEN
+         DIST1 = lcen(ng) - (float(chl) + y_cor)
+         IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
            DIST  = DIST1
            NPO   = ng - 1
@@ -351,7 +353,7 @@ CONTAINS
          ENDDO 
          
          DO k = 1, kdim
-          IF (AOUT(chn,chl,K).NE.D0_0) THEN
+          IF (AOUT(chn,chl,K).NE.0.0_r8) THEN
             AOUT(chn,chl,K) = DX_GCM/AOUT(chn,chl,K)
           ENDIF
          ENDDO 
@@ -359,8 +361,8 @@ CONTAINS
         ELSE   ! INTERPOL        
 
          DO k = 1, kdim
-           IF A(K,ng).EQ.D0_0) THEN
-             AOUT(chn,chl,K) = D0_0
+           IF (A(K,ng).EQ.0.0_r8) THEN
+             AOUT(chn,chl,K) = 0.0_r8
            ELSE
              AOUT(chn,chl,K) = DX_GCM/A(K,ng)
            ENDIF
@@ -377,7 +379,8 @@ CONTAINS
        
        END SUBROUTINE csect_dist     
 
-#endif
+!JUNG #endif
+
    END SUBROUTINE cal_rtime
 
 END MODULE q3d_rtime_module

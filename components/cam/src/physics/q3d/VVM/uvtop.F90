@@ -1,11 +1,11 @@
 MODULE uvtop
 ! Update horizontal wind at the model top layer
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk2
-USE constld, only: d4_0,dx,dy
+USE constld, only: dx,dy
 
 ! Subroutine being called
 USE elliptic, only: relax_2d
@@ -21,7 +21,6 @@ CONTAINS
 !----------------------------------------------------------------------------
 ! SUBROUTINE uvtop_3d : Update horizontal wind at the model top
 !----------------------------------------------------------------------------
-!     D4_0  = 4.0_dbl_kind
 
 !=======================================================================
    SUBROUTINE UVTOP_3D (channel,NITER)
@@ -35,8 +34,8 @@ CONTAINS
                                                   ! "niterxy" (test purpose)      
 
 !     Local variables
-      REAL (KIND=dbl_kind), DIMENSION(:,:), ALLOCATABLE :: UROT
-      REAL (KIND=dbl_kind), DIMENSION(:,:), ALLOCATABLE :: VROT
+      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: UROT
+      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: VROT
       
       INTEGER :: I,J,num_seg,mim,mip,mim_a,mip_a,mjm,mjp,mjm_a,mjp_a
 
@@ -102,7 +101,7 @@ CONTAINS
                                                 -channel%seg(num_seg)%CHI(I+1,J))          &
          +channel%seg(num_seg)%GCONT_V(2,I+1,J-1)*(channel%seg(num_seg)%CHI(I+1,J)         &
                                                   -channel%seg(num_seg)%CHI(I+1,J-1)))     &
-         /(D4_0*DY)           
+         /(4.0_r8*DY)           
        ENDDO
       ENDDO
       
@@ -119,7 +118,7 @@ CONTAINS
                                                 -channel%seg(num_seg)%CHI(I,J+1))         &
          +channel%seg(num_seg)%GCONT_U(2,I-1,J+1)*(channel%seg(num_seg)%CHI(I,J+1)        &
                                                 -channel%seg(num_seg)%CHI(I-1,J+1)))      &
-         /(D4_0*DX)            
+         /(4.0_r8*DX)            
        ENDDO
       ENDDO      
       
@@ -133,7 +132,7 @@ CONTAINS
                   -(channel%seg(num_seg)%GG_V(2,I+1,J)*VROT(I+1,J)                        &
                    +channel%seg(num_seg)%GG_V(2,I,J)*VROT(I,J)                            &
                    +channel%seg(num_seg)%GG_V(2,I+1,J-1)*VROT(I+1,J-1)                    &
-                   +channel%seg(num_seg)%GG_V(2,I,J-1)*VROT(I,J-1))/D4_0                  &
+                   +channel%seg(num_seg)%GG_V(2,I,J-1)*VROT(I,J-1))/4.0_r8                  &
                   +(channel%seg(num_seg)%CHI(I+1,J)-channel%seg(num_seg)%CHI(I,J))/DX        
        ENDDO
       ENDDO          
@@ -145,7 +144,7 @@ CONTAINS
                   -(channel%seg(num_seg)%GG_U(2,I,J+1)*UROT(I,J+1)                        &
                    +channel%seg(num_seg)%GG_U(2,I,J)*UROT(I,J)                            &
                    +channel%seg(num_seg)%GG_U(2,I-1,J+1)*UROT(I-1,J+1)                    &
-                   +channel%seg(num_seg)%GG_U(2,I-1,J)*UROT(I-1,J))/D4_0                  &
+                   +channel%seg(num_seg)%GG_U(2,I-1,J)*UROT(I-1,J))/4.0_r8                  &
                   +(channel%seg(num_seg)%CHI(I,J+1)-channel%seg(num_seg)%CHI(I,J))/DY                 
        ENDDO
       ENDDO      

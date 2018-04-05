@@ -1,7 +1,7 @@
 MODULE ab_3d_module
 ! Controls the integration of individual CRM (one timestep calculation)
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE CONSTLD,        only: notherm,buoy,physics,turbulence
@@ -42,7 +42,7 @@ CONTAINS
 
 !     Calculate the nonlinear turbulence coefficients
 !     ITT is related to how often surface flux is calculated.
-      IF (TURBULENCE) CALL TURB_3D (channel)
+      IF (TURBULENCE) CALL TURB_3D (ITT, channel)
 
       IF (.NOT.NOTHERM) THEN
 
@@ -60,7 +60,7 @@ CONTAINS
       ENDIF
 
 !     Calculate the buoyancy based on the predicted thermodynamic fields 
-      CALL BUOYF_3D (BUOY, channel)
+      IF (BUOY) CALL BUOYF_3D (channel)
 
 !     Predict the vorticity components
       CALL VORT_3D  (N1, N2, channel)

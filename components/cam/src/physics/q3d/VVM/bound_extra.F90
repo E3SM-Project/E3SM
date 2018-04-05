@@ -3,7 +3,7 @@ module bound_extra
 ! this module contains routines that specify the boundary values in the normal and  
 ! vertical directions of the channel domain.
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t 
 
 USE parmsld,        only: ntracer,nk1,nk2,nk3 
@@ -502,11 +502,11 @@ CONTAINS
 
       ! Local
       INTEGER :: mi1_2,mim_2,mip_2,mjm_2,mjp_2
-      INTEGER :: mj1_3,mim_3,mip_3,mjm_3,mjp_3
+      INTEGER :: mj1_3,mim_3,mip_3,mjm_3,mjp_3,mi1_3
       INTEGER :: mj1_4,mim_4,mip_4,mjm_4,mjp_4
 
       ! Size of segment 2
-      mi1_2 = channel%seg(2)%mi1  
+      mi1_2 = channel%seg(2)%mi1 
       
       mim_2 = channel%seg(2)%mim
       mip_2 = channel%seg(2)%mip   
@@ -514,6 +514,7 @@ CONTAINS
       mjp_2 = channel%seg(2)%mjp    
 
       ! Size of segment 3 
+      mi1_3 = channel%seg(3)%mi1  
       mj1_3 = channel%seg(3)%mj1 
        
       mim_3 = channel%seg(3)%mim
@@ -536,8 +537,8 @@ CONTAINS
         if (Z3DZ) then
         SELECT CASE (channel%num_chg)
         CASE(2)
-          CALL SYNC_GROUP2 (mj1_3,mim_3,mip_3,mjm_3,mjp_3,    &
-                            mj1_4,mim_4,mip_4,mjm_4,mjp_4,1,  &
+          CALL SYNC_GROUP2 (mj1_3,mim_3,mip_3,mjm_3,mjp_3,         &
+                            mj1_4,mim_4,mip_4,mjm_4,mjp_4,mi1_3,1, & 
                             channel%seg(3)%Z3DZ(:,:,NK2),channel%seg(4)%Z3DZ(:,:,NK2))
 
         CASE(3)
@@ -556,13 +557,13 @@ CONTAINS
         if (PSI) then
         SELECT CASE (channel%num_chg)
         CASE(2)
-          CALL SYNC_GROUP2_2 (mj1(3),mim(3),mip(3),mjm(3),mjp(3),    &
-                              mj1(4),mim(4),mip(4),mjm(4),mjp(4),    &
+          CALL SYNC_GROUP2_2 (mj1_3,mim_3,mip_3,mjm_3,mjp_3,       &
+                              mj1_4,mim_4,mip_4,mjm_4,mjp_4,mi1_3, &
                               channel%seg(3)%PSI,channel%seg(4)%PSI)
 
         CASE(3)
-          CALL SYNC_GROUP3_2 (mi1(2),mim(2),mip(2),mjm(2),mjp(2),    &
-                              mj1(3),mim(3),mip(3),mjm(3),mjp(3),    &
+          CALL SYNC_GROUP3_2 (mi1_2,mim_2,mip_2,mjm_2,mjp_2,    &
+                              mj1_3,mim_3,mip_3,mjm_3,mjp_3,    &
                               channel%seg(2)%PSI,channel%seg(3)%PSI)
         END SELECT
         endif                        
@@ -571,17 +572,18 @@ CONTAINS
       CONTAINS
       
       SUBROUTINE SYNC_GROUP2 (mj1_3,mim_3,mip_3,mjm_3,mjp_3, &
-                              mj1_4,mim_4,mip_4,mjm_4,mjp_4,ksize,a3,a4)
+                              mj1_4,mim_4,mip_4,mjm_4,mjp_4, &
+                              mi1_3,ksize,a3,a4)
 !=========================================================================================      
 !     Synchronize the edge values of F5 (Seg3) and F3 (Seg4) in GROUP 2 channels 
       
       INTEGER, INTENT(IN) :: mj1_3,mim_3,mip_3,mjm_3,mjp_3, &
-                             mj1_4,mim_4,mip_4,mjm_4,mjp_4,ksize
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_4:mip_4,mjm_4:mjp_4,ksize), INTENT(INOUT) :: A4
+                             mj1_4,mim_4,mip_4,mjm_4,mjp_4,mi1_3,ksize
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_4:mip_4,mjm_4:mjp_4,ksize), INTENT(INOUT) :: A4
       
       ! Local
-      REAL (kind=dbl_kind) :: TEMP
+      REAL (kind=r8) :: TEMP
       INTEGER :: chn,chn_rev,k               
 
 !---------------------------- 
@@ -590,7 +592,7 @@ CONTAINS
         DO K = 1, ksize 
          DO chn = mim_3, mip_3-1
           chn_rev = mi1_3 - chn 
-          TEMP = (A3(chn,mj1_3,K)+A4(chn_rev,mj1_4,K))/2._dbl_kind
+          TEMP = (A3(chn,mj1_3,K)+A4(chn_rev,mj1_4,K))/2.0_r8
           A3(chn,mj1_3,K)     = TEMP
           A4(chn_rev,mj1_4,K) = TEMP 
          ENDDO
@@ -599,17 +601,18 @@ CONTAINS
       end subroutine sync_group2 
       
       SUBROUTINE SYNC_GROUP2_2 (mj1_3,mim_3,mip_3,mjm_3,mjp_3, &
-                                mj1_4,mim_4,mip_4,mjm_4,mjp_4,a3,a4)
+                                mj1_4,mim_4,mip_4,mjm_4,mjp_4, &
+                                mi1_3,a3,a4)
 !=========================================================================================      
 !     Synchronize the edge values of F5 (Seg3) and F3 (Seg4) in GROUP 2 channels 
       
       INTEGER, INTENT(IN) :: mj1_3,mim_3,mip_3,mjm_3,mjp_3, &
-                             mj1_4,mim_4,mip_4,mjm_4,mjp_4
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_4:mip_4,mjm_4:mjp_4), INTENT(INOUT) :: A4
+                             mj1_4,mim_4,mip_4,mjm_4,mjp_4,mi1_3
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_4:mip_4,mjm_4:mjp_4), INTENT(INOUT) :: A4
       
       ! Local
-      REAL (kind=dbl_kind) :: TEMP
+      REAL (kind=r8) :: TEMP
       INTEGER :: chn,chn_rev               
 
 !---------------------------- 
@@ -617,7 +620,7 @@ CONTAINS
 !----------------------------
          DO chn = mim_3, mip_3-1
           chn_rev = mi1_3 - chn 
-          TEMP = (A3(chn,mj1_3)+A4(chn_rev,mj1_4))/2._dbl_kind
+          TEMP = (A3(chn,mj1_3)+A4(chn_rev,mj1_4))/2.0_r8
           A3(chn,mj1_3)     = TEMP
           A4(chn_rev,mj1_4) = TEMP 
          ENDDO  
@@ -631,11 +634,11 @@ CONTAINS
       
       INTEGER, INTENT(IN) :: mi1_2,mim_2,mip_2,mjm_2,mjp_2, &
                              mj1_3,mim_3,mip_3,mjm_3,mjp_3,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim_2:mip_2,mjm_2:mjp_2,ksize), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_2:mip_2,mjm_2:mjp_2,ksize), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
       
       ! Local
-      REAL (kind=dbl_kind) :: TEMP
+      REAL (kind=r8) :: TEMP
       INTEGER :: chn,k               
 
 !---------------------------- 
@@ -643,7 +646,7 @@ CONTAINS
 !----------------------------
         DO K = 1, ksize 
          DO chn = mjm_2, mjp_2
-          TEMP = (A2(mi1_2,chn,K)+A3(chn,mj1_3,K))/2._dbl_kind
+          TEMP = (A2(mi1_2,chn,K)+A3(chn,mj1_3,K))/2.0_r8
           
           A2(mi1_2,chn,K) = TEMP
           A3(chn,mj1_3,K) = TEMP
@@ -659,18 +662,18 @@ CONTAINS
       
       INTEGER, INTENT(IN) :: mi1_2,mim_2,mip_2,mjm_2,mjp_2, &
                              mj1_3,mim_3,mip_3,mjm_3,mjp_3       
-      REAL (kind=dbl_kind), DIMENSION(mim_2:mip_2,mjm_2:mjp_2), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_2:mip_2,mjm_2:mjp_2), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
       
       ! Local
-      REAL (kind=dbl_kind) :: TEMP
+      REAL (kind=r8) :: TEMP
       INTEGER :: chn               
 
 !---------------------------- 
       ! Seg 2 & Seg 3
 !----------------------------
          DO chn = mjm_2, mjp_2
-          TEMP = (A2(mi1_2,chn)+A3(chn,mj1_3))/2._dbl_kind
+          TEMP = (A2(mi1_2,chn)+A3(chn,mj1_3))/2.0_r8
           
           A2(mi1_2,chn) = TEMP
           A3(chn,mj1_3) = TEMP
@@ -687,8 +690,8 @@ CONTAINS
 !     (deviation is uniform across the channel)
       
       INTEGER, INTENT(IN) :: mi1,mim,mip,mj1,mjm,mjp,num_halo,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(IN) :: Abg
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(IN) :: Abg
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
       
       INTEGER :: I,J,K,JM,JP       
 
@@ -711,7 +714,7 @@ CONTAINS
 !     Same as HALO_NS, but for a 2D variable (whole value is uniform across the channel)
       
       INTEGER, INTENT(IN) :: mi1,mim,mip,mj1,mjm,mjp,num_halo       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp), INTENT(INOUT) :: A
       
       INTEGER :: I,J,JM,JP       
 
@@ -733,8 +736,8 @@ CONTAINS
 !     (deviation is uniform across the channel)
       
       INTEGER, INTENT(IN) :: mi1,mim,mip,mj1,mjm,mjp,num_halo,ksize     
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(IN) :: Abg
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(IN) :: Abg
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
       
       INTEGER :: I,J,K,IM,IP    
 
@@ -757,7 +760,7 @@ CONTAINS
 !     Same as HALO_EW, but for a 2D variable (whole value is uniform across the channel)
       
       INTEGER, INTENT(IN) :: mi1,mim,mip,mj1,mjm,mjp,num_halo     
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp), INTENT(INOUT) :: A
       
       INTEGER :: I,J,IM,IP    
 
@@ -778,7 +781,7 @@ CONTAINS
 !     specify the boundary values at the model top and bottom 
       
       INTEGER, INTENT(IN) :: mim,mip,mjm,mjp,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
       
       INTEGER :: I,J    
       
@@ -797,14 +800,14 @@ CONTAINS
 !     specify the boundary values at the model top and bottom 
       
       INTEGER, INTENT(IN) :: mim,mip,mjm,mjp,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
+      REAL (kind=r8), DIMENSION(mim:mip,mjm:mjp,ksize), INTENT(INOUT) :: A
       
       INTEGER :: I,J    
       
       DO J = mjm,mjp
        DO I = mim,mip
-        A(I,J,1)     = 0._dbl_kind
-        A(I,J,KSIZE) = 0._dbl_kind
+        A(I,J,1)     = 0.0_r8
+        A(I,J,KSIZE) = 0.0_r8
        ENDDO
       ENDDO
       

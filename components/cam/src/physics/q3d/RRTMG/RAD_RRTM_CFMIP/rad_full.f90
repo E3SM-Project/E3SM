@@ -1,10 +1,18 @@
       SUBROUTINE rad_full ()
+
+! JUNG: In order to remove MPI structure,
+!       - Comment out all (masterproc) writing
+!       - Comment out "tracesini" because TRACE_GAS_INPUT (in trace_gases.f90) is used.
+!         ("call tracesini" was already commented out by TCRAM.)
+!       - Remove subroutine read_patch_background_sounding.F90
+!         ("call read_patch_background_sounding" was commented out by TCRAM.)
  
       use rad ! note qrad, pres_input, tabs_slice, insolation_TOA, lwUp, etc from this module
       use rad_driver, only: &
                       p_factor_xy, p_coszrs_xy, &
                       rad_driver_rrtm, initialize_radiation, &
-                      isInitialized_RadDriver, tracesini
+                      isInitialized_RadDriver
+!JUNG                 tracesini                        
       use parkind, only: &
                    kind_rb ! RRTM expects reals with this kind parameter (8 byte reals) 
 
@@ -149,7 +157,8 @@
   else
     updateRadiation = .false.
   end if
-  if(masterproc)print *,'updateradiation ',updateradiation
+
+!JUNG  if(masterproc)print *,'updateradiation ',updateradiation
 
   if(updateRadiation) then
     

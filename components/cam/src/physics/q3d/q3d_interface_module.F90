@@ -1,24 +1,25 @@
 MODULE q3d_interface_module
 ! Subprograms control the VVM channels
 
-USE shr_kind_mod,    only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,    only: r8 => shr_kind_r8
 USE vGCM_data_types, only: vGCM_state_t,vGCM_tend_t,vGCM_out_t,channel_vGCM_t
 USE vvm_data_types,  only: channel_t,allocate_channel_data
 
-USE parmsld, only: nVGCM_seg,netsz,nhalo_cal,nhalo_adv,nhalo,ntracer
-USE constld, only: d0_0,d1_0,d2_0,d3_0,d0_5,itt_max,a,b,dt,physics      
+USE parmsld, only: nVGCM_seg,netsz,nhalo_cal,nhalo_adv,nhalo,ntracer,nk1,nk2
+USE constld, only: itt_max,a,b,dt,physics      
 
-#ifdef FIXTHIS
+!JUNG 1 #ifdef FIXTHIS
 USE time_manager_module, only: time_manager
-#endif
+!JUNG 1_end #endif
 
 USE q3d_init_module,    only: init_common,init_channel
 USE q3d_mapping_module, only: find_channel_info,mapping_channel
 USE q3d_bg_module,      only: cal_bg
 USE q3d_effect_module,  only: ini_tendency,ini_crm_eft,cal_eddy_trans, &
-                              cal_tendency,ini_sfc_eft,cal_sfc_eft, &
+                              cal_tendency,ini_sfc_eft,cal_sfc_eft,cal_feedback, &
                               eddy_prepare
 USE q3d_rtime_module,   only: cal_rtime
+USE ab_3d_module,       only: ab_3d
 
 IMPLICIT NONE
 PRIVATE
@@ -34,14 +35,16 @@ CONTAINS
     LOGICAL, INTENT(IN) :: isRestart  ! .true. iff restart run
     INTEGER, INTENT(IN) :: nch        ! number of channels per node
      
-    type(channel_t),      intent(inout) :: channel(nch) ! CRM data for multiple channels
-    type(channel_vGCM_t), intent(inout) :: vGCM(nch)    ! vGCM data for multiple channels
+    type(channel_t),      intent(inout) :: channel(:) ! CRM data for multiple channels
+    type(channel_vGCM_t), intent(inout) :: vGCM(:)    ! vGCM data for multiple channels
 
 !   Local 
     INTEGER num_seg,num_gcm,isize(4,nch),jsize(4,nch),k 
 
-!   Specify model start time in fractional Julian day: determine rjday0 in timeinfo.F90
-!   (JUNG_PLAN) Add it here.    
+!   JUNG_PLAN
+!   Specify model start time in fractional Julian day (rjday0). 
+!   Or, calculate rjday0 (timeinfo.F90) in "TIME_MANAGER" 
+!   (Need to provide iyear0, imonth0, iday0 to "TIME_MANAGER")   
 
 !   Initialize common parameters and vertical profiles in CONSTLD.f90
     CALL INIT_common (isRestart) 
@@ -93,7 +96,7 @@ CONTAINS
     ENDDO
     DO num_gcm = 1, nVGCM_seg 
      channel(k)%seg(num_seg)%lcen(num_gcm) = &
-                D0_5*(channel(k)%seg(num_seg)%lsta(num_gcm) &
+                0.5_r8*(channel(k)%seg(num_seg)%lsta(num_gcm) &
                +channel(k)%seg(num_seg)%lend(num_gcm))
     ENDDO
     
@@ -124,14 +127,15 @@ CONTAINS
     INTEGER, INTENT(IN) :: itt     ! vGCM time step count
     INTEGER, INTENT(IN) :: nch     ! number of channels per node
     
-    type(channel_t),      intent(inout) :: channel(nch)  ! CRM data for multiple channels
-    type(channel_vGCM_t), intent(inout) :: vGCM(nch)     ! vGCM data for multiple channels
+    type(channel_t),      intent(inout) :: channel(:)  ! CRM data for multiple channels
+    type(channel_vGCM_t), intent(inout) :: vGCM(:)     ! vGCM data for multiple channels
 
     ! Local
     LOGICAL :: FIRST = .TRUE.
     INTEGER K
     
-#ifdef FIXTHIS
+!JUNG2 #ifdef FIXTHIS
+
     INTEGER :: ITT_CRM_COUNT       ! vGCM time step in CRM's CRM's time-scale 
         
     ITT_CRM_COUNT = (ITT-1)*itt_max
@@ -155,22 +159,24 @@ CONTAINS
     
     FIRST = .FALSE.
     
-#endif
+! JUNG2_end #endif
 
   end subroutine crm_run
 
 !==============================================================================
-  subroutine crm_final (itt, channel, vGCM)
+  subroutine crm_final (itt, nch, channel, vGCM)
 !==============================================================================
-    integer,              intent(in)    :: itt           ! vGCM time step count
-    type(channel_t),      intent(inout) :: channel(nch)  ! CRM data for multiple channels
-    type(channel_vGCM_t), intent(inout) :: vGCM(nch)     ! vGCM data for multiple channels
+    integer, intent(in) :: itt           ! vGCM time step count
+    INTEGER, INTENT(IN) :: nch     ! number of channels per node
+    
+    type(channel_t),      intent(inout) :: channel(:)  ! CRM data for multiple channels
+    type(channel_vGCM_t), intent(inout) :: vGCM(:)     ! vGCM data for multiple channels
     
 !   What is this program for?       
 
   end subroutine crm_final
 
-#ifdef FIXTHIS
+!JUNG3  #ifdef FIXTHIS
 !===================================================================================
     SUBROUTINE CRM_PREDICTION (ITT_CRM_COUNT, channel)
 !===================================================================================
@@ -201,20 +207,20 @@ CONTAINS
 
       IF(ITT_CRM.eq.1) THEN
         a = dt                 ! forward scheme to initialize the CRM
-        b = D0_0               ! forward scheme to initialize the CRM
+        b = 0.0_r8               ! forward scheme to initialize the CRM
       ELSE
-        a =   D3_0 / D2_0 * dt     ! AB second-order scheme
-        b = - D1_0 / D2_0 * dt     ! AB second-order scheme
+        a =   3.0_r8 / 2.0_r8 * dt     ! AB second-order scheme
+        b = - 1.0_r8 / 2.0_r8 * dt     ! AB second-order scheme
       ENDIF
 
       N1 = MOD ( ITT_CRM    , 2 ) + 1
       N2 = MOD ( ITT_CRM - 1, 2 ) + 1
 
-#ifdef FIXTHIS
+!JUNG4 #ifdef FIXTHIS
 !     Defines the year and fractional Julian day
 !     rjday, iyr in in timeinfo.F90
       CALL TIME_MANAGER(ITT_NEW)
-#endif
+!JUNG4_end #endif
 
       CALL INI_TENDENCY (channel)
       
@@ -235,6 +241,8 @@ CONTAINS
 !      Calculate the mean sfc fluxes
        CALL CAL_SFC_EFT (itt_max,MAKE_AVG,channel)
       ENDIF
+      
+      IF (MAKE_AVG) CALL CAL_FEEDBACK(channel)
 
 !-----------------------------------
       ENDDO   ! CRM time marching
@@ -244,6 +252,8 @@ CONTAINS
     
 !===================================================================================
     SUBROUTINE CRM_OUT_TEND (channel,vGCM_tend)
+!   Arrange the CRM tendencies following the vGCM_tend data shape.
+!   INPUT: _E1 (total CRM effects)    
 !===================================================================================
     type(channel_t),   intent(in)  :: channel       ! CRM data for one channel
     type(vGCM_tend_t), intent(out) :: vGCM_tend(4)  ! vGCM tendency
@@ -262,112 +272,92 @@ CONTAINS
 !-------------------------------------------------- x-channel segment  
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%TH_E1(2:nk2,:), &
-                  channel%seg(num_seg)%TH_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dTH)
 
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QV_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QV_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQV)            
 
      if (physics) then
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QC_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QC_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQC)
 
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QI_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QI_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQI)            
                   
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QR_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QR_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQR)
 
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QS_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QS_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQS)            
                   
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QG_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QG_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQG)
      endif 
      
      DO NT = 1,ntracer 
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,         & 
                   channel%seg(num_seg)%QT_E1(2:nk2,:,nt), &
-                  channel%seg(num_seg)%QT_E2(2:nk2,:,nt), & 
                   vGCM_tend(num_seg)%dQT(:,:,nt))            
      ENDDO
                   
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%U_E1(2:nk2,:),  &
-                  channel%seg(num_seg)%U_E2(2:nk2,:),  & 
                   vGCM_tend(num_seg)%dU)
 
      CALL TEND_X (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%V_E1(2:nk2,:),  &
-                  channel%seg(num_seg)%V_E2(2:nk2,:),  & 
                   vGCM_tend(num_seg)%dV)                                                                                          
 !--------------------------------------------------
    ELSE
 !-------------------------------------------------- y-channel segment  
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%TH_E1(2:nk2,:), &
-                  channel%seg(num_seg)%TH_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dTH)
                   
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QV_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QV_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQV)
      
      if (physics) then             
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QC_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QC_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQC)                                    
 
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QI_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QI_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQI)
                   
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QR_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QR_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQR)
                   
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QS_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QS_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQS)                                    
 
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%QG_E1(2:nk2,:), &
-                  channel%seg(num_seg)%QG_E2(2:nk2,:), & 
                   vGCM_tend(num_seg)%dQG)
      endif 
      
      DO NT = 1,ntracer              
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,         & 
                   channel%seg(num_seg)%QT_E1(2:nk2,:,nt), &
-                  channel%seg(num_seg)%QT_E2(2:nk2,:,nt), & 
                   vGCM_tend(num_seg)%dQT(:,:,nt))
      ENDDO
                   
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%U_E1(2:nk2,:),  &
-                  channel%seg(num_seg)%U_E2(2:nk2,:),  & 
                   vGCM_tend(num_seg)%dU)                                    
 
      CALL TEND_Y (channel%seg(num_seg)%NFACE,nk1,      & 
                   channel%seg(num_seg)%V_E1(2:nk2,:),  &
-                  channel%seg(num_seg)%V_E2(2:nk2,:),  & 
                   vGCM_tend(num_seg)%dV)         
 !--------------------------------------------------
    ENDIF
@@ -379,15 +369,14 @@ CONTAINS
 
     CONTAINS
     
-    SUBROUTINE TEND_X (NFACE,kdim,E1,E2,EOUT)
-!   Combine the tendencies due to transport and diabatic effects
+    SUBROUTINE TEND_X (NFACE,kdim,E1,EOUT)
 !   arrange the data for the vGCM_tend grid structure     
     
     INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
     INTEGER, INTENT(IN) :: kdim      ! Vertical size of input data  
     
-    REAL(kind=dbl_kind),DIMENSION(kdim,nVGCM_seg),INTENT(IN)  :: E1,E2
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg,kdim),INTENT(OUT) :: EOUT
+    REAL(kind=r8),DIMENSION(kdim,nVGCM_seg),INTENT(IN)  :: E1
+    REAL(kind=r8),DIMENSION(nVGCM_seg,kdim),INTENT(OUT) :: EOUT
     
     ! LOCAL
     INTEGER I,K,NPO 
@@ -395,29 +384,28 @@ CONTAINS
     IF (NFACE .NE. 6) THEN
       DO I = 1,nVGCM_seg
        DO K = 1, kdim
-        EOUT(I,K) = E1(K,I) + E2(K,I)
+        EOUT(I,K) = E1(K,I)
        ENDDO 
       ENDDO  
     ELSE
       DO I = 1,nVGCM_seg
        npo = nVGCM_seg - I + 1
        DO K = 1, kdim  
-        EOUT(I,K) = E1(K,npo) + E2(K,npo)
+        EOUT(I,K) = E1(K,npo)
        ENDDO 
       ENDDO  
     ENDIF
      
     END SUBROUTINE tend_x
 
-    SUBROUTINE TEND_Y (NFACE,kdim,E1,E2,EOUT)
-!   Combine the tendencies due to transport and diabatic effects
+    SUBROUTINE TEND_Y (NFACE,kdim,E1,EOUT)
 !   arrange the data for the vGCM_tend grid structure  
     
     INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
     INTEGER, INTENT(IN) :: kdim      ! Vertical size of input data  
     
-    REAL(kind=dbl_kind),DIMENSION(kdim,nVGCM_seg),INTENT(IN)  :: E1,E2
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg,kdim),INTENT(OUT) :: EOUT
+    REAL(kind=r8),DIMENSION(kdim,nVGCM_seg),INTENT(IN)  :: E1
+    REAL(kind=r8),DIMENSION(nVGCM_seg,kdim),INTENT(OUT) :: EOUT
     
     ! LOCAL
     INTEGER I,K,NPO 
@@ -426,13 +414,13 @@ CONTAINS
       DO I = 1,nVGCM_seg
        npo = nVGCM_seg - I + 1
        DO K = 1, kdim
-        EOUT(I,K) = E1(K,npo) + E2(K,npo)
+        EOUT(I,K) = E1(K,npo) 
        ENDDO 
       ENDDO  
     ELSE
       DO I = 1,nVGCM_seg
        DO K = 1, kdim  
-        EOUT(I,K) = E1(K,I) + E2(K,I)
+        EOUT(I,K) = E1(K,I)
        ENDDO 
       ENDDO  
     ENDIF
@@ -443,7 +431,9 @@ CONTAINS
 
 !===================================================================================
     SUBROUTINE CRM_OUT (channel,vGCM_out)
-    ! Currently, it has only 2D fields. 
+!   Arrange the CRM diagnostic data following the vGCM_out data shape  
+!   INPUT: _E0 (net-size and time average over the CRM cycle)  
+!   Currently, it has only 2D fields. 
 !===================================================================================
     type(channel_t),   intent(in) :: channel      ! CRM data for one channel
     type(vGCM_out_t), intent(out) :: vGCM_out(4)  ! vGCM tendency
@@ -524,8 +514,8 @@ CONTAINS
     
     INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
     
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg),INTENT(IN)  :: E1
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg),INTENT(OUT) :: EOUT
+    REAL(kind=r8),DIMENSION(nVGCM_seg),INTENT(IN)  :: E1
+    REAL(kind=r8),DIMENSION(nVGCM_seg),INTENT(OUT) :: EOUT
     
     ! LOCAL
     INTEGER I,NPO 
@@ -548,8 +538,8 @@ CONTAINS
     
     INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
     
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg),INTENT(IN)  :: E1
-    REAL(kind=dbl_kind),DIMENSION(nVGCM_seg),INTENT(OUT) :: EOUT
+    REAL(kind=r8),DIMENSION(nVGCM_seg),INTENT(IN)  :: E1
+    REAL(kind=r8),DIMENSION(nVGCM_seg),INTENT(OUT) :: EOUT
     
     ! LOCAL
     INTEGER I,NPO 
@@ -569,6 +559,6 @@ CONTAINS
           
     END SUBROUTINE crm_out
         
-#endif
+!JUNG3_end #endif
 
 END MODULE q3d_interface_module

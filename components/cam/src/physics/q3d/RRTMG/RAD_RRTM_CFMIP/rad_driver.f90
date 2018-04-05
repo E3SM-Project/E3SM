@@ -1,5 +1,16 @@
       MODULE rad_driver
-
+      
+! JUNG: To use cime/src/share/util/shr_orb_mod (R8 data type), 
+!       instead of using GQ3D_CODE/RRTMG/RAD_RRTM_CFMIP/shr_orb_mod (R4 data type),
+!       some modifications are made (02/23/2018). Follow "JUNG"
+!
+!       In order to remove MPI structure,
+!       - Remove rrtmg_lw_read_nc.f90 and rrtmg_sw_read_nc.f90 
+!         Instead, use rrtmg_lw_k_g_constants.f90 and rrtmg_sw_k_g_constants.f90 
+!       - Remove subroutine tracesini since subroutine TRACE_GAS_INPUT (in trace_gases.f90)
+!         is used ("call tracesini" was commented out by TCRAMS in rad_full.f90).  
+!         In TRACE_GAS_INPUT, data is specified, instead of reading.
+!       - Comment out all (masterproc) writing
 ! -------------------------------------------------------------------------- 
 ! Interface to RRTM longwave and shortwave radiation code.
 !   Robert Pincus, November 2007
@@ -25,20 +36,18 @@
       use shr_orb_mod, only: shr_orb_params
       use cam_rad_parameterizations, only : &
                                      computeRe_Liquid, computeRe_Ice, albedo
-      use parkind, only : kind_rb   ! RRTM expects reals with this kind parameter 
-                                    ! (8 byte reals) 
-      
+      use parkind, only : kind_rb, &   ! (8 byte reals) 
+                          kind_rm      ! (4 byte reals)  ! added by JUNG
       implicit none
       private
 
-    include "mpif.h"
+!JUNG    include "mpif.h"
 
 !------------------------------------------------------------------------------
 ! Public procedures
 !------------------------------------------------------------------------------
 
-      public :: rad_driver_rrtm, initialize_radiation, isInitialized_RadDriver, &
-                tracesini
+      public :: rad_driver_rrtm, initialize_radiation, isInitialized_RadDriver
   
 !------------------------------------------------------------------------------
 ! Constants
@@ -72,7 +81,7 @@
           isInitialized_RadDriver = .false. 
 
 !bloss(072009): changed from mass mixing ratios to volume mixing ratios
-!                 because we are now using rrtmg_lw.nc sounding for trace gases.
+!               because we are now using rrtmg_lw.nc sounding for trace gases.
 
 ! Profiles of gas volume mixing ratios 
 
@@ -143,8 +152,8 @@
       use rrtmg_lw_rad, only : rrtmg_lw
       use parrrtm,      only : nbndlw ! Number of LW bands
       use parrrsw,      only : nbndsw, naerec ! Number of SW bands
-      use parkind,      only : kind_rb ! RRTM expects reals with this kind parameter 
-                                  ! (8 byte reals) 
+      use parkind,      only : kind_rb, & ! (8 byte reals) 
+                               kind_rm    ! (4 byte reals)   ! Added by JUNG 
       
       IMPLICIT NONE
     
@@ -287,7 +296,11 @@
           overlap   ! RRTMG cloud overlap method (default = 1)
 
       integer :: i,k
-      real    :: dayForSW, delta
+      real    :: dayForSW
+   
+   ! JUNG
+   !  real :: delta
+      real(kind = kind_rb) :: delta,eccf_tmp
 
 !bloss: add layer to top to improve top-of-model heating rates.
       
@@ -418,7 +431,7 @@
 
     if (dolongwave) then
     
-      if(lat.eq.1.AND.masterproc) print *, "Computing longwave radiation ..." 
+!JUNG      if(lat.eq.1.AND.masterproc) print *, "Computing longwave radiation ..." 
       
       surfaceT(:) = tg(1:nx)
 
@@ -443,7 +456,7 @@
 
     if(doshortwave) then
 
-        if(lat.eq.1.AND.masterproc) print *, "Computing shortwave radiation ..." 
+!JUNG        if(lat.eq.1.AND.masterproc) print *, "Computing shortwave radiation ..." 
 
 ! Solar insolation depends on several choices
 
@@ -478,10 +491,19 @@
           dayForSW = float(floor(day0)) + day - float(floor(day))
         end if
 
-        call shr_orb_decl (dayForSW, eccen, mvelpp, lambm0, obliqr, delta, eccf)
-        solarZenithAngleCos(:) =  &
-             zenith(dayForSW, pi * latitude(:)/180., pi * longitude(:)/180.)
+! JUNG -----------------------------------------
+!       call shr_orb_decl (dayForSW, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+        call shr_orb_decl (real(dayForSW,kind_rb),real(eccen,kind_rb),real(mvelpp,kind_rb), &
+                           real(lambm0,kind_rb),real(obliqr,kind_rb),delta,eccf_tmp) 
+        eccf = real(eccf_tmp,kind_rm)   
+! JUNG -----------------------------------------                        
 
+        ! JUNG: Add do-loop for function zenith because "zenith" is not pure anymore.
+        !       Change due to the use of shared version of shr_orb_mode.           
+        do i=1,nx 
+        solarZenithAngleCos(i) =  &
+             zenith(dayForSW, pi * latitude(i)/180., pi * longitude(i)/180.)
+        enddo
       end if
 
 !---------------
@@ -494,7 +516,7 @@
 
       if(all(solarZenithAngleCos(:) >= tiny(solarZenithAngleCos))) then 
 
-!        if(lat.eq.1.AND.masterproc) print *, "Let's do some shortwave" 
+!JUNG        if(lat.eq.1.AND.masterproc) print *, "Let's do some shortwave" 
 
         call albedo(ocean, real(solarZenithAngleCos(:)), &
              asdir(:), aldir(:), asdif(:), aldif(:))
@@ -510,22 +532,22 @@
              dummyAerosolProps, dummyAerosolProps, dummyAerosolProps, dummyAerosolProps2, &
              swUp, swDown, swHeatingRate, swUpClearSky, swDownClearSky, swHeatingRateClearSky)
 
-        if(lat.eq.1.AND.masterproc) then
-          if(doshortwave) then 
-            if(doperpetual) then
-              write(*,992) coszrs, SUM(swDown(1:nx,nzm+2))/float(nx)
-            else
-              write(*,991) coszrs, SUM(swDown(1:nx,nzm+2))/float(nx), eccf
-            end if
-            991 format('radiation: diurnally-varying insolation, coszrs = ',F10.7, &
-                     ' solin = ',f10.4,' eccf = ',f10.7)
-            992 format('radiation: diurnally-averaged insolation, coszrs = ',F10.7, &
-                     ' solin = ',f10.4)
-          end if
-          write(*,993) asdir(1), aldir(1), asdif(1), aldif(1)
-993       format('radiation: surface albedos, asdir= ',F10.7, &
-               ' aldir = ',f10.7,' asdif = ',f10.7,' aldif = ',f10.7)
-        end if
+!JUNG        if(lat.eq.1.AND.masterproc) then
+!JUNG          if(doshortwave) then 
+!JUNG            if(doperpetual) then
+!JUNG              write(*,992) coszrs, SUM(swDown(1:nx,nzm+2))/float(nx)
+!JUNG            else
+!JUNG              write(*,991) coszrs, SUM(swDown(1:nx,nzm+2))/float(nx), eccf
+!JUNG            end if
+!JUNG            991 format('radiation: diurnally-varying insolation, coszrs = ',F10.7, &
+!JUNG                     ' solin = ',f10.4,' eccf = ',f10.7)
+!JUNG            992 format('radiation: diurnally-averaged insolation, coszrs = ',F10.7, &
+!JUNG                     ' solin = ',f10.4)
+!JUNG          end if
+!JUNG          write(*,993) asdir(1), aldir(1), asdif(1), aldif(1)
+!JUNG993       format('radiation: surface albedos, asdir= ',F10.7, &
+!JUNG               ' aldir = ',f10.7,' asdif = ',f10.7,' aldif = ',f10.7)
+!JUNG        end if
 
       else ! if sun is down
         coszrs = 0.
@@ -549,7 +571,7 @@
   subroutine initialize_radiation(nx,ny,cp,iyear,day0,latitude,longitude,doperpetual)
 !==============================================================================
 
-    use parkind, only: kind_rb
+    use parkind, only: kind_rb,kind_rm     ! kind_rm is added by JUNG
     use rrtmg_sw_init, only: rrtmg_sw_ini
     use rrtmg_lw_init, only: rrtmg_lw_ini
     
@@ -569,12 +591,26 @@
     real(KIND=kind_rb) :: cpdair
     integer :: ierr, i, j
     real :: p_factor, p_coszrs
+    
+!   JUNG    
+    real(kind=kind_rb) :: eccen_tmp,obliq_tmp,mvelp_tmp
+    real(kind=kind_rb) :: obliqr_tmp,lambm0_tmp,mvelpp_tmp
 
     !bloss  subroutine shr_orb_params
     !bloss  inputs:  iyear, log_print
     !bloss  ouptuts: eccen, obliq, mvelp, obliqr, lambm0, mvelpp
 
-    call shr_orb_params(iyear, eccen, obliq, mvelp, obliqr, lambm0, mvelpp, .false.)
+! JUNG ------------------------------------------
+!   call shr_orb_params(iyear, eccen, obliq, mvelp, obliqr, lambm0, mvelpp, .false.)
+    call shr_orb_params(iyear,eccen_tmp,obliq_tmp,mvelp_tmp,obliqr_tmp, &
+                        lambm0_tmp,mvelpp_tmp,.false.)
+    eccen = real(eccen_tmp,kind_rm)
+    obliq = real(obliq_tmp,kind_rm)
+    mvelp = real(mvelp_tmp,kind_rm)
+    obliqr = real(obliqr_tmp,kind_rm)
+    lambm0 = real(lambm0_tmp,kind_rm)
+    mvelpp = real(mvelpp_tmp,kind_rm)
+! JUNG ------------------------------------------                        
  
     if(doperpetual) then
       ! perpetual sun (no diurnal cycle)
@@ -596,289 +632,13 @@
     
     isInitialized_RadDriver = .true. 
   end subroutine initialize_radiation
-  
-!==============================================================================
-  subroutine tracesini(nzm,pres,presi,ggr,masterproc)
-!==============================================================================
-
-! ----------------------------------------------------------------------------
-! Trace gas profiles
-! ----------------------------------------------------------------------------
-
-    use parkind, only: kind_rb, kind_im
-    use rrlw_ncpar
-	use netcdf
-	
-	implicit none
-	
-! Initialize trace gas vertical profiles
-!   The files read from the top down 
-
-!bloss(072009): Get trace gas profiles from rrtmg_lw.nc, the data
-!                 file provided with RRTMG.  These are indexed from
-!                 bottom to top and are in ppmv, so that no conversion
-!                 is needed for use with RRTMG.
-
-    integer, intent(in) :: nzm
-    real, intent(in) :: pres(nzm), presi(nzm+1)
-    real, intent(in) :: ggr ! gravitational acceleration (~9.8 m/s2)
-    logical, intent(in) :: masterproc
-    integer k, m, ierr
-    real :: godp ! gravity over delta pressure
-    real :: plow, pupp
-    integer(kind=kind_im) :: ncid, varID, dimIDab, dimIDp
-
-    integer(kind=kind_im) :: Nab, nPress, ab
-    real(kind=kind_rb) :: wgtlow, wgtupp, pmid
-    real(kind=kind_rb), allocatable, dimension(:) :: pMLS
-    real(kind=kind_rb), allocatable, dimension(:,:) :: trace, trace_in
-    character(LEN=nf90_max_name) :: tmpName
-
-    integer, parameter :: nTraceGases = 9
-    real(kind=kind_rb), dimension(nzm+1) :: tmppres ! pres w/extra level at top.
-    real(kind=kind_rb), dimension(nzm+2) :: tmppresi ! presi w/extra level at top.
-    real(kind=kind_rb), dimension(nzm+1) :: tmpTrace
-    real(kind=kind_rb), dimension(nzm+2,nTraceGases) :: trpath
-    character(len = maxAbsorberNameLength), dimension(nTraceGases), parameter :: &
-         TraceGasNameOrder = (/        &
-     				'O3   ',  &
-     				'CO2  ',  &
-     				'CH4  ',  &
-     				'N2O  ',  & 
-     				'O2   ',  &
-     				'CFC11',  &
-     				'CFC12',  &
-     				'CFC22',  &
-     				'CCL4 '  /)
-
-	real, dimension(nTraceGases), parameter :: &
-	      tracegasMolecularWeights = (/ &
-	                                  mwo3,    &
-	                                  mwco2,   &
-	                                  mwch4,   &
-	                                  mwn2o,   &
-	                                  mwo2,    &
-	                                  mwf11,   &
-	                                  mwf12,   &
-	                                  mwf22,   &
-	                                  mwccl4  /)
-	
-    ! ---------------------------------
-
-    if(isallocated_tracegases.AND.(nz_tracegases.ne.nzm+1)) then
-
-! number of vertical levels for radiation has changed since last
-!   update of trace gas concentrations (because the size of the 
-!   patched sounding above the model domain has changed with the 
-!   pressure at the model top, perhaps).
-
-! deallocate trace gas arrays and re-allocate below.
-
-      deallocate(o3, co2, ch4, n2o, o2, cfc11, cfc12, cfc22, ccl4, STAT=ierr)
-      if(ierr.ne.0) then
-        write(*,*) 'ERROR: could not deallocate trace gas arrays in tracesini'
-        call rad_error()
-      else
-        isallocated_tracegases = .false.
-        nz_tracegases = -1
-      end if
-    end if
-
-    if(.NOT.isallocated_tracegases) then
-
-! allocate trace gas arrays.  These have an extra level for the 
-!   mean mass-weighted trace gas concentration in the overlying atmosphere.
-
-      nz_tracegases = nzm+1  ! add one level to compute trace gas levels to TOA
-      allocate(o3(nz_tracegases), co2(nz_tracegases), ch4(nz_tracegases), &
-           n2o(nz_tracegases), o2(nz_tracegases), cfc11(nz_tracegases), &
-           cfc12(nz_tracegases), cfc22(nz_tracegases), ccl4(nz_tracegases), &
-           STAT=ierr)
-      if(ierr.ne.0) then
-        write(*,*) 'ERROR: could not allocate trace gas arrays in tracesini'
-        call rad_error()
-      else
-        isallocated_tracegases=.true.
-      end if
-    end if
-
-! Read profiles from rrtmg data file.
-    status(:)   = nf90_NoErr
-  if(masterproc) then
-    status(1)   = nf90_open('RUNDATA/rrtmg_lw.nc',nf90_nowrite,ncid)
-	
-    status(2)   = nf90_inq_dimid(ncid,"Pressure",dimIDp)
-    status(3)   = nf90_inquire_dimension(ncid, dimIDp, tmpName, nPress)
-
-    status(4)   = nf90_inq_dimid(ncid,"Absorber",dimIDab)
-    status(5)   = nf90_inquire_dimension(ncid, dimIDab, tmpName, Nab)
-  endif
-
-    CALL MPI_BCAST( npress, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-    CALL MPI_BCAST( nab, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-
-    allocate(pMLS(nPress), trace(nTraceGases,nPress), trace_in(Nab,nPress), STAT=ierr)
-    if(ierr.ne.0) then
-      write(*,*) 'ERROR: could not declare arrays in tracesini'
-      call rad_error()
-    end if
-
-!initialize arrays
-    pMLS = 0.
-    trace = 0.
-    trace_in = 0.
-
-  if(masterproc) then
-    status(6)   = nf90_inq_varid(ncid,"Pressure",varID)
-    status(7)   = nf90_get_var(ncid, varID, pMLS)
-
-    status(8)   = nf90_inq_varid(ncid,"AbsorberAmountMLS",varID)
-    status(9) = nf90_get_var(ncid, varID, trace_in)
-  endif
-
-    CALL MPI_BCAST( pmls, npress, mpi_double_precision, 0, MPI_COMM_WORLD, ierr)
-    CALL MPI_BCAST( trace_in, nab*npress, mpi_double_precision, 0, MPI_COMM_WORLD, ierr)
-    CALL MPI_BCAST( status, 9, mpi_integer, 0, MPI_COMM_WORLD, ierr)
-
-    do m = 1,nTraceGases
-      call getAbsorberIndex(TRIM(tracegasNameOrder(m)),ab)
-      trace(m,1:nPress) = trace_in(ab,1:nPress)
-      where (trace(m,:)>2.)
-        trace(m,:) = 0.
-      end where
-    end do
-
-    if(MAXVAL(ABS(status(1:8+nTraceGases))).ne.0) then
-      write(*,*) 'Error in reading trace gas sounding from RUNDATA/rrtmg_lw.nc'
-      call rad_error()
-    end if
-
-!!$    do k = 1,nPress
-!!$      write(*,999) pMLS(k), (trace(m,k),m=1,nTraceGases)
-!!$    end do
-    999 format(f8.2,12e12.4)
-
-!tcram: write trace gas sounding (mass mixing ratio) to ascii file
-!!$      write(91,1001) 'p (mb)',tracegasNameOrder
-!!$      do 100 k = nPress,1,-1
-!!$        write(91,999) pMLS(k), (trace(m,k)*(tracegasMolecularWeights(m)/mwdry),m=1,nTraceGases)
-!!$  100 continue
-!!$ 1001 format(A8,9A12)
-
-!bloss: modify routine to compute trace gas paths from surface to
-! top of supplied sounding.  Then, interpolate these paths onto the
-!  interface pressure levels of the model grid, with an extra level
-!  at the top for the overlying atmosphere.  Differencing these
-!   paths and dividing by dp/g will give the mean mass concentration
-!    in that level.
-
-!  This procedure has the advantage that the total trace gas path
-!   will be invariant to changes in the vertical grid.
-
-! pressure sounding
-    tmppres(1:nzm) = pres(1:nzm) ! pressure at model levels (mb)
-    tmppresi(1:nzm+1) = presi(1:nzm+1) ! pressure at model interfaces (mb)
-    
-! add a level for the overlying atmosphere.
-    tmppres(nzm+1) = 0.5*presi(nzm+1) ! half of pressure at top of model
-    tmppresi(nzm+2) = MIN(1.e-4_kind_rb,0.25*tmppres(nzm+1)) ! near-zero pressure at top of extra laye
-
-! trace gas paths at surface are zero.
-    trpath(1,:) = 0.
-
-! start with trace path at interface below
-
-    do k = 2,nzm+2
-      trpath(k,:) = trpath(k-1,:)
-
-! if pressure greater than sounding, assume concentration at bottom.
-
-      if (tmppresi(k-1).gt.pMLS(1)) then
-        trpath(k,:) = trpath(k,:) &
-             + (tmppresi(k-1) - MAX(tmppresi(k),pMLS(1)))/ggr & ! dp/g
-             *trace(:,1)                                 ! *tr
-      end if
-
-! limit pMLS(m:m-1) so that they are within the model level
-!  tmppresi(k-1:k).
-
-      do m = 2,nPress
-        plow = MIN(tmppresi(k-1),MAX(tmppresi(k),pMLS(m-1)))
-        pupp = MIN(tmppresi(k-1),MAX(tmppresi(k),pMLS(m)))
-
-        if(plow.gt.pupp) then
-          pmid = 0.5*(plow+pupp)
-
-          wgtlow = (pmid-pMLS(m))/(pMLS(m-1)-pMLS(m))
-          wgtupp = (pMLS(m-1)-pmid)/(pMLS(m-1)-pMLS(m))
-!!$          write(*,*) pMLS(m-1),pmid,pMLS(m),wgtlow,wgtupp
-
-! include this level of the sounding in the trace gas path
-          trpath(k,:) = trpath(k,:) &
-               + (plow - pupp)/ggr*(wgtlow*trace(:,m-1)+wgtupp*trace(:,m)) ! dp/g*tr
-        end if
-      end do
-
-! if pressure is off top of trace gas sounding, assume
-!  concentration at top
-      if (tmppresi(k).lt.pMLS(nPress)) then
-        trpath(k,:) = trpath(k,:) &
-             + (MIN(tmppresi(k-1),pMLS(nPress)) - tmppresi(k))/ggr & ! dp/g
-             *trace(:,nPress)                               ! *tr
-      end if
-
-    end do
-
-    do m = 1,nTraceGases
-      do k = 1,nzm+1
-        godp = ggr/(tmppresi(k) - tmppresi(k+1))
-        tmpTrace(k) = (trpath(k+1,m) - trpath(k,m))*godp
-      end do
-      if(TRIM(TraceGasNameOrder(m))=='O3') then
-        o3(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CO2') then
-        co2(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CH4') then
-        ch4(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='N2O') then
-        n2o(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='O2') then
-        o2(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CFC11') then
-        cfc11(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CFC12') then
-        cfc12(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CFC22') then
-        cfc22(:) = tmpTrace(:)
-      elseif(TRIM(TraceGasNameOrder(m))=='CCL4') then
-        ccl4(:) = tmpTrace(:)
-      end if
-    end do
-
-    if(masterproc) then
-      print*,'RRTMG rrtmg_lw.nc trace gas profile: number of levels=',nPress
-      print*,'gas traces vertical profiles (ppmv):'
-      write(*,101) 'p (hPa)', (TraceGasNameOrder(m),m=1,nTraceGases)
-      do k=1,nzm+1
-        write(*,102) tmppres(k),o3(k),co2(k),ch4(k),n2o(k),o2(k), &
-             cfc11(k),cfc12(k), cfc22(k),ccl4(k)
-      end do
-      print*,'done...'
-    endif
-   
- 101 FORMAT(A8, 9A18)
- 102 FORMAT(F8.2, 9E18.8)
- 
-    deallocate(pMLS, trace, trace_in, STAT=ierr)
-    if(ierr.ne.0) then
-      write(*,*) 'ERROR: could not deallocate arrays in tracesini'
-      call rad_error()
-    end if
-    
-  end subroutine tracesini
 
 !==============================================================================
-  elemental real function zenith(calday, clat, clon)
+! JUNG  elemental real function zenith(calday, clat, clon)
+!       Change due to the use of shared version of shr_orb_mode.  
+!       Since shr_orb_decl is not pure in the shared version, 
+!       thus, zenith cannot be pure.       
+  function zenith(calday, clat, clon) result(zenith_result)
 !==============================================================================
 
 ! ----------------------------------------------------------------------------
@@ -886,43 +646,58 @@
 ! ----------------------------------------------------------------------------
 
      use shr_orb_mod, only : shr_orb_decl, shr_orb_cosz
+     
+     use parkind, only : kind_rb,kind_rm   ! added by JUNG
+                          
      implicit none
-     real, intent(in ) :: calday, & ! Calendar day, including fraction
-                          clat,   & ! Current centered latitude (radians)
-                          clon      ! Centered longitude (radians)
+     real, intent(in) :: calday, & ! Calendar day, including fraction
+                         clat,   & ! Current centered latitude (radians)
+                         clon      ! Centered longitude (radians)
+     real zenith_result
+! JUNG ------------------------------------------------------    
+!    real :: delta,eccf  ! delta: Solar declination angle in radians
+     real(kind=kind_rb) :: delta,eccf,zenith_tmp  ! delta: Solar declination angle in radians
 
-     real     :: delta, & ! Solar declination angle in radians
-                 eccf
-     integer  :: i     ! Position loop index
+!    call shr_orb_decl (calday, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+!    Compute local cosine solar zenith angle
+!    zenith = shr_orb_cosz(calday, clat, clon, delta)
 
-     call shr_orb_decl (calday, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+     call shr_orb_decl (real(calday,kind_rb),real(eccen,kind_rb),real(mvelpp,kind_rb), &
+                        real(lambm0,kind_rb),real(obliqr,kind_rb), &
+                        delta,eccf)
 
-! Compute local cosine solar zenith angle
-     zenith = shr_orb_cosz(calday, clat, clon, delta)
-
+!    Compute local cosine solar zenith angle
+     zenith_tmp = shr_orb_cosz(real(calday,kind_rb),real(clat,kind_rb), &
+                               real(clon,kind_rb),delta)
+     zenith_result = real(zenith_tmp,kind_rm)
+!------------------------------------------------------------     
+     
   end function zenith
 
 !==============================================================================
   subroutine perpetual_factor_coszrs(day, lat, lon, p_factor, p_coszrs)
-!==============================================================================
-
-     use shr_orb_mod, only : shr_orb_decl
-     implicit none
-
-     real, intent(in) :: day, lat, lon ! Day (without fraction); centered lat/lon (degrees) 
-     real     :: delta, & ! Solar declination angle in radians
-                 eccf
-
-! Output
-     real, intent(out) :: p_factor, p_coszrs
-
+  
 !  estimate the factor to multiply the solar constant
 !  so that the sun hanging perpetually right above
 !  the head (zenith angle=0) would produce the same
 !  total input the TOA as the sun subgect to diurnal cycle.
-!  coded by Marat Khairoutdinov, 2004
-    
+!  coded by Marat Khairoutdinov, 2004  
+!==============================================================================
+     use parkind, only : kind_rb,kind_rm   ! added by JUNG
+     use shr_orb_mod, only : shr_orb_decl
+     implicit none
+
+     real, intent(in)  :: day, lat, lon ! Day (without fraction); centered lat/lon (degrees) 
+     real, intent(out) :: p_factor, p_coszrs
+
 ! Local:
+     
+! JUNG --------------------------------------------------------------------
+!    real :: delta,eccf    ! delta: Solar declination angle in radians
+     real :: eccf          
+     real(kind=kind_rb) :: delta,eccf_tmp  ! delta: Solar declination angle in radians
+! JUNG --------------------------------------------------------------------     
+          
      integer :: n
      real :: tmp, tmp2, dttime, ttime 
      real :: coszrs
@@ -940,7 +715,15 @@
 
       ttime = day+float(n)*dtrad/86400.
 
-      call shr_orb_decl (ttime, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+! JUNG ------------------------------------------------------------------
+!     call shr_orb_decl (ttime,eccen,mvelpp,lambm0,obliqr,delta,eccf)
+      call shr_orb_decl (real(ttime,kind_rb),real(eccen,kind_rb),real(mvelpp,kind_rb), &
+                         real(lambm0,kind_rb),real(obliqr,kind_rb), &
+                         delta,eccf_tmp)
+      
+      eccf = real(eccf_tmp,kind_rm) 
+! JUNG ------------------------------------------------------------------                       
+                         
       coszrs = zenith(ttime, clat, clon)
       tmp  = tmp  + max(0., eccf * coszrs)
       tmp2 = tmp2 + max(0., eccf * coszrs) * max(0.,coszrs)
