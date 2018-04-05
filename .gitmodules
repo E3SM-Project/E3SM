@@ -8,3 +8,9 @@
 [submodule "sbetr"]
 	path = components/clm/src/external_models/sbetr
 	url = git@github.com:ACME-Climate/sbetr.git
+[submodule "mpas-source"]
+	path = mpas-source
+	url = git@github.com:ACME-Climate/MPAS.git
+[submodule "components/mpas-source"]
+	path = components/mpas-source
+	url = git@github.com:ACME-Climate/MPAS.git
