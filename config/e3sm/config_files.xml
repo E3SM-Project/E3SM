@@ -196,14 +196,11 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="drv"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="cam"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="cism"     >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="clm"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="cice"     >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="rtm"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="mosart"   >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="pop"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/testdefs/testmods_dirs</value>
+      <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testmods_dirs</value>
+      <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testmods_dirs</value>
+      <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testmods_dirs</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -217,12 +214,9 @@
       <value component="allactive">$CIMEROOT/config/$MODEL/usermods_dirs</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/usermods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/usermods_dirs</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/usermods_dirs</value>
-      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
       <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
