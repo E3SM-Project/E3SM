@@ -2,8 +2,7 @@
 use strict;
 use File::Compare;
 
-my $component = "mpaso";
-my $component_fullname = "mpas-ocean";
+my $component = "mpas-ocean";
 my $component_dir = "ocn";
 my $component_driver = "ocean_cesm_driver";
 my $core = "ocean";
@@ -30,12 +29,12 @@ my $MACH         = `./xmlquery MACH         -value`;
 # Copy MPAS-O source
 #---------------------------------------------------------------------------
 
-my $srccpy = "cp -fpR $SRCROOT/components/$component_fullname/model/src/* $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/$component/model/src/* $OBJROOT/$component_dir/source/.";
 mkdir "$OBJROOT/$component_dir";
 mkdir "$OBJROOT/$component_dir/source";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
 
-my $drvcpy = "cp -fpR $SRCROOT/components/$component_fullname/driver ${OBJROOT}/$component_dir/source/$component_driver";
+my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
 system($drvcpy) == 0 or die "ERROR: $component.buildlib $drvcpy failed: $?\n";
 
 my $root_path = "$OBJROOT/$component_dir/source";

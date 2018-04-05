@@ -54,9 +54,8 @@
   </entry>
 
   <description>
-    <desc compset="_MALI">MPAS-ALBANY Land Ice default:</desc>
-    <desc compset="_MALISIA" >MPAS-ALBANY Land Ice (shallow ice solver):</desc>
-    <desc compset="_MALIALB" >MPAS-ALBANY Land Ice (Albany-FO solver):</desc>
+    <desc compset="_MALI">MPAS-Albany Land Ice default (Albany-FO solver):</desc>
+    <desc compset="_MALISIA" >MPAS-Albany Land Ice (shallow ice solver):</desc>
   </description>
 
   <help>
@@ -64,7 +63,7 @@
     MPAS-ALBANY LAND ICE naming conventions
     =========================================
     MALISIA   => native shallow ice solver
-    MALIALBFO => external Albany First-order solver
+    MALI      => external Albany First-order solver
   </help>
 
 </definitions_variables>
