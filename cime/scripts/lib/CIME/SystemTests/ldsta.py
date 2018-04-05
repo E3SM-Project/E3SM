@@ -7,7 +7,7 @@ The test verifies the archive directory contains the expected files
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.utils import expect
-from CIME.case_st_archive import case_st_archive, get_file_date
+from CIME.date import get_file_date
 
 import datetime
 import glob
@@ -52,7 +52,7 @@ class LDSTA(SystemTestsCommon):
             current_date_str = '{:04}-{:02}-{:02}'.format(current_date.year,
                                                           current_date.month,
                                                           current_date.day)
-            case_st_archive(self._case, last_date_str=current_date_str, copy_only=False)
+            self._case.case_st_archive(last_date_str=current_date_str, copy_only=False)
             archive_dates = [_date_to_datetime(get_file_date(fname))
                              for fname in glob.glob(os.path.join(rest_dir, '*'))]
             while next_datecheck <= current_date:

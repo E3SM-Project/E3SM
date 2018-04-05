@@ -15,7 +15,7 @@ import CIME.compare_namelists
 import CIME.utils
 import six
 from update_e3sm_tests import get_recommended_test_time
-from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
+from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.generic_xml import GenericXML
@@ -25,8 +25,8 @@ from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
-from CIME.check_lockedfiles import lock_file
 from CIME.provenance import get_recommended_test_time_based_on_past
+from CIME.locked_files import lock_file
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,34 @@ def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads
         new_test_names.append(new_test_name)
 
     return new_test_names
+
+_TIME_CACHE = {}
+###############################################################################
+def _get_time_est(test, baseline_root, as_int=False, use_cache=False, raw=False):
+###############################################################################
+    if test in _TIME_CACHE and use_cache:
+        return _TIME_CACHE[test]
+
+    recommended_time = get_recommended_test_time_based_on_past(baseline_root, test, raw=raw)
+
+    if recommended_time is None:
+        recommended_time = get_recommended_test_time(test)
+
+    if as_int:
+        if recommended_time is None:
+            recommended_time = 9999999999
+        else:
+            recommended_time = convert_to_seconds(recommended_time)
+
+    if use_cache:
+        _TIME_CACHE[test] = recommended_time
+
+    return recommended_time
+
+###############################################################################
+def _order_tests_by_runtime(tests, baseline_root):
+###############################################################################
+    tests.sort(key=lambda x: _get_time_est(x, baseline_root, as_int=True, use_cache=True, raw=True), reverse=True)
 
 ###############################################################################
 class TestScheduler(object):
@@ -186,9 +214,13 @@ class TestScheduler(object):
                     test_baseline = os.path.join(full_baseline_dir, test_name)
                     if os.path.isdir(test_baseline):
                         existing_baselines.append(test_baseline)
+
                 expect(allow_baseline_overwrite or len(existing_baselines) == 0,
                        "Baseline directories already exists {}\n" \
                        "Use -o to avoid this error".format(existing_baselines))
+
+        if self._cime_model == "e3sm":
+            _order_tests_by_runtime(test_names, self._baseline_root)
 
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
@@ -255,6 +287,7 @@ class TestScheduler(object):
 
     ###########################################################################
     def get_testnames(self):
+    ###########################################################################
         return list(self._tests.keys())
 
     ###########################################################################
@@ -350,7 +383,9 @@ class TestScheduler(object):
             rc, output, errput = run_cmd(cmd, from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
-                                 "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".format(phase, test, cmd, output + "\n" + errput))
+                                 "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".
+                                 format(phase, test, cmd, 
+                                        output.encode('utf-8') + "\n" + errput.encode('utf-8')))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
@@ -363,7 +398,9 @@ class TestScheduler(object):
                 # succeeded was the submission.
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
-                                 "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".format(phase, test, cmd, output + "\n" + errput))
+                                 "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".
+                                 format(phase, test, cmd, 
+                                        output.encode('utf-8') + "\n" + errput.encode('utf-8')))
                 return True, errput
 
     ###########################################################################
@@ -393,7 +430,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if get_model() == "e3sm":
+            if self._cime_model == "e3sm":
                 component = "allactive"
                 modspath = test_mods
             else:
@@ -446,11 +483,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --walltime {}".format(self._walltime)
         else:
             # model specific ways of setting time
-            if get_model() == "e3sm":
-                recommended_time = get_recommended_test_time_based_on_past(self._baseline_root, test)
-
-                if recommended_time is None:
-                    recommended_time = get_recommended_test_time(test)
+            if self._cime_model == "e3sm":
+                recommended_time = _get_time_est(test, self._baseline_root)
 
                 if recommended_time is not None:
                     create_newcase_cmd += " --walltime {}".format(recommended_time)
@@ -573,7 +607,7 @@ class TestScheduler(object):
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
             # if we are running a single test we don't need sharedlibroot
-            if len(self._tests) > 1 and get_model() != "e3sm":
+            if len(self._tests) > 1 and self._cime_model != "e3sm":
                 case.set_value("SHAREDLIBROOT",
                                os.path.join(self._output_root,
                                             "sharedlibroot.{}".format(self._test_id)))
@@ -658,7 +692,7 @@ class TestScheduler(object):
             return max_cores
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
-            if get_model() == "cesm":
+            if self._cime_model == "cesm":
                 # Will force serialization of sharedlib builds
                 # TODO - instead of serializing, compute all library configs needed and build
                 # them all in parallel
@@ -843,7 +877,7 @@ class TestScheduler(object):
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            if get_model() == "cesm":
+            if self._cime_model == "cesm":
                 template_file = os.path.join(python_libs_root, "testreporter.template")
                 template = open(template_file, "r").read()
                 template = template.replace("<PATH>",

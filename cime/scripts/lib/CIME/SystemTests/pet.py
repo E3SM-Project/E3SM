@@ -7,7 +7,6 @@ This is an openmp test to determine that changing thread counts does not change 
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ class PET(SystemTestsCompareTwo):
                 self._case.set_value("NTHRDS_{}".format(comp), 2)
 
         # Need to redo case_setup because we may have changed the number of threads
-        case_setup(self._case, reset=True)
+
 
     def _case_two_setup(self):
         #Do a run with all threads set to 1
@@ -40,4 +39,4 @@ class PET(SystemTestsCompareTwo):
             self._case.set_value("NTHRDS_{}".format(comp), 1)
 
         # Need to redo case_setup because we may have changed the number of threads
-        case_setup(self._case, reset=True)
+

@@ -58,14 +58,16 @@ def _main_func(description):
     with Case(caseroot, read_only=False) as case:
         print("BATCH SUBMIT: (nodes {})".format(case.num_nodes))
         if job is None:
-            job = "case.test" if case.get_value("TEST") else "case.run"
+            job = case.get_primary_job()
+
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
         for job_id, cmd in job_id_to_cmd:
             case.load_env(job=job_id, reset=True, verbose=True)
             print("    {} -> {}".format(job_id, case.get_resolved_value(cmd)))
             print("")
-        if job in ["case.test", "case.run"]:
-            print("MPIRUN: {}".format(case.get_resolved_value(case.get_mpirun_cmd())))
+
+        if job == case.get_primary_job():
+            print("MPIRUN: {}".format(case.get_mpirun_cmd()))
 
 if __name__ == "__main__":
     _main_func(__doc__)

@@ -1,3 +1,70 @@
+import re
+from CIME.XML.standard_module_setup import *
+logger = logging.getLogger(__name__)
+###############################################################################
+def get_file_date(filename):
+###############################################################################
+    """
+    Returns the date associated with the filename as a date object representing the correct date
+    Formats supported:
+    "%Y-%m-%d_%h.%M.%s
+    "%Y-%m-%d_%05s"
+    "%Y-%m-%d-%05s"
+    "%Y-%m-%d"
+    "%Y-%m"
+    "%Y.%m"
+
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0001-01-06-00435.nc")
+    date(1, 1, 6, 0, 7, 15)
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0010-1-06_00435.nc")
+    date(10, 1, 6, 0, 7, 15)
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0010-10.nc")
+    date(10, 10, 1, 0, 0, 0)
+    >>> get_file_date("0064-3-8_10.20.30.nc")
+    date(64, 3, 8, 10, 20, 30)
+    >>> get_file_date("0140-3-5")
+    date(140, 3, 5, 0, 0, 0)
+    >>> get_file_date("0140-3")
+    date(140, 3, 1, 0, 0, 0)
+    >>> get_file_date("0140.3")
+    date(140, 3, 1, 0, 0, 0)
+    """
+
+    #
+    # TODO: Add these to config_archive.xml, instead of here
+    # Note these must be in order of most specific to least
+    # so that lesser specificities aren't used to parse greater ones
+    re_formats = [r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}", # [yy...]yyyy-mm-dd_hh.MM.ss
+                  r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[\-_][0-9]{1,5}",                     # [yy...]yyyy-mm-dd_sssss
+                  r"[0-9]*[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",                                    # [yy...]yyyy-mm-dd
+                  r"[0-9]*[0-9]{4}[\-\.][0-9]{1,2}",                                          # [yy...]yyyy-mm
+    ]
+
+    for re_str in re_formats:
+        match = re.search(re_str, filename)
+        if match is None:
+            continue
+        date_str = match.group()
+        date_tuple = [int(unit) for unit in re.split(r"-|_|\.", date_str)]
+        year = date_tuple[0]
+        month = date_tuple[1]
+        day = 1
+        second = 0
+        if len(date_tuple) > 2:
+            day = date_tuple[2]
+            if len(date_tuple) == 4:
+                second = date_tuple[3]
+            elif len(date_tuple) == 6:
+                # Create a date object with arbitrary year, month, day, but the correct time of day
+                # Then use _get_day_second to get the time of day in seconds
+                second = date.hms_to_second(hour = date_tuple[3],
+                                            minute = date_tuple[4],
+                                            second = date_tuple[5])
+        return date(year, month, day, 0, 0, second)
+
+    # Not a valid filename date format
+    logger.debug("{} is a filename without a supported date!".format(filename))
+    return None
 
 class date:
     """
