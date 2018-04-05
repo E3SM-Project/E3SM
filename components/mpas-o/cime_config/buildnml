@@ -44,8 +44,8 @@ if (! -d "$CASEBUILD/mpas-oconf" ) {
 # MPAS-O with active BGC fails bfb restart with more than 1 thread
 # DO NOT run with ocean bgc turned on with more than 1 thread
 #--------------------------------------------------------------------
-if ($NTHRDS_OCN != 1 && $OCN_BGC) {
-    die " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n";
+if ($NTHRDS_OCN ne 1 and $OCN_BGC ne 'no_bgc') {
+        die " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n";
 }
 
 #--------------------------------------------------------------------
