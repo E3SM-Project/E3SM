@@ -1,11 +1,10 @@
 MODULE halo_vort
 ! Routines that correct the halo-point vector components from neighboring face.
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk1,nk2,nhalo
-USE constld, only: d2_0,d3_0,d0_5
 
 ! Functions used
 USE utils,   only: fintrp,cubicint
@@ -32,9 +31,9 @@ CONTAINS
 ! SUBROUTINE HALO_ALPHA : called from HALO_COR_VORT_ALPHA   
 ! SUBROUTINE HALO_BETA  : called from HALO_COR_VORT_BETA
 !---------------------------------------------------------------------------
-!     D2_0  = 2.0_dbl_kind
-!     D3_0  = 3.0_dbl_kind
-!     D0_5  = 0.5_dbl_kind
+!     2.0_r8  = 2.0_r8
+!     3.0_r8  = 3.0_r8
+!     0.5_r8  = 0.5_r8
 
 !======================================================================= 
       SUBROUTINE VORT_COMM_PRE (channel)
@@ -53,8 +52,8 @@ CONTAINS
       INTEGER :: MODE = 1
 !     1 (Linear interpolation) 2 (Cubic Spline interpolation)
     
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_ALPHA,Z3DY_ALPHA
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_BETA,Z3DY_BETA 
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_ALPHA,Z3DY_ALPHA
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_BETA,Z3DY_BETA 
       
       INTEGER :: I,J,K,NPO
       INTEGER :: num_seg,mi1,mim,mip,mj1,mjm,mjp
@@ -90,8 +89,8 @@ CONTAINS
       IF (mi1.GT.mj1) THEN  
 !=======================================  x-array     
  
-      CALL HALO_COR_VORT_BETA (mi1,mim,mip,mjm,mjp,nk1-1,MODE,       &
-                               channel%seg(num_seg)%AM_VORT_BETA_T,  &
+      CALL HALO_COR_VORT_BETA (mi1,mj1,mim,mip,mjm,mjp,nk1-1,MODE,   &
+                               channel%seg(num_seg)%AM_VORT_BETA,    &
                                channel%seg(num_seg)%CBETA_T,         &
                                channel%seg(num_seg)%HBETA_T,         &
                                channel%seg(num_seg)%JHALO_LOC_T,     &
@@ -122,8 +121,8 @@ CONTAINS
       ELSE    
 !=======================================  y-array
 
-      CALL HALO_COR_VORT_ALPHA (mj1,mim,mip,mjm,mjp,nk1-1,MODE,       &
-                                channel%seg(num_seg)%AM_VORT_ALPHA_T, &
+      CALL HALO_COR_VORT_ALPHA (mi1,mj1,mim,mip,mjm,mjp,nk1-1,MODE,   &
+                                channel%seg(num_seg)%AM_VORT_ALPHA,   &
                                 channel%seg(num_seg)%CALPHA_T,        &
                                 channel%seg(num_seg)%HALPHA_T,        &
                                 channel%seg(num_seg)%IHALO_LOC_T,     &  
@@ -176,8 +175,8 @@ CONTAINS
 !-------------------------------------------------------------------------------- 
       type(channel_t), intent(inout) :: channel   ! channel data
       
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_ALPHA,Z3DY_ALPHA
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_BETA,Z3DY_BETA 
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_ALPHA,Z3DY_ALPHA
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Z3DX_BETA,Z3DY_BETA 
       
       INTEGER, PARAMETER :: INTERPOL_ITER = 10 
       INTEGER :: I,J,K,IPOM,IPOP,JPOM,JPOP,ITER
@@ -252,9 +251,9 @@ CONTAINS
         IPOM = 1 - I
         DO K = 2, NK1
          DO J = mjm, mjp-1
-          channel%seg(num_seg)%Z3DX(IPOM,J,K) = D0_5*(Z3DX_BETA(I,J,K-1)+Z3DX_BETA(I,J+1,K-1))
+          channel%seg(num_seg)%Z3DX(IPOM,J,K) = 0.5_r8*(Z3DX_BETA(I,J,K-1)+Z3DX_BETA(I,J+1,K-1))
          ENDDO
-          channel%seg(num_seg)%Z3DX(IPOM,mjp,K) = D2_0*Z3DX_BETA(I,mjp,K-1) &
+          channel%seg(num_seg)%Z3DX(IPOM,mjp,K) = 2.0_r8*Z3DX_BETA(I,mjp,K-1) &
                                                 - channel%seg(num_seg)%Z3DX(IPOM,mjp-1,K)
         ENDDO  
        ENDDO
@@ -263,14 +262,14 @@ CONTAINS
         IPOM = 1 - I
         DO K = 2, NK1 
          DO J = mjm, mjp 
-          channel%seg(num_seg)%Z3DY(IPOM,J,K) = D0_5*(Z3DY_BETA(I,J,K-1)+Z3DY_BETA(I-1,J,K-1))
+          channel%seg(num_seg)%Z3DY(IPOM,J,K) = 0.5_r8*(Z3DY_BETA(I,J,K-1)+Z3DY_BETA(I-1,J,K-1))
          ENDDO
         ENDDO  
        ENDDO         
        DO K = 2, NK1 
         DO J = mjm, mjp        
-         channel%seg(num_seg)%Z3DY(0,J,K) = (D2_0*Z3DY_BETA(1,J,K-1) &
-                                          + channel%seg(num_seg)%Z3DY(1,J,K))/D3_0
+         channel%seg(num_seg)%Z3DY(0,J,K) = (2.0_r8*Z3DY_BETA(1,J,K-1) &
+                                          + channel%seg(num_seg)%Z3DY(1,J,K))/3.0_r8
         ENDDO  
        ENDDO
         
@@ -280,10 +279,10 @@ CONTAINS
         DO K = 2, NK1
          DO J = mjm, mjp-1
           channel%seg(num_seg)%Z3DX(IPOP,J,K) =   &
-                 D0_5*(Z3DX_BETA(I,J,K-1)+Z3DX_BETA(I,J+1,K-1))
+                 0.5_r8*(Z3DX_BETA(I,J,K-1)+Z3DX_BETA(I,J+1,K-1))
          ENDDO
           channel%seg(num_seg)%Z3DX(IPOP,mjp,K) = &
-                 D2_0*Z3DX_BETA(I,mjp,K-1)-channel%seg(num_seg)%Z3DX(IPOP,mjp-1,K)
+                 2.0_r8*Z3DX_BETA(I,mjp,K-1)-channel%seg(num_seg)%Z3DX(IPOP,mjp-1,K)
         ENDDO  
        ENDDO
          
@@ -292,7 +291,7 @@ CONTAINS
         DO K = 2, NK1 
          DO J = mjm, mjp 
           channel%seg(num_seg)%Z3DY(IPOP,J,K) = &
-                 D0_5*(Z3DY_BETA(I,J,K-1)+Z3DY_BETA(I+1,J,K-1))
+                 0.5_r8*(Z3DY_BETA(I,J,K-1)+Z3DY_BETA(I+1,J,K-1))
          ENDDO
         ENDDO  
        ENDDO
@@ -300,14 +299,14 @@ CONTAINS
        DO ITER = 1, INTERPOL_ITER   
        DO K = 2, NK1 
         DO J = mjm, mjp 
-         Z3DY_BETA(nhalo+1,J,K-1) = D0_5*(channel%seg(num_seg)%Z3DY(MI1,J,K) &
-                                  + channel%seg(num_seg)%Z3DY(MI1+1,J,K))
+         Z3DY_BETA(nhalo+1,J,K-1) = 0.5_r8*(channel%seg(num_seg)%Z3DY(MI1,J,K) &
+                                          + channel%seg(num_seg)%Z3DY(MI1+1,J,K))
         ENDDO
        ENDDO  
        DO K = 2, NK1 
         DO J = mjm, mjp 
          channel%seg(num_seg)%Z3DY(MI1+1,J,K) = &
-                D0_5*(Z3DY_BETA(nhalo+1,J,K-1)+Z3DY_BETA(nhalo+2,J,K-1))
+                0.5_r8*(Z3DY_BETA(nhalo+1,J,K-1)+Z3DY_BETA(nhalo+2,J,K-1))
         ENDDO
        ENDDO 
        ENDDO  ! ITER              
@@ -317,7 +316,7 @@ CONTAINS
        DO K = 2, NK1 
         DO J = mjm, mjp 
          channel%seg(num_seg)%Z3DY(IPOP,J,K) = &
-                D2_0*Z3DY_BETA(I,J,K-1)-channel%seg(num_seg)%Z3DY(IPOP-1,J,K)
+                2.0_r8*Z3DY_BETA(I,J,K-1)-channel%seg(num_seg)%Z3DY(IPOP-1,J,K)
         ENDDO  
        ENDDO
              
@@ -374,9 +373,9 @@ CONTAINS
         DO K = 2, NK1
          DO I = mim, mip-1
           channel%seg(num_seg)%Z3DY(I,JPOM,K) = &
-                 D0_5*(Z3DY_ALPHA(I,J,K-1)+Z3DY_ALPHA(I+1,J,K-1))
+                 0.5_r8*(Z3DY_ALPHA(I,J,K-1)+Z3DY_ALPHA(I+1,J,K-1))
          ENDDO
-          channel%seg(num_seg)%Z3DY(mip,JPOM,K) = D2_0*Z3DY_ALPHA(mip,J,K-1) &
+          channel%seg(num_seg)%Z3DY(mip,JPOM,K) = 2.0_r8*Z3DY_ALPHA(mip,J,K-1) &
                                                 - channel%seg(num_seg)%Z3DY(mip-1,JPOM,K)
         ENDDO  
        ENDDO
@@ -386,14 +385,14 @@ CONTAINS
         DO K = 2, NK1 
          DO I = mim, mip 
           channel%seg(num_seg)%Z3DX(I,JPOM,K) = &
-                 D0_5*(Z3DX_ALPHA(I,J,K-1)+Z3DX_ALPHA(I,J-1,K-1))
+                 0.5_r8*(Z3DX_ALPHA(I,J,K-1)+Z3DX_ALPHA(I,J-1,K-1))
          ENDDO
         ENDDO  
        ENDDO         
        DO K = 2, NK1 
         DO I = mim, mip 
-         channel%seg(num_seg)%Z3DX(I,0,K) = (D2_0*Z3DX_ALPHA(I,1,K-1) &
-                                          + channel%seg(num_seg)%Z3DX(I,1,K))/D3_0
+         channel%seg(num_seg)%Z3DX(I,0,K) = (2.0_r8*Z3DX_ALPHA(I,1,K-1) &
+                                          + channel%seg(num_seg)%Z3DX(I,1,K))/3.0_r8
         ENDDO  
        ENDDO
 
@@ -403,9 +402,9 @@ CONTAINS
         DO K = 2, NK1
          DO I = mim, mip-1
           channel%seg(num_seg)%Z3DY(I,JPOP,K) = &
-                 D0_5*(Z3DY_ALPHA(I,J,K-1)+Z3DY_ALPHA(I+1,J,K-1))
+                 0.5_r8*(Z3DY_ALPHA(I,J,K-1)+Z3DY_ALPHA(I+1,J,K-1))
          ENDDO
-          channel%seg(num_seg)%Z3DY(mip,JPOP,K) = D2_0*Z3DY_ALPHA(mip,J,K-1) &
+          channel%seg(num_seg)%Z3DY(mip,JPOP,K) = 2.0_r8*Z3DY_ALPHA(mip,J,K-1) &
                                                 - channel%seg(num_seg)%Z3DY(mip-1,JPOP,K)
         ENDDO  
        ENDDO
@@ -415,7 +414,7 @@ CONTAINS
         DO K = 2, NK1 
          DO I = mim, mip 
           channel%seg(num_seg)%Z3DX(I,JPOP,K) = &
-                 D0_5*(Z3DX_ALPHA(I,J,K-1)+Z3DX_ALPHA(I,J+1,K-1))
+                 0.5_r8*(Z3DX_ALPHA(I,J,K-1)+Z3DX_ALPHA(I,J+1,K-1))
          ENDDO
         ENDDO  
        ENDDO  
@@ -423,14 +422,14 @@ CONTAINS
        DO ITER = 1, INTERPOL_ITER   
         DO K = 2, NK1 
          DO I = mim, mip 
-          Z3DX_ALPHA(I,nhalo+1,K-1) = D0_5*(channel%seg(num_seg)%Z3DX(I,mj1,K) &
+          Z3DX_ALPHA(I,nhalo+1,K-1) = 0.5_r8*(channel%seg(num_seg)%Z3DX(I,mj1,K) &
                                     + channel%seg(num_seg)%Z3DX(I,mj1+1,K))
          ENDDO
         ENDDO  
         DO K = 2, NK1 
          DO I = mim, mip 
           channel%seg(num_seg)%Z3DX(I,mj1+1,K) = &
-                 D0_5*(Z3DX_ALPHA(I,nhalo+1,K-1)+Z3DX_ALPHA(I,nhalo+2,K-1))
+                 0.5_r8*(Z3DX_ALPHA(I,nhalo+1,K-1)+Z3DX_ALPHA(I,nhalo+2,K-1))
          ENDDO
         ENDDO           
        ENDDO  ! ITER    
@@ -440,7 +439,7 @@ CONTAINS
        DO K = 2, NK1 
         DO I = mim, mip 
          channel%seg(num_seg)%Z3DX(I,JPOP,K) = &
-                D2_0*Z3DX_ALPHA(I,J,K-1)-channel%seg(num_seg)%Z3DX(I,JPOP-1,K)
+                2.0_r8*Z3DX_ALPHA(I,J,K-1)-channel%seg(num_seg)%Z3DX(I,JPOP-1,K)
         ENDDO  
        ENDDO
 !=========================================  Y-channel     
@@ -460,31 +459,31 @@ CONTAINS
       END SUBROUTINE vort_comm_post  
                         
 !=======================================================================  
-      SUBROUTINE HALO_COR_VORT_ALPHA (mj1,mim,mip,mjm,mjp,KDIMN,MODE,   &
+      SUBROUTINE HALO_COR_VORT_ALPHA (mi1,mj1,mim,mip,mjm,mjp,KDIMN,MODE,    &
                                       AM_VORT_ALPHA,CALPHA,HALPHA,IHALO_LOC, &
                                       AKSI,AETA,AKSI0,AETA0) 
 !=======================================================================        
-      INTEGER, INTENT(IN) :: mj1,mim,mip,mjm,mjp,nlen  ! horizontal array sizes
+      INTEGER, INTENT(IN) :: mi1,mj1,mim,mip,mjm,mjp  ! horizontal array sizes
       INTEGER, INTENT(IN) :: KDIMN   ! vertical array size
       INTEGER, INTENT(IN) :: MODE    ! interpolation type (1: linear  2: cubic spline)
 
-      REAL(KIND=dbl_kind),DIMENSION(4,mim:mip,nhalo*2),INTENT(IN) :: &
+      REAL(KIND=r8),DIMENSION(4,mim:mip,nhalo*2),INTENT(IN) :: &
          AM_VORT_ALPHA  ! transformation matrix for a vector in q-point 
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip),INTENT(IN) ::           &
+      REAL(KIND=r8),DIMENSION(mim:mip),INTENT(IN) ::           &
          CALPHA         ! curvilinear coordinates, alpha [rad]
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip,nhalo),INTENT(IN) ::     &
+      REAL(KIND=r8),DIMENSION(mim:mip,nhalo),INTENT(IN) ::     &
          HALPHA         ! location of halo points: alpha value [rad] 
       INTEGER,DIMENSION(mim:mip,nhalo),INTENT(IN) ::                 &
          IHALO_LOC     ! location of halo points: nearby i-index   
 
 
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(IN) ::  &
+      REAL(KIND=r8),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(IN) ::  &
          AKSI,AETA     ! original field
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip,2*nhalo,kdimn),INTENT(OUT) :: &
+      REAL(KIND=r8),DIMENSION(mim:mip,2*nhalo,kdimn),INTENT(OUT) :: &
          AKSI0,AETA0   ! corrected field for communication  
 
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip,2*nhalo,kdimn) :: AKSI_ALPHA,AETA_ALPHA
-      INTEGER :: I,J,K,NPO
+      REAL(KIND=r8),DIMENSION(mim:mip,2*nhalo,kdimn) :: AKSI_ALPHA,AETA_ALPHA
+      INTEGER :: I,J,K,NPO,nlen
 
 !     1. Obtain the vorticity components at q-point 
    
@@ -492,33 +491,33 @@ CONTAINS
 
        DO J=2,nhalo
         DO I=mim,mip
-         AKSI_ALPHA(I,J,K) = D0_5*(AKSI(I,J,K)+AKSI(I,J-1,K))
+         AKSI_ALPHA(I,J,K) = 0.5_r8*(AKSI(I,J,K)+AKSI(I,J-1,K))
         ENDDO 
        ENDDO  
        DO I=mim,mip
-        AKSI_ALPHA(I,1,K)  = D2_0*AKSI(I,1,K)-AKSI_ALPHA(I,2,K)
+        AKSI_ALPHA(I,1,K)  = 2.0_r8*AKSI(I,1,K)-AKSI_ALPHA(I,2,K)
        ENDDO
               
        DO J=mj1-nhalo+1,mj1
         NPO = J - mj1 + 2*nhalo      
         DO I=mim,mip
-         AKSI_ALPHA(I,NPO,K) = D0_5*(AKSI(I,J,K)+AKSI(I,J-1,K))
+         AKSI_ALPHA(I,NPO,K) = 0.5_r8*(AKSI(I,J,K)+AKSI(I,J-1,K))
         ENDDO 
        ENDDO          
        
        DO J=1,nhalo
         DO I=mim+1,mip         
-         AETA_ALPHA(I,J,K)  = D0_5*(AETA(I,J,K)+AETA(I-1,J,K))
+         AETA_ALPHA(I,J,K)  = 0.5_r8*(AETA(I,J,K)+AETA(I-1,J,K))
         ENDDO
-        AETA_ALPHA(mim,J,K) = D2_0*AETA(mim,J,K)-AETA_ALPHA(mim+1,J,K) 
+        AETA_ALPHA(mim,J,K) = 2.0_r8*AETA(mim,J,K)-AETA_ALPHA(mim+1,J,K) 
        ENDDO 
        
        DO J=mj1-nhalo+1,mj1
         NPO = J - mj1 + 2*nhalo
         DO I=mim+1,mip         
-         AETA_ALPHA(I,NPO,K)  = D0_5*(AETA(I,J,K)+AETA(I-1,J,K))
+         AETA_ALPHA(I,NPO,K)  = 0.5_r8*(AETA(I,J,K)+AETA(I-1,J,K))
         ENDDO 
-        AETA_ALPHA(mim,NPO,K) = D2_0*AETA(mim,J,K)-AETA_ALPHA(mim+1,NPO,K)
+        AETA_ALPHA(mim,NPO,K) = 2.0_r8*AETA(mim,J,K)-AETA_ALPHA(mim+1,NPO,K)
        ENDDO 
                              
       ENDDO  ! k-loop
@@ -553,29 +552,29 @@ CONTAINS
       END SUBROUTINE halo_cor_vort_alpha 
 
 !=======================================================================      
-      SUBROUTINE HALO_COR_VORT_BETA (mi1,mim,mip,mjm,mjp,KDIMN,MODE,     &
+      SUBROUTINE HALO_COR_VORT_BETA (mi1,mj1,mim,mip,mjm,mjp,KDIMN,MODE, &
                                      AM_VORT_BETA,CBETA,HBETA,JHALO_LOC, &
                                      AKSI,AETA,AKSI0,AETA0) 
 !=======================================================================        
-      INTEGER, INTENT(IN) :: mi1,mim,mip,mjm,mjp  ! horizontal array sizes
+      INTEGER, INTENT(IN) :: mi1,mj1,mim,mip,mjm,mjp  ! horizontal array sizes
       INTEGER, INTENT(IN) :: KDIMN   ! vertical array size
       INTEGER, INTENT(IN) :: MODE    ! interpolation type (1: linear  2: cubic spline)
 
-      REAL(KIND=dbl_kind),DIMENSION(4,nhalo*2,mjm:mjp),INTENT(IN) :: &
+      REAL(KIND=r8),DIMENSION(4,nhalo*2,mjm:mjp),INTENT(IN) :: &
          AM_VORT_BETA  ! transformation matrix for a vector in q-point 
-      REAL(KIND=dbl_kind),DIMENSION(mjm:mjp),INTENT(IN) ::           &
+      REAL(KIND=r8),DIMENSION(mjm:mjp),INTENT(IN) ::           &
          CBETA         ! curvilinear coordinates, beta [rad]
-      REAL(KIND=dbl_kind),DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::     &
+      REAL(KIND=r8),DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::     &
          HBETA         ! location of halo points: beta value [rad] 
       INTEGER,DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::                 &
          JHALO_LOC     ! location of halo points: nearby j-index   
                   
-      REAL(KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(IN) ::  &
+      REAL(KIND=r8),DIMENSION(mim:mip,mjm:mjp,KDIMN),INTENT(IN) ::  &
          AKSI,AETA     ! original field
-      REAL(KIND=dbl_kind),DIMENSION(2*nhalo,mjm:mjp,kdimn),INTENT(OUT) :: &
+      REAL(KIND=r8),DIMENSION(2*nhalo,mjm:mjp,kdimn),INTENT(OUT) :: &
          AKSI0,AETA0   ! corrected field for communication  
 
-      REAL(KIND=dbl_kind),DIMENSION(2*nhalo,mjm:mjp,kdimn) :: AKSI_BETA,AETA_BETA 
+      REAL(KIND=r8),DIMENSION(2*nhalo,mjm:mjp,kdimn) :: AKSI_BETA,AETA_BETA 
       INTEGER :: nlen,I,J,K,NPO
              
 !     1. Obtain the vorticity components at q-point (every processes) 
@@ -584,32 +583,32 @@ CONTAINS
 
        DO I=1,nhalo
         DO J=mjm+1,mjp         
-         AKSI_BETA(I,J,K)  = D0_5*(AKSI(I,J,K)+AKSI(I,J-1,K))
+         AKSI_BETA(I,J,K)  = 0.5_r8*(AKSI(I,J,K)+AKSI(I,J-1,K))
         ENDDO
-        AKSI_BETA(I,mjm,K) = D2_0*AKSI(I,mjm,K)-AKSI_BETA(I,mjm+1,K) 
+        AKSI_BETA(I,mjm,K) = 2.0_r8*AKSI(I,mjm,K)-AKSI_BETA(I,mjm+1,K) 
        ENDDO 
        
        DO I=mi1-nhalo+1,mi1
         NPO = I - mi1 + 2*nhalo
         DO J=mjm+1,mjp         
-         AKSI_BETA(NPO,J,K)  = D0_5*(AKSI(I,J,K)+AKSI(I,J-1,K))
+         AKSI_BETA(NPO,J,K)  = 0.5_r8*(AKSI(I,J,K)+AKSI(I,J-1,K))
         ENDDO
-        AKSI_BETA(NPO,mjm,K) = D2_0*AKSI(I,mjm,K)-AKSI_BETA(NPO,mjm+1,K)  
+        AKSI_BETA(NPO,mjm,K) = 2.0_r8*AKSI(I,mjm,K)-AKSI_BETA(NPO,mjm+1,K)  
        ENDDO 
                      
        DO I=2,nhalo
         DO J=mjm,mjp
-         AETA_BETA(I,J,K) = D0_5*(AETA(I,J,K)+AETA(I-1,J,K))
+         AETA_BETA(I,J,K) = 0.5_r8*(AETA(I,J,K)+AETA(I-1,J,K))
         ENDDO 
        ENDDO  
        DO J=mjm,mjp
-        AETA_BETA(1,J,K) = D2_0*AETA(1,J,K)-AETA_BETA(2,J,K)
+        AETA_BETA(1,J,K) = 2.0_r8*AETA(1,J,K)-AETA_BETA(2,J,K)
        ENDDO
               
        DO I=mi1-nhalo+1,mi1
         NPO = I - mi1 + 2*nhalo      
         DO J=mjm,mjp
-         AETA_BETA(NPO,J,K) = D0_5*(AETA(I,J,K)+AETA(I-1,J,K))
+         AETA_BETA(NPO,J,K) = 0.5_r8*(AETA(I,J,K)+AETA(I-1,J,K))
         ENDDO 
        ENDDO          
                 
@@ -654,19 +653,19 @@ CONTAINS
       INTEGER, INTENT(IN) :: MODE         ! interpolation type (1: linear  2: cubic spline) 
       
       ! alpha values of the regular q-grid points
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip),INTENT(IN) ::        &
+      REAL (KIND=r8),DIMENSION(mim:mip),INTENT(IN) ::        &
         CALPHA      ! alpha coordinates of the regular q-grid points
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,nhalo),INTENT(IN) ::  &
+      REAL (KIND=r8),DIMENSION(mim:mip,nhalo),INTENT(IN) ::  &
         HALPHA      ! alpha values of the target halo points
       INTEGER,DIMENSION(mim:mip,nhalo),INTENT(IN) ::               &
         IHALO_LOC   ! i-index of CALPHA that is just less than (or equal to) HALPHA  
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,2*nhalo,KDIMN),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,2*nhalo,KDIMN),INTENT(INOUT) :: A
       
       ! Local variables 
-      REAL (KIND=dbl_kind),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,KDIMN) :: HMV,HPV  
+      REAL (KIND=r8),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mim:mip,KDIMN) :: HMV,HPV  
       INTEGER :: I,J,K,NPO,I1VAL,I2VAL
             
       IF (MODE.EQ.2)  THEN
@@ -756,19 +755,19 @@ CONTAINS
       INTEGER, INTENT(IN) :: KDIMN         ! vertical array size  
       INTEGER, INTENT(IN) :: MODE          ! interpolation type (1: linear  2: cubic spline)        
    
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp),INTENT(IN) ::        &
+      REAL (KIND=r8),DIMENSION(mjm:mjp),INTENT(IN) ::        &
         CBETA       ! beta coordinates of the regular q-grid points
-      REAL (KIND=dbl_kind),DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::  &
+      REAL (KIND=r8),DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::  &
         HBETA       ! beta values of the target halo points 
       INTEGER,DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::               &
         JHALO_LOC   ! j-index of CBETA that is just less than (or equal to) HBETA     
       
       ! target variable
-      REAL (KIND=dbl_kind),DIMENSION(2*nhalo,mjm:mjp,KDIMN),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(2*nhalo,mjm:mjp,KDIMN),INTENT(INOUT) :: A
       
       ! Local variables 
-      REAL (KIND=dbl_kind),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp,KDIMN) :: HMV,HPV
+      REAL (KIND=r8),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(mjm:mjp,KDIMN) :: HMV,HPV
       INTEGER :: I,J,K,NPO,J1VAL,J2VAL
      
       IF (MODE.EQ.2)  THEN

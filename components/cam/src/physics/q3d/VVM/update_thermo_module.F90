@@ -1,11 +1,11 @@
 MODULE update_thermo_module
 ! Update thermodynamic variables & Store the diabatic effect to be used for coupling
 
-USE shr_kind_mod, only: dbl_kind => shr_kind_r8
+USE shr_kind_mod, only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t 
 
-USE parmsld,      only: ntracer,nk1,nk2,nk3,nhalo_adv,netsz,nVGCM_seg
-USE constld,      only: d0_0,d4_0,a,b,dt,dxsq,dysq,dxdy,crad, &
+USE parmsld,      only: ntracer,nk1,nk2,nk3,nhalo,nhalo_adv,netsz,nVGCM_seg
+USE constld,      only: a,b,dt,dxsq,dysq,dxdy,crad, &
                         nomap,notopo,physics,turbulence
                     
 ! Subroutines being called
@@ -33,8 +33,6 @@ CONTAINS
 ! SUBROUTINE LDIFFUSION2 : numerical diffusion
 !                          FUNCTION TURB_H : used in LDIFFUSION2
 !-------------------------------------------------------------------
-!    D0_0  = 0.0_dbl_kind
-!    D4_0  = 4.0_dbl_kind
 
 !=======================================================================
       SUBROUTINE update_thermodynamics (N1, N2, channel)
@@ -133,19 +131,19 @@ CONTAINS
 !--------------------------------
       DO K = 2, klow-1
        channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D(I,J,KLOW)
-       channel%seg(num_seg)%QV3D(I,J,K) = d0_0
+       channel%seg(num_seg)%QV3D(I,J,K) = 0.0_r8
        DO nt = 1, ntracer
-        channel%seg(num_seg)%QT3D(I,J,K,nt) = d0_0
+        channel%seg(num_seg)%QT3D(I,J,K,nt) = 0.0_r8
        ENDDO
       ENDDO
 
       IF (PHYSICS) THEN
         DO K = 2, klow-1
-         channel%seg(num_seg)%QC3D(I,J,K) = d0_0
-         channel%seg(num_seg)%QI3D(I,J,K) = d0_0
-         channel%seg(num_seg)%QR3D(I,J,K) = d0_0
-         channel%seg(num_seg)%QS3D(I,J,K) = d0_0
-         channel%seg(num_seg)%QG3D(I,J,K) = d0_0
+         channel%seg(num_seg)%QC3D(I,J,K) = 0.0_r8
+         channel%seg(num_seg)%QI3D(I,J,K) = 0.0_r8
+         channel%seg(num_seg)%QR3D(I,J,K) = 0.0_r8
+         channel%seg(num_seg)%QS3D(I,J,K) = 0.0_r8
+         channel%seg(num_seg)%QG3D(I,J,K) = 0.0_r8
         ENDDO
       ENDIF
 !-------------------------
@@ -315,7 +313,7 @@ CONTAINS
 
 !     DAMPING EFFECT (th, qv, qc, and qi)
 !     DIABATIC TENDENCY is calculated inside DAMPING_THERM
-      IF (CRAD.NE.0.) CALL DAMPING_THERM (channel)
+      IF (CRAD.NE.0.0_r8) CALL DAMPING_THERM (channel)
 
 !---------------------------------------------------
 !            RELAXATION EFFECT (th, qv, qt)
@@ -387,30 +385,30 @@ CONTAINS
 !     Local variables
       LOGICAL :: INTERPOL = .FALSE.
       
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_TH
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QV
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QC
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QI
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QR
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QS
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QG
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4,ntracer) :: MN_QT
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_TH
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QV
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QC
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QI
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QR
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QS
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4) :: MN_QG
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4,ntracer) :: MN_QT
       
-      REAL (KIND=dbl_kind) :: XMN(netsz)
+      REAL (KIND=r8) :: XMN(netsz)
       
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_TH
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QV
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QC
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QI
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QR
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QS
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QG   
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:,:), ALLOCATABLE :: TEMP_QT  
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_TH
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QV
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QC
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QI
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QR
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QS
+      REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_QG   
+      REAL (KIND=r8), DIMENSION(:,:,:,:), ALLOCATABLE :: TEMP_QT  
 
-      INTEGER :: mi1,mj1,k,nt,klow
+      INTEGER :: mi1,mj1,i,j,k,nt,klow
       INTEGER :: num_seg,ng,lsta,lend,chl,chn,npo
       
-      REAL (KIND=dbl_kind) :: lcen,dist,dist1,dist2
+      REAL (KIND=r8) :: lcen,dist,dist1,dist2
 
       chn = 1    !  Assume (prognostic) channel width is 1.
       
@@ -638,7 +636,7 @@ CONTAINS
         IF (INTERPOL) THEN
          
          DIST1 = lcen - float(chl)
-         IF (DIST1.GE.D0_0) THEN
+         IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
            DIST  = DIST1
            NPO   = ng - 1
@@ -713,7 +711,7 @@ CONTAINS
         IF (INTERPOL) THEN
         
          DIST1 = lcen - float(chl)
-         IF (DIST1.GE.D0_0) THEN
+         IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
            DIST  = DIST1
            NPO   = ng - 1
@@ -783,7 +781,7 @@ CONTAINS
        DO J = 1, mj1
         DO I = 1, mi1
 
-          IF (channel%seg(num_seg)%TAU_RX_TQ(I,J,K).NE.0.) THEN
+          IF (channel%seg(num_seg)%TAU_RX_TQ(I,J,K).NE.0.0_r8) THEN
           
            channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D(I,J,K) &
                     - DT*TEMP_TH(I,J,K-1)/channel%seg(num_seg)%TAU_RX_TQ(I,J,K)
@@ -808,7 +806,7 @@ CONTAINS
                     - DT*TEMP_QG(I,J,K-1)/channel%seg(num_seg)%TAU_RX_TQ(I,J,K)                            
            ENDIF
            
-          ENDIF  ! (TAU_RX_TQ(I,J,K).NE.0.)
+          ENDIF  ! (TAU_RX_TQ(I,J,K).NE.0.0_r8)
 
         ENDDO
        ENDDO
@@ -846,7 +844,7 @@ CONTAINS
       
       SUBROUTINE BOUND_G1 (A)
 !     Filling the halos along the channel (Group1)      
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
 
@@ -871,7 +869,7 @@ CONTAINS
 
       SUBROUTINE BOUND_G2 (A)
 !     Filling the halos along the channel (Group2)      
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
 
@@ -896,7 +894,7 @@ CONTAINS
 
       SUBROUTINE BOUND_G3 (A)
 !     Filling the halos along the channel (Group3)      
-      REAL (KIND=dbl_kind),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(nk1,0:nVGCM_seg+1,4),INTENT(INOUT) :: A
       
       INTEGER :: chl_p,chl_m,K
   
@@ -932,22 +930,22 @@ CONTAINS
       
       ! # of variables, to which diffusion is applied. Currently, only th3d is used.
       INTEGER, PARAMETER   :: nvar = 1   
-      REAL (KIND=dbl_kind) :: COEF_FAC = 400.0_dbl_kind
+      REAL (KIND=r8) :: COEF_FAC = 400.0_r8
       
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:,:), ALLOCATABLE :: AVAL
-      REAL (KIND=dbl_kind), DIMENSION(:,:,:,:), ALLOCATABLE :: TEND
+      REAL (KIND=r8), DIMENSION(:,:,:,:), ALLOCATABLE :: AVAL
+      REAL (KIND=r8), DIMENSION(:,:,:,:), ALLOCATABLE :: TEND
 
-      REAL (KIND=dbl_kind) :: COEFX,COEFY,COEFA
+      REAL (KIND=r8) :: COEFX,COEFY,COEFA
       
-      REAL (KIND=dbl_kind) :: KVAL,KVAL0
-      REAL (KIND=dbl_kind) :: FXP,FXM,FYP,FYM
-      REAL (KIND=dbl_kind) :: FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0
-      REAL (KIND=dbl_kind) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
+      REAL (KIND=r8) :: KVAL,KVAL0
+      REAL (KIND=r8) :: FXP,FXM,FYP,FYM
+      REAL (KIND=r8) :: FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0
+      REAL (KIND=r8) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
 
       INTEGER :: I,J,K,KLOW,KLOWQ_MAX
       INTEGER :: mi1,mj1,mim,mip,mjm,mjp,num_seg,nt
 
-      KVAL0 = DXSQ/(D4_0*DT)
+      KVAL0 = DXSQ/(4.0_r8*DT)
       KVAL  = KVAL0/COEF_FAC
 
 !**********************************************************************   
@@ -991,9 +989,9 @@ CONTAINS
 !     Influenced by topography
 
         IF(channel%seg(num_seg)%DM_Q_TE(I,J,K).EQ.1) THEN
-         FXP    = D0_0
-         FYP_XP = D0_0
-         FYM_XP = D0_0
+         FXP    = 0.0_r8
+         FYP_XP = 0.0_r8
+         FYM_XP = 0.0_r8
         ELSE
          FXP    = channel%seg(num_seg)%RGG_U(1,I,J)
          FYP_XP = channel%seg(num_seg)%RGG_V(2,I+1,J)
@@ -1001,22 +999,22 @@ CONTAINS
         ENDIF
 
         IF(channel%seg(num_seg)%DM_Q_TW(I,J,K).EQ.1) THEN
-         FXM    = D0_0
-         FYP_XM = D0_0
-         FYM_XM = D0_0
+         FXM    = 0.0_r8
+         FYP_XM = 0.0_r8
+         FYM_XM = 0.0_r8
         ELSE
          FXM    = channel%seg(num_seg)%RGG_U(1,I-1,J)
          FYP_XM = channel%seg(num_seg)%RGG_V(2,I-1,J)
          FYM_XM = channel%seg(num_seg)%RGG_V(2,I-1,J-1)
         ENDIF
 
-         FYP_X0 = D0_0
-         FYM_X0 = D0_0
+         FYP_X0 = 0.0_r8
+         FYM_X0 = 0.0_r8
 
         IF(channel%seg(num_seg)%DM_Q_TN(I,J,K).EQ.1) THEN
-         FYP    = D0_0
-         FXP_YP = D0_0
-         FXM_YP = D0_0
+         FYP    = 0.0_r8
+         FXP_YP = 0.0_r8
+         FXM_YP = 0.0_r8
         ELSE
          FYP    = channel%seg(num_seg)%RGG_V(3,I,J)
          FXP_YP = channel%seg(num_seg)%RGG_U(2,I,J+1)
@@ -1024,17 +1022,17 @@ CONTAINS
         ENDIF
 
         IF(channel%seg(num_seg)%DM_Q_TS(I,J,K).EQ.1) THEN
-         FYM    = D0_0
-         FXP_YM = D0_0
-         FXM_YM = D0_0
+         FYM    = 0.0_r8
+         FXP_YM = 0.0_r8
+         FXM_YM = 0.0_r8
         ELSE
          FYM    = channel%seg(num_seg)%RGG_V(3,I,J-1)
          FXP_YM = channel%seg(num_seg)%RGG_U(2,I,J-1)
          FXM_YM = channel%seg(num_seg)%RGG_U(2,I-1,J-1)
         ENDIF
 
-         FXP_Y0 = D0_0
-         FXM_Y0 = D0_0
+         FXP_Y0 = 0.0_r8
+         FXM_Y0 = 0.0_r8
 
       do nt = 1, nvar
         TEND(I,J,K,nt) = &
@@ -1059,8 +1057,8 @@ CONTAINS
          FYP_XM = channel%seg(num_seg)%RGG_V(2,I-1,J)
          FYM_XM = channel%seg(num_seg)%RGG_V(2,I-1,J-1)
 
-         FYP_X0 = D0_0
-         FYM_X0 = D0_0
+         FYP_X0 = 0.0_r8
+         FYM_X0 = 0.0_r8
 
          FYP    = channel%seg(num_seg)%RGG_V(3,I,J)
          FXP_YP = channel%seg(num_seg)%RGG_U(2,I,J+1)
@@ -1070,8 +1068,8 @@ CONTAINS
          FXP_YM = channel%seg(num_seg)%RGG_U(2,I,J-1)
          FXM_YM = channel%seg(num_seg)%RGG_U(2,I-1,J-1)
 
-         FXP_Y0 = D0_0
-         FXM_Y0 = D0_0
+         FXP_Y0 = 0.0_r8
+         FXM_Y0 = 0.0_r8
 
       do nt = 1, nvar
         TEND(I,J,K,nt) = &
@@ -1131,15 +1129,13 @@ CONTAINS
 !     A4(I-1,J  ,K),A5(I,J  ,K),A6(I+1,J  ,K)
 !     A1(I-1,J-1,K),A2(I,J-1,K),A3(I+1,J-1,K)
 !------------------------------------------------------------------
-
-      USE shr_kind_mod, only: dbl_kind => shr_kind_r8
       IMPLICIT NONE
 
-      REAL (KIND=dbl_kind), INTENT(IN) :: CX,CY,CA,KXP,KXM,KYP,KYM
-      REAL (KIND=dbl_kind), INTENT(IN) :: KYP_XP,KYM_XP,KYP_XM,KYM_XM,KYP_X0,KYM_X0
-      REAL (KIND=dbl_kind), INTENT(IN) :: KXP_YP,KXM_YP,KXP_YM,KXM_YM,KXP_Y0,KXM_Y0
-      REAL (KIND=dbl_kind), INTENT(IN) :: A1,A2,A3,A4,A5,A6,A7,A8,A9
-      REAL (KIND=dbl_kind) :: TURB_H_result
+      REAL (KIND=r8), INTENT(IN) :: CX,CY,CA,KXP,KXM,KYP,KYM
+      REAL (KIND=r8), INTENT(IN) :: KYP_XP,KYM_XP,KYP_XM,KYM_XM,KYP_X0,KYM_X0
+      REAL (KIND=r8), INTENT(IN) :: KXP_YP,KXM_YP,KXP_YM,KXM_YM,KXP_Y0,KXM_Y0
+      REAL (KIND=r8), INTENT(IN) :: A1,A2,A3,A4,A5,A6,A7,A8,A9
+      REAL (KIND=r8) :: TURB_H_result
 
       TURB_H_result = CX*(KXP*(A6-A5)-KXM*(A5-A4))      &
                     + CY*(KYP*(A8-A5)-KYM*(A5-A2))      &

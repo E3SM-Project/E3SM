@@ -1,10 +1,10 @@
 MODULE rcalc_module 
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld,        only: ntracer,nk2,nk3
-USE constld,        only: d1_0,physics
+USE constld,        only: physics
 
 ! Subroutines being called
 USE advec_3d_module,      only: advec_3d
@@ -22,7 +22,7 @@ CONTAINS
 !------------------------
 ! SUBROUTINE rcalc_3d
 !------------------------
-!    D1_0  = 1.0_dbl_kind
+!    1.0_r8  = 1.0_r8
 
 !=======================================================================
    SUBROUTINE RCALC_3D (N1, N2, ITT, channel)
@@ -37,7 +37,7 @@ CONTAINS
       type(channel_t), intent(inout) :: channel   ! channel data
       
       ! Local
-      REAL (KIND=dbl_kind), PARAMETER :: TP_HEIGHT = 12000._dbl_kind
+      REAL (KIND=r8), PARAMETER :: TP_HEIGHT = 12000.0_r8
       
       integer mi1,mim,mim_a,mim_c,mip,mip_c,mj1,mjm,mjm_a,mjm_c,mjp,mjp_c    
       integer L,num_seg,nt 
@@ -67,7 +67,7 @@ CONTAINS
       mjp    = channel%seg(num_seg)%mjp    
       mjp_c  = channel%seg(num_seg)%mjp_c         
       
-      channel%seg(num_seg)%TERM1(:,:,:) = D1_0
+      channel%seg(num_seg)%TERM1(:,:,:) = 1.0_r8
       
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
@@ -86,7 +86,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%TH3D,           &
-                     channel%seg(num_seg)%FTH3D(1,1,1,L), &
+                     channel%seg(num_seg)%FTH3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -96,11 +96,12 @@ CONTAINS
                      channel%seg(num_seg)%KLOWQ_IJ,       &
                      .FALSE.,TPHGT=TP_HEIGHT,             &
                      TERM_ADD=channel%seg(num_seg)%Z3DX0(1:mi1,1:mj1,:))
+
       ! QV3D                                    
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QV3D,           &
-                     channel%seg(num_seg)%FQV3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQV3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -118,7 +119,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QC3D,           &
-                     channel%seg(num_seg)%FQC3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQC3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -132,7 +133,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QI3D,           &
-                     channel%seg(num_seg)%FQI3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQI3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -146,7 +147,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QR3D,           &
-                     channel%seg(num_seg)%FQR3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQR3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -160,7 +161,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QS3D,           &
-                     channel%seg(num_seg)%FQS3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQS3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -174,7 +175,7 @@ CONTAINS
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
                      mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,       &
                      channel%seg(num_seg)%QG3D,           &
-                     channel%seg(num_seg)%FQG3D(1,1,1,L), &
+                     channel%seg(num_seg)%FQG3D(:,:,:,L), &
                      channel%seg(num_seg)%U3DX,           &
                      channel%seg(num_seg)%U3DY,           &
                      channel%seg(num_seg)%W3D,            &
@@ -191,7 +192,7 @@ CONTAINS
        CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,          &
                       mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,          &
                       channel%seg(num_seg)%QT3D(:,:,:,nt),    &
-                      channel%seg(num_seg)%FQT3D(1,1,1,L,nt), &
+                      channel%seg(num_seg)%FQT3D(:,:,:,L,nt), &
                       channel%seg(num_seg)%U3DX,              &
                       channel%seg(num_seg)%U3DY,              &
                       channel%seg(num_seg)%W3D,               &

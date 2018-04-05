@@ -1,11 +1,11 @@
 MODULE force_3d_module
 ! Implements a random perturbation to the potential temperature
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk2,nk3
-USE constld, only: d0_0,zt,rad2deg
+USE constld, only: zt,rad2deg
 
 ! Subroutines being called
 USE utils,   only: indexr,ran2
@@ -30,23 +30,23 @@ CONTAINS
 !
 !  JH: Currently, TOPOGRAPHY is not considered.
 !-----------------------------------------------------------------------
-      REAL (KIND=dbl_kind), INTENT(IN)  :: A,Z1,Z2
+      REAL (KIND=r8), INTENT(IN)  :: A,Z1,Z2
       
       type(channel_t), intent(inout) :: channel   ! channel data
       
 !     Local variables
       LOGICAL :: LF
-      REAL (KIND=dbl_kind) :: SUMV(NK2,4),NDATA(NK2,4),AMEAN(NK2)
-      REAL (KIND=dbl_kind) :: AMAX(NK2),AMIN(NK2),AMAX_all(NK2),AMIN_all(NK2)
-      REAL (KIND=dbl_kind) :: AMAX0,AMIN0,ADD1,ADD2
+      REAL (KIND=r8) :: SUMV(NK2,4),NDATA(NK2,4),AMEAN(NK2)
+      REAL (KIND=r8) :: AMAX(NK2),AMIN(NK2),AMAX_all(NK2),AMIN_all(NK2)
+      REAL (KIND=r8) :: AMAX0,AMIN0,ADD1,ADD2
 
       INTEGER :: NSUM,IDUM,I,J,K,K1,K2,num_seg,mi1,mj1,chl,chn
       
       chn = 1    ! Assume the channel width is 1 (i.e., mi1 or mj1 = 1).
 
       ! Set the lateral boundary for applying the perturbation.
-      ADD1 = -10._dbl_kind/RAD2DEG
-      ADD2 =  10._dbl_kind/RAD2DEG
+      ADD1 = -10.0_r8/RAD2DEG
+      ADD2 =  10.0_r8/RAD2DEG
 
 ! Get vertical indices
       K1 = INDEXR(Z1,NK3,ZT,LF) + 1
@@ -72,7 +72,7 @@ CONTAINS
       IF (mi1.gt.mj1) THEN
         ! x-channel segment
         DO K = K1, K2
-         SUMV(k,num_seg) = D0_0
+         SUMV(k,num_seg) = 0.0_r8
          DO chl = 1, MI1
           SUMV(k,num_seg) = SUMV(k,num_seg) + channel%seg(num_seg)%term1(chl,chn,K)
          ENDDO
@@ -81,7 +81,7 @@ CONTAINS
       ELSE
         ! y-channel segment
         DO K = K1, K2
-         SUMV(k,num_seg) = D0_0
+         SUMV(k,num_seg) = 0.0_r8
          DO chl = 1, MJ1
           SUMV(k,num_seg) = SUMV(k,num_seg) + channel%seg(num_seg)%term1(chn,chl,K)
          ENDDO
@@ -99,8 +99,8 @@ CONTAINS
                  /(NDATA(k,1)+NDATA(k,2)+NDATA(k,3)+NDATA(k,4))
       ENDDO 
 
-      AMAX_all(:) = D0_0
-      AMIN_all(:) = D0_0
+      AMAX_all(:) = 0.0_r8
+      AMIN_all(:) = 0.0_r8
        
 !******************************  
       DO num_seg = 1, 4
@@ -144,9 +144,9 @@ CONTAINS
       DO K = K1, K2
        DO J = 1, MJ1
         DO I = 1, MI1
-         IF (channel%seg(num_seg)%term1(I,J,K).LT.d0_0) &
+         IF (channel%seg(num_seg)%term1(I,J,K).LT.0.0_r8) &
              channel%seg(num_seg)%term1(I,J,K) = -channel%seg(num_seg)%term1(I,J,K)*A/AMIN0
-         IF (channel%seg(num_seg)%term1(I,J,K).GT.d0_0) &
+         IF (channel%seg(num_seg)%term1(I,J,K).GT.0.0_r8) &
              channel%seg(num_seg)%term1(I,J,K) =  channel%seg(num_seg)%term1(I,J,K)*A/AMAX0
         ENDDO
        ENDDO
@@ -155,7 +155,8 @@ CONTAINS
       DO K = K1, K2
        DO J = 1, MJ1
         DO I = 1, MI1
-         IF (RLAT_T(I,J).GE.ADD1 .AND. RLAT_T(I,J).LE.ADD2) THEN
+         IF (channel%seg(num_seg)%RLAT_T(I,J).GE.ADD1 &
+             .AND. channel%seg(num_seg)%RLAT_T(I,J).LE.ADD2) THEN
           channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D(I,J,K) &
                                            + channel%seg(num_seg)%term1(I,J,K)
          ENDIF

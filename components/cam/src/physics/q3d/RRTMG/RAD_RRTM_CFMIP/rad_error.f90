@@ -1,10 +1,10 @@
 subroutine rad_error()
   implicit none
   
-  include "mpif.h"
-  integer mpierr
+!JUNG  include "mpif.h"
+!JUNG  integer mpierr
   
-  call mpi_finalize(mpierr)
+!JUNG  call mpi_finalize(mpierr)
 
   write(*,*) 'Error encountered in GCSS-CFMIP interface to RRTM '
   write(*,*) 'Stopping model...'

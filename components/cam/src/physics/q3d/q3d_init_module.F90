@@ -1,7 +1,7 @@
 MODULE q3d_init_module
 ! Contains the programs related to initializing the channels
 
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t
 
       USE parmsld, only: channel_l,channel_w,nk1,nk2,nk3,ntracer,nhalo,nhalo_adv
@@ -9,14 +9,13 @@ MODULE q3d_init_module
       
       USE constld                    
 
-#ifdef FIXTHIS
+!JUNG #ifdef FIXTHIS
 ! Need to be able to compile all of RRTMG
       USE trace_gases, only: trace_gas_input
-      USE rrtm_grid,   only: nrad_rad => nrad, &
-                             nrestart_rad => nrestart, &
-                             masterproc,dtn,nstat    
+!JUNG #endif
+      
+      USE rrtm_grid,   only: nrad_rad => nrad 
       USE rrtm_vars,   only: pres,presi
-#endif
 
       USE bound_channel_module, only: bound_channel
       USE bound_extra,          only: bound_normal,bound_vert,bound_sync
@@ -25,6 +24,7 @@ MODULE q3d_init_module
       USE halo_z,               only: halo_correc_z     
       USE vort_3d_module,       only: zeta_diag
       USE wind_module,          only: wind_3d
+      USE z_coord,              only: coords_2d
       
 IMPLICIT NONE
 PRIVATE
@@ -42,11 +42,10 @@ CONTAINS
       
       ! Local
       INTEGER :: K
-      REAL (KIND=dbl_kind),DIMENSION(nk2) :: PBARZ,PIBARZ  ! used for radcode initialization
       
-      REAL (kind=dbl_kind) :: PZERO = 100000._dbl_kind     ! [Pa]
-      REAL (kind=dbl_kind) :: RBCP,CPBR,ALPHAW
-      REAL (KIND=dbl_kind), DIMENSION(NK3) :: TV,ALPHA
+      REAL (kind=r8) :: PZERO = 100000._r8     ! [Pa]
+      REAL (kind=r8) :: RBCP,CPBR,ALPHAW
+      REAL (KIND=r8), DIMENSION(NK3) :: TV,ALPHA
       
       IF (.NOT. isRestart) THEN
       
@@ -71,13 +70,13 @@ CONTAINS
 !------------------------      
 ! REAL Parameters
 !------------------------
-      DT      = 10.0_dbl_kind           ! integration timestep of crm (s)
-      DT_GCM  = 300.0_dbl_kind          ! dt of gcm (s) 
+      DT      = 10.0_r8                 ! integration timestep of crm (s)
+      DT_GCM  = 300.0_r8                ! dt of gcm (s) 
       
-      DZ      = 1000._dbl_kind          ! grid size in vertical direction (m)
+      DZ      = 1000.0_r8               ! grid size in vertical direction (m)
       DZSQ    = DZ * DZ
 
-!      Obtained in Mapping_channel
+!      (Specified in Mapping_channel)
 !      DX      =                        ! crm grid size in x-direction (m) 
 !      DY      =                        ! crm grid size in y-direction (m)  
 !      DXSQ    =
@@ -86,49 +85,50 @@ CONTAINS
 !      DX_GCM  =                        ! gcm grid size in x-direction (m)
 !      DY_GCM  =                        ! gcm grid size in y-direction (m) 
       
-      DZ1     = 500._dbl_kind           ! the lowest layer depth in z (m)  
-      DOMAIN  = 30000._dbl_kind         ! vertical domain for z'-selection
-      ZB      = 0.0_dbl_kind            ! surface height (m)
+      DZ1     = 500.0_r8                ! the lowest layer depth in z (m)  
+      DOMAIN  = 30000.0_r8              ! vertical domain forstretched grids
+      ZB      = 0.0_r8                  ! surface height (m)
       
-      PI      = 4._8 * atan(1._8)       ! 3.14159... 
-      GRAV    = 9.80616_dbl_kind        ! gravitational constant (m/s^2)
-      HLF     = 2.500E+6_dbl_kind       ! latent heat of vaporization (J/kg)
-      HLM     = 3.336E+5_dbl_kind       ! latent heat of fusion (J/kg) 
-      CP      = 1004.5_dbl_kind         ! specific heat of dry air at constant pressure (J/kg/K)
-      GAS_CONST = 287.04_dbl_kind       ! dry air gas constant
-      DELTA   = 0.608_dbl_kind          ! 0.608
-      VK      = 0.4_dbl_kind            ! von Karman's constant
+      PI      = 4.0_r8 * DATAN(1.0_r8)  ! 3.14159... 
+      GRAV    = 9.80616_r8              ! gravitational constant (m/s^2)
+      HLF     = 2.500D+6                ! latent heat of vaporization (J/kg)
+      HLM     = 3.336D+5                ! latent heat of fusion (J/kg) 
+      CP      = 1004.5_r8               ! specific heat of dry air at constant pressure (J/kg/K)
+      GAS_CONST = 287.0_r8              ! dry air gas constant
+      DELTA   = 0.608_r8                ! 0.608
+      VK      = 0.4_r8                  ! von Karman constant
       
-      ZRSEA   = 2.0E-04                 ! surface roughness over sea (m)
-      ZRLAND  = 1.0E-02                 ! surface roughness over land (m)
+      ZRSEA   = 2.0D-04                 ! surface roughness over sea (m)
+      ZRLAND  = 1.0D-02                 ! surface roughness over land (m)
       
-      SST   = 298.0_dbl_kind            ! sea surface temperature (K)
+      SST     = 298.0_r8                ! sea surface temperature (K)
 
-      PSFC    = 100000._dbl_kind        ! surface pressure (Pa)
+      PSFC    = 100000.0_r8             ! surface pressure (Pa)
 
-      REARTH  = 6371220_dbl_kind        ! radius of the earth (m)
-      OMEGA   = 7.292E-5_dbl_kind       ! earth rotation rate (s^-1)  
-      RAD2DEG = 180._dbl_kind/PI        ! deg. of 1 rad (i.e., 180/pi) 
+      REARTH  = 6371220.0_r8            ! radius of the earth (m)
+      OMEGA   = 7.292D-5                ! earth rotation rate (s^-1)  
+      RAD2DEG = 180.0_r8/PI             ! deg. of 1 rad (i.e., 180/pi) 
 
-      ALADV   = 1._dbl_kind             ! alpha-value in advection
+      ALADV   = 1.0_r8                  ! alpha-value in advection
 
-!      Obtained in Mapping_channel (after dx & dy are determined)      
+!      (Specified in Mapping_channel, after dx & dy are determined)      
 !      WRXMU   =                        ! (mu/dt) in the relaxation method 
            
-      DTRAD   = 3600._dbl_kind          ! time interval between radiation calls (s) 
+      DTRAD   = 3600.0_r8               ! time interval between radiation calls (s) 
            
-      CRAD    = 1._dbl_kind/(3600._dbl_kind)  ! Rayleigh-type damping coefficient (s^-1)
-      GWDHT   = 15000.0_dbl_kind              ! GWD above this height (m)
+      CRAD    = 1.0_r8/(3600._r8)       ! Rayleigh-type damping coefficient (s^-1)
+      GWDHT   = 15000.0_r8              ! GWD above this height (m)
       
-      DTHMAX  = 0.5_dbl_kind            ! coefficient for random perturbation (K)
-      Z1PERT  = 0.0_dbl_kind            ! z_low for random perturbation  (m)
-      Z2PERT  = 12500._dbl_kind         ! z_high for random perturbation (m)
+      DTHMAX  = 0.5_r8                  ! coefficient for random perturbation (K)
+      Z1PERT  = 0.0_r8                  ! z_low for random perturbation  (m)
+      Z2PERT  = 12500.0_r8              ! z_high for random perturbation (m)
 
 !------------------------          
 ! Integer Parameters
 !------------------------
       ITT_MAX = INT(dt_gcm/dt)          ! # of CRM time steps per one GCM time step 
-      
+
+! The below may not be needed.      
 !!      NRESTART = 999999               ! restart writing interval
 !!      NXS      = 2                    ! accumulation frequency for averaging
 !!      NXSAVG   = 2                    ! averaging period for output 
@@ -149,38 +149,48 @@ CONTAINS
 !***********************************************************************************
       IF (ZCONST) THEN
 !       Use of constant-depth vertical grids
-        CZ2 = D0_0
-        CZ1 = D1_0
+        CZ2 = 0.0_r8
+        CZ1 = 1.0_r8
       ELSE
 !       Use of stretched vertical grids
         CZ2 = ( DZ - DZ1 ) / ( DZ * ( DOMAIN - DZ ) )
-        CZ1 = D1_0 - CZ2 * DOMAIN
+        CZ1 = 1.0_r8 - CZ2 * DOMAIN
       ENDIF
 
       CALL COORDS_2D ( CZ1, CZ2, DZ, ZB )
 
 !***********************************************************************************
 ! Define main vertical profiles: rho, rhoz, pbar, pibar, fn1, fn2, thbar, qvbar
-! Need more work: prescribe thbar and pibar?
+! Need more work: how to prescribe thbar and pibar?
 !***********************************************************************************
       DO K = 1, NK3
-        QVBAR(K) = D0_0
+        QVBAR(K) = 0.0_r8
       ENDDO
 
       CPBR = CP / gas_const
-      RBCP = 1. / CPBR
+      RBCP = 1.0_r8 / CPBR
 
       PISFC = ( PSFC / PZERO ) ** RBCP
       PBAR(1)  = PSFC   ! [Pa]
 
-!     Prepare THBAR & PIBAR
-!!!!      CALL PRESCRIBE_IC (THBAR,PIBAR,TH3D,PREU_U,PREU_V,PREV_U,PREV_V)
+!     Prepare THBAR & PIBAR: temparary setting
+      CALL PRESCRIBE_IC (THBAR,PIBAR)
 
       TV(1) = THBAR(1)*PIBAR(1)
       DO K = 2, NK3
        PBAR(K) = PZERO * PIBAR(K) ** CPBR
        TV(K)   = THBAR(K)*PIBAR(K)
       ENDDO
+      
+      PIBARZ(1) = PIBAR(1)
+      PBARZ(1)  = PBAR(1)
+
+      DO K = 2, nk2
+        PIBARZ(K)= PIBAR(K) + (PIBAR(K+1)-PIBAR(K))/(ZT(K+1)-ZT(K)) * (ZZ(K)-ZT(K))
+      ENDDO
+      DO K = 2, nk2
+        PBARZ(K) = PSFC * PIBARZ(K) ** ( cp / gas_const )
+      ENDDO      
 
 !     PROFILES OF RHO, RHOZ
       DO K = 2, NK3
@@ -188,8 +198,8 @@ CONTAINS
       ENDDO
 
       DO K = 2, NK2
-       ALPHAW = (ALPHA(K) + ALPHA(K+1)) / 2.
-       RHOZ(K) = 1. / ALPHAW
+       ALPHAW = (ALPHA(K) + ALPHA(K+1)) / 2.0_r8
+       RHOZ(K) = 1.0_r8 / ALPHAW
       ENDDO
 
 !     SURFACE DENSITY
@@ -198,7 +208,7 @@ CONTAINS
 !     DENSITY FOR k=1/2
       RHO(1) = RHOZ(1)
       DO K = 2, NK3
-        RHO(K) = 1. / ALPHA(K)
+        RHO(K) = 1.0_r8 / ALPHA(K)
       ENDDO
 
 ! TEMP----------------
@@ -216,7 +226,7 @@ CONTAINS
       ENDDO 
 
 !     Find the vertical index of the lowest layer where GWD is applied.
-      IF (CRAD .NE. D0_0) THEN
+      IF (CRAD .NE. 0.0_r8) THEN
         K = 2
         DO WHILE (ZT(K) .LT. GWDHT)
         K = K + 1
@@ -235,7 +245,7 @@ CONTAINS
 !--------------------------    
 
       ! Initialize Parameters for Microphysics    
-      CALL initialize_microphysics (dt) 
+      CALL initialize_microphysics  
       
       DO K=1,nk1
         RHOL(K) = RHO(K+1)          
@@ -251,52 +261,145 @@ CONTAINS
       RHO_INT(nk1) = RHOL(nk1)
       DO K=1,nk1-1   
         RHO_INT(K) = &
-          (DZL(K)*RHOL(K) + DZL(K+1)*RHOL(K+1))/(D2_0*(ZT(K+2) - ZT(K+1)))
+          (DZL(K)*RHOL(K) + DZL(K+1)*RHOL(K+1))/(2.0_r8*(ZT(K+2) - ZT(K+1)))
       ENDDO
-
-#ifdef FIXTHIS
-! Need to be able to compile all of RRTMG  
        
       !-------------------- 
       IF (radcode) THEN
       !--------------------
-      ! Initialize Parameters for Radiation 
-
-!!!      masterproc = my_task == 0     Q: how to determine masterproc?      
+      ! Initialize Parameters for Radiation   
       
       ! Get vertical grid parameters and define vertical pressure levels
-      PIBARZ(1) = PIBAR(1)
-      PBARZ(1)  = PBAR(1)
+      PRES(:)  = PBAR(2:nk2) * 1.0D-2    ! [mb]
+      PRESI(:) = PBARZ(:) * 1.0D-2
 
-      DO K = 2, nk2
-        PIBARZ(K)= PIBAR(K) + (PIBAR(K+1)-PIBAR(K)) / (ZT(K+1)-ZT(K)) * (ZZ(K)-ZT(K))
-      ENDDO
-      DO K = 2, nk2
-        PBARZ(K) = psfc * PIBARZ(K) ** ( cp / gas_const )
-      ENDDO
-
-      PRES(:)  = PBAR(2:nk2) * 1.D-2    ! [mb]
-      PRESI(:) = PBARZ(:) * 1.D-2
-
-      DTN  = DT
-      NSTAT = 100000
       NRAD_rad = NRAD
-      NRESTART_rad = 0
-      ! Only call tracesini if nrestart==0 (Initialize trace gas vertical profiles)
-      ! However, currently, the profiles are read by trace_gases.f90.
-      ! "call tracesini" is commented out. (Seems, no use of "nrestart" for radiation)
 
-      ! Read in trace gases (fort 91) by master process and broadcast them.
       CALL TRACE_GAS_INPUT(channel_l, channel_w, nk1, PBAR(2:nk2), PBARZ)
-#endif
+      ! Horizontally uniform profiles are used.      
 
       !--------------------
       ENDIF  ! RADCODE
       !--------------------
+      
 !--------------------------      
     ENDIF  ! PHYSICS   
 !--------------------------    
 
+   CONTAINS
+   
+   SUBROUTINE PRESCRIBE_IC (THBAR_LO,PIBAR_LO)
+   IMPLICIT NONE
+!  Just temporary use.    
+
+      REAL (KIND=r8),DIMENSION(nk3),INTENT(OUT) :: THBAR_LO,PIBAR_LO
+
+!     Vertical domain size = 25 km      
+      INTEGER, PARAMETER :: KM = 2500
+      INTEGER, PARAMETER :: KM_TROP_THETA = 900,      &
+                            KM1 = KM_TROP_THETA + 30, &
+                            KM2 = KM1 + 30,           &
+                            KM3 = KM2 + 750
+      
+      REAL (kind=r8), PARAMETER :: NT_SQUARE  = 0.00015_r8, &
+                                   NT1_SQUARE = 0.00050_r8, &
+                                   NT2_SQUARE = 0.00055_r8, &
+                                   NT3_SQUARE = 0.00055_r8, &
+                                   NS_SQUARE  = 0.00080_r8
+
+      REAL (kind=r8), PARAMETER :: THETA00 = 300.0_r8    
+      REAL (kind=r8), PARAMETER :: ZS = 0.0_r8, DZ_LO = 10.0_r8
+      REAL (kind=r8), PARAMETER :: EXF_S = 1.0_r8     
+!     Assume: p=1000mb at zs
+         
+      REAL (kind=r8), DIMENSION(0:KM) :: Z,THETA0,THETA_BAR,EXF,TEMP
+      
+      INTEGER :: LGAP_Z,LOC_K(NK2)
+      INTEGER :: ITERATION,K,KLO
+      
+!--------------------------------------      
+!     Set the local vertical grids
+!--------------------------------------
+      Z(0) = ZS
+      DO K=1,KM
+       Z(K) = Z(K-1) + DZ_LO
+      ENDDO
+
+!-----------------------------------------      
+!     Set the vertical profile of theta0
+!-----------------------------------------
+      DO K=0,KM_TROP_THETA
+         THETA0(K) = THETA00*DEXP(NT_SQUARE*(Z(K)-ZS)/GRAV)
+      ENDDO
+
+      DO K=KM_TROP_THETA+1,KM1
+         THETA0(K) = THETA0(KM_TROP_THETA)*DEXP(NT1_SQUARE*(Z(K)-Z(KM_TROP_THETA))/GRAV)
+      ENDDO
+
+      DO K=KM1+1,KM2
+         THETA0(K) = THETA0(KM1)*DEXP(NT2_SQUARE*(Z(K)-Z(KM1))/GRAV)
+      ENDDO
+
+      DO K=KM2+1,KM3
+         THETA0(K) = THETA0(KM2)*DEXP(NT3_SQUARE*(Z(K)-Z(KM2))/GRAV)
+      ENDDO
+
+      DO K=KM3+1,KM
+         THETA0(K) = THETA0(KM3)*DEXP(NS_SQUARE*(Z(K)-Z(KM3))/GRAV)
+      ENDDO
+
+!     Vertical Smoothing 
+      DO ITERATION=1,1000
+       TEMP = THETA0
+       DO K=2,KM-2
+        TEMP(K) = &
+        (THETA0(K-2)+THETA0(K-1)+THETA0(K)+THETA0(K+1)+THETA0(K+2))/5.0_r8
+       ENDDO
+       THETA0 = TEMP
+      ENDDO
+      
+!-----------------------------------------      
+!     Set up theta
+!-----------------------------------------
+      DO K=0,KM
+       THETA_BAR(K) = THETA0(K)
+      ENDDO
+      
+      EXF(0) = EXF_S
+      DO K=1,KM
+       EXF(K) = THETA_BAR(K-1)*EXF(K-1)/THETA_BAR(K)
+      ENDDO      
+!---------------------------------------------------------      
+!     PREPARE IC (following the resolution of the model)
+!---------------------------------------------------------    
+      LGAP_Z  = IDINT(DZ/DZ_LO)
+       
+      LOC_K(1) = 0
+      LOC_K(2) = IDINT(0.5_r8*DZ/DZ_LO)
+      DO K = 3,NK2
+       LOC_K(K) = LOC_K(K-1) + LGAP_Z 
+      ENDDO
+      
+!=====================      
+      DO K = 2,NK2
+!=====================       
+       KLO  = LOC_K(K) 
+       THBAR_LO(K) = THETA_BAR(KLO)
+       PIBAR_LO(K) = EXF(KLO)
+!=====================               
+      ENDDO  ! K-loop 
+!=====================       
+      THBAR_LO(1) = THETA_BAR(0)
+      PIBAR_LO(1) = EXF(0)     
+       
+!      THBAR_LO(1) = THBAR_LO(2)
+!      PIBAR_LO(1) = PIBAR_LO(2)
+            
+      THBAR_LO(NK3) = THBAR_LO(NK2)
+      PIBAR_LO(NK3) = PIBAR_LO(NK2)
+             
+   END SUBROUTINE prescribe_ic 
+   
    END SUBROUTINE init_common
 
 !===================================================================================
@@ -307,9 +410,9 @@ CONTAINS
       type(channel_t), intent(inout) :: channel  ! channel data
 
       ! Local
-      REAL (KIND=dbl_kind) :: ZRSEA = 2.0E-04    ! temporary setting 
+      REAL (KIND=r8) :: ZRSEA = 2.0D-04    ! temporary setting 
       
-      INTEGER :: I,J,K,nt,num_seg,mi1,mj1,mim,mip,mjm,mjp
+      INTEGER :: I,J,K,nt,num_seg,mi1,mj1,mim,mip,mjm,mjp,mip_c,mjp_c
 
 ! Calculate various coefficients    
 !*************************************************************************   
@@ -324,19 +427,19 @@ CONTAINS
       DO I = 1, mi1  
       channel%seg(num_seg)%COEFX(I,J) = 1./(channel%seg(num_seg)%RG_T(I,J)*DXSQ)
       channel%seg(num_seg)%COEFY(I,J) = 1./(channel%seg(num_seg)%RG_T(I,J)*DYSQ)
-      channel%seg(num_seg)%COEFA(I,J) = 1./(channel%seg(num_seg)%RG_T(I,J)*DXDY*4.)
+      channel%seg(num_seg)%COEFA(I,J) = 1./(channel%seg(num_seg)%RG_T(I,J)*DXDY*4.0_r8)
       
       channel%seg(num_seg)%COEFX_K(I,J) = 1./(channel%seg(num_seg)%RG_V(I,J)*DXSQ)
       channel%seg(num_seg)%COEFY_K(I,J) = 1./(channel%seg(num_seg)%RG_V(I,J)*DYSQ)
-      channel%seg(num_seg)%COEFA_K(I,J) = 1./(channel%seg(num_seg)%RG_V(I,J)*DXDY*4.)
+      channel%seg(num_seg)%COEFA_K(I,J) = 1./(channel%seg(num_seg)%RG_V(I,J)*DXDY*4.0_r8)
 
       channel%seg(num_seg)%COEFX_E(I,J) = 1./(channel%seg(num_seg)%RG_U(I,J)*DXSQ)
       channel%seg(num_seg)%COEFY_E(I,J) = 1./(channel%seg(num_seg)%RG_U(I,J)*DYSQ)
-      channel%seg(num_seg)%COEFA_E(I,J) = 1./(channel%seg(num_seg)%RG_U(I,J)*DXDY*4.)
+      channel%seg(num_seg)%COEFA_E(I,J) = 1./(channel%seg(num_seg)%RG_U(I,J)*DXDY*4.0_r8)
 
       channel%seg(num_seg)%COEFX_Z(I,J) = 1./(channel%seg(num_seg)%RG_Z(I,J)*DXSQ)
       channel%seg(num_seg)%COEFY_Z(I,J) = 1./(channel%seg(num_seg)%RG_Z(I,J)*DYSQ)
-      channel%seg(num_seg)%COEFA_Z(I,J) = 1./(channel%seg(num_seg)%RG_Z(I,J)*DXDY*4.)      
+      channel%seg(num_seg)%COEFA_Z(I,J) = 1./(channel%seg(num_seg)%RG_Z(I,J)*DXDY*4.0_r8)      
       ENDDO
       ENDDO
 
@@ -392,39 +495,57 @@ CONTAINS
       mip = channel%seg(num_seg)%mip
       
       mjm = channel%seg(num_seg)%mjm
-      mjp = channel%seg(num_seg)%mjp  
+      mjp = channel%seg(num_seg)%mjp
+      
+      mip_c = channel%seg(num_seg)%mip_c
+      mjp_c = channel%seg(num_seg)%mjp_c  
 
 ! Surface fluxes: initialization is not really necessary.
       IF (PHYSICS) THEN     
       DO J = 1,mj1
        DO I = 1,mi1
-        channel%seg(num_seg)%SPREC(I,J) = D0_0
+        channel%seg(num_seg)%SPREC(I,J) = 0.0_r8
         
-        channel%seg(num_seg)%WTH(I,J) = D0_0
-        channel%seg(num_seg)%WQV(I,J) = D0_0
-        
-        channel%seg(num_seg)%UW(I,J) = D0_0
-        channel%seg(num_seg)%WV(I,J) = D0_0
+        channel%seg(num_seg)%WTH(I,J) = 0.0_r8
+        channel%seg(num_seg)%WQV(I,J) = 0.0_r8
        ENDDO
       ENDDO   
+
+      DO J = 1,mjp_c
+       DO I = 1,mip_c
+        channel%seg(num_seg)%UW(I,J) = 0.0_r8
+        channel%seg(num_seg)%WV(I,J) = 0.0_r8
+        
+        channel%seg(num_seg)%UW_CON(I,J) = 0.0_r8
+        channel%seg(num_seg)%WV_CON(I,J) = 0.0_r8
+       ENDDO
+      ENDDO         
       ENDIF     
 
-! Surface information      
+! Surface information     
 !-------------------------------------------------------------------
-!      GWET is not used anymore (no surface flux caculation). 
-!      TG is used in radiation.
+!      LOCEAN is used in the calculation of surface fluxes. 
+!      GWET is used in the calculation of surface fluxes. 
+!      TG is used in radiation and surface fluxes.
 !      ZROUGH is used in the calculation of turbulence coefficient.
 !-------------------------------------------------------------------
+      DO J = 1, mjp_c
+       DO I = 1, mip_c 
+        channel%seg(num_seg)%LOCEAN(I,J) = .TRUE.
+       ENDDO
+      ENDDO  
+
       DO J = mjm, mjp
        DO I = mim, mip 
         channel%seg(num_seg)%TG(I,J) = SST 
         channel%seg(num_seg)%ZROUGH(I,J) = ZRSEA
+        channel%seg(num_seg)%GWET(I,J) = 1.0_r8
        ENDDO
       ENDDO  
-!      CALL BOUND_NORMAL  (nhalo,channel,TG=.TRUE.,ZROUGH=.TRUE.)      
-!      CALL BOUND_CHANNEL (nhalo_adv,channel,TG=.TRUE.,ZROUGH=.TRUE.)
+!      CALL BOUND_NORMAL  (nhalo,channel,TG=.TRUE.,ZROUGH=.TRUE.,GWET=.TRUE.)      
+!      CALL BOUND_CHANNEL (nhalo_adv,channel,TG=.TRUE.,ZROUGH=.TRUE.,GWET=.TRUE.)
 !      IF (.not.nomap) &
-!      CALL HALO_CORREC_Q (nhalo_adv,TG=.TRUE.,ZROUGH=.TRUE.)
+!      CALL HALO_CORREC_Q (nhalo_adv,TG=.TRUE.,ZROUGH=.TRUE.,GWET=.TRUE.)
 
 ! Thermodynamic Fields (Temporary setting: zero deviation)
       
@@ -458,6 +579,7 @@ CONTAINS
          channel%seg(num_seg)%QT3D(I,J,K,nt) = channel%seg(num_seg)%QT3D_bg(I,J,K,nt)
         ENDDO 
        ENDDO
+      ENDDO
       ENDDO
             
 !------------------------
@@ -520,8 +642,8 @@ CONTAINS
 
       DO J = mjm, mjp
        DO I = mim, mip
-        channel%seg(num_seg)%W3D(I,J,  1) = D0_0
-        channel%seg(num_seg)%W3D(I,J,nk2) = D0_0
+        channel%seg(num_seg)%W3D(I,J,  1) = 0.0_r8
+        channel%seg(num_seg)%W3D(I,J,nk2) = 0.0_r8
        ENDDO
       ENDDO
       DO K = 2, NK1
@@ -546,15 +668,15 @@ CONTAINS
       ! PSI & CHI are only for deviation parts      
       DO J = mjm, mjp
        DO I = mim, mip
-         channel%seg(num_seg)%PSI(I,J,K) = D0_0
-         channel%seg(num_seg)%CHI(I,J,K) = D0_0
+         channel%seg(num_seg)%PSI(I,J) = 0.0_r8
+         channel%seg(num_seg)%CHI(I,J) = 0.0_r8
        ENDDO
       ENDDO  
       
       DO J = mjm, mjp
        DO I = mim, mip
-         channel%seg(num_seg)%PSInm1(I,J,K) = channel%seg(num_seg)%PSI(I,J,K)
-         channel%seg(num_seg)%CHInm1(I,J,K) = channel%seg(num_seg)%CHI(I,J,K)
+         channel%seg(num_seg)%PSInm1(I,J) = channel%seg(num_seg)%PSI(I,J)
+         channel%seg(num_seg)%CHInm1(I,J) = channel%seg(num_seg)%CHI(I,J)
        ENDDO
       ENDDO                 
            
@@ -583,7 +705,7 @@ CONTAINS
       INTEGER,DIMENSION(4)    :: KLOWQ_MAX
       INTEGER,DIMENSION(nk2,4):: NTOPOQ,NTOPOU,NTOPOV
       
-      REAL (kind=dbl_kind) :: HEIGHT
+      REAL (kind=r8) :: HEIGHT
 
 !*************************************************************************
       IF (NOTOPO) then
@@ -682,7 +804,7 @@ CONTAINS
       ! Read Orographic Data (from INPUT): currently, specify 0.0 km       
       DO J = mjm, mjp
        DO I = mim, mip
-        channel%seg(num_seg)%TOPOZ(I,J) = D0_0
+        channel%seg(num_seg)%TOPOZ(I,J) = 0.0_r8
        ENDDO 
       ENDDO 
 
@@ -874,9 +996,17 @@ CONTAINS
 !===============================   
       
       DO K = 2, NK2
-       channel%seg(:)%NTOPOQ_GLOB(K) = NTOPOQ(K,1)+NTOPOQ(K,2)+NTOPOQ(K,3)+NTOPOQ(K,4)
-       channel%seg(:)%NTOPOU_GLOB(K) = NTOPOU(K,1)+NTOPOU(K,2)+NTOPOU(K,3)+NTOPOU(K,4)
-       channel%seg(:)%NTOPOV_GLOB(K) = NTOPOV(K,1)+NTOPOV(K,2)+NTOPOV(K,3)+NTOPOV(K,4)
+       channel%seg(1)%NTOPOQ_GLOB(K) = NTOPOQ(K,1)+NTOPOQ(K,2)+NTOPOQ(K,3)+NTOPOQ(K,4)
+       channel%seg(1)%NTOPOU_GLOB(K) = NTOPOU(K,1)+NTOPOU(K,2)+NTOPOU(K,3)+NTOPOU(K,4)
+       channel%seg(1)%NTOPOV_GLOB(K) = NTOPOV(K,1)+NTOPOV(K,2)+NTOPOV(K,3)+NTOPOV(K,4)
+      ENDDO
+             
+      DO num_seg = 2, 4
+       DO K = 2, NK2
+        channel%seg(num_seg)%NTOPOQ_GLOB(K) = channel%seg(1)%NTOPOQ_GLOB(K)
+        channel%seg(num_seg)%NTOPOU_GLOB(K) = channel%seg(1)%NTOPOU_GLOB(K)
+        channel%seg(num_seg)%NTOPOV_GLOB(K) = channel%seg(1)%NTOPOV_GLOB(K)
+       ENDDO
       ENDDO 
 
 !*************************************************************************

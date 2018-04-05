@@ -2,11 +2,10 @@ MODULE halo_z
 ! Routines that correct the halopoint values from neighboring face.
 ! Target: 2-D data at the z-point (on a given height) 
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nhalo,nk2
-USE constld, only: d0_5,d1_5
 
 ! Function
 USE utils, only: fintrp,cubicint
@@ -30,8 +29,6 @@ CONTAINS
 ! SUBROUTINE HALO_COR_BETA  : Correct the halo-values from other faces 
 !                      through 1-D interpolation (along the beta axis)
 !----------------------------------------------------------------------
-!    D0_5  = 0.5_dbl_kind
-!    D1_5  = 1.5_dbl_kind
 
 !=======================================================================  
       SUBROUTINE HALO_CORREC_Z (num_halo,channel,Z3DZ,PSI)
@@ -69,7 +66,7 @@ CONTAINS
           CALL HALO_X (num_halo,mi1,mim,mip,mjm,mjp,channel%seg(num_seg)%nface,  &
                        channel%seg(num_seg)%Z3DZ(:,:,nk2))
                        
-          CALL HALO_COR_BETA (MODE,num_halo,nlen,mim,mip,mjm,mjp, &
+          CALL HALO_COR_BETA (MODE,num_halo,nlen,mi1,mim,mip,mjm,mjp, &
                               channel%seg(num_seg)%CBETA_Z,       &
                               channel%seg(num_seg)%HBETA_Z,       &
                               channel%seg(num_seg)%JHALO_LOC_Z,   &
@@ -82,7 +79,7 @@ CONTAINS
           CALL HALO_X (num_halo,mi1,mim,mip,mjm,mjp,channel%seg(num_seg)%nface,  &
                        channel%seg(num_seg)%PSI)
                        
-          CALL HALO_COR_BETA (MODE,num_halo,nlen,mim,mip,mjm,mjp, &
+          CALL HALO_COR_BETA (MODE,num_halo,nlen,mi1,mim,mip,mjm,mjp, &
                               channel%seg(num_seg)%CBETA_Z,       &
                               channel%seg(num_seg)%HBETA_Z,       &
                               channel%seg(num_seg)%JHALO_LOC_Z,   &
@@ -101,7 +98,7 @@ CONTAINS
           CALL HALO_Y (num_halo,mj1,mim,mip,mjm,mjp,channel%seg(num_seg)%nface,  &
                        channel%seg(num_seg)%Z3DZ(:,:,nk2))
                        
-          CALL HALO_COR_ALPHA (MODE,num_halo,nlen,mim,mip,mjm,mjp,  &
+          CALL HALO_COR_ALPHA (MODE,num_halo,nlen,mj1,mim,mip,mjm,mjp,  &
                                channel%seg(num_seg)%CALPHA_Z,       &
                                channel%seg(num_seg)%HALPHA_Z,       &
                                channel%seg(num_seg)%IHALO_LOC_Z,    &
@@ -114,7 +111,7 @@ CONTAINS
           CALL HALO_Y (num_halo,mj1,mim,mip,mjm,mjp,channel%seg(num_seg)%nface,  &
                        channel%seg(num_seg)%PSI)
                        
-          CALL HALO_COR_ALPHA (MODE,num_halo,nlen,mim,mip,mjm,mjp,  &
+          CALL HALO_COR_ALPHA (MODE,num_halo,nlen,mj1,mim,mip,mjm,mjp,  &
                                channel%seg(num_seg)%CALPHA_Z,       &
                                channel%seg(num_seg)%HALPHA_Z,       &
                                channel%seg(num_seg)%IHALO_LOC_Z,    &
@@ -140,10 +137,10 @@ CONTAINS
       INTEGER, INTENT(IN) :: mi1,mim,mip,mjm,mjp  ! channel segment size
       INTEGER, INTENT(IN) :: nface            ! number of face where the segment is placed
       
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp) :: TVAR
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp) :: TVAR
       INTEGER :: J,NPO
       
       TVAR(:,:) = A(:,:)
@@ -160,7 +157,7 @@ CONTAINS
           DO J=mjm,mjp-1
            A(1-NPO,J) = TVAR(1-NPO,J+1)
           ENDDO
-           A(1-NPO,mjp) = D1_5*TVAR(1-NPO,mjp)-D0_5*TVAR(1-NPO,mjp-1)
+           A(1-NPO,mjp) = 1.5_r8*TVAR(1-NPO,mjp)-0.5_r8*TVAR(1-NPO,mjp-1)
          ENDDO               
 !=================   
       CASE(6)
@@ -170,14 +167,14 @@ CONTAINS
           DO J=mjm,mjp-1
            A(mi1+NPO,J) = TVAR(mi1+NPO,J+1)
           ENDDO
-           A(mi1+NPO,mjp) = D1_5*TVAR(mi1+NPO,mjp)-D0_5*TVAR(mi1+NPO,mjp-1)
+           A(mi1+NPO,mjp) = 1.5_r8*TVAR(mi1+NPO,mjp)-0.5_r8*TVAR(mi1+NPO,mjp-1)
          ENDDO 
 
 !        Data shift on the alpha-direction (correct halos at Edge_M)  
          NPO=1
          DO J=mjm,mjp
-           A(1-NPO,J) = D0_5*(D1_5*TVAR(1-NPO,J)-D0_5*TVAR(1-NPO-1,J) &
-                             +D1_5*TVAR(1,J)-D0_5*TVAR(2,J))
+           A(1-NPO,J) = 0.5_r8*(1.5_r8*TVAR(1-NPO,J)-0.5_r8*TVAR(1-NPO-1,J) &
+                               +1.5_r8*TVAR(1,J)-0.5_r8*TVAR(2,J))
          ENDDO            
          DO NPO=2,num_halo
           DO J=mjm,mjp 
@@ -199,10 +196,10 @@ CONTAINS
       INTEGER, INTENT(IN) :: mj1,mim,mip,mjm,mjp  ! channel segment size
       INTEGER, INTENT(IN) :: nface            ! number of face where the segment is placed
       
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp) :: TVAR 
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp) :: TVAR 
       INTEGER :: I,NPO
       
       TVAR(:,:) = A(:,:)
@@ -219,7 +216,7 @@ CONTAINS
           DO I=mim,mip-1
            A(I,1-NPO) = TVAR(I+1,1-NPO)
           ENDDO
-           A(mip,1-NPO) = D1_5*TVAR(mip,1-NPO)-D0_5*TVAR(mip-1,1-NPO)
+           A(mip,1-NPO) = 1.5_r8*TVAR(mip,1-NPO)-0.5_r8*TVAR(mip-1,1-NPO)
          ENDDO
 !================= 
       CASE(3)
@@ -229,7 +226,7 @@ CONTAINS
           DO I=mim,mip-1
            A(I,mj1+NPO) = TVAR(I+1,mj1+NPO)
           ENDDO
-           A(mip,mj1+NPO) = D1_5*TVAR(mip,mj1+NPO)-D0_5*TVAR(mip-1,mj1+NPO)
+           A(mip,mj1+NPO) = 1.5_r8*TVAR(mip,mj1+NPO)-0.5_r8*TVAR(mip-1,mj1+NPO)
           DO I=mim,mip
            A(I,mj1+NPO) = TVAR(I,mj1+NPO)
           ENDDO 
@@ -240,7 +237,7 @@ CONTAINS
           DO I=mim,mip-1
            A(I,1-NPO) = TVAR(I+1,1-NPO)
           ENDDO
-           A(mip,1-NPO) = D1_5*TVAR(mip,1-NPO)-D0_5*TVAR(mip-1,1-NPO)
+           A(mip,1-NPO) = 1.5_r8*TVAR(mip,1-NPO)-0.5_r8*TVAR(mip-1,1-NPO)
            
           DO I=mim,mip
            TVAR(I,1-NPO) = A(I,1-NPO)
@@ -250,8 +247,8 @@ CONTAINS
 !        Data shift on the beta-direction (correct halos at Edge_M)  
          NPO=1
          DO I=mim,mip
-           A(I,1-NPO) = D0_5*(D1_5*TVAR(I,1-NPO)-D0_5*TVAR(I,1-NPO-1) &
-                             +D1_5*TVAR(I,1)-D0_5*TVAR(I,2))
+           A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
+                               +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 
@@ -266,14 +263,14 @@ CONTAINS
           DO I=mim,mip-1
            A(I,mj1+NPO) = TVAR(I+1,mj1+NPO)
           ENDDO
-           A(mip,mj1+NPO) = D1_5*TVAR(mip,mj1+NPO)-D0_5*TVAR(mip-1,mj1+NPO)
+           A(mip,mj1+NPO) = 1.5_r8*TVAR(mip,mj1+NPO)-0.5_r8*TVAR(mip-1,mj1+NPO)
          ENDDO  
 
 !        Data shift on the beta-direction (correct halos at Edge_M)  
          NPO=1
          DO I=mim,mip
-           A(I,1-NPO) = D0_5*(D1_5*TVAR(I,1-NPO)-D0_5*TVAR(I,1-NPO-1) &
-                             +D1_5*TVAR(I,1)-D0_5*TVAR(I,2))
+           A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
+                               +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 
@@ -288,7 +285,7 @@ CONTAINS
           DO I=mim,mip-1
            A(I,mj1+NPO) = TVAR(I+1,mj1+NPO)
           ENDDO
-           A(mip,mj1+NPO) = D1_5*TVAR(mip,mj1+NPO)-D0_5*TVAR(mip-1,mj1+NPO)
+           A(mip,mj1+NPO) = 1.5_r8*TVAR(mip,mj1+NPO)-0.5_r8*TVAR(mip-1,mj1+NPO)
          ENDDO 
 !=================    
       CASE(6)
@@ -298,7 +295,7 @@ CONTAINS
           DO I=mim,mip-1
            A(I,1-NPO) = TVAR(I+1,1-NPO)
           ENDDO
-           A(mip,1-NPO) = D1_5*TVAR(mip,1-NPO)-D0_5*TVAR(mip-1,1-NPO)
+           A(mip,1-NPO) = 1.5_r8*TVAR(mip,1-NPO)-0.5_r8*TVAR(mip-1,1-NPO)
            
           DO I=mim,mip
            TVAR(I,1-NPO) = A(I,1-NPO)
@@ -308,8 +305,8 @@ CONTAINS
 !        Data shift on the beta-direction (correct halos at Edge_M)  
          NPO=1
          DO I=mim,mip
-           A(I,1-NPO) = D0_5*(D1_5*TVAR(I,1-NPO)-D0_5*TVAR(I,1-NPO-1) &
-                             +D1_5*TVAR(I,1)-D0_5*TVAR(I,2))          
+           A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
+                               +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))          
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 
@@ -322,27 +319,27 @@ CONTAINS
 
       END SUBROUTINE halo_y
             
-      SUBROUTINE HALO_COR_BETA (MODE,mhalo,nlen,mim,mip,mjm,mjp, &
+      SUBROUTINE HALO_COR_BETA (MODE,mhalo,nlen,mi1,mim,mip,mjm,mjp, &
                                 CBETA,HBETA,JHALO_LOC,A)
 !=======================================================================       
 !     Correct the halo-values from other faces through 1-D interpolation (along the beta axis)
 !------------------------------------------------------------------------------------------
       INTEGER, INTENT(IN) :: MODE             ! interpolation type (1: linear  2: cubic spline)
       INTEGER, INTENT(IN) :: mhalo            ! number of halo points for interpolation
-      INTEGER, INTENT(IN) :: nlen,mim,mip,mjm,mjp  ! channel segment size
+      INTEGER, INTENT(IN) :: nlen,mi1,mim,mip,mjm,mjp  ! channel segment size
 
-      REAL (KIND=dbl_kind),DIMENSION(mjm:mjp),INTENT(IN) :: &
+      REAL (KIND=r8),DIMENSION(mjm:mjp),INTENT(IN) :: &
            CBETA       ! beta values (coordinates) of the regular zeta-grid points 
-      REAL (KIND=dbl_kind),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: &
+      REAL (KIND=r8),DIMENSION(nhalo,mjm:mjp),INTENT(IN) :: &
            HBETA       ! beta values of the target halo points
       INTEGER,DIMENSION(nhalo,mjm:mjp),INTENT(IN) ::  &
            JHALO_LOC   ! j-index of lower points of given values for linear interpolation
       
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
       INTEGER :: I,J,IPO,J1VAL
-      REAL (KIND=dbl_kind),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
       
       IF (MODE.EQ.2)  THEN
         DO J = mjm,mjp  
@@ -444,7 +441,7 @@ CONTAINS
       END SUBROUTINE halo_cor_beta
                     
 !=======================================================================       
-      SUBROUTINE HALO_COR_ALPHA (MODE,mhalo,nlen,mim,mip,mjm,mjp, &
+      SUBROUTINE HALO_COR_ALPHA (MODE,mhalo,nlen,mj1,mim,mip,mjm,mjp, &
                                  CALPHA,HALPHA,IHALO_LOC,A)
 !=======================================================================         
 !     Correct the halo-values from other faces through 1-D interpolation (along the alpha axis)
@@ -459,20 +456,20 @@ CONTAINS
 !------------------------------------------------------------------------------------------
       INTEGER, INTENT(IN) :: MODE             ! interpolation type (1: linear  2: cubic spline)
       INTEGER, INTENT(IN) :: mhalo            ! number of halo points for interpolation
-      INTEGER, INTENT(IN) :: nlen,mim,mip,mjm,mjp  ! channel segment size
+      INTEGER, INTENT(IN) :: nlen,mj1,mim,mip,mjm,mjp  ! channel segment size
       
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip),INTENT(IN) :: &
+      REAL (KIND=r8),DIMENSION(mim:mip),INTENT(IN) :: &
            CALPHA      ! alpha values (coordinates) of the regular zeta-grid points 
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,nhalo),INTENT(IN) :: &
+      REAL (KIND=r8),DIMENSION(mim:mip,nhalo),INTENT(IN) :: &
            HALPHA      ! alpha values of the target halo points
       INTEGER,DIMENSION(mim:mip,nhalo),INTENT(IN) ::  &
            IHALO_LOC   ! i-index of lower points of given values for linear interpolation
       
-      REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
+      REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp),INTENT(INOUT) :: A
       
       ! Local
       INTEGER :: I,J,JPO,I1VAL
-      REAL (KIND=dbl_kind),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
+      REAL (KIND=r8),DIMENSION(nlen) :: XVAL,YVAL,XNEW,YNEW
       
       IF (MODE.EQ.2)  THEN
         DO I = mim,mip  
