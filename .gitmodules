@@ -1,14 +1,3 @@
-[submodule "mpas-o"]
-	path = components/mpas-o/model
-	url = git@github.com:ACME-Climate/MPAS.git
-	branch = ocean/develop
-[submodule "mpas-li"]
-	path = components/mpasli/model
-	url = git@github.com:ACME-Climate/MPAS.git
-[submodule "mpas-cice"]
-	path = components/mpas-cice/model
-	url = git@github.com:ACME-Climate/MPAS.git
-	branch = cice/develop
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
 	url = git@github.com:ACME-Climate/fates.git
