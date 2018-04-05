@@ -59,22 +59,22 @@
                 <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
 			description="area-integrated surface mass balance within region"
 		/>
-		<var name="regionalAvgNetAccumulation" type="real" dimensions="nRegions Time" units="m yr^{-1}^"
+		<var name="regionalAvgNetAccumulation" type="real" dimensions="nRegions Time" units="m yr^{-1}"
 			description="average sfcMassBal, as a thickness rate. Positive values are ice gain."
 		/>
                 <var name="regionalSumBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
 			description="area-integrated basal mass balance within region"
 		/>
-		<var name="regionalSumGroundedBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}^"
+		<var name="regionalSumGroundedBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
 			description="total, area integrated grounded basal mass balance. Positive values are ice gain."
 		/>
-		<var name="regionalAvgGroundedBasalMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}^"
+		<var name="regionalAvgGroundedBasalMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}"
 			description="average groundedBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
-		<var name="regionalSumFloatingBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}^"
+		<var name="regionalSumFloatingBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
 			description="total, area integrated floating basal mass balance. Positive values are ice gain."
 		/>
-		<var name="regionalAvgSubshelfMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}^"
+		<var name="regionalAvgSubshelfMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}"
 			description="average floatingBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
                 <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^-1"
