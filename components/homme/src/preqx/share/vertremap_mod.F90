@@ -244,6 +244,7 @@ contains
   real (kind=real_kind) :: ps_forcing(np,np)
 
   call t_startf('remap_vsplit_dyn')
+  do ie=nets,nete
      ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
 
      elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)*dt
