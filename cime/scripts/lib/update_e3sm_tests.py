@@ -49,7 +49,7 @@ _TEST_SUITES = {
                              "ERP.f45_g37_rx1.A",
                              "SMS_D_Ln9.f19_g16_rx1.A",
                              "DAE.f19_f19.A",
-                             ("PET_P4.f19_f19.A","mach-pet"),
+                             ("PET_P4.f19_f19.A","allactive-mach-pet"),
                              "SMS.T42_T42.S",
                              "PRE.f19_f19.ADESP",
                              "PRE.f19_f19.ADESP_TEST",
@@ -69,7 +69,7 @@ _TEST_SUITES = {
                               "SMS_Ld1.hcru_hcru.I1850CRUCLM45CN",
                              ("ERS.f19_g16.I1850CNECACNTBC" ,"clm-eca"),
                              ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),
-                             ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                             ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "clm-force_netcdf_pio"),
                              ("ERS_Ld3.f45_f45.ICLM45ED","clm-fates"),
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
                              ("ERS.f19_g16.I1850CLM45","clm-vst"),
@@ -91,7 +91,7 @@ _TEST_SUITES = {
     "e3sm_atm_integration" : (None, None,
                               ("ERS_Ln9.ne4_ne4.FC5" ,
                                "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
-                               ("PET_Ln5.ne4_ne4.FC5AV1C-L","mach-pet"),
+                               ("PET_Ln5.ne4_ne4.FC5AV1C-L","allactive-mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
@@ -134,17 +134,17 @@ _TEST_SUITES = {
                          "ERS.f09_g16_g.MPASLISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI"
-                        ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
+                        ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
                         )),
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
-		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
+		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-                           ("PET.f19_g16.X","mach-pet"),
-                           ("PET.f45_g37_rx1.A","mach-pet"),
-                           ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","mach-pet"),
+                           ("PET.f19_g16.X","allactive-mach-pet"),
+                           ("PET.f45_g37_rx1.A","allactive-mach-pet"),
+                           ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","allactive-mach-pet"),
                            "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
@@ -175,7 +175,7 @@ _TEST_SUITES = {
     #e3sm tests to mimic production runs
     "e3sm_prod" : (("e3sm_atm_prod",),None,
                      (
-		      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","v1cmip6"),
+		      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
 		      )),
 
     "fates" : (None, None,
