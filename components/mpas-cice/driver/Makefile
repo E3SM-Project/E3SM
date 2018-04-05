@@ -4,7 +4,7 @@ OBJS = ice_comp_mct.o \
        mpas_cice_cpl_indices.o \
        mpas_cice_mct_vars.o
 
-ICE_SHARED_INCLUDES=-I../core_cice/column -I../core_cice/forward_model -I../core_cice/analysis_members -I../framework -I../operators
+ICE_SHARED_INCLUDES=-I../core_seaice/column -I../core_seaice/forward_model -I../core_seaice/analysis_members -I../framework -I../operators
 
 all: $(OBJS)
 

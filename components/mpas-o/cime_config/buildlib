@@ -31,19 +31,19 @@ my $MACH        = `./xmlquery MACH         -value`;
 
 mkdir "$OBJROOT/$component_dir";
 mkdir "$OBJROOT/$component_dir/source";
-# my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/* $OBJROOT/$component_dir/source/.";
+# my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/* $OBJROOT/$component_dir/source/.";
 # system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/Makefile* $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/core_ocean $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_ocean $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/external $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/operators $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/framework $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/model/src/tools $OBJROOT/$component_dir/source/.";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component.buildlib $srccpy failed: $?\n";
 
 my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
