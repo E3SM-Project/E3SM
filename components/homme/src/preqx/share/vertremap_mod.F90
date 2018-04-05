@@ -207,7 +207,7 @@ contains
      call remap1(ttmp,np,1,dp_forcing,dp_star)
      call t_stopf('vertical_remap1_1')
      !add forcing to temperature
-     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)
+     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
 
      !remap forcing V
      ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_forcing
@@ -218,11 +218,44 @@ contains
      call remap1(ttmp,np,2,dp_forcing,dp_star)
      call t_stopf('vertical_remap1_2')
      !add forcing back
-     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)
-     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)/dp_star(:,:,:)
+     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
+     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)/dp_star(:,:,:)*dt
   enddo
   call t_stopf('remap_vsplit_dyn')
   end subroutine remap_vsplit_dyn
+
+
+
+!new version without remap
+  subroutine remap_vsplit_dyn_(hybrid,elem,hvcoord,dt,np1,nets,nete)
+  use kinds,          only: real_kind
+  use hybvcoord_mod,  only: hvcoord_t
+  use control_mod,    only: rsplit
+  use hybrid_mod,     only: hybrid_t
+  type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure(shared)
+  type (element_t), intent(inout) :: elem(:)
+  integer, intent(in) :: np1, nets, nete
+  type (hvcoord_t)                :: hvcoord
+  real (kind=real_kind)           :: dt
+  integer :: ie,i,j,k
+
+  real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
+  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+  real (kind=real_kind) :: ps_forcing(np,np)
+
+  call t_startf('remap_vsplit_dyn')
+     ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
+
+     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)*dt
+
+     ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)
+     ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)
+
+     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)*dt
+     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)*dt
+  enddo
+  call t_stopf('remap_vsplit_dyn')
+  end subroutine remap_vsplit_dyn_
 
 end module 
 
