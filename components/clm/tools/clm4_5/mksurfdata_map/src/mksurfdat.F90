@@ -709,7 +709,7 @@ program mksurfdat
     do n = 1,ns_o
 
        ! Assume wetland and/or lake when dataset landmask implies ocean 
-       ! (assume medium soil color (15), soil order(16) and loamy texture).
+       ! (assume medium soil color (15), soil order(15) and loamy texture).
        
        ! Also set pftdata_mask here
        ! Note that pctpft_full is NOT adjusted here, so that we still have information
@@ -719,7 +719,7 @@ program mksurfdat
        if (pctlnd_pft(n) < 1.e-6_r8) then
           pftdata_mask(n)  = 0
           soicol(n)        = 15
-          soiord(n)        = 16
+          soiord(n)        = 15
           pctwet(n)        = 100._r8 - pctlak(n)
           pcturb(n)        = 0._r8
           pctgla(n)        = 0._r8
@@ -1415,7 +1415,6 @@ subroutine normalizencheck_landuse(ldomain)
                    end if
                    pctpft_full(n,m) = 0.0_r8
                 end if
-                if (pctpft_full(n,m) < toosmallPFT) pctpft_full(n,m) = 0.0_r8
              end do
           end if
 
