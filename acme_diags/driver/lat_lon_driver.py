@@ -262,9 +262,17 @@ def run_diag(parameter):
                     mean_mv1_reg_minus_mv2_reg = mean(mv1_reg - mv2_reg)
                     print('mean(mv1_reg) - mean(mv2_reg): {}'.format(mean_mv1_reg - mean_mv2_reg))
                     print('mean(mv1_reg - mv2_reg): {}'.format(mean_mv1_reg_minus_mv2_reg))
-                    diff = mv1_reg - mv2_reg
+                    #diff = mv1_reg - mv2_reg
+                    #metrics_dict = create_metrics(
+                    #    mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+
+                    # Original ref vs regrid ref
+                    # Test (top image): ref (mv2_domain)
+                    # Ref (middle image): ref_regrid (mv2_reg)
+                    diff = mv2_domain - mv2_reg
                     metrics_dict = create_metrics(
-                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                        mv2_reg, mv2_domain, mv2_reg, mv2_reg, diff)
+
 
                     metrics_dict['unit'] = mv1_reg.units
 
@@ -275,8 +283,14 @@ def run_diag(parameter):
                     print('Metrics saved in: ' + fnm + '.json')
 
                     parameter.var_region = region
+                    # plot(parameter.current_set, mv2_domain,
+                    #      mv1_domain, diff, metrics_dict, parameter)
+                    # Original ref vs regrid ref
+                    parameter.reference_title = 'Ref regrid'
+                    parameter.test_title = 'Ref'
+                    parameter.diff_title = 'Ref - Ref regrid'
                     plot(parameter.current_set, mv2_domain,
-                         mv1_domain, diff, metrics_dict, parameter)
+                         mv2_reg, diff, metrics_dict, parameter)
                     utils.save_ncfiles(parameter.current_set,
                                        mv1_domain, mv2_domain, diff, parameter)
 
