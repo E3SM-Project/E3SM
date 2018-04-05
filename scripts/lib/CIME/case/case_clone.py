@@ -1,15 +1,17 @@
+"""
+create_clone is a member of the Case class from file case.py
+"""
 import os, glob, shutil
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect
 from CIME.user_mod_support import apply_user_mods
-from CIME.check_lockedfiles         import lock_file
-from CIME.case_setup import case_setup
+from CIME.locked_files         import lock_file
 from CIME.simple_compare            import compare_files
 
 logger = logging.getLogger(__name__)
 
 
-def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
+def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
                       cime_output_root=None, exeroot=None, rundir=None,
                       user_mods_dir=None):
     """
@@ -20,7 +22,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     directories. It is an error to provide exeroot if keepexe is True.
     """
     if cime_output_root is None:
-        cime_output_root = case.get_value("CIME_OUTPUT_ROOT")
+        cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
 
     newcaseroot = os.path.abspath(newcase)
     expect(not os.path.isdir(newcaseroot),
@@ -29,7 +31,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     newcase_cimeroot = os.path.abspath(get_cime_root())
 
     # create clone from case to case
-    clone_cimeroot = case.get_value("CIMEROOT")
+    clone_cimeroot = self.get_value("CIMEROOT")
     if newcase_cimeroot != clone_cimeroot:
         logger.warning(" case  CIMEROOT is {} ".format(newcase_cimeroot))
         logger.warning(" clone CIMEROOT is {} ".format(clone_cimeroot))
@@ -37,11 +39,11 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
 
     # *** create case object as deepcopy of clone object ***
     srcroot = os.path.join(newcase_cimeroot,"..")
-    newcase = case.copy(newcasename, newcaseroot, newsrcroot=srcroot)
+    newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
     newcase.set_value("CIMEROOT", newcase_cimeroot)
 
     # if we are cloning to a different user modify the output directory
-    olduser = case.get_value("USER")
+    olduser = self.get_value("USER")
     newuser = os.environ.get("USER")
     if olduser != newuser:
         cime_output_root = cime_output_root.replace(olduser, newuser)
@@ -63,10 +65,10 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
 
     # determine if will use clone executable or not
     if keepexe:
-        orig_exeroot = case.get_value("EXEROOT")
+        orig_exeroot = self.get_value("EXEROOT")
         newcase.set_value("EXEROOT", orig_exeroot)
         newcase.set_value("BUILD_COMPLETE","TRUE")
-        orig_bld_complete = case.get_value("BUILD_COMPLETE")
+        orig_bld_complete = self.get_value("BUILD_COMPLETE")
         if not orig_bld_complete:
             logger.warning("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
             logger.warning("Avoid this message by building case one before you clone.\n")
@@ -91,7 +93,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     # user's case. However, note that, if a project is not given, the fallback will
     # be to copy it from the clone, just like other xml variables are copied.
     if project is None:
-        project = case.get_value("PROJECT", subgroup="case.run")
+        project = self.get_value("PROJECT", subgroup=self.get_primary_job())
     if project is not None:
         newcase.set_value("PROJECT", project)
 
@@ -100,7 +102,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     newcase.flush(flushall=True)
 
     # copy user_ files
-    cloneroot = case.get_case_root()
+    cloneroot = self.get_case_root()
     files = glob.glob(cloneroot + '/user_*')
 
     for item in files:
@@ -151,9 +153,9 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     fnewcase.write("\n    *** original clone README follows ****")
     fnewcase.write("\n " +  fclone.read())
 
-    clonename = case.get_value("CASE")
+    clonename = self.get_value("CASE")
     logger.info(" Successfully created new case {} from clone case {} ".format(newcasename, clonename))
 
-    case_setup(newcase)
+    newcase.case_setup()
 
     return newcase

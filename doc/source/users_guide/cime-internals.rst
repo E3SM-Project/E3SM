@@ -4,7 +4,7 @@
 CIME internals
 ==============
 
-The file **$CIMEROOT/config/[cesm,acme]/config_files.xml** contains all model-specific information that CIME uses to determine compsets, compset component settings, model grids, machines, batch queue settings, and compiler settings. It contains the following xml nodes, which are discussed below or in subsequent sections of this guide.
+The file **$CIMEROOT/config/[cesm,e3sm]/config_files.xml** contains all model-specific information that CIME uses to determine compsets, compset component settings, model grids, machines, batch queue settings, and compiler settings. It contains the following xml nodes, which are discussed below or in subsequent sections of this guide.
 ::
 
    compset definitions:

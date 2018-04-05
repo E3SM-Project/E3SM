@@ -220,7 +220,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
                     try:
                         shutil.copy(cprnc_log_file, casedir)
-                    except OSError:
+                    except (OSError, IOError) as _:
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
@@ -256,7 +256,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     case - the case containing the files
     rundir - the rundir for the case
     outfile_suffix - if non-blank, then the output file name ends with this
-        suffix (with a '.' added before the given suffix)
+        suffix (with a '.' added before the given suffix).
+        Use None to avoid permissions issues in the case dir.
 
     returns (True if the files matched, log_name)
     """

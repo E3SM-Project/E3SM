@@ -2,7 +2,6 @@ import CIME.compare_namelists, CIME.simple_compare
 from CIME.utils import expect, append_status, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline
-from CIME.case_cmpgen_namelists import case_cmpgen_namelists
 from CIME.case import Case
 
 import os, glob, logging
@@ -20,7 +19,7 @@ def compare_namelists(case, baseline_name, baseline_root, logfile_name):
 ###############################################################################
     log_lvl = logging.getLogger().getEffectiveLevel()
     logging.disable(logging.CRITICAL)
-    success = case_cmpgen_namelists(case, compare=True, compare_name=baseline_name, baseline_root=baseline_root, logfile_name=logfile_name)
+    success = case.case_cmpgen_namelists(compare=True, compare_name=baseline_name, baseline_root=baseline_root, logfile_name=logfile_name)
     logging.getLogger().setLevel(log_lvl)
     return success
 

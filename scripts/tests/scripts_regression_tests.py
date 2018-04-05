@@ -1498,7 +1498,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
                 with TestStatus(test_dir=casedir) as ts:
                     ts.set_status(MEMLEAK_PHASE, TEST_PEND_STATUS)
 
-            run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+            run_cmd_assert_result(self, "./case.submit --skip-preview-namelist", from_dir=casedir)
 
         self._wait_for_tests(self._baseline_name)
 
