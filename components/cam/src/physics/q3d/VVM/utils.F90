@@ -1,18 +1,10 @@
 MODULE utils
 !  a collection of utility routines (functions & subroutines)
 
-   USE shr_kind_mod, only: dbl_kind => shr_kind_r8
-   USE constld,      only: d0_0,d1_0,d2_0,d3_0,d6_0,d0_5
+   USE shr_kind_mod, only: r8 => shr_kind_r8
    
    IMPLICIT NONE
    PRIVATE
-
-!    D0_0  = 0.0_dbl_kind
-!    D1_0  = 1.0_dbl_kind
-!    D2_0  = 2.0_dbl_kind
-!    D3_0  = 3.0_dbl_kind
-!    D6_0  = 6.0_dbl_kind
-!    D0_5  = 0.5_dbl_kind
 
 !------------------------------------------------------------------------------
 ! public member functions
@@ -37,19 +29,25 @@ MODULE utils
      amtx21,    &  ! find the transformation matrix A21
      amtx22,    &  ! find the transformation matrix A22 
      imatrix,   &  ! calculation of inverse matrix 
-     cangle        ! calculation of central angle      
+     cangle,    &  ! calculation of central angle   
+     con2rll,   &  ! convert a contravariant vector to a RLL vector
+     cov2rll,   &  ! convert a covariant vector to a RLL vector
+     rll2con,   &  ! convert a RLL vector to a contrariant vector
+     rll2cov,   &  ! convert a RLL vector to a covariant vector
+     cov2con,   &  ! convert a covariant vector to a contravariant vector 
+     con2cov       ! convert a contravariant vector to a covariant vector 
         
    CONTAINS
 
 !========================================================================   
       FUNCTION es ( t ) RESULT(es_result)
 !========================================================================      
-         REAL (KIND=dbl_kind), INTENT(IN) :: t ! temperature (K)
-         REAL(KIND=dbl_kind) :: es_result
+         REAL (KIND=r8), INTENT(IN) :: t ! temperature (K)
+         REAL(KIND=r8) :: es_result
          
-         REAL (KIND=dbl_kind) :: esatw
+         REAL (KIND=r8) :: esatw
 
-         es_result = 100._dbl_kind * esatw ( t )
+         es_result = 100.0_r8 * esatw ( t )
 
       END FUNCTION es
 
@@ -64,9 +62,9 @@ MODULE utils
 !     TE = TABLE OF ELEMENTS ARRANGED IN ASCENDING ORDER
 !     LF = LOGICAL FLAG
 
-      REAL(KIND=dbl_kind), INTENT(IN) :: V
+      REAL(KIND=r8), INTENT(IN) :: V
       INTEGER, INTENT(IN) :: NE
-      REAL(KIND=dbl_kind), INTENT(IN) :: TE(NE)
+      REAL(KIND=r8), INTENT(IN) :: TE(NE)
       
       LOGICAL, INTENT(INOUT) :: LF
       
@@ -161,9 +159,9 @@ MODULE utils
 !     3 = POWER LAW - - A * X**B
 
          INTEGER, INTENT(IN) :: mode
-         REAL (KIND=dbl_kind), INTENT(IN) :: X,X1,F1,X2,F2
+         REAL (KIND=r8), INTENT(IN) :: X,X1,F1,X2,F2
          
-         REAL (KIND=dbl_kind) :: fintrp_result
+         REAL (KIND=r8) :: fintrp_result
 
          SELECT CASE (mode)
          
@@ -177,7 +175,7 @@ MODULE utils
 
 !         POWER LAW INTERPOLATION
             CASE(3)
-              IF ( X1 .GT. D0_0 ) then
+              IF ( X1 .GT. 0.0_r8 ) then
                  fintrp_result = F1 * ( X / X1 )**( LOG( F1 / F2 ) / LOG( X1 / X2 ) )
               ELSE
                  fintrp_result = F1 * ( F1 / F2 )**( ( X - X1 ) / ( X1 - X2 ) )
@@ -195,12 +193,12 @@ MODULE utils
 !     Returns a random number between -1.0 and 1.0. 
 
          INTEGER, INTENT(INOUT) :: idum
-         REAL (KIND=dbl_kind) :: ran2_result
+         REAL (KIND=r8) :: ran2_result
          
          ! Local variables
          INTEGER, parameter :: M=714025,IA=1366,IB=3454,IC=150889
          INTEGER :: m1, m2, m3, mfac
-         REAL (KIND=dbl_kind) :: tmp, rfac
+         REAL (KIND=r8) :: tmp, rfac
       
          m1 = mod(IA*IDUM,m)
          m2 = mod(IB*IDUM,m)
@@ -219,16 +217,16 @@ MODULE utils
 !========================================================================      
       INTEGER,INTENT(IN) :: NSIZE,NSIZE_NEW
       
-      REAL (KIND=dbl_kind),INTENT(IN)  :: XVAL(NSIZE),YVAL(NSIZE)
-      REAL (KIND=dbl_kind),INTENT(IN)  :: XNEW(NSIZE_NEW)
-      REAL (KIND=dbl_kind),INTENT(OUT) :: YNEW(NSIZE_NEW)
+      REAL (KIND=r8),INTENT(IN)  :: XVAL(NSIZE),YVAL(NSIZE)
+      REAL (KIND=r8),INTENT(IN)  :: XNEW(NSIZE_NEW)
+      REAL (KIND=r8),INTENT(OUT) :: YNEW(NSIZE_NEW)
       
       ! Local variables
-      REAL (KIND=dbl_kind) :: YP1,YPN    ! First derivative of the interpolating function 
+      REAL (KIND=r8) :: YP1,YPN    ! First derivative of the interpolating function 
                                          ! at points 1 and n, respectively.
       
-      REAL (KIND=dbl_kind),DIMENSION(NSIZE) :: Y2
-      REAL (KIND=dbl_kind) :: X_INT,Y_INT
+      REAL (KIND=r8),DIMENSION(NSIZE) :: Y2
+      REAL (KIND=r8) :: X_INT,Y_INT
       INTEGER :: I
       
       YP1 = (YVAL(2)-YVAL(1))/(XVAL(2)-XVAL(1))
@@ -249,36 +247,36 @@ MODULE utils
 !     yp1 or ypn=0: second derivative is zero (natural cubic spline) 
 
       INTEGER,INTENT(IN) :: N
-      REAL (KIND=dbl_kind),INTENT(IN) :: YP1,YPN
-      REAL (KIND=dbl_kind),DIMENSION(N),INTENT(IN) :: X,Y
-      REAL (KIND=dbl_kind),DIMENSION(N),INTENT(OUT) :: Y2
+      REAL (KIND=r8),INTENT(IN) :: YP1,YPN
+      REAL (KIND=r8),DIMENSION(N),INTENT(IN) :: X,Y
+      REAL (KIND=r8),DIMENSION(N),INTENT(OUT) :: Y2
       
-      REAL (KIND=dbl_kind),DIMENSION(N):: U(N)
-      REAL (KIND=dbl_kind) :: SIG,P,QN,UN
+      REAL (KIND=r8),DIMENSION(N):: U(N)
+      REAL (KIND=r8) :: SIG,P,QN,UN
       INTEGER :: I,K
       
-      IF (YP1 .GT. .99E30) THEN
-        Y2(1) = D0_0
-        U(1)  = D0_0
+      IF (YP1 .GT. 0.99D30) THEN
+        Y2(1) = 0.0_r8
+        U(1)  = 0.0_r8
       ELSE
-        Y2(1) = -D0_5
-        U(1)  = (D3_0/(X(2)-X(1)))*((Y(2)-Y(1))/(X(2)-X(1))-YP1)
+        Y2(1) = -0.5_r8
+        U(1)  = (3.0_r8/(X(2)-X(1)))*((Y(2)-Y(1))/(X(2)-X(1))-YP1)
       ENDIF
       
       DO I = 2, N-1
         SIG = (X(I)-X(I-1))/(X(I+1)-X(I-1))
-        P = SIG*Y2(I-1)+2.
+        P = SIG*Y2(I-1)+2.0_r8
         Y2(I) = (SIG-1.)/P
-        U(I) = (D6_0*((Y(I+1)-Y(I))/(X(I+1)-X(I))-(Y(I)-Y(I-1)) &
+        U(I) = (6.0_r8*((Y(I+1)-Y(I))/(X(I+1)-X(I))-(Y(I)-Y(I-1)) &
               /(X(I)-X(I-1)))/(X(I+1)-X(I-1))-SIG*U(I-1))/P
       ENDDO
       
-      IF (YPN .GT. .99E30) THEN
-        QN = D0_0
-        UN = D0_0
+      IF (YPN .GT. 0.99D30) THEN
+        QN = 0.0_r8
+        UN = 0.0_r8
       ELSE
-        QN = D0_5
-        UN = (D3_0/(X(N)-X(N-1)))*(YPN-(Y(N)-Y(N-1))/(X(N)-X(N-1)))
+        QN = 0.5_r8
+        UN = (3.0_r8/(X(N)-X(N-1)))*(YPN-(Y(N)-Y(N-1))/(X(N)-X(N-1)))
       ENDIF
       
       Y2(N) = (UN-QN*U(N-1))/(QN*Y2(N-1)+1.)
@@ -292,11 +290,11 @@ MODULE utils
 !     Returns a cubic-spline interpolated value Y at X-point 
 
       INTEGER,INTENT(IN) :: N
-      REAL (KIND=dbl_kind),DIMENSION(N),INTENT(IN) :: XA,YA,Y2A
-      REAL (KIND=dbl_kind),INTENT(IN)  :: X
-      REAL (KIND=dbl_kind),INTENT(OUT) :: Y
+      REAL (KIND=r8),DIMENSION(N),INTENT(IN) :: XA,YA,Y2A
+      REAL (KIND=r8),INTENT(IN)  :: X
+      REAL (KIND=r8),INTENT(OUT) :: Y
       
-      REAL (KIND=dbl_kind) :: H,A,B
+      REAL (KIND=r8) :: H,A,B
       INTEGER :: I,KLO,KHI,K
       
       KLO = 1
@@ -312,11 +310,11 @@ MODULE utils
       ENDIF
       
       H = XA(KHI) - XA(KLO)
-      IF (H .EQ. D0_0) PAUSE 'Bad XA input.'
+      IF (H .EQ. 0.0_r8) PAUSE 'Bad XA input.'
       A = (XA(KHI)-X)/H
       B = (X-XA(KLO))/H
       Y = A*YA(KLO)+B*YA(KHI) &
-        +((A**3-A)*Y2A(KLO)+(B**3-B)*Y2A(KHI))*(H**2)/D6_0
+        +((A**3-A)*Y2A(KLO)+(B**3-B)*Y2A(KHI))*(H**2)/6.0_r8
       
       END SUBROUTINE splint 
              
@@ -327,11 +325,11 @@ MODULE utils
 !========================================================================
 !     Find the cube-face on which the point (A,B) is located.
  
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A   ! longitude [rad]
-      REAL (KIND=dbl_kind), INTENT(IN) ::  B   ! latitude  [rad]
+      REAL (KIND=r8), INTENT(IN) ::  A   ! longitude [rad]
+      REAL (KIND=r8), INTENT(IN) ::  B   ! latitude  [rad]
       INTEGER :: FIND_FACE_result
       
-      REAL (KIND=dbl_kind) :: X,Y,Z,AX,AY,AZ,PM
+      REAL (KIND=r8) :: X,Y,Z,AX,AY,AZ,PM
       
       X = DCOS(A)*DCOS(B)
       Y = DSIN(A)*DCOS(B)
@@ -344,19 +342,19 @@ MODULE utils
       PM = MAX(AX,AY,AZ)
       
       IF (PM .EQ. AX) THEN
-         if (x .gt. d0_0) then
+         if (x .gt. 0.0_r8) then
            FIND_FACE_result = 1      ! F1 
          else
            FIND_FACE_result = 3      ! F3
          endif
       ELSE IF (PM .EQ. AY) THEN   
-         if (y .gt. d0_0) then
+         if (y .gt. 0.0_r8) then
            FIND_FACE_result = 2      ! F2
          else
            FIND_FACE_result = 4      ! F4
          endif      
       ELSE
-         if (z .gt. d0_0) then
+         if (z .gt. 0.0_r8) then
            FIND_FACE_result = 5      ! F5 (top face) 
          else
            FIND_FACE_result = 6      ! F6 (bottom face)  
@@ -379,10 +377,10 @@ MODULE utils
 !     FACE6: Latitude = -45 ~ -90 (alpha=0)
 !========================================================================  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: LATVAL_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: LATVAL_result
       
-      REAL (KIND=dbl_kind) :: COS_A,TAN_A,TAN_B
+      REAL (KIND=r8) :: COS_A,TAN_A,TAN_B
 
       COS_A  = DCOS(A)
       TAN_A  = DTAN(A)
@@ -392,9 +390,9 @@ MODULE utils
         CASE(1:4)
           LATVAL_result = DATAN(TAN_B*COS_A)    
         CASE(5)
-          LATVAL_result =  DATAN(D1_0/SQRT(TAN_A**2 + TAN_B**2))
+          LATVAL_result =  DATAN(1.0_r8/SQRT(TAN_A**2 + TAN_B**2))
         CASE(6)
-          LATVAL_result = -DATAN(D1_0/SQRT(TAN_A**2 + TAN_B**2))
+          LATVAL_result = -DATAN(1.0_r8/SQRT(TAN_A**2 + TAN_B**2))
       END SELECT   
        
       END FUNCTION latval
@@ -415,17 +413,17 @@ MODULE utils
 !            At SP (alpha=beta=0), not determined: DATAN2(0,0)=0  
 !======================================================================== 
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B,PIVAL
-      REAL (KIND=dbl_kind) :: LONVAL_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B,PIVAL
+      REAL (KIND=r8) :: LONVAL_result
       
-      REAL (KIND=dbl_kind) :: TAN_A,TAN_B
+      REAL (KIND=r8) :: TAN_A,TAN_B
 
       TAN_A = DTAN(A)
       TAN_B = DTAN(B)
          
       SELECT CASE (N)
         CASE(1:4)
-          LONVAL_result = A + D0_5*(N-1)*PIVAL  
+          LONVAL_result = A + 0.5_r8*(N-1)*PIVAL  
         CASE(5)
           LONVAL_result = DATAN2(TAN_A,-TAN_B) 
         CASE(6)
@@ -441,17 +439,17 @@ MODULE utils
 !     OUTPUT: alpha value in [rad]
 !========================================================================
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  LONV,LATV,PIVAL
-      REAL (KIND=dbl_kind) :: ALPHAV_result
+      REAL (KIND=r8), INTENT(IN) ::  LONV,LATV,PIVAL
+      REAL (KIND=r8) :: ALPHAV_result
       
-      REAL (KIND=dbl_kind) :: TAN_LAT,SIN_LON
+      REAL (KIND=r8) :: TAN_LAT,SIN_LON
 
       TAN_LAT  = DTAN(LATV)
       SIN_LON  = DSIN(LONV)
          
       SELECT CASE (N)
         CASE(1:4)
-          ALPHAV_result = LONV - D0_5*(N-1)*PIVAL 
+          ALPHAV_result = LONV - 0.5_r8*(N-1)*PIVAL 
         CASE(5)
           ALPHAV_result = DATAN(SIN_LON/TAN_LAT)
         CASE(6)
@@ -467,16 +465,16 @@ MODULE utils
 !     OUTPUT: beta value in [rad]
 !========================================================================  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  LONV,LATV,PIVAL
-      REAL (KIND=dbl_kind) :: BETAV_result
+      REAL (KIND=r8), INTENT(IN) ::  LONV,LATV,PIVAL
+      REAL (KIND=r8) :: BETAV_result
       
-      REAL (KIND=dbl_kind) :: TAN_LAT,COS_LON,TEMP,SECV
+      REAL (KIND=r8) :: TAN_LAT,COS_LON,TEMP,SECV
 
       TAN_LAT  = DTAN(LATV)
       COS_LON  = DCOS(LONV)
       
-      TEMP = LONV - D0_5*(N-1)*PIVAL
-      SECV = D1_0/DCOS(TEMP)
+      TEMP = LONV - 0.5_r8*(N-1)*PIVAL
+      SECV = 1.0_r8/DCOS(TEMP)
          
       SELECT CASE (N)
         CASE(1:4)
@@ -496,11 +494,11 @@ MODULE utils
 !     INPUT: A (alpha value), B (beta value)
 !========================================================================       
  
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: JACO_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: JACO_result
       
-      REAL (KIND=dbl_kind) :: COS_A2,COS_B2,TAN_A2,TAN_B2
-      REAL (KIND=dbl_kind) :: GAMMA,GAMMA3
+      REAL (KIND=r8) :: COS_A2,COS_B2,TAN_A2,TAN_B2
+      REAL (KIND=r8) :: GAMMA,GAMMA3
 
       COS_A2 = DCOS(A)**2
       COS_B2 = DCOS(B)**2
@@ -508,10 +506,10 @@ MODULE utils
       TAN_A2 = DTAN(A)**2
       TAN_B2 = DTAN(B)**2
       
-      GAMMA  = SQRT(D1_0+ TAN_A2 + TAN_B2)
+      GAMMA  = SQRT(1.0_r8+ TAN_A2 + TAN_B2)
       GAMMA3 = GAMMA**3
          
-      JACO_result = D1_0/(GAMMA3*COS_A2*COS_B2)   
+      JACO_result = 1.0_r8/(GAMMA3*COS_A2*COS_B2)   
        
       END FUNCTION jaco
 
@@ -522,18 +520,18 @@ MODULE utils
 !     INPUT : A (alpha value), B (beta value)
 !     OUTPUT: G11
  
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: GCONT11_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: GCONT11_result
       
-      REAL (KIND=dbl_kind) :: COS_A2,COS_B2,TAN_A2,TAN_B2,GAMMA2
+      REAL (KIND=r8) :: COS_A2,COS_B2,TAN_A2,TAN_B2,GAMMA2
 
       COS_A2 = DCOS(A)*DCOS(A)
       COS_B2 = DCOS(B)*DCOS(B)
       TAN_A2 = DTAN(A)**2
       TAN_B2 = DTAN(B)**2
-      GAMMA2 = D1_0 + TAN_A2 + TAN_B2
+      GAMMA2 = 1.0_r8 + TAN_A2 + TAN_B2
          
-      GCONT11_result = GAMMA2*COS_A2*COS_B2*(D1_0+TAN_B2)
+      GCONT11_result = GAMMA2*COS_A2*COS_B2*(1.0_r8+TAN_B2)
        
       END FUNCTION gcont11      
 
@@ -543,16 +541,16 @@ MODULE utils
 !     INPUT : A (alpha value), B (beta value)
 !     OUTPUT: G12 (=G21)
  
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: GCONT12_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: GCONT12_result
       
-      REAL (KIND=dbl_kind) :: COS_A2,COS_B2,TAN_A,TAN_B,GAMMA2
+      REAL (KIND=r8) :: COS_A2,COS_B2,TAN_A,TAN_B,GAMMA2
 
       COS_A2 = DCOS(A)*DCOS(A)
       COS_B2 = DCOS(B)*DCOS(B)
       TAN_A  = DTAN(A)
       TAN_B  = DTAN(B)
-      GAMMA2 = D1_0 + TAN_A**2 + TAN_B**2
+      GAMMA2 = 1.0_r8 + TAN_A**2 + TAN_B**2
          
       GCONT12_result = GAMMA2*COS_A2*COS_B2*TAN_A*TAN_B
        
@@ -564,18 +562,18 @@ MODULE utils
 !     INPUT : A (alpha value), B (beta value)
 !     OUTPUT: G22
  
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: GCONT22_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: GCONT22_result
       
-      REAL (KIND=dbl_kind) :: COS_A2,COS_B2,TAN_A2,TAN_B2,GAMMA2
+      REAL (KIND=r8) :: COS_A2,COS_B2,TAN_A2,TAN_B2,GAMMA2
 
       COS_A2 = DCOS(A)*DCOS(A)
       COS_B2 = DCOS(B)*DCOS(B)
       TAN_A2 = DTAN(A)**2
       TAN_B2 = DTAN(B)**2
-      GAMMA2 = D1_0+ TAN_A2 + TAN_B2
+      GAMMA2 = 1.0_r8+ TAN_A2 + TAN_B2
          
-      GCONT22_result = GAMMA2*COS_A2*COS_B2*(D1_0+TAN_A2)
+      GCONT22_result = GAMMA2*COS_A2*COS_B2*(1.0_r8+TAN_A2)
        
       END FUNCTION gcont22      
 
@@ -587,11 +585,11 @@ MODULE utils
 !     OUTPUT: a11
  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: AMTX11_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: AMTX11_result
       
-      REAL (KIND=dbl_kind) :: COS_A,TAN_A,TAN_B
-      REAL (KIND=dbl_kind) :: COS_A2,TAN_A2,TAN_B2,GAMMA,RLON
+      REAL (KIND=r8) :: COS_A,TAN_A,TAN_B
+      REAL (KIND=r8) :: COS_A2,TAN_A2,TAN_B2,GAMMA,RLON
       ! RLON (Longitude)
 
       COS_A = DCOS(A)  
@@ -602,11 +600,11 @@ MODULE utils
       TAN_A2 = TAN_A*TAN_A
       TAN_B2 = TAN_B*TAN_B 
             
-      GAMMA = DSQRT(D1_0 + TAN_A2 + TAN_B2)
+      GAMMA = DSQRT(1.0_r8 + TAN_A2 + TAN_B2)
          
       SELECT CASE (N)
         CASE(1:4)
-          AMTX11_result = D1_0/(GAMMA*COS_A)     
+          AMTX11_result = 1.0_r8/(GAMMA*COS_A)     
         CASE(5)
           RLON = DATAN2(TAN_A,-TAN_B)
           AMTX11_result = DCOS(RLON)/(GAMMA*COS_A2)
@@ -624,11 +622,11 @@ MODULE utils
 !     OUTPUT: a12
  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: AMTX12_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: AMTX12_result
       
-      REAL (KIND=dbl_kind) :: COS_B,TAN_A,TAN_B
-      REAL (KIND=dbl_kind) :: COS_B2,TAN_A2,TAN_B2,GAMMA,RLON
+      REAL (KIND=r8) :: COS_B,TAN_A,TAN_B
+      REAL (KIND=r8) :: COS_B2,TAN_A2,TAN_B2,GAMMA,RLON
 
       COS_B = DCOS(B)
       TAN_A = DTAN(A)
@@ -638,11 +636,11 @@ MODULE utils
       TAN_A2 = TAN_A*TAN_A
       TAN_B2 = TAN_B*TAN_B 
           
-      GAMMA = DSQRT(D1_0 + TAN_A2 + TAN_B2)
+      GAMMA = DSQRT(1.0_r8 + TAN_A2 + TAN_B2)
                
       SELECT CASE (N)
         CASE(1:4)
-          AMTX12_result = D0_0 
+          AMTX12_result = 0.0_r8 
         CASE(5)
           RLON = DATAN2(TAN_A,-TAN_B)
           AMTX12_result =  DSIN(RLON)/(GAMMA*COS_B2)
@@ -660,11 +658,11 @@ MODULE utils
 !     OUTPUT: a21
  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: AMTX21_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: AMTX21_result
       
-      REAL (KIND=dbl_kind) :: SIN_B,COS_A,COS_B,TAN_A,TAN_B
-      REAL (KIND=dbl_kind) :: COS_A2,TAN_A2,TAN_B2,GAMMA2,RLON
+      REAL (KIND=r8) :: SIN_B,COS_A,COS_B,TAN_A,TAN_B
+      REAL (KIND=r8) :: COS_A2,TAN_A2,TAN_B2,GAMMA2,RLON
       
       SIN_B  = DSIN(B)
       COS_A  = DCOS(A)
@@ -676,7 +674,7 @@ MODULE utils
       TAN_A2 = TAN_A*TAN_A
       TAN_B2 = TAN_B*TAN_B 
              
-      GAMMA2 = D1_0 + TAN_A2 + TAN_B2
+      GAMMA2 = 1.0_r8 + TAN_A2 + TAN_B2
                      
       SELECT CASE (N)
         CASE(1:4)
@@ -698,11 +696,11 @@ MODULE utils
 !     OUTPUT: a22
  
       INTEGER, INTENT(IN) :: N
-      REAL (KIND=dbl_kind), INTENT(IN) ::  A,B
-      REAL (KIND=dbl_kind) :: AMTX22_result
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: AMTX22_result
       
-      REAL (KIND=dbl_kind) :: COS_A,COS_B,TAN_A,TAN_B
-      REAL (KIND=dbl_kind) :: COS_B2,TAN_A2,TAN_B2,GAMMA2,RLON
+      REAL (KIND=r8) :: COS_A,COS_B,TAN_A,TAN_B
+      REAL (KIND=r8) :: COS_B2,TAN_A2,TAN_B2,GAMMA2,RLON
 
       COS_A  = DCOS(A)
       COS_B  = DCOS(B)
@@ -713,11 +711,11 @@ MODULE utils
       TAN_A2 = TAN_A*TAN_A
       TAN_B2 = TAN_B*TAN_B 
       
-      GAMMA2 = D1_0 + TAN_A2 + TAN_B2
+      GAMMA2 = 1.0_r8 + TAN_A2 + TAN_B2
                
       SELECT CASE (N)
         CASE(1:4)
-          AMTX22_result = D1_0/(GAMMA2*COS_A*COS_B2)    
+          AMTX22_result = 1.0_r8/(GAMMA2*COS_A*COS_B2)    
         CASE(5)
           RLON = DATAN2(TAN_A,-TAN_B)
           AMTX22_result = DCOS(RLON)/(GAMMA2*COS_B2)
@@ -736,32 +734,32 @@ MODULE utils
 !     OUTPUT: (2x2) inverse matrix of A
 !======================================================================== 
       
-      REAL (KIND=dbl_kind), DIMENSION(2,2), INTENT(IN) :: MAT
-      REAL (KIND=dbl_kind), DIMENSION(2,2) :: IMATRIX_result
+      REAL (KIND=r8), DIMENSION(2,2), INTENT(IN) :: MAT
+      REAL (KIND=r8), DIMENSION(2,2) :: IMATRIX_result
       
-      REAL (KIND=dbl_kind), DIMENSION(2,4) :: A
-      REAL (KIND=dbl_kind) :: PivElt, TarElt,TempRow(4)
+      REAL (KIND=r8), DIMENSION(2,4) :: A
+      REAL (KIND=r8) :: PivElt, TarElt,TempRow(4)
       INTEGER :: N,PivRow,TarRow,I,J,K 
       
-      A = D0_0
+      A = 0.0_r8
       DO J = 1,2
        DO I = 1,2
         A(I,J) = MAT(I,J)
        ENDDO
       ENDDO
       DO I = 1,2
-       A(I,2+I) = D1_0
+       A(I,2+I) = 1.0_r8
       ENDDO
       
       DO PivRow = 1,2 
        PivElt = A(PivRow,PivRow)
-       IF (PivElt == D0_0) THEN
+       IF (PivElt == 0.0_r8) THEN
         K = PivRow + 1
-        DO WHILE (PivElt == D0_0 .AND. K <= 2)
+        DO WHILE (PivElt == 0.0_r8 .AND. K <= 2)
           PivElt = A(K,PivRow)
           K = K+1
         ENDDO
-        IF (PivElt == D0_0) THEN
+        IF (PivElt == 0.0_r8) THEN
           PRINT*, "Couldn't find a non-zero pivot: solution rubbish"
           RETURN 
         ELSE
@@ -795,17 +793,17 @@ MODULE utils
 !     INPUT : PI, latitudes [rad], longitudes [rad]
 !     OUTPUT: central angle between two points     
 !========================================================================      
-      REAL (KIND=dbl_kind), INTENT(IN) :: PI,LAT1,LON1,LAT2,LON2
-      REAL (KIND=dbl_kind) :: CANGLE_result
+      REAL (KIND=r8), INTENT(IN) :: PI,LAT1,LON1,LAT2,LON2
+      REAL (KIND=r8) :: CANGLE_result
       
-      REAL (KIND=dbl_kind) :: LON1new,LON2new,DLAMDA
-      REAL (KIND=dbl_kind) :: TERM1,TERM2,TERM3,TERM4
+      REAL (KIND=r8) :: LON1new,LON2new,DLAMDA
+      REAL (KIND=r8) :: TERM1,TERM2,TERM3,TERM4
       
       LON1new = LON1
       LON2new = LON2
       
-      IF (LON1.lt.D0_0) LON1new = LON1new + D2_0*PI
-      IF (LON2.lt.D0_0) LON2new = LON2new + D2_0*PI
+      IF (LON1.lt.0.0_r8) LON1new = LON1new + 2.0_r8*PI
+      IF (LON2.lt.0.0_r8) LON2new = LON2new + 2.0_r8*PI
        
       DLAMDA   = DABS(LON2new-LON1new)
       
@@ -817,5 +815,125 @@ MODULE utils
       CANGLE_result = DATAN2(TERM4,TERM3) 
       
       END FUNCTION cangle 
+      
+!========================================================================          
+      FUNCTION CON2RLL ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a contravariant vector to a RLL vector
+!
+!     INPUT : A1 - transformation matrix coefficients A_11
+!             A2 - transformation matrix coefficients A_12
+!             A3 - transformation matrix coefficients A_21
+!             A4 - transformation matrix coefficients A_22   
+!            (V1,V2) - contravariant vector
+!     OUTPUT: vector_result(2) - RLL vector
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = A1*V1 + A2*V2
+      vector_result(2) = A3*V1 + A4*V2
+      
+      END FUNCTION con2rll
+
+!========================================================================          
+      FUNCTION COV2RLL ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a covariant vector to a RLL vector
+!
+!     INPUT : A1 - inverse transformation matrix coefficients AI_11
+!             A2 - inverse transformation matrix coefficients AI_12
+!             A3 - inverse transformation matrix coefficients AI_21
+!             A4 - inverse transformation matrix coefficients AI_22   
+!            (V1,V2) - covariant vector
+!     OUTPUT: vector_result(2) - RLL vector
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = A1*V1 + A3*V2
+      vector_result(2) = A2*V1 + A4*V2
+      
+      END FUNCTION cov2rll      
+      
+!========================================================================          
+      FUNCTION RLL2CON ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a RLL vector to a contrariant vector
+!
+!     INPUT : A1 - inverse transformation matrix coefficients AI_11
+!             A2 - inverse transformation matrix coefficients AI_12
+!             A3 - inverse transformation matrix coefficients AI_21
+!             A4 - inverse transformation matrix coefficients AI_22   
+!            (V1,V2) - RLL vector 
+!     OUTPUT: vector_result(2) - contravariant vector
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = A1*V1 + A2*V2
+      vector_result(2) = A3*V1 + A4*V2
+      
+      END FUNCTION rll2con  
+      
+!========================================================================          
+      FUNCTION RLL2COV ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a RLL vector to a covariant vector 
+!
+!     INPUT : A1 - transformation matrix coefficients A_11
+!             A2 - transformation matrix coefficients A_12
+!             A3 - transformation matrix coefficients A_21
+!             A4 - transformation matrix coefficients A_22   
+!            (V1,V2) - RLL vector 
+!     OUTPUT: vector_result(2) - covariant vector
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = A1*V1 + A3*V2
+      vector_result(2) = A2*V1 + A4*V2
+      
+      END FUNCTION rll2cov               
+      
+!========================================================================          
+      FUNCTION COV2CON ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a covariant vector to a contravariant vector 
+!
+!     INPUT : A1 - inverse transformation matrix coefficients A_11
+!             A2 - inverse transformation matrix coefficients A_12
+!             A3 - inverse transformation matrix coefficients A_21
+!             A4 - inverse transformation matrix coefficients A_22   
+!            (V1,V2) - covariant vector 
+!     OUTPUT: vector_result(2) - contravariant vector  
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = (A1*A1 + A2*A2)*V1 + (A1*A3 + A2*A4)*V2
+      vector_result(2) = (A1*A3 + A2*A4)*V1 + (A3*A3 + A4*A4)*V2
+      
+      END FUNCTION cov2con            
+      
+!========================================================================          
+      FUNCTION CON2COV ( A1,A2,A3,A4,V1,V2 ) RESULT(vector_result)
+!========================================================================
+!     Convert a contravariant vector to a covariant vector  
+!
+!     INPUT : A1 - transformation matrix coefficients A_11
+!             A2 - transformation matrix coefficients A_12
+!             A3 - transformation matrix coefficients A_21
+!             A4 - transformation matrix coefficients A_22   
+!            (V1,V2) - contravariant vector 
+!     OUTPUT: vector_result(2) - covariant vector  
+!========================================================================  
+      REAL (KIND=r8), INTENT(IN) ::  A1,A2,A3,A4,V1,V2
+      REAL (KIND=r8) :: vector_result(2)
+
+      vector_result(1) = (A1*A1 + A3*A3)*V1 + (A1*A2 + A3*A4)*V2
+      vector_result(2) = (A1*A2 + A3*A4)*V1 + (A2*A2 + A4*A4)*V2
+      
+      END FUNCTION con2cov                          
 
 END MODULE utils

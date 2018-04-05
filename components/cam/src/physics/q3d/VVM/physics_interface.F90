@@ -18,11 +18,11 @@
 !    (IN/OUT) FQR3D,FQS3D,FQG3D (advection tendencies of qr, qs, qg)
 !             (FTHRAD can be prescribed here if RADCODE=.F.)
 !-----------------------------------------------------------------------------
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t   
       
       USE parmsld, only: channel_seg_l,nk1,nk2
-      USE constld, only: d0_0,radcode,microcode
+      USE constld, only: radcode,microcode
       
       USE mphysics_variables, only: theta,qv,qc,qi,qr,qs,qg,     &
                                     tendency_microphysics_theta, &
@@ -67,21 +67,21 @@
 !*****************************************************************************      
 
        ! Initialize tendency terms
-       TENDENCY_MICROPHYSICS_THETA = D0_0
-       TENDENCY_MICROPHYSICS_QV    = D0_0
-       TENDENCY_MICROPHYSICS_QC    = D0_0
-       TENDENCY_MICROPHYSICS_QI    = D0_0
-       TENDENCY_MICROPHYSICS_QR    = D0_0
-       TENDENCY_MICROPHYSICS_QS    = D0_0
-       TENDENCY_MICROPHYSICS_QG    = D0_0
+       TENDENCY_MICROPHYSICS_THETA = 0.0_r8
+       TENDENCY_MICROPHYSICS_QV    = 0.0_r8
+       TENDENCY_MICROPHYSICS_QC    = 0.0_r8
+       TENDENCY_MICROPHYSICS_QI    = 0.0_r8
+       TENDENCY_MICROPHYSICS_QR    = 0.0_r8
+       TENDENCY_MICROPHYSICS_QS    = 0.0_r8
+       TENDENCY_MICROPHYSICS_QG    = 0.0_r8
        
-       TENDENCY_RAIN    = D0_0
-       TENDENCY_SNPOW   = D0_0
-       TENDENCY_GRAUPEL = D0_0
+       TENDENCY_RAIN    = 0.0_r8
+       TENDENCY_SNOW    = 0.0_r8
+       TENDENCY_GRAUPEL = 0.0_r8
        
-       LATENT_HEATING_RATE = D0_0 
+       LATENT_HEATING_RATE = 0.0_r8 
        
-       SURFACE_RAIN = D0_0
+       SURFACE_RAIN = 0.0_r8
        
 !      Assign input arrays from model fields 
 !      (combine 4 channel segments to set up one channel array)        

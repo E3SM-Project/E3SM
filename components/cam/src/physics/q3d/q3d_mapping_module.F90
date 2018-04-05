@@ -1,14 +1,13 @@
 MODULE q3d_mapping_module
 ! Contains the programs related to preparing the mapping information
 
-   USE shr_kind_mod,    only: dbl_kind => shr_kind_r8
+   USE shr_kind_mod,    only: r8 => shr_kind_r8
    USE vGCM_data_types, only: vGCM_state_t
    USE vvm_data_types,  only: channel_t
       
    USE parmsld, only: channel_seg_l,netsz,nhalo
-   USE constld, only: d0_0,d1_0,d2_0,d4_0,d0_5,d0_25, &
-                      dx,dy,dxsq,dysq,dxdy,dx_gcm,dy_gcm,wrxmu, &
-                      pi,rearth,omega,rad2deg
+   USE constld, only: dx,dy,dxsq,dysq,dxdy,dx_gcm,dy_gcm,wrxmu, &
+                      pi,rearth,omega,rad2deg,nomap
 
    ! Subroutines being called
    USE utils, only: indexr,find_face,latval,lonval,alphav,betav,jaco, &
@@ -38,7 +37,7 @@ CONTAINS
     
     ! Local
     INTEGER :: num_seg,MAX0,MIN0
-    REAL (KIND=dbl_kind) :: LON_VAL,LAT_VAL
+    REAL (KIND=r8) :: LON_VAL,LAT_VAL
     
     DO num_seg = 1, 4
       LON_VAL = vGCM_st(num_seg)%lon(0,1)  ! Longitude [rad] of the 1st vGCM grid in each segment
@@ -65,6 +64,7 @@ CONTAINS
       channel%seg(num_seg)%nface = vGCM_st(num_seg)%nface
     ENDDO 
     
+    ! # of prognostic grids
     SELECT CASE (channel%num_chg)
     CASE(1)
       DO num_seg = 1, 4
@@ -102,16 +102,16 @@ CONTAINS
     type(channel_t), intent(inout) :: channel     ! Channel data
 
     ! Local variables 
-    REAL (kind=dbl_kind) :: dalpha,dbeta,alpha_lowb,beta_lowb
+    REAL (kind=r8) :: dalpha,dbeta,alpha_lowb,beta_lowb
     INTEGER :: num_seg,mi1,mim,mip,mj1,mjm,mjp
     INTEGER :: I,J,NPO
     
-    REAL (KIND=dbl_kind), PARAMETER :: LAT_FIX = 15.0_dbl_kind   ! [deg] 
+    REAL (KIND=r8), PARAMETER :: LAT_FIX = 15.0_r8   ! [deg] 
 
-    dalpha = PI/(D2_0*channel_seg_l)
+    dalpha = PI/(2.0_r8*channel_seg_l)
     dbeta  = dalpha
     
-    IF (num_ch. EQ. 1) THEN 
+    IF (num_ch .EQ. 1) THEN 
 !     Initialize the horizontal grid size of CRM (constld parameters)    
       DX = REARTH*DALPHA
       DY = REARTH*DBETA
@@ -123,7 +123,7 @@ CONTAINS
       DX_GCM = netsz*DX
       DY_GCM = netsz*DY
     
-      WRXMU  = D2_0/(DX*DX) 
+      WRXMU  = 2.0_r8/(DX*DX) 
     ENDIF
     
 !**************************************************************************** 
@@ -142,43 +142,43 @@ CONTAINS
       IF (mi1.GT.mj1) THEN
 !============================= x-channel-segment      
 
-      channel%seg(num_seg)%CALPHA_T(1) = - D0_25*PI + D0_5*dalpha
+      channel%seg(num_seg)%CALPHA_T(1) = - 0.25_r8*PI + 0.5_r8*dalpha
       DO I = 2, mi1
        channel%seg(num_seg)%CALPHA_T(I) = channel%seg(num_seg)%CALPHA_T(I-1) + dalpha 
       ENDDO
       DO I = 1, mi1
-       channel%seg(num_seg)%CALPHA_U(I) = channel%seg(num_seg)%CALPHA_T(I) + D0_5*dalpha
+       channel%seg(num_seg)%CALPHA_U(I) = channel%seg(num_seg)%CALPHA_T(I) + 0.5_r8*dalpha
       ENDDO
 
 !     The x-channel-segment is centered at vGCM_st(num_seg)%beta1
-      BETA_lowb = vGCM_st(num_seg)%beta1 - (D0_5*mj1*dbeta)
+      BETA_lowb = vGCM_st(num_seg)%beta1 - (0.5_r8*mj1*dbeta)
           
       DO J = 1, mj1
-       channel%seg(num_seg)%CBETA_T(J) = BETA_lowb + (J-D0_5)*dbeta
+       channel%seg(num_seg)%CBETA_T(J) = BETA_lowb + (J-0.5_r8)*dbeta
       ENDDO
       DO J = 1, mj1
-       channel%seg(num_seg)%CBETA_V(J) = channel%seg(num_seg)%CBETA_T(J) + D0_5*dbeta
+       channel%seg(num_seg)%CBETA_V(J) = channel%seg(num_seg)%CBETA_T(J) + 0.5_r8*dbeta
       ENDDO 
 !=============================      
       ELSE
 !============================= y-channel-segment  
 
-      channel%seg(num_seg)%CBETA_T(1) = - D0_25*PI + D0_5*dbeta       
+      channel%seg(num_seg)%CBETA_T(1) = - 0.25_r8*PI + 0.5_r8*dbeta       
       DO J = 2, mj1
        channel%seg(num_seg)%CBETA_T(J) = channel%seg(num_seg)%CBETA_T(J-1) + dbeta 
       ENDDO
       DO J = 1, mj1
-       channel%seg(num_seg)%CBETA_V(J) = channel%seg(num_seg)%CBETA_T(J) + D0_5*dbeta 
+       channel%seg(num_seg)%CBETA_V(J) = channel%seg(num_seg)%CBETA_T(J) + 0.5_r8*dbeta 
       ENDDO
             
 !     The y-channel-segment is centered at vGCM_st(num_seg)%alpha1
-      alpha_lowb = vGCM_st(num_seg)%alpha1 - (D0_5*mi1*dalpha)
+      alpha_lowb = vGCM_st(num_seg)%alpha1 - (0.5_r8*mi1*dalpha)
              
       DO I = 1, mi1
-       channel%seg(num_seg)%CALPHA_T(I) = alpha_lowb + (I-D0_5)*dalpha
+       channel%seg(num_seg)%CALPHA_T(I) = alpha_lowb + (I-0.5_r8)*dalpha
       ENDDO
       DO I = 1, mi1
-       channel%seg(num_seg)%CALPHA_U(I) = channel%seg(num_seg)%CALPHA_T(I) + D0_5*dalpha
+       channel%seg(num_seg)%CALPHA_U(I) = channel%seg(num_seg)%CALPHA_T(I) + 0.5_r8*dalpha
       ENDDO 
 !=============================      
       ENDIF
@@ -216,61 +216,61 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       DO J = mjm, mjp
        DO I = mim, mip
-         channel%seg(num_seg)%FVAL(I,J) = D2_0*OMEGA*DSIN(LAT_FIX/RAD2DEG) 
+         channel%seg(num_seg)%FVAL(I,J) = 2.0_r8*OMEGA*DSIN(LAT_FIX/RAD2DEG) 
        
-         channel%seg(num_seg)%RG_T(I,J) = D1_0     
-         channel%seg(num_seg)%RG_U(I,J) = D1_0  
-         channel%seg(num_seg)%RG_V(I,J) = D1_0     
-         channel%seg(num_seg)%RG_Z(I,J) = D1_0 
+         channel%seg(num_seg)%RG_T(I,J) = 1.0_r8     
+         channel%seg(num_seg)%RG_U(I,J) = 1.0_r8  
+         channel%seg(num_seg)%RG_V(I,J) = 1.0_r8     
+         channel%seg(num_seg)%RG_Z(I,J) = 1.0_r8 
        
-         channel%seg(num_seg)%GCONT_T(1,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_U(1,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_V(1,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_Z(1,I,J) = D1_0
+         channel%seg(num_seg)%GCONT_T(1,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_U(1,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_V(1,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_Z(1,I,J) = 1.0_r8
         
-         channel%seg(num_seg)%GCONT_T(2,I,J) = D0_0
-         channel%seg(num_seg)%GCONT_U(2,I,J) = D0_0
-         channel%seg(num_seg)%GCONT_V(2,I,J) = D0_0
-         channel%seg(num_seg)%GCONT_Z(2,I,J) = D0_0
+         channel%seg(num_seg)%GCONT_T(2,I,J) = 0.0_r8
+         channel%seg(num_seg)%GCONT_U(2,I,J) = 0.0_r8
+         channel%seg(num_seg)%GCONT_V(2,I,J) = 0.0_r8
+         channel%seg(num_seg)%GCONT_Z(2,I,J) = 0.0_r8
         
-         channel%seg(num_seg)%GCONT_T(3,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_U(3,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_V(3,I,J) = D1_0
-         channel%seg(num_seg)%GCONT_Z(3,I,J) = D1_0
+         channel%seg(num_seg)%GCONT_T(3,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_U(3,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_V(3,I,J) = 1.0_r8
+         channel%seg(num_seg)%GCONT_Z(3,I,J) = 1.0_r8
        ENDDO
       ENDDO       
       
       DO J=mjm,mjp
        DO I=mim,mip 
-        channel%seg(num_seg)%GG_T(1,I,J) = D1_0
-        channel%seg(num_seg)%GG_U(1,I,J) = D1_0
-        channel%seg(num_seg)%GG_V(1,I,J) = D1_0
-        channel%seg(num_seg)%GG_Z(1,I,J) = D1_0
+        channel%seg(num_seg)%GG_T(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_U(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_V(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_Z(1,I,J) = 1.0_r8
         
-        channel%seg(num_seg)%GG_T(2,I,J) = D0_0
-        channel%seg(num_seg)%GG_U(2,I,J) = D0_0
-        channel%seg(num_seg)%GG_V(2,I,J) = D0_0
-        channel%seg(num_seg)%GG_Z(2,I,J) = D0_0
+        channel%seg(num_seg)%GG_T(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%GG_U(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%GG_V(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%GG_Z(2,I,J) = 0.0_r8
         
-        channel%seg(num_seg)%GG_T(3,I,J) = D1_0
-        channel%seg(num_seg)%GG_U(3,I,J) = D1_0
-        channel%seg(num_seg)%GG_V(3,I,J) = D1_0
-        channel%seg(num_seg)%GG_Z(3,I,J) = D1_0
+        channel%seg(num_seg)%GG_T(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_U(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_V(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%GG_Z(3,I,J) = 1.0_r8
 
-        channel%seg(num_seg)%RGG_T(1,I,J) = D1_0
-        channel%seg(num_seg)%RGG_U(1,I,J) = D1_0
-        channel%seg(num_seg)%RGG_V(1,I,J) = D1_0
-        channel%seg(num_seg)%RGG_Z(1,I,J) = D1_0
+        channel%seg(num_seg)%RGG_T(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_U(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_V(1,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_Z(1,I,J) = 1.0_r8
         
-        channel%seg(num_seg)%RGG_T(2,I,J) = D0_0
-        channel%seg(num_seg)%RGG_U(2,I,J) = D0_0
-        channel%seg(num_seg)%RGG_V(2,I,J) = D0_0
-        channel%seg(num_seg)%RGG_Z(2,I,J) = D0_0
+        channel%seg(num_seg)%RGG_T(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%RGG_U(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%RGG_V(2,I,J) = 0.0_r8
+        channel%seg(num_seg)%RGG_Z(2,I,J) = 0.0_r8
         
-        channel%seg(num_seg)%RGG_T(3,I,J) = D1_0
-        channel%seg(num_seg)%RGG_U(3,I,J) = D1_0
-        channel%seg(num_seg)%RGG_V(3,I,J) = D1_0
-        channel%seg(num_seg)%RGG_Z(3,I,J) = D1_0        
+        channel%seg(num_seg)%RGG_T(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_U(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_V(3,I,J) = 1.0_r8
+        channel%seg(num_seg)%RGG_Z(3,I,J) = 1.0_r8        
        ENDDO
       ENDDO      
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,7 +328,7 @@ CONTAINS
       DO J = mjm, mjp
        DO I = mim, mip     
         channel%seg(num_seg)%FVAL(I,J) = &
-           D2_0*OMEGA*DSIN(channel%seg(num_seg)%RLAT_Z(I,J)+PI/D4_0) 
+           2.0_r8*OMEGA*DSIN(channel%seg(num_seg)%RLAT_Z(I,J)+PI/4.0_r8) 
        ENDDO
       ENDDO
 
@@ -585,11 +585,11 @@ CONTAINS
 !     Calculate the inverse matrix  
       
       INTEGER, INTENT(IN) :: mim,mip,mjm,mjp
-      REAL (kind=dbl_kind), DIMENSION(4,mim:mip,mjm:mjp), INTENT(IN)  :: DumA
-      REAL (kind=dbl_kind), DIMENSION(4,mim:mip,mjm:mjp), INTENT(OUT) :: DumB
+      REAL (kind=r8), DIMENSION(4,mim:mip,mjm:mjp), INTENT(IN)  :: DumA
+      REAL (kind=r8), DIMENSION(4,mim:mip,mjm:mjp), INTENT(OUT) :: DumB
       
       ! Local
-      REAL (kind=dbl_kind) :: TEMP(2,2),TEMPI(2,2) 
+      REAL (kind=r8) :: TEMP(2,2),TEMPI(2,2) 
       INTEGER :: I,J   
       
       DO J = mjm, mjp
@@ -620,16 +620,16 @@ CONTAINS
 !     HALPHA_T, HALPHA_Z, HBETA_T, HBETA_Z
       
       INTEGER, INTENT(IN) :: mim,mip,mjm,mjp,NFACE
-      REAL (kind=dbl_kind), INTENT(IN) :: DALPHA,DBETA
-      REAL (kind=dbl_kind), DIMENSION(mim:mip), INTENT(IN) :: CALPHA_T,CALPHA_Z
-      REAL (kind=dbl_kind), DIMENSION(mjm:mjp), INTENT(IN) :: CBETA_T,CBETA_Z
+      REAL (kind=r8), INTENT(IN) :: DALPHA,DBETA
+      REAL (kind=r8), DIMENSION(mim:mip), INTENT(IN) :: CALPHA_T,CALPHA_Z
+      REAL (kind=r8), DIMENSION(mjm:mjp), INTENT(IN) :: CBETA_T,CBETA_Z
       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,nhalo), INTENT(OUT) :: HALPHA_T,HALPHA_Z
-      REAL (kind=dbl_kind), DIMENSION(nhalo,mjm:mjp), INTENT(OUT) :: HBETA_T,HBETA_Z
+      REAL (kind=r8), DIMENSION(mim:mip,nhalo), INTENT(OUT) :: HALPHA_T,HALPHA_Z
+      REAL (kind=r8), DIMENSION(nhalo,mjm:mjp), INTENT(OUT) :: HBETA_T,HBETA_Z
       
       ! Local variables
       INTEGER :: I,J,IFACE
-      REAL (kind=dbl_kind) :: RLON,RLAT,ALPHA,BETA
+      REAL (kind=r8) :: RLON,RLAT,ALPHA,BETA
 
 !===========================================
       SELECT CASE (NFACE)
@@ -645,7 +645,7 @@ CONTAINS
         DO I = mim, mip
          ALPHA = CALPHA_T(I)
          DO J = 1, nhalo
-          BETA = -D0_25*PI + D0_5*DBETA - DBETA*J         
+          BETA = -0.25_r8*PI + 0.5_r8*DBETA - DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_T(I,J) = ALPHAV(NFACE,RLON,RLAT,PI)
@@ -654,7 +654,7 @@ CONTAINS
         DO I=mim,mip
          ALPHA = CALPHA_Z(I)
          DO J = 1, nhalo
-          BETA = -D0_25*PI - DBETA*J         
+          BETA = -0.25_r8*PI - DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
@@ -669,7 +669,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_T(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI + D0_5*DALPHA - DALPHA*I            
+          ALPHA = -0.25_r8*PI + 0.5_r8*DALPHA - DALPHA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -678,7 +678,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_Z(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI - DALPHA*I         
+          ALPHA = -0.25_r8*PI - DALPHA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -695,7 +695,7 @@ CONTAINS
         DO I = mim, mip
          BETA = CALPHA_T(I)
          DO J = 1, nhalo
-          ALPHA = D0_25*PI - D0_5*DALPHA + DALPHA*J         
+          ALPHA = 0.25_r8*PI - 0.5_r8*DALPHA + DALPHA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_T(I,J) = ALPHAV(NFACE,RLON,RLAT,PI)
@@ -704,7 +704,7 @@ CONTAINS
         DO I = mim, mip
          BETA = CALPHA_Z(I)
          DO J = 1, nhalo
-          ALPHA = D0_25*PI + DALPHA*J         
+          ALPHA = 0.25_r8*PI + DALPHA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
@@ -719,7 +719,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_T(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI + D0_5*DALPHA - DALPHA*I            
+          ALPHA = -0.25_r8*PI + 0.5_r8*DALPHA - DALPHA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -728,7 +728,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_Z(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI - DALPHA*I         
+          ALPHA = -0.25_r8*PI - DALPHA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -745,9 +745,9 @@ CONTAINS
         DO I = mim, mip
          ALPHA = - CALPHA_T(I)
          DO J = 1, nhalo
-          BETA = D0_25*PI - D0_5*DBETA + DBETA*J         
+          BETA = 0.25_r8*PI - 0.5_r8*DBETA + DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
-          IF (RLON.LT.D0_0) RLON = RLON+2.*PI
+          IF (RLON.LT.0.0_r8) RLON = RLON+2.*PI
           
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_T(I,J) = ALPHAV(NFACE,RLON,RLAT,PI)
@@ -756,9 +756,9 @@ CONTAINS
         DO I = mim, mip
          ALPHA = - CALPHA_Z(I)
          DO J = 1, nhalo
-          BETA = D0_25*PI + DBETA*J         
+          BETA = 0.25_r8*PI + DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI)
-          IF (RLON.LT.D0_0) RLON = RLON+D2_0*PI 
+          IF (RLON.LT.0.0_r8) RLON = RLON+2.0_r8*PI 
           
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
@@ -773,7 +773,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_T(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI + D0_5*DALPHA - DALPHA*I            
+          ALPHA = -0.25_r8*PI + 0.5_r8*DALPHA - DALPHA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -782,7 +782,7 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_Z(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI - DALPHA*I         
+          ALPHA = -0.25_r8*PI - DALPHA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -799,11 +799,11 @@ CONTAINS
         DO I = mim, mip
          BETA = - CALPHA_T(I)
          DO J = 1, nhalo
-          ALPHA = -D0_25*PI + D0_5*DALPHA - DALPHA*J         
+          ALPHA = -0.25_r8*PI + 0.5_r8*DALPHA - DALPHA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLON = RLON+2.*PI
           
-          IF (RLON.LT.D0_0) RLON = RLON+2.*PI
+          IF (RLON.LT.0.0_r8) RLON = RLON+2.*PI
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_T(I,J) = ALPHAV(NFACE,RLON,RLAT,PI)
          ENDDO
@@ -811,9 +811,9 @@ CONTAINS
         DO I = mim, mip
          BETA = - CALPHA_Z(I)
          DO J = 1, nhalo
-          ALPHA = -D0_25*PI - DALPHA*J         
+          ALPHA = -0.25_r8*PI - DALPHA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
-          RLON = RLON+D2_0*PI
+          RLON = RLON+2.0_r8*PI
           
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
@@ -828,9 +828,9 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_T(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI + D0_5*DALPHA - DALPHA*I            
+          ALPHA = -0.25_r8*PI + 0.5_r8*DALPHA - DALPHA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
-          RLON  = RLON+D2_0*PI
+          RLON  = RLON+2.0_r8*PI
           
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -839,9 +839,9 @@ CONTAINS
         DO J = mjm, mjp
          BETA = CBETA_Z(J)
          DO I = 1, nhalo
-          ALPHA = -D0_25*PI - DALPHA*I         
+          ALPHA = -0.25_r8*PI - DALPHA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
-          RLON  = RLON+D2_0*PI
+          RLON  = RLON+2.0_r8*PI
           
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -858,7 +858,7 @@ CONTAINS
         DO I = mim, mip
          ALPHA = - CALPHA_T(I)
          DO J = 1, nhalo
-          BETA = D0_25*PI - D0_5*DBETA + DBETA*J         
+          BETA = 0.25_r8*PI - 0.5_r8*DBETA + DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           IF (RLON.GT.PI) RLON = RLON-2.*PI
           RLAT = LATVAL(IFACE,ALPHA,BETA)
@@ -868,9 +868,9 @@ CONTAINS
         DO I = mim, mip
          ALPHA = - CALPHA_Z(I) 
          DO J = 1, nhalo
-          BETA = D0_25*PI + DBETA*J         
+          BETA = 0.25_r8*PI + DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
-          IF (RLON.GT.PI) RLON = RLON-D2_0*PI
+          IF (RLON.GT.PI) RLON = RLON-2.0_r8*PI
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
          ENDDO
@@ -884,7 +884,7 @@ CONTAINS
         DO J = mjm, mjp
          ALPHA = CBETA_T(J)
          DO I = 1, nhalo
-          BETA = D0_25*PI - D0_5*DBETA + DBETA*I            
+          BETA = 0.25_r8*PI - 0.5_r8*DBETA + DBETA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -893,7 +893,7 @@ CONTAINS
         DO J = mjm, mjp
          ALPHA = CBETA_Z(J)
          DO I = 1, nhalo
-          BETA = D0_25*PI + DBETA*I         
+          BETA = 0.25_r8*PI + DBETA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -910,7 +910,7 @@ CONTAINS
         DO I = mim, mip
          ALPHA = CALPHA_T(I)
          DO J = 1, nhalo
-          BETA = -D0_25*PI + D0_5*DBETA - DBETA*J         
+          BETA = -0.25_r8*PI + 0.5_r8*DBETA - DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_T(I,J) = ALPHAV(NFACE,RLON,RLAT,PI)
@@ -919,7 +919,7 @@ CONTAINS
         DO I = mim, mip
          ALPHA = CALPHA_Z(I)
          DO J = 1, nhalo
-          BETA = -D0_25*PI - DBETA*J         
+          BETA = -0.25_r8*PI - DBETA*J         
           RLON = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT = LATVAL(IFACE,ALPHA,BETA)
           HALPHA_Z(I,J)= ALPHAV(NFACE,RLON,RLAT,PI)
@@ -934,7 +934,7 @@ CONTAINS
         DO J = mjm, mjp
          ALPHA = - CBETA_T(J)
          DO I=1,nhalo
-          BETA = -D0_25*PI + D0_5*DBETA - DBETA*I            
+          BETA = -0.25_r8*PI + 0.5_r8*DBETA - DBETA*I            
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_T(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -943,7 +943,7 @@ CONTAINS
         DO J = mjm, mjp
          ALPHA = - CBETA_Z(J)
          DO I = 1, nhalo
-          BETA = -D0_25*PI - DBETA*I         
+          BETA = -0.25_r8*PI - DBETA*I         
           RLON  = LONVAL(IFACE,ALPHA,BETA,PI) 
           RLAT  = LATVAL(IFACE,ALPHA,BETA)
           HBETA_Z(I,J)= BETAV(NFACE,RLON,RLAT,PI)
@@ -967,14 +967,14 @@ CONTAINS
 
       INTEGER, INTENT(IN) :: mi1,mj1,mim,mip,mjm,mjp
 
-      REAL (kind=dbl_kind), DIMENSION(mim:mip), INTENT(IN) :: CALPHA_T,CALPHA_Z
-      REAL (kind=dbl_kind), DIMENSION(mjm:mjp), INTENT(IN) :: CBETA_T,CBETA_Z
+      REAL (kind=r8), DIMENSION(mim:mip), INTENT(IN) :: CALPHA_T,CALPHA_Z
+      REAL (kind=r8), DIMENSION(mjm:mjp), INTENT(IN) :: CBETA_T,CBETA_Z
       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,nhalo), INTENT(IN) :: HALPHA_T,HALPHA_Z
-      REAL (kind=dbl_kind), DIMENSION(nhalo,mjm:mjp), INTENT(IN) :: HBETA_T,HBETA_Z
+      REAL (kind=r8), DIMENSION(mim:mip,nhalo), INTENT(IN) :: HALPHA_T,HALPHA_Z
+      REAL (kind=r8), DIMENSION(nhalo,mjm:mjp), INTENT(IN) :: HBETA_T,HBETA_Z
       
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,nhalo), INTENT(OUT) :: IHALO_LOC_T,IHALO_LOC_Z
-      REAL (kind=dbl_kind), DIMENSION(nhalo,mjm:mjp), INTENT(OUT) :: JHALO_LOC_T,JHALO_LOC_Z
+      INTEGER, DIMENSION(mim:mip,nhalo), INTENT(OUT) :: IHALO_LOC_T,IHALO_LOC_Z
+      INTEGER, DIMENSION(nhalo,mjm:mjp), INTENT(OUT) :: JHALO_LOC_T,JHALO_LOC_Z
             
       ! Logical variables      
       LOGICAL :: LF
@@ -1019,16 +1019,16 @@ CONTAINS
 !*************************************************************************** 
       INTEGER, INTENT(IN) :: mim,mip,mjm,mjp,NFACE
       
-      REAL (kind=dbl_kind), INTENT(IN) :: DALPHA,DBETA
-      REAL (kind=dbl_kind), DIMENSION(mim:mip,nhalo), INTENT(IN) :: HALPHA_T
-      REAL (kind=dbl_kind), DIMENSION(nhalo,mjm:mjp), INTENT(IN) :: HBETA_T
+      REAL (kind=r8), INTENT(IN) :: DALPHA,DBETA
+      REAL (kind=r8), DIMENSION(mim:mip,nhalo), INTENT(IN) :: HALPHA_T
+      REAL (kind=r8), DIMENSION(nhalo,mjm:mjp), INTENT(IN) :: HBETA_T
       
-      REAL (kind=dbl_kind), DIMENSION(4,mim:mip,nhalo*2), INTENT(OUT) :: AM_VORT_ALPHA
-      REAL (kind=dbl_kind), DIMENSION(4,nhalo*2,mjm:mjp), INTENT(OUT) :: AM_VORT_BETA
+      REAL (kind=r8), DIMENSION(4,mim:mip,nhalo*2), INTENT(OUT) :: AM_VORT_ALPHA
+      REAL (kind=r8), DIMENSION(4,nhalo*2,mjm:mjp), INTENT(OUT) :: AM_VORT_BETA
       
       ! Local variables
       INTEGER :: I,J,NPO
-      REAL (kind=dbl_kind) :: ALPHA,BETA
+      REAL (kind=r8) :: ALPHA,BETA
 
 !-------------------------------------------------------       
       DO J = mjm, mjp
@@ -1038,7 +1038,7 @@ CONTAINS
        BETA = HBETA_T(I,J)
        
 !       internal halo points near alpha = -pi/4        
-        ALPHA = -D0_25*PI - D0_5*DALPHA + I*DALPHA
+        ALPHA = -0.25_r8*PI - 0.5_r8*DALPHA + I*DALPHA
         AM_VORT_BETA(1,I,J) = AMTX11(NFACE,ALPHA,BETA)
         AM_VORT_BETA(2,I,J) = AMTX12(NFACE,ALPHA,BETA)
         AM_VORT_BETA(3,I,J) = AMTX21(NFACE,ALPHA,BETA)
@@ -1046,7 +1046,7 @@ CONTAINS
 
         NPO = (2*nhalo+1) - I
 !       internal halo points near alpha = pi/4       
-        ALPHA = D0_25*PI + D0_5*DALPHA - I*DALPHA  
+        ALPHA = 0.25_r8*PI + 0.5_r8*DALPHA - I*DALPHA  
         AM_VORT_BETA(1,NPO,J) = AMTX11(NFACE,ALPHA,BETA)
         AM_VORT_BETA(2,NPO,J) = AMTX12(NFACE,ALPHA,BETA)
         AM_VORT_BETA(3,NPO,J) = AMTX21(NFACE,ALPHA,BETA)
@@ -1065,7 +1065,7 @@ CONTAINS
        ALPHA = HALPHA_T(I,J)
         
 !       internal halo points near beta = -pi/4 
-        BETA = -D0_25*PI - D0_5*DBETA + J*DBETA
+        BETA = -0.25_r8*PI - 0.5_r8*DBETA + J*DBETA
         AM_VORT_ALPHA(1,I,J) = AMTX11(NFACE,ALPHA,BETA)
         AM_VORT_ALPHA(2,I,J) = AMTX12(NFACE,ALPHA,BETA)
         AM_VORT_ALPHA(3,I,J) = AMTX21(NFACE,ALPHA,BETA)
@@ -1073,7 +1073,7 @@ CONTAINS
 
         NPO = (2*nhalo+1) - J
 !       internal halo points near beta = pi/4       
-        BETA =  D0_25*PI + D0_5*DBETA - J*DBETA  
+        BETA =  0.25_r8*PI + 0.5_r8*DBETA - J*DBETA  
         AM_VORT_ALPHA(1,I,NPO) = AMTX11(NFACE,ALPHA,BETA)
         AM_VORT_ALPHA(2,I,NPO) = AMTX12(NFACE,ALPHA,BETA)
         AM_VORT_ALPHA(3,I,NPO) = AMTX21(NFACE,ALPHA,BETA)

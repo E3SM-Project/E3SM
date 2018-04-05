@@ -1,13 +1,13 @@
 MODULE q3d_bg_module
 ! Contains the programs related to calculating the background fields
 
-      USE shr_kind_mod,    only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,    only: r8 => shr_kind_r8
       USE vGCM_data_types, only: vGCM_state_t
       USE vvm_data_types,  only: channel_t
 
       USE parmsld, only: nhalo_vgcm,nvgcm_seg,nlevel, &
                          ntracer,nk1,nk2,nhalo,netsz,netsz_sq
-      USE constld, only: D0_0,D0_5,dx,dy,dz,fnz,physics
+      USE constld, only: dx,dy,dz,fnz,physics
       
 IMPLICIT NONE
 PRIVATE
@@ -30,9 +30,10 @@ CONTAINS
    type(channel_t),    intent(inout) :: channel     ! channel data
    
    ! Local
-   integer nt,num_seg,mi1,mj1,mim,mip,mim_a,mip_a,mjm,mjp,mjp_a,I,J,K  
+   integer num_seg,mi1,mj1,mim,mip,mim_a,mip_a,mjm,mjp,mjm_a,mjp_a
+   integer nt,I,J,K  
 
-#ifdef FIXTHIS
+!JUNG #ifdef FIXTHIS
 
 !********************************************************************  
    DO num_seg = 1, 4
@@ -154,16 +155,16 @@ CONTAINS
                    channel%seg(num_seg)%U3DY_co_bg(:,:,2:nk1))
                    
    ! Covariant components of horizontal wind (k= nk2): used for top-wind calculation                  
-   CALL GCM2Q3D_X (.FALSE.,2,nhalo,channel%seg(num_seg)%NFACE,mim,mip,mjm,mjp,1,    &
-                   channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,             &
-                   channel%seg(num_seg)%lcen,                                       &
-                   vGCM_st(num_seg)%Ucov(:,:,nk1:nk1),                              &
+   CALL GCM2Q3D_X (.FALSE.,2,nhalo,channel%seg(num_seg)%NFACE,mim,mip,mjm,mjp,1,  &
+                   channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,           &
+                   channel%seg(num_seg)%lcen,                                     &
+                   vGCM_st(num_seg)%Ucov(:,:,nk1:nk1),                            &
                    channel%seg(num_seg)%U3DX_co_bg(:,:,nk2:nk2))
                    
-   CALL GCM2Q3D_X (.FALSE.,3,nhalo,channel%seg(num_seg)%NFACE,mim,mip,mjm,mjp,1,    &
-                   channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,             &
-                   channel%seg(num_seg)%lcen,                                       &
-                   vGCM_st(num_seg)%Vcov(:,:,nk1:nk1),                              &
+   CALL GCM2Q3D_X (.FALSE.,3,nhalo,channel%seg(num_seg)%NFACE,mim,mip,mjm,mjp,1,  &
+                   channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,           &
+                   channel%seg(num_seg)%lcen,                                     &
+                   vGCM_st(num_seg)%Vcov(:,:,nk1:nk1),                            &
                    channel%seg(num_seg)%U3DY_co_bg(:,:,nk2:nk2))
    
    ! Vertical velocity: used for vorticity calculation                 
@@ -203,8 +204,8 @@ CONTAINS
        ! computational boundary condition
        DO J = mjm, mjp_a
         DO I = 1, mi1 
-         channel%seg(num_seg)%Z3DX_bg(I,J,  1) = D0_0
-         channel%seg(num_seg)%Z3DX_bg(I,J,nk2) = D0_0       
+         channel%seg(num_seg)%Z3DX_bg(I,J,  1) = 0.0_r8
+         channel%seg(num_seg)%Z3DX_bg(I,J,nk2) = 0.0_r8       
        ENDDO
       ENDDO
  
@@ -240,10 +241,10 @@ CONTAINS
        ! computational boundary condition
        DO J = mjm, mjp
         DO I = 1, mi1
-         channel%seg(num_seg)%Z3DY_bg(I,J,  1) = D0_0
-         channel%seg(num_seg)%Z3DY_bg(I,J,nk2) = D0_0       
+         channel%seg(num_seg)%Z3DY_bg(I,J,  1) = 0.0_r8
+         channel%seg(num_seg)%Z3DY_bg(I,J,nk2) = 0.0_r8       
+        ENDDO
        ENDDO
-      ENDDO
 !----------------------------------------      
 !     Z3DZ_bg calculation (only at nk2)   
 !----------------------------------------
@@ -323,7 +324,7 @@ CONTAINS
                    channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,         &
                    channel%seg(num_seg)%lcen,                                   &
                    vGCM_st(num_seg)%QG(:,:,1:nk1),                              &
-                   channel%seg(num_seg)%QG3D_bg(:,:,2:nk2))                     &
+                   channel%seg(num_seg)%QG3D_bg(:,:,2:nk2))                     
    endif
  
    DO NT = 1,ntracer    
@@ -422,8 +423,8 @@ CONTAINS
        ! computational boundary condition
        DO J = 1, mj1
         DO I = mim, mip 
-         channel%seg(num_seg)%Z3DX_bg(I,J,  1) = D0_0
-         channel%seg(num_seg)%Z3DX_bg(I,J,nk2) = D0_0       
+         channel%seg(num_seg)%Z3DX_bg(I,J,  1) = 0.0_r8
+         channel%seg(num_seg)%Z3DX_bg(I,J,nk2) = 0.0_r8       
        ENDDO
       ENDDO
  
@@ -453,8 +454,8 @@ CONTAINS
        ! computational boundary condition
        DO J = 1, mj1
         DO I = mim, mip_a
-         channel%seg(num_seg)%Z3DY_bg(I,J,  1) = D0_0
-         channel%seg(num_seg)%Z3DY_bg(I,J,nk2) = D0_0       
+         channel%seg(num_seg)%Z3DY_bg(I,J,  1) = 0.0_r8
+         channel%seg(num_seg)%Z3DY_bg(I,J,nk2) = 0.0_r8       
        ENDDO
       ENDDO
       
@@ -496,11 +497,11 @@ CONTAINS
    ENDDO   ! num_seg 
 !********************************************************************
 
-#endif
+!JUNG #endif
 
    END SUBROUTINE cal_bg
 
-#ifdef FIXTHIS
+!JUNG #ifdef FIXTHIS
 !===================================================================================
    SUBROUTINE GCM2Q3D_X (POSITIVE,LOC_V,mhalo_l,NFACE,mim,mip,mjm,mjp,kdim, &
                          lsta,lend,lcen,A_in,A_bg)
@@ -519,35 +520,35 @@ CONTAINS
    INTEGER, INTENT(IN) :: kdim               ! Vertical size of input data
    INTEGER, INTENT(IN) :: lsta(nVGCM_seg)    ! Starting CRM-grid index in each vGCM cell
    INTEGER, INTENT(IN) :: lend(nVGCM_seg)    ! Ending CRM-grid index in each vGCM cell
-   REAL(kind=dbl_kind), INTENT(IN) :: lcen(nVGCM_seg)  ! Center CRM-grid index in each vGCM cell
-   REAL(kind=dbl_kind), INTENT(IN) ::  & 
+   REAL(kind=r8), INTENT(IN) :: lcen(nVGCM_seg)  ! Center CRM-grid index in each vGCM cell
+   REAL(kind=r8), INTENT(IN) ::  & 
        A_in(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
        
-   REAL(kind=dbl_kind), INTENT(OUT) :: A_bg(mim:mip,mjm:mjp,kdim)    
+   REAL(kind=r8), INTENT(OUT) :: A_bg(mim:mip,mjm:mjp,kdim)    
        
    ! Local variables    
-   REAL(kind=dbl_kind) :: A(1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,-nhalo_vGCM:nhalo_vGCM,kdim)
-   REAL(kind=dbl_kind) :: GRADI(0:nVGCM_seg+1,-1:1,kdim)
-   REAL(kind=dbl_kind) :: GRADJ(0:nVGCM_seg+1,-1:1,kdim)
-   REAL(KIND=dbl_kind) :: VAL0,VAL1,VAL2,VAL3
-   REAL(KIND=dbl_kind) :: V01,V02,V03,V04,V05,V06,V07,V08
-   REAL(KIND=dbl_kind) :: XVAL,YVAL,X0,X_COR,Y_COR
+   REAL(kind=r8) :: A(1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,-nhalo_vGCM:nhalo_vGCM,kdim)
+   REAL(kind=r8) :: GRADI(0:nVGCM_seg+1,-1:1,kdim)
+   REAL(kind=r8) :: GRADJ(0:nVGCM_seg+1,-1:1,kdim)
+   REAL(KIND=r8) :: VAL0,VAL1,VAL2,VAL3
+   REAL(KIND=r8) :: V01,V02,V03,V04,V05,V06,V07,V08
+   REAL(KIND=r8) :: XVAL,YVAL,X0,X_COR,Y_COR
    
    INTEGER :: I,J,K,IPO,JPO,chl,chn,lsta0,lend0,lcen_int
    
    SELECT CASE (LOC_V)
    CASE(1)  
      ! q-point variable
-     X_COR = D0_0
-     Y_COR = D0_0
+     X_COR = 0.0_r8
+     Y_COR = 0.0_r8
    CASE(2)
      ! u-point variable
-     X_COR = D0_5
-     Y_COR = D0_0
+     X_COR = 0.5_r8
+     Y_COR = 0.0_r8
    CASE(3)
      ! v-point variable
-     X_COR = D0_0
-     Y_COR = D0_5
+     X_COR = 0.0_r8
+     Y_COR = 0.5_r8
    END SELECT
    
 !  Prepare data on the local Cartesian coordinates (for x-channels)
@@ -557,8 +558,8 @@ CONTAINS
    DO K = 1, kdim
     DO J = -1, 1
      DO I = 0, nVGCM_seg+1
-      GRADI(I,J,K) = D0_5*(A(I+1,J,K)-A(I-1,J,K))
-      GRADJ(I,J,K) = D0_5*(A(I,J+1,K)-A(I,J-1,K))
+      GRADI(I,J,K) = 0.5_r8*(A(I+1,J,K)-A(I-1,J,K))
+      GRADJ(I,J,K) = 0.5_r8*(A(I,J+1,K)-A(I,J-1,K))
      ENDDO
     ENDDO
    ENDDO
@@ -604,7 +605,7 @@ CONTAINS
        A_bg(chl,chn,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chl,chn,K) = MAX(D0_0,A_bg(chl,chn,K))                         
+       IF (POSITIVE) A_bg(chl,chn,K) = MAX(0.0_r8,A_bg(chl,chn,K))                         
      ENDDO
     ENDDO
     ENDDO 
@@ -637,7 +638,7 @@ CONTAINS
        A_bg(chl,chn,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chl,chn,K) = MAX(D0_0,A_bg(chl,chn,K))                         
+       IF (POSITIVE) A_bg(chl,chn,K) = MAX(0.0_r8,A_bg(chl,chn,K))                         
      ENDDO
     ENDDO
     ENDDO     
@@ -670,7 +671,7 @@ CONTAINS
        A_bg(chl,chn,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chl,chn,K) = MAX(D0_0,A_bg(chl,chn,K))                         
+       IF (POSITIVE) A_bg(chl,chn,K) = MAX(0.0_r8,A_bg(chl,chn,K))                         
      ENDDO
     ENDDO
     ENDDO 
@@ -703,7 +704,7 @@ CONTAINS
        A_bg(chl,chn,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chl,chn,K) = MAX(D0_0,A_bg(chl,chn,K))                         
+       IF (POSITIVE) A_bg(chl,chn,K) = MAX(0.0_r8,A_bg(chl,chn,K))                         
      ENDDO
     ENDDO
     ENDDO     
@@ -723,9 +724,9 @@ CONTAINS
    INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
    INTEGER, INTENT(IN) :: kdim      ! Vertical size of input data 
    
-   REAL(kind=dbl_kind), INTENT(IN)  :: &     
+   REAL(kind=r8), INTENT(IN)  :: &     
        A_in(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
-   REAL(kind=dbl_kind), INTENT(OUT) :: &
+   REAL(kind=r8), INTENT(OUT) :: &
        A_out(1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,-nhalo_vGCM:nhalo_vGCM,kdim)
 
    ! Local
@@ -771,35 +772,35 @@ CONTAINS
    INTEGER, INTENT(IN) :: kdim               ! Vertical size of input data
    INTEGER, INTENT(IN) :: lsta(nVGCM_seg)    ! Starting CRM-grid index in each vGCM cell
    INTEGER, INTENT(IN) :: lend(nVGCM_seg)    ! Ending CRM-grid index in each vGCM cell
-   REAL(kind=dbl_kind), INTENT(IN) :: lcen(nVGCM_seg)  ! Center CRM-grid index in each vGCM cell
-   REAL(kind=dbl_kind), INTENT(IN) ::  & 
+   REAL(kind=r8), INTENT(IN) :: lcen(nVGCM_seg)  ! Center CRM-grid index in each vGCM cell
+   REAL(kind=r8), INTENT(IN) ::  & 
        A_in(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
        
-   REAL(kind=dbl_kind), INTENT(OUT) :: A_bg(mim:mip,mjm:mjp,kdim)    
+   REAL(kind=r8), INTENT(OUT) :: A_bg(mim:mip,mjm:mjp,kdim)    
        
    ! Local variables    
-   REAL(kind=dbl_kind) :: A(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
-   REAL(kind=dbl_kind) :: GRADI(-1:1,0:nVGCM_seg+1,kdim)
-   REAL(kind=dbl_kind) :: GRADJ(-1:1,0:nVGCM_seg+1,kdim)
-   REAL(KIND=dbl_kind) :: VAL0,VAL1,VAL2,VAL3
-   REAL(KIND=dbl_kind) :: V01,V02,V03,V04,V05,V06,V07,V08
-   REAL(KIND=dbl_kind) :: XVAL,YVAL,X0,X_COR,Y_COR
+   REAL(kind=r8) :: A(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
+   REAL(kind=r8) :: GRADI(-1:1,0:nVGCM_seg+1,kdim)
+   REAL(kind=r8) :: GRADJ(-1:1,0:nVGCM_seg+1,kdim)
+   REAL(KIND=r8) :: VAL0,VAL1,VAL2,VAL3
+   REAL(KIND=r8) :: V01,V02,V03,V04,V05,V06,V07,V08
+   REAL(KIND=r8) :: XVAL,YVAL,X0,X_COR,Y_COR,Y0
    
    INTEGER :: I,J,K,IPO,JPO,chl,chn,lsta0,lend0,lcen_int
    
    SELECT CASE (LOC_V)
    CASE(1)  
      ! q-point variable
-     X_COR = D0_0
-     Y_COR = D0_0
+     X_COR = 0.0_r8
+     Y_COR = 0.0_r8
    CASE(2)
      ! u-point variable
-     X_COR = D0_5
-     Y_COR = D0_0
+     X_COR = 0.5_r8
+     Y_COR = 0.0_r8
    CASE(3)
      ! v-point variable
-     X_COR = D0_0
-     Y_COR = D0_5
+     X_COR = 0.0_r8
+     Y_COR = 0.5_r8
    END SELECT
    
 !  Prepare data on the local Cartesian coordinates (for y-channels)
@@ -809,8 +810,8 @@ CONTAINS
    DO K = 1, kdim
     DO J = 0, nVGCM_seg+1
      DO I = -1, 1
-      GRADI(I,J,K) = D0_5*(A(I+1,J,K)-A(I-1,J,K))
-      GRADJ(I,J,K) = D0_5*(A(I,J+1,K)-A(I,J-1,K))
+      GRADI(I,J,K) = 0.5_r8*(A(I+1,J,K)-A(I-1,J,K))
+      GRADJ(I,J,K) = 0.5_r8*(A(I,J+1,K)-A(I,J-1,K))
      ENDDO
     ENDDO
    ENDDO
@@ -856,7 +857,7 @@ CONTAINS
        A_bg(chn,chl,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chn,chl,K) = MAX(D0_0,A_bg(chn,chl,K))                         
+       IF (POSITIVE) A_bg(chn,chl,K) = MAX(0.0_r8,A_bg(chn,chl,K))                         
      ENDDO
     ENDDO
     ENDDO 
@@ -889,7 +890,7 @@ CONTAINS
        A_bg(chn,chl,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chn,chl,K) = MAX(D0_0,A_bg(chn,chl,K))                         
+       IF (POSITIVE) A_bg(chn,chl,K) = MAX(0.0_r8,A_bg(chn,chl,K))                         
      ENDDO
     ENDDO
     ENDDO     
@@ -922,7 +923,7 @@ CONTAINS
        A_bg(chn,chl,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chn,chl,K) = MAX(D0_0,A_bg(chn,chl,K))                         
+       IF (POSITIVE) A_bg(chn,chl,K) = MAX(0.0_r8,A_bg(chn,chl,K))                         
      ENDDO
     ENDDO
     ENDDO 
@@ -955,7 +956,7 @@ CONTAINS
        A_bg(chn,chl,K) = QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                                  VAL0,VAL1,VAL2,VAL3,netsz,netsz_sq)
                               
-       IF (POSITIVE) A_bg(chn,chl,K) = MAX(D0_0,A_bg(chn,chl,K))                         
+       IF (POSITIVE) A_bg(chn,chl,K) = MAX(0.0_r8,A_bg(chn,chl,K))                         
      ENDDO
     ENDDO
     ENDDO     
@@ -975,9 +976,9 @@ CONTAINS
    INTEGER, INTENT(IN) :: NFACE     ! # of cube-face, to which the data belongs
    INTEGER, INTENT(IN) :: kdim      ! Vertical size of input data 
    
-   real(kind=dbl_kind), INTENT(IN)  :: &     
+   real(kind=r8), INTENT(IN)  :: &     
        A_in(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
-   real(kind=dbl_kind), INTENT(OUT) :: &
+   real(kind=r8), INTENT(OUT) :: &
        A_out(-nhalo_vGCM:nhalo_vGCM,1-nhalo_vGCM:nVGCM_seg+nhalo_vGCM,kdim)
 
    ! Local
@@ -1003,15 +1004,15 @@ CONTAINS
         
    END SUBROUTINE prep_y   
 
-   END SUBROUTINE gcm2q3d_Y
+   END SUBROUTINE gcm2q3d_y
    
    FUNCTION QUADINT(XVAL,YVAL,V01,V02,V03,V04,V05,V06,V07,V08, &
                     VAL0,VAL1,VAL2,VAL3,N,NSQ) RESULT (QUADINT_result)
 
-   REAL (KIND=dbl_kind) :: QUADINT_result
-   REAL (KIND=dbl_kind), INTENT(IN) :: XVAL,YVAL  ! x and y locations relative to the GCM grid (i,j)
-   REAL (KIND=dbl_kind), INTENT(IN) :: V01,V02,V03,V04,V05,V06,V07,V08 ! terms in the interpolation ftn
-   REAL (KIND=dbl_kind), INTENT(IN) :: VAL0,VAL1,VAL2,VAL3 ! terms in the interpolation ftn
+   REAL (KIND=r8) :: QUADINT_result
+   REAL (KIND=r8), INTENT(IN) :: XVAL,YVAL  ! x and y locations relative to the GCM grid (i,j)
+   REAL (KIND=r8), INTENT(IN) :: V01,V02,V03,V04,V05,V06,V07,V08 ! terms in the interpolation ftn
+   REAL (KIND=r8), INTENT(IN) :: VAL0,VAL1,VAL2,VAL3 ! terms in the interpolation ftn
    INTEGER, INTENT(IN) :: N,NSQ
 
    QUADINT_result = &
@@ -1023,6 +1024,6 @@ CONTAINS
    QUADINT_result=QUADINT_result/FLOAT(NSQ*NSQ)
 
    END FUNCTION quadint
-#endif
+!JUNG #endif
 
 END MODULE q3d_bg_module

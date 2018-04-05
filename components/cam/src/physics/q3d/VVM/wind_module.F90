@@ -1,11 +1,11 @@
 MODULE wind_module
 ! diagnose wind components
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
-USE vvm_data_types, only: GQ3D_DATA_T
+USE shr_kind_mod,   only: r8 => shr_kind_r8
+USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk1,nk2,nk3
-USE constld, only: d0_0,d4_0,dx,dy,dz,fnz
+USE constld, only: dx,dy,dz,fnz
 
 ! Subroutines being called
 USE elliptic, only: relax_3d
@@ -22,8 +22,6 @@ CONTAINS
 !-----------------------------------------------------------------------
 ! SUBROUTINE wind_3d : diagnose wind components
 !-----------------------------------------------------------------------
-!    D0_0  = 0.0_dbl_kind
-!    D4_0  = 4.0_dbl_kind
 
 !=======================================================================
    SUBROUTINE WIND_3D (UCHANGE,WCHANGE,channel,NITER2D)
@@ -52,7 +50,7 @@ CONTAINS
       ! which is different from the basic setting "niterxy" (test purpose) 
 
 !     Local Variables
-      REAL (KIND=dbl_kind), DIMENSION(nk1) :: ADD_U,ADD_V
+      REAL (KIND=r8), DIMENSION(nk1) :: ADD_U,ADD_V
 
       INTEGER :: I,J,K,KLOWU,KLOWV,num_seg
       INTEGER :: mim,mim_a,mim_ce,mip_a,mip_c,mip_ce  
@@ -112,12 +110,12 @@ CONTAINS
                                             -channel%seg(num_seg)%W3D(I,J,K))         &
        +channel%seg(num_seg)%GCONT_V(2,I,J-1)*(channel%seg(num_seg)%W3D(I,J,K)        &
                                               -channel%seg(num_seg)%W3D(I,J-1,K)))    &
-       /(4.dbl_kind*DY)                                                               &
+       /(4.0_r8*DY)                                                               &
      - (channel%seg(num_seg)%GG_V(2,I+1,J)*channel%seg(num_seg)%Z3DX(I+1,J,K)         &
        +channel%seg(num_seg)%GG_V(2,I,J)*channel%seg(num_seg)%Z3DX(I,J,K)             &
        +channel%seg(num_seg)%GG_V(2,I+1,J-1)*channel%seg(num_seg)%Z3DX(I+1,J-1,K)     &
        +channel%seg(num_seg)%GG_V(2,I,J-1)*channel%seg(num_seg)%Z3DX(I,J-1,K))        &
-       /(D4_0*channel%seg(num_seg)%RG_U(I,J))
+       /(4.0_r8*channel%seg(num_seg)%RG_U(I,J))
       ENDDO
 
       DO K = nk1, KLOWU, -1
@@ -130,7 +128,7 @@ CONTAINS
       
 !     kinematic boundary condition
       DO K = 2, KLOWU-1
-       channel%seg(num_seg)%U3DX(I,J,K) = D0_0
+       channel%seg(num_seg)%U3DX(I,J,K) = 0.0_r8
       ENDDO
 
       channel%seg(num_seg)%U3DX(I,J,1)   = channel%seg(num_seg)%U3DX(I,J,2)
@@ -158,12 +156,12 @@ CONTAINS
                                             -channel%seg(num_seg)%W3D(I,J,K))         &
        +channel%seg(num_seg)%GCONT_U(2,I-1,J)*(channel%seg(num_seg)%W3D(I,J,K)        &
                                               -channel%seg(num_seg)%W3D(I-1,J,K)))    &
-       /(4.dbl_kind*DX)                                                               &
+       /(4.0_r8*DX)                                                               &
      + (channel%seg(num_seg)%GG_U(2,I,J+1)*channel%seg(num_seg)%Z3DY(I,J+1,K)         &
        +channel%seg(num_seg)%GG_U(2,I,J)*channel%seg(num_seg)%Z3DY(I,J,K)             &
        +channel%seg(num_seg)%GG_U(2,I-1,J+1)*channel%seg(num_seg)%Z3DY(I-1,J+1,K)     &
        +channel%seg(num_seg)%GG_U(2,I-1,J)*channel%seg(num_seg)%Z3DY(I-1,J,K))        &
-       /(D4_0*channel%seg(num_seg)%RG_V(I,J))
+       /(4.0_r8*channel%seg(num_seg)%RG_V(I,J))
 
       ENDDO
       DO K = nk1, KLOWV, -1
@@ -176,7 +174,7 @@ CONTAINS
       
 !     kinematic boundary condition
       DO K = 2, KLOWV-1
-       channel%seg(num_seg)%U3DY(I,J,K) = D0_0
+       channel%seg(num_seg)%U3DY(I,J,K) = 0.0_r8
       ENDDO
 
       channel%seg(num_seg)%U3DY(I,J,1)   = channel%seg(num_seg)%U3DY(I,J,2)
@@ -211,7 +209,7 @@ CONTAINS
                 +channel%seg(num_seg)%GG_V(2,I+1,J)*channel%seg(num_seg)%U3DY(I+1,J,K)      &
                 +channel%seg(num_seg)%GG_V(2,I,J-1)*channel%seg(num_seg)%U3DY(I,J-1,K)      &
                 +channel%seg(num_seg)%GG_V(2,I+1,J-1)*channel%seg(num_seg)%U3DY(I+1,J-1,K)) &
-                /D4_0
+                /4.0_r8
         ENDDO
 
         channel%seg(num_seg)%U3DX_CO(I,J,1)   = channel%seg(num_seg)%U3DX_CO(I,J,2)
@@ -240,7 +238,7 @@ CONTAINS
                 +channel%seg(num_seg)%GG_U(2,I,J+1)*channel%seg(num_seg)%U3DX(I,J+1,K)      &
                 +channel%seg(num_seg)%GG_U(2,I-1,J)*channel%seg(num_seg)%U3DX(I-1,J,K)      &
                 +channel%seg(num_seg)%GG_U(2,I-1,J+1)*channel%seg(num_seg)%U3DX(I-1,J+1,K)) &
-                /D4_0
+                /4.0_r8
         ENDDO
 
         channel%seg(num_seg)%U3DY_CO(I,J,1)   = channel%seg(num_seg)%U3DY_CO(I,J,2)

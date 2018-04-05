@@ -1,11 +1,11 @@
 MODULE buoyf_module
 ! Calculates buoyancy terms in vorticity equations
 
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t
 
       USE parmsld, only: nk1,nk2
-      USE constld, only: d0_0,thbar,dx,dy,grav,delta,physics
+      USE constld, only: thbar,dx,dy,grav,delta,physics
 
 IMPLICIT NONE
 PRIVATE
@@ -20,11 +20,10 @@ CONTAINS
 !-----------------------------------------------------------------------
 
 !=======================================================================
-   SUBROUTINE BUOYF_3D ( BUOYANCY, channel )
+   SUBROUTINE BUOYF_3D ( channel )
 !=======================================================================
 !  Temporary use of channel%seg(num_seg)%TERM1
 
-      LOGICAL, INTENT(IN) :: BUOYANCY
       type(channel_t), intent(inout) :: channel   ! channel data
      
 !     Local variables 
@@ -41,19 +40,6 @@ CONTAINS
       mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment  
       mjm_c  = channel%seg(num_seg)%mjm_c    
       mjp_c  = channel%seg(num_seg)%mjp_c         
-                  
-      DO K = 2, nk1
-       DO J = 1, mj1
-        DO I = 1, mi1
-         channel%seg(num_seg)%FZXBU(I,J,K) = D0_0
-         channel%seg(num_seg)%FZYBU(I,J,K) = D0_0
-        ENDDO
-       ENDDO
-      ENDDO
-
-!--------------------------
-      IF(BUOYANCY) THEN
-!--------------------------
 
       IF (PHYSICS) THEN
         ! temporary use of term1
@@ -69,7 +55,7 @@ CONTAINS
          ENDDO
         ENDDO
       ELSE
-        channel%seg(num_seg)%TERM1(:,:,:) = D0_0
+        channel%seg(num_seg)%TERM1(:,:,:) = 0.0_r8
       ENDIF
 
       DO J = 1, mj1
@@ -111,15 +97,12 @@ CONTAINS
 
         DO K = klowu, nk1
          channel%seg(num_seg)%FZYBU(I,J,K) = &
-        -channel%seg(num_seg)%FZYBU(I,J,K)*GRAV/(2.*DX*channel%seg(num_seg)%RG_U(I,J))
+        -channel%seg(num_seg)%FZYBU(I,J,K)*GRAV/(2.0_r8*DX*channel%seg(num_seg)%RG_U(I,J))
         ENDDO
 
        ENDDO  ! I-loop
       ENDDO  ! J-loop
 
-!--------------------------
-      ENDIF
-!--------------------------
 !****************************  
       ENDDO  ! num_seg
 !****************************

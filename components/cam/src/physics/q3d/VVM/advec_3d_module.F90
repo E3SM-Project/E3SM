@@ -1,9 +1,8 @@
 MODULE advec_3d_module
 
-      USE shr_kind_mod, only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod, only: r8 => shr_kind_r8
       USE parmsld,      only: nk1,nk2,nk3
-      USE constld,      only: d0_0,d1_0,d2_0,d6_0,d0_5, &
-                              dx,dy,dz,dt,aladv,rho,rhoz,fnt,fnz,zz
+      USE constld,      only: dx,dy,dz,dt,aladv,rho,rhoz,fnt,fnz,zz
 
 IMPLICIT NONE
 PRIVATE
@@ -16,12 +15,7 @@ CONTAINS
 !------------------------------------------------------------------------
 ! SUBROUTINE advec_3d
 !------------------------------------------------------------------------
-!     D0_0  = 0.0_dbl_kind
-!     D1_0  = 1.0_dbl_kind
-!     D2_0  = 2.0_dbl_kind
-!     D6_0  = 6.0_dbl_kind
-!     D0_5  = 0.5_dbl_kind
-    
+
 !========================================================================
       SUBROUTINE ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,                 &
                            mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,                 &
@@ -41,41 +35,41 @@ CONTAINS
       INTEGER, INTENT(IN) :: mi1,mim,mim_a,mim_c,mip,mip_c, &
                              mj1,mjm,mjm_a,mjm_c,mjp,mjp_c
                                
-      REAL (KIND=dbl_kind), DIMENSION(mim:mip,mjm:mjp,NK3), INTENT(IN)  :: Q 
-      REAL (KIND=dbl_kind), DIMENSION(mi1,mj1,nk2),         INTENT(OUT) :: TERMA 
+      REAL (KIND=r8), DIMENSION(mim:mip,mjm:mjp,NK3), INTENT(IN)  :: Q 
+      REAL (KIND=r8), DIMENSION(mi1,mj1,nk2),         INTENT(OUT) :: TERMA 
       
       ! Wind field
-      REAL (KIND=dbl_kind), DIMENSION(mim:mip,mjm:mjp,NK3), INTENT(IN)  :: U3DX,U3DY 
-      REAL (KIND=dbl_kind), DIMENSION(mim:mip,mjm:mjp,NK2), INTENT(IN)  :: W3D 
+      REAL (KIND=r8), DIMENSION(mim:mip,mjm:mjp,NK3), INTENT(IN)  :: U3DX,U3DY 
+      REAL (KIND=r8), DIMENSION(mim:mip,mjm:mjp,NK2), INTENT(IN)  :: W3D 
       ! Mapping information
-      REAL (KIND=dbl_kind), DIMENSION(mim:mip,mjm:mjp),     INTENT(IN)  :: RG_T,RG_U,RG_V 
+      REAL (KIND=r8), DIMENSION(mim:mip,mjm:mjp),     INTENT(IN)  :: RG_T,RG_U,RG_V 
       ! Topography information
       INTEGER, DIMENSION(mim:mip,mjm:mjp), INTENT(IN)  :: KLOWQ_IJ
       
       LOGICAL, INTENT(IN) :: POSITIVE
 
-      REAL (KIND=dbl_kind), OPTIONAL, INTENT(IN) :: TPHGT     ! tropopause height
+      REAL (KIND=r8), OPTIONAL, INTENT(IN) :: TPHGT     ! tropopause height
       LOGICAL, OPTIONAL, INTENT(IN) :: DIV_CAL
-      REAL (KIND=dbl_kind), DIMENSION(mi1,mj1,nk2),OPTIONAL,INTENT(IN) :: TERM_ADD
+      REAL (KIND=r8), DIMENSION(mi1,mj1,nk2),OPTIONAL,INTENT(IN) :: TERM_ADD
 
 !     Local variables ---------
-      REAL (KIND=dbl_kind) :: TEMPX(mim_a:mip_c,mj1,NK2),TEMPY(mi1,mjm_a:mjp_c,NK2)
-      REAL (KIND=dbl_kind) :: UPI(mim_a:mip_c,mjm_a:mjp_c,NK2) 
-      REAL (KIND=dbl_kind) :: UMI(mim_a:mip_c,mjm_a:mjp_c,NK2)   
-      REAL (KIND=dbl_kind) :: UPSRI(mim_a:mip_c,mjm_a:mjp_c,NK2)
-      REAL (KIND=dbl_kind) :: UMSRI(mim_a:mip_c,mjm_a:mjp_c,NK2)
-      REAL (KIND=dbl_kind) :: FLXI(0:mi1,0:mj1,NK2)
+      REAL (KIND=r8) :: TEMPX(mim_a:mip_c,mj1,NK2),TEMPY(mi1,mjm_a:mjp_c,NK2)
+      REAL (KIND=r8) :: UPI(mim_a:mip_c,mjm_a:mjp_c,NK2) 
+      REAL (KIND=r8) :: UMI(mim_a:mip_c,mjm_a:mjp_c,NK2)   
+      REAL (KIND=r8) :: UPSRI(mim_a:mip_c,mjm_a:mjp_c,NK2)
+      REAL (KIND=r8) :: UMSRI(mim_a:mip_c,mjm_a:mjp_c,NK2)
+      REAL (KIND=r8) :: FLXI(0:mi1,0:mj1,NK2)
 
 !     For positive definite advection
-      REAL (KIND=dbl_kind) :: EPSIL = 1.0d-30
-      REAL (KIND=dbl_kind) :: P_X(mim_c:mip_c,mj1,nk2)
-      REAL (KIND=dbl_kind) :: P_Y(mi1,mjm_c:mjp_c,nk2)
-      REAL (KIND=dbl_kind) :: P_Z(mi1,mj1,nk1)
-      REAL (KIND=dbl_kind) :: A0,GAMMA_P,GAMMA_HAT_P,GAMMA_M,GAMMA_HAT_M, &
+      REAL (KIND=r8) :: EPSIL = 1.0d-30
+      REAL (KIND=r8) :: P_X(mim_c:mip_c,mj1,nk2)
+      REAL (KIND=r8) :: P_Y(mi1,mjm_c:mjp_c,nk2)
+      REAL (KIND=r8) :: P_Z(mi1,mj1,nk1)
+      REAL (KIND=r8) :: A0,GAMMA_P,GAMMA_HAT_P,GAMMA_M,GAMMA_HAT_M, &
                               BETA_P,BETA_HAT_P,BETA_M,BETA_HAT_M
 
       LOGICAL :: USE_MU = .FALSE.                        
-      REAL (KIND=dbl_kind) :: COEF_P,COEF_M,MU_P,MU_M,ALPHA_P,ALPHA_M            
+      REAL (KIND=r8) :: COEF_P,COEF_M,MU_P,MU_M,ALPHA_P,ALPHA_M            
 
       INTEGER :: I, J, K, KLOW
 
@@ -89,12 +83,12 @@ CONTAINS
       DO K=2,NK2
        DO J=1,MJ1
         DO I=mim_c,mip_c
-         P_X(I,J,K)=(Q(I-1,J,K)-D2_0*Q(I,J,K)+Q(I+1,J,K))**2 + EPSIL
+         P_X(I,J,K)=(Q(I-1,J,K)-2.0_r8*Q(I,J,K)+Q(I+1,J,K))**2 + EPSIL
         ENDDO
        ENDDO
        DO J=mjm_c,mjp_c
         DO I=1,MI1
-         P_Y(I,J,K)=(Q(I,J-1,K)-D2_0*Q(I,J,K)+Q(I,J+1,K))**2 + EPSIL
+         P_Y(I,J,K)=(Q(I,J-1,K)-2.0_r8*Q(I,J,K)+Q(I,J+1,K))**2 + EPSIL
         ENDDO
        ENDDO
       ENDDO
@@ -102,7 +96,7 @@ CONTAINS
       DO K=klow+1,nk1
        DO J=1,MJ1
         DO I=1,MI1
-         P_Z(I,J,K)=(Q(I,J,K-1)-D2_0*Q(I,J,K)+Q(I,J,K+1))**2 + EPSIL
+         P_Z(I,J,K)=(Q(I,J,K-1)-2.0_r8*Q(I,J,K)+Q(I,J,K+1))**2 + EPSIL
         ENDDO
        ENDDO
       ENDDO
@@ -132,7 +126,7 @@ CONTAINS
       DO K=2,NK2
        DO J=1,MJ1
         DO I=0,MI1
-         FLXI(I,J,K) = D0_5*TEMPX(I,J,K)*(Q(I+1,J,K)+Q(I,J,K))
+         FLXI(I,J,K) = 0.5_r8*TEMPX(I,J,K)*(Q(I+1,J,K)+Q(I,J,K))
         ENDDO
        ENDDO
       ENDDO
@@ -144,8 +138,8 @@ CONTAINS
       DO K=2,NK2
        DO J=1,MJ1
         DO I=mim_a,mip_c
-         UPI(I,J,K)=D0_5*(TEMPX(I,J,K)+ABS(TEMPX(I,J,K)))
-         UMI(I,J,K)=D0_5*(TEMPX(I,J,K)-ABS(TEMPX(I,J,K)))
+         UPI(I,J,K)=0.5_r8*(TEMPX(I,J,K)+ABS(TEMPX(I,J,K)))
+         UMI(I,J,K)=0.5_r8*(TEMPX(I,J,K)-ABS(TEMPX(I,J,K)))
         ENDDO
        ENDDO
       ENDDO
@@ -168,46 +162,46 @@ CONTAINS
 !       -------------------
          IF (USE_MU) THEN
            MU_P    = ABS(U3DX(I,J,K))*dt/dx
-           ALPHA_P = (D1_0 + MU_P)/D6_0
-           COEF_P  = (D1_0 - D2_0*ALPHA_P)/(D2_0*ALPHA_P)
+           ALPHA_P = (1.0_r8 + MU_P)/6.0_r8
+           COEF_P  = (1.0_r8 - 2.0_r8*ALPHA_P)/(2.0_r8*ALPHA_P)
 
            MU_M    = ABS(U3DX(I+1,J,K))*dt/dx
-           ALPHA_M = (D1_0 + MU_M)/D6_0
-           COEF_M  = (D1_0 - D2_0*ALPHA_M)/(D2_0*ALPHA_M)
+           ALPHA_M = (1.0_r8 + MU_M)/6.0_r8
+           COEF_M  = (1.0_r8 - 2.0_r8*ALPHA_M)/(2.0_r8*ALPHA_M)
          ELSE
-           COEF_P  =  D2_0
-           COEF_M  =  D2_0
+           COEF_P  =  2.0_r8
+           COEF_M  =  2.0_r8
          ENDIF
 
-         a0 = MAX(Q(I,J,K),D0_0)*MAX(Q(I+1,J,K),D0_0)
+         a0 = MAX(Q(I,J,K),0.0_r8)*MAX(Q(I+1,J,K),0.0_r8)
 
          GAMMA_P     = (P_X(I,J,K)**2)/(P_X(I,J,K)**2 + a0)
          GAMMA_HAT_P = GAMMA_P
-         BETA_P      = D1_0 + COEF_P*GAMMA_P
-         BETA_HAT_P  = D1_0 - GAMMA_HAT_P
+         BETA_P      = 1.0_r8 + COEF_P*GAMMA_P
+         BETA_HAT_P  = 1.0_r8 - GAMMA_HAT_P
 
          GAMMA_M     = (P_X(I+1,J,K)**2)/(P_X(I+1,J,K)**2 + a0)
          GAMMA_HAT_M = GAMMA_M
-         BETA_M      = D1_0 + COEF_M*GAMMA_M
-         BETA_HAT_M  = D1_0 - GAMMA_HAT_M
+         BETA_M      = 1.0_r8 + COEF_M*GAMMA_M
+         BETA_HAT_M  = 1.0_r8 - GAMMA_HAT_M
 !       -------------------
         ELSE
 !       -------------------
-         BETA_P      = D1_0
-         BETA_HAT_P  = D1_0
-         BETA_M      = D1_0
-         BETA_HAT_M  = D1_0
+         BETA_P      = 1.0_r8
+         BETA_HAT_P  = 1.0_r8
+         BETA_M      = 1.0_r8
+         BETA_HAT_M  = 1.0_r8
 !       -------------------
         ENDIF
 !       -------------------
 
          FLXI(I,J,K) = &
-           D0_5*TEMPX(I,J,K)*(Q(I+1,J,K)+Q(I,J,K))                      &
+                 0.5_r8*TEMPX(I,J,K)*(Q(I+1,J,K)+Q(I,J,K))                      &
          - aladv*(UPI(I,J,K)*BETA_P*(Q(I+1,J,K)-Q(I,J,K))                       &
                -UPSRI(I,J,K)*UPSRI(I-1,J,K)*BETA_HAT_P*(Q(I,J,K)-Q(I-1,J,K))    &
                +UMI(I,J,K)*BETA_M*(Q(I,J,K)-Q(I+1,J,K))                         &
                +UMSRI(I,J,K)*UMSRI(I+1,J,K)*BETA_HAT_M*(Q(I+1,J,K)-Q(I+2,J,K))) &
-               /D6_0
+               /6.0_r8
         ENDDO
        ENDDO
       ENDDO
@@ -241,7 +235,7 @@ CONTAINS
       DO K=2,NK2
        DO J=0,MJ1
         DO I=1,MI1
-         FLXI(I,J,K) = D0_5*TEMPY(I,J,K)*(Q(I,J+1,K)+Q(I,J,K))
+         FLXI(I,J,K) = 0.5_r8*TEMPY(I,J,K)*(Q(I,J+1,K)+Q(I,J,K))
         ENDDO
        ENDDO
       ENDDO
@@ -252,8 +246,8 @@ CONTAINS
       DO K=2,NK2
        DO J=mjm_a,mjp_c
         DO I=1,mi1
-         UPI(I,J,K)=D0_5*(TEMPY(I,J,K)+ABS(TEMPY(I,J,K)))
-         UMI(I,J,K)=D0_5*(TEMPY(I,J,K)-ABS(TEMPY(I,J,K)))
+         UPI(I,J,K)=0.5_r8*(TEMPY(I,J,K)+ABS(TEMPY(I,J,K)))
+         UMI(I,J,K)=0.5_r8*(TEMPY(I,J,K)-ABS(TEMPY(I,J,K)))
         ENDDO
        ENDDO
       ENDDO
@@ -276,46 +270,46 @@ CONTAINS
 !       -------------------
          IF (USE_MU) THEN
            MU_P    = ABS(U3DY(I,J,K))*dt/dy
-           ALPHA_P = (D1_0 + MU_P)/D6_0
-           COEF_P  = (D1_0 - D2_0*ALPHA_P)/(D2_0*ALPHA_P)
+           ALPHA_P = (1.0_r8 + MU_P)/6.0_r8
+           COEF_P  = (1.0_r8 - 2.0_r8*ALPHA_P)/(2.0_r8*ALPHA_P)
 
            MU_M    = ABS(U3DY(I,J+1,K))*dt/dy
-           ALPHA_M = (D1_0 + MU_M)/D6_0
-           COEF_M  = (D1_0 - D2_0*ALPHA_M)/(D2_0*ALPHA_M)
+           ALPHA_M = (1.0_r8 + MU_M)/6.0_r8
+           COEF_M  = (1.0_r8 - 2.0_r8*ALPHA_M)/(2.0_r8*ALPHA_M)
          ELSE
-           COEF_P  =  D2_0
-           COEF_M  =  D2_0
+           COEF_P  =  2.0_r8
+           COEF_M  =  2.0_r8
          ENDIF
 
-         a0 = MAX(Q(I,J,K),D0_0)*MAX(Q(I,J+1,K),D0_0)
+         a0 = MAX(Q(I,J,K),0.0_r8)*MAX(Q(I,J+1,K),0.0_r8)
 
          GAMMA_P     = (P_Y(I,J,K)**2)/(P_Y(I,J,K)**2 + a0)
          GAMMA_HAT_P = GAMMA_P
-         BETA_P      = D1_0 + COEF_P*GAMMA_P
-         BETA_HAT_P  = D1_0 - GAMMA_HAT_P
+         BETA_P      = 1.0_r8 + COEF_P*GAMMA_P
+         BETA_HAT_P  = 1.0_r8 - GAMMA_HAT_P
 
          GAMMA_M     = (P_Y(I,J+1,K)**2)/(P_Y(I,J+1,K)**2 + a0)
          GAMMA_HAT_M = GAMMA_M
-         BETA_M      = D1_0 + COEF_M*GAMMA_M
-         BETA_HAT_M  = D1_0 - GAMMA_HAT_M
+         BETA_M      = 1.0_r8 + COEF_M*GAMMA_M
+         BETA_HAT_M  = 1.0_r8 - GAMMA_HAT_M
 !       -------------------
         ELSE
 !       -------------------
-         BETA_P      = D1_0
-         BETA_HAT_P  = D1_0
-         BETA_M      = D1_0
-         BETA_HAT_M  = D1_0
+         BETA_P      = 1.0_r8
+         BETA_HAT_P  = 1.0_r8
+         BETA_M      = 1.0_r8
+         BETA_HAT_M  = 1.0_r8
 !       -------------------
         ENDIF
 !       -------------------
 
          FLXI(I,J,K) = &
-           0.5*TEMPY(I,J,K)*(Q(I,J+1,K)+Q(I,J,K))                               &
+              0.5_r8*TEMPY(I,J,K)*(Q(I,J+1,K)+Q(I,J,K))                         &
          - aladv*(UPI(I,J,K)*BETA_P*(Q(I,J+1,K)-Q(I,J,K))                       &
                -UPSRI(I,J,K)*UPSRI(I,J-1,K)*BETA_HAT_P*(Q(I,J,K)-Q(I,J-1,K))    &
                +UMI(I,J,K)*BETA_M*(Q(I,J,K)-Q(I,J+1,K))                         &
                +UMSRI(I,J,K)*UMSRI(I,J+1,K)*BETA_HAT_M*(Q(I,J+1,K)-Q(I,J+2,K))) &
-               /D6_0
+               /6.0_r8
         ENDDO
        ENDDO
       ENDDO
@@ -349,14 +343,14 @@ CONTAINS
 !*********************************
 
       DO K=KLOW+1,NK1-1
-       FLXI(I,J,K) = D0_5*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K))
+       FLXI(I,J,K) = 0.5_r8*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K))
       ENDDO
 
 !     LEVEL: K=NK1
-      IF(TEMPX(I,J,NK1).GE.D0_0) THEN
-       FLXI(I,J,NK1) = D0_5*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
+      IF(TEMPX(I,J,NK1).GE.0.0_r8) THEN
+       FLXI(I,J,NK1) = 0.5_r8*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
       ELSE
-       FLXi(I,J,NK1)=D0_5*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
+       FLXi(I,J,NK1)=0.5_r8*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
        IF (POSITIVE) THEN
         FLXI(I,J,NK1)=MAX(FLXI(I,J,NK1),-dz*rho(NK2)*Q(I,J,NK2) &
                      /(fnt(NK2)*dt))
@@ -364,14 +358,14 @@ CONTAINS
       ENDIF
 
 !     LEVEL: K=KLOW
-      IF(TEMPX(I,J,KLOW).GE.D0_0) THEN
-       FLXI(I,J,KLOW)=D0_5*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
+      IF(TEMPX(I,J,KLOW).GE.0.0_r8) THEN
+       FLXI(I,J,KLOW)=0.5_r8*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
        IF (POSITIVE) THEN
         FLXI(I,J,KLOW)=MIN(FLXI(I,J,KLOW),dz*rho(KLOW)*Q(I,J,KLOW) &
                       /(fnt(KLOW)*dt))
        ENDIF
       ELSE
-       FLXI(I,J,KLOW) = D0_5*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
+       FLXI(I,J,KLOW) = 0.5_r8*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
       ENDIF
 
 !*********************************
@@ -379,8 +373,8 @@ CONTAINS
 !*********************************
 
       DO K=KLOW,NK1
-       UPI(I,J,K)=D0_5*(TEMPX(I,J,K)+ABS(TEMPX(I,J,K)))
-       UMI(I,J,K)=D0_5*(TEMPX(I,J,K)-ABS(TEMPX(I,J,K)))
+       UPI(I,J,K)=0.5_r8*(TEMPX(I,J,K)+ABS(TEMPX(I,J,K)))
+       UMI(I,J,K)=0.5_r8*(TEMPX(I,J,K)-ABS(TEMPX(I,J,K)))
       ENDDO
       DO K=KLOW,NK1
        UPSRI(I,J,K)=SQRT(UPI(I,J,K))
@@ -395,100 +389,100 @@ CONTAINS
 
          IF (USE_MU) THEN
            MU_P    = fnz(K)*ABS(W3D(I,J,K))*dt/dz
-           ALPHA_P = (D1_0 + MU_P)/D6_0
-           COEF_P  = (D1_0 - D2_0*ALPHA_P)/(D2_0*ALPHA_P)
+           ALPHA_P = (1.0_r8 + MU_P)/6.0_r8
+           COEF_P  = (1.0_r8 - 2.0_r8*ALPHA_P)/(2.0_r8*ALPHA_P)
 
            MU_M    = fnz(K+1)*ABS(W3D(I,J,K+1))*dt/dz
-           ALPHA_M = (D1_0 + MU_M)/D6_0
-           COEF_M  = (D1_0 - D2_0*ALPHA_M)/(D2_0*ALPHA_M)
+           ALPHA_M = (1.0_r8 + MU_M)/6.0_r8
+           COEF_M  = (1.0_r8 - 2.0_r8*ALPHA_M)/(2.0_r8*ALPHA_M)
          ELSE
-           COEF_P  =  D2_0
-           COEF_M  =  D2_0
+           COEF_P  =  2.0_r8
+           COEF_M  =  2.0_r8
          ENDIF
 
-         a0 = MAX(Q(I,J,K),D0_0)*MAX(Q(I,J,K+1),D0_0)
+         a0 = MAX(Q(I,J,K),0.0_r8)*MAX(Q(I,J,K+1),0.0_r8)
 
          GAMMA_P     = (P_Z(I,J,K)**2)/(P_Z(I,J,K)**2 + a0)
          GAMMA_HAT_P = GAMMA_P
-         BETA_P      = D1_0 + COEF_P*GAMMA_P
-         BETA_HAT_P  = D1_0 - GAMMA_HAT_P
+         BETA_P      = 1.0_r8 + COEF_P*GAMMA_P
+         BETA_HAT_P  = 1.0_r8 - GAMMA_HAT_P
 
          GAMMA_M     = (P_Z(I,J,K+1)**2)/(P_Z(I,J,K+1)**2 + a0)
          GAMMA_HAT_M = GAMMA_M
-         BETA_M      = D1_0 + COEF_M*GAMMA_M
-         BETA_HAT_M  = D1_0 - GAMMA_HAT_M
+         BETA_M      = 1.0_r8 + COEF_M*GAMMA_M
+         BETA_HAT_M  = 1.0_r8 - GAMMA_HAT_M
 
 !       -------------------
         ELSE
 !       -------------------
 
-         BETA_P      = D1_0
-         BETA_HAT_P  = D1_0
-         BETA_M      = D1_0
-         BETA_HAT_M  = D1_0
+         BETA_P      = 1.0_r8
+         BETA_HAT_P  = 1.0_r8
+         BETA_M      = 1.0_r8
+         BETA_HAT_M  = 1.0_r8
 
 !       -------------------
         ENDIF
 !       -------------------
        
        IF (PRESENT(TPHGT).AND.ZZ(K).GE.TPHGT) THEN
-         FLXI(I,J,K) = D0_5*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K)) 
+         FLXI(I,J,K) = 0.5_r8*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K)) 
        ELSE 
        FLXI(I,J,K) = &
-         D0_5*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K))                      &
+            0.5_r8*TEMPX(I,J,K)*(Q(I,J,K+1)+Q(I,J,K))                         &
        - aladv*(UPI(I,J,K)*BETA_P*(Q(I,J,K+1)-Q(I,J,K))                       &
              -UPSRI(I,J,K)*UPSRI(I,J,K-1)*BETA_HAT_P*(Q(I,J,K)-Q(I,J,K-1))    &
              +UMI(I,J,K)*BETA_M*(Q(I,J,K)-Q(I,J,K+1))                         &
              +UMSRI(I,J,K)*UMSRI(I,J,K+1)*BETA_HAT_M*(Q(I,J,K+1)-Q(I,J,K+2))) &
-             /D6_0
+             /6.0_r8
        ENDIF      
       ENDDO
 
 !     LEVEL: K=NK1
 !=====================================
-      IF(TEMPX(I,J,NK1).GE.D0_0) THEN
+      IF(TEMPX(I,J,NK1).GE.0.0_r8) THEN
 !=====================================
 !       -------------------
         IF (POSITIVE) THEN
 !       -------------------
          IF (USE_MU) THEN
            MU_P    = fnz(NK1)*ABS(W3D(I,J,NK1))*dt/dz
-           ALPHA_P = (D1_0 + MU_P)/D6_0
-           COEF_P  = (D1_0 - D2_0*ALPHA_P)/(D2_0*ALPHA_P)
+           ALPHA_P = (1.0_r8 + MU_P)/6.0_r8
+           COEF_P  = (1.0_r8 - 2.0_r8*ALPHA_P)/(2.0_r8*ALPHA_P)
          ELSE
-           COEF_P  =  D2_0
+           COEF_P  =  2.0_r8
          ENDIF
 
-         a0 = MAX(Q(I,J,NK1),D0_0)*MAX(Q(I,J,NK2),D0_0)
+         a0 = MAX(Q(I,J,NK1),0.0_r8)*MAX(Q(I,J,NK2),0.0_r8)
 
          GAMMA_P     = P_Z(I,J,NK1)**2/(P_Z(I,J,NK1)**2+a0)
          GAMMA_HAT_P = GAMMA_P
-         BETA_P      = D1_0 + COEF_P*GAMMA_P
-         BETA_HAT_P  = D1_0 - GAMMA_HAT_P
+         BETA_P      = 1.0_r8 + COEF_P*GAMMA_P
+         BETA_HAT_P  = 1.0_r8 - GAMMA_HAT_P
 !       -------------------
         ELSE
 !       -------------------
 
-         BETA_P      = D1_0
-         BETA_HAT_P  = D1_0
+         BETA_P      = 1.0_r8
+         BETA_HAT_P  = 1.0_r8
 !       -------------------
         ENDIF
 !       -------------------
          
          IF (PRESENT(TPHGT).AND.ZZ(NK1).GE.TPHGT) THEN
-           FLXI(I,J,NK1) = D0_5*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
+           FLXI(I,J,NK1) = 0.5_r8*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
          ELSE 
          FLXI(I,J,NK1) = &
-            D0_5*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))                       &
+            0.5_r8*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))                       &
           - aladv*(UPI(I,J,NK1)*BETA_P*(Q(I,J,NK2)-Q(I,J,NK1))                        &
                -UPSRI(I,J,NK1)*UPSRI(I,J,NK1-1)*BETA_HAT_P*(Q(I,J,NK1)-Q(I,J,NK1-1))) &
-               /D6_0
+               /6.0_r8
          ENDIF      
 !=====================================
       ELSE
 !=====================================
 
-         FLXi(I,J,NK1)=D0_5*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
+         FLXi(I,J,NK1)=0.5_r8*TEMPX(I,J,NK1)*(Q(I,J,NK2)+Q(I,J,NK1))
          IF (POSITIVE) THEN
           FLXI(I,J,NK1)=MAX(FLXI(I,J,NK1),-dz*rho(NK2)*Q(I,J,NK2) &
                        /(fnt(NK2)*dt))
@@ -499,9 +493,9 @@ CONTAINS
 
 !     LEVEL: K=KLOW
 !=====================================
-      IF(TEMPX(I,J,KLOW).GE.D0_0) THEN
+      IF(TEMPX(I,J,KLOW).GE.0.0_r8) THEN
 !=====================================
-         FLXI(I,J,KLOW)=D0_5*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
+         FLXI(I,J,KLOW)=0.5_r8*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))
          IF (POSITIVE) THEN
           FLXI(I,J,KLOW)=MIN(FLXI(I,J,KLOW),dz*rho(KLOW)*Q(I,J,KLOW) &
                         /(fnt(KLOW)*dt))
@@ -514,32 +508,32 @@ CONTAINS
 !       -------------------
          IF (USE_MU) THEN
            MU_M    = fnz(KLOW+1)*ABS(W3D(I,J,KLOW+1))*dt/dz
-           ALPHA_M = (D1_0 + MU_M)/D6_0
-           COEF_M  = (D1_0 - D2_0*ALPHA_M)/(D2_0*ALPHA_M)
+           ALPHA_M = (1.0_r8 + MU_M)/6.0_r8
+           COEF_M  = (1.0_r8 - 2.0_r8*ALPHA_M)/(2.0_r8*ALPHA_M)
          ELSE
-           COEF_M  =  D2_0
+           COEF_M  =  2.0_r8
          ENDIF
 
-         a0 = MAX(Q(I,J,KLOW),D0_0)*MAX(Q(I,J,KLOW+1),D0_0)
+         a0 = MAX(Q(I,J,KLOW),0.0_r8)*MAX(Q(I,J,KLOW+1),0.0_r8)
 
          GAMMA_M     = P_Z(I,J,KLOW+1)**2/(P_Z(I,J,KLOW+1)**2+a0)
          GAMMA_HAT_M = GAMMA_M
-         BETA_M      = D1_0 + COEF_M*GAMMA_M
-         BETA_HAT_M  = D1_0 - GAMMA_HAT_M
+         BETA_M      = 1.0_r8 + COEF_M*GAMMA_M
+         BETA_HAT_M  = 1.0_r8 - GAMMA_HAT_M
 !       -------------------
         ELSE
 !       -------------------
-         BETA_M      = D1_0
-         BETA_HAT_M  = D1_0
+         BETA_M      = 1.0_r8
+         BETA_HAT_M  = 1.0_r8
 !       -------------------
         ENDIF  ! POSITIVE
 !       -------------------
 
          FLXI(I,J,KLOW) = &
-           0.5*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))         &
-         - aladv*(UMI(I,J,KLOW)*BETA_M*(Q(I,J,KLOW)-Q(I,J,KLOW+1)) &
+           0.5_r8*TEMPX(I,J,KLOW)*(Q(I,J,KLOW+1)+Q(I,J,KLOW))         &
+         - aladv*(UMI(I,J,KLOW)*BETA_M*(Q(I,J,KLOW)-Q(I,J,KLOW+1))    &
                +UMSRI(I,J,KLOW)*UMSRI(I,J,KLOW+1)*BETA_HAT_M*(Q(I,J,KLOW+1)-Q(I,J,KLOW+2))) &
-               /D6_0
+               /6.0_r8
 !=====================================
       ENDIF
 !=====================================
@@ -548,8 +542,8 @@ CONTAINS
       ENDIF  ! DIV_CAL
 !*********************************
 
-      FLXI(I,J,KLOW-1) = D0_0
-      FLXI(I,J,NK2) = D0_0
+      FLXI(I,J,KLOW-1) = 0.0_r8
+      FLXI(I,J,NK2) = 0.0_r8
 
       DO K=KLOW,NK2
        TERMA(I,J,K)=TERMA(I,J,K)-(FLXI(I,J,K)-FLXI(I,J,K-1))*fnt(K)/dz
@@ -568,7 +562,7 @@ CONTAINS
       ENDIF
 
       DO K=1,KLOW-1
-       TERMA(I,J,K) = D0_0
+       TERMA(I,J,K) = 0.0_r8
       ENDDO
 
       ENDDO  ! I-loop

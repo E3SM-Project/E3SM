@@ -2,7 +2,7 @@ MODULE parmsld
 ! This module declares parameters that describe the main configuration of CRMs.
 ! vert_dimension & channel_dimension must be given.
 
-   USE ppgrid, only: pver
+!! Temp comment-out   USE ppgrid, only: pver
    
 IMPLICIT NONE
 
@@ -24,7 +24,9 @@ IMPLICIT NONE
 !----------------------------------------   
 !  Define the vertical dimension
 !----------------------------------------
-   INTEGER, PARAMETER :: nk1 = pver              ! The numer of vertical levels (q-point) of CRM 
+!!   INTEGER, PARAMETER :: nk1 = pver              ! The numer of vertical levels (q-point) of CRM 
+   INTEGER, PARAMETER :: nk1 = 20
+   
    INTEGER, PARAMETER :: nk2 = nk1+1,nk3=nk1+2
    
    INTEGER, PARAMETER :: nLevel = nk1            ! The numer of vertical levels of vGCM

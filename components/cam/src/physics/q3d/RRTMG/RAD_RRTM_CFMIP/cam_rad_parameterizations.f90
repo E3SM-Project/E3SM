@@ -1,5 +1,5 @@
 module cam_rad_parameterizations
-  use shr_orb_mod
+!JUNG_comment out  use shr_orb_mod
   !
   ! CAM 3.0 parameterizations related to radiation
   !

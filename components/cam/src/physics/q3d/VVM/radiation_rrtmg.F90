@@ -28,7 +28,7 @@
 !      FUSWTOA,  upward shortwave flux at the top of the atmosphere (W/m**2)
 !      FDSWTOA   downward shortwave flux at the top of the atmosphere (W/m**2)
 !------------------------------------------------------------------
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE parmsld,        only: channel_seg_l
       USE constld,        only: pi,pibar,rad2deg
       USE timeinfo,       only: rjday0,rjday,iyr
@@ -54,14 +54,15 @@
       ! Local variables
       INTEGER :: mi1,mj1,num_seg,chp,chn,chl,K
       
-      REAL (KIND=dbl_kind), PARAMETER :: &
-         QVMIN = 1.E-06, &   ! Minimum value of qv used in radiation calculation
-         QCMIN = 1.E-07, &   ! Minimum value of qc used in radiation calculation
-         QIMIN = 1.E-08      ! Minimum value of qi used in radiation calculation
+      REAL (KIND=r8), PARAMETER :: &
+         QVMIN = 1.0D-06, &   ! Minimum value of qv used in radiation calculation
+         QCMIN = 1.0D-07, &   ! Minimum value of qc used in radiation calculation
+         QIMIN = 1.0D-08      ! Minimum value of qi used in radiation calculation
             
 ! Timing variables
       NSTEP  = ITT
-      ICYCLE = 1
+      ICYCLE = 1      ! Substep number within a timestep (inherited from SAM).
+                      ! Fixed as 1 because there is no Substep in VVM. 
      
       DAY0 = REAL(RJDAY0) 
       DAY  = REAL(RJDAY)
@@ -155,7 +156,7 @@
         chl = channel_seg_l*(num_seg-1) + chp
         
         ! Outgoing longwave radiation and other TOA fluxes
-        channel%seg(num_seg)%OLR(chp,chn)     = FULWTOA(chl,chn)
+        channel%seg(num_seg)%OLR(chp,chn)     = netlwUpToa(chl,chn)
         channel%seg(num_seg)%FUSWTOA(chp,chn) = NetswUpToa(chl,chn)
         channel%seg(num_seg)%FDSWTOA(chp,chn) = NetswDownToa(chl,chn)
         channel%seg(num_seg)%FULWTOA(chp,chn) = NetlwUpToa(chl,chn)
@@ -189,7 +190,7 @@
         chl = channel_seg_l*(num_seg-1) + chp
         
         ! Outgoing longwave radiation and other TOA fluxes
-        channel%seg(num_seg)%OLR(chn,chp)     = FULWTOA(chl,chn)
+        channel%seg(num_seg)%OLR(chn,chp)     = netlwUpToa(chl,chn)
         channel%seg(num_seg)%FUSWTOA(chn,chp) = NetswUpToa(chl,chn)
         channel%seg(num_seg)%FDSWTOA(chn,chp) = NetswDownToa(chl,chn)
         channel%seg(num_seg)%FULWTOA(chn,chp) = NetlwUpToa(chl,chn)

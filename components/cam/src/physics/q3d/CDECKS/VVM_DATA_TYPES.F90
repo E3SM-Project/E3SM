@@ -1,6 +1,6 @@
 module vvm_data_types
 
-  USE shr_kind_mod, only: dbl_kind => shr_kind_r8
+  USE shr_kind_mod, only: r8 => shr_kind_r8
   USE parmsld,      only: nVGCM,nVGCM_seg,channel_seg_l, &
                           ntracer,nk1,nk2,nk3,nhalo 
   
@@ -19,7 +19,7 @@ module vvm_data_types
     
     integer :: lsta(nVGCM_seg)        ! starting CRM-point index of a vGCM cell (along a channel)
     integer :: lend(nVGCM_seg)        ! ending CRM-point index of a vGCM cell
-    real (kind=dbl_kind) :: lcen(nVGCM_seg)  ! center CRM-point index of a vGCM cell (vGCM point)
+    real (kind=r8) :: lcen(nVGCM_seg) ! center CRM-point index of a vGCM cell (vGCM point)
 !----------------- 
 !   TIMEINFO
 !-----------------     
@@ -27,334 +27,337 @@ module vvm_data_types
     integer :: imonth                 ! Month of current time step
     integer :: iday                   ! Calendar day of current time step
     
-    real (kind=dbl_kind) :: rjday0    ! Fractional Julian day at the start of the model simulation
-    real (kind=dbl_kind) :: rjday     ! Fractional Julian day of the current model time step
-    real (kind=dbl_kind) :: utc_time  ! UTC time of the current model time step    
+    real (kind=r8) :: rjday0    ! Fractional Julian day at the start of the model simulation
+    real (kind=r8) :: rjday     ! Fractional Julian day of the current model time step
+    real (kind=r8) :: utc_time  ! UTC time of the current model time step    
 
 !-----------------  
 !   BACKGROUND FIELDS
 !-----------------     
     ! Counterparts of Prognostic 3-D thermodynamical variables     
-    real (kind=dbl_kind), pointer :: TH3D_bg(:,:,:)   => NULL() ! potential temperature (K)
-    real (kind=dbl_kind), pointer :: QV3D_bg(:,:,:)   => NULL() ! water vapor mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QC3D_bg(:,:,:)   => NULL() ! cloud water mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QI3D_bg(:,:,:)   => NULL() ! cloud ice mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QR3D_bg(:,:,:)   => NULL() ! rain mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QS3D_bg(:,:,:)   => NULL() ! snow mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QG3D_bg(:,:,:)   => NULL() ! graupel mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QT3D_bg(:,:,:,:) => NULL() ! tracer mixing ratio (kg/kg)  
+    real (kind=r8), pointer :: TH3D_bg(:,:,:)   => NULL() ! potential temperature (K)
+    real (kind=r8), pointer :: QV3D_bg(:,:,:)   => NULL() ! water vapor mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QC3D_bg(:,:,:)   => NULL() ! cloud water mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QI3D_bg(:,:,:)   => NULL() ! cloud ice mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QR3D_bg(:,:,:)   => NULL() ! rain mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QS3D_bg(:,:,:)   => NULL() ! snow mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QG3D_bg(:,:,:)   => NULL() ! graupel mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QT3D_bg(:,:,:,:) => NULL() ! tracer mixing ratio (kg/kg)  
        
     ! Counterparts of Prognostic 3-D dynamical variables
-    real (kind=dbl_kind), pointer :: Z3DX_bg(:,:,:) => NULL() ! x-component of vorticity, dw/dy-dv/dz (1/s)
-    real (kind=dbl_kind), pointer :: Z3DY_bg(:,:,:) => NULL() ! y-component of vorticity, du/dz-dw/dx (1/s)
-    real (kind=dbl_kind), pointer :: Z3DZ_bg(:,:,:) => NULL() ! z-component of vorticity, dv/dx-du/dy (1/s)
+    real (kind=r8), pointer :: Z3DX_bg(:,:,:) => NULL() ! x-component of vorticity, dw/dy-dv/dz (1/s)
+    real (kind=r8), pointer :: Z3DY_bg(:,:,:) => NULL() ! y-component of vorticity, du/dz-dw/dx (1/s)
+    real (kind=r8), pointer :: Z3DZ_bg(:,:,:) => NULL() ! z-component of vorticity, dv/dx-du/dy (1/s)
     
     ! Counterparts of Diagnostic 3-D dynamical variables
-    real (kind=dbl_kind), pointer :: U3DX_bg(:,:,:)    => NULL() ! (contravariant) zonal velocity, u (m/s)
-    real (kind=dbl_kind), pointer :: U3DY_bg(:,:,:)    => NULL() ! (contravariant) meridional velocity, v (m/s)
-    real (kind=dbl_kind), pointer :: U3DX_co_bg(:,:,:) => NULL() ! (covariant) zonal velocity, u (m/s)
-    real (kind=dbl_kind), pointer :: U3DY_co_bg(:,:,:) => NULL() ! (covariant) meridional velocity, v (m/s)
-    real (kind=dbl_kind), pointer :: W3D_bg(:,:,:)     => NULL() ! vertical velocity, w (m/s)
+    real (kind=r8), pointer :: U3DX_bg(:,:,:)    => NULL() ! (contravariant) zonal velocity, u (m/s)
+    real (kind=r8), pointer :: U3DY_bg(:,:,:)    => NULL() ! (contravariant) meridional velocity, v (m/s)
+    real (kind=r8), pointer :: U3DX_co_bg(:,:,:) => NULL() ! (covariant) zonal velocity, u (m/s)
+    real (kind=r8), pointer :: U3DY_co_bg(:,:,:) => NULL() ! (covariant) meridional velocity, v (m/s)
+    real (kind=r8), pointer :: W3D_bg(:,:,:)     => NULL() ! vertical velocity, w (m/s)
     
 !-----------------  
 !   CONST3D
 !-----------------     
     ! Prognostic 3-D thermodynamical variables     
-    real (kind=dbl_kind), pointer :: TH3D(:,:,:)   => NULL() ! potential temperature (K)
-    real (kind=dbl_kind), pointer :: QV3D(:,:,:)   => NULL() ! water vapor mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QC3D(:,:,:)   => NULL() ! cloud water mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QI3D(:,:,:)   => NULL() ! cloud ice mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QR3D(:,:,:)   => NULL() ! rain mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QS3D(:,:,:)   => NULL() ! snow mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QG3D(:,:,:)   => NULL() ! graupel mixing ratio (kg/kg)
-    real (kind=dbl_kind), pointer :: QT3D(:,:,:,:) => NULL() ! tracer mixing ratio (kg/kg)  
+    real (kind=r8), pointer :: TH3D(:,:,:)   => NULL() ! potential temperature (K)
+    real (kind=r8), pointer :: QV3D(:,:,:)   => NULL() ! water vapor mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QC3D(:,:,:)   => NULL() ! cloud water mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QI3D(:,:,:)   => NULL() ! cloud ice mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QR3D(:,:,:)   => NULL() ! rain mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QS3D(:,:,:)   => NULL() ! snow mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QG3D(:,:,:)   => NULL() ! graupel mixing ratio (kg/kg)
+    real (kind=r8), pointer :: QT3D(:,:,:,:) => NULL() ! tracer mixing ratio (kg/kg)  
        
     ! Prognostic 3-D dynamical variables
-    real (kind=dbl_kind), pointer :: Z3DX(:,:,:) => NULL() ! x-component of vorticity, dw/dy-dv/dz (1/s)
-    real (kind=dbl_kind), pointer :: Z3DY(:,:,:) => NULL() ! y-component of vorticity, du/dz-dw/dx (1/s)
-    real (kind=dbl_kind), pointer :: Z3DZ(:,:,:) => NULL() ! z-component of vorticity, dv/dx-du/dy (1/s)
+    real (kind=r8), pointer :: Z3DX(:,:,:) => NULL() ! x-component of vorticity, dw/dy-dv/dz (1/s)
+    real (kind=r8), pointer :: Z3DY(:,:,:) => NULL() ! y-component of vorticity, du/dz-dw/dx (1/s)
+    real (kind=r8), pointer :: Z3DZ(:,:,:) => NULL() ! z-component of vorticity, dv/dx-du/dy (1/s)
     
     ! Diagnostic 3-D dynamical variables
-    real (kind=dbl_kind), pointer :: U3DX(:,:,:)    => NULL() ! (contravariant) zonal velocity, u (m/s)
-    real (kind=dbl_kind), pointer :: U3DY(:,:,:)    => NULL() ! (contravariant) meridional velocity, v (m/s)
-    real (kind=dbl_kind), pointer :: U3DX_CO(:,:,:) => NULL() ! (covariant) zonal velocity, u (m/s)
-    real (kind=dbl_kind), pointer :: U3DY_CO(:,:,:) => NULL() ! (covariant) meridional velocity, v (m/s)
-    real (kind=dbl_kind), pointer :: W3D(:,:,:)     => NULL() ! vertical velocity, w (m/s)
-    real (kind=dbl_kind), pointer :: W3DNM1(:,:,:)  => NULL() ! vertical velocity, w (m/s), in the previous timestep
+    real (kind=r8), pointer :: U3DX(:,:,:)    => NULL() ! (contravariant) zonal velocity, u (m/s)
+    real (kind=r8), pointer :: U3DY(:,:,:)    => NULL() ! (contravariant) meridional velocity, v (m/s)
+    real (kind=r8), pointer :: U3DX_CO(:,:,:) => NULL() ! (covariant) zonal velocity, u (m/s)
+    real (kind=r8), pointer :: U3DY_CO(:,:,:) => NULL() ! (covariant) meridional velocity, v (m/s)
+    real (kind=r8), pointer :: W3D(:,:,:)     => NULL() ! vertical velocity, w (m/s)
+    real (kind=r8), pointer :: W3DNM1(:,:,:)  => NULL() ! vertical velocity, w (m/s), in the previous timestep
     
     ! Diagnostic 2-D dynamical variables (uppermost layer)
-    real (kind=dbl_kind), pointer :: PSI(:,:)    => NULL() ! stream function (m**2/s)
-    real (kind=dbl_kind), pointer :: PSINM1(:,:) => NULL() ! stream function (m**2/s), in the previous timestep
-    real (kind=dbl_kind), pointer :: CHI(:,:)    => NULL() ! velocity potential (m**2/s)
-    real (kind=dbl_kind), pointer :: CHINM1(:,:) => NULL() ! velocity potential (m**2/s), in the previous timestep
+    real (kind=r8), pointer :: PSI(:,:)    => NULL() ! stream function (m**2/s)
+    real (kind=r8), pointer :: PSINM1(:,:) => NULL() ! stream function (m**2/s), in the previous timestep
+    real (kind=r8), pointer :: CHI(:,:)    => NULL() ! velocity potential (m**2/s)
+    real (kind=r8), pointer :: CHINM1(:,:) => NULL() ! velocity potential (m**2/s), in the previous timestep
     
     ! Diagnostic 2-D variables (top or surface) : Add more diagnostics (or remove some)
-    real (kind=dbl_kind), pointer :: TG(:,:)     => NULL() ! ground temperature (K)
-    real (kind=dbl_kind), pointer :: ZROUGH(:,:) => NULL() ! roughness length (m)
-    real (kind=dbl_kind), pointer :: GWET(:,:)   => NULL() ! ground wetness
+    logical, pointer :: LOCEAN(:,:) => NULL()  ! logical variable for being ocean  
     
-    real (kind=dbl_kind), pointer :: UW(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2
-    real (kind=dbl_kind), pointer :: WV(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2
+    real (kind=r8), pointer :: TG(:,:)     => NULL() ! ground temperature (K)
+    real (kind=r8), pointer :: ZROUGH(:,:) => NULL() ! roughness length (m)
+    real (kind=r8), pointer :: GWET(:,:)   => NULL() ! ground wetness
     
-    real (kind=dbl_kind), pointer :: WTH(:,:) => NULL() ! surface heat (potential temp.) flux (kg/m**3)(K)(m/s)
-    real (kind=dbl_kind), pointer :: WQV(:,:) => NULL() ! surface moisture flux (kg/m**3)(kg/kg)(m/s)
+    real (kind=r8), pointer :: UW(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2
+    real (kind=r8), pointer :: WV(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2
+    real (kind=r8), pointer :: UW_CON(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2
+    real (kind=r8), pointer :: WV_CON(:,:) => NULL() ! surface momentum flux (kg/m**3)(m/s)**2    
     
-    real (kind=dbl_kind), pointer :: SPREC(:,:) => NULL() ! surface precipitation rate (kg/m**2/s): sprec*3600. (mm/hr)
+    real (kind=r8), pointer :: WTH(:,:) => NULL() ! surface heat (potential temp.) flux (kg/m**3)(K)(m/s)
+    real (kind=r8), pointer :: WQV(:,:) => NULL() ! surface moisture flux (kg/m**3)(kg/kg)(m/s)
+    
+    real (kind=r8), pointer :: SPREC(:,:) => NULL() ! surface precipitation rate (kg/m**2/s): sprec*3600. (mm/hr)
 
 !-----------------  
 !   CONST3D_Extra
 !-----------------  
     ! alternative space (used in halo_vort & relax_3d): multi-use
-    real (kind=dbl_kind), pointer :: Z3DX0(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: Z3DY0(:,:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: TERM1(:,:,:) => NULL()     
+    real (kind=r8), pointer :: Z3DX0(:,:,:) => NULL() 
+    real (kind=r8), pointer :: Z3DY0(:,:,:) => NULL()  
+    real (kind=r8), pointer :: TERM1(:,:,:) => NULL()     
     
     ! deformation & shear components (used in turbulence and nonlinear diffusion)  
-    real (kind=dbl_kind), pointer :: DEFYZ(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: DEFXZ(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: DEFXY(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: DEFXX(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: DEFYY(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: DEFZZ(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFYZ(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFXZ(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFXY(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFXX(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFYY(:,:,:) => NULL() 
+    real (kind=r8), pointer :: DEFZZ(:,:,:) => NULL() 
 
+    ! turbulence coefficients
+    real (kind=r8), pointer :: RKH(:,:,:) => NULL()
+    real (kind=r8), pointer :: RKM(:,:,:) => NULL() 
+    
     ! coefficients (used in turbulence and diffusion: initially calculated)  
-    real (kind=dbl_kind), pointer :: COEFX(:,:) => NULL()    
-    real (kind=dbl_kind), pointer :: COEFY(:,:) => NULL()    
-    real (kind=dbl_kind), pointer :: COEFA(:,:) => NULL()       
-    real (kind=dbl_kind), pointer :: COEFX_K(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFY_K(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFA_K(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFX_E(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFY_E(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFA_E(:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: COEFX_Z(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFY_Z(:,:) => NULL()  
-    real (kind=dbl_kind), pointer :: COEFA_Z(:,:) => NULL()     
+    real (kind=r8), pointer :: COEFX(:,:) => NULL()    
+    real (kind=r8), pointer :: COEFY(:,:) => NULL()    
+    real (kind=r8), pointer :: COEFA(:,:) => NULL()       
+    real (kind=r8), pointer :: COEFX_K(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFY_K(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFA_K(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFX_E(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFY_E(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFA_E(:,:) => NULL() 
+    real (kind=r8), pointer :: COEFX_Z(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFY_Z(:,:) => NULL()  
+    real (kind=r8), pointer :: COEFA_Z(:,:) => NULL()     
 
     ! coefficients (used in relaxation_3d: initially calculated)
-    real (kind=dbl_kind), pointer :: AGAU_CO(:,:,:) => NULL()
-    real (kind=dbl_kind), pointer :: BGAU_CO(:,:,:) => NULL()
-    real (kind=dbl_kind), pointer :: CGAU_CO(:,:,:) => NULL()
+    real (kind=r8), pointer :: AGAU_CO(:,:,:) => NULL()
+    real (kind=r8), pointer :: BGAU_CO(:,:,:) => NULL()
+    real (kind=r8), pointer :: CGAU_CO(:,:,:) => NULL()
     
     ! coefficients (used in relaxation_2d: initially calculated)
-    real (kind=dbl_kind), pointer :: RX2D_C1(:,:) => NULL()
-    real (kind=dbl_kind), pointer :: RX2D_C2(:,:) => NULL()
+    real (kind=r8), pointer :: RX2D_C1(:,:) => NULL()
+    real (kind=r8), pointer :: RX2D_C2(:,:) => NULL()
     
 !-----------------  
 !   CONST3D_TD    
 !----------------- 
     ! Tendencies used in Adams-Bashforth 2nd-order time scheme (advection).    
-    real (kind=dbl_kind), pointer :: FTH3D(:,:,:,:)   => NULL() ! (K/s) & random perturbation 
-    real (kind=dbl_kind), pointer :: FQV3D(:,:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQC3D(:,:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQI3D(:,:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQR3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
-    real (kind=dbl_kind), pointer :: FQS3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
-    real (kind=dbl_kind), pointer :: FQG3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
-    real (kind=dbl_kind), pointer :: FQT3D(:,:,:,:,:) => NULL()
+    real (kind=r8), pointer :: FTH3D(:,:,:,:)   => NULL() ! (K/s) & random perturbation 
+    real (kind=r8), pointer :: FQV3D(:,:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQC3D(:,:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQI3D(:,:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQR3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
+    real (kind=r8), pointer :: FQS3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
+    real (kind=r8), pointer :: FQG3D(:,:,:,:)   => NULL() ! (kg/kg/s) & falling with terminal velocity
+    real (kind=r8), pointer :: FQT3D(:,:,:,:,:) => NULL()
     
     ! Tendencies used in Adams-Bashforth 2nd-order time scheme (1/s/s) 
     ! (due to advection, stretching, twisting, and Coriolis effect)   
-    real (kind=dbl_kind), pointer :: FZX(:,:,:,:) => NULL() ! x-component of vorticity  
-    real (kind=dbl_kind), pointer :: FZY(:,:,:,:) => NULL() ! y-component of vorticity 
-    real (kind=dbl_kind), pointer :: FZTOP(:,:,:) => NULL() ! z-component of vorticity only at the top layer
+    real (kind=r8), pointer :: FZX(:,:,:,:) => NULL() ! x-component of vorticity  
+    real (kind=r8), pointer :: FZY(:,:,:,:) => NULL() ! y-component of vorticity 
+    real (kind=r8), pointer :: FZTOP(:,:,:) => NULL() ! z-component of vorticity only at the top layer
     
     ! Tendencies due to turbulence.
-    real (kind=dbl_kind), pointer :: THAD3(:,:,:)   => NULL() ! (K/s)
-    real (kind=dbl_kind), pointer :: QVAD3(:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QCAD3(:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QIAD3(:,:,:)   => NULL() ! (kg/kg/s)
-!     real (kind=dbl_kind), pointer :: QRAD3(:,:,:)   => NULL() ! (kg/kg/s)
-!     real (kind=dbl_kind), pointer :: QSAD3(:,:,:)   => NULL() ! (kg/kg/s)
-!     real (kind=dbl_kind), pointer :: QGAD3(:,:,:)   => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QTAD3(:,:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: THAD3(:,:,:)   => NULL() ! (K/s)
+    real (kind=r8), pointer :: QVAD3(:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QCAD3(:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QIAD3(:,:,:)   => NULL() ! (kg/kg/s)
+!     real (kind=r8), pointer :: QRAD3(:,:,:)   => NULL() ! (kg/kg/s)
+!     real (kind=r8), pointer :: QSAD3(:,:,:)   => NULL() ! (kg/kg/s)
+!     real (kind=r8), pointer :: QGAD3(:,:,:)   => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QTAD3(:,:,:,:) => NULL() ! (kg/kg/s)
     
-    real (kind=dbl_kind), pointer :: FZXTB(:,:,:) => NULL() ! x-component of vorticity (1/s/s) 
-    real (kind=dbl_kind), pointer :: FZYTB(:,:,:) => NULL() ! y-component of vorticity (1/s/s) 
-    real (kind=dbl_kind), pointer :: FZTOPB(:,:)  => NULL() ! z-component of vorticity (1/s/s) 
-    
-    real (kind=dbl_kind), pointer :: FU_TB(:,:,:) => NULL() ! x-component of momentum (m/s/s)
-    real (kind=dbl_kind), pointer :: FV_TB(:,:,:) => NULL() ! y-component of momentum (m/s/s)
-    
+    real (kind=r8), pointer :: FZXTB(:,:,:) => NULL() ! x-component of vorticity (1/s/s) 
+    real (kind=r8), pointer :: FZYTB(:,:,:) => NULL() ! y-component of vorticity (1/s/s) 
+    real (kind=r8), pointer :: FZTOPB(:,:)  => NULL() ! z-component of vorticity (1/s/s) 
+        
     ! Tendencies due to buoyancy.
-    real (kind=dbl_kind), pointer :: FZXBU(:,:,:) => NULL() ! x-component of vorticity (1/s/s)
-    real (kind=dbl_kind), pointer :: FZYBU(:,:,:) => NULL() ! y-component of vorticity (1/s/s) 
+    real (kind=r8), pointer :: FZXBU(:,:,:) => NULL() ! x-component of vorticity (1/s/s)
+    real (kind=r8), pointer :: FZYBU(:,:,:) => NULL() ! y-component of vorticity (1/s/s) 
     
     ! Tendencies due to microphysics.
-    real (kind=dbl_kind), pointer :: THAD_MICRO(:,:,:) => NULL() ! (K/s)
-    real (kind=dbl_kind), pointer :: QVAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QCAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QIAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QRAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QSAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: QGAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)   
+    real (kind=r8), pointer :: THAD_MICRO(:,:,:) => NULL() ! (K/s)
+    real (kind=r8), pointer :: QVAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QCAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QIAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QRAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QSAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: QGAD_MICRO(:,:,:) => NULL() ! (kg/kg/s)   
 !-----------------    
 !   Q3D_COUPLE (coupling) 
 !-----------------  
     ! Relaxation time scale, sec 
-    real (kind=dbl_kind), pointer :: TAU_RX_TQ(:,:,:) => NULL() ! for T (Q) 
-    real (kind=dbl_kind), pointer :: TAU_RX_ZX(:,:,:) => NULL() ! for z3dx
-    real (kind=dbl_kind), pointer :: TAU_RX_ZY(:,:,:) => NULL() ! for z3dy
-    real (kind=dbl_kind), pointer :: TAU_RX_ZZ(:,:,:) => NULL() ! for z3dz (top layer only)
+    real (kind=r8), pointer :: TAU_RX_TQ(:,:,:) => NULL() ! for T (Q) 
+    real (kind=r8), pointer :: TAU_RX_ZX(:,:,:) => NULL() ! for z3dx
+    real (kind=r8), pointer :: TAU_RX_ZY(:,:,:) => NULL() ! for z3dy
+    real (kind=r8), pointer :: TAU_RX_ZZ(:,:,:) => NULL() ! for z3dz (top layer only)
     
     ! Tendency due to diabatic effect (coupling) 
-    real (kind=dbl_kind), pointer :: FTH3D_DIA(:,:,:) => NULL() ! (K/s)
-    real (kind=dbl_kind), pointer :: FQV3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQC3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQI3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQR3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQS3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
-    real (kind=dbl_kind), pointer :: FQG3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FTH3D_DIA(:,:,:) => NULL() ! (K/s)
+    real (kind=r8), pointer :: FQV3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQC3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQI3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQR3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQS3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
+    real (kind=r8), pointer :: FQG3D_DIA(:,:,:) => NULL() ! (kg/kg/s)
     
-    real (kind=dbl_kind), pointer :: FQT3D_DIA(:,:,:,:) => NULL()
+    real (kind=r8), pointer :: FQT3D_DIA(:,:,:,:) => NULL()
     
-    real (kind=dbl_kind), pointer :: FU_DIA(:,:,:) => NULL() ! x-component of momentum (m/s/s)
-    real (kind=dbl_kind), pointer :: FV_DIA(:,:,:) => NULL() ! y-component of momentum (m/s/s)
+    real (kind=r8), pointer :: FU_DIA(:,:,:) => NULL() ! x-component of momentum (m/s/s)
+    real (kind=r8), pointer :: FV_DIA(:,:,:) => NULL() ! y-component of momentum (m/s/s)
 !----------------- 
 !   Q3D_EDDY (coupling) 
 !-----------------  
     ! Eddy Components
-    real (kind=dbl_kind), pointer :: TH3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QV3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QC3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QI3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QR3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QS3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QG3D_ED(:,:,:)   => NULL() 
-    real (kind=dbl_kind), pointer :: QT3D_ED(:,:,:,:) => NULL() 
+    real (kind=r8), pointer :: TH3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QV3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QC3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QI3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QR3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QS3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QG3D_ED(:,:,:)   => NULL() 
+    real (kind=r8), pointer :: QT3D_ED(:,:,:,:) => NULL() 
     
-    real (kind=dbl_kind), pointer :: U3DX_ED(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: U3DY_ED(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: W3D_ED(:,:,:)  => NULL() 
+    real (kind=r8), pointer :: U3DX_ED(:,:,:) => NULL() 
+    real (kind=r8), pointer :: U3DY_ED(:,:,:) => NULL() 
+    real (kind=r8), pointer :: W3D_ED(:,:,:)  => NULL() 
     
 !----------------- 
 !   Q3D_EDDY_EFFECT (coupling) 
 !----------------- 
-    real (kind=dbl_kind), pointer :: TH_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QV_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QC_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QI_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QR_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QS_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QG_E1(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QT_E1(:,:,:) => NULL()
+    real (kind=r8), pointer :: TH_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QV_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QC_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QI_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QR_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QS_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QG_E1(:,:)   => NULL()
+    real (kind=r8), pointer :: QT_E1(:,:,:) => NULL()
     
-    real (kind=dbl_kind), pointer :: U_E1(:,:) => NULL()
-    real (kind=dbl_kind), pointer :: V_E1(:,:) => NULL()
+    real (kind=r8), pointer :: U_E1(:,:) => NULL()
+    real (kind=r8), pointer :: V_E1(:,:) => NULL()
     
-    real (kind=dbl_kind), pointer :: TH_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QV_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QC_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QI_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QR_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QS_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QG_E2(:,:)   => NULL()
-    real (kind=dbl_kind), pointer :: QT_E2(:,:,:) => NULL()
+    real (kind=r8), pointer :: TH_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QV_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QC_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QI_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QR_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QS_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QG_E2(:,:)   => NULL()
+    real (kind=r8), pointer :: QT_E2(:,:,:) => NULL()
     
-    real (kind=dbl_kind), pointer :: U_E2(:,:) => NULL()
-    real (kind=dbl_kind), pointer :: V_E2(:,:) => NULL()    
+    real (kind=r8), pointer :: U_E2(:,:) => NULL()
+    real (kind=r8), pointer :: V_E2(:,:) => NULL()    
 
 !----------------- 
 !   Q3D_EDDY_EFFECT (coupling)  2D Variables: e.g., sfx fluxes
 !----------------- 
-    real (kind=dbl_kind), pointer :: SPREC_E0(:) => NULL()
-    real (kind=dbl_kind), pointer :: WTH_E0(:)   => NULL()
-    real (kind=dbl_kind), pointer :: WQV_E0(:)   => NULL()
-    real (kind=dbl_kind), pointer :: UW_E0(:)    => NULL()
-    real (kind=dbl_kind), pointer :: WV_E0(:)    => NULL()
+    real (kind=r8), pointer :: SPREC_E0(:) => NULL()
+    real (kind=r8), pointer :: WTH_E0(:)   => NULL()
+    real (kind=r8), pointer :: WQV_E0(:)   => NULL()
+    real (kind=r8), pointer :: UW_E0(:)    => NULL()
+    real (kind=r8), pointer :: WV_E0(:)    => NULL()
     
 !-----------------    
 !   MAPPING        
 !-----------------  
-    integer :: NFACE,NFACE_M,NFACE_P  ! index of cube face, indices of neighbors (-, +)
-    
     ! Base of curvilinear coordinates, alpha [rad]
-    real (kind=dbl_kind), pointer :: CALPHA_T(:) => NULL() ! at T-point   
-    real (kind=dbl_kind), pointer :: CALPHA_U(:) => NULL() ! at U-point 
-    real (kind=dbl_kind), pointer :: CALPHA_V(:) => NULL() ! at V-point 
-    real (kind=dbl_kind), pointer :: CALPHA_Z(:) => NULL() ! at Z-point     
+    real (kind=r8), pointer :: CALPHA_T(:) => NULL() ! at T-point   
+    real (kind=r8), pointer :: CALPHA_U(:) => NULL() ! at U-point 
+    real (kind=r8), pointer :: CALPHA_V(:) => NULL() ! at V-point 
+    real (kind=r8), pointer :: CALPHA_Z(:) => NULL() ! at Z-point     
     
     ! Base of curvilinear coordinates, beta [rad]
-    real (kind=dbl_kind), pointer :: CBETA_T(:)  => NULL() ! at T-point 
-    real (kind=dbl_kind), pointer :: CBETA_U(:)  => NULL() ! at U-point  
-    real (kind=dbl_kind), pointer :: CBETA_V(:)  => NULL() ! at V-point  
-    real (kind=dbl_kind), pointer :: CBETA_Z(:)  => NULL() ! at Z-point 
+    real (kind=r8), pointer :: CBETA_T(:)  => NULL() ! at T-point 
+    real (kind=r8), pointer :: CBETA_U(:)  => NULL() ! at U-point  
+    real (kind=r8), pointer :: CBETA_V(:)  => NULL() ! at V-point  
+    real (kind=r8), pointer :: CBETA_Z(:)  => NULL() ! at Z-point 
     
     ! Longitude [rad] 
-    real (kind=dbl_kind), pointer :: RLON_T(:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: RLON_U(:,:) => NULL() ! at U-point
-    real (kind=dbl_kind), pointer :: RLON_V(:,:) => NULL() ! at V-point
-    real (kind=dbl_kind), pointer :: RLON_Z(:,:) => NULL() ! at Z-point 
+    real (kind=r8), pointer :: RLON_T(:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: RLON_U(:,:) => NULL() ! at U-point
+    real (kind=r8), pointer :: RLON_V(:,:) => NULL() ! at V-point
+    real (kind=r8), pointer :: RLON_Z(:,:) => NULL() ! at Z-point 
     
     ! Latitude [rad] 
-    real (kind=dbl_kind), pointer :: RLAT_T(:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: RLAT_U(:,:) => NULL() ! at U-point
-    real (kind=dbl_kind), pointer :: RLAT_V(:,:) => NULL() ! at V-point
-    real (kind=dbl_kind), pointer :: RLAT_Z(:,:) => NULL() ! at Z-point 
+    real (kind=r8), pointer :: RLAT_T(:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: RLAT_U(:,:) => NULL() ! at U-point
+    real (kind=r8), pointer :: RLAT_V(:,:) => NULL() ! at V-point
+    real (kind=r8), pointer :: RLAT_Z(:,:) => NULL() ! at Z-point 
     
     ! Coefficient of Coriolis Force defined at Z-point  
-    real (kind=dbl_kind), pointer :: FVAL(:,:) => NULL() 
+    real (kind=r8), pointer :: FVAL(:,:) => NULL() 
     
     ! Jacobian of the transformation
-    real (kind=dbl_kind), pointer :: RG_T (:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: RG_U (:,:) => NULL() ! at U-point
-    real (kind=dbl_kind), pointer :: RG_V (:,:) => NULL() ! at V-point
-    real (kind=dbl_kind), pointer :: RG_Z (:,:) => NULL() ! at Z-point
+    real (kind=r8), pointer :: RG_T (:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: RG_U (:,:) => NULL() ! at U-point
+    real (kind=r8), pointer :: RG_V (:,:) => NULL() ! at V-point
+    real (kind=r8), pointer :: RG_Z (:,:) => NULL() ! at Z-point
     
     ! Coefficients of the contravariant metric tensor
-    real (kind=dbl_kind), pointer :: GCONT_T(:,:,:) => NULL() ! at T-point 
-    real (kind=dbl_kind), pointer :: GCONT_U(:,:,:) => NULL() ! at U-point 
-    real (kind=dbl_kind), pointer :: GCONT_V(:,:,:) => NULL() ! at V-point 
-    real (kind=dbl_kind), pointer :: GCONT_Z(:,:,:) => NULL() ! at Z-point 
+    real (kind=r8), pointer :: GCONT_T(:,:,:) => NULL() ! at T-point 
+    real (kind=r8), pointer :: GCONT_U(:,:,:) => NULL() ! at U-point 
+    real (kind=r8), pointer :: GCONT_V(:,:,:) => NULL() ! at V-point 
+    real (kind=r8), pointer :: GCONT_Z(:,:,:) => NULL() ! at Z-point 
     
     ! Secondary coefficients: used for calculating deformation & vorticity
-    real (kind=dbl_kind), pointer :: RGG_T(:,:,:) => NULL() ! at T-point 
-    real (kind=dbl_kind), pointer :: RGG_U(:,:,:) => NULL() ! at U-point 
-    real (kind=dbl_kind), pointer :: RGG_V(:,:,:) => NULL() ! at V-point 
-    real (kind=dbl_kind), pointer :: RGG_Z(:,:,:) => NULL() ! at Z-point 
+    real (kind=r8), pointer :: RGG_T(:,:,:) => NULL() ! at T-point 
+    real (kind=r8), pointer :: RGG_U(:,:,:) => NULL() ! at U-point 
+    real (kind=r8), pointer :: RGG_V(:,:,:) => NULL() ! at V-point 
+    real (kind=r8), pointer :: RGG_Z(:,:,:) => NULL() ! at Z-point 
     
-    real (kind=dbl_kind), pointer :: GG_T(:,:,:) => NULL() ! at T-point 
-    real (kind=dbl_kind), pointer :: GG_U(:,:,:) => NULL() ! at U-point 
-    real (kind=dbl_kind), pointer :: GG_V(:,:,:) => NULL() ! at V-point 
-    real (kind=dbl_kind), pointer :: GG_Z(:,:,:) => NULL() ! at Z-point 
+    real (kind=r8), pointer :: GG_T(:,:,:) => NULL() ! at T-point 
+    real (kind=r8), pointer :: GG_U(:,:,:) => NULL() ! at U-point 
+    real (kind=r8), pointer :: GG_V(:,:,:) => NULL() ! at V-point 
+    real (kind=r8), pointer :: GG_Z(:,:,:) => NULL() ! at Z-point 
     
     ! Coefficients of Transformation matrix A
-    real (kind=dbl_kind), pointer :: AM_T(:,:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: AM_U(:,:,:) => NULL() ! at U-point
-    real (kind=dbl_kind), pointer :: AM_V(:,:,:) => NULL() ! at V-point
-    real (kind=dbl_kind), pointer :: AM_Z(:,:,:) => NULL() ! at Z-point
+    real (kind=r8), pointer :: AM_T(:,:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: AM_U(:,:,:) => NULL() ! at U-point
+    real (kind=r8), pointer :: AM_V(:,:,:) => NULL() ! at V-point
+    real (kind=r8), pointer :: AM_Z(:,:,:) => NULL() ! at Z-point
     
     ! Coefficients of the inverse of A
-    real (kind=dbl_kind), pointer :: AMI_T(:,:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: AMI_U(:,:,:) => NULL() ! at U-point
-    real (kind=dbl_kind), pointer :: AMI_V(:,:,:) => NULL() ! at V-point
-    real (kind=dbl_kind), pointer :: AMI_Z(:,:,:) => NULL() ! at Z-point
+    real (kind=r8), pointer :: AMI_T(:,:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: AMI_U(:,:,:) => NULL() ! at U-point
+    real (kind=r8), pointer :: AMI_V(:,:,:) => NULL() ! at V-point
+    real (kind=r8), pointer :: AMI_Z(:,:,:) => NULL() ! at Z-point
     
     ! Coefficients of the inverse of A at the 1st halos of vGCM at the Edges 
-    real (kind=dbl_kind) :: AMI_vGCM_halo(4,2)
+    real (kind=r8) :: AMI_vGCM_halo(4,2)
     
     ! Halo points: location & alpha [rad]
     integer, pointer :: IHALO_LOC_T(:,:) => NULL() ! at T-point
     integer, pointer :: IHALO_LOC_Z(:,:) => NULL() ! at Z-point
     
-    real (kind=dbl_kind), pointer :: HALPHA_T(:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: HALPHA_Z(:,:) => NULL() ! at Z-point
+    real (kind=r8), pointer :: HALPHA_T(:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: HALPHA_Z(:,:) => NULL() ! at Z-point
     
     ! Halo points: location & beta [rad]
     integer, pointer :: JHALO_LOC_T(:,:) => NULL() ! at T-point
     integer, pointer :: JHALO_LOC_Z(:,:) => NULL() ! at Z-point
     
-    real (kind=dbl_kind), pointer :: HBETA_T(:,:) => NULL() ! at T-point
-    real (kind=dbl_kind), pointer :: HBETA_Z(:,:) => NULL() ! at Z-point
+    real (kind=r8), pointer :: HBETA_T(:,:) => NULL() ! at T-point
+    real (kind=r8), pointer :: HBETA_Z(:,:) => NULL() ! at Z-point
     
     ! Halo points: mapping rules for vector in T-point
-    real (kind=dbl_kind), pointer :: AM_VORT_ALPHA(:,:,:) => NULL() 
-    real (kind=dbl_kind), pointer :: AM_VORT_BETA(:,:,:)  => NULL() 
+    real (kind=r8), pointer :: AM_VORT_ALPHA(:,:,:) => NULL() 
+    real (kind=r8), pointer :: AM_VORT_BETA(:,:,:)  => NULL() 
 !-----------------    
 !   TOPO
 !----------------- 
     ! Mountain heights
-    real (kind=dbl_kind), pointer :: TOPOZ(:,:) => NULL()
+    real (kind=r8), pointer :: TOPOZ(:,:) => NULL()
 
     ! Vertical level index of mountain top: if hx=1, no mountain
     integer, pointer :: HX(:,:) => NULL()
@@ -395,28 +398,28 @@ module vvm_data_types
 !   RADOUTLD 
 !----------------- 
     ! Diagnostic output from the radiation parameterization.
-    real (kind=dbl_kind), pointer :: FTHRAD(:,:,:) => NULL() ! tendency of potential temp. due to radiation (K/s)
+    real (kind=r8), pointer :: FTHRAD(:,:,:) => NULL() ! tendency of potential temp. due to radiation (K/s)
     
-    real (kind=dbl_kind), pointer :: FULWO(:,:,:)   => NULL() ! upward longwave flux (W/m**2)
-    real (kind=dbl_kind), pointer :: FDLWO(:,:,:)   => NULL() ! downward longwave flux (W/m**2)
-    real (kind=dbl_kind), pointer :: FUSWO(:,:,:)   => NULL() ! upward shortwave flux (W/m**2)
-    real (kind=dbl_kind), pointer :: FDSWO(:,:,:)   => NULL() ! downward shortwave flux (W/m**2)
-    real (kind=dbl_kind), pointer :: DTRADLW(:,:,:) => NULL() ! longwave heating rate (K/s)
-    real (kind=dbl_kind), pointer :: DTRADSW(:,:,:) => NULL() ! shortwave heating rate (K/s)
+    real (kind=r8), pointer :: FULWO(:,:,:)   => NULL() ! upward longwave flux (W/m**2)
+    real (kind=r8), pointer :: FDLWO(:,:,:)   => NULL() ! downward longwave flux (W/m**2)
+    real (kind=r8), pointer :: FUSWO(:,:,:)   => NULL() ! upward shortwave flux (W/m**2)
+    real (kind=r8), pointer :: FDSWO(:,:,:)   => NULL() ! downward shortwave flux (W/m**2)
+    real (kind=r8), pointer :: DTRADLW(:,:,:) => NULL() ! longwave heating rate (K/s)
+    real (kind=r8), pointer :: DTRADSW(:,:,:) => NULL() ! shortwave heating rate (K/s)
       
-    real (kind=dbl_kind), pointer :: WPLIQ(:,:,:) => NULL() ! liquid water path (g/m**2)
-    real (kind=dbl_kind), pointer :: WPICE(:,:,:) => NULL() ! ice water path (g/m**2)
-    real (kind=dbl_kind), pointer :: RELIQ(:,:,:) => NULL() ! effective radius of water (microns)
-    real (kind=dbl_kind), pointer :: REICE(:,:,:) => NULL() ! effective radius of ice (microns)
+    real (kind=r8), pointer :: WPLIQ(:,:,:) => NULL() ! liquid water path (g/m**2)
+    real (kind=r8), pointer :: WPICE(:,:,:) => NULL() ! ice water path (g/m**2)
+    real (kind=r8), pointer :: RELIQ(:,:,:) => NULL() ! effective radius of water (microns)
+    real (kind=r8), pointer :: REICE(:,:,:) => NULL() ! effective radius of ice (microns)
     
-    real (kind=dbl_kind), pointer :: FULWTOA(:,:) => NULL() ! upward longwave flux at the top of the atmosphere (W/m**2)
-    real (kind=dbl_kind), pointer :: FUSWTOA(:,:) => NULL() ! upward shortwave flux at the top of the atmosphere (W/m**2)
-    real (kind=dbl_kind), pointer :: FDSWTOA(:,:) => NULL() ! downward shortwave flux at the top of the atmosphere (W/m**2)
+    real (kind=r8), pointer :: FULWTOA(:,:) => NULL() ! upward longwave flux at the top of the atmosphere (W/m**2)
+    real (kind=r8), pointer :: FUSWTOA(:,:) => NULL() ! upward shortwave flux at the top of the atmosphere (W/m**2)
+    real (kind=r8), pointer :: FDSWTOA(:,:) => NULL() ! downward shortwave flux at the top of the atmosphere (W/m**2)
     
-    real (kind=dbl_kind), pointer :: OLR(:,:) => NULL() ! outgoing long wave radiation (W/m**2)
+    real (kind=r8), pointer :: OLR(:,:) => NULL() ! outgoing long wave radiation (W/m**2)
     
-    real (kind=dbl_kind), pointer :: dtlwavg(:) => NULL() ! area mean of longwave heating rate (K/s)
-    real (kind=dbl_kind), pointer :: dtswavg(:) => NULL() ! area mean of shortwave heating rate (K/s)
+    real (kind=r8), pointer :: dtlwavg(:) => NULL() ! area mean of longwave heating rate (K/s)
+    real (kind=r8), pointer :: dtswavg(:) => NULL() ! area mean of shortwave heating rate (K/s)
 !----------------------------------------------------------------------- 
     
   end type channel_seg_t
@@ -528,12 +531,17 @@ CONTAINS
     allocate(segment%CHINM1(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     
     ! Diagnostic 2-D variables (top or surface) : Add more diagnostics (or remove some)
+    allocate(segment%LOCEAN(1:isize+1,1:jsize+1))
+    
     allocate(segment%TG(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     allocate(segment%ZROUGH(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     allocate(segment%GWET(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo))
     
-    allocate(segment%UW(isize,jsize))
-    allocate(segment%WV(isize,jsize))
+    allocate(segment%UW(isize+1,jsize+1))
+    allocate(segment%WV(isize+1,jsize+1))
+    allocate(segment%UW_CON(isize+1,jsize+1))
+    allocate(segment%WV_CON(isize+1,jsize+1))
+    
     allocate(segment%WTH(isize,jsize))
     allocate(segment%WQV(isize,jsize))
     allocate(segment%SPREC(isize,jsize))
@@ -554,6 +562,10 @@ CONTAINS
     allocate(segment%DEFYY(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo,nk2))
     allocate(segment%DEFZZ(1-nhalo:isize+nhalo,1-nhalo:jsize+nhalo,nk2))
 
+    ! turbulence coefficients
+    allocate(segment%RKH(0:isize+1,0:jsize+1,nk2))
+    allocate(segment%RKM(0:isize+1,0:jsize+1,nk2))
+    
     ! coefficients (used in turbulence and diffusion: initially calculated)  
     allocate(segment%COEFX(isize,jsize))   
     allocate(segment%COEFY(isize,jsize))   
@@ -606,10 +618,7 @@ CONTAINS
     allocate(segment%FZXTB(isize,jsize,nk2))
     allocate(segment%FZYTB(isize,jsize,nk2))
     allocate(segment%FZTOPB(isize,jsize))
-    
-    allocate(segment%FU_TB(isize,jsize,nk2))
-    allocate(segment%FV_TB(isize,jsize,nk2))
-    
+        
     ! Tendencies due to buoyancy.
     allocate(segment%FZXBU(isize,jsize,nk2))
     allocate(segment%FZYBU(isize,jsize,nk2))
@@ -690,8 +699,8 @@ CONTAINS
 !   Q3D_EDDY_EFFECT (coupling)  2D Variables: e.g., sfx fluxes
 !----------------------------------------------------------------------- 
     allocate(segment%SPREC_E0(nVGCM_seg))
-    
     allocate(segment%WTH_E0(nVGCM_seg))
+    
     allocate(segment%WQV_E0(nVGCM_seg))
     allocate(segment%UW_E0(nVGCM_seg))
     allocate(segment%WV_E0(nVGCM_seg))

@@ -1,12 +1,12 @@
 module elliptic
 ! Solve 2D and 3D elliptic equations by iteration method
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk1,nk2,nhalo,nhalo_cal
-USE constld, only: d0_0,d2_0,d4_0,wrxmu,niterw,niterxy,dx,dy,rhoz,fnz,nomap, &  
-                   dxsq,dysq,dxdy
+USE constld, only: wrxmu,niterw,niterxy,dx,dy,dz, &
+                   rho,rhoz,fnt,fnz,nomap,dxsq,dysq,dxdy
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel
@@ -27,9 +27,6 @@ CONTAINS
 ! SUBROUTINE relax_2d  : Solve 2D elliptic equations by iteration method
 ! SUBROUTINE GAUSS_LD  : Gauss elimination
 !-----------------------------------------------------------------------
-!     D0_0  = 0.0_dbl_kind
-!     D2_0  = 2.0_dbl_kind
-!     D4_0  = 4.0_dbl_kind
 
 !=======================================================================
       SUBROUTINE RELAX_3D (channel)
@@ -42,14 +39,14 @@ CONTAINS
       type(channel_t), intent(inout) :: channel   ! channel data
       
       ! Local variables
-      REAL (kind=dbl_kind), DIMENSION(NK2) :: &
+      REAL (kind=r8), DIMENSION(NK2) :: &
          AGAU,        & ! coefficient a in gaussian elimination
          BGAU,        & ! coefficient b in gaussian elimination
          CGAU           ! coefficient c in gaussian elimination         
 
-      REAL (kind=dbl_kind) :: RHSV(NK2),ROUT(NK2)
+      REAL (kind=r8) :: RHSV(NK2),ROUT(NK2)
       
-      INTEGER :: I,J,K,ITER,KLOW
+      INTEGER :: I,J,K,ITER,KLOW,KLOWU,KLOWV
       INTEGER :: num_seg,mi1,mj1,mim_c,mip_c,mjm_c,mjp_c
 
 !     Pre-process of iteration
@@ -108,12 +105,12 @@ CONTAINS
            +channel%seg(num_seg)%GG_V(2,I+1,J-1)*channel%seg(num_seg)%Z3DX0(I+1,J-1,K)          &
            -channel%seg(num_seg)%GG_V(2,I-1,J)*channel%seg(num_seg)%Z3DX0(I-1,J,K)              &
            -channel%seg(num_seg)%GG_V(2,I-1,J-1)*channel%seg(num_seg)%Z3DX0(I-1,J-1,K))         &
-          /(D4_0*DX)                                                                     &
+          /(4.0_r8*DX)                                                                     &
           +(channel%seg(num_seg)%GG_U(2,I,J+1)*channel%seg(num_seg)%Z3DY0(I,J+1,K)              &
            +channel%seg(num_seg)%GG_U(2,I-1,J+1)*channel%seg(num_seg)%Z3DY0(I-1,J+1,K)          &
            -channel%seg(num_seg)%GG_U(2,I,J-1)*channel%seg(num_seg)%Z3DY0(I,J-1,K)              &
            -channel%seg(num_seg)%GG_U(2,I-1,J-1)*channel%seg(num_seg)%Z3DY0(I-1,J-1,K))         &
-          /(D4_0*DY) 
+          /(4.0_r8*DY) 
         ENDDO
        ENDDO
       ENDDO 
@@ -123,7 +120,7 @@ CONTAINS
        DO J = mjm_c, mjp_c
         DO I = mim_c, mip_c
          channel%seg(num_seg)%Z3DX0(I,J,K) = &
-           D2_0*channel%seg(num_seg)%W3D(I,J,K)-channel%seg(num_seg)%W3DNM1(I,J,K)
+           2.0_r8*channel%seg(num_seg)%W3D(I,J,K)-channel%seg(num_seg)%W3DNM1(I,J,K)
         ENDDO
        ENDDO
       ENDDO
@@ -143,8 +140,6 @@ CONTAINS
         ENDDO
        ENDDO
       ENDDO      
-      
-      ENDIF    
 
 !-------------------------------   
       ENDDO  ! num_seg
@@ -206,7 +201,7 @@ CONTAINS
            *(channel%seg(num_seg)%Z3DY0(I+1,J-1,K)-channel%seg(num_seg)%Z3DY0(I,J-1,K))   &
          -channel%seg(num_seg)%RGG_U(2,I-1,J-1)                                           &
            *(channel%seg(num_seg)%Z3DY0(I,J-1,K)-channel%seg(num_seg)%Z3DY0(I-1,J-1,K)))  &
-         /(D4_0*DXDY)   
+         /(4.0_r8*DXDY)   
         ENDDO 
                 
         CALL GAUSS_LD(KLOW,NK2,AGAU,BGAU,CGAU,RHSV,ROUT)
@@ -254,10 +249,10 @@ CONTAINS
 !     loop 40: pm = g \ u, stored it on pm
 
       integer, intent(in) :: kp2,kmin
-      real (kind=dbl_kind), intent(in) :: zm(kp2),an(kp2),bn(kp2),cn(kp2)
-      real (kind=dbl_kind), intent(out):: pm(kp2)
+      real (kind=r8), intent(in) :: zm(kp2),an(kp2),bn(kp2),cn(kp2)
+      real (kind=r8), intent(out):: pm(kp2)
 
-      real (kind=dbl_kind) :: bn_new(kp2),cn_new(kp2),pm_temp(kp2)
+      real (kind=r8) :: bn_new(kp2),cn_new(kp2),pm_temp(kp2)
       integer :: k
 
       cn_new(kmin) = cn(kmin) / bn(kmin)
@@ -277,7 +272,7 @@ CONTAINS
       pm(k) = pm_temp(k) - cn_new(k) * pm(k+1)
       enddo
       do k = 1, kmin-1
-      pm(k) = D0_0
+      pm(k) = 0.0_r8
       enddo
 
       end subroutine gauss_ld
@@ -303,7 +298,7 @@ CONTAINS
      
       ! Local variables
       LOGICAL :: USE_MU = .TRUE.
-      REAL (kind=dbl_kind) :: COEF0  
+      REAL (kind=r8) :: COEF0  
       
       INTEGER :: I,J,ITER,NITER
       INTEGER :: num_seg,mi1,mj1,mim,mip,mjm,mjp,mim_c,mip_c,mjm_c,mjp_c
@@ -317,7 +312,7 @@ CONTAINS
       IF (USE_MU) THEN
         COEF0 = WRXMU
       ELSE
-        COEF0 = D0_0
+        COEF0 = 0.0_r8
       ENDIF   
 
 !===============================================================================         
@@ -352,7 +347,7 @@ CONTAINS
       ! linear extrapolation of initial guess (temporary use of z3dx0) 
       DO J = mjm, mjp
        DO I = mim, mip
-         channel%seg(num_seg)%Z3DX0(I,J,1) = D2_0*channel%seg(num_seg)%PSI(I,J) &
+         channel%seg(num_seg)%Z3DX0(I,J,1) = 2.0_r8*channel%seg(num_seg)%PSI(I,J) &
                                            - channel%seg(num_seg)%PSINM1(I,J)
        ENDDO
       enddo
@@ -417,7 +412,7 @@ CONTAINS
                                                   -channel%seg(num_seg)%Z3DY0(I,J-1,1))  &
            -channel%seg(num_seg)%RGG_V(2,I,J-1)*(channel%seg(num_seg)%Z3DY0(I,J-1,1)     &
                                                 -channel%seg(num_seg)%Z3DY0(I-1,J-1,1))) &
-           /(D4_0*DXDY) 
+           /(4.0_r8*DXDY) 
        ENDDO         
       ENDDO
       
@@ -474,7 +469,7 @@ CONTAINS
       ! linear extrapolation of initial guess           
       DO J = mjm, mjp
        DO I = mim, mip
-         channel%seg(num_seg)%Z3DX0(I,J,1) = D2_0*channel%seg(num_seg)%CHI(I,J) &
+         channel%seg(num_seg)%Z3DX0(I,J,1) = 2.0_r8*channel%seg(num_seg)%CHI(I,J) &
                                            - channel%seg(num_seg)%CHINM1(I,J)
        ENDDO
       enddo
@@ -539,7 +534,7 @@ CONTAINS
                                           -channel%seg(num_seg)%Z3DY0(I,J-1,1))            &
            -channel%seg(num_seg)%RGG_U(2,I-1,J-1)*(channel%seg(num_seg)%Z3DY0(I,J-1,1)     &
                                           -channel%seg(num_seg)%Z3DY0(I-1,J-1,1)))         &
-           /(D4_0*DXDY) 
+           /(4.0_r8*DXDY) 
        ENDDO         
       ENDDO
       

@@ -1,11 +1,12 @@
 MODULE q3d_effect_module
 ! Contains the programs for calculating CRM effects that will be provided to the GCM
 
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t
       
       USE parmsld, only: nVGCM_seg,netsz,ntracer,nk1,nk2,nk3
-      USE constld, only: d0_0,d0_5,d0_25,dz,physics,fnt,rho,rhoz
+      USE constld, only: dz,physics,fnt,rho,rhoz
+      USE utils,   only: con2rll,cov2rll
       
 IMPLICIT NONE
 PRIVATE
@@ -16,8 +17,8 @@ PUBLIC :: ini_tendency,    & ! initialize tendencies at each CRM timestep
           eddy_prepare,    & ! prepare eddy parts
           cal_eddy_trans,  & ! calculate mean eddy transport effects
           cal_tendency,    & ! calculate mean diabatic tendencies
-          cal_sfc_eft        ! calculate mean sfc fluxes
-
+          cal_sfc_eft,     & ! calculate mean sfc fluxes
+          cal_feedback       ! calculate total feedback (E1)
 CONTAINS
 
 !================================================================================
@@ -30,7 +31,7 @@ CONTAINS
 !------------------------------------------------------------------------      
       type(channel_t), intent(inout) :: channel   ! Channel data      
 
-#ifndef CAM
+!JUNG #ifndef CAM
       
       INTEGER num_seg
 
@@ -39,41 +40,49 @@ CONTAINS
 !=============================== 
 
       ! total diabatic effects 
-      channel%seg(num_seg)%FTH3D_DIA = D0_0
-      channel%seg(num_seg)%FQV3D_DIA = D0_0
-      channel%seg(num_seg)%FQC3D_DIA = D0_0
-      channel%seg(num_seg)%FQI3D_DIA = D0_0
-      channel%seg(num_seg)%FQR3D_DIA = D0_0
-      channel%seg(num_seg)%FQS3D_DIA = D0_0
-      channel%seg(num_seg)%FQG3D_DIA = D0_0     
-      channel%seg(num_seg)%FQT3D_DIA = D0_0
+      channel%seg(num_seg)%FTH3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQV3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQC3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQI3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQR3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQS3D_DIA = 0.0_r8
+      channel%seg(num_seg)%FQG3D_DIA = 0.0_r8     
+      channel%seg(num_seg)%FQT3D_DIA = 0.0_r8
       
-      channel%seg(num_seg)%FU_DIA = D0_0
-      channel%seg(num_seg)%FV_DIA = D0_0
+      channel%seg(num_seg)%FU_DIA = 0.0_r8
+      channel%seg(num_seg)%FV_DIA = 0.0_r8
       
       ! Microphysical effects      
-      channel%seg(num_seg)%THAD_MICRO = D0_0
-      channel%seg(num_seg)%QVAD_MICRO = D0_0
-      channel%seg(num_seg)%QCAD_MICRO = D0_0
-      channel%seg(num_seg)%QIAD_MICRO = D0_0
-      channel%seg(num_seg)%QSAD_MICRO = D0_0
-      channel%seg(num_seg)%QGAD_MICRO = D0_0
-      channel%seg(num_seg)%QRAD_MICRO = D0_0  
+      channel%seg(num_seg)%THAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QVAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QCAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QIAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QSAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QGAD_MICRO = 0.0_r8
+      channel%seg(num_seg)%QRAD_MICRO = 0.0_r8  
       
       !Turbulent effects      
-      channel%seg(num_seg)%THAD3 = D0_0
-      channel%seg(num_seg)%QVAD3 = D0_0
-      channel%seg(num_seg)%QCAD3 = D0_0
-      channel%seg(num_seg)%QIAD3 = D0_0
-      channel%seg(num_seg)%QTAD3 = D0_0
+      channel%seg(num_seg)%THAD3 = 0.0_r8
+      channel%seg(num_seg)%QVAD3 = 0.0_r8
+      channel%seg(num_seg)%QCAD3 = 0.0_r8
+      channel%seg(num_seg)%QIAD3 = 0.0_r8
+      channel%seg(num_seg)%QTAD3 = 0.0_r8
+      
+      channel%seg(num_seg)%FZXTB  = 0.0_r8
+      channel%seg(num_seg)%FZYTB  = 0.0_r8
+      channel%seg(num_seg)%FZTOPB = 0.0_r8
       
       ! Radiative effects 
-      channel%seg(num_seg)%FTHRAD = D0_0    
+      channel%seg(num_seg)%FTHRAD = 0.0_r8    
+      
+      ! Buoyancy effects
+      channel%seg(num_seg)%FZXBU = 0.0_r8
+      channel%seg(num_seg)%FZYBU = 0.0_r8
       
 !=======================================================================   
       ENDDO   ! num_seg 
 !=======================================================================
-#endif
+!JUNG #endif
 
       END SUBROUTINE ini_tendency
       
@@ -89,53 +98,53 @@ CONTAINS
       
       INTEGER num_seg,num_gcm,nt,k
 
-#ifndef CAM
+!JUNG #ifndef CAM
 !===============================   
       DO num_seg = 1, 4
 !=============================== 
       DO num_gcm = 1,nVGCM_seg   ! # of vGCM points in a segment
       
       DO k = 1,nk2
-       channel%seg(num_seg)%TH_E1(k,num_gcm) = D0_0
-       channel%seg(num_seg)%QV_E1(k,num_gcm) = D0_0
+       channel%seg(num_seg)%TH_E1(k,num_gcm) = 0.0_r8
+       channel%seg(num_seg)%QV_E1(k,num_gcm) = 0.0_r8
 
        DO nt = 1,ntracer
-        channel%seg(num_seg)%QT_E1(k,num_gcm,nt) = D0_0
+        channel%seg(num_seg)%QT_E1(k,num_gcm,nt) = 0.0_r8
        ENDDO
 
-       channel%seg(num_seg)%U_E1(k,num_gcm)  = D0_0
-       channel%seg(num_seg)%V_E1(k,num_gcm)  = D0_0
+       channel%seg(num_seg)%U_E1(k,num_gcm)  = 0.0_r8
+       channel%seg(num_seg)%V_E1(k,num_gcm)  = 0.0_r8
       ENDDO
       
       IF (physics) THEN 
        DO k = 1,nk2
-        channel%seg(num_seg)%QC_E1(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QI_E1(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QR_E1(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QS_E1(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QG_E1(k,num_gcm) = D0_0
+        channel%seg(num_seg)%QC_E1(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QI_E1(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QR_E1(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QS_E1(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QG_E1(k,num_gcm) = 0.0_r8
        ENDDO     
       ENDIF      
 
       DO k = 1,nk2
-       channel%seg(num_seg)%TH_E2(k,num_gcm) = D0_0
-       channel%seg(num_seg)%QV_E2(k,num_gcm) = D0_0
+       channel%seg(num_seg)%TH_E2(k,num_gcm) = 0.0_r8
+       channel%seg(num_seg)%QV_E2(k,num_gcm) = 0.0_r8
 
        DO nt = 1,ntracer
-        channel%seg(num_seg)%QT_E2(k,num_gcm,nt) = D0_0
+        channel%seg(num_seg)%QT_E2(k,num_gcm,nt) = 0.0_r8
        ENDDO
 
-       channel%seg(num_seg)%U_E2(k,num_gcm)  = D0_0
-       channel%seg(num_seg)%V_E2(k,num_gcm)  = D0_0
+       channel%seg(num_seg)%U_E2(k,num_gcm)  = 0.0_r8
+       channel%seg(num_seg)%V_E2(k,num_gcm)  = 0.0_r8
       ENDDO
 
       IF (physics) THEN 
        DO k = 1,nk2
-        channel%seg(num_seg)%QC_E2(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QI_E2(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QR_E2(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QS_E2(k,num_gcm) = D0_0
-        channel%seg(num_seg)%QG_E2(k,num_gcm) = D0_0
+        channel%seg(num_seg)%QC_E2(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QI_E2(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QR_E2(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QS_E2(k,num_gcm) = 0.0_r8
+        channel%seg(num_seg)%QG_E2(k,num_gcm) = 0.0_r8
        ENDDO     
       ENDIF 
       
@@ -144,7 +153,7 @@ CONTAINS
 !===============================
       ENDDO   ! num_seg 
 !===============================         
-#endif
+!JUNG #endif
 
    END SUBROUTINE ini_crm_eft
 
@@ -160,7 +169,7 @@ CONTAINS
 !-------------------------------------------------------------------------
       type(channel_t), intent(inout) :: channel   ! Channel data
       
-#ifndef CAM
+!JUNG #ifndef CAM
 
       ! Local
       integer num_seg,num_gcm
@@ -171,12 +180,12 @@ CONTAINS
       DO num_seg = 1, 4
 !=============================== 
       DO num_gcm = 1,nVGCM_seg   ! # of vGCM points in a segment 
-       channel%seg(num_seg)%SPREC_E0(num_gcm) = D0_0
+       channel%seg(num_seg)%SPREC_E0(num_gcm) = 0.0_r8
 
-       channel%seg(num_seg)%WTH_E0(num_gcm) = D0_0
-       channel%seg(num_seg)%WQV_E0(num_gcm) = D0_0
-       channel%seg(num_seg)%UW_E0(num_gcm)  = D0_0
-       channel%seg(num_seg)%WV_E0(num_gcm)  = D0_0
+       channel%seg(num_seg)%WTH_E0(num_gcm) = 0.0_r8
+       channel%seg(num_seg)%WQV_E0(num_gcm) = 0.0_r8
+       channel%seg(num_seg)%UW_E0(num_gcm)  = 0.0_r8
+       channel%seg(num_seg)%WV_E0(num_gcm)  = 0.0_r8
       ENDDO 
 !===============================   
       ENDDO
@@ -184,9 +193,153 @@ CONTAINS
 
       ENDIF  ! PHYSICS
 
-#endif
+!JUNG #endif
 
    END SUBROUTINE ini_sfc_eft
+
+!================================================================================
+   SUBROUTINE CAL_FEEDBACK (channel)
+!================================================================================
+!  Calculate the total feedback (E1)
+!      = eddy effects (E1) + diabatic effects (E2)
+!  For momentum tendency, mapping is applied to obtain the feedback in RLL coordinates.   
+!--------------------------------------------------------------------------------
+      type(channel_t), intent(inout) :: channel   ! Channel data
+
+!JUNG #ifndef CAM
+
+      ! Local
+      REAL(KIND=r8) VMAP(2)
+      INTEGER k,nt,num_seg,num_gcm,mi1,mj1,lcen1,lcen2,chn
+      
+      chn = 1
+      
+!===============================   
+      DO num_seg = 1, 4
+!=============================== 
+      
+      DO num_gcm = 1,nVGCM_seg 
+       DO K = 2,nk2
+        channel%seg(num_seg)%TH_E1(K,num_gcm)= channel%seg(num_seg)%TH_E1(K,num_gcm) &  
+                                              +channel%seg(num_seg)%TH_E2(K,num_gcm)
+        channel%seg(num_seg)%QV_E1(K,num_gcm)= channel%seg(num_seg)%QV_E1(K,num_gcm) &
+                                              +channel%seg(num_seg)%QV_E2(K,num_gcm)
+       ENDDO
+      ENDDO 
+
+      IF (physics) THEN
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2               
+         channel%seg(num_seg)%QC_E1(K,num_gcm)= channel%seg(num_seg)%QC_E1(K,num_gcm) &
+                                               +channel%seg(num_seg)%QC_E2(K,num_gcm)
+         channel%seg(num_seg)%QI_E1(K,num_gcm)= channel%seg(num_seg)%QI_E1(K,num_gcm) &
+                                               +channel%seg(num_seg)%QI_E2(K,num_gcm)
+         channel%seg(num_seg)%QR_E1(K,num_gcm)= channel%seg(num_seg)%QR_E1(K,num_gcm) &
+                                               +channel%seg(num_seg)%QR_E2(K,num_gcm)
+         channel%seg(num_seg)%QS_E1(K,num_gcm)= channel%seg(num_seg)%QS_E1(K,num_gcm) &
+                                               +channel%seg(num_seg)%QS_E2(K,num_gcm)
+         channel%seg(num_seg)%QG_E1(K,num_gcm)= channel%seg(num_seg)%QG_E1(K,num_gcm) &
+                                               +channel%seg(num_seg)%QG_E2(K,num_gcm)                                                                                                                                                    
+       ENDDO
+      ENDDO  
+      ENDIF         
+
+      DO nt=1,ntracer
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2               
+         channel%seg(num_seg)%QT_E1(K,num_gcm,nt)= channel%seg(num_seg)%QT_E1(K,num_gcm,nt) &
+                                                  +channel%seg(num_seg)%QT_E2(K,num_gcm,nt)
+       ENDDO
+      ENDDO  
+      ENDDO
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2               
+         channel%seg(num_seg)%U_E2(K,num_gcm)= channel%seg(num_seg)%U_E1(K,num_gcm) &
+                                              +channel%seg(num_seg)%U_E2(K,num_gcm)
+         channel%seg(num_seg)%V_E2(K,num_gcm)= channel%seg(num_seg)%V_E1(K,num_gcm) &
+                                              +channel%seg(num_seg)%V_E2(K,num_gcm)                                      
+       ENDDO
+      ENDDO        
+
+!-------------------------------------------------------------
+! Apply mapping to obtain momentum tendency in RLL coordinates
+!-------------------------------------------------------------
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment    
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment  
+      
+      DO num_gcm = 1,nVGCM_seg
+      
+       lcen1 =  INT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+       lcen2 = NINT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+
+!---------------------------- x-channel seg.
+      IF (mi1.GT.mj1) THEN
+!---------------------------- 
+       IF (lcen2 .GT. lcen1) THEN 
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_U(1,lcen1,chn), &
+                          channel%seg(num_seg)%AM_U(2,lcen1,chn), &
+                          channel%seg(num_seg)%AM_U(3,lcen1,chn), &
+                          channel%seg(num_seg)%AM_U(4,lcen1,chn), &
+                          channel%seg(num_seg)%U_E2(K,num_gcm),   &
+                          channel%seg(num_seg)%V_E2(K,num_gcm))
+                        
+           channel%seg(num_seg)%U_E1(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%V_E1(K,num_gcm)= VMAP(2)                                         
+         ENDDO
+       ELSE
+         DO K = 2,nk2     
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_T(1,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(2,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(3,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(4,lcen1,chn), &
+                          channel%seg(num_seg)%U_E2(K,num_gcm),   &
+                          channel%seg(num_seg)%V_E2(K,num_gcm))
+                        
+           channel%seg(num_seg)%U_E1(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%V_E1(K,num_gcm)= VMAP(2)        
+         ENDDO                
+       ENDIF
+!---------------------------- y-channel seg.
+      ELSE
+!---------------------------- 
+       IF (lcen2 .GT. lcen1) THEN 
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_V(1,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(2,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(3,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(4,chn,lcen1), &
+                          channel%seg(num_seg)%U_E2(K,num_gcm),   &
+                          channel%seg(num_seg)%V_E2(K,num_gcm))
+                        
+           channel%seg(num_seg)%U_E1(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%V_E1(K,num_gcm)= VMAP(2)                                         
+         ENDDO        
+       ELSE
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_T(1,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(2,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(3,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(4,chn,lcen1), &
+                          channel%seg(num_seg)%U_E2(K,num_gcm),   &
+                          channel%seg(num_seg)%V_E2(K,num_gcm))
+                        
+           channel%seg(num_seg)%U_E1(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%V_E1(K,num_gcm)= VMAP(2)                                         
+         ENDDO                                
+       ENDIF
+!---------------------------- 
+      ENDIF
+!---------------------------- 
+       
+      ENDDO   ! num_gcm-loop        
+       
+!===============================
+      ENDDO   ! num_seg 
+!=============================== 
+
+END SUBROUTINE cal_feedback
 
 !=======================================================================
    SUBROUTINE EDDY_PREPARE(channel)
@@ -199,7 +352,7 @@ CONTAINS
       integer mi1,mim,mip,mj1,mjm,mjp
       integer num_seg,nt
 
-#ifdef FIXTHIS
+!JUNG #ifdef FIXTHIS
 !=======================================================================   
       DO num_seg = 1, 4
 !=======================================================================
@@ -281,9 +434,9 @@ CONTAINS
     SUBROUTINE GET_EDDY (mi1,mim,mip,mj1,mjm,mjp,nbeg,A,A_BG,A_ED)
     
     INTEGER, INTENT(IN) :: mi1,mim,mip,mj1,mjm,mjp,nbeg
-    REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,nk2),INTENT(IN) :: A
-    REAL (KIND=dbl_kind),DIMENSION(mim:mip,mjm:mjp,nk2),INTENT(IN) :: A_BG
-    REAL (KIND=dbl_kind),DIMENSION(0:mi1,0:mj1,nk2),INTENT(OUT)    :: A_ED
+    REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp,nk2),INTENT(IN) :: A
+    REAL (KIND=r8),DIMENSION(mim:mip,mjm:mjp,nk2),INTENT(IN) :: A_BG
+    REAL (KIND=r8),DIMENSION(0:mi1,0:mj1,nk2),INTENT(OUT)    :: A_ED
     
     INTEGER I,J,K
     
@@ -297,7 +450,7 @@ CONTAINS
     
     END SUBROUTINE get_eddy
 
-#endif
+!JUNG #endif
 
    END SUBROUTINE eddy_prepare
   
@@ -324,12 +477,12 @@ CONTAINS
       
       type(channel_t), intent(inout) :: channel   ! Channel data
 
-#ifndef CAM
+!JUNG #ifndef CAM
 
       integer mi1,mj1
       integer k,nt,num_seg,num_gcm
 
-      REAL (KIND=dbl_kind) :: AVG(nk2,nVGCM_seg)
+      REAL (KIND=r8), DIMENSION(nk2,nVGCM_seg) :: AVG,AOUT
       
 !===============================   
       DO num_seg = 1, 4
@@ -637,8 +790,8 @@ CONTAINS
       CONTAINS
 
        SUBROUTINE CSECT_AVG_Q(lsta,lend,mi1,mj1,A,W,AVG)
-!      input  (A)   : eddy field (q) transported by w'
-!             (W)   : w' 
+!      input  (A)   : eddy field (q) transported by w_prime
+!             (W)   : w_prime
 !      output (AVG) : vertical flux average over a vGCM-cell at w-level (k=2~nk1)  
 
        IMPLICIT NONE 
@@ -648,22 +801,22 @@ CONTAINS
        integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
        integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
        
-       real (kind=dbl_kind), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k,chp
-       real (kind=dbl_kind) :: SUM
+       real (kind=r8) :: SUM
        
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_5*(A(CHP,1,K)+A(CHP,1,K+1))*W(CHP,1,K)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.5_r8*(A(CHP,1,K)+A(CHP,1,K+1))*W(CHP,1,K)
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -673,9 +826,9 @@ CONTAINS
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_5*(A(1,CHP,K)+A(1,CHP,K+1))*W(1,CHP,K)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.5_r8*(A(1,CHP,K)+A(1,CHP,K+1))*W(1,CHP,K)
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -687,8 +840,8 @@ CONTAINS
        END SUBROUTINE csect_avg_q  
        
        SUBROUTINE CSECT_AVG_U(lsta,lend,mi1,mj1,A,W,AVG)
-!      input  (A)   : eddy field (U) transported by w'
-!             (W)   : w' 
+!      input  (A)   : eddy field (U) transported by w_prime
+!             (W)   : w_prime 
 !      output (AVG) : vertical flux average over a vGCM-cell at w-level (k=2~nk1) 
 
        IMPLICIT NONE 
@@ -698,23 +851,23 @@ CONTAINS
        integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
        integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
        
-       real (kind=dbl_kind), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k,chp
-       real (kind=dbl_kind) :: SUM
+       real (kind=r8) :: SUM
        
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_25*(A(CHP,1,K)+A(CHP,1,K+1) &
-                            +A(CHP-1,1,K)+A(CHP-1,1,K+1))*W(CHP,1,K) 
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.25_r8*(A(CHP,1,K)+A(CHP,1,K+1) &
+                              +A(CHP-1,1,K)+A(CHP-1,1,K+1))*W(CHP,1,K) 
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -724,10 +877,10 @@ CONTAINS
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_25*(A(1,CHP,K)+A(1,CHP,K+1) &
-                            +A(0,CHP,K)+A(0,CHP,K+1))*W(1,CHP,K)   
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.25_r8*(A(1,CHP,K)+A(1,CHP,K+1) &
+                              +A(0,CHP,K)+A(0,CHP,K+1))*W(1,CHP,K)   
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -739,8 +892,8 @@ CONTAINS
        END SUBROUTINE csect_avg_u  
        
        SUBROUTINE CSECT_AVG_V(lsta,lend,mi1,mj1,A,W,AVG)
-!      input  (A)   : eddy field (V) transported by w'
-!             (W)   : w' 
+!      input  (A)   : eddy field (V) transported by w_prime
+!             (W)   : w_prime 
 !      output (AVG) : vertical flux average over a vGCM-cell at w-level (k=2~nk1) 
 
        IMPLICIT NONE 
@@ -750,23 +903,23 @@ CONTAINS
        integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
        integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
        
-       real (kind=dbl_kind), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(IN)  :: W(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k,chp
-       real (kind=dbl_kind) :: SUM
+       real (kind=r8) :: SUM
        
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_25*(A(CHP,1,K)+A(CHP,1,K+1) &
-                            +A(CHP,0,K)+A(CHP,0,K+1))*W(CHP,1,K)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.25_r8*(A(CHP,1,K)+A(CHP,1,K+1) &
+                              +A(CHP,0,K)+A(CHP,0,K+1))*W(CHP,1,K)
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -776,10 +929,10 @@ CONTAINS
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
-          SUM = SUM + D0_25*(A(1,CHP,K)+A(1,CHP,K+1) &
-                            +A(1,CHP-1,K)+A(1,CHP-1,K+1))*W(1,CHP,K)  
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
+          SUM = SUM + 0.25_r8*(A(1,CHP,K)+A(1,CHP,K+1) &
+                              +A(1,CHP-1,K)+A(1,CHP-1,K+1))*W(1,CHP,K)  
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
         ENDDO
@@ -798,8 +951,8 @@ CONTAINS
 
        IMPLICIT NONE            
       
-       real (kind=dbl_kind), INTENT(IN)  :: A(nk2,nVGCM_seg)
-       real (kind=dbl_kind), INTENT(OUT) :: AOUT(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(OUT) :: AOUT(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k
@@ -813,7 +966,7 @@ CONTAINS
              
        END SUBROUTINE vert_conv                     
                  
-#endif
+!JUNG #endif
 
    END SUBROUTINE cal_eddy_trans
 
@@ -840,11 +993,11 @@ CONTAINS
       
       type(channel_t), intent(inout) :: channel   ! Channel data      
 
-#ifndef CAM
+!JUNG #ifndef CAM
       integer mi1,mj1
       integer k,nt,num_seg,num_gcm
 
-      REAL (KIND=dbl_kind) :: AVG(nk2,nVGCM_seg)
+      REAL (KIND=r8) :: AVG(nk2,nVGCM_seg)
 
 !===============================   
       DO num_seg = 1, 4
@@ -1041,20 +1194,20 @@ CONTAINS
        integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
        integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
        
-       real (kind=dbl_kind), INTENT(IN)  :: A(mi1,mj1,nk2)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(mi1,mj1,nk2)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
        integer n_gcm,k,chp
-       real (kind=dbl_kind) :: SUM
+       real (kind=r8) :: SUM
        
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk2
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
           SUM = SUM + A(CHP,1,K)
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
@@ -1065,8 +1218,8 @@ CONTAINS
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk2
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
           SUM = SUM + A(1,CHP,K)
          ENDDO       
          AVG(k,n_gcm) = SUM/FLOAT(netsz)
@@ -1077,7 +1230,8 @@ CONTAINS
 !---------------------------------                
        
        END SUBROUTINE csect_avg_3d 
-#endif
+!JUNG #endif
+
    END SUBROUTINE cal_tendency
 
 !================================================================================
@@ -1087,6 +1241,7 @@ CONTAINS
 !  Average (over a channel segment & a GCM timestep) is provided to a GCM grid
 !------------------------------------------------------------------------
 !  IN: SPREC, WTH, WQV, UW, WV (channel)
+!      Note: UW and WV are in the form of covariant components.
 !
 !  IN/OUT: SPREC_E0, WTH_E0, WQV_E0, UW_E0, WV_E0 (channel)
 !
@@ -1100,13 +1255,14 @@ CONTAINS
 
       type(channel_t), intent(inout) :: channel   ! Channel data
       
-#ifndef CAM
+!JUNG #ifndef CAM
       
       ! Local
-      integer mi1,mj1
-      integer num_seg,num_gcm
-      REAL (KIND=dbl_kind) :: AVG(nVGCM_seg)
-
+      INTEGER mi1,mj1,num_seg,num_gcm,chn,lcen1,lcen2
+      REAL (KIND=r8) AVG(nVGCM_seg),VMAP(2)
+      
+      chn = 1
+      
       IF (physics) THEN
       
 !===============================   
@@ -1184,6 +1340,70 @@ CONTAINS
         channel%seg(num_seg)%WV_E0(num_gcm)/FLOAT(INUM)
       
       ENDDO
+      
+      ! Map the surface fluxes of momentum (covariant to RLL) 
+      DO num_gcm = 1,nVGCM_seg
+       lcen1 =  INT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+       lcen2 = NINT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+
+!---------------------------- 
+      IF (mi1.GT.mj1) THEN
+!---------------------------- x-channel seg.
+
+       IF (lcen2 .GT. lcen1) THEN        
+           VMAP = COV2RLL(channel%seg(num_seg)%AMI_U(1,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_U(2,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_U(3,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_U(4,lcen1,chn), &
+                          channel%seg(num_seg)%UW_E0(num_gcm),     &
+                          channel%seg(num_seg)%WV_E0(num_gcm))
+                          
+           channel%seg(num_seg)%UW_E0(num_gcm)= VMAP(1)
+           channel%seg(num_seg)%WV_E0(num_gcm)= VMAP(2)                                             
+       ELSE
+           VMAP = COV2RLL(channel%seg(num_seg)%AMI_T(1,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_T(2,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_T(3,lcen1,chn), &
+                          channel%seg(num_seg)%AMI_T(4,lcen1,chn), &
+                          channel%seg(num_seg)%UW_E0(num_gcm),     &
+                          channel%seg(num_seg)%WV_E0(num_gcm))
+                          
+           channel%seg(num_seg)%UW_E0(num_gcm)= VMAP(1)
+           channel%seg(num_seg)%WV_E0(num_gcm)= VMAP(2)                           
+       ENDIF
+
+!---------------------------- 
+      ELSE
+!---------------------------- y-channel seg.
+
+       IF (lcen2 .GT. lcen1) THEN 
+           VMAP = COV2RLL(channel%seg(num_seg)%AMI_V(1,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_V(2,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_V(3,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_V(4,chn,lcen1), &
+                          channel%seg(num_seg)%UW_E0(num_gcm),     &
+                          channel%seg(num_seg)%WV_E0(num_gcm))
+                          
+           channel%seg(num_seg)%UW_E0(num_gcm)= VMAP(1)
+           channel%seg(num_seg)%WV_E0(num_gcm)= VMAP(2)                                              
+         
+       ELSE
+           VMAP = COV2RLL(channel%seg(num_seg)%AMI_T(1,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_T(2,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_T(3,chn,lcen1), &
+                          channel%seg(num_seg)%AMI_T(4,chn,lcen1), &
+                          channel%seg(num_seg)%UW_E0(num_gcm),     &
+                          channel%seg(num_seg)%WV_E0(num_gcm))
+                          
+           channel%seg(num_seg)%UW_E0(num_gcm)= VMAP(1)
+           channel%seg(num_seg)%WV_E0(num_gcm)= VMAP(2)              
+       ENDIF
+
+!---------------------------- 
+      ENDIF
+!---------------------------- 
+      ENDDO   ! num_gcm-loop
+
 !*****************
       ENDIF
 !*****************
@@ -1206,19 +1426,19 @@ CONTAINS
        integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
        integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
        
-       real (kind=dbl_kind), INTENT(IN)  :: A(mi1,mj1)
-       real (kind=dbl_kind), INTENT(OUT) :: AVG(nVGCM_seg)
+       real (kind=r8), INTENT(IN)  :: A(mi1,mj1)
+       real (kind=r8), INTENT(OUT) :: AVG(nVGCM_seg)
        
        ! Local
        integer n_gcm,chp
-       real (kind=dbl_kind) :: SUM
+       real (kind=r8) :: SUM
        
 !--------------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !--------------------------------------       
        DO n_gcm = 1,nVGCM_seg 
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
           SUM = SUM + A(CHP,1)
          ENDDO       
          AVG(n_gcm) = SUM/FLOAT(netsz)
@@ -1227,8 +1447,8 @@ CONTAINS
        else                  ! y-array
 !--------------------------------------   
        DO n_gcm = 1,nVGCM_seg 
-         SUM = D0_0 
-         DO CHP = ista(n_gcm),iend(n_gcm)
+         SUM = 0.0_r8 
+         DO CHP = lsta(n_gcm),lend(n_gcm)
           SUM = SUM + A(1,CHP)
          ENDDO       
          AVG(n_gcm) = SUM/FLOAT(netsz)
@@ -1238,7 +1458,7 @@ CONTAINS
 !--------------------------------------               
        END SUBROUTINE csect_avg_2d 
        
-#endif
+!JUNG #endif
 
    END SUBROUTINE cal_sfc_eft
 

@@ -1,7 +1,7 @@
 MODULE damping
 ! Rayleigh-type Gravity Wave Damping in the upper layers 
 
-      USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+      USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t 
       
       USE parmsld, only: nk1,nk2
@@ -29,7 +29,7 @@ CONTAINS
 
 !     Local variables 
       INTEGER :: I, J, K, mi1, mj1, num_seg
-      REAL (KIND=dbl_kind) :: CGR
+      REAL (KIND=r8) :: CGR
 
 !**********************************************************************   
       DO num_seg = 1, 4
@@ -88,7 +88,7 @@ CONTAINS
       
 !     Local variables   
       INTEGER :: num_seg,mi1,mj1,I,J,K
-      REAL (KIND=dbl_kind) :: CGR,TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
+      REAL (KIND=r8) :: CGR,TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
 
 !**********************************************************************   
       DO num_seg = 1, 4

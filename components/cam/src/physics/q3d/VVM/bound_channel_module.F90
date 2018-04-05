@@ -8,7 +8,7 @@ MODULE bound_channel_module
 ! For z3dz & psi, the possibility of overlap at the Edge is considered (data shift).
 ! (In the stand-alone version, bound_sync & data shift are done in halo_z.)
 
-USE shr_kind_mod,   only: dbl_kind => shr_kind_r8
+USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld,        only: ntracer,nk1,nk2
@@ -41,7 +41,7 @@ CONTAINS
       INTEGER, INTENT(IN) :: num_halo
       type(channel_t), INTENT(INOUT) :: channel   ! channel data
       
-      LOGICAL, INTENT(IN), OPTIONAL :: TH3D,QV3,QT3D,QC3D,QI3D,QR3D,QS3D,QG3D, &
+      LOGICAL, INTENT(IN), OPTIONAL :: TH3D,QV3D,QT3D,QC3D,QI3D,QR3D,QS3D,QG3D, &
                                        W3D,Z3DX,Z3DY,Z3DZ, &
                                        PSI,CHI,TOPOZ,ZROUGH,GWET,TG
 
@@ -656,10 +656,10 @@ CONTAINS
 !     (SEG1: Face 4, SEG2: Face 1, SEG3: Face 2, SEG4: Face 3)
       
       INTEGER, INTENT(IN) :: mi1_1,mim_1,mip_1,mj1_1,mjm_1,mjp_1,num_halo,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A4
       
       INTEGER :: chl,chl_p,chl_m,chl_rev,chw,chwm,chwp
       INTEGER :: nn,chn,k          
@@ -702,10 +702,10 @@ CONTAINS
 !     Same as HALO_GROUP1, but used for a 2D variable. 
       
       INTEGER, INTENT(IN) :: mi1_1,mim_1,mip_1,mj1_1,mjm_1,mjp_1,num_halo       
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A4
       
       INTEGER :: chl,chl_p,chl_m,chl_rev,chw,chwm,chwp
       INTEGER :: nn,chn          
@@ -747,10 +747,10 @@ CONTAINS
 !     (SEG1: Face 6, SEG2: Face 1, SEG3: Face 5, SEG4: Face 3)
       
       INTEGER, INTENT(IN) :: mi1_1,mim_1,mip_1,mj1_1,mjm_1,mjp_1,num_halo,ksize       
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A4
       
       LOGICAL, INTENT(IN), OPTIONAL :: OVERLAP
       
@@ -817,10 +817,10 @@ CONTAINS
 !     Same as HALO_GROUP2, but used for a 2D variable. 
       
       INTEGER, INTENT(IN) :: mi1_1,mim_1,mip_1,mj1_1,mjm_1,mjp_1,num_halo      
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A4
       
       LOGICAL, INTENT(IN), OPTIONAL :: OVERLAP
       
@@ -890,10 +890,10 @@ CONTAINS
       INTEGER, INTENT(IN) :: mi1_4,mim_4,mip_4,mj1_4,mjm_4,mjp_4
       INTEGER, INTENT(IN) :: num_halo,ksize 
             
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_2:mip_2,mjm_2:mjp_2,ksize), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_4:mip_4,mjm_4:mjp_4,ksize), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1,ksize), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_2:mip_2,mjm_2:mjp_2,ksize), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3,ksize), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_4:mip_4,mjm_4:mjp_4,ksize), INTENT(INOUT) :: A4
       
       LOGICAL, INTENT(IN), OPTIONAL :: OVERLAP
       
@@ -1008,7 +1008,7 @@ CONTAINS
           A4(chl_m,chn,K) = A1(chn,nn,K)
         ENDDO
         ENDDO  
-      ENDDO           
+      ENDDO  ! nn-loop           
                          
       end subroutine halo_group3 
       
@@ -1027,10 +1027,10 @@ CONTAINS
       INTEGER, INTENT(IN) :: mi1_4,mim_4,mip_4,mj1_4,mjm_4,mjp_4
       INTEGER, INTENT(IN) :: num_halo
             
-      REAL (kind=dbl_kind), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
-      REAL (kind=dbl_kind), DIMENSION(mim_2:mip_2,mjm_2:mjp_2), INTENT(INOUT) :: A2
-      REAL (kind=dbl_kind), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
-      REAL (kind=dbl_kind), DIMENSION(mim_4:mip_4,mjm_4:mjp_4), INTENT(INOUT) :: A4
+      REAL (kind=r8), DIMENSION(mim_1:mip_1,mjm_1:mjp_1), INTENT(INOUT) :: A1
+      REAL (kind=r8), DIMENSION(mim_2:mip_2,mjm_2:mjp_2), INTENT(INOUT) :: A2
+      REAL (kind=r8), DIMENSION(mim_3:mip_3,mjm_3:mjp_3), INTENT(INOUT) :: A3
+      REAL (kind=r8), DIMENSION(mim_4:mip_4,mjm_4:mjp_4), INTENT(INOUT) :: A4
 
       LOGICAL, INTENT(IN), OPTIONAL :: OVERLAP
       
@@ -1081,7 +1081,6 @@ CONTAINS
         ENDDO       
       ENDIF
                  
-      ENDDO  ! nn-loop  
 !---------------------------- 
       ! Seg 2 (x-array)
 !----------------------------      
@@ -1107,7 +1106,6 @@ CONTAINS
         ENDDO        
       ENDIF  
              
-      ENDDO  ! nn-loop 
 !---------------------------- 
       ! Seg 4 (x-array)
 !----------------------------      
