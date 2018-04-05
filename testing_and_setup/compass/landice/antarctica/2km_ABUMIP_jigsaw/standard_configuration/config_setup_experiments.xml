@@ -12,7 +12,6 @@
         <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
         <!--        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/> -->
         <add_link source_path="script_test_dir" source="Antarctica-1km.BISICLES.CISM-style.nc" dest="ais_input_data.nc"/>
-        <add_link source_path="script_test_dir" source="antarctica_8km_2014_01_14.nc" dest="ais_lowres_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais2km-MESH.msh" dest="."/>
 
 <!--
@@ -63,9 +62,9 @@
 
                 <!-- Add thickness to landice mesh -->
                 <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
-                        <argument flag="-s">ais_lowres_input_data.nc</argument>
+                        <argument flag="-s">ais_input_data.nc</argument>
                         <argument flag="-d">li_full.nc</argument>
-                        <argument flag="-m">d</argument>
+                        <argument flag="-m">b</argument>
                         <argument flag="--thickness-only"></argument>
                 </step>
 
@@ -101,7 +100,7 @@
                 <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
                         <argument flag="-s">ais_input_data.nc</argument>
                         <argument flag="-d">ais_2_to_20_km.nc</argument>
-                        <argument flag="-m">d</argument>
+                        <argument flag="-m">b</argument>
                 </step>
 
 
