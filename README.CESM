@@ -44,3 +44,4 @@ component tags
 
 7) copy your sandbox to a new tag in the repository
 > svn copy . $SVNREPO/ccsm4/tags/ccsm4_0_alpha## -m "created tag ccsm4_0_alpha##"
+
