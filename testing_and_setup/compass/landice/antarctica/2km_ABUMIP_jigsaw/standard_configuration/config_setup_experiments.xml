@@ -94,6 +94,7 @@
                         <argument flag="-l">10</argument>
                         <argument flag="--beta"></argument>
                         <argument flag="--thermal"></argument>
+                        <argument flag="--obs"></argument>
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->
