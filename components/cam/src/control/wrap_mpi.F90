@@ -1284,6 +1284,9 @@
 #if defined( WRAP_MPI_TIMING )
    call t_stopf ('mpi_win_create')
 #endif
+#else
+   win = -1
+   write(iulog,*)'warning: creating MPI2 window without MPI2 macro,win=',win
 #endif
 
    return
