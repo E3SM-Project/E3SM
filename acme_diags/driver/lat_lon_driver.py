@@ -46,6 +46,14 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
         'rmse': float(rmse(test_regrid, ref_regrid)),
         'corr': float(corr(test_regrid, ref_regrid))
     }
+
+    t_r_mean = metrics_dict['test_regrid']['mean']
+    r_r_mean = metrics_dict['ref_regrid']['mean']
+    d_mean = metrics_dict['diff']['mean']
+    print('test_regrid_mean: {}'.format(t_r_mean))
+    print('ref_regrid_mean: {}'.format(r_r_mean))
+    print('diff_mean: {}'.format(d_mean))
+    print('(test_regrid_mean - ref_regrid_mean) == diff_mean: {} == {}'.format(t_r_mean-r_r_mean, d_mean))
     return metrics_dict
 
 
@@ -249,6 +257,11 @@ def run_diag(parameter):
                         mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                         mv2_reg = MV2.masked_where(land_mask, mv2_reg)
 
+                    mean_mv1_reg = mean(mv1_reg)
+                    mean_mv2_reg = mean(mv2_reg)
+                    mean_mv1_reg_minus_mv2_reg = mean(mv1_reg - mv2_reg)
+                    print('mean(mv1_reg) - mean(mv2_reg): {}'.format(mean_mv1_reg - mean_mv2_reg))
+                    print('mean(mv1_reg - mv2_reg): {}'.format(mean_mv1_reg_minus_mv2_reg))
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
