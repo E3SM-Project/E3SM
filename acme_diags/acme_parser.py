@@ -239,6 +239,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--no_viewer',
+            dest='no_viewer',
+            help="Don't generate the viewer.",
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
             '--debug',
             dest='debug',
             help='Turns debugging on, allows code to prematurely break.',
