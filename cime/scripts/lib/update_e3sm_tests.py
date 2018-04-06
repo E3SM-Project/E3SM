@@ -80,8 +80,7 @@ _TEST_SUITES = {
                              ),
 
     "e3sm_atm_developer" : (None, None,
-                            ("SMS_D_Ln5.ne4_ne4.FC5",
-                             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
+                            ("ERP_Ln9.ne4_ne4.FC5AV1C-L",
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
                              ("SMS.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                              "SMS_R_Ld5.T42_T42.FSCM5A97",
@@ -89,8 +88,7 @@ _TEST_SUITES = {
                             ),
 
     "e3sm_atm_integration" : (None, None,
-                              ("ERS_Ln9.ne4_ne4.FC5" ,
-                               "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
+                              ("ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
                                ("PET_Ln5.ne4_ne4.FC5AV1C-L","mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
