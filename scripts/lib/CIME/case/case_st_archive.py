@@ -625,3 +625,6 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
             self.submit(resubmit=True)
 
     return True
+
+def test_st_archive(self):
+    pass
