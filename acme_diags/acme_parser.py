@@ -107,10 +107,10 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
-            '-r', '--region',
+            '-r', '--regions',
             nargs='+',
-            dest='region',
-            help='region to use',
+            dest='regions',
+            help='regions to use',
             required=False)
 
         self.add_argument(
