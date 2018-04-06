@@ -1,5 +1,66 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 4-06-2018
+Tag: cime5.4.0-alpha.28
+Answer Changes: None
+Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio 
+       scripts_regression_tests.py
+       code_checker
+Dependencies:
+
+Brief Summary:
+    - py3 fix
+    - Fix for ERI test.
+    - More fixes for archiver and tests.
+    - cime_bisect improvements.
+    - ERS and ERI tests need skip_pnl=False.
+    - More fixes related to cesm testing.
+    - CESM test fixes.
+    - Refactor crucial run_sub_or_cmd method.
+    - Restore shell batch capability.
+
+User interface changes: 
+    - New custom script option.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+35fd3d1 py3 fix
+6c6d3b5 Merge pull request #2429 from jedwards4b/eri_fix
+83ef1ba Merge pull request #2426 from jedwards4b/archiver_and_test_fixes
+58f020d Merge pull request #2425 from ESMCI/jgfouca/cime_bisect_improvements
+3c3fdeb Merge pull request #2424 from jedwards4b/cesm_sta_fixes
+603d5da Merge pull request #2423 from jedwards4b/cesm_sta_fixes
+fc83e87 Merge pull request #2422 from jedwards4b/cesm_sta_fixes
+7602f4b Merge pull request #2420 from ESMCI/jgfouca/refactor_run_sub_or_cmd
+d9e3cdf Merge pull request #2419 from ESMCI/jgfouca/restore_shell_batch
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_archive.xml
+M       scripts/Tools/cime_bisect
+M       scripts/Tools/mkSrcfiles
+M       scripts/lib/CIME/SystemTests/eri.py
+M       scripts/lib/CIME/SystemTests/erp.py
+M       scripts/lib/CIME/SystemTests/ers.py
+M       scripts/lib/CIME/SystemTests/irt.py
+M       scripts/lib/CIME/SystemTests/nck.py
+M       scripts/lib/CIME/SystemTests/seq.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/case/case_run.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/utils.py
+M       src/drivers/mct/cime_config/config_archive.xml
+M       src/share/util/shr_scam_mod.F90
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 4-03-2018
 Tag: cime5.4.0-alpha.27
