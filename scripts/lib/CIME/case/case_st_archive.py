@@ -9,6 +9,8 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force, safe_copy
 from CIME.date                      import get_file_date
+from CIME.XML.archive       import Archive
+from CIME.XML.files            import Files
 from os.path                        import isdir, join
 
 logger = logging.getLogger(__name__)
@@ -626,5 +628,30 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
 
     return True
 
-def test_st_archive(self):
-    pass
+def test_st_archive(self, testdir="st_archive_test"):
+    archive = Archive()
+    files = Files()
+    config_archive_files = archive.get_all_config_archive_files(files)
+    # create the run directory testdir and populate it with rest_file and hist_file from
+    # config_archive.xml test_file_names
+    for config_archive_file in config_archive_files:
+        archive = Archive(infile=config_archive_file, files=files)
+        comp_archive_specs = archive.get_children("comp_archive_spec")
+        for comp_archive_spec in comp_archive_specs:
+            test_file_names = archive.get_optional_child("test_file_names", root=comp_archive_spec)
+            if test_file_names is not None:
+                if not os.path.exists(testdir):
+                    os.makedirs(os.path.join(testdir,"archive"))
+
+                for rest_file_node in archive.get_children("rest_file", root=test_file_names):
+                    with open(os.path.join(testdir,archive.text(rest_file_node)), 'w') as fd:
+                        fd.write(archive.get(rest_file_node,"disposition")+"\n")
+
+                for hist_file_node in archive.get_children("hist_file", root=test_file_names):
+                    with open(os.path.join(testdir,archive.text(hist_file_node)), 'w') as fd:
+                        fd.write(archive.get(hist_file_node,"disposition")+"\n")
+
+    print "{}".format( len(comp_archive_specs))
+
+#        print " {} {}".format(len(config_archive_files), config_archive_files)
+    return True

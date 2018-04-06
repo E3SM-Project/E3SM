@@ -53,11 +53,10 @@ class Archive(GenericXML):
                 logger.debug("adding archive spec for {}".format(comp))
                 env_archive.add_child(specs, root=components_node)
 
-    def _get_all_config_archive_files(self):
+    def get_all_config_archive_files(self, files):
         """
         Returns the list of ARCHIVE_SPEC_FILES that exist on disk as defined in config_files.xml
         """
-        files = Files()
         archive_spec_node = files.get_child("entry", {"id" : "ARCHIVE_SPEC_FILE"})
         component_nodes = files.get_children("value", root=files.get_child("values", root=archive_spec_node))
         config_archive_files = []
@@ -81,12 +80,3 @@ class Archive(GenericXML):
                     config_archive_files.append(compval)
 
         return list(set(config_archive_files))
-
-
-
-    def test_st_archive(self):
-        config_archive_files = self._get_all_config_archive_files()
-
-
-        print "{}  {}".format(len(config_archive_files), config_archive_files)
-        return True
