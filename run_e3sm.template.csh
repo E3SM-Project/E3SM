@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.18
+set script_ver = 3.0.20
 
 #===========================================
 # DEFINE ALIASES
@@ -1067,6 +1067,47 @@ if ( `lowercase $short_term_archive_root_dir` != default ) then
   $xmlchange_exe --id DOUT_S_ROOT --val $short_term_archive_root_dir
 endif
 
+set short_term_archive_root_dir = `$xmlquery_exe DOUT_S_ROOT --value`
+
+#==============================
+# SETUP PERMISSIONS FOR SHARING
+#==============================
+
+set group_list = `groups`
+if ( "$group_list" =~ "*${project}*" ) then
+  # Determine what command to use to setup permissions
+  where setfacl > /dev/null
+  if ( $? == 0 ) then
+    # setfacl exists, but may not work depending on kernel configuration
+    # So, verify it works, and if not, just use chgrp
+    set group_perms = "setfacl -Rdm g:${project}:r-x"
+    e3sm_print ${group_perms} ${case_run_dir}
+    ${group_perms} ${case_run_dir}
+    if ( $? != 0 ) then
+      set group_perms = "chgrp ${project}"
+    endif
+    ${group_perms} ${case_run_dir}
+    # Ensure chgrp works also, in case there's something we didn't anticipate
+    if ( $? != 0 ) then
+      unset group_perms
+      e3sm_print "Could not make results accessible to the group, results must be shared manually"
+    endif
+  endif
+
+  if ( $?group_perms ) then
+    # Make results which have been archived accessible to other project members
+    if (! -d ${short_term_archive_root_dir} )then
+      mkdir -p ${short_term_archive_root_dir}
+    endif
+    e3sm_print ${group_perms} ${short_term_archive_root_dir}
+    ${group_perms} ${short_term_archive_root_dir}
+
+    e3sm_print "All project members have been given access to the results of this simulation"
+  endif
+else
+  e3sm_print "${project} not recognized as a group, results must be shared manually"
+endif
+
 #============================================
 # COUPLER HISTORY OUTPUT
 #============================================
@@ -1351,6 +1392,7 @@ e3sm_newline
 # 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
 # 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
 # 3.0.19   2017-12-07    Remove all references to ACME except for online links. Also updates the case.st_archive name again (MD)
+# 3.0.20   2018-04-03    Add in a setfacl command for the run and short term archiving directory (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
