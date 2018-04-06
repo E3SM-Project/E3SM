@@ -988,7 +988,8 @@ contains
           !return : 0, 1, 2, 0, 1, 2 and remap happens for r=1, r=4
           if( mod((r-1), vsplit) == 0 )then
             !remap + forcing
-            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
+            !call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
+            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
         endif !if-statement r == 1
