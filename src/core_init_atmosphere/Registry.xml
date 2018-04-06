@@ -79,7 +79,7 @@
 
         <nml_record name="dimensions" in_defaults="true">
 
-                <nml_option name="config_nvertlevels"           type="integer"       default_value="41"
+                <nml_option name="config_nvertlevels"           type="integer"       default_value="55"
                      units="-"
                      description="The number of vertical levels to be used in the model"
                      possible_values="Positive integer values"/>
