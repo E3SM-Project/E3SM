@@ -1790,7 +1790,7 @@
     </values>
   </entry>
 
-  <entry id="stop_ymd" modify_via_xml="STOP_YMD">
+  <entry id="stop_ymd" modify_via_xml="STOP_DATE">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
