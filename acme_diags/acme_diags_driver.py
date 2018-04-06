@@ -144,15 +144,18 @@ def main():
 
     parameters = _collaspse_results(parameters)
 
-    if parameters:
+    if not parameters:
+        print('There was not a single valid diagnostics run, no viewer created.')
+
+    elif parameters[0].no_viewer:
+        print('Viewer not created because the no_viewer parameter is True.')
+
+    else:
         pth = os.path.join(parameters[0].results_dir, 'viewer')
         if not os.path.exists(pth):
             os.makedirs(pth)
-
         create_viewer(pth, parameters, parameters[0].output_format[0])
 
-    else:
-        print('There was not a single valid diagnostics run, no viewer created')
 
 if __name__ == '__main__':
     main()
