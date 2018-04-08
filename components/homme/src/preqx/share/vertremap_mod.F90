@@ -167,6 +167,8 @@ contains
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
   real (kind=real_kind) :: ps_forcing(np,np)
 
+!  if (hybrid%masterthread) print *,"IN REMAP_VSPLIT_DYN, dt=",dt 
+
   call t_startf('remap_vsplit_dyn')
    do ie=nets,nete
      ps_forcing(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,np1),3)
@@ -209,6 +211,10 @@ contains
      !add forcing to temperature
      elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
 
+!if (hybrid%masterthread) print *,"IN REMAP_ ttmp/dp_star",ttmp(1,1,1,1)/dp_star(1,1,1)
+!if (hybrid%masterthread) print *,"IN REMAP_ ttmp/dp_star*dt",ttmp(1,1,1,1)/dp_star(1,1,1)*dt
+
+
      !remap forcing V
      ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_forcing
      ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_forcing
@@ -220,6 +226,10 @@ contains
      !add forcing back
      elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
      elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)/dp_star(:,:,:)*dt
+
+!if (hybrid%masterthread) print *,"IN REMAP_ vttmp/dp_star",ttmp(1,1,1,1)/dp_star(1,1,1)
+!if (hybrid%masterthread) print *,"IN REMAP_ vttmp/dp_star*dt",ttmp(1,1,1,1)/dp_star(1,1,1)*dt
+
   enddo
   call t_stopf('remap_vsplit_dyn')
   end subroutine remap_vsplit_dyn
