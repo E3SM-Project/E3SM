@@ -932,6 +932,9 @@ contains
 ! sorf out, no vsplit is vsplit=-1 or 0 or either?
     elseif (ftype==2) then
       if( vsplit < 1 )then
+
+!        if (hybrid%masterthread) print *,"case ftype=2, vsplit < 1"
+
         call t_startf("ApplyCAMForcing_dynamics")
         call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
         call t_stopf("ApplyCAMForcing_dynamics")
@@ -966,8 +969,17 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
+
+!    if (hybrid%masterthread) print *,"ftype", ftype
+!    if (hybrid%masterthread) print *,"rsplit,vsplit", rsplit,vsplit
+!    if (hybrid%masterthread) print *,"dt_q", dt_q
+
+
     if(vsplit < 1) then
       ! Loop over rsplit vertically lagrangian timesiteps
+
+!      if (hybrid%masterthread) print *,"vsplit < 1 case, MAIN RUN"
+
       call t_startf("prim_step_rX")
       call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
       call t_stopf("prim_step_rX")
@@ -983,15 +995,27 @@ contains
 !PUT in namelist check that vsplit neq 0?
       !new logic, with vsplit and ftype=2 only for now
       do r=1,rsplit
+
+!      if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN"
+
+!      if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=",r
+ 
         if( r == 1 )then
           !no need to recompute ps_, so, smaller call
+
+!          if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=1"
           call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
         else
           !example: default for ne30 rsplit=6, vsplit=3 then mod(r-1,3) will
           !return : 0, 1, 2, 0, 1, 2 and remap happens for r=1, r=4
+!          if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=",r
+!          if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, mod statement=",mod((r-1), vsplit)
           if( mod((r-1), vsplit) == 0 )then
+            
+!            if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, inside mod statement, apply forcing"
             !remap + forcing
-            !call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
+!            if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUNinside, dt_q*vsplit", dt_q*vsplit
+!            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
             call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
