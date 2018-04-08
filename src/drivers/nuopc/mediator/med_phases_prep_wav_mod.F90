@@ -1,0 +1,159 @@
+module med_phases_prep_wav_mod
+
+  !-----------------------------------------------------------------------------
+  ! Mediator Phases
+  !-----------------------------------------------------------------------------
+
+  use ESMF
+  use NUOPC
+  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
+  use esmFlds                 , only : compatm, compocn, compice, compwav, ncomps, compname 
+  use esmFlds                 , only : fldListFr, fldListTo
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+  use med_constants_mod       , only : med_constants_dbug_flag
+  use med_constants_mod       , only : med_constants_czero
+  use med_merge_mod           , only : med_merge_auto
+  use med_map_mod             , only : med_map_FB_Regrid_Norm 
+  use med_internalstate_mod   , only : InternalState
+
+  implicit none
+  private
+
+  integer           , parameter :: dbug_flag = med_constants_dbug_flag
+  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
+  character(*)      , parameter :: u_FILE_u  = __FILE__
+  integer                       :: dbrc
+  logical                       :: mastertask
+
+  public  :: med_phases_prep_wav
+
+!-----------------------------------------------------------------------------
+  contains
+!-----------------------------------------------------------------------------
+
+  subroutine med_phases_prep_wav(gcomp, rc)
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    ! Prepares the WAV import Fields.
+
+    ! local variables
+    type(ESMF_Clock)            :: clock
+    type(ESMF_Time)             :: time
+    character(len=64)           :: timestr
+    type(InternalState)         :: is_local
+    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
+    integer                     :: i,j,n,n1,ncnt
+    logical,save                :: first_call = .true.
+    character(len=*),parameter  :: subname='(med_phases_prep_wav)'
+    !---------------------------------------
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    rc = ESMF_SUCCESS
+
+    !---------------------------------------
+    ! --- Get the internal state
+    !---------------------------------------
+
+    nullify(is_local%wrap)
+    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    !--- Count the number of fields outside of scalar data, if zero, then return
+    !---------------------------------------
+
+    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
+    ! fieldCount is 0 and not 1 here
+
+    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compwav), fieldCount=ncnt, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ncnt == 0) then
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compwav), returning", &
+               ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       RETURN
+    end if
+
+    !---------------------------------------
+    !--- Get the current time from the clock
+    !---------------------------------------
+
+    call ESMF_GridCompGet(gcomp, clock=clock)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockGet(clock,currtime=time,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet(time,timestring=timestr)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (dbug_flag > 1) then
+       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+
+    if (mastertask) then
+       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    !---------------------------------------
+    !--- map to create FBimp(:,compwav)
+    !---------------------------------------
+
+    do n1 = 1,ncomps
+       if (is_local%wrap%med_coupling_active(n1,compwav)) then
+          call med_map_FB_Regrid_Norm( &
+               fldListFr(n1)%flds, n1, compwav, &
+               is_local%wrap%FBImp(n1,n1), &
+               is_local%wrap%FBImp(n1,compwav), &
+               is_local%wrap%FBFrac(n1), &
+               is_local%wrap%FBNormOne(n1,compwav,:), &
+               is_local%wrap%RH(n1,compwav,:), &
+               string=trim(compname(n1))//'2'//trim(compname(compwav)), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+    enddo
+
+    !---------------------------------------
+    !--- auto merges
+    !---------------------------------------
+
+    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExp(compwav), value=czero, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call med_merge_auto(is_local%wrap%FBExp(compwav), &
+         FB1=is_local%wrap%FBImp(compocn,compwav), &
+         FB2=is_local%wrap%FBImp(compice,compwav), &
+         FB3=is_local%wrap%FBImp(compatm,compwav), &
+         document=first_call, string=subname, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    !--- custom calculations
+    !---------------------------------------
+
+    !---------------------------------------
+    !--- update local scalar data
+    !---------------------------------------
+
+    !is_local%wrap%scalar_data(1) =
+
+    !---------------------------------------
+    !--- clean up
+    !---------------------------------------
+
+    first_call = .false.
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+
+  end subroutine med_phases_prep_wav
+
+end module med_phases_prep_wav_mod

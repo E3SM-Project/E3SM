@@ -1,0 +1,537 @@
+module shr_nuopc_fldList_mod
+
+  use ESMF
+  use NUOPC
+  use shr_kind_mod   , only : CX => shr_kind_CX, CXX => shr_kind_CXX, CS=>shr_kind_CS, CL=>shr_kind_CL
+  use shr_sys_mod    , only : shr_sys_abort
+  use shr_string_mod , only : shr_string_lastindex
+
+  implicit none
+  private
+
+  integer, parameter, public :: CSS = 256  ! use longer short character
+  integer, parameter, public :: CLL = 1024
+
+  public :: shr_nuopc_fldList_Concat
+  public :: shr_nuopc_fldList_Realize
+  public :: shr_nuopc_fldList_AddFld
+  public :: shr_nuopc_fldList_AddDomain
+  public :: shr_nuopc_fldList_AddMetadata
+  public :: shr_nuopc_fldList_AddMap
+  public :: shr_nuopc_fldList_Deactivate
+  public :: shr_nuopc_fldList_GetFldNames
+  public :: shr_nuopc_fldList_GetNumFlds
+  public :: shr_nuopc_fldList_GetFldInfo
+
+  !-----------------------------------------------
+  ! Metadata array
+  !-----------------------------------------------
+
+  character(len=*), parameter  :: undef     = 'undefined'
+  integer         , parameter  :: nmax      = 1000        ! maximum number of entries in metadta_entry
+  integer                      :: n_entries = 0           ! actual number of entries in metadta_entry
+  character(len=CSS)           :: shr_nuopc_fldList_Metadata(nmax,4) = undef
+
+  !-----------------------------------------------
+  ! Maximum number of components, mappers 
+  !-----------------------------------------------
+
+  integer          , public, parameter :: ncomps_max = 8
+  integer          , public, parameter :: mapunset=0
+  integer          , public, parameter :: nmappers=6
+  integer          , public, parameter :: mapbilnr=1
+  integer          , public, parameter :: mapconsf=2
+  integer          , public, parameter :: mapconsd=3
+  integer          , public, parameter :: mappatch=4
+  integer          , public, parameter :: mapfcopy=5
+  integer          , public, parameter :: mapfiler=6
+  character(len=*) , public, parameter :: mapnames(nmappers) = (/'bilnr','consf','consd','patch','fcopy','filer'/)
+
+  !-----------------------------------------------
+  ! Types and instantiations that determine fields, mappings, mergings
+  !-----------------------------------------------
+
+  type shr_nuopc_fldList_entry_type
+     character(CS) :: stdname
+     character(CS) :: shortname
+     logical       :: active = .true.
+     integer       :: mapindex(ncomps_max) = mapunset
+     character(CS) :: mapnorm(ncomps_max) = 'unset'
+     character(CX) :: mapfile(ncomps_max) = 'unset'
+     logical       :: merge_with_weights = .false.
+  end type shr_nuopc_fldList_entry_type
+  public :: shr_nuopc_fldList_entry_type
+
+  type shr_nuopc_fldList_type
+     type (shr_nuopc_fldList_entry_type), pointer :: flds(:)
+  end type shr_nuopc_fldList_type
+  public :: shr_nuopc_fldList_type
+
+  integer           :: dbrc
+  character(len=CL) :: infostr
+
+!================================================================================
+contains
+!================================================================================
+
+  subroutine shr_nuopc_fldList_Concat(fldsFr, fldsTo, concat_src, concat_dst, flds_scalar_name)
+    ! Returns new concatentated colon delimited field lists
+    
+    ! input/output parameters:
+    type(shr_nuopc_fldList_type) , intent(in)    :: fldsFr
+    type(shr_nuopc_fldList_type) , intent(in)    :: fldsTo
+    character(len=*)             , intent(in)    :: flds_scalar_name
+    character(len=*)             , intent(inout) :: concat_src
+    character(len=*)             , intent(inout) :: concat_dst
+    
+    ! local variables
+    integer :: n
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_concat) '
+    !-------------------------------------------------------------------------------
+    
+    do n = 1,size(FldsFr%flds)
+       if (trim(FldsFr%flds(n)%shortname) /= flds_scalar_name) then
+          if (trim(concat_src) == '') then
+             concat_src = trim(FldsFr%flds(n)%shortname)
+          else
+             concat_src = trim(concat_src)//':'//trim(FldsFr%flds(n)%shortname)
+          end if
+       end if
+    end do
+    if (len_trim(concat_src) >= CXX) then
+       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
+    end if
+    
+    do n = 1,size(FldsTo%flds)
+       if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
+          if (trim(concat_dst) == '') then
+             concat_dst = trim(FldsTo%flds(n)%shortname)
+          else
+             concat_dst = trim(concat_dst)//':'//trim(FldsTo%flds(n)%shortname)
+          end if
+       end if
+    end do
+    if (len_trim(concat_dst) >= CXX) then
+       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
+    end if
+    
+  end subroutine shr_nuopc_fldList_Concat
+
+  !===============================================================================
+
+  subroutine shr_nuopc_fldList_AddDomain(fldlist, fldname, longname, stdname, units)
+
+    ! Returns new concatentated field and map lists
+
+    ! input/output parameters:
+    character(len=*),intent(inout)       :: fldlist   ! output field name
+    character(len=*),intent(in)          :: fldname   ! fldname to add to fldlist
+    character(len=*),intent(in),optional :: longname
+    character(len=*),intent(in),optional :: stdname
+    character(len=*),intent(in),optional :: units
+
+    ! local variables
+    character(len=*),parameter :: subname = '(fldList_AddDomain) '
+    !-------------------------------------------------------------------------------
+
+    if (trim(fldlist) == '') then
+       fldlist = trim(fldname)
+    else
+       fldlist = trim(fldlist)//':'//trim(fldname)
+    end if
+
+    if (len_trim(fldlist) >= CXX) then
+       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
+    end if
+
+    if (present(longname) .and. present(stdname) .and. present(units)) then
+       call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    endif
+
+  end subroutine shr_nuopc_fldList_AddDomain
+
+  !===============================================================================
+  
+  subroutine shr_nuopc_fldList_AddMetadata(fldname , longname, stdname, units)
+
+    ! input/output parameters:
+    character(len=*), intent(in) :: fldname
+    character(len=*), intent(in) :: longname
+    character(len=*), intent(in) :: stdname
+    character(len=*), intent(in) :: units
+
+    ! local variables
+    integer :: i, j
+    integer :: rc
+    character(len=*),parameter :: subname = '(fldList_AddMetadata) '
+    !-------------------------------------------------------------------------------
+
+    if (.not.NUOPC_FieldDictionaryHasEntry(fldname)) then
+       call ESMF_LogWrite(subname//': Add:'//trim(fldname), ESMF_LOGMSG_INFO, rc=rc)
+       call NUOPC_FieldDictionaryAddEntry(standardName=fldname, canonicalUnits=units, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    endif
+
+  end subroutine shr_nuopc_fldList_AddMetadata
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_AddFld(flds, stdname, shortname, fldindex, merge_with_weights)
+    ! ----------------------------------------------
+    ! Add an entry to to the flds array
+    ! Use pointers to create an extensible allocatable array.
+    ! to allow the size of flds to grow, the process for
+    ! adding a new field is:
+    ! 1) allocate newflds to be N (one element larger than flds)
+    ! 2) copy flds into first N-1 elements of newflds
+    ! 3) newest flds entry is Nth element of newflds
+    ! 4) deallocate / nullify flds
+    ! 5) point flds => newflds
+    ! ----------------------------------------------
+
+    type(shr_nuopc_fldList_entry_type) , pointer                :: flds(:)
+    character(len=*)                   , intent(in)             :: stdname
+    character(len=*)                   , intent(in)  , optional :: shortname
+    integer                            , intent(out) , optional :: fldindex
+    logical                            , intent(in)  , optional :: merge_with_weights
+
+    ! local variables
+    integer :: n,oldsize,id
+    type(shr_nuopc_fldList_entry_type), pointer :: newflds(:)
+    character(len=*), parameter :: subname='(fldList_AddFld)'
+    ! ----------------------------------------------
+
+    if (associated(flds)) then
+       oldsize = size(flds)
+    else
+       oldsize = 0
+    end if
+    id = oldsize + 1
+
+    ! 1) allocate newfld to be size (one element larger than input flds)
+    allocate(newflds(id))
+
+    ! 2) copy flds into first N-1 elements of newflds
+    do n = 1,oldsize
+       newflds(n)%stdname   = flds(n)%stdname
+       newflds(n)%shortname = flds(n)%shortname
+       newflds(n)%mapindex  = flds(n)%mapindex
+       newflds(n)%mapnorm   = flds(n)%mapnorm
+       newflds(n)%mapfile   = flds(n)%mapfile
+       newflds(n)%merge_with_weights = flds(n)%merge_with_weights
+    end do
+
+    ! 3) deallocate / nullify flds
+    if (oldsize >  0) then
+       deallocate(flds)
+       nullify(flds)
+    end if
+
+    ! 4) point flds => new_flds
+    flds => newflds
+
+    ! 5) now update flds information for new entry
+    flds(id)%stdname   = trim(stdname)
+    if (present(shortname)) then
+       flds(id)%shortname = trim(shortname)
+    else
+       flds(id)%shortname = trim(stdname)
+    end if
+    if (present(fldindex)) then
+       fldindex = id
+    end if
+    if (present(merge_with_weights)) then
+       flds(id)%merge_with_weights = merge_with_weights
+    end if
+
+  end subroutine shr_nuopc_fldList_AddFld
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_AddMap(fld, srccomp, destcomp, mapindex, mapnorm, mapfile)
+    type(shr_nuopc_fldList_entry_type) , intent(inout) :: fld
+    integer                            , intent(in)    :: srccomp
+    integer                            , intent(in)    :: destcomp
+    integer                            , intent(in)    :: mapindex
+    character(len=*)                   , intent(in)    :: mapnorm
+    character(len=*)                   , intent(in)    :: mapfile
+    
+    ! local variables
+    logical :: mapset 
+    character(len=*),parameter  :: subname='(fldList_AddMap)'
+    ! ----------------------------------------------
+
+    ! Note - default values are already set for the fld entries - so only non-default
+    ! values need to be set below
+    ! If mapindex is mapfcopy - create a redistribution route handle
+    ! If mapfile is idmap - create a redistribution route nhandle
+    ! If mapfile is unset then create the mapping route handle at run time
+
+    fld%mapindex(destcomp) = mapindex
+    fld%mapfile(destcomp)  = trim(mapfile)
+    fld%mapnorm(destcomp)  = trim(mapnorm)
+
+    ! overwrite values if appropriate
+    if (fld%mapindex(destcomp) == mapfcopy) then
+       fld%mapfile(destcomp) = 'unset'
+       fld%mapnorm(destcomp) = 'unset'
+    else if (trim(fld%mapfile(destcomp)) == 'idmap') then
+       fld%mapindex(destcomp) = mapfcopy
+       fld%mapnorm(destcomp) = 'unset'
+    end if
+  end subroutine shr_nuopc_fldList_AddMap
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_Realize(state, fldList, flds_scalar_name, flds_scalar_num, &
+       grid, mesh, tag, rc)
+
+    type(ESMF_State)            , intent(inout)            :: state
+    type(shr_nuopc_fldlist_type), intent(in)               :: fldList
+    character(len=*)            , intent(in)               :: flds_scalar_name
+    integer                     , intent(in)               :: flds_scalar_num
+    character(len=*)            , intent(in)               :: tag
+    integer                     , intent(inout)            :: rc
+    type(ESMF_Grid)             , intent(in)    , optional :: grid
+    type(ESMF_Mesh)             , intent(in)    , optional :: mesh
+
+    ! local variables
+    integer                         :: n, nflds
+    integer                         :: itemCount
+    type(ESMF_Field)                :: field
+    character(CS)                   :: shortname
+    character(CS)                   :: stdname
+    character(ESMF_MAXSTR)          :: transferAction
+    character(ESMF_MAXSTR), pointer :: StandardNameList(:)
+    character(ESMF_MAXSTR), pointer :: ConnectedList(:)
+    character(ESMF_MAXSTR), pointer :: NameSpaceList(:)
+    character(ESMF_MAXSTR), pointer :: itemNameList(:)
+    character(len=*),parameter  :: subname='(shr_nuopc_fldList_Realize)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (present(grid) .and. present(mesh)) then
+       call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR both grid and mesh not allowed", &
+            ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+       rc = ESMF_FAILURE
+       return
+    endif
+
+    nullify(StandardNameList)
+    nullify(ConnectedList)
+    nullify(NameSpaceList)
+    nullify(ItemNameList)
+
+    call ESMF_StateGet(state, itemCount=itemCount, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    write(infostr,'(i6)') itemCount
+    call ESMF_LogWrite(trim(subname)//trim(tag)//" count = "//trim(infostr), ESMF_LOGMSG_INFO, rc=dbrc)
+    if (itemCount > 0) then
+       allocate(itemNameList(itemCount))
+       call ESMF_StateGet(state, itemNameList=itemNameList, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+       do n = 1,itemCount
+          call ESMF_LogWrite(trim(subname)//trim(tag)//" itemNameList = "//trim(itemNameList(n)), ESMF_LOGMSG_INFO, rc=dbrc)
+       enddo
+       deallocate(itemNameList)
+    endif
+
+#if (1 == 0)
+    call NUOPC_GetStateMemberLists(state, StandardNameList=StandardNameList, ConnectedList=ConnectedList, &
+         NamespaceList=NamespaceList, itemNameList=itemNameList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    write(infostr,'(i6)') size(StandardNameList)
+    call ESMF_LogWrite(trim(subname)//trim(tag)//" size = "//trim(infostr), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    do n = 1,size(StandardNameList)
+       call ESMF_LogWrite(trim(subname)//trim(tag)//" StandardNameList = "//trim(StandardNameList(n)), &
+            ESMF_LOGMSG_INFO, rc=dbrc)
+    enddo
+    do n = 1,size(ConnectedList)
+       call ESMF_LogWrite(trim(subname)//trim(tag)//" ConnectedList = "//trim(ConnectedList(n)), &
+            ESMF_LOGMSG_INFO, rc=dbrc)
+    enddo
+    do n = 1,size(NamespaceList)
+       call ESMF_LogWrite(trim(subname)//trim(tag)//" NamespaceList = "//trim(NamespaceList(n)), &
+            ESMF_LOGMSG_INFO, rc=dbrc)
+    enddo
+    do n = 1,size(ItemnameList)
+       call ESMF_LogWrite(trim(subname)//trim(tag)//" ItemnameList = "//trim(ItemnameList(n)), &
+            ESMF_LOGMSG_INFO, rc=dbrc)
+    enddo
+#endif
+
+    nflds = size(fldList%flds)
+
+    do n = 1, nflds
+       shortname = fldList%flds(n)%shortname
+
+       if (fldList%flds(n)%active) then
+          ! call ESMF_LogWrite(subname//' fld = '//trim(shortname), ESMF_LOGMSG_INFO, rc=dbrc)
+
+          if (NUOPC_IsConnected(state, fieldName=shortname)) then
+             
+             call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+             call NUOPC_GetAttribute(field, name="TransferActionGeomObject", value=transferAction, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+             if (trim(transferAction) == "accept") then  ! accept
+
+                call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected, grid/mesh TBD", &
+                     ESMF_LOGMSG_INFO, rc=dbrc)
+
+             else   ! provide
+
+                if (shortname == trim(flds_scalar_name)) then
+                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected on root pe", &
+                        ESMF_LOGMSG_INFO, rc=dbrc)
+                   call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                elseif (present(grid)) then
+                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using grid", &
+                        ESMF_LOGMSG_INFO, rc=dbrc)
+                   ! Create the field
+                   field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=shortname,rc=rc)
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                elseif (present(mesh)) then
+                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using mesh", &
+                        ESMF_LOGMSG_INFO, rc=dbrc)
+                   ! Create the field
+                   field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                else
+                   call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR grid or mesh expected", &
+                        ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                   rc = ESMF_FAILURE
+                   return
+                endif
+
+                ! NOW call NUOPC_Realize
+                call NUOPC_Realize(state, field=field, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                ! call ESMF_FieldPrint(field=field, rc=rc)
+                ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+             endif
+
+          else
+             
+             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(shortname) // " is not connected.", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_StateRemove(state, (/shortname/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          end if
+             
+       end if
+    end do
+
+    call ESMF_LogWrite(subname//' done ', ESMF_LOGMSG_INFO, rc=dbrc)
+
+  contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
+      ! ----------------------------------------------
+      ! create a field with scalar data on the root pe
+      ! ----------------------------------------------
+      type(ESMF_Field) , intent(inout) :: field
+      character(len=*) , intent(in)    :: flds_scalar_name
+      integer          , intent(in)    :: flds_scalar_num
+      integer          , intent(inout) :: rc
+
+      ! local variables
+      type(ESMF_Distgrid) :: distgrid
+      type(ESMF_Grid)     :: grid
+      character(len=*), parameter :: subname='(SetScalarField)'
+      ! ----------------------------------------------
+
+      rc = ESMF_SUCCESS
+
+      ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
+      distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      grid = ESMF_GridCreate(distgrid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      field = ESMF_FieldCreate(name=trim(flds_scalar_name), &
+           grid=grid, &
+           typekind=ESMF_TYPEKIND_R8, &
+           ungriddedLBound=(/1/), &
+           ungriddedUBound=(/flds_scalar_num/), rc=rc)  
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    end subroutine SetScalarField
+
+  end subroutine shr_nuopc_fldList_Realize
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_Deactivate(fldList, flds_scalar_name)
+    ! ----------------------------------------------
+    ! set active flag to .false. for all fields other than flds_scalar_name
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type) , intent(in) :: fldList
+    character(len=*)             , intent(in) :: flds_scalar_name
+
+    ! local variables
+    integer :: n
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_Deactivate)'
+    ! ----------------------------------------------
+
+    do n = 1,size(fldList%flds)
+       if (trim(fldList%flds(n)%shortname) /= flds_scalar_name) then
+          fldList%flds(n)%active = .false.
+       end if
+    end do
+  end subroutine shr_nuopc_fldList_Deactivate
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_GetFldInfo(fldList, fldindex, active, stdname, shortname)
+    ! ----------------------------------------------
+    ! Get field info
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type) , intent(in)  :: fldList
+    integer                      , intent(in)  :: fldindex
+    logical                      , intent(out) :: active
+    character(len=*)             , intent(out) :: stdname
+    character(len=*)             , intent(out) :: shortname
+    
+    ! local variables
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo)'
+    ! ----------------------------------------------
+
+    active    = fldList%flds(fldindex)%active
+    stdname   = fldList%flds(fldindex)%stdname
+    shortname = fldList%flds(fldindex)%shortname
+
+  end subroutine shr_nuopc_fldList_GetFldInfo
+
+  !================================================================================
+
+  integer function shr_nuopc_fldList_GetNumFlds(fldList)
+    ! ----------------------------------------------
+    ! Get number of fields
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type), intent(in)  :: fldList
+    shr_nuopc_fldList_GetNumFlds = size(fldList%flds)
+  end function shr_nuopc_fldList_GetNumFlds
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_GetFldNames(flds, fldnames)
+    type(shr_nuopc_fldList_entry_type), intent(in) :: flds(:)
+    character(len=*), pointer :: fldnames(:)
+    integer :: n
+    do n = 1,size(flds)
+       fldnames(n) = trim(flds(n)%shortname)
+    end do
+  end subroutine shr_nuopc_fldList_GetFldNames
+
+end module shr_nuopc_fldList_mod
