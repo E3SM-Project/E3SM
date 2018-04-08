@@ -1,33 +1,20 @@
-!===============================================================================
-!BOP ===========================================================================
-!
-! !MODULE: dead_data_mod -- data declaration
-!
-! !DESCRIPTION:
-!  Declares data that's shared across the init, run, and finalize methods
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-
 MODULE dead_data_mod
 
-! !USES:
+  ! !DESCRIPTION:
+  !  Declares data that's shared across the init, run, and finalize methods
 
-   use shr_kind_mod, only : IN => SHR_KIND_IN
+  ! !USES:
+  use shr_kind_mod, only : IN => SHR_KIND_IN
 
-   implicit none
+  implicit none
 
-! !PUBLIC TYPES:
+  ! !PUBLIC TYPES:
+  ! no public types
 
-   ! no public types
+  ! !PUBLIC MEMBER FUNCTIONS:
+  ! no public functions
 
-! !PUBLIC MEMBER FUNCTIONS:
-
-   ! no public functions
-
-! !PUBLIC DATA MEMBERS:
-
+  ! !PUBLIC DATA MEMBERS:
   integer(IN) :: dead_grid_lat    = 1   ! lat from component
   integer(IN) :: dead_grid_lon    = 2   ! lon from component
   integer(IN) :: dead_grid_area   = 3   ! area from component
@@ -38,7 +25,4 @@ MODULE dead_data_mod
   integer(IN) :: dead_grid_pid    = 8   ! proc id number
   integer(IN) :: dead_grid_total  = 8
 
-!EOP
-
 END MODULE dead_data_mod
-!===============================================================================
