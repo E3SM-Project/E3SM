@@ -4,7 +4,6 @@
 module dwav_comp_mod
 
   ! !USES:
-
   use esmf
   use mct_mod
   use perf_mod
@@ -18,7 +17,8 @@ module dwav_comp_mod
   use shr_strdata_mod   , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
+  use shr_cal_mod       , only: shr_cal_ymdtod2string
+  use seq_timemgr_mod   , only: seq_timemgr_EClockGetData
 
   use dwav_shr_mod   , only: datamode       ! namelist input
   use dwav_shr_mod   , only: decomp         ! namelist input
@@ -92,7 +92,9 @@ CONTAINS
     logical       :: exists    ! file existance
     integer(IN)   :: nu        ! unit number
     character(CL) :: calendar  ! model calendar
-    type(iosystem_desc_t), pointer :: wav_pio_subsystem
+    integer(IN)   :: currentYMD ! model date
+    integer(IN)   :: currentTOD ! model sec into model date
+    logical       :: write_restart
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
@@ -113,8 +115,7 @@ CONTAINS
     ! Initialize pio
     !----------------------------------------------------------------------------
 
-    wav_pio_subsystem => shr_pio_getiosys(trim(inst_name))
-    call shr_strdata_pioinit(SDWAV, wav_pio_subsystem, shr_pio_getiotype(trim(inst_name)))
+    call shr_strdata_pioinit(SDWAV, COMPID)
 
     !----------------------------------------------------------------------------
     ! Initialize SDWAV
@@ -146,12 +147,12 @@ CONTAINS
     call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
+    ! NOTE: gsmap is initialized using the decomp read in from the dwav_in namelist
     ! (which by default is "1d")
     call shr_dmodel_gsmapcreate(gsmap,SDWAV%nxg*SDWAV%nyg,compid,mpicom,decomp)
     lsize = mct_gsmap_lsize(gsmap,mpicom)
 
-    ! create a rearranger from the data model SDOCN%gsmap to gsmap
+    ! create a rearranger from the data model SDWAV%gsmap to gsmap
     call mct_rearr_init(SDWAV%gsmap,gsmap,mpicom,rearr)
 
     write(logunit,*)'lsize= ',lsize
@@ -238,9 +239,15 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
+
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+
+    write_restart = .false.
     call dwav_comp_run(EClock, x2w, w2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit)
+         inst_suffix, logunit, read_restart, write_restart, &
+         currentYMD, currentTOD)
+
     call t_adj_detailf(-2)
 
     if (my_task == master_task) write(logunit, F00) 'dwav_comp_init done'
@@ -251,11 +258,12 @@ CONTAINS
   end subroutine dwav_comp_init
 
   !===============================================================================
+
   subroutine dwav_comp_run(EClock, x2w, w2x, &
        SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, case_name)
+       inst_suffix, logunit, read_restart, write_restart, &
+       currentYMD, currentTOD, case_name)
 
-    use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION:  run method for dwav model
     implicit none
 
@@ -272,17 +280,18 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    logical                , intent(in)    :: read_restart     ! start from restart
+    logical                , intent(in)    :: write_restart    ! write restart
+    integer(IN)            , intent(in)    :: currentYMD       ! model date
+    integer(IN)            , intent(in)    :: currentTOD       ! model sec into model date
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)   :: CurrentYMD            ! model date
-    integer(IN)   :: CurrentTOD            ! model sec into model date
-    integer(IN)   :: yy,mm,dd              ! year month day
+    integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
     integer(IN)   :: n                     ! indices
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
     integer(IN)   :: nu                    ! unit number
-    logical       :: write_restart         ! restart now
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dwav_comp_run) ',8a)"
@@ -293,11 +302,8 @@ CONTAINS
     call t_startf('DWAV_RUN')
 
     call t_startf('dwav_run1')
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
     call seq_timemgr_EClockGetData( EClock, dtime=idt)
     dt = idt * 1.0_r8
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
     call t_stopf('dwav_run1')
 
     !--------------------
@@ -347,6 +353,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dwav_restart')
+       call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
        call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
