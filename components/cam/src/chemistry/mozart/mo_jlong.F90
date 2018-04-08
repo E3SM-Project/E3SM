@@ -14,6 +14,8 @@
 #endif
       use spmd_utils,   only : masterproc
 
+      use perf_mod
+
       implicit none
 
       interface jlong
@@ -353,6 +355,7 @@
       integer :: start(5)
       real(r8) :: wrk
       character(len=256) :: locfn
+      integer :: my1, my2, my3, my4
 
       Masterproc_only : if( masterproc ) then
          !------------------------------------------------------------------------------
@@ -456,12 +459,28 @@
 
          iret = nf90_get_var( ncid, varid, rsf_tab )
          iret = nf90_close( ncid )
-
+          call t_startf("WWWWW0")
+#ifdef CAM_SHAN_OPT
+         do my1 = 1,numalb
+         do my2 = 1,numcolo3
+         do my3 = 1,numsza
+         do my4 = 1,nump
+         do w = 1,nw
+            wrk = wlintv(w)
+            rsf_tab(w,my4,my3,my2, my1) = wrk*rsf_tab(w,my4,my3,my2,my1)
+!            rsf_tab(w,:,:,:,:) = wrk*rsf_tab(w,:,:,:,:)
+         enddo
+         enddo
+         enddo
+         enddo
+         enddo
+#else
          do w = 1,nw
             wrk = wlintv(w)
             rsf_tab(w,:,:,:,:) = wrk*rsf_tab(w,:,:,:,:)
          enddo
-
+#endif
+         call t_stopf("WWWWW0")
       end if Masterproc_only2
 #ifdef SPMD
       call mpibcast( wc,      nw,       mpir8, 0, mpicom )
@@ -471,9 +490,15 @@
       call mpibcast( alb,     numalb,   mpir8, 0, mpicom )
       call mpibcast( o3rat,   numcolo3, mpir8, 0, mpicom )
       call mpibcast( colo3,   nump,     mpir8, 0, mpicom )
+      call t_startf("WWWWW1")
+#ifdef CAM_SHAN_OPT
+      call mpibcast( rsf_tab, nw*numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
+#else
       do w = 1,nw
          call mpibcast( rsf_tab(w,:,:,:,:), numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
       enddo
+#endif
+      call t_stopf("WWWWW1")
 #endif
 #ifdef USE_BDE
       if (masterproc) write(iulog,*) 'Jlong using bdes'

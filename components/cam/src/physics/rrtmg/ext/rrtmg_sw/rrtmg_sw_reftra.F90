@@ -80,27 +80,27 @@
 
       integer, intent(in) :: nlayers
 
-      logical, intent(in) :: lrtchk(:)                           ! Logical flag for reflectivity and
+      logical, contiguous, intent(in) :: lrtchk(:)                           ! Logical flag for reflectivity and
                                                                  ! and transmissivity calculation; 
                                                                  !   Dimensions: (nlayers)
 
-      real(kind=r8), intent(in) :: pgg(:)                      ! asymmetry parameter
+      real(kind=r8), contiguous, intent(in) :: pgg(:)                      ! asymmetry parameter
                                                                  !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: ptau(:)                     ! optical depth
+      real(kind=r8), contiguous, intent(in) :: ptau(:)                     ! optical depth
                                                                  !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: pw(:)                       ! single scattering albedo 
+      real(kind=r8), contiguous, intent(in) :: pw(:)                       ! single scattering albedo 
                                                                  !   Dimensions: (nlayers)
       real(kind=r8), intent(in) :: prmuz                       ! cosine of solar zenith angle
 
 ! ------- Output -------
 
-      real(kind=r8), intent(inout) :: pref(:)                    ! direct beam reflectivity
+      real(kind=r8), contiguous, intent(inout) :: pref(:)                    ! direct beam reflectivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(inout) :: prefd(:)                   ! diffuse beam reflectivity
+      real(kind=r8), contiguous, intent(inout) :: prefd(:)                   ! diffuse beam reflectivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(inout) :: ptra(:)                    ! direct beam transmissivity
+      real(kind=r8), contiguous, intent(inout) :: ptra(:)                    ! direct beam transmissivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(inout) :: ptrad(:)                   ! diffuse beam transmissivity
+      real(kind=r8), contiguous, intent(inout) :: ptrad(:)                   ! diffuse beam transmissivity
                                                                  !   Dimensions: (nlayers+1)
 
 ! ------- Local -------
