@@ -94,7 +94,7 @@
 
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
-		            description="Selection of the method for advecting thickness."
+		            description="Selection of the method for advecting thickness ('fo' = first-order upwinding)."
 		            possible_values="'fo', 'none'"
 		/>
 		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
@@ -111,7 +111,7 @@
 
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
-		            description="Selection of the method for calving ice."
+		            description="Selection of the method for calving ice (as defined further below)."
 		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' "
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
@@ -127,7 +127,7 @@
 		            possible_values="'data' ('eigencalvingParameter' field read from input file), 'scalar' (specified by config_calving_eigencalving_parameter_scalar_value)"
 		/>
                 <nml_option name="config_calving_eigencalving_parameter_scalar_value" type="real" default_value="3.14e16" units="m s"
-		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 ma converted to units used here.)"
+		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)"
 		            possible_values="any positive real number"
 		/>
 		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
@@ -135,7 +135,7 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_calving_timescale" type="real" default_value="0.0" units="s"
-		            description="Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."
+		            description="Defines the timescale for calving. The fraction of eligible ice that calves is min(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."
 		            possible_values="Any non-negative real value"
 		/>
 		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
@@ -146,19 +146,19 @@
 
 	<nml_record name="thermal_solver" in_defaults="true">
 		<nml_option name="config_thermal_solver" type="character" default_value="none" units="unitless"
-		            description="Selection of the method for the vertical thermal solver."
+		            description="Selection of the method for the vertical thermal solver (possible values are described further below)."
 		            possible_values="'none', 'temperature', 'enthalpy'"
                 />
                 <nml_option name="config_thermal_calculate_bmb" type="logical" default_value=".true." units="unitless"
-			description="Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance."
+			description="Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance or be ignored."
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_temperature_init" type="character" default_value="file" units="unitless"
-		            description="Selection of the method for initializing the ice temperature."
+		            description="Selection of the method for initializing the ice temperature (as described further below)."
 		            possible_values="'sfc_air_temperature', 'linear', 'file'"
 		/>
 		<nml_option name="config_thermal_thickness" type="real" default_value="1.0" units="m of ice"
-		            description="Defines the minimum thickness for thermal calculations"
+		            description="Defines the minimum ice thickness for conducting thermal calculations"
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
@@ -186,15 +186,15 @@
 		            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi'"
 		/>
 		<nml_option name="config_basal_mass_bal_seroussi_amplitude" type="real" default_value="0.0" units="m"
-		            description="amplitude on the depth adjustment applied to the Seroussi subglacial melt param."
+		            description="amplitude on the depth adjustment applied to the Seroussi subglacial melt parameterization"
 		            possible_values="any positive real value"
 		/>
                 <nml_option name="config_basal_mass_bal_seroussi_period" type="real" default_value="1.0" units="a"
-		            description="period of the periodic depth adjustment applied to the Seroussi subglacial melt param."
+		            description="period of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization"
 		            possible_values="any positive real value"
 		/>
                 <nml_option name="config_basal_mass_bal_seroussi_phase" type="real" default_value="0.0" units="cycles"
-		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt param. Units are cycles, i.e., 0-1"
+		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
 		/>
 		<nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
@@ -202,22 +202,22 @@
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_bmlt_float_xlimit" type="real" default_value="0.0" units="m"
-		            description="x value defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit."
+		            description="x value defining region where bmlt_float_flux is applied; melt only where abs(x) is greater than xlimit."
 		            possible_values="Any positive real value"
 		/>
 	</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
-		            description="ice density to use"
+		            description="ice density to use (assumed constant and uniform)"
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_ocean_density" type="real" default_value="1028.0" units="kg m^{-3}"
-		            description="ocean density to use for calculating floatation"
+		            description="ocean density to use for calculating floatation (assumed constant and uniform)"
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"
-		            description="sea level to use for calculating floatation"
+		            description="sea level to use for calculating floatation (assumed constant and uniform)"
 		            possible_values="Any real value"
 		/>
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
@@ -233,7 +233,7 @@
 		            possible_values="Any real value"
 		/>
 		<nml_option name="config_dynamic_thickness" type="real" default_value="10.0" units="m of ice"
-		            description="Defines the ice thickness below which dynamics are not calculated."
+		            description="Defines the ice thickness below which dynamics are not calculated (and hence ice velocity is set to 0)."
 		            possible_values="Any positive real value"
 		/>
 	</nml_record>
