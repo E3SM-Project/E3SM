@@ -1120,7 +1120,7 @@ add_default($nl, 'config_AM_timeSeriesStatsCustom_reset_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsCustom_backward_output_offset');
 
 #-----------------------------------------------------------------------------------------------
-# *** Write output namelist file (mpas-cice_in) and input dataset list (mpas--cice.input_data_list) ***
+# *** Write output namelist file (mpas-cice_in) and input dataset list (mpas-cice.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
