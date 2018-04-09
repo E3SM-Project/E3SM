@@ -84,7 +84,7 @@ CONTAINS
 
     ! Retrieve component indices from the time manager
     do ind = 1, desp_num_comps
-      comp_index(ind) = seq_timemgr_pause_component_index(comp_names(ind))
+       comp_index(ind) = seq_timemgr_pause_component_index(comp_names(ind))
     end do
 
   end subroutine esp_init_mct
@@ -140,7 +140,7 @@ CONTAINS
     call seq_infodata_GetData(infodata, case_name=case_name)
     ! Find out if we should be running
     do ind = 1, desp_num_comps
-      pause_sig(ind) = seq_timemgr_pause_component_active(comp_index(ind))
+       pause_sig(ind) = seq_timemgr_pause_component_active(comp_index(ind))
     end do
     call desp_comp_run(EClock, case_name, pause_sig, atm_resume, lnd_resume,  &
          rof_resume, ocn_resume, ice_resume, glc_resume, wav_resume,          &

@@ -3,14 +3,11 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog
-from CIME.case_setup import case_setup
-from CIME.case_run import case_run
-from CIME.case_st_archive import case_st_archive
+from CIME.utils import append_testlog, get_model
 from CIME.test_status import *
-from CIME.check_lockedfiles import *
 from CIME.hist_utils import *
-
+from CIME.provenance import save_test_time
+from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
 import shutil, glob, gzip, time, traceback, six
@@ -34,9 +31,7 @@ class SystemTestsCommon(object):
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
-
-    def __del__(self):
-        self._case.set_value("RUN_WITH_SUBMIT", False)
+        self._skip_pnl = False
 
     def _init_environment(self, caseroot):
         """
@@ -68,7 +63,7 @@ class SystemTestsCommon(object):
             logging.warning("Resetting case due to detected re-run of phase {}".format(phase))
             self._case.set_initial_test_values()
 
-            case_setup(self._case, reset=True, test_mode=True)
+            self._case.case_setup(reset=True, test_mode=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -91,8 +86,8 @@ class SystemTestsCommon(object):
                 except BaseException as e:
                     success = False
                     msg = e.__str__()
-                    if "BUILD FAIL" in msg:
-                        # Don't want to print stacktrace for a model failure since that
+                    if "FAILED, cat" in msg or "BUILD FAIL" in msg:
+                        # Don't want to print stacktrace for a build failure since that
                         # is not a CIME/infrastructure problem.
                         excmsg = msg
                     else:
@@ -132,13 +127,14 @@ class SystemTestsCommon(object):
             comps = [x.lower() for x in self._case.get_values("COMP_CLASSES")]
         build.clean(self._case, cleanlist=comps)
 
-    def run(self):
+    def run(self, skip_pnl=False):
         """
         Do NOT override this method, this method is the framework that controls
         the run phase. run_phase is the extension point that subclasses should use.
         """
         success = True
         start_time = time.time()
+        self._skip_pnl = skip_pnl
         try:
             self._resetup_case(RUN_PHASE)
             with self._test_status:
@@ -171,6 +167,9 @@ class SystemTestsCommon(object):
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
+
+        if success and get_model() == "e3sm":
+            save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
@@ -222,7 +221,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        case_run(self._case)
+        self._case.case_run(skip_pnl=self._skip_pnl)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
@@ -231,7 +230,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            case_st_archive(self._case)
+            self._case.case_st_archive()
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfiles = self._get_latest_cpl_logs()
@@ -349,7 +348,7 @@ class SystemTestsCommon(object):
         Compare env_run file to original and warn about differences
         """
         components = self._case.get_values("COMP_CLASSES")
-        f1obj = EnvRun(self._caseroot, "env_run.xml", components=components)
+        f1obj = self._case.get_env("run")
         f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"), components=components)
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
@@ -480,7 +479,7 @@ class FakeTest(SystemTestsCommon):
 
             os.chmod(modelexe, 0o755)
 
-            build.post_build(self._case, [])
+            build.post_build(self._case, [], build_complete=True)
 
     def run_indv(self, suffix='base', st_archive=False):
         mpilib = self._case.get_value("MPILIB")
@@ -503,7 +502,7 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                       sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
     """

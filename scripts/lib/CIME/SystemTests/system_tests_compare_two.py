@@ -37,8 +37,6 @@ In addition, they MAY require the following methods:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
-from CIME.case_submit import check_case
-from CIME.case_st_archive import archive_last_restarts
 from CIME.utils import get_model
 
 import shutil, os, glob
@@ -49,7 +47,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
-                 separate_builds,
+                 separate_builds = False,
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = '',
@@ -185,8 +183,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # Although we're doing separate builds, it still makes sense
             # to share the sharedlibroot area with case1 so we can reuse
             # pieces of the build from there.
-            if get_model() != "acme":
-                # We need to turn off this change for ACME because it breaks
+            if get_model() != "e3sm":
+                # We need to turn off this change for E3SM because it breaks
                 # the MPAS build system
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))
@@ -213,6 +211,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         first_phase = self._case1.get_value("RESUBMIT") == 1 # Only relevant for multi-submit tests
         run_type = self._case1.get_value("RUN_TYPE")
+
         # First run
         if not self._multisubmit or first_phase:
             logger.info('Doing first run: ' + self._run_one_description)
@@ -230,10 +229,11 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             with self._case2:
                 logger.info('Doing second run: ' + self._run_two_description)
                 self._activate_case2()
+                # This assures that case two namelists are populated
+                self._skip_pnl = False
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
-                    check_case(self._case2)
-                self._force_case2_settings()
+                    self._case2.check_case()
 
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
@@ -254,9 +254,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         files.
         """
         rundir2 = self._case2.get_value("RUNDIR")
-        archive_last_restarts(case = self._case1,
-                              archive_restdir = rundir2,
-                              link_to_restart_files = True)
+        self._case1.archive_last_restarts(archive_restdir = rundir2,
+                                          link_to_restart_files = True)
 
     # ========================================================================
     # Private methods
@@ -455,6 +454,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # note that we print a warning to the log file if that happens, in the
         # caller of this method).
         self._case.flush()
+        # This assures that case one namelists are populated
+        # and creates the case.test script
+        self._case.case_setup(test_mode=False, reset=True)
 
         # Set up case 2
         self._activate_case2()
@@ -466,19 +468,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
-
-    def _force_case2_settings(self):
-        """
-        Sets some settings in case2 that are normally set automatically.
-
-        This is needed because we aren't running case2 via the normal mechanism
-        (i.e., via the submit script).
-        """
-
-        # RUN_WITH_SUBMIT is normally set when you run the case's submit script.
-        # Trick the scripts into thinking that we are running via the submit
-        # script, like we're supposed to
-        self._case2.set_value("RUN_WITH_SUBMIT",True)
 
     def _link_to_case2_output(self):
         """

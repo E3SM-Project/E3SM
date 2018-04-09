@@ -1,6 +1,6 @@
 module esp_utils
 
-! !USES:
+  ! !USES:
 
   use shr_kind_mod, only: r8=>shr_kind_r8, CL=>SHR_KIND_CL
   use shr_sys_mod,  only: shr_sys_abort, shr_sys_flush
@@ -27,13 +27,13 @@ CONTAINS
     rndm_seed = 8.53973422267357_r8
     call random_seed(put=rndm_seed)
     do ind = 1, size(array)
-      call random_number(pertval)
-      pertval = 2._r8 * pertlim * (0.5_r8 - pertval)
-      if (absolute) then
-        array(ind) = pertval
-      else
-        array(ind) = array(ind) * (1.0_r8 + pertval)
-      end if
+       call random_number(pertval)
+       pertval = 2._r8 * pertlim * (0.5_r8 - pertval)
+       if (absolute) then
+          array(ind) = pertval
+       else
+          array(ind) = array(ind) * (1.0_r8 + pertval)
+       end if
     end do
 
   end subroutine esp_modify_array
@@ -49,8 +49,8 @@ CONTAINS
     character(len=256) :: errormsg
 
     if (ierr /= PIO_NOERR) then
-      write(errormsg, '(a,i6,2a)') '(PIO:', ierr, ') ', trim(errorstr)
-      call shr_sys_abort(errormsg)
+       write(errormsg, '(a,i6,2a)') '(PIO:', ierr, ') ', trim(errorstr)
+       call shr_sys_abort(errormsg)
     end if
 
   end subroutine esp_pio_handle_error
@@ -73,19 +73,19 @@ CONTAINS
     ierr = pio_openfile(piosys, file, iotype, fname, mode)
 
     if(ierr/= PIO_NOERR) then
-      if (mode == PIO_nowrite) then
-        write(errmsg, '(3a,i0)') 'Failed to open ',trim(fname),' to read, error = ',ierr
-        call shr_sys_abort(subname//trim(errmsg))
-      else if (mode == PIO_write) then
-        write(errmsg, '(3a,i0)') 'Failed to open ',trim(fname),' to write, error = ',ierr
-        call shr_sys_abort(subname//trim(errmsg))
-      else
-        write(errmsg, '(3a,i0,a,i0)') 'Failed to open ',trim(fname),' with mode = ',mode,', error = ',ierr
-        call shr_sys_abort(subname//trim(errmsg))
-      end if
+       if (mode == PIO_nowrite) then
+          write(errmsg, '(3a,i0)') 'Failed to open ',trim(fname),' to read, error = ',ierr
+          call shr_sys_abort(subname//trim(errmsg))
+       else if (mode == PIO_write) then
+          write(errmsg, '(3a,i0)') 'Failed to open ',trim(fname),' to write, error = ',ierr
+          call shr_sys_abort(subname//trim(errmsg))
+       else
+          write(errmsg, '(3a,i0,a,i0)') 'Failed to open ',trim(fname),' with mode = ',mode,', error = ',ierr
+          call shr_sys_abort(subname//trim(errmsg))
+       end if
     else if((pio_iotask_rank(piosys) == 0) .and. present(iulog)) then
-      write(iulog,'(2a)') 'Opened existing file, ', trim(fname)
-      call shr_sys_flush(iulog)
+       write(iulog,'(2a)') 'Opened existing file, ', trim(fname)
+       call shr_sys_flush(iulog)
     end if
 
   end subroutine esp_pio_openfile
@@ -120,7 +120,7 @@ CONTAINS
     ierr = pio_openfile(piosys, file, iotype, fname, PIO_NOWRITE)
     esp_pio_fileexists = (ierr == PIO_NOERR)
     if (esp_pio_fileexists) then
-      call pio_closefile(file)
+       call pio_closefile(file)
     end if
 
     ! Back to whatever error handling was running before this routine
@@ -165,32 +165,32 @@ CONTAINS
     dimlens = 0
 
     if (present(varname)) then
-      errsuff = ' for '//trim(varname)
+       errsuff = ' for '//trim(varname)
     else
-      errsuff = ''
+       errsuff = ''
     end if
     ! Check dimensions
     ret = PIO_inq_varndims(ncid, varid, ndims)
     call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with num dimensions')
     if (size(dimids) < ndims) then
-      call shr_sys_abort('ESP_PIO_VAR_INFO: dimids too small'//trim(errsuff))
+       call shr_sys_abort('ESP_PIO_VAR_INFO: dimids too small'//trim(errsuff))
     end if
     ret = PIO_inq_vardimid(ncid, varid, dimids(1:ndims))
     call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inq dim ids'//trim(errsuff))
     if (size(dimlens) < ndims) then
-      call shr_sys_abort('ESP_PIO_VAR_INFO: dimlens too small'//trim(errsuff))
+       call shr_sys_abort('ESP_PIO_VAR_INFO: dimlens too small'//trim(errsuff))
     end if
     do i = 1, ndims
-      ret = PIO_inq_dimlen(ncid, dimids(i), dimlens(i))
-      call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inq dimlens')
-      if (present(dimnames)) then
-        ret = PIO_inq_dimname(ncid, dimids(i), dimnames(i))
-        call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inq dimnames')
-      end if
+       ret = PIO_inq_dimlen(ncid, dimids(i), dimlens(i))
+       call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inq dimlens')
+       if (present(dimnames)) then
+          ret = PIO_inq_dimname(ncid, dimids(i), dimnames(i))
+          call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inq dimnames')
+       end if
     end do
     if (present(unlimDimID)) then
-      ret = PIO_inquire(ncid, unlimitedDimID=unlimDimID)
-      call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inquire')
+       ret = PIO_inquire(ncid, unlimitedDimID=unlimDimID)
+       call esp_pio_handle_error(ret, 'ESP_PIO_VAR_INFO: Error with inquire')
     end if
     call PIO_seterrorhandling(ncid, err_handling)
 
@@ -201,7 +201,7 @@ CONTAINS
     use pio, only: pio_inq_varid, pio_noerr
     use pio, only: PIO_seterrorhandling, PIO_BCAST_ERROR
 
- ! Dummy arguments
+    ! Dummy arguments
     type(file_desc_t),           intent(inout) :: ncid
     character(len=*),            intent(in)    :: varname
     type(var_desc_t),            intent(out)   :: varid
@@ -286,58 +286,58 @@ CONTAINS
     ! Find the variable
     call esp_pio_find_var(file, varname, varid, found)
     if (found) then
-      ! Check dimensions
-      call esp_pio_var_info(file, varid, ndims, dimids, dimlens,              &
-           varname=varname, unlimDimID=uid)
-      ! Skip the unlimited dimension if it is in varname
-      ierr = 1
-      do i = 1, ndims
-        if (i > ierr) then
-          dimids(ierr) = dimids(i)
-          dimlens(ierr) = dimlens(i)
-        end if
-        if (dimids(i) /= uid) then
-          ierr = ierr + 1
-        end if
-      end do
-      ndims = ndims - COUNT(dimids(1:ndims) == uid)
-      ! Calculate global and local array sizes
-      totalsize = PRODUCT(dimlens(1:ndims))
-      call shr_mpi_commsize(comm, npes)
-      call shr_mpi_commrank(comm, iam)
-      mysize = totalsize / npes
-      if (iam < MOD(totalsize, npes)) then
-        mysize = mysize + 1
-      end if
-      allocate(varr(mysize))
-      allocate(ldof(mysize))
-      offset = (iam * (totalsize / npes)) + MIN(iam, MOD(totalsize, npes))
-      do i = 1, mysize
-        ldof(i) = i + offset
-      end do
-      call esp_pio_newdecomp(iodesc, pio_subsystem, pio_iotype,               &
-           dimlens(1:ndims), ldof, PIO_DOUBLE)
-      call pio_read_darray(file, varid, iodesc, varr, ierr)
-      call esp_pio_handle_error(ierr, subname//'Error reading variable '//trim(varname))
-      ! See if we have a constant zero value
-      equiv = ALL(varr == 0.0_r8)
-      call mpi_allreduce(equiv, all_equiv, 1, MPI_LOGICAL, MPI_LAND, comm, ierr)
-      ! Modify and write back to file
-      call esp_modify_array(varr, 1.0e-12_r8, all_equiv)
-      call pio_write_darray(file, varid, iodesc, varr, ierr)
-      call esp_pio_handle_error(ierr, subname//'Error writing variable '//trim(varname))
-   endif
+       ! Check dimensions
+       call esp_pio_var_info(file, varid, ndims, dimids, dimlens,              &
+            varname=varname, unlimDimID=uid)
+       ! Skip the unlimited dimension if it is in varname
+       ierr = 1
+       do i = 1, ndims
+          if (i > ierr) then
+             dimids(ierr) = dimids(i)
+             dimlens(ierr) = dimlens(i)
+          end if
+          if (dimids(i) /= uid) then
+             ierr = ierr + 1
+          end if
+       end do
+       ndims = ndims - COUNT(dimids(1:ndims) == uid)
+       ! Calculate global and local array sizes
+       totalsize = PRODUCT(dimlens(1:ndims))
+       call shr_mpi_commsize(comm, npes)
+       call shr_mpi_commrank(comm, iam)
+       mysize = totalsize / npes
+       if (iam < MOD(totalsize, npes)) then
+          mysize = mysize + 1
+       end if
+       allocate(varr(mysize))
+       allocate(ldof(mysize))
+       offset = (iam * (totalsize / npes)) + MIN(iam, MOD(totalsize, npes))
+       do i = 1, mysize
+          ldof(i) = i + offset
+       end do
+       call esp_pio_newdecomp(iodesc, pio_subsystem, pio_iotype,               &
+            dimlens(1:ndims), ldof, PIO_DOUBLE)
+       call pio_read_darray(file, varid, iodesc, varr, ierr)
+       call esp_pio_handle_error(ierr, subname//'Error reading variable '//trim(varname))
+       ! See if we have a constant zero value
+       equiv = ALL(varr == 0.0_r8)
+       call mpi_allreduce(equiv, all_equiv, 1, MPI_LOGICAL, MPI_LAND, comm, ierr)
+       ! Modify and write back to file
+       call esp_modify_array(varr, 1.0e-12_r8, all_equiv)
+       call pio_write_darray(file, varid, iodesc, varr, ierr)
+       call esp_pio_handle_error(ierr, subname//'Error writing variable '//trim(varname))
+    endif
 
     call esp_pio_closefile(file)
     if (found) then
-      ! Cleanup
-      call pio_freedecomp(pio_subsystem, iodesc)
+       ! Cleanup
+       call pio_freedecomp(pio_subsystem, iodesc)
     end if
     if (allocated(varr)) then
-      deallocate(varr)
+       deallocate(varr)
     end if
     if (allocated(ldof)) then
-      deallocate(ldof)
+       deallocate(ldof)
     end if
 
   end subroutine esp_pio_modify_variable

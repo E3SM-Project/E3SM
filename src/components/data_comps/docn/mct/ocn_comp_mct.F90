@@ -41,6 +41,7 @@ module ocn_comp_mct
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
+  logical                :: read_restart        ! start from restart
 
   character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
   integer(IN) , parameter :: master_task=0 ! task number of master task
@@ -66,13 +67,11 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: ocn_present               ! flag
     logical           :: ocn_prognostic            ! flag
     logical           :: ocnrof_prognostic         ! flag
     integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
@@ -194,7 +193,6 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
-    logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(ocn_run_mct) "
     !-------------------------------------------------------------------------------
@@ -211,9 +209,10 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
+    ! Note that docn_comp_run is already called
     call docn_comp_run(EClock, x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

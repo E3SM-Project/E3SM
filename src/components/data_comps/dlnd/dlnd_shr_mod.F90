@@ -74,7 +74,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / dlnd_nml / &
-        decomp, restfilm, restfils, force_prognostic_true
+         decomp, restfilm, restfils, force_prognostic_true
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -127,14 +127,14 @@ CONTAINS
     datamode = trim(SDLND%dataMode)
 
     if (trim(datamode) == 'NULL' .or. &
-        trim(datamode) == 'COPYALL') then
-        if (my_task == master_task) then
-           write(logunit,F00) 'dlnd datamode = ',trim(datamode)
-        end if
+         trim(datamode) == 'COPYALL') then
+       if (my_task == master_task) then
+          write(logunit,F00) 'dlnd datamode = ',trim(datamode)
+       end if
     else
-      write(logunit,F00) ' ERROR illegal dlnd datamode = ',trim(datamode)
-      call shr_sys_abort()
-   end if
+       write(logunit,F00) ' ERROR illegal dlnd datamode = ',trim(datamode)
+       call shr_sys_abort()
+    end if
 
     !----------------------------------------------------------------------------
     ! Determine present and prognostic flags

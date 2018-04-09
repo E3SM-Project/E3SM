@@ -1263,6 +1263,7 @@ module shr_reprosum_mod
       exceeds_limit = 0
       max_rel_diff = 0.0_r8
       max_abs_diff = 0.0_r8
+      max_rel_diff_idx = 0
       do ifld=1,nflds
          if (rel_diff(1,ifld) > shr_reprosum_reldiffmax) then
             exceeds_limit = exceeds_limit + 1

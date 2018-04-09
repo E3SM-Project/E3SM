@@ -220,7 +220,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
                     try:
                         shutil.copy(cprnc_log_file, casedir)
-                    except OSError:
+                    except (OSError, IOError) as _:
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
@@ -256,7 +256,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     case - the case containing the files
     rundir - the rundir for the case
     outfile_suffix - if non-blank, then the output file name ends with this
-        suffix (with a '.' added before the given suffix)
+        suffix (with a '.' added before the given suffix).
+        Use None to avoid permissions issues in the case dir.
 
     returns (True if the files matched, log_name)
     """
@@ -322,7 +323,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
             last_line = open(bless_log, "r").readlines()[-1]
@@ -403,16 +404,6 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             if os.path.exists(baseline):
                 os.remove(baseline)
 
-            #special care for multi-instance cases,
-            #only keep first instance and
-            #remove instance string from filename
-            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)" % model, baseline)
-            if m is not None:
-                if m.group(2) != '0001':
-                    continue
-                baseline = m.group(1)+m.group(3)
-
-                logger.debug("Found multiinstance hist file {}".format(hist))
             shutil.copy(hist, baseline)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
@@ -425,7 +416,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         shutil.copyfile(newestcpllogfile,
                     os.path.join(basegen_dir, "cpl.log.gz"))
 
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
+    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
@@ -435,7 +426,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                 # We tried. Not worth hard failure here.
                 pass
 
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
         with open(bless_log, "a") as fd:
             fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),

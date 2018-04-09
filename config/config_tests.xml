@@ -213,7 +213,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
 <config_test>
 
   <test NAME="DAE">
-    <DESC>data assimilation test, default 1 day, two DA cycles, no data modification</DESC>
+    <DESC>data assimilation test, default two 2-day DA cycles, no data modification</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>4</STOP_N>
@@ -518,6 +518,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <DOUT_S>FALSE</DOUT_S>
+    <RESUBMIT>1</RESUBMIT>
   </test>
 
   <test NAME="PFS">

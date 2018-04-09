@@ -8,7 +8,6 @@ Builds runs and compares a single processor mpi model to a model built using mpi
 
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.XML.machines import Machines
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ class PEA(SystemTestsCompareTwo):
             self._case.set_value("ROOTPE_{}".format(comp), 0)
 
     def _case_one_setup(self):
-        case_setup(self._case, reset=True, test_mode=True)
+        pass
 
     def _case_two_setup(self):
         mach_name = self._case.get_value("MACH")
@@ -43,4 +42,4 @@ class PEA(SystemTestsCompareTwo):
 
         if os.path.isfile("Macros"):
             os.remove("Macros")
-        case_setup(self._case, reset=True, test_mode=True)
+        self._case.case_setup(test_mode=True, reset=True)

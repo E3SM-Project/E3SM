@@ -238,7 +238,7 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
         compiler = machobj.get_default_compiler()
         print "compiler is {}".format(compiler)
     if mpilib is None:
-        mpilib = machobj.get_default_MPIlib()
+        mpilib = machobj.get_default_MPIlib({"compiler":compiler})
 
 
 

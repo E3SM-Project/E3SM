@@ -39,7 +39,7 @@ class HOMME(SystemTestsCommon):
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
-            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")])
+            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
 
     def run_phase(self):
 
@@ -77,7 +77,7 @@ class HOMME(SystemTestsCommon):
 
         expect(stat == 0, "RUN FAIL for HOMME")
 
-    # Homme is a bit of an oddball test since it's not really running the ACME model
+    # Homme is a bit of an oddball test since it's not really running the E3SM model
     # We need to override some methods to make the core infrastructure work.
 
     def _generate_baseline(self):

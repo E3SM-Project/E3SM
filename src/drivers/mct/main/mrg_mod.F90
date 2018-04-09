@@ -9,14 +9,14 @@ module mrg_mod
   save
   private ! except
 
-!--------------------------------------------------------------------------
-! TODO - write summary of naming convention here as well
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! TODO - write summary of naming convention here as well
+  !--------------------------------------------------------------------------
 
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: mrg_x2a_run_mct
   public :: mrg_x2i_run_mct
@@ -27,19 +27,19 @@ module mrg_mod
   public :: mrg_x2s_run_mct
   public :: mrg_x2w_run_mct
 
-!--------------------------------------------------------------------------
-! Private interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private interfaces
+  !--------------------------------------------------------------------------
 
   private :: getfld
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
-!===========================================================================================
+  !===========================================================================================
 contains
-!===========================================================================================
+  !===========================================================================================
 
   subroutine mrg_x2a_run_mct( cdata_a, l2x_a, o2x_a, xao_a, i2x_a, fractions_a, x2a_a )
 
@@ -171,10 +171,10 @@ contains
              write(logunit,10)trim(itemc_atm),trim(itemc_lnd),&
                   trim(itemc_ice),trim(itemc_xao),trim(itemc_ocn)
 10           format(' ',' atm field: ',a15,', lnd merge: ',a15, &
-             ', ice merge: ',a15,', xao merge: ',a15,', ocn merge: ',a15)
+                  ', ice merge: ',a15,', xao merge: ',a15,', ocn merge: ',a15)
              write(logunit, *)'field_atm,lmerge, imerge, xmerge, omerge= ',&
                   trim(field_atm),lmerge(ka),imerge(ka),xmerge(ka),omerge(ka)
-         end if
+          end if
        end do
        first_time = .false.
     end if
@@ -254,7 +254,7 @@ contains
 
   end subroutine mrg_x2a_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2i_run_mct( cdata_i, a2x_i, o2x_i, x2i_i )
 
@@ -271,7 +271,6 @@ contains
     !
     integer :: i
     real(r8):: flux_epbalfact
-    character(len=cl) :: flux_epbal
     type(seq_infodata_type),pointer :: infodata
     integer, save :: index_a2x_Faxa_rainc
     integer, save :: index_a2x_Faxa_rainl
@@ -352,9 +351,9 @@ contains
 
     do i = 1,mct_aVect_lsize(x2i_i)
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = a2x_i%rAttr(index_a2x_Faxa_rainc,i) + &
-	                                    a2x_i%rAttr(index_a2x_Faxa_rainl,i)
+            a2x_i%rAttr(index_a2x_Faxa_rainl,i)
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = a2x_i%rAttr(index_a2x_Faxa_snowc,i) + &
-	                                    a2x_i%rAttr(index_a2x_Faxa_snowl,i)
+            a2x_i%rAttr(index_a2x_Faxa_snowl,i)
 
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
@@ -364,19 +363,19 @@ contains
        do i = 1,mct_aVect_lsize(x2i_i)
           !H2_16O
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
           !H2_18O
           x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
           !HDO
           x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
-                                        a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
 
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
@@ -390,7 +389,7 @@ contains
 
   end subroutine mrg_x2i_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2r_run_mct( cdata_r, l2x_r, fractions_r, x2r_r)
 
@@ -406,7 +405,6 @@ contains
     ! Local variables
     !
     integer :: i
-    type(seq_infodata_type),pointer :: infodata
     integer, save :: index_l2x_Flrl_rofliq
     integer, save :: index_l2x_Flrl_rofice
     integer, save :: index_x2r_Flrl_rofliq
@@ -474,7 +472,7 @@ contains
 
   end subroutine mrg_x2r_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2l_run_mct( cdata_l, a2x_l, r2l_l, x2l_l )
 
@@ -493,7 +491,7 @@ contains
 
   end subroutine mrg_x2l_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2o_run_mct( cdata_o, a2x_o, i2x_o, w2x_o, xao_o, fractions_o, x2o_o )
 
@@ -509,7 +507,7 @@ contains
     !
     ! Local variables
     !
-    integer  :: n,ka,ki,ko,kir,kor
+    integer  :: n,ki,ko,kir,kor
     integer  :: lsize
     real(r8) :: ifrac,ifracr
     real(r8) :: afrac,afracr
@@ -519,7 +517,6 @@ contains
     real(r8) :: fswabsv, fswabsi             ! sw
     integer  :: noflds,naflds,niflds,nxflds
     integer  :: kof,kaf,kif,kxf
-    character(len=cl) :: flux_epbal
     character(CL) :: field_ocn   ! string converted to char
     character(CL) :: field_atm   ! string converted to char
     character(CL) :: field_ice   ! string converted to char
@@ -572,7 +569,7 @@ contains
     integer, save :: index_x2o_Faxa_prec_HDO
 
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
-    integer, save, pointer :: aindx(:), iindx(:), oindx(:), xindx(:)
+    integer, save, pointer :: aindx(:), iindx(:), xindx(:)
     logical, save :: first_time = .true.
     logical, save :: flds_wiso  = .false.
     character(*),parameter :: subName = '(mrg_x2o_run_mct) '
@@ -666,21 +663,21 @@ contains
              cycle ! ignore all ocn states that do not have a Sx_ prefix
           end if
           if (trim(field_ocn) == 'Foxx_swnet'.or. &
-              trim(field_ocn) == 'Faxa_snow' .or. &
-              trim(field_ocn) == 'Faxa_rain' .or. &
-              trim(field_ocn) == 'Faxa_prec') then
+               trim(field_ocn) == 'Faxa_snow' .or. &
+               trim(field_ocn) == 'Faxa_rain' .or. &
+               trim(field_ocn) == 'Faxa_prec') then
              cycle ! ignore swnet, snow, rain, prec - treated explicitly above
           end if
           !wiso
           if (trim(field_ocn) == 'Faxa_snow_16O' .or. &
-              trim(field_ocn) == 'Faxa_rain_16O' .or. &
-              trim(field_ocn) == 'Faxa_prec_16O' .or. &
-              trim(field_ocn) == 'Faxa_snow_18O' .or. &
-              trim(field_ocn) == 'Faxa_rain_18O' .or. &
-              trim(field_ocn) == 'Faxa_prec_18O' .or. &
-              trim(field_ocn) == 'Faxa_snow_HDO' .or. &
-              trim(field_ocn) == 'Faxa_rain_HDO' .or. &
-              trim(field_ocn) == 'Faxa_prec_HDO') then
+               trim(field_ocn) == 'Faxa_rain_16O' .or. &
+               trim(field_ocn) == 'Faxa_prec_16O' .or. &
+               trim(field_ocn) == 'Faxa_snow_18O' .or. &
+               trim(field_ocn) == 'Faxa_rain_18O' .or. &
+               trim(field_ocn) == 'Faxa_prec_18O' .or. &
+               trim(field_ocn) == 'Faxa_snow_HDO' .or. &
+               trim(field_ocn) == 'Faxa_rain_HDO' .or. &
+               trim(field_ocn) == 'Faxa_prec_HDO') then
              cycle ! ignore iso snow, rain, prec - treated explicitly above
           end if
           if (trim(field_ocn(1:5)) == 'Forr_') then
@@ -731,7 +728,7 @@ contains
                   ', ice merge: ',a15,', atm merge: ',a15)
              write(logunit, *)'field_ocn,kof,imerge,amerge,xmerge= ',&
                   trim(field_ocn),kof,imerge(kof),xmerge(kof),amerge(kof)
-         end if
+          end if
        end do
 
        first_time = .false.
@@ -778,39 +775,39 @@ contains
        avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
        anidf = xao_o%rAttr(index_xao_So_anidf,n)
        fswabsv  =  a2x_o%rAttr(index_a2x_Faxa_swvdr,n) * (1.0_R8 - avsdr) &
-                 + a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
+            + a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
        fswabsi  =  a2x_o%rAttr(index_a2x_Faxa_swndr,n) * (1.0_R8 - anidr) &
-                 + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
+            + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
        x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
-                                             i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
+            i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
 
        ! Derived: compute total precipitation - scale total precip
        ! Note that runoff is scaled by flux_epbalfact in ccsm_comp_mod
        x2o_o%rAttr(index_x2o_Faxa_snow ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc,n) * afrac + &
-                                             a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
+            a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
        x2o_o%rAttr(index_x2o_Faxa_rain ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc,n) * afrac + &
-                                             a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
+            a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
 
        x2o_o%rAttr(index_x2o_Faxa_snow ,n) = x2o_o%rAttr(index_x2o_Faxa_snow ,n) * flux_epbalfact
        x2o_o%rAttr(index_x2o_Faxa_rain ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) * flux_epbalfact
 
        x2o_o%rAttr(index_x2o_Faxa_prec ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) + &
-                                             x2o_o%rAttr(index_x2o_Faxa_snow ,n)
+            x2o_o%rAttr(index_x2o_Faxa_snow ,n)
 
        !wiso
        if ( flds_wiso )then
           x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_16O,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_16O,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_18O,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_18O,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_HDO,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
           x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_HDO,n) * afrac + &
-                                                a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
+               a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
 
           x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) * flux_epbalfact
           x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) * flux_epbalfact
@@ -820,11 +817,11 @@ contains
           x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) * flux_epbalfact
 
           x2o_o%rAttr(index_x2o_Faxa_prec_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) + &
-                                                x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
           x2o_o%rAttr(index_x2o_Faxa_prec_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) + &
-                                                x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
           x2o_o%rAttr(index_x2o_Faxa_prec_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) + &
-                                                x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
+               x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
        end if
 
     end do
@@ -864,7 +861,7 @@ contains
 
   end subroutine mrg_x2o_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2g_run_mct( cdata_g, s2x_g, x2g_g )
 
@@ -881,7 +878,7 @@ contains
 
   end subroutine mrg_x2g_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2s_run_mct( cdata_s, g2x_s, x2s_s )
 
@@ -898,7 +895,7 @@ contains
 
   end subroutine mrg_x2s_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine mrg_x2w_run_mct( cdata_w, a2x_w, o2x_w, i2x_w, frac_w, x2w_w)
 
@@ -921,7 +918,7 @@ contains
 
   end subroutine mrg_x2w_run_mct
 
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
 
   subroutine getfld(n, av, field, suffix)
     integer         , intent(in)    :: n

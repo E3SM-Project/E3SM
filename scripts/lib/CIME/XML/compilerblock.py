@@ -81,7 +81,7 @@ class CompilerBlock(object):
     matches_machine
     """
 
-    def __init__(self, writer, compiler_elem, machobj):
+    def __init__(self, writer, compiler_elem, machobj, db):
         """Construct a CompilerBlock.
 
         Arguments:
@@ -92,9 +92,10 @@ class CompilerBlock(object):
         """
         self._writer = writer
         self._compiler_elem = compiler_elem
+        self._db            = db
         self._machobj = machobj
         # If there's no COMPILER attribute, self._compiler is None.
-        self._compiler = compiler_elem.get("COMPILER")
+        self._compiler = db.get(compiler_elem, "COMPILER")
         self._specificity = 0
 
     def _handle_references(self, elem, set_up, tear_down, depends):
@@ -114,7 +115,7 @@ class CompilerBlock(object):
         modified and thus serve as additional outputs.
         """
         writer = self._writer
-        output = elem.text
+        output = self._db.text(elem)
         if output is None:
             output = ""
         logger.debug("Initial output={}".format(output))
@@ -156,11 +157,11 @@ class CompilerBlock(object):
 
         logger.debug("First pass output={}".format(output))
 
-        for child in elem:
-            if child.tag == "env":
+        for child in self._db.get_children(root=elem):
+            if self._db.name(child) == "env":
                 # <env> tags just need to be expanded by the writer.
-                output += writer.environment_variable_string(child.text)
-            elif child.tag == "shell":
+                output += writer.environment_variable_string(self._db.text(child))
+            elif self._db.name(child) == "shell":
                 # <shell> tags can contain other tags, so handle those.
                 command = self._handle_references(child, set_up, tear_down,
                                                   depends)
@@ -172,19 +173,19 @@ class CompilerBlock(object):
                 if new_tear_down is not None:
                     tear_down.append(new_tear_down)
                 logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
-            elif child.tag == "var":
+            elif self._db.name(child) == "var":
                 # <var> commands also need expansion by the writer, and can
                 # add dependencies.
-                var_name = child.text
+                var_name = self._db.text(child)
                 output += writer.variable_string(var_name)
                 depends.add(var_name)
             else:
                 expect(False,
-                       "Unexpected tag "+child.tag+" encountered in "
+                       "Unexpected tag "+self._db.name(child)+" encountered in "
                        "config_build.xml. Check that the file is valid "
                        "according to the schema.")
-            if child.tail is not None:
-                output += child.tail
+            if child.xml_element.tail is not None:
+                output += child.xml_element.tail
 
         logger.debug("Second pass output={}".format(output))
 
@@ -201,7 +202,7 @@ class CompilerBlock(object):
         variables that this setting depends on.
         """
         # Attributes on an element are the conditions on that element.
-        conditions = dict(list(elem.items()))
+        conditions = self._db.attrib(elem)
         if self._compiler is not None:
             conditions["COMPILER"] = self._compiler
         # Deal with internal markup.
@@ -211,7 +212,7 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        setting = ValueSetting(value_text, elem.tag == "append",
+        setting = ValueSetting(value_text, self._db.name(elem) == "append",
                                conditions, set_up, tear_down)
         return (setting, depends)
 
@@ -224,10 +225,6 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        # Skip this if the element's MPILIB is not valid.
-        if "MPILIB" in elem.keys() and \
-           not self._machobj.is_valid_MPIlib(elem.get("MPILIB")):
-            return
         setting, depends = self._elem_to_setting(elem)
         if name not in value_lists:
             value_lists[name] = PossibleValues(name, setting,
@@ -244,13 +241,13 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        for elem in self._compiler_elem:
+        for elem in self._db.get_children(root=self._compiler_elem):
             # Deal with "flag"-type variables.
-            if elem.tag in flag_vars:
-                for child in elem:
-                    self._add_elem_to_lists(elem.tag, child, value_lists)
+            if self._db.name(elem) in flag_vars:
+                for child in self._db.get_children(root=elem):
+                    self._add_elem_to_lists(self._db.name(elem), child, value_lists)
             else:
-                self._add_elem_to_lists(elem.tag, elem, value_lists)
+                self._add_elem_to_lists(self._db.name(elem), elem, value_lists)
 
     def matches_machine(self):
         """Check whether this block matches a machine/os.
@@ -259,14 +256,14 @@ class CompilerBlock(object):
         before add_settings_to_lists if machine-specific output is needed.
         """
         self._specificity = 0
-        if "MACH" in self._compiler_elem.keys():
+        if self._db.has(self._compiler_elem, "MACH"):
             if self._machobj.get_machine_name() == \
-               self._compiler_elem.get("MACH"):
+               self._db.get(self._compiler_elem, "MACH"):
                 self._specificity += 2
             else:
                 return False
-        if "OS" in self._compiler_elem.keys():
-            if self._machobj.get_value("OS") == self._compiler_elem.get("OS"):
+        if self._db.has(self._compiler_elem, "OS"):
+            if self._machobj.get_value("OS") == self._db.get(self._compiler_elem, "OS"):
                 self._specificity += 1
             else:
                 return False

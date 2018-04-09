@@ -10,6 +10,7 @@
 <xs:attribute name="SMP_PRESENT" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
 <xs:attribute name="unit_testing" type="xs:boolean"/>
+<xs:attribute name="queue" type="xs:string"/>
 
 <!-- simple elements -->
 <xs:element name="header" type="xs:string"/>
@@ -34,14 +35,34 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="header"/>
+        <xs:element ref="group"/>
         <xs:element ref="module_system"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
-        <xs:element minOccurs="0" maxOccurs="unbounded" ref="entry"/>
       </xs:sequence>
       <xs:attribute ref="id" use="required"/>
       <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="type"/>
+        <xs:element ref="desc"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required" />
+      <xs:attribute ref="value" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -53,6 +74,7 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
       <xs:attribute name="type" use="required" type="xs:NCName"/>
+      <xs:attribute name="allow_error" type="xs:boolean"/>
     </xs:complexType>
   </xs:element>
 
@@ -130,6 +152,7 @@
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute name="threaded" type="xs:boolean"/>
+      <xs:attribute ref="queue"/>
       <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
@@ -142,14 +165,4 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="entry">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="type"/>
-        <xs:element ref="desc"/>
-      </xs:sequence>
-      <xs:attribute ref="id" use="required" />
-      <xs:attribute ref="value" use="required"/>
-    </xs:complexType>
-  </xs:element>
 </xs:schema>

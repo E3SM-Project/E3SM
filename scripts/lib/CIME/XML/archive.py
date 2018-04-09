@@ -1,6 +1,5 @@
 """
 Interface to the archive.xml file.  This class inherits from GenericXML.py
-
 """
 
 from CIME.XML.standard_module_setup import *
@@ -26,9 +25,7 @@ class Archive(GenericXML):
         if files is None:
             files = Files()
 
-        components_node = ET.Element("components")
-        components_node.set("version", "2.0")
-
+        components_node = env_archive.make_child("components", attributes={"version":"2.0"})
 
         model = get_model()
         if 'drv' not in components:
@@ -41,17 +38,17 @@ class Archive(GenericXML):
 
             if infile is not None and os.path.isfile(infile):
                 arch = Archive(infile=infile, files=files)
-                specs = arch.get_node("comp_archive_spec", {"compname":comp})
+                specs = arch.get_optional_child(name="comp_archive_spec", attributes={"compname":comp})
             else:
                 if infile is None:
                     logger.debug("No archive file defined for component {}".format(comp))
                 else:
                     logger.debug("Archive file {} for component {} not found".format(infile,comp))
 
-                specs = self.get_optional_node("comp_archive_spec", attributes={"compname":comp})
+                specs = self.get_optional_child(name="comp_archive_spec", attributes={"compname":comp})
+
             if specs is None:
                 logger.debug("No archive specs found for component {}".format(comp))
             else:
                 logger.debug("adding archive spec for {}".format(comp))
-                components_node.append(specs)
-        env_archive.add_child(components_node)
+                env_archive.add_child(specs, root=components_node)

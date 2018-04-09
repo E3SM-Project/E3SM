@@ -3,7 +3,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.check_input_data import check_all_input_data
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -93,9 +92,6 @@ class ERI(SystemTestsCommon):
         clone1.set_value("HIST_OPTION", "never")
         clone1.flush()
 
-        # if the initial case is hybrid this will put the reference data in the correct location
-        check_all_input_data(clone1)
-
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
         # force cam namelist to write out initial file at end of run
@@ -103,7 +99,11 @@ class ERI(SystemTestsCommon):
             if "inithist" not in open("user_nl_cam", "r").read():
                 with open("user_nl_cam", "a") as fd:
                     fd.write("inithist = 'ENDOFRUN'\n")
+        clone1.case_setup(test_mode=True, reset=True)
+        # if the initial case is hybrid this will put the reference data in the correct location
+        clone1.check_all_input_data()
 
+        self._skip_pnl = False
         self.run_indv(st_archive=True, suffix=None)
 
         #
@@ -143,13 +143,12 @@ class ERI(SystemTestsCommon):
         rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
 
-        if not os.path.exists(rundir2):
-            os.makedirs(rundir2)
-
         _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
         # run ref2 case (all component history files will go to short term archiving)
+        clone2.case_setup(test_mode=True, reset=True)
 
+        self._skip_pnl = False
         self.run_indv(suffix="hybrid", st_archive=True)
 
         #
@@ -197,6 +196,7 @@ class ERI(SystemTestsCommon):
                 os.remove(dst)
             os.symlink(item, dst)
 
+        self._skip_pnl = False
         # run branch case (short term archiving is off)
         self.run_indv()
 

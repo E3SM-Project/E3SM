@@ -51,6 +51,15 @@
     <schema>$CIMEROOT/config/xml_schemas/config_batch.xsd</schema>
   </entry>
 
+  <entry id="INPUTDATA_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/config/$MODEL/config_inputdata.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing inputdata server descriptions  (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/config/xml_schemas/config_inputdata.xsd</schema>
+  </entry>
+
   <entry id="COMPILERS_SPEC_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/config/$MODEL/machines/config_compilers.xml</default_value>
@@ -102,7 +111,7 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value >$CIMEROOT/src/drivers/mct</value>
+      <value component="mct">$CIMEROOT/src/drivers/mct</value>
       <value component="drv">$CIMEROOT/src/drivers/mct</value>
     </values>
     <group>case_comps</group>
@@ -386,7 +395,9 @@
 
   <entry id="CONFIG_CPL_FILE">
     <type>char</type>
-    <default_value>$COMP_ROOT_DIR_CPL/cime_config/config_component.xml</default_value>
+    <values>
+      <value>$COMP_ROOT_DIR_CPL/cime_config/config_component.xml</value>
+    </values>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>

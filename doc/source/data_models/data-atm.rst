@@ -26,7 +26,7 @@ These variables will appear in ``env_run.xml`` and the resulting values are comp
 
    "DATM_MODE",                "Mode for atmospheric component"
    "",                         "Valid values are: CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,"
-   "",                         "CLMCRUNCEP_V5,CLMGSWP3,WW3,CPLHIST"
+   "",                         "CLMCRUNCEP_V5,CLMGSWP3,WW3,CPLHIST,CORE_IAF_JRA"
 
    "DATM_PRESAERO",            "Optional prescribed aerosol forcing"
    "DATM_TOPO",                "Optional Surface topography"
@@ -64,7 +64,8 @@ Each data model has its own set of supported ``datamode`` values. The following 
    "COPYALL", "The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams; if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero except for aerosol deposition fields which will be set to a special value. "
    "CLMNCEP", "In conjunction with NCEP climatological atmosphere data, provides the atmosphere forcing favored by the Land Model Working Group when coupling an active land model with observed atmospheric forcing. This  mode replicates code previously found in CLM (circa 2005), before the LMWG started using the CIME coupling infrastructure and data models to do active-land-only simulations."
    "CORE2_NYF", "Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing."
-   "CORE2_IAF", "In conjunction with with CORE Version 2 atmospheric forcing data, provides the atmosphere forcing favored by the Ocean Model Working Group when coupling an active ocean model with observed atmospheric forcing. This mode and associated data sets implement the CORE-IAF Version 2 forcing data, as developed by Large and Yeager (2008) at NCAR.  Note that CORE2_NYF and CORE2_IAF work exactly the same way."
+   "CORE2_IAF", "In conjunction with CORE Version 2 atmospheric forcing data, provides the atmosphere forcing favored by the Ocean Model Working Group when coupling an active ocean model with observed atmospheric forcing. This mode and associated data sets implement the CORE-IAF Version 2 forcing data, as developed by Large and Yeager (2008) at NCAR.  Note that CORE2_NYF and CORE2_IAF work exactly the same way."
+   "CORE_IAF_JRA", "In conjunction with JRA-55 Project, provides the atmosphere forcing when coupling an active ocean model with observed atmospheric forcing. This mode and associated data sets implement the JRA-55 v1.3 forcing data."
 
 .. _datm_mode:
 
@@ -90,6 +91,11 @@ CIME will generate a value of ``DATM_MODE`` based on the compset.
    "", "CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,"
    "", "CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor"
    "", "datamode: CORE2_IAF"
+   "CORE_IAF_JRA",JRA-55 intra-annual year forcing(C ang G compsets)"
+   "", "streams: CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,"
+   "", "CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,"
+   "", "CORE_IAF_JRA.NCEP.V_10,CORE_IAF_JRA.CORE2.ArcFactor"
+   "", "datamode: CORE_IAF_JRA"
    "CLM_QIAN_WISO","QIAN atm input data with water isotopes (I compsets)"
    "", "streams: CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW"
    "", "datamode: CLMNCEP"

@@ -1,6 +1,8 @@
 #pylint: disable=import-error
 from six.moves import queue
-import os, time, threading, socket, signal, distutils.spawn, shutil, glob
+import os, time, threading, socket, signal, shutil, glob
+#pylint: disable=import-error
+from distutils.spawn import find_executable
 import logging
 import xml.etree.ElementTree as xmlet
 
@@ -11,7 +13,7 @@ from CIME.test_status import *
 
 
 SIGNAL_RECEIVED           = False
-ACME_MAIN_CDASH           = "ACME_Climate"
+E3SM_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 SLEEP_INTERVAL_SEC        = .1
 
@@ -53,7 +55,7 @@ def get_test_output(test_path):
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
     # We assume all cases were created from the same code repo
-    first_result_case = os.path.dirname(results.iteritems().next()[1][0])
+    first_result_case = os.path.dirname(list(results.items())[0][1][0])
     try:
         srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
     except:
@@ -225,7 +227,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     hostname = Machines().get_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
-        logging.warning("Could not convert hostname '{}' into an ACME machine name".format(hostname))
+        logging.warning("Could not convert hostname '{}' into an E3SM machine name".format(hostname))
 
     dart_config = \
 """
@@ -254,7 +256,7 @@ ScpCommand: {4}
 # Dashboard start time
 NightlyStartTime: {5} UTC
 """.format(os.getcwd(), hostname, cdash_build_name, cdash_project,
-           distutils.spawn.find_executable("scp"), cdash_timestamp)
+           find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
         dart_fd.write(dart_config)
@@ -347,7 +349,7 @@ def wait_for_tests(test_paths,
                    ignore_namelists=False,
                    ignore_memleak=False,
                    cdash_build_name=None,
-                   cdash_project=ACME_MAIN_CDASH,
+                   cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None):
 ###############################################################################

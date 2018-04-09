@@ -108,7 +108,7 @@ contains
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
     !
     ! Local Variables
-    integer                          :: eli, egi
+    integer                          :: eli
     integer                          :: lsize_l
     integer                          :: lsize_g
     logical                          :: samegrid_lg   ! samegrid land and glc
@@ -407,7 +407,6 @@ contains
     integer       :: index_lfrac
     integer       :: lsize
     logical       :: iamroot
-    real(r8)      :: lfrac
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     character(CL) :: field   ! string converted to char
@@ -847,7 +846,7 @@ contains
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
 
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
-                                ! This is the area that can contribute SMB to the ice sheet model.
+    ! This is the area that can contribute SMB to the ice sheet model.
 
 
     !---------------------------------------------------------------

@@ -190,10 +190,14 @@ formatter_class=argparse.RawDescriptionHelpFormatter)
         args.type, args.valid_values, args.partial_match, args.file
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
-    thistype = case.get_type_info(var)
-    value = case.get_value(var, attribute=attribute, resolved=resolved, subgroup=subgroup)
-    if value is not None and thistype:
-        value = convert_to_string(value, thistype, var)
+    if var in ["THREAD_COUNT", "TOTAL_TASKS", "TASKS_PER_NODE", "NUM_NODES", "SPARE_NODES", "TASKS_PER_NUMA", "CORES_PER_TASK"]:
+        value = str(getattr(case, var.lower()))
+    else:
+        thistype = case.get_type_info(var)
+        value = case.get_value(var, attribute=attribute, resolved=resolved, subgroup=subgroup)
+        if value is not None and thistype:
+            value = convert_to_string(value, thistype, var)
+
     return value
 
 def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
@@ -275,10 +279,6 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
     return results
 
 def _main_func():
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, get_group, full, dtype, \

@@ -14,8 +14,6 @@ OR
 {0} --verbose
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run \033[0m
@@ -80,7 +78,4 @@ def _main(argv, documentation):
     buildlib(bldroot, installpath, caseroot)
 
 if (__name__ == "__main__"):
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
     _main(sys.argv, __doc__)

@@ -6,12 +6,9 @@ Check (and optionally download) input data files.
 Should be run from case.
 """
 from standard_script_setup import *
-
-from CIME.utils import get_model
-from CIME.check_input_data import check_input_data, SVN_LOCS
 from CIME.case import Case
 
-import argparse, doctest
+import argparse
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -20,8 +17,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--download] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Download input data \033[0m
@@ -35,7 +30,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
+    parser.add_argument("--protocal", default=None,
+                        help="The input data protocal to download data.")
+
+    parser.add_argument("--server", default=None,
                         help="The input data repository from which to download data.")
 
 
@@ -52,23 +50,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
+    return args.protocal, args.server, args.input_data_root, args.data_list_dir, args.download
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
+    protocal, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
     with Case() as case:
-        sys.exit(0 if check_input_data(case,
-                                       svn_loc=svn_loc,
-                                       input_data_root=input_data_root,
-                                       data_list_dir=data_list_dir,
-                                       download=download) else 1)
+        sys.exit(0 if case.check_all_input_data(protocal=protocal,
+                                                address=address,
+                                                input_data_root=input_data_root,
+                                                data_list_dir=data_list_dir,
+                                                download=download) else 1)
 
 ###############################################################################
 

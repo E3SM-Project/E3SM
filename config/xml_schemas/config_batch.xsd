@@ -5,6 +5,7 @@
    version="2.0">
   <!-- attributes -->
   <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="type"  type="xs:NCName"/>
 
@@ -24,6 +25,7 @@
   <xs:element name="batch_mail_default" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:integer"/>
+  <xs:element name="walltime" type="xs:string"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
 
@@ -91,7 +93,7 @@
 
   <!-- directives: A list of fields to provide in the script directives section,
        be careful that these do not conflict with submit_args above -->
-        <xs:element minOccurs="0" ref="directives"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="directives"/>
 
   <!-- queues: The list of queue options for this machine, not all system queues need be listed
        attributes of this field include walltimemin, walltimemax, nodemin and nodemax and strict
@@ -133,13 +135,18 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="directive"/>
       </xs:sequence>
+      <xs:attribute ref="queue"/>
     </xs:complexType>
   </xs:element>
 
   <xs:element name="directive">
     <xs:complexType mixed="true">
       <xs:attribute name="default"/>
-      <xs:attribute name="name"/>
+      <xs:attribute name="prefix"/>
+      <xs:attribute name="compiler"/>
+      <xs:attribute name="mpilib"/>
+      <xs:attribute name="threaded" type="xs:boolean"/>
+      <xs:attribute name="queue"/>
     </xs:complexType>
   </xs:element>
 
@@ -159,6 +166,8 @@
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="nodemax" type="xs:integer"/>
           <xs:attribute name="nodemin" type="xs:integer"/>
+          <xs:attribute name="jobmax" type="xs:integer"/>
+          <xs:attribute name="jobmin" type="xs:integer"/>
           <xs:attribute name="jobname" type="xs:NCName"/>
           <xs:attribute name="walltimemax"/>
           <xs:attribute name="walltimemin"/>
@@ -180,6 +189,7 @@
       <xs:sequence>
         <xs:element ref="template"/>
         <xs:element minOccurs="0" ref="task_count"/>
+        <xs:element minOccurs="0" ref="walltime"/>
         <xs:element minOccurs="0" ref="dependency"/>
         <xs:element ref="prereq"/>
       </xs:sequence>
@@ -188,4 +198,3 @@
   </xs:element>
 
 </xs:schema>
-

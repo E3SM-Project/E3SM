@@ -155,9 +155,7 @@ contains
     character(len=*), intent(in) :: comp_name(:)
     integer, intent(in) ::  comp_comm(:), comp_comm_iam(:)
     integer :: i
-    integer :: ncomps
     character(len=shr_kind_cl) :: nlfilename, cname
-    type(iosystem_desc_t) :: iosys
     integer :: ret
     character(*), parameter :: subName = '(shr_pio_init2) '
 
@@ -208,7 +206,7 @@ contains
        do i=1,total_comps
           if(comp_iamin(i)) then
              cname = comp_name(i)
-	     if(len_trim(cname) <= 3) then
+             if(len_trim(cname) <= 3) then
                 nlfilename=trim(shr_string_toLower(cname))//'_modelio.nml'
              else
                 nlfilename=trim(shr_string_toLower(cname(1:3)))//'_modelio.nml_'//cname(4:8)
@@ -259,9 +257,7 @@ contains
   subroutine shr_pio_finalize(  )
     integer :: ierr
     integer :: i
-    logical :: active
     do i=1,total_comps
-!       print *,__FILE__,__LINE__,drank,i,iosystems(i)%iosysid
        call pio_finalize(iosystems(i), ierr)
     end do
 

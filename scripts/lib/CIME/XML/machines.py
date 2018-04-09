@@ -51,6 +51,11 @@ class Machines(GenericXML):
         expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
 
+    def get_child(self, name=None, attributes=None, root=None, err_msg=None):
+        if root is None:
+            root = self.machine_node
+        return super(Machines, self).get_child(name, attributes, root, err_msg)
+
     def get_machines_dir(self):
         """
         Return the directory of the machines file
@@ -67,17 +72,17 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./")
+        nodes = self.get_children(root=self.machine_node)
         node_names = []
         for node in nodes:
-            node_names.append(node.tag)
+            node_names.append(self.name(node))
         return node_names
 
     def get_first_child_nodes(self, nodename):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./" + nodename)
+        nodes = self.get_children(nodename, root=self.machine_node)
         return nodes
 
     def list_available_machines(self):
@@ -85,9 +90,9 @@ class Machines(GenericXML):
         Return a list of machines defined for a given CIME_MODEL
         """
         machines = []
-        nodes  = self.get_nodes("machine")
+        nodes  = self.get_children("machine")
         for node in nodes:
-            mach = node.get("MACH")
+            mach = self.get(node, "MACH")
             machines.append(mach)
         return machines
 
@@ -125,13 +130,13 @@ class Machines(GenericXML):
         """
 
         machine = None
-        nodes = self.get_nodes("machine")
+        nodes = self.get_children("machine")
 
         for node in nodes:
-            machtocheck = node.get("MACH")
+            machtocheck = self.get(node, "MACH")
             logger.debug("machine is " + machtocheck)
-            regex_str_node = self.get_optional_node("NODENAME_REGEX", root=node)
-            regex_str = machtocheck if regex_str_node is None else regex_str_node.text
+            regex_str_node = self.get_optional_child("NODENAME_REGEX", root=node)
+            regex_str = machtocheck if regex_str_node is None else self.text(regex_str_node)
 
             if regex_str is not None:
                 logger.debug("machine regex string is " + regex_str)
@@ -158,8 +163,7 @@ class Machines(GenericXML):
         if machine == "Query":
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
-            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
-            expect(self.machine_node is not None, "No machine {} found".format(machine))
+            self.machine_node = super(Machines,self).get_child("machine", {"MACH" : machine}, err_msg="No machine {} found".format(machine))
             self.machine = machine
 
         return machine
@@ -179,9 +183,9 @@ class Machines(GenericXML):
         elif name == "MPILIB":
             value = self.get_default_MPIlib(attributes)
         else:
-            node = self.get_optional_node(name, root=self.machine_node, attributes=attributes)
+            node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
-                value = node.text
+                value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -273,64 +277,46 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
+        batch_system = self.get_optional_child("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
-            result = (batch_system.text is not None and batch_system.text != "none")
+            result = (self.text(batch_system) is not None and self.text(batch_system) != "none")
         logger.debug("Machine {} has batch: {}".format(self.machine, result))
         return result
 
     def get_suffix(self, suffix_type):
-        node = self.get_optional_node("default_run_suffix")
+        node = self.get_optional_child("default_run_suffix")
         if node is not None:
-            suffix_node = self.get_optional_node(suffix_type, root=node)
+            suffix_node = self.get_optional_child(suffix_type, root=node)
             if suffix_node is not None:
-                return suffix_node.text
+                return self.text(suffix_node)
 
         return None
 
+    def set_value(self, vid, value, subgroup=None, ignore_type=True):
+        tmproot = self.root
+        self.root = self.machine_node
+        result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
+                                               ignore_type=ignore_type)
+        self.root = tmproot
+        return result
+
+
     def print_values(self):
         # write out machines
-        machines = self.get_nodes(nodename="machine")
-        print( "Machines")
+        machines = self.get_children("machine")
+        logger.info("Machines")
         for machine in machines:
-            name = machine.get("MACH")
-            desc = machine.find("DESC")
-            os_  = machine.find("OS")
-            compilers = machine.find("COMPILERS")
-            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
+            name = self.get(machine, "MACH")
+            desc = self.get_child("DESC", root=machine)
+            os_  = self.get_child("OS", root=machine)
+            compilers = self.get_child("COMPILERS", root=machine)
+            max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
+            max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
 
-            print( "  {} : {} ".format(name , desc.text))
-            print( "      os             ", os_.text)
-            print( "      compilers      ",compilers.text)
+            print( "  {} : {} ".format(name , self.text(desc)))
+            print( "      os             ", self.text(os_))
+            print( "      compilers      ",self.text(compilers))
             if max_mpitasks_per_node is not None:
-                print("      pes/node       ",max_mpitasks_per_node.text)
+                print("      pes/node       ",self.text(max_mpitasks_per_node))
             if max_tasks_per_node is not None:
-                print("      max_tasks/node ",max_tasks_per_node.text)
-
-    def return_all_values(self):
-        # return a dictionary of machines
-        mach_dict = dict()
-        machines = self.get_nodes(nodename="machine")
-        for machine in machines:
-            name = machine.get("MACH")
-            desc = machine.find("DESC")
-            os_  = machine.find("OS")
-            compilers = machine.find("COMPILERS")
-            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
-            ppn = ''
-            if max_mpitasks_per_node is not None:
-                ppn = max_mpitasks_per_node.text
-
-            max_tasks_pn = ''
-            if max_tasks_per_node is not None:
-                max_tasks_pn = max_tasks_per_node.text
-
-            mach_dict[name] = { 'description'    : desc.text,
-                                'os'             : os_.text,
-                                'compilers'      : compilers.text,
-                                'pes/node'       : ppn,
-                                'max_tasks/node' : max_tasks_pn }
-
-        return mach_dict
+                print("      max_tasks/node ",self.text(max_tasks_per_node))

@@ -129,6 +129,9 @@ class CaseFake(object):
         """
         self.set_value('RUNDIR', os.path.join(self.get_value('CASEROOT'), 'run'))
 
+    def case_setup(self, clean=False, test_mode=False, reset=False):
+        pass
+
     def load_env(self, reset=False):
         pass
 

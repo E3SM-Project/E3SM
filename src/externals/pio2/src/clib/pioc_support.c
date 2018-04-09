@@ -1937,7 +1937,7 @@ int check_unlim_use(int ncid)
  * @author Ed Hartnett
  */
 int inq_file_metadata(file_desc_t *file, int ncid, int iotype, int *nvars, int **rec_var,
-                      int **pio_type, int **pio_type_size, int **mpi_type, int **mpi_type_size)
+                      int **pio_type, int **pio_type_size, MPI_Datatype **mpi_type, int **mpi_type_size)
 {
     int nunlimdims;        /* The number of unlimited dimensions. */
     int unlimdimid;
@@ -1966,7 +1966,7 @@ int inq_file_metadata(file_desc_t *file, int ncid, int iotype, int *nvars, int *
             return PIO_ENOMEM;
         if (!(*pio_type_size = malloc(*nvars * sizeof(int))))
             return PIO_ENOMEM;
-        if (!(*mpi_type = malloc(*nvars * sizeof(int))))
+        if (!(*mpi_type = malloc(*nvars * sizeof(MPI_Datatype))))
             return PIO_ENOMEM;
         if (!(*mpi_type_size = malloc(*nvars * sizeof(int))))
             return PIO_ENOMEM;
@@ -2145,7 +2145,7 @@ int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filena
     int *rec_var = NULL;
     int *pio_type = NULL;
     int *pio_type_size = NULL;
-    int *mpi_type = NULL;
+    MPI_Datatype *mpi_type = NULL;
     int *mpi_type_size = NULL;
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     int ierr = PIO_NOERR;      /* Return code from function calls. */
@@ -2355,7 +2355,7 @@ int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filena
             return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);                    
         if (!(pio_type_size = malloc(nvars * sizeof(int))))
             return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);                    
-        if (!(mpi_type = malloc(nvars * sizeof(int))))
+        if (!(mpi_type = malloc(nvars * sizeof(MPI_Datatype))))
             return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);                    
         if (!(mpi_type_size = malloc(nvars * sizeof(int))))
             return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);                    
@@ -2368,7 +2368,7 @@ int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filena
             return check_mpi(file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(pio_type_size, nvars, MPI_INT, ios->ioroot, ios->my_comm)))
             return check_mpi(file, mpierr, __FILE__, __LINE__);
-        if ((mpierr = MPI_Bcast(mpi_type, nvars, MPI_INT, ios->ioroot, ios->my_comm)))
+        if ((mpierr = MPI_Bcast(mpi_type, nvars*(int)(sizeof(MPI_Datatype)/sizeof(int)), MPI_INT, ios->ioroot, ios->my_comm)))
             return check_mpi(file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(mpi_type_size, nvars, MPI_INT, ios->ioroot, ios->my_comm)))
             return check_mpi(file, mpierr, __FILE__, __LINE__);

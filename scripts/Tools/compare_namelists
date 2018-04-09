@@ -18,8 +18,6 @@ def parse_command_line(args, description):
 usage="""\n{0} <Path to gold namelist file> <Path to new namelist file> [-c <CASEBASEID>] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare namelist files\033[0m
@@ -51,10 +49,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        CIME.utils.run_cmd_no_fail("python -m doctest {}/compare_namelists.py -v".format(CIME.utils.get_python_libs_root()), arg_stdout=None, arg_stderr=None)
-        return
-
     gold_file, compare_file, case = \
         parse_command_line(sys.argv, description)
 

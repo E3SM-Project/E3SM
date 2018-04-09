@@ -8,7 +8,7 @@ directory trees.
 from standard_script_setup import *
 from CIME.utils import run_cmd, run_cmd_no_fail
 
-import argparse, sys, os, doctest
+import argparse, sys, os
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -17,8 +17,6 @@ def parse_command_line(args, description):
         usage="""\n{0} case1 case2 [skip-files]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     > {0} case1 case2
@@ -106,7 +104,7 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
             is_text_file = "text" in out
             if (not (not show_binary and not is_text_file)):
                 the_text = open(path2, "r").read()
-                for replace_item, replace_with in repls.iteritems():
+                for replace_item, replace_with in repls.items():
                     the_text = the_text.replace(replace_item, replace_with)
 
                 stat, out, _ = run_cmd("diff -w {} -".format(path1), input_str=the_text)
@@ -121,21 +119,20 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     case1, case2, show_binary, skip_list = parse_command_line(sys.argv, description)
 
     xml_normalize_fields = ["TEST_TESTID", "SRCROOT"]
     repls = {}
     for xml_normalize_field in xml_normalize_fields:
-        val1 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case1)
-        val2 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case2)
-        if os.sep in val1:
-            repls[os.path.normpath(val2)] = os.path.normpath(val1)
-        else:
-            repls[val2] = val1
+        try:
+            val1 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case1)
+            val2 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case2)
+            if os.sep in val1:
+                repls[os.path.normpath(val2)] = os.path.normpath(val1)
+            else:
+                repls[val2] = val1
+        except SystemExit:
+            print("Warning, failed to normalize on " + xml_normalize_field)
 
     num_differing_files = recursive_diff(case1, case2, repls, show_binary, skip_list)
     print (num_differing_files, "files are different")
