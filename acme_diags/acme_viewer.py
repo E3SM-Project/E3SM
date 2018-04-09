@@ -487,7 +487,7 @@ def create_metadata(parameter):
     """
     metadata = collections.OrderedDict()
     metadata['Command to run'] = ''
-    cmd = 'acme_diags '
+    cmd = 'acme_diags --no_viewer '
 
     from acme_diags.acme_parser import ACMEParser
     parser = ACMEParser()

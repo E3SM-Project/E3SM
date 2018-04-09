@@ -58,6 +58,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.distributed = False
         self.num_workers = 4
 
+        self.no_viewer = False
         self.debug = False
 
         self.granulate = ['variables', 'seasons', 'regions', 'plevs']
