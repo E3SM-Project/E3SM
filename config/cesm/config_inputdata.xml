@@ -8,9 +8,15 @@
 </server>
 
 <server>
+  <protocal>ftp</protocal>
+  <address>ftp.cgd.ucar.edu/cesm/inputdata</address>
+</server>
+
+<server>
   <protocal>wget</protocal>
   <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
 </server>
+
 
 <server>
   <protocal>svn</protocal>
