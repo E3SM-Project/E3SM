@@ -1012,8 +1012,8 @@ contains
 !            if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, inside mod statement, apply forcing"
             !remap + forcing
 !            if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUNinside, dt_q*vsplit", dt_q*vsplit
-!            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
-            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%n0,nets,nete)
+!            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
           endif
           call TimeLevel_update(tl,"leapfrog")
         endif !if-statement r == 1
