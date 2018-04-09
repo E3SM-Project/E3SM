@@ -22,7 +22,11 @@ module hetfrz_classnuc
 
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use wv_saturation, only: svp_water, svp_ice
+#ifdef CAM_SHAN_OPT
+
+#else
 use shr_spfn_mod,  only: erf => shr_spfn_erf
+#endif
 
 implicit none
 private
@@ -232,6 +236,8 @@ subroutine hetfrz_classnuc_calc( &
    logical :: pdf_imm_in = .true.
    !------------------------------------------------------------------------------------------------
 
+   real(r8) :: shan_t1(i1:i2), shan_t2(i1:i2)
+
    errstring = ' '
 
    if (pdf_imm_in) then
@@ -401,12 +407,24 @@ subroutine hetfrz_classnuc_calc( &
    if (pdf_imm_in) then
       sum_imm_dust_a1 = 0._r8
       sum_imm_dust_a3 = 0._r8
-      do i = i1,i2-1
-         sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a1(i)*deltat)+ &
-            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a1(i+1)*deltat)))*pdf_d_theta
-         sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
-            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
+!      do i = i1,i2-1
+!         sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a1(i)*deltat)+ &
+!            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a1(i+1)*deltat)))*pdf_d_theta
+!         sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
+!            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
+!      end do
+      do i = i1,i2
+         shan_t1(i) = exp(-dim_Jimm_dust_a1(i)*deltat)
+         shan_t2(i) = exp(-dim_Jimm_dust_a3(i)*deltat)
       end do
+
+      do i = i1,i2-1
+         sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*shan_t1(i)+ &
+            pdf_imm_theta(i+1)*shan_t1(i+1)))*pdf_d_theta
+         sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*shan_t2(i)+ &
+            pdf_imm_theta(i+1)*shan_t2(i+1)))*pdf_d_theta
+      end do
+
       do i = i1,i2
       	   if (sum_imm_dust_a1 > 0.99_r8) then
                sum_imm_dust_a1 = 1.0_r8
