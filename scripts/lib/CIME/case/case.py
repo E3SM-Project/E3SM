@@ -1259,7 +1259,7 @@ class Case(object):
         if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
-            return executable + aprun_args + " " + run_misc_suffix
+            return self.get_resolved_value(executable + aprun_args + " " + run_misc_suffix, allow_unresolved_envvars=allow_unresolved_envvars)
 
         else:
             mpi_arg_string = " ".join(mpi_arg_list)
