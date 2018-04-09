@@ -22,7 +22,11 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 use wv_saturation,    only: qsat
 use phys_control,     only: phys_getopts
 use ref_pres,         only: top_lev => trop_cloud_top_lev
+#ifdef CAM_SHAN_OPT
+! use intel erf 
+#else
 use shr_spfn_mod,     only: erf => shr_spfn_erf
+#endif
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
@@ -1191,6 +1195,9 @@ subroutine explmix( q, src, ekkp, ekkm, overlapp, overlapm, &
 
    if ( is_unact ) then
       !     the qactold*(1-overlap) terms are resuspension of activated material
+#ifdef CAM_SHAN_OPT
+!dir$ simd
+#endif
       do k=top_lev,pver
          kp1=min(k+1,pver)
          km1=max(k-1,top_lev)
@@ -1213,6 +1220,9 @@ subroutine explmix( q, src, ekkp, ekkm, overlapp, overlapm, &
       q(pver)=max(q(pver),0._r8)
       !        endif
    else
+#ifdef CAM_SHAN_OPT
+!dir$ simd
+#endif
       do k=top_lev,pver
          kp1=min(k+1,pver)
          km1=max(k-1,top_lev)
