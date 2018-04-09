@@ -14,7 +14,7 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 import six
-from update_e3sm_tests import get_recommended_test_time
+from get_e3sm_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
 from CIME.test_status import *
 from CIME.XML.machines import Machines
