@@ -462,7 +462,7 @@ subroutine micro_mg_tend ( &
   real(r8), intent(in) :: q(:,:)        ! input h20 vapor mixing ratio (kg/kg)
 
   ! note: all input cloud variables are grid-averaged
-  real(r8), intent(in) :: qcn(:,:)       ! cloud water mixing ratio (kg/kg)
+  real(r8), contiguous, intent(in) :: qcn(:,:)       ! cloud water mixing ratio (kg/kg)
   real(r8), intent(in) :: qin(:,:)       ! cloud ice mixing ratio (kg/kg)
   real(r8), intent(in) :: ncn(:,:)       ! cloud water number conc (1/kg)
   real(r8), intent(in) :: nin(:,:)       ! cloud ice number conc (1/kg)
@@ -502,7 +502,7 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: qvlat(:,:)        ! microphysical tendency qv (1/s)
   real(r8), intent(out) :: qctend(:,:)       ! microphysical tendency qc (1/s)
   real(r8), intent(out) :: qitend(:,:)       ! microphysical tendency qi (1/s)
-  real(r8), intent(out) :: nctend(:,:)       ! microphysical tendency nc (1/(kg*s))
+  real(r8), contiguous, intent(out) :: nctend(:,:)       ! microphysical tendency nc (1/(kg*s))
   real(r8), intent(out) :: nitend(:,:)       ! microphysical tendency ni (1/(kg*s))
 
   real(r8), intent(out) :: qrtend(:,:)       ! microphysical tendency qr (1/s)
@@ -523,7 +523,7 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: deffi(:,:)        ! ice effective diameter for optics (radiation) (micron)
   real(r8), intent(out) :: pgamrad(:,:)      ! ice gamma parameter for optics (radiation) (no units)
   real(r8), intent(out) :: lamcrad(:,:)      ! slope of droplet distribution for optics (radiation) (1/m)
-  real(r8), intent(out) :: qsout(:,:)        ! snow mixing ratio (kg/kg)
+  real(r8), contiguous,intent(out) :: qsout(:,:)        ! snow mixing ratio (kg/kg)
   real(r8), intent(out) :: dsout(:,:)        ! snow diameter (m)
   real(r8), intent(out) :: lflx(:,:)         ! grid-box average liquid condensate flux (kg m^-2 s^-1)
   real(r8), intent(out) :: iflx(:,:)         ! grid-box average ice condensate flux (kg m^-2 s^-1)
@@ -567,13 +567,13 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: mnuccdtot(:,:)       ! mass tendency from ice nucleation
   real(r8), intent(out) :: nrout(:,:)        ! rain number concentration (1/m3)
   real(r8), intent(out) :: nsout(:,:)        ! snow number concentration (1/m3)
-  real(r8), intent(out) :: refl(:,:)         ! analytic radar reflectivity
-  real(r8), intent(out) :: arefl(:,:)        ! average reflectivity will zero points outside valid range
-  real(r8), intent(out) :: areflz(:,:)       ! average reflectivity in z.
-  real(r8), intent(out) :: frefl(:,:)        ! fractional occurrence of radar reflectivity
-  real(r8), intent(out) :: csrfl(:,:)        ! cloudsat reflectivity
-  real(r8), intent(out) :: acsrfl(:,:)       ! cloudsat average
-  real(r8), intent(out) :: fcsrfl(:,:)       ! cloudsat fractional occurrence of radar reflectivity
+  real(r8), contiguous, intent(out) :: refl(:,:)         ! analytic radar reflectivity
+  real(r8), contiguous, intent(out) :: arefl(:,:)        ! average reflectivity will zero points outside valid range
+  real(r8), contiguous, intent(out) :: areflz(:,:)       ! average reflectivity in z.
+  real(r8), contiguous, intent(out) :: frefl(:,:)        ! fractional occurrence of radar reflectivity
+  real(r8), contiguous, intent(out) :: csrfl(:,:)        ! cloudsat reflectivity
+  real(r8), contiguous, intent(out) :: acsrfl(:,:)       ! cloudsat average
+  real(r8), contiguous, intent(out) :: fcsrfl(:,:)       ! cloudsat fractional occurrence of radar reflectivity
   real(r8), intent(out) :: rercld(:,:)       ! effective radius calculation for rain + cloud
   real(r8), intent(out) :: ncai(:,:)         ! output number conc of ice nuclei available (1/m3)
   real(r8), intent(out) :: ncal(:,:)         ! output number conc of CCN (1/m3)
@@ -811,14 +811,15 @@ subroutine micro_mg_tend ( &
   real(r8) :: ratio
   real(r8) :: tmpfrz
   ! dummies for in-cloud variables
-  real(r8) :: dumc(mgncol,nlev)   ! qc
-  real(r8) :: dumnc(mgncol,nlev)  ! nc
-  real(r8) :: dumi(mgncol,nlev)   ! qi
-  real(r8) :: dumni(mgncol,nlev)  ! ni
-  real(r8) :: dumr(mgncol,nlev)   ! rain mixing ratio
-  real(r8) :: dumnr(mgncol,nlev)  ! rain number concentration
-  real(r8) :: dums(mgncol,nlev)   ! snow mixing ratio
-  real(r8) :: dumns(mgncol,nlev)  ! snow number concentration
+  !! shan
+  !!real(r8) :: dumc(mgncol,nlev)   ! qc
+  !!real(r8) :: dumnc(mgncol,nlev)  ! nc
+  real(r8) :: dumi2(mgncol,nlev)   ! qi
+  !!real(r8) :: dumni(mgncol,nlev)  ! ni
+  !!real(r8) :: dumr(mgncol,nlev)   ! rain mixing ratio
+  !!real(r8) :: dumnr(mgncol,nlev)  ! rain number concentration
+  !!real(r8) :: dums(mgncol,nlev)   ! snow mixing ratio
+  !!real(r8) :: dumns(mgncol,nlev)  ! snow number concentration
   ! Array dummy variable
   real(r8) :: dum_2D(mgncol,nlev)
   ! Total precipitation fraction used in mass_gradient method.
@@ -833,6 +834,36 @@ subroutine micro_mg_tend ( &
 
   ! number of sub-steps for loops over "n" (for sedimentation)
   integer nstep
+
+  ! shan
+  real(r8) :: invnstep
+  real(r8) :: dumc(nlev)
+  real(r8) :: dumnc(nlev)
+  real(r8) :: dumi(nlev) 
+  real(r8) :: dumni(nlev)
+  real(r8) :: dumr(nlev)
+  real(r8) :: dumnr(nlev)
+  real(r8) :: dums(nlev) 
+  real(r8) :: dumns(nlev)
+
+  real(r8) :: lami1(nlev)
+  real(r8) :: lamc1(nlev)
+  real(r8) :: lams1(nlev)
+  real(r8) :: lamr1(nlev)
+  real(r8) :: pdel1(nlev)
+  real(r8) :: qctend1(nlev)
+  real(r8) :: qitend1(nlev)
+  real(r8) :: qstend1(nlev)
+  real(r8) :: qrtend1(nlev)
+  real(r8) :: nctend1(nlev)
+  real(r8) :: nitend1(nlev)
+  real(r8) :: nrtend1(nlev)
+  real(r8) :: nstend1(nlev)
+
+  real(r8) :: qc1(nlev)
+  real(r8) :: qi1(nlev)
+  real(r8) :: qr1(nlev)
+  real(r8) :: qs1(nlev)
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -2069,6 +2100,25 @@ subroutine micro_mg_tend ( &
 
   sed_col_loop: do i=1,mgncol
   
+   ! get temp array: shan  
+   do k = 1, nlev 
+     pdel1(k) = 1.0/pdel(i, k)
+     qctend1(k) = qctend(i, k)
+     qitend1(k) = qitend(i, k)
+     nctend1(k) = nctend(i, k)
+     nitend1(k) = nitend(i, k)
+     qrtend1(k) = qrtend(i, k)
+     qstend1(k) = qstend(i, k)
+     nrtend1(k) = nrtend(i, k)
+     nstend1(k) = nstend(i, k)
+
+     qc1(k) = qc(i, k)
+     qi1(k) = qi(i, k)
+     qr1(k) = qr(i, k)
+     qs1(k) = qs(i, k)
+
+   end do
+
    if (.not. precip_off) then
 
      do k=1,nlev
@@ -2080,49 +2130,49 @@ subroutine micro_mg_tend ( &
         ! with microphysical tendencies to calculate sedimentation, assign to dummy vars
         ! note: these are in-cloud values***, hence we divide by cloud fraction
 
-        dumc(i,k) = (qc(i,k)+qctend(i,k)*deltat)/lcldm(i,k)
-        dumi(i,k) = (qi(i,k)+qitend(i,k)*deltat)/icldm(i,k)
-        dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
-        dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
+        dumc(k) = (qc1(k)+qctend1(k)*deltat)/lcldm(i,k)
+        dumi(k) = (qi1(k)+qitend1(k)*deltat)/icldm(i,k)
+        dumnc(k) = max((nc(i,k)+nctend1(k)*deltat)/lcldm(i,k),0._r8)
+        dumni(k) = max((ni(i,k)+nitend1(k)*deltat)/icldm(i,k),0._r8)
 
-        dumr(i,k) = (qr(i,k)+qrtend(i,k)*deltat)/precip_frac(i,k)
-        dumnr(i,k) = max((nr(i,k)+nrtend(i,k)*deltat)/precip_frac(i,k),0._r8)
-        dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)/precip_frac(i,k)
-        dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat)/precip_frac(i,k),0._r8)
+        dumr(k) = (qr1(k)+qrtend1(k)*deltat)/precip_frac(i,k)
+        dumnr(k) = max((nr(i,k)+nrtend1(k)*deltat)/precip_frac(i,k),0._r8)
+        dums(k) = (qs1(k)+qstend1(k)*deltat)/precip_frac(i,k)
+        dumns(k) = max((ns(i,k)+nstend1(k)*deltat)/precip_frac(i,k),0._r8)
 
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
-           dumnc(i,k)=ncnst/rho(i,k)
+           dumnc(k)=ncnst/rho(i,k)
         end if
 
         ! switch for specification of cloud ice number
         if (nicons) then
-           dumni(i,k)=ninst/rho(i,k)
+           dumni(k)=ninst/rho(i,k)
         end if
 
         ! obtain new slope parameter to avoid possible singularity
 
-        call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-             lami(i,k))
+        call size_dist_param_basic(mg_ice_props, dumi(k), dumni(k), &
+             lami1(k))
 
-        call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-             pgam(i,k), lamc(i,k))
+        call size_dist_param_liq(mg_liq_props, dumc(k), dumnc(k), rho(i,k), &
+             pgam(i,k), lamc1(k))
 
         ! calculate number and mass weighted fall velocity for droplets and cloud ice
         !-------------------------------------------------------------------
 
 
-        if (dumc(i,k).ge.qsmall) then
+        if (dumc(k).ge.qsmall) then
 
            vtrmc(i,k)=acn(i,k)*gamma(4._r8+bc+pgam(i,k))/ &
-                (lamc(i,k)**bc*gamma(pgam(i,k)+4._r8))
+                (lamc1(k)**bc*gamma(pgam(i,k)+4._r8))
 
            fc(k) = g*rho(i,k)*vtrmc(i,k)
 
            fnc(k) = g*rho(i,k)* &
                 acn(i,k)*gamma(1._r8+bc+pgam(i,k))/ &
-                (lamc(i,k)**bc*gamma(pgam(i,k)+1._r8))
+                (lamc1(k)**bc*gamma(pgam(i,k)+1._r8))
         else
            fc(k) = 0._r8
            fnc(k)= 0._r8
@@ -2130,14 +2180,14 @@ subroutine micro_mg_tend ( &
 
         ! calculate number and mass weighted fall velocity for cloud ice
 
-        if (dumi(i,k).ge.qsmall) then
+        if (dumi(k).ge.qsmall) then
 
-           vtrmi(i,k)=min(ain(i,k)*gamma_bi_plus4/(6._r8*lami(i,k)**bi), &
+           vtrmi(i,k)=min(ain(i,k)*gamma_bi_plus4/(6._r8*lami1(k)**bi), &
                 1.2_r8*rhof(i,k))
 
            fi(k) = g*rho(i,k)*vtrmi(i,k)
            fni(k) = g*rho(i,k)* &
-                min(ain(i,k)*gamma_bi_plus1/lami(i,k)**bi,1.2_r8*rhof(i,k))
+                min(ain(i,k)*gamma_bi_plus1/lami1(k)**bi,1.2_r8*rhof(i,k))
         else
            fi(k) = 0._r8
            fni(k)= 0._r8
@@ -2145,15 +2195,15 @@ subroutine micro_mg_tend ( &
 
         ! fallspeed for rain
 
-        call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-             lamr(i,k))
+        call size_dist_param_basic(mg_rain_props, dumr(k), dumnr(k), &
+             lamr1(k))
 
-        if (lamr(i,k).ge.qsmall) then
+        if (lamr1(k).ge.qsmall) then
 
            ! 'final' values of number and mass weighted mean fallspeed for rain (m/s)
 
-           unr(i,k) = min(arn(i,k)*gamma_br_plus1/lamr(i,k)**br,9.1_r8*rhof(i,k))
-           umr(i,k) = min(arn(i,k)*gamma_br_plus4/(6._r8*lamr(i,k)**br),9.1_r8*rhof(i,k))
+           unr(i,k) = min(arn(i,k)*gamma_br_plus1/lamr1(k)**br,9.1_r8*rhof(i,k))
+           umr(i,k) = min(arn(i,k)*gamma_br_plus4/(6._r8*lamr1(k)**br),9.1_r8*rhof(i,k))
 
            fr(k) = g*rho(i,k)*umr(i,k)
            fnr(k) = g*rho(i,k)*unr(i,k)
@@ -2165,14 +2215,14 @@ subroutine micro_mg_tend ( &
 
         ! fallspeed for snow
 
-        call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
-             lams(i,k))
+        call size_dist_param_basic(mg_snow_props, dums(k), dumns(k), &
+             lams1(k))
 
-        if (lams(i,k).ge.qsmall) then
+        if (lams1(k).ge.qsmall) then
 
            ! 'final' values of number and mass weighted mean fallspeed for snow (m/s)
-           ums(i,k) = min(asn(i,k)*gamma_bs_plus4/(6._r8*lams(i,k)**bs),1.2_r8*rhof(i,k))
-           uns(i,k) = min(asn(i,k)*gamma_bs_plus1/lams(i,k)**bs,1.2_r8*rhof(i,k))
+           ums(i,k) = min(asn(i,k)*gamma_bs_plus4/(6._r8*lams1(k)**bs),1.2_r8*rhof(i,k))
+           uns(i,k) = min(asn(i,k)*gamma_bs_plus1/lams1(k)**bs,1.2_r8*rhof(i,k))
 
            fs(k) = g*rho(i,k)*ums(i,k)
            fns(k) = g*rho(i,k)*uns(i,k)
@@ -2185,19 +2235,19 @@ subroutine micro_mg_tend ( &
         ! redefine dummy variables - sedimentation is calculated over grid-scale
         ! quantities to ensure conservation
 
-        dumc(i,k) = (qc(i,k)+qctend(i,k)*deltat)
-        dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat),0._r8)
-        dumi(i,k) = (qi(i,k)+qitend(i,k)*deltat)
-        dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat),0._r8)
-        dumr(i,k) = (qr(i,k)+qrtend(i,k)*deltat)
-        dumnr(i,k) = max((nr(i,k)+nrtend(i,k)*deltat),0._r8)
-        dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)
-        dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat),0._r8)
+        dumc(k) = (qc1(k)+qctend1(k)*deltat)
+        dumnc(k) = max((nc(i,k)+nctend1(k)*deltat),0._r8)
+        dumi(k) = (qi1(k)+qitend1(k)*deltat)
+        dumni(k) = max((ni(i,k)+nitend1(k)*deltat),0._r8)
+        dumr(k) = (qr1(k)+qrtend1(k)*deltat)
+        dumnr(k) = max((nr(i,k)+nrtend1(k)*deltat),0._r8)
+        dums(k) = (qs1(k)+qstend1(k)*deltat)
+        dumns(k) = max((ns(i,k)+nstend1(k)*deltat),0._r8)
 
-        if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8
-        if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
-        if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
-        if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
+        if (dumc(k).lt.qsmall) dumnc(k)=0._r8
+        if (dumi(k).lt.qsmall) dumni(k)=0._r8
+        if (dumr(k).lt.qsmall) dumnr(k)=0._r8
+        if (dums(k).lt.qsmall) dumns(k)=0._r8
 
      end do       !!! vertical loop
 
@@ -2207,9 +2257,10 @@ subroutine micro_mg_tend ( &
      ! for sedimentation calculations
      !-------------------------------------------------------------------
      nstep = 1 + int(max( &
-          maxval( fi/pdel(i,:)), &
-          maxval(fni/pdel(i,:))) &
+          maxval( fi*pdel1(:)), &
+          maxval(fni*pdel1(:))) &
           * deltat)
+     invnstep = 1.0/nstep
 
 
      ! loop over sedimentation sub-time step to ensure stability
@@ -2217,8 +2268,8 @@ subroutine micro_mg_tend ( &
      do n = 1,nstep
 
         if (do_cldice) then
-           falouti  = fi  * dumi(i,:)
-           faloutni = fni * dumni(i,:)
+           falouti  = fi  * dumi(:)
+           faloutni = fni * dumni(:)
         else
            falouti  = 0._r8
            faloutni = 0._r8
@@ -2229,16 +2280,16 @@ subroutine micro_mg_tend ( &
         k = 1
 
         ! add fallout terms to microphysical tendencies
-        faltndi = falouti(k)/pdel(i,k)
-        faltndni = faloutni(k)/pdel(i,k)
-        qitend(i,k) = qitend(i,k)-faltndi/nstep
-        nitend(i,k) = nitend(i,k)-faltndni/nstep
+        faltndi = falouti(k)*pdel1(k)
+        faltndni = faloutni(k)*pdel1(k)
+        qitend1(k) = qitend1(k)-faltndi*invnstep
+        nitend1(k) = nitend1(k)-faltndni*invnstep
 
         ! sedimentation tendency for output
-        qisedten(i,k)=qisedten(i,k)-faltndi/nstep
+        qisedten(i,k)=qisedten(i,k)-faltndi*invnstep
 
-        dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep
-        dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep
+        dumi(k) = dumi(k)-faltndi*deltat*invnstep
+        dumni(k) = dumni(k)-faltndni*deltat*invnstep
 
         do k = 2,nlev
 
@@ -2251,28 +2302,28 @@ subroutine micro_mg_tend ( &
            dum1=icldm(i,k)/icldm(i,k-1)
            dum1=min(dum1,1._r8)
 
-           faltndqie=(falouti(k)-falouti(k-1))/pdel(i,k)
-           faltndi=(falouti(k)-dum1*falouti(k-1))/pdel(i,k)
-           faltndni=(faloutni(k)-dum1*faloutni(k-1))/pdel(i,k)
+           faltndqie=(falouti(k)-falouti(k-1))*pdel1(k)
+           faltndi=(falouti(k)-dum1*falouti(k-1))*pdel1(k)
+           faltndni=(faloutni(k)-dum1*faloutni(k-1))*pdel1(k)
 
            ! add fallout terms to eulerian tendencies
 
-           qitend(i,k) = qitend(i,k)-faltndi/nstep
-           nitend(i,k) = nitend(i,k)-faltndni/nstep
+           qitend1(k) = qitend1(k)-faltndi*invnstep
+           nitend1(k) = nitend1(k)-faltndni*invnstep
 
            ! sedimentation tendency for output
-           qisedten(i,k)=qisedten(i,k)-faltndi/nstep
+           qisedten(i,k)=qisedten(i,k)-faltndi*invnstep
 
            ! add terms to to evap/sub of cloud water
 
-           qvlat(i,k)=qvlat(i,k)-(faltndqie-faltndi)/nstep
+           qvlat(i,k)=qvlat(i,k)-(faltndqie-faltndi)*invnstep
            ! for output
-           qisevap(i,k)=qisevap(i,k)-(faltndqie-faltndi)/nstep
+           qisevap(i,k)=qisevap(i,k)-(faltndqie-faltndi)*invnstep
 
-           tlat(i,k)=tlat(i,k)+(faltndqie-faltndi)*xxls/nstep
+           tlat(i,k)=tlat(i,k)+(faltndqie-faltndi)*xxls*invnstep
 
-           dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep
-           dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep
+           dumi(k) = dumi(k)-faltndi*deltat*invnstep
+           dumni(k) = dumni(k)-faltndni*deltat*invnstep
 
         end do
 
@@ -2294,56 +2345,57 @@ subroutine micro_mg_tend ( &
      ! for sedimentation calculations
      !-------------------------------------------------------------------
      nstep = 1 + int(max( &
-          maxval( fc/pdel(i,:)), &
-          maxval(fnc/pdel(i,:))) &
+          maxval( fc*pdel1(:)), &
+          maxval(fnc*pdel1(:))) &
           * deltat)
+     invnstep = 1.0 / nstep
 
      ! loop over sedimentation sub-time step to ensure stability
      !==============================================================
      do n = 1,nstep
 
-        faloutc  = fc  * dumc(i,:)
-        faloutnc = fnc * dumnc(i,:)
+        faloutc  = fc  * dumc(:)
+        faloutnc = fnc * dumnc(:)
 
         ! top of model
         k = 1
 
         ! add fallout terms to microphysical tendencies
-        faltndc = faloutc(k)/pdel(i,k)
-        faltndnc = faloutnc(k)/pdel(i,k)
-        qctend(i,k) = qctend(i,k)-faltndc/nstep
-        nctend(i,k) = nctend(i,k)-faltndnc/nstep
+        faltndc = faloutc(k)*pdel1(k)
+        faltndnc = faloutnc(k)*pdel1(k)
+        qctend1(k) = qctend1(k)-faltndc*invnstep
+        nctend1(k) = nctend1(k)-faltndnc*invnstep
 
         ! sedimentation tendency for output
-        qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
+        qcsedten(i,k)=qcsedten(i,k)-faltndc*invnstep
 
-        dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep
-        dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep
+        dumc(k) = dumc(k)-faltndc*deltat*invnstep
+        dumnc(k) = dumnc(k)-faltndnc*deltat*invnstep
 
         do k = 2,nlev
 
            dum=lcldm(i,k)/lcldm(i,k-1)
            dum=min(dum,1._r8)
-           faltndqce=(faloutc(k)-faloutc(k-1))/pdel(i,k)
-           faltndc=(faloutc(k)-dum*faloutc(k-1))/pdel(i,k)
-           faltndnc=(faloutnc(k)-dum*faloutnc(k-1))/pdel(i,k)
+           faltndqce=(faloutc(k)-faloutc(k-1))*pdel1(k)
+           faltndc=(faloutc(k)-dum*faloutc(k-1))*pdel1(k)
+           faltndnc=(faloutnc(k)-dum*faloutnc(k-1))*pdel1(k)
 
            ! add fallout terms to eulerian tendencies
-           qctend(i,k) = qctend(i,k)-faltndc/nstep
-           nctend(i,k) = nctend(i,k)-faltndnc/nstep
+           qctend1(k) = qctend1(k)-faltndc*invnstep
+           nctend1(k) = nctend1(k)-faltndnc*invnstep
 
            ! sedimentation tendency for output
-           qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
+           qcsedten(i,k)=qcsedten(i,k)-faltndc*invnstep
 
            ! add terms to to evap/sub of cloud water
-           qvlat(i,k)=qvlat(i,k)-(faltndqce-faltndc)/nstep
+           qvlat(i,k)=qvlat(i,k)-(faltndqce-faltndc)*invnstep
            ! for output
-           qcsevap(i,k)=qcsevap(i,k)-(faltndqce-faltndc)/nstep
+           qcsevap(i,k)=qcsevap(i,k)-(faltndqce-faltndc)*invnstep
 
-           tlat(i,k)=tlat(i,k)+(faltndqce-faltndc)*xxlv/nstep
+           tlat(i,k)=tlat(i,k)+(faltndqce-faltndc)*xxlv*invnstep
 
-           dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep
-           dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep
+           dumc(k) = dumc(k)-faltndc*deltat*invnstep
+           dumnc(k) = dumnc(k)-faltndnc*deltat*invnstep
 
         end do
 
@@ -2360,55 +2412,56 @@ subroutine micro_mg_tend ( &
      ! for sedimentation calculations
      !-------------------------------------------------------------------
      nstep = 1 + int(max( &
-          maxval( fr/pdel(i,:)), &
-          maxval(fnr/pdel(i,:))) &
+          maxval( fr*pdel1(:)), &
+          maxval(fnr*pdel1(:))) &
           * deltat)
+     invnstep = 1.0 / nstep
 
      ! loop over sedimentation sub-time step to ensure stability
      !==============================================================
      do n = 1,nstep
 
-        faloutr  = fr  * dumr(i,:)
-        faloutnr = fnr * dumnr(i,:)
+        faloutr  = fr  * dumr(:)
+        faloutnr = fnr * dumnr(:)
 
         ! top of model
         k = 1
 
         ! add fallout terms to microphysical tendencies
-        faltndr = faloutr(k)/pdel(i,k)
-        faltndnr = faloutnr(k)/pdel(i,k)
-        qrtend(i,k) = qrtend(i,k)-faltndr/nstep
-        nrtend(i,k) = nrtend(i,k)-faltndnr/nstep
+        faltndr = faloutr(k)*pdel1(k)
+        faltndnr = faloutnr(k)*pdel1(k)
+        qrtend1(k) = qrtend1(k)-faltndr*invnstep
+        nrtend1(k) = nrtend1(k)-faltndnr*invnstep
 
         ! sedimentation tendency for output
-        qrsedten(i,k)=qrsedten(i,k)-faltndr/nstep
+        qrsedten(i,k)=qrsedten(i,k)-faltndr*invnstep
 
-        dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
-        dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
+        dumr(k) = dumr(k)-faltndr*deltat*invnstep
+        dumnr(k) = dumnr(k)-faltndnr*deltat*invnstep
 
         do k = 2,nlev
 
-           faltndr=(faloutr(k)-faloutr(k-1))/pdel(i,k)
-           faltndnr=(faloutnr(k)-faloutnr(k-1))/pdel(i,k)
+           faltndr=(faloutr(k)-faloutr(k-1))*pdel1(k)
+           faltndnr=(faloutnr(k)-faloutnr(k-1))*pdel1(k)
 
            ! add fallout terms to eulerian tendencies
-           qrtend(i,k) = qrtend(i,k)-faltndr/nstep
-           nrtend(i,k) = nrtend(i,k)-faltndnr/nstep
+           qrtend1(k) = qrtend1(k)-faltndr*invnstep
+           nrtend1(k) = nrtend1(k)-faltndnr*invnstep
 
            ! sedimentation tendency for output
-           qrsedten(i,k)=qrsedten(i,k)-faltndr/nstep
+           qrsedten(i,k)=qrsedten(i,k)-faltndr*invnstep
 
-           dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
-           dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
+           dumr(k) = dumr(k)-faltndr*deltat*invnstep
+           dumnr(k) = dumnr(k)-faltndnr*deltat*invnstep
 
         end do
 
         ! Rain Flux
         do k = 1,nlev
-           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g / real(nstep)
+           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g *invnstep
         end do
 
-        prect(i) = prect(i)+faloutr(nlev)/g/real(nstep)/1000._r8
+        prect(i) = prect(i)+faloutr(nlev)/g*invnstep/1000._r8
 
      end do
 
@@ -2416,56 +2469,57 @@ subroutine micro_mg_tend ( &
      ! for sedimentation calculations
      !-------------------------------------------------------------------
      nstep = 1 + int(max( &
-          maxval( fs/pdel(i,:)), &
-          maxval(fns/pdel(i,:))) &
+          maxval( fs*pdel1(:)), &
+          maxval(fns*pdel1(:))) &
           * deltat)
+     invnstep = 1.0 / nstep
 
      ! loop over sedimentation sub-time step to ensure stability
      !==============================================================
      do n = 1,nstep
 
-        falouts  = fs  * dums(i,:)
-        faloutns = fns * dumns(i,:)
+        falouts  = fs  * dums(:)
+        faloutns = fns * dumns(:)
 
         ! top of model
         k = 1
 
         ! add fallout terms to microphysical tendencies
-        faltnds = falouts(k)/pdel(i,k)
-        faltndns = faloutns(k)/pdel(i,k)
-        qstend(i,k) = qstend(i,k)-faltnds/nstep
-        nstend(i,k) = nstend(i,k)-faltndns/nstep
+        faltnds = falouts(k)*pdel1(k)
+        faltndns = faloutns(k)*pdel1(k)
+        qstend1(k) = qstend1(k)-faltnds*invnstep
+        nstend1(k) = nstend1(k)-faltndns*invnstep
 
         ! sedimentation tendency for output
-        qssedten(i,k)=qssedten(i,k)-faltnds/nstep
+        qssedten(i,k)=qssedten(i,k)-faltnds*invnstep
 
-           dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep)
-           dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
+           dums(k) = dums(k)-faltnds*deltat*invnstep
+           dumns(k) = dumns(k)-faltndns*deltat*invnstep
 
         do k = 2,nlev
 
-           faltnds=(falouts(k)-falouts(k-1))/pdel(i,k)
-           faltndns=(faloutns(k)-faloutns(k-1))/pdel(i,k)
+           faltnds=(falouts(k)-falouts(k-1))*pdel1(k)
+           faltndns=(faloutns(k)-faloutns(k-1))*pdel1(k)
 
            ! add fallout terms to eulerian tendencies
-           qstend(i,k) = qstend(i,k)-faltnds/nstep
-           nstend(i,k) = nstend(i,k)-faltndns/nstep
+           qstend1(k) = qstend1(k)-faltnds*invnstep
+           nstend1(k) = nstend1(k)-faltndns*invnstep
 
            ! sedimentation tendency for output
-           qssedten(i,k)=qssedten(i,k)-faltnds/nstep
+           qssedten(i,k)=qssedten(i,k)-faltnds*invnstep
 
-           dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep)
-           dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
+           dums(k) = dums(k)-faltnds*deltat*invnstep
+           dumns(k) = dumns(k)-faltndns*deltat*invnstep
 
         end do   !! k loop
 
         ! Snow Flux
         do k = 1,nlev
-           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g / real(nstep)
+           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g *invnstep
         end do
 
-        prect(i) = prect(i)+falouts(nlev)/g/real(nstep)/1000._r8
-        preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8
+        prect(i) = prect(i)+falouts(nlev)/g*invnstep/1000._r8
+        preci(i) = preci(i)+falouts(nlev)/g*invnstep/1000._r8
 
      end do   !! nstep loop
      
@@ -2479,30 +2533,30 @@ subroutine micro_mg_tend ( &
 
      do k=1,nlev
 
-        dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
-        dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)
-        dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)
-        dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)
+        dumc(k) = max(qc1(k)+qctend1(k)*deltat,0._r8)
+        dumi(k) = max(qi1(k)+qitend1(k)*deltat,0._r8)
+        dumnc(k) = max(nc(i,k)+nctend1(k)*deltat,0._r8)
+        dumni(k) = max(ni(i,k)+nitend1(k)*deltat,0._r8)
 
-        dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)
-        dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)
-        dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)
-        dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)
+        dumr(k) = max(qr1(k)+qrtend1(k)*deltat,0._r8)
+        dumnr(k) = max(nr(i,k)+nrtend1(k)*deltat,0._r8)
+        dums(k) = max(qs1(k)+qstend1(k)*deltat,0._r8)
+        dumns(k) = max(ns(i,k)+nstend1(k)*deltat,0._r8)
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
-           dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
+           dumnc(k)=ncnst/rho(i,k)*lcldm(i,k)
         end if
 
         ! switch for specification of cloud ice number
         if (nicons) then
-           dumni(i,k)=ninst/rho(i,k)*icldm(i,k)
+           dumni(k)=ninst/rho(i,k)*icldm(i,k)
         end if
 
-        if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8
-        if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
-        if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
-        if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
+        if (dumc(k).lt.qsmall) dumnc(k)=0._r8
+        if (dumi(k).lt.qsmall) dumni(k)=0._r8
+        if (dumr(k).lt.qsmall) dumnr(k)=0._r8
+        if (dums(k).lt.qsmall) dumns(k)=0._r8
 
         ! calculate instantaneous processes (melting, homogeneous freezing)
         !====================================================================
@@ -2510,25 +2564,25 @@ subroutine micro_mg_tend ( &
         ! melting of snow at +2 C
 
         if (t(i,k)+tlat(i,k)/cpp*deltat > snowmelt) then
-           if (dums(i,k) > 0._r8) then
+           if (dums(k) > 0._r8) then
 
               ! make sure melting snow doesn't reduce temperature below threshold
-              dum = -xlf/cpp*dums(i,k)
+              dum = -xlf/cpp*dums(k)
               if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt. snowmelt) then
                  dum = (t(i,k)+tlat(i,k)/cpp*deltat-snowmelt)*cpp/xlf
-                 dum = dum/dums(i,k)
+                 dum = dum/dums(k)
                  dum = max(0._r8,dum)
                  dum = min(1._r8,dum)
               else
                  dum = 1._r8
               end if
 
-              qstend(i,k)=qstend(i,k)-dum*dums(i,k)/deltat
-              nstend(i,k)=nstend(i,k)-dum*dumns(i,k)/deltat
-              qrtend(i,k)=qrtend(i,k)+dum*dums(i,k)/deltat
-              nrtend(i,k)=nrtend(i,k)+dum*dumns(i,k)/deltat
+              qstend1(k)=qstend1(k)-dum*dums(k)/deltat
+              nstend1(k)=nstend1(k)-dum*dumns(k)/deltat
+              qrtend1(k)=qrtend1(k)+dum*dums(k)/deltat
+              nrtend1(k)=nrtend1(k)+dum*dumns(k)/deltat
 
-              dum1=-xlf*dum*dums(i,k)/deltat
+              dum1=-xlf*dum*dums(k)/deltat
               tlat(i,k)=tlat(i,k)+dum1
               meltsdttot(i,k)=meltsdttot(i,k) + dum1
            end if
@@ -2538,38 +2592,38 @@ subroutine micro_mg_tend ( &
 
         if (t(i,k)+tlat(i,k)/cpp*deltat < rainfrze) then
 
-           if (dumr(i,k) > 0._r8) then
+           if (dumr(k) > 0._r8) then
 
               ! make sure freezing rain doesn't increase temperature above threshold
-              dum = xlf/cpp*dumr(i,k)
+              dum = xlf/cpp*dumr(k)
               if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.rainfrze) then
                  dum = -(t(i,k)+tlat(i,k)/cpp*deltat-rainfrze)*cpp/xlf
-                 dum = dum/dumr(i,k)
+                 dum = dum/dumr(k)
                  dum = max(0._r8,dum)
                  dum = min(1._r8,dum)
               else
                  dum = 1._r8
               end if
 
-              qrtend(i,k)=qrtend(i,k)-dum*dumr(i,k)/deltat
-              nrtend(i,k)=nrtend(i,k)-dum*dumnr(i,k)/deltat
+              qrtend1(k)=qrtend1(k)-dum*dumr(k)/deltat
+              nrtend1(k)=nrtend1(k)-dum*dumnr(k)/deltat
 
               ! get mean size of rain = 1/lamr, add frozen rain to either snow or cloud ice
               ! depending on mean rain size
 
-              call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                   lamr(i,k))
+              call size_dist_param_basic(mg_rain_props, dumr(k), dumnr(k), &
+                   lamr1(k))
 
-              if (lamr(i,k) < 1._r8/Dcs) then
-                 qstend(i,k)=qstend(i,k)+dum*dumr(i,k)/deltat
-                 nstend(i,k)=nstend(i,k)+dum*dumnr(i,k)/deltat
+              if (lamr1(k) < 1._r8/Dcs) then
+                 qstend1(k)=qstend1(k)+dum*dumr(k)/deltat
+                 nstend1(k)=nstend1(k)+dum*dumnr(k)/deltat
               else
-                 qitend(i,k)=qitend(i,k)+dum*dumr(i,k)/deltat
-                 nitend(i,k)=nitend(i,k)+dum*dumnr(i,k)/deltat
+                 qitend1(k)=qitend1(k)+dum*dumr(k)/deltat
+                 nitend1(k)=nitend1(k)+dum*dumnr(k)/deltat
               end if
 
               ! heating tendency
-              dum1 = xlf*dum*dumr(i,k)/deltat
+              dum1 = xlf*dum*dumr(k)/deltat
               frzrdttot(i,k)=frzrdttot(i,k) + dum1
               tlat(i,k)=tlat(i,k)+dum1
 
@@ -2579,34 +2633,34 @@ subroutine micro_mg_tend ( &
 
         if (do_cldice) then
            if (t(i,k)+tlat(i,k)/cpp*deltat > tmelt) then
-              if (dumi(i,k) > 0._r8) then
+              if (dumi(k) > 0._r8) then
 
                  ! limit so that melting does not push temperature below freezing
                  !-----------------------------------------------------------------
-                 dum = -dumi(i,k)*xlf/cpp
+                 dum = -dumi(k)*xlf/cpp
                  if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt.tmelt) then
                     dum = (t(i,k)+tlat(i,k)/cpp*deltat-tmelt)*cpp/xlf
-                    dum = dum/dumi(i,k)
+                    dum = dum/dumi(k)
                     dum = max(0._r8,dum)
                     dum = min(1._r8,dum)
                  else
                     dum = 1._r8
                  end if
 
-                 qctend(i,k)=qctend(i,k)+dum*dumi(i,k)/deltat
+                 qctend1(k)=qctend1(k)+dum*dumi(k)/deltat
 
                  ! for output
-                 melttot(i,k)=dum*dumi(i,k)/deltat
+                 melttot(i,k)=dum*dumi(k)/deltat
 
                  ! assume melting ice produces droplet
                  ! mean volume radius of 8 micron
 
-                 nctend(i,k)=nctend(i,k)+3._r8*dum*dumi(i,k)/deltat/ &
+                 nctend1(k)=nctend1(k)+3._r8*dum*dumi(k)/deltat/ &
                       (4._r8*pi*5.12e-16_r8*rhow)
 
-                 qitend(i,k)=((1._r8-dum)*dumi(i,k)-qi(i,k))/deltat
-                 nitend(i,k)=((1._r8-dum)*dumni(i,k)-ni(i,k))/deltat
-                 tlat(i,k)=tlat(i,k)-xlf*dum*dumi(i,k)/deltat
+                 qitend1(k)=((1._r8-dum)*dumi(k)-qi1(k))/deltat
+                 nitend1(k)=((1._r8-dum)*dumni(k)-ni(i,k))/deltat
+                 tlat(i,k)=tlat(i,k)-xlf*dum*dumi(k)/deltat
               end if
            end if
 
@@ -2614,30 +2668,30 @@ subroutine micro_mg_tend ( &
            !-----------------------------------------------------------------
 
            if (t(i,k)+tlat(i,k)/cpp*deltat < 233.15_r8) then
-              if (dumc(i,k) > 0._r8) then
+              if (dumc(k) > 0._r8) then
 
                  ! limit so that freezing does not push temperature above threshold
-                 dum = dumc(i,k)*xlf/cpp
+                 dum = dumc(k)*xlf/cpp
                  if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.233.15_r8) then
                     dum = -(t(i,k)+tlat(i,k)/cpp*deltat-233.15_r8)*cpp/xlf
-                    dum = dum/dumc(i,k)
+                    dum = dum/dumc(k)
                     dum = max(0._r8,dum)
                     dum = min(1._r8,dum)
                  else
                     dum = 1._r8
                  end if
 
-                 qitend(i,k)=qitend(i,k)+dum*dumc(i,k)/deltat
+                 qitend1(k)=qitend1(k)+dum*dumc(k)/deltat
                  ! for output
-                 homotot(i,k)=dum*dumc(i,k)/deltat
+                 homotot(i,k)=dum*dumc(k)/deltat
 
                  ! assume 25 micron mean volume radius of homogeneously frozen droplets
                  ! consistent with size of detrained ice in stratiform.F90
-                 nitend(i,k)=nitend(i,k)+dum*3._r8*dumc(i,k)/(4._r8*3.14_r8*1.563e-14_r8* &
+                 nitend1(k)=nitend1(k)+dum*3._r8*dumc(k)/(4._r8*3.14_r8*1.563e-14_r8* &
                       500._r8)/deltat
-                 qctend(i,k)=((1._r8-dum)*dumc(i,k)-qc(i,k))/deltat
-                 nctend(i,k)=((1._r8-dum)*dumnc(i,k)-nc(i,k))/deltat
-                 tlat(i,k)=tlat(i,k)+xlf*dum*dumc(i,k)/deltat
+                 qctend1(k)=((1._r8-dum)*dumc(k)-qc1(k))/deltat
+                 nctend1(k)=((1._r8-dum)*dumnc(k)-nc(i,k))/deltat
+                 tlat(i,k)=tlat(i,k)+xlf*dum*dumc(k)/deltat
               end if
            end if
 
@@ -2670,10 +2724,10 @@ subroutine micro_mg_tend ( &
 
               dum = (qtmp-qvn)/(1._r8+(xxls*dum1+xxlv*(1._r8-dum1))**2 &
                    *qvn/(cpp*rv*ttmp**2))/deltat
-              qctend(i,k)=qctend(i,k)+dum*(1._r8-dum1)
+              qctend1(k)=qctend1(k)+dum*(1._r8-dum1)
               ! for output
               qcrestot(i,k)=dum*(1._r8-dum1)
-              qitend(i,k)=qitend(i,k)+dum*dum1
+              qitend1(k)=qitend1(k)+dum*dum1
               qirestot(i,k)=dum*dum1
               qvlat(i,k)=qvlat(i,k)-dum
               ! for output
@@ -2690,49 +2744,49 @@ subroutine micro_mg_tend ( &
         ! update cloud variables after instantaneous processes to get effective radius
         ! variables are in-cloud to calculate size dist parameters
 
-        dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)/lcldm(i,k)
-        dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)/icldm(i,k)
-        dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)/lcldm(i,k)
-        dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)/icldm(i,k)
+        dumc(k) = max(qc1(k)+qctend1(k)*deltat,0._r8)/lcldm(i,k)
+        dumi(k) = max(qi1(k)+qitend1(k)*deltat,0._r8)/icldm(i,k)
+        dumnc(k) = max(nc(i,k)+nctend1(k)*deltat,0._r8)/lcldm(i,k)
+        dumni(k) = max(ni(i,k)+nitend1(k)*deltat,0._r8)/icldm(i,k)
 
-        dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
-        dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
-        dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)/precip_frac(i,k)
-        dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)/precip_frac(i,k)
+        dumr(k) = max(qr1(k)+qrtend1(k)*deltat,0._r8)/precip_frac(i,k)
+        dumnr(k) = max(nr(i,k)+nrtend1(k)*deltat,0._r8)/precip_frac(i,k)
+        dums(k) = max(qs1(k)+qstend1(k)*deltat,0._r8)/precip_frac(i,k)
+        dumns(k) = max(ns(i,k)+nstend1(k)*deltat,0._r8)/precip_frac(i,k)
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
-           dumnc(i,k)=ncnst/rho(i,k)
+           dumnc(k)=ncnst/rho(i,k)
         end if
 
         ! switch for specification of cloud ice number
         if (nicons) then
-           dumni(i,k)=ninst/rho(i,k)
+           dumni(k)=ninst/rho(i,k)
         end if
 
         ! limit in-cloud mixing ratio to reasonable value of 5 g kg-1
-        dumc(i,k)=min(dumc(i,k),5.e-3_r8)
-        dumi(i,k)=min(dumi(i,k),5.e-3_r8)
+        dumc(k)=min(dumc(k),5.e-3_r8)
+        dumi(k)=min(dumi(k),5.e-3_r8)
         ! limit in-precip mixing ratios
-        dumr(i,k)=min(dumr(i,k),10.e-3_r8)
-        dums(i,k)=min(dums(i,k),10.e-3_r8)
+        dumr(k)=min(dumr(k),10.e-3_r8)
+        dums(k)=min(dums(k),10.e-3_r8)
 
         ! cloud ice effective radius
         !-----------------------------------------------------------------
 
         if (do_cldice) then
-           if (dumi(i,k).ge.qsmall) then
+           if (dumi(k).ge.qsmall) then
 
-              dum_2D(i,k) = dumni(i,k)
-              call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-                   lami(i,k))
+              dum_2D(i,k) = dumni(k)
+              call size_dist_param_basic(mg_ice_props, dumi(k), dumni(k), &
+                   lami1(k))
 
-              if (dumni(i,k) /=dum_2D(i,k)) then
+              if (dumni(k) /=dum_2D(i,k)) then
                  ! adjust number conc if needed to keep mean size in reasonable range
-                 nitend(i,k)=(dumni(i,k)*icldm(i,k)-ni(i,k))/deltat
+                 nitend1(k)=(dumni(k)*icldm(i,k)-ni(i,k))/deltat
               end if
 
-              effi(i,k) = 1.5_r8/lami(i,k)*1.e6_r8
+              effi(i,k) = 1.5_r8/lami1(k)*1.e6_r8
 
            else
               effi(i,k) = 25._r8
@@ -2749,7 +2803,7 @@ subroutine micro_mg_tend ( &
 
         ! cloud droplet effective radius
         !-----------------------------------------------------------------
-        if (dumc(i,k).ge.qsmall) then
+        if (dumc(k).ge.qsmall) then
 
 
            ! switch for specification of droplet and crystal number
@@ -2759,23 +2813,23 @@ subroutine micro_mg_tend ( &
               ! note that nctend may be further adjusted below if mean droplet size is
               ! out of bounds
 
-              nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
+              nctend1(k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
 
            end if
 
-           dum = dumnc(i,k)
+           dum = dumnc(k)
 
-           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                pgam(i,k), lamc(i,k))
+           call size_dist_param_liq(mg_liq_props, dumc(k), dumnc(k), rho(i,k), &
+                pgam(i,k), lamc1(k))
 
-           if (dum /= dumnc(i,k)) then
+           if (dum /= dumnc(k)) then
               ! adjust number conc if needed to keep mean size in reasonable range
-              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
+              nctend1(k)=(dumnc(k)*lcldm(i,k)-nc(i,k))/deltat
            end if
 
-           effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
+           effc(i,k) = (pgam(i,k)+3._r8)/lamc1(k)/2._r8*1.e6_r8
            !assign output fields for shape here
-           lamcrad(i,k)=lamc(i,k)
+           lamcrad(i,k)=lamc1(k)
            pgamrad(i,k)=pgam(i,k)
 
 
@@ -2784,14 +2838,14 @@ subroutine micro_mg_tend ( &
            !======================================
            ! assume constant number of 10^8 kg-1
 
-           dumnc(i,k)=1.e8_r8
+           dumnc(k)=1.e8_r8
 
            ! Pass in "false" adjust flag to prevent number from being changed within
            ! size distribution subroutine.
-           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                pgam(i,k), lamc(i,k))
+           call size_dist_param_liq(mg_liq_props, dumc(k), dumnc(k), rho(i,k), &
+                pgam(i,k), lamc1(k))
 
-           effc_fn(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
+           effc_fn(i,k) = (pgam(i,k)+3._r8)/lamc1(k)/2._r8*1.e6_r8
 
         else
            effc(i,k) = 10._r8
@@ -2803,16 +2857,16 @@ subroutine micro_mg_tend ( &
         ! recalculate 'final' rain size distribution parameters
         ! to ensure that rain size is in bounds, adjust rain number if needed
 
-        if (dumr(i,k).ge.qsmall) then
+        if (dumr(k).ge.qsmall) then
 
-           dum = dumnr(i,k)
+           dum = dumnr(k)
 
-           call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                lamr(i,k))
+           call size_dist_param_basic(mg_rain_props, dumr(k), dumnr(k), &
+                lamr1(k))
 
-           if (dum /= dumnr(i,k)) then
+           if (dum /= dumnr(k)) then
               ! adjust number conc if needed to keep mean size in reasonable range
-              nrtend(i,k)=(dumnr(i,k)*precip_frac(i,k)-nr(i,k))/deltat
+              nrtend1(k)=(dumnr(k)*precip_frac(i,k)-nr(i,k))/deltat
            end if
 
         end if
@@ -2820,16 +2874,16 @@ subroutine micro_mg_tend ( &
         ! recalculate 'final' snow size distribution parameters
         ! to ensure that snow size is in bounds, adjust snow number if needed
 
-        if (dums(i,k).ge.qsmall) then
+        if (dums(k).ge.qsmall) then
 
-           dum = dumns(i,k)
+           dum = dumns(k)
 
-           call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
-                lams(i,k))
+           call size_dist_param_basic(mg_snow_props, dums(k), dumns(k), &
+                lams1(k))
 
-           if (dum /= dumns(i,k)) then
+           if (dum /= dumns(k)) then
               ! adjust number conc if needed to keep mean size in reasonable range
-              nstend(i,k)=(dumns(i,k)*precip_frac(i,k)-ns(i,k))/deltat
+              nstend1(k)=(dumns(k)*precip_frac(i,k)-ns(i,k))/deltat
            end if
 
         end if
@@ -2840,11 +2894,24 @@ subroutine micro_mg_tend ( &
      do k=1,nlev
         ! if updated q (after microphysics) is zero, then ensure updated n is also zero
         !=================================================================================
-        if (qc(i,k)+qctend(i,k)*deltat.lt.qsmall) nctend(i,k)=-nc(i,k)/deltat
-        if (do_cldice .and. qi(i,k)+qitend(i,k)*deltat.lt.qsmall) nitend(i,k)=-ni(i,k)/deltat
-        if (qr(i,k)+qrtend(i,k)*deltat.lt.qsmall) nrtend(i,k)=-nr(i,k)/deltat
-        if (qs(i,k)+qstend(i,k)*deltat.lt.qsmall) nstend(i,k)=-ns(i,k)/deltat
+        if (qc1(k)+qctend1(k)*deltat.lt.qsmall) nctend1(k)=-nc(i,k)/deltat
+        if (do_cldice .and. qi1(k)+qitend1(k)*deltat.lt.qsmall) nitend1(k)=-ni(i,k)/deltat
+        if (qr1(k)+qrtend1(k)*deltat.lt.qsmall) nrtend1(k)=-nr(i,k)/deltat
+        if (qs1(k)+qstend1(k)*deltat.lt.qsmall) nstend1(k)=-ns(i,k)/deltat
 
+     end do
+
+     ! added by shan
+     do k = 1, nlev 
+       dumi2(i, k) = dumi(k)     
+       qctend(i, k) = qctend1(k)
+       qitend(i, k) = qitend1(k)
+       nctend(i, k) = nctend1(k)
+       nitend(i, k) = nitend1(k)
+       qrtend(i, k) = qrtend1(k)
+       qstend(i, k) = qstend1(k)
+       nrtend(i, k) = nrtend1(k)
+       nstend(i, k) = nstend1(k)
      end do
 
   end do sed_col_loop! i loop
@@ -2912,8 +2979,10 @@ subroutine micro_mg_tend ( &
   ! *****note: radar reflectivity is local (in-precip average)
   ! units of mm^6/m^3
 
-  do i = 1,mgncol
-     do k=1,nlev
+!  do i = 1,mgncol
+!     do k=1,nlev
+   do k = 1, nlev
+     do i = 1, mgncol
         if (qc(i,k).ge.qsmall .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
            dum=(qc(i,k)/lcldm(i,k)*rho(i,k)*1000._r8)**2 &
                 /(0.109_r8*(nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k)*rho(i,k)/1.e6_r8)*lcldm(i,k)/precip_frac(i,k)
@@ -2991,9 +3060,9 @@ subroutine micro_mg_tend ( &
 
   !redefine fice here....
   dum_2D = qsout + qrout + qc + qi
-  dumi = qsout + qi
-  where (dumi .gt. qsmall .and. dum_2D .gt. qsmall)
-     nfice=min(dumi/dum_2D,1._r8)
+  dumi2 = qsout + qi
+  where (dumi2 .gt. qsmall .and. dum_2D .gt. qsmall)
+     nfice=min(dumi2/dum_2D,1._r8)
   elsewhere
      nfice=0._r8
   end where
