@@ -1182,4 +1182,14 @@ using a fortran linker.
   </CPPDEFS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="theia">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
+</compiler>
+
 </config_compilers>

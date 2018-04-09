@@ -2,49 +2,49 @@
 
 <!--
 
- ===============================================================
- COMPILER and COMPILERS
- ===============================================================
- If a machine supports multiple compilers - then
-  - the settings for COMPILERS should reflect the supported compilers
-    as a comma separated string
-  - the setting for COMPILER should be the default compiler
-    (which is one of the values in COMPILERS)
+===============================================================
+COMPILER and COMPILERS
+===============================================================
+If a machine supports multiple compilers - then
+- the settings for COMPILERS should reflect the supported compilers
+as a comma separated string
+- the setting for COMPILER should be the default compiler
+(which is one of the values in COMPILERS)
 
- ===============================================================
- MPILIB and MPILIBS
- ===============================================================
- If a machine supports only one MPILIB is supported - then
- the setting for  MPILIB and MPILIBS should be blank ("")
- If a machine supports multiple mpi libraries (e.g. mpich and openmpi)
-  - the settings for MPILIBS should reflect the supported mpi libraries
-    as a comma separated string
+===============================================================
+MPILIB and MPILIBS
+===============================================================
+If a machine supports only one MPILIB is supported - then
+the setting for  MPILIB and MPILIBS should be blank ("")
+If a machine supports multiple mpi libraries (e.g. mpich and openmpi)
+- the settings for MPILIBS should reflect the supported mpi libraries
+as a comma separated string
 
- The default settings for COMPILERS and MPILIBS is blank (in config_machines.xml)
+The default settings for COMPILERS and MPILIBS is blank (in config_machines.xml)
 
- Normally variable substitutions are not made until the case scripts are run, however variables
- of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment
- variable of the same name if it exists.
+Normally variable substitutions are not made until the case scripts are run, however variables
+of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment
+variable of the same name if it exists.
 
- ===============================================================
- PROJECT_REQUIRED
- ===============================================================
- A machine may need the PROJECT xml variable to be defined either because it is
- used in some paths, or because it is used to give an account number in the job
- submission script. If either of these are the case, then PROJECT_REQUIRED
- should be set to TRUE for the given machine.
+===============================================================
+PROJECT_REQUIRED
+===============================================================
+A machine may need the PROJECT xml variable to be defined either because it is
+used in some paths, or because it is used to give an account number in the job
+submission script. If either of these are the case, then PROJECT_REQUIRED
+should be set to TRUE for the given machine.
 
 
- mpirun: the mpirun command that will be used to actually launch the model.
- The attributes used to choose the mpirun command are:
+mpirun: the mpirun command that will be used to actually launch the model.
+The attributes used to choose the mpirun command are:
 
- mpilib: can either be 'default' the name of an mpi library, or a compiler name so one can choose the mpirun
-	 based on the mpi library in use.
+mpilib: can either be 'default' the name of an mpi library, or a compiler name so one can choose the mpirun
+based on the mpi library in use.
 
-   the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
+the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
 
- unit_testing: can be 'true' or 'false'.
-   This allows using a different mpirun command to launch unit tests
+unit_testing: can be 'true' or 'false'.
+This allows using a different mpirun command to launch unit tests
 
 -->
 
@@ -194,8 +194,8 @@
 
   <machine MACH="centos7-linux">
     <DESC>
-	Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
-	using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
+      Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
+      using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
     </DESC>
     <NODENAME_REGEX>regex.expression.matching.your.machine</NODENAME_REGEX>
     <OS>LINUX</OS>
@@ -235,7 +235,7 @@
       <modules>
 	<command name="purge"/>
       </modules>
-       <modules compiler="gnu">
+      <modules compiler="gnu">
 	<command name="load">compiler/gnu/7.2.0</command>
 	<command name="load">mpi/gcc/mpich-3.2</command>
 	<command name="load">tool/netcdf/4.4.1.1/gcc</command>
@@ -957,7 +957,7 @@
 	<command name="load">compiler/pgi/17.04</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
+	<command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>
@@ -978,22 +978,22 @@
   <machine MACH="homebrew">
     <DESC>
 
-     Customize these fields as appropriate for your system,
-     particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
-     number of cores on your machine.  You may also want to change
-     instances of '$ENV{HOME}/projects' to your desired directory
-     organization.  You can use this in either of two ways: (1)
-     Without making any changes, by adding `--machine homebrew` to
-     create_newcase or create_test (2) Copying this into a
-     config_machines.xml file in your personal .cime directory and
-     then changing the machine name (MACH="homebrew") to
-     your machine name and the NODENAME_REGEX to something matching
-     your machine's hostname.  With (2), you should not need the
-     `--machine` argument, because the machine should be determined
-     automatically.  However, with (2), you will also need to copy the
-     homebrew-specific settings in config_compilers.xml into a
-     config_compilers.xml file in your personal .cime directory, again
-     changing the machine name (MACH="homebrew") to your machine name.
+      Customize these fields as appropriate for your system,
+      particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
+      number of cores on your machine.  You may also want to change
+      instances of '$ENV{HOME}/projects' to your desired directory
+      organization.  You can use this in either of two ways: (1)
+      Without making any changes, by adding `--machine homebrew` to
+      create_newcase or create_test (2) Copying this into a
+      config_machines.xml file in your personal .cime directory and
+      then changing the machine name (MACH="homebrew") to
+      your machine name and the NODENAME_REGEX to something matching
+      your machine's hostname.  With (2), you should not need the
+      `--machine` argument, because the machine should be determined
+      automatically.  However, with (2), you will also need to copy the
+      homebrew-specific settings in config_compilers.xml into a
+      config_compilers.xml file in your personal .cime directory, again
+      changing the machine name (MACH="homebrew") to your machine name.
 
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
@@ -1276,7 +1276,7 @@
     <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-       <executable>/usr/bin/runjob</executable>
+      <executable>/usr/bin/runjob</executable>
       <arguments>
 	<arg name="label"> --label short</arg>
 	<!-- Ranks per node!! -->
@@ -1833,7 +1833,7 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
-     </environment_variables>
+    </environment_variables>
   </machine>
 
   <machine MACH="lbl-lr3">
@@ -2158,67 +2158,114 @@
   </machine>
 
   <machine MACH="modex">
-      <DESC>Medium sized linux cluster at BNL, torque scheduler.</DESC>
-      <OS>LINUX</OS>
-      <COMPILERS>gnu</COMPILERS>
-      <MPILIBS>openmpi,mpi-serial</MPILIBS>
-      <CIME_OUTPUT_ROOT>/data/$ENV{USER}</CIME_OUTPUT_ROOT>
-      <DIN_LOC_ROOT>/data/Model_Data/cesm_input_datasets/</DIN_LOC_ROOT>
-      <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-      <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-      <CCSM_CPRNC>/data/software/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-      <GMAKE_J>4</GMAKE_J>
-      <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-      <SUPPORTED_BY>rgknox at lbl dot gov and sserbin at bnl gov</SUPPORTED_BY>
-      <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-      <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
-      <COSTPES_PER_NODE>12</COSTPES_PER_NODE>
-      <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-      <mpirun mpilib="default">
-          <executable>mpirun</executable>
-          <arguments>
-              <arg name="num_tasks">-np {{ total_tasks }}</arg>
-              <arg name="tasks_per_node">-npernode $MAX_TASKS_PER_NODE</arg>
-          </arguments>
-      </mpirun>
-      <module_system type="module">
-          <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-          <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-          <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-          <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-          <cmd_path lang="sh">module</cmd_path>
-          <cmd_path lang="csh">module</cmd_path>
-          <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-          <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-          <modules>
-              <command name="purge"/>
-              <command name="load">perl/5.22.1</command>
-              <command name="load">libxml2/2.9.2</command>
-              <command name="load">maui/3.3.1</command>
-              <command name="load">python/2.7.13</command>
-          </modules>
-          <modules compiler="gnu">
-              <command name="load">gcc/5.4.0</command>
-              <command name="load">gfortran/5.4.0</command>
-              <command name="load">hdf5/1.8.19fates</command>
-              <command name="load">netcdf/4.4.1.1-gnu540-fates</command>
-              <command name="load">openmpi/2.1.1-gnu540</command>
-          </modules>
-          <modules compiler="gnu" mpilib="!mpi-serial">
-              <command name="load">openmpi/2.1.1-gnu540</command>
-          </modules>
-      </module_system>
-       <environment_variables>
-         <env name="HDF5_HOME">/data/software/hdf5/1.8.19fates</env>
-         <env name="NETCDF_PATH">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
-       </environment_variables>
-
+    <DESC>Medium sized linux cluster at BNL, torque scheduler.</DESC>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>/data/$ENV{USER}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/data/Model_Data/cesm_input_datasets/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/data/software/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>rgknox at lbl dot gov and sserbin at bnl gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
+    <COSTPES_PER_NODE>12</COSTPES_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">-np {{ total_tasks }}</arg>
+        <arg name="tasks_per_node">-npernode $MAX_TASKS_PER_NODE</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">perl/5.22.1</command>
+        <command name="load">libxml2/2.9.2</command>
+        <command name="load">maui/3.3.1</command>
+        <command name="load">python/2.7.13</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/5.4.0</command>
+        <command name="load">gfortran/5.4.0</command>
+        <command name="load">hdf5/1.8.19fates</command>
+        <command name="load">netcdf/4.4.1.1-gnu540-fates</command>
+        <command name="load">openmpi/2.1.1-gnu540</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">openmpi/2.1.1-gnu540</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="HDF5_HOME">/data/software/hdf5/1.8.19fates</env>
+      <env name="NETCDF_PATH">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
+    </environment_variables>
   </machine>
 
-<default_run_suffix>
-  <default_run_exe>${EXEROOT}/cesm.exe </default_run_exe>
-  <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
-</default_run_suffix>
+  <machine MACH="theia">
+    <DESC>theia</DESC>
+    <NODENAME_REGEX>tfe</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>nems</PROJECT>
+    <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>/scratch4/NCEPDEV/nems/noscrub/$USER/cimecases</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/cesm_baselines</BASELINE_ROOT>
+    <!--<CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>-->
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="num_tasks"> -n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules compiler="intel">
+	<command name="purge"/>
+	<command name="load">intel</command>
+	<command name="load">impi/5.1.1.109</command>
+	<command name="load">netcdf/4.3.0</command>
+	<command name="load">pnetcdf</command>
+	<command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
+	<command name="load">esmf/7.1.0r</command>
+      </modules>
+    </module_system>
+  </machine>
+
+  <default_run_suffix>
+    <default_run_exe>${EXEROOT}/cesm.exe </default_run_exe>
+    <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
+  </default_run_suffix>
 
 </config_machines>

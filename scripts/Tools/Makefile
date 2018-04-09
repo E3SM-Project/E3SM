@@ -31,6 +31,7 @@ exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
 SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
 SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
@@ -99,6 +100,12 @@ endif
 # USE_ESMF_LIB is currently only defined in env_build.xml
 ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
+endif
+
+ifeq ($(COMP_INTERFACE), NUOPC)
+   CPPDEFS += -DNUOPC_INTERFACE
+else
+   CPPDEFS += -DMCT_INTERFACE
 endif
 
 ifeq ($(strip $(MPILIB)),mpi-serial)

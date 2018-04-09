@@ -128,7 +128,7 @@ OR
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files")
 
-    parser.add_argument("--driver",
+    parser.add_argument("--driver", "-driver", default="mct", choices=('mct','nuopc'),
                         help="Select a driver. No selection implies mct driver")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)

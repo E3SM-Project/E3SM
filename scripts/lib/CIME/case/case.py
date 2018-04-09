@@ -13,7 +13,7 @@ from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
 from CIME.utils                     import get_current_commit, safe_copy
-from CIME.locked_files         import LOCKED_DIR, lock_file
+from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -112,6 +112,7 @@ class Case(object):
         self._component_classes = []
         self._component_description = {}
         self._is_env_loaded = False
+        self._comp_interface = None
 
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
@@ -445,6 +446,11 @@ class Case(object):
         # that has a match for either the alias or the longname in that order
         for component in components:
 
+            # The following lines change the component name to be driver-nuopc
+            # TODO: this needs to be generalized and not hard-wired here
+            if component == 'drv' and self.comp_interface == "nuopc":
+                component = 'drv-nuopc'
+
             # Determine the compsets file for this component
             compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
 
@@ -532,7 +538,11 @@ class Case(object):
         Assumes that self._primary_component has already been set.
         """
 
+        # The following lines change the component name to be driver-nuopc
+        # TODO: this needs to be generalized and not hard-wired here
         component = self.get_primary_component()
+        if component == 'drv' and self.comp_interface == "nuopc":
+            component = 'drv-nuopc'
 
         compset_spec_file = files.get_value("COMPSETS_SPEC_FILE",
                                             {"component":component}, resolved=False)
@@ -605,7 +615,8 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
 
-        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        comp_interface = self.lookups["COMP_INTERFACE"]
+        drv_config_file = files.get_value("CONFIG_CPL_FILE", {"component":comp_interface})
         drv_comp = Component(drv_config_file, "CPL")
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
@@ -631,11 +642,10 @@ class Case(object):
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
-        comp_root_dir = files.get_value(root_dir_node_name,
-                                        {"component":"drv"}, resolved=False)
+        comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_interface}, resolved=False)
+
         if comp_root_dir is not None:
             self.set_value(root_dir_node_name, comp_root_dir)
-
 
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -658,7 +668,8 @@ class Case(object):
             # For files following version 3 schema this also checks the compsetname validity
 
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
-            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
+            expect(self._component_description[comp_class] is not None,
+                   "No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
@@ -778,6 +789,7 @@ class Case(object):
 
         if driver:
             self.set_lookup_value("COMP_INTERFACE", driver)
+            self.comp_interface = self.lookups["COMP_INTERFACE"]
 
         #--------------------------------------------
         # compset, pesfile, and compset components

@@ -418,6 +418,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --machine {}".format(machine)
         if compiler is not None:
             create_newcase_cmd += " --compiler {}".format(compiler)
+        if "Vnuopc" in case_opts:
+            create_newcase_cmd += " --driver nuopc "
         if self._project is not None:
             create_newcase_cmd += " --project {} ".format(self._project)
         if self._output_root is not None:
@@ -431,6 +433,11 @@ class TestScheduler(object):
         if test_mods is not None:
             files = Files()
             (component, modspath) = test_mods.split('/',1)
+
+            # TODO: to get the right attributes of COMP_ROOT_DIR_CPL in evaluating definition_file - need
+            # to do the following first - this needs to be changed so that the following two lines are not needed!
+            comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL",{"component":"drv-nuopc"}, resolved=False)
+            files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
