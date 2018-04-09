@@ -384,7 +384,7 @@ class TestScheduler(object):
             if rc != 0:
                 self._log_output(test,
                                  "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".
-                                 format(phase, test, cmd, 
+                                 format(phase, test, cmd,
                                         output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
@@ -399,7 +399,7 @@ class TestScheduler(object):
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
                                  "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".
-                                 format(phase, test, cmd, 
+                                 format(phase, test, cmd,
                                         output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 return True, errput
 
@@ -430,11 +430,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if self._cime_model == "e3sm":
-                component = "allactive"
-                modspath = test_mods
-            else:
-                (component, modspath) = test_mods.split('/',1)
+            (component, modspath) = test_mods.split('/',1)
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
