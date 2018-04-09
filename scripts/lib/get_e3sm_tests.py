@@ -4,7 +4,7 @@ from CIME.XML.machines import Machines
 import six, sys, os
 
 sys.path.append(os.path.join(get_cime_root(), "config", "e3sm"))
-from e3sm_tests import _TEST_SUITES
+from e3sm_tests import _TEST_SUITES # pylint: disable=import-error
 
 ###############################################################################
 def get_test_suite(suite, machine=None, compiler=None):
