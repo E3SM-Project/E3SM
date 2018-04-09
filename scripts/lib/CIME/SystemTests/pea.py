@@ -42,3 +42,4 @@ class PEA(SystemTestsCompareTwo):
 
         if os.path.isfile("Macros"):
             os.remove("Macros")
+        self._case.case_setup(test_mode=True, reset=True)
