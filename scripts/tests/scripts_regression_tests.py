@@ -214,8 +214,9 @@ class N_TestUnitTest(unittest.TestCase):
         os.makedirs(test_dir)
         unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
-        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
-                            %(unit_test_tool,test_dir,test_spec_dir))
+        args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
+        args += " --machine {}".format(MACHINE.get_machine_name())
+        run_cmd_no_fail("{} {}".format(unit_test_tool, args))
         cls._do_teardown.append(test_dir)
 
     def test_b_cime_f90_unit_tests(self):
@@ -231,9 +232,9 @@ class N_TestUnitTest(unittest.TestCase):
         os.makedirs(test_dir)
         test_spec_dir = CIME.utils.get_cime_root()
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
-
-        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
-                            %(unit_test_tool,test_dir,test_spec_dir))
+        args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
+        args += " --machine {}".format(MACHINE.get_machine_name())
+        run_cmd_no_fail("{} {}".format(unit_test_tool, args))
         cls._do_teardown.append(test_dir)
 
     @classmethod
