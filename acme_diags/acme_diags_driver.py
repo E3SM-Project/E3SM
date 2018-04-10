@@ -11,6 +11,7 @@ import getpass
 import datetime
 import importlib
 import traceback
+import subprocess
 import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
@@ -48,6 +49,21 @@ def _collaspse_results(parameters):
             output_parameters.append(p1)
 
     return output_parameters
+
+
+def provenance(results_dir):
+    """Store a JSON of the environmental provenance in results_dir"""
+    cmd = 'conda list'
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, err = p.communicate()
+    print(type(output))
+    print(type(err))
+    fnm = os.path.join(results_dir, 'prov.txt')
+
+    with file(fnm, 'w') as f:
+        f.write(output)
+        f.write(err)
+    print('Saving provenance data in: {}'.format(fnm))
 
 
 def run_diag(parameters):
@@ -146,15 +162,16 @@ def main():
 
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
-
-    elif parameters[0].no_viewer:
-        print('Viewer not created because the no_viewer parameter is True.')
-
     else:
-        pth = os.path.join(parameters[0].results_dir, 'viewer')
-        if not os.path.exists(pth):
-            os.makedirs(pth)
-        create_viewer(pth, parameters, parameters[0].output_format[0])
+        provenance(parameters[0].results_dir)
+        
+        if parameters[0].no_viewer:
+            print('Viewer not created because the no_viewer parameter is True.')
+        else:
+            pth = os.path.join(parameters[0].results_dir, 'viewer')
+            if not os.path.exists(pth):
+                os.makedirs(pth)
+            create_viewer(pth, parameters, parameters[0].output_format[0])
 
 
 if __name__ == '__main__':
