@@ -804,50 +804,50 @@ is the value of that variable from the *previous* time level!
 <!-- ================ -->
 
 	<!--  Variables related to ice sheet geometry -->
-	<var_struct name="geometry" time_levs="1">
-		<var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
-		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
-		/>
-		<var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="ice thickness"
-		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="1"
-		     description="layer thickness"
-		/>
-		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
-		     description="elevation at bottom of ice"
-		/>
-		<var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
-		     description="elevation at top of ice"
-		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
-		     description="layer thickness on cell edges"
-		/>
+        <var_struct name="geometry" time_levs="1">
+                <var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
+                     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
+                />
+                <var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="ice thickness"
+                />
+                <var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="1"
+                     description="layer thickness"
+                />
+                <var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
+                     description="elevation at bottom of ice"
+                />
+                <var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
+                     description="elevation at top of ice"
+                />
+                <var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+                     description="layer thickness on cell edges"
+                />
                 <var name="dHdt" type="real" dimensions="nCells Time" units="m a^{-1}"
                      description="diagnostic field of rate of thickness change with time (dH/dt). This includes all processes (flux divergence, SMB, BMB, calving, etc.) because it is calculated as the new thickness minus the old thickness divided by the time step."
-		/>
-		<var name="thicknessOld" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="ice thickness from previous time level (only used to calculate thicknessTendency)"
-		/>
+                />
+                <var name="thicknessOld" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="ice thickness from previous time level (only used to calculate thicknessTendency)"
+                />
                 <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
-		     description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
-		/>
-		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
-		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
-		/>
-		<var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
-		     description="bitmask indicating various properties about the ice sheet on edges."
-		/>
-		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none" time_levs="2"
-		     description="bitmask indicating various properties about the ice sheet on vertices."
-		/>
-		<!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
+                     description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
+                />
+                <var name="cellMask" type="integer" dimensions="nCells Time" units="none"
+                     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
+                />
+                <var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
+                     description="bitmask indicating various properties about the ice sheet on edges."
+                />
+                <var name="vertexMask" type="integer" dimensions="nVertices Time" units="none" time_levs="2"
+                     description="bitmask indicating various properties about the ice sheet on vertices."
+                />
+                <!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
 
-		<var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-		     description="Surface mass balance"
-		/>
-		<var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="Basal mass balance applied"
+                <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied surface mass balance"
+                />
+                <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied basal mass balance"
                 />
                 <var name="groundedBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Basal mass balance on grounded regions"
@@ -855,146 +855,147 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Basal mass balance on floating regions"
                 />
-		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="thickness of ice that calves (less than or equal to ice thickness)"
-		/>
+                <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="thickness of ice that calves (less than or equal to ice thickness)"
+                />
                 <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="m s" time_levs="1"
-		     description="proportionality constant K2+- used in eigencalving formulation"
-		/>
+                     description="proportionality constant K2+- used in eigencalving formulation"
+                />
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane).  This retreat rate is converted in the code to requiredCalvingVolumeRate."
-		/>
+                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane).  This retreat rate is converted from a flux to a rate in the code requiredCalvingVolumeRate."
+                />
                 <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"
-		     description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
-		/>
-                <var name="uncalvedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
-		     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
-		/>
-		<var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="thickness of basal water"
-		/>
-		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="thickness of ice added to restore the calving front to its initial position"
+                     description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
+                />
+               <var name="uncalvedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
+                />
+                <var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="thickness of basal water"
+                />
+                <var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="thickness of ice added when the config_restore_calving_front option is set to .true. (in order to maintain the calving front at its initial position)"
                 />
                 <!-- Variables only needed for calculating diffusivity at cell centers - this is always done now so no package is attached here -->
-		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="normal surface slope on edges"
-		/>
+                <var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="normal surface slope on edges"
+                />
                 <var name="apparentDiffusivity" type="real" dimensions="nCells Time"
-                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers"
-		/>
-		<!-- Variables only needed by SIA solver -->
-		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
-		     description="elevation at top of ice on vertices" packages="SIAvelocity"
-		/>
-		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
-		/>
-		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
-		/>
-	</var_struct>
+                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers (estimated based on the local ice flux and surface slope)"
+                />
+                <!-- Variables only needed by SIA solver -->
+                <var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+                     description="elevation at top of ice on vertices" packages="SIAvelocity"
+                />
+                <var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
+                />
+                <var name="slopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
+                />
+        </var_struct>
 
 <!-- ================ -->
 
 	<!-- Variables related to velocity -->
-	<var_struct name="velocity" time_levs="1">
-		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
-		     description="flow law parameter, A"
-		/>
-		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge, layer interface"
-		/>
-		<var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge, layer midpoint"
-		/>
-		<var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge, computed at initialization"
-		/>
-		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
-		/>
-		<var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers.    Also, for higher-order dycores, on input: value of the y-component of velocity that should be applied where dirichletVelocityMask==1."
-		/>
-		<var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
-		/>
-		<var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
-		/>
-		<var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
-		/>
-		<var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
-		     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
-		/>
-		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
-		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
-		/>
-		<var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{-1}" default_value="1.0e8"
-		     description="higher-order basal traction parameter; NOTE: not SI units!"
-		/>
-		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
-		     description="higher-order basal traction parameter; NOTE: not SI units!"
-		/>
-		<var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="x-component of strain rate"
-		/>
-		<var name="eyy" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="y-component of strain rate"
-		/>
-		<var name="exy" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="shear component of strain rate"
-		/>
-		<var name="eTheta" type="real" dimensions="nCells Time" units="radians"
-		     description="orientation of principal strain rate"
-		/>
-		<var name="eyx" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="shear component of strain rate"
-		/>
-		<var name="eMax" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="magnitude of first principal strain rate"
-		/>
-		<var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
-		     description="magnitude of second principal strain rate"
-		/>
+        <var_struct name="velocity" time_levs="1">
+                <var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+                     description="flow law parameter, A"
+                />
+                <var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, layer interface"
+                />
+                <var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, layer midpoint"
+                />
+                <var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, computed at initialization"
+                />
+                <var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
+                />
+                <var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers.    Also, for higher-order dycores, on input: value of the y-component of velocity that should be applied where dirichletVelocityMask==1."
+                />
+                <var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
+                />
+                <var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
+                />
+                <var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
+                />
+                <var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
+                />
+                <var name="basalSpeed"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
+                />
+                <var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{-1}" default_value="1.0e8"
+                     description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
+                />
+                <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
+                     description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
+                />
+                <var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="x-component of strain rate"
+                />
+                <var name="eyy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="y-component of strain rate"
+                />
+                <var name="exy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="shear component of strain rate"
+                />
+                <var name="eTheta" type="real" dimensions="nCells Time" units="radians"
+                     description="orientation of principal strain rate"
+                />
+                <var name="eyx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="shear component of strain rate"
+                />
+                <var name="eMax" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="magnitude of first principal strain rate"
+                />
+                <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="magnitude of second principal strain rate"
+                />
+
 
 		<!-- Variables only needed by HO solver -->
-		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
-		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
-			units="none"  time_levs="2"
-			description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
-		     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="floatingEdges"
-			type="integer" dimensions="nEdges Time"
-			units="unitless"
-			description="edges which are floating have a value of 1.  non floating edges have a value of 0."
-			packages="higherOrderVelocity"
-		/>
-	</var_struct>
+                <var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
+                     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
+                        packages="higherOrderVelocity"
+                />
+                <var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
+                        units="none"  time_levs="2"
+                        description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
+                        packages="higherOrderVelocity"
+                />
+                <var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
+                     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
+                        packages="higherOrderVelocity"
+                />
+                <var name="floatingEdges"
+                        type="integer" dimensions="nEdges Time"
+                        units="unitless"
+                        description="edges which are floating have a value of 1.  non floating edges have a value of 0."
+                        packages="higherOrderVelocity"
+                />
+        </var_struct>
 
 <!-- ================ -->
 
 	<!-- Variables related to observations -->
-	<var_struct name="observations" time_levs="1" package="observations">
-		<var name="observedSurfaceVelocityX" type="real" dimensions="nCells Time" units="m s^-1"
-		     description="X-component of observed surface velocity" />
-		<var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^-1"
-		     description="Y-component of observed surface velocity" />
-		<var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^-1"
-		     description="uncertainty in observed surface velocity" />
-		<var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^-1"
+        <var_struct name="observations" time_levs="1" package="observations">
+                <var name="observedSurfaceVelocityX" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="X-component of observed surface velocity" />
+                <var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Y-component of observed surface velocity" />
+                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="uncertainty in observed surface velocity magnitude" />
+                <var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
                         description="observed tendency in thickness (dH/dt)" />
-		<var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^-1"
+                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
                         description="uncertainty in observed tendency in thickness (dH/dt)" />
                 <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                         description="uncertainty in observed surface mass balance" />
@@ -1002,52 +1003,52 @@ is the value of that variable from the *previous* time level!
                         description="uncertainty in observed thickness" />
                 <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                         description="uncertainty in observed floating basal mass balance" />
-	</var_struct>
+        </var_struct>
 
 <!-- ================ -->
 
 	<!-- Variables related to thermal state -->
-	<var_struct name="thermal" time_levs="1">
-		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
-		     description="interior ice temperature"
-		/>
-		<var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
-		     description="interior water fraction"
-		/>
-		<var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
-		     description="interior ice enthalpy"
-		/>
-		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
-		     description="surface air temperature"
-		/>
-		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
-		     description="upper surface ice temperature"
-		/>
-		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
-		     description="lower surface ice temperature"
-		/>
-		<var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
-		     description="pressure melt temperature"
-		/>
-		<var name="basalPmpTemperature" type="real" dimensions="nCells Time" units="K"
-		     description="lower surface pressure melt temperature"
-		/>
-		<var name="surfaceConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
-		     description="conductive heat flux at the upper surface (positive downward)"
-		/>
-		<var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
-		     description="conductive heat flux at the lower surface (positive downward)"
-		/>
-		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" default_value="0.06"
-		     description="basal heat flux into the ice (positive upward)"
-		/>
-		<var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
-		     description="basal frictional flux into the ice (positive upward)"
-		/>
-		<var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s^{-1}"
-		     description="interior heat dissipation rate, divided by rhoi*cp_ice"
-		/>
-	</var_struct>
+        <var_struct name="thermal" time_levs="1">
+                <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
+                     description="interior ice temperature"
+                />
+                <var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="interior ice water fraction"
+                />
+                <var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
+                     description="interior ice enthalpy"
+                />
+                <var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="air temperature at the ice sheet surface"
+                />
+                <var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="temperature at upper ice service"
+                />
+                <var name="basalTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="temperature at lower ice surface"
+                />
+                <var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="pressure melt temperature"
+                />
+                <var name="basalPmpTemperature" type="real" dimensions="nCells Time" units="K"
+                     description="pressure melt temperature at lower ice surface"
+                />
+                <var name="surfaceConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="conductive heat flux at the upper ice surface (positive downward)"
+                />
+                <var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="conductive heat flux at the lower ice surface (positive downward)"
+                />
+                <var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" default_value="0.06"
+                     description="basal heat flux into the ice (positive upward)"
+                />
+                <var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="basal frictional heat flux into the ice (positive upward)"
+                />
+                <var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s^{-1}"
+                     description="interior heat dissipation rate, divided by rhoi*cp_ice"
+                />
+        </var_struct>
 
 <!-- ================ -->
 
