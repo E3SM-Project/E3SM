@@ -1,3 +1,4 @@
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 has_gftp = find_executable("globus-url-copy")
 has_svn = find_executable("svn")
