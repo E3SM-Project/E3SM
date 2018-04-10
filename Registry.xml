@@ -242,10 +242,10 @@
 	<nml_record name="time_integration" in_defaults="true">
 		<nml_option name="config_dt" type="character" default_value="0001-00-00_00:00:00" units="unitless"
 		            description="Length of model time step defined as a time interval."
-		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit, e.g. 0000-00-01_00:00:00 and 0000-00-00_24:00:00 are identical for representing an interval of one day)"
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
-		            description="Time integration method."
+		            description="Time integration method (currently, only forward Euler is supported)."
 		            possible_values="'forward_euler'"
 		/>
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
@@ -257,7 +257,7 @@
 			possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
-			description="The maximum allowable time step in seconds.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds)."
+			description="The maximum allowable time step in seconds. If the allowable time step determined by the adaptive CFL calculation is longer than this, then the model will specify config_max_adaptive_timestep as the time step instead. Defaults to 100 years (in seconds)."
 			possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_adaptive_timestep_CFL_fraction" type="real" default_value="0.25" units="none"
@@ -265,11 +265,11 @@
 			possible_values="Any positive real value less than 1.0."
 		/>
 		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
-			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep."
+			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"
-		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring you get output at a specific desired interval (rather than the closest time after) or for running coupled to earth system models that expect a certain interval."
+		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
 	</nml_record>
@@ -337,7 +337,7 @@
 		            possible_values=".true. or .false."
                 />
                 <nml_option name="config_write_albany_ascii_mesh" type="logical" default_value=".false." units="unitless"
-		            description="Logical flag determining if Albany ascii mesh files will be written.  If .true., model initializes, writes the mesh files, and then terminates."
+		            description="Logical flag determining if ascii mesh files from the Albany velocity solver will be written to output. If .true., the model initializes, writes the mesh files, and then terminates."
 		            possible_values=".true. or .false."
                 />
 
@@ -346,7 +346,7 @@
 
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
-		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). Default FO advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection, neither of which is currently fully supported."
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice)."
 		            possible_values="Any positive interger value."
 		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
@@ -374,11 +374,11 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_print_calving_info" type="logical" default_value=".false." units="unitless"
-		            description="Prints additional information about calving."
+		            description="Prints additional information about calving physics (if enabled)."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_print_thermal_info" type="logical" default_value=".false." units="unitless"
-		            description="Prints additional information about thermal calculations."
+		            description="Prints additional information about thermal calculations if enabled)."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
