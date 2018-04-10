@@ -1727,7 +1727,7 @@
     <MPILIBS>impi,mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/scratch/projects/xsede/CESM//cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -1780,13 +1780,12 @@
 
   <machine MACH="stampede2-knl">
     <DESC>Intel Xeon Phi 7250 ("Knights Landing") , batch system is SLURM</DESC>
-    <NODENAME_REGEX>.*stampede2</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/scratch/projects/xsede/CESM//cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
