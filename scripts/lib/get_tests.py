@@ -1,10 +1,77 @@
 import CIME.utils
-from CIME.utils import expect, convert_to_seconds, parse_test_name, get_cime_root
+from CIME.utils import expect, convert_to_seconds, parse_test_name, get_cime_root, get_model
 from CIME.XML.machines import Machines
 import six, sys, os
 
-sys.path.append(os.path.join(get_cime_root(), "config", "e3sm"))
-from e3sm_tests import _TEST_SUITES # pylint: disable=import-error
+# Expect that, if a model wants to use python-based test lists, they will have a file
+# config/$model/tests.py , containing a test dictionary called _TESTS
+
+sys.path.append(os.path.join(get_cime_root(), "config", get_model()))
+_ALL_TESTS = {}
+try:
+    from tests import _TESTS # pylint: disable=import-error
+    _ALL_TESTS.update(_TESTS)
+except:
+    pass
+
+# Here are the tests belonging to e3sm suites. Format is
+# <test>.<grid>.<compset>.
+# suite_name -> (inherits_from, timelimit, [test [, mods[, machines]]])
+#   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
+#   If testmods are needed, a 2-ple must be provided  (test, mods)
+#   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
+
+_CIME_TESTS = {
+
+    "cime_tiny" : (None, "0:10:00",
+                   ("ERS.f19_g16_rx1.A",
+                    "NCK.f19_g16_rx1.A")
+                   ),
+
+    "cime_test_only_pass" : (None, "0:10:00",
+                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNPASS_P1.f45_g37_rx1.A")
+                   ),
+
+    "cime_test_only_slow_pass" : (None, "0:10:00",
+                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
+                   ),
+
+    "cime_test_only" : (None, "0:10:00",
+                   ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
+                    "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
+                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.f19_g16_rx1.A",
+                    "TESTTESTDIFF_P1.f19_g16_rx1.A",
+                    "TESTMEMLEAKFAIL_P1.f09_g16.X",
+                    "TESTMEMLEAKPASS_P1.f09_g16.X")
+                   ),
+
+    "cime_developer" : (None, "0:15:00",
+                            ("NCK_Ld3.f45_g37_rx1.A",
+                             "ERI.f09_g16.X",
+                             "ERIO.f09_g16.X",
+                             "SEQ_Ln9.f19_g16_rx1.A",
+                             ("ERS.ne30_g16_rx1.A","drv-y100k"),
+                             "IRT_N2.f19_g16_rx1.A",
+                             "ERR.f45_g37_rx1.A",
+                             "ERP.f45_g37_rx1.A",
+                             "SMS_D_Ln9.f19_g16_rx1.A",
+                             "DAE.f19_f19.A",
+                             "PET_P4.f19_f19.A",
+                             "SMS.T42_T42.S",
+                             "PRE.f19_f19.ADESP",
+                             "PRE.f19_f19.ADESP_TEST",
+                             "MCC_P1.f19_g16_rx1.A",
+                             "LDSTA.f45_g37_rx1.A")
+                            ),
+}
+
+_ALL_TESTS.update(_CIME_TESTS)
 
 ###############################################################################
 def get_test_suite(suite, machine=None, compiler=None):
@@ -12,7 +79,7 @@ def get_test_suite(suite, machine=None, compiler=None):
     """
     Return a list of FULL test names for a suite.
     """
-    expect(suite in _TEST_SUITES, "Unknown test suite: '{}'".format(suite))
+    expect(suite in _ALL_TESTS, "Unknown test suite: '{}'".format(suite))
     machobj = Machines(machine=machine)
     machine = machobj.get_machine_name()
 
@@ -20,7 +87,7 @@ def get_test_suite(suite, machine=None, compiler=None):
         compiler = machobj.get_default_compiler()
     expect(machobj.is_valid_compiler(compiler),"Compiler {} not valid for machine {}".format(compiler,machine))
 
-    inherits_from, _, tests_raw = _TEST_SUITES[suite]
+    inherits_from, _, tests_raw = _ALL_TESTS[suite]
     tests = []
     for item in tests_raw:
         test_mod = None
@@ -57,7 +124,7 @@ def get_test_suite(suite, machine=None, compiler=None):
 ###############################################################################
 def get_test_suites():
 ###############################################################################
-    return list(_TEST_SUITES.keys())
+    return list(_ALL_TESTS.keys())
 
 ###############################################################################
 def infer_machine_name_from_tests(testargs):
@@ -166,7 +233,7 @@ def get_recommended_test_time(test_full_name):
     best_time = None
     suites = get_test_suites()
     for suite in suites:
-        _, rec_time, tests_raw = _TEST_SUITES[suite]
+        _, rec_time, tests_raw = _ALL_TESTS[suite]
         for item in tests_raw:
             test_mod = None
             if (isinstance(item, six.string_types)):

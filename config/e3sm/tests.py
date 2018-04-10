@@ -4,57 +4,7 @@
 #   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
 #   If testmods are needed, a 2-ple must be provided  (test, mods)
 #   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
-_TEST_SUITES = {
-    "cime_tiny" : (None, "0:10:00",
-                   ("ERS.f19_g16_rx1.A",
-                    "NCK.f19_g16_rx1.A")
-                   ),
-
-    "cime_test_only_pass" : (None, "0:10:00",
-                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNPASS_P1.f45_g37_rx1.A")
-                   ),
-
-    "cime_test_only_slow_pass" : (None, "0:10:00",
-                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
-                   ),
-
-    "cime_test_only" : (None, "0:10:00",
-                   ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
-                    "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
-                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTTESTDIFF_P1.f19_g16_rx1.A",
-                    "TESTMEMLEAKFAIL_P1.f09_g16.X",
-                    "TESTMEMLEAKPASS_P1.f09_g16.X")
-                   ),
-
-    "cime_developer" : (None, "0:15:00",
-                            ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI.f09_g16.X",
-                             "ERIO.f09_g16.X",
-                             "SEQ_Ln9.f19_g16_rx1.A",
-                             ("ERS.ne30_g16_rx1.A","drv-y100k"),
-                             "IRT_N2.f19_g16_rx1.A",
-                             "ERR.f45_g37_rx1.A",
-                             "ERP.f45_g37_rx1.A",
-                             "SMS_D_Ln9.f19_g16_rx1.A",
-                             "DAE.f19_f19.A",
-                             "PET_P4.f19_f19.A",
-                             "SMS.T42_T42.S",
-                             "PRE.f19_f19.ADESP",
-                             "PRE.f19_f19.ADESP_TEST",
-                             "MCC_P1.f19_g16_rx1.A",
-                             "LDSTA.f45_g37_rx1.A")
-                            ),
-
-    #
-    # ACME tests below
-    #
+_TESTS = {
 
     "e3sm_runoff_developer" : (None, "0:45:00",
                              ("ERS.f19_f19.IM1850CLM45CN",
