@@ -906,7 +906,7 @@
 
   <machine MACH="hobart">
     <DESC>NCAR CGD Linux Cluster 48 pes/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>^h.*\.cgd\.ucar\.edu</NODENAME_REGEX>
+    <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2,openmpi</MPILIBS>
@@ -915,7 +915,7 @@
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -970,9 +970,6 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
-    <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
   </machine>
 
   <machine MACH="homebrew">
@@ -1095,110 +1092,6 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
-  </machine>
-
-  <machine MACH="lawrencium-lr3">
-    <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>rgknox at lbl dot gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-	<arg name="num_tasks">-np $TOTALPES</arg>
-	<arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE </arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-      <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/Modules/python.py</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">cmake</command>
-        <command name="load">perl xml-libxml switch python/2.7</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">intel/2016.4.072</command>
-        <command name="load">mkl</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
-        <command name="load">netcdf/4.4.1.1-intel-s</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial">
-        <command name="load">openmpi</command>
-        <command name="load">netcdf/4.4.1.1-intel-p</command>
-      </modules>
-    </module_system>
-  </machine>
-  
-  <machine MACH="lawrencium-lr2">
-    <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>rgknox and gbisht at lbl dot gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
-        <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-      <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/Modules/python.py</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">cmake</command>
-        <command name="load">perl xml-libxml switch python/2.7</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">intel/2016.4.072</command>
-        <command name="load">mkl</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
-        <command name="load">netcdf/4.4.1.1-intel-s</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial">
-        <command name="load">openmpi</command>
-        <command name="load">netcdf/4.4.1.1-intel-p</command>
-      </modules>
-    </module_system>
   </machine>
 
   <machine MACH="melvin">
@@ -1752,25 +1645,25 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="purge"></command>
-        <command name="load">TACC</command>
-        <command name="load">python/2.7.13</command>
-        <command name="load">intel/17.0.4</command>
-        <command name="load">cmake/3.10.2</command>
+	<command name="purge"></command>
+	<command name="load">TACC</command>
+	<command name="load">python/2.7.13</command>
+	<command name="load">intel/17.0.4</command>
+	<command name="load">cmake/3.10.2</command>
       </modules>
       <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.3b</command>
-        <command name="load">pnetcdf/1.8.1</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+	<command name="load">mvapich2/2.3b</command>
+	<command name="load">pnetcdf/1.8.1</command>
+	<command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="impi">
-        <command name="rm">mvapich2</command>
-        <command name="load">impi/17.0.3</command>
-        <command name="load">pnetcdf/1.8.1</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+	<command name="rm">mvapich2</command>
+	<command name="load">impi/17.0.3</command>
+	<command name="load">pnetcdf/1.8.1</command>
+	<command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.3.3.1</command>
+	<command name="load">netcdf/4.3.3.1</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1836,6 +1729,7 @@
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
   </machine>
+
 
   <machine MACH="lbl-lr3">
     <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
