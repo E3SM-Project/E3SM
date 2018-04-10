@@ -9,11 +9,11 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
-		            description="fraction of limiting timestep to use"
+		            description="fraction of adaptive CFL timestep to use"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
-			description="The maximum allowable time step in seconds for the subglacial hydrology model.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds)."
+			description="The maximum allowable time step in seconds. If the allowable time step determined by the adaptive CFL calculation is longer than this, then the model will specify config_SGH_max_adaptive_timestep as the time step instead.  Defaults to 100 years (in seconds)."
 			possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_normal_slope" units="unitless"
@@ -30,23 +30,23 @@
 		            possible_values="'cavity', 'overburden'"
                 />
 		<nml_option name="config_SGH_alpha" type="real" default_value="1.25" units="unitless"
-		            description="power in flux formula"
+		            description="power of alpha parameter in subglacial water flux formula"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_beta" type="real" default_value="1.5" units="unitless"
-		            description="power in flux formula"
+		            description="power of beta parameter in subglacial water flux formula"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_conduc_coeff" type="real" default_value="0.001" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
-		            description="conductivity coefficient"
+		            description="conductivity coefficient for subglacial water flux"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_till_drainage" type="real" default_value="3.1709792e-11" units="m s^-1"
-		            description="background till drainage rate"
+		            description="background subglacial till drainage rate"
                             possible_values="positive real number.  Default value is 0.001 m/yr"
 		/>
 		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
-		            description="Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled."
+		            description="Advection method for SGH. 'fo'=first-order upwind; 'fct'=flux-corrected transport. FCT currently not enabled."
 		            possible_values="'fo','fct'"
 		/>
 		<nml_option name="config_SGH_bed_roughness" type="real" default_value="0.5" units="m^-1"
@@ -66,7 +66,7 @@
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_till_max" type="real" default_value="2.0" units="m"
-		            description="maximum water thickness in till"
+		            description="maximum water thickness in subglacial till"
 		            possible_values="positive real number"
 		/>
                 <!-- channel options -->
@@ -75,19 +75,19 @@
 		            possible_values=".true. or .false."
 		/>
                 <nml_option name="config_SGH_chnl_alpha" type="real" default_value="1.25" units="unitless"
-		            description="power in flux formula"
+		            description="power of alpha parameter in subglacial water flux formula (in channels)"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_chnl_beta" type="real" default_value="1.5" units="unitless"
-		            description="power in flux formula"
+		            description="power of beta parameter in subglacial water flux formula (in channels)"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="COMPLICATED"
-		            description="conductivity coefficient"
+		            description="conductivity coefficient (in channels)"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_chnl_creep_coefficient" type="real" default_value="0.04" units="none"
-		            description="creep closure coefficient"
+		            description="creep closure coefficient (in channels)"
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_incipient_channel_width" type="real" default_value="2.0" units="m"
@@ -95,7 +95,7 @@
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".true." units="none"
-                            description="whether to include the pressure melt term in the channel opening"
+                            description="whether to include the pressure melt term in the rate of channel opening"
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_SGH_shmip_forcing" type="character" default_value="none" units="none"
