@@ -120,7 +120,7 @@ module mpas_block_decomp
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
 
            if (istatus /= 0) then
-              call mpas_log_write('Could not open block decomposition file for %i blocks.', MPAS_LOG_ERR, intArgs=(/dminfo % total_blocks/) )
+              call mpas_log_write('Could not open block decomposition file for $i blocks.', MPAS_LOG_ERR, intArgs=(/dminfo % total_blocks/) )
               call mpas_log_write('Filename: '//trim(filename), MPAS_LOG_CRIT)
            end if
 
