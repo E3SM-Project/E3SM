@@ -56,8 +56,6 @@ def provenance(results_dir):
     cmd = 'conda list'
     p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = p.communicate()
-    print(type(output))
-    print(type(err))
     fnm = os.path.join(results_dir, 'prov.txt')
 
     with file(fnm, 'w') as f:
