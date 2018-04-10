@@ -438,6 +438,8 @@ add_default($nl, 'config_tracer_advection');
 add_default($nl, 'config_calving');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
+add_default($nl, 'config_calving_eigencalving_parameter_source');
+add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
@@ -447,13 +449,18 @@ add_default($nl, 'config_restore_calving_front');
 ##################################
 
 add_default($nl, 'config_thermal_solver');
+add_default($nl, 'config_thermal_calculate_bmb');
 add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
+add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
+add_default($nl, 'config_basal_mass_bal_seroussi_period');
+add_default($nl, 'config_basal_mass_bal_seroussi_phase');
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 

@@ -15,7 +15,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $SRCROOT     = `./xmlquery SRCROOT     -value`;
+my $SRCROOT      = `./xmlquery SRCROOT      -value`;
 my $OBJROOT      = `./xmlquery OBJROOT      -value`;
 my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
 my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;

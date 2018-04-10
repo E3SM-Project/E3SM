@@ -27,6 +27,11 @@ my $ICE_PIO_TYPENAME	= `./xmlquery  ICE_PIO_TYPENAME		-value`;
 #my $NINST_ICE       = `./xmlquery  NINST_ICE			-value`;
 my $NINST_ICE		= 1; # Change if you want multiple instances... though this isn't coded yet.
 my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
+my $RUN_TYPE		= `./xmlquery  RUN_TYPE			-value`;
+my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE		-value`;
+my $RUN_REFCASE		= `./xmlquery  RUN_REFCASE		-value`;
+my $RUN_REFDATE		= `./xmlquery  RUN_REFDATE		-value`;
+my $RUN_REFTOD		= `./xmlquery  RUN_REFTOD		-value`;
 my $STREAM_NAME		= 'streams.seaice';
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
@@ -154,11 +159,24 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 chdir "$CASEBUILD/mpassiconf";
 
 #--------------------------------------------------------------------
+# Set the initial file, changing to a restart file for branch and hybrid runs
+# Note: this is not setup for multiple instances
+#--------------------------------------------------------------------
+
+my $input_file = "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc";
+if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
+    $input_file = "$RUNDIR/mpassi.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
+    if (! -e "$input_file") {
+        die " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: $input_file ";
+    }
+}
+
+#--------------------------------------------------------------------
 # Generate input data file with stream-specified files
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpassi.input_data_list");
-print $input_list "mesh = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc\n";
+print $input_list "mesh = $input_file\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -261,7 +279,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
         }
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file "                  filename_template=" . '"' 
-						. "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc" 
+						. "$input_file"
 						. '"' . "\n";
 	print $stream_file '                  input_interval="initial_only" />' . "\n";
 	print $stream_file '' . "\n";
@@ -300,7 +318,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
                         print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
                 }
                 print $stream_file "                  filename_template=" . '"'
-                                                        . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                        . "$input_file"
                                                         . '"' . "\n";
                 print $stream_file '                  filename_interval="none"' . "\n";
                 print $stream_file '                  input_interval="initial_only" />' . "\n";
@@ -329,7 +347,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="LYqSixHourlyForcing"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '                  filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"' . "\n";
 	print $stream_file '                  filename_interval="0001-00-00_00:00:00"' . "\n";
 	print $stream_file '                  reference_time="2000-01-01_03:00:00"' . "\n";
@@ -337,43 +355,72 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="LYqMonthlyForcing"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '                  filename_template="forcing/atmosphere_forcing_monthly.nc"' . "\n";
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="NCARMonthlySSTForcing"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '                  filename_template="forcing/ocean_forcing_monthly.nc"' . "\n";
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="NCARMonthlyForcing"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '                  filename_template="forcing/ocean_forcing_monthly.nc"' . "\n";
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
-        print $stream_file '<immutable_stream name="StandardAerosolsInput"' . "\n";
-        print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-        print $stream_file '                  filename_template="standard_optics_mpas_cice.nc"' . "\n";
-        print $stream_file '                  filename_interval="none"' . "\n";
-        print $stream_file '                  input_interval="none" />' . "\n";
-        print $stream_file '' . "\n";
-        print $stream_file '<immutable_stream name="ModalAerosolsInput"' . "\n";
-        print $stream_file '                  type="input"' . "\n";
-        print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-        print $stream_file '                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"' . "\n";
-        print $stream_file '                  filename_interval="none"' . "\n";
-        print $stream_file '                  input_interval="none" />' . "\n";
-        print $stream_file '' . "\n";
+	print $stream_file '<immutable_stream name="StandardAerosolsInput"' . "\n";
+	print $stream_file '                  type="input"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  filename_template="standard_optics_mpas_cice.nc"' . "\n";
+	print $stream_file '                  filename_interval="none"' . "\n";
+	print $stream_file '                  input_interval="none" />' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<immutable_stream name="ModalAerosolsInput"' . "\n";
+	print $stream_file '                  type="input"' . "\n";
+	print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"' . "\n";
+	print $stream_file '                  filename_interval="none"' . "\n";
+	print $stream_file '                  input_interval="none" />' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<immutable_stream name="abort_contents"' . "\n";
+	print $stream_file '                  type="none"' . "\n";
+	print $stream_file '                  filename_template="abort_variables.nc" />' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="abort_block"' . "\n";
+	print $stream_file '                  type="output"' . "\n";
+	print $stream_file '                  filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"' . "\n";
+	print $stream_file '                  filename_interval="none"' . "\n";
+	print $stream_file '                  clobber_mode="truncate"' . "\n";
+	print $stream_file '                  output_interval="none" >' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '    <stream name="mesh"/>' . "\n";
+	print $stream_file '    <stream name="abort_contents"/>' . "\n";
+	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
+	print $stream_file '    <var name="xtime"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="abort"' . "\n";
+	print $stream_file '                  type="output"' . "\n";
+	print $stream_file '                  filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '                  filename_interval="none"' . "\n";
+	print $stream_file '                  clobber_mode="truncate"' . "\n";
+	print $stream_file '                  output_interval="none" >' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '    <stream name="mesh"/>' . "\n";
+	print $stream_file '    <stream name="abort_contents"/>' . "\n";
+	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
+	print $stream_file '    <var name="xtime"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-        print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpassi.hist.am.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
@@ -441,14 +488,14 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '	<var name="relativeSaltError"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
-        print $stream_file '<stream name="conservationCheckRestart"' . "\n";
-        print $stream_file '        type="input;output"' . "\n";
-        print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-        print $stream_file '        filename_template="mpassi.rst.am.conservationCheck.$Y-$M-$D_$S.nc"' . "\n";
-        print $stream_file '        filename_interval="output_interval"' . "\n";
-        print $stream_file '        clobber_mode="truncate"' . "\n";
-        print $stream_file '        packages="conservationCheckAMPKG"' . "\n";
-        print $stream_file '        input_interval="initial_only"' . "\n";
+	print $stream_file '<stream name="conservationCheckRestart"' . "\n";
+	print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '        filename_template="mpassi.rst.am.conservationCheck.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_interval="output_interval"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        packages="conservationCheckAMPKG"' . "\n";
+	print $stream_file '        input_interval="initial_only"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
         print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
         print $stream_file '</stream>' . "\n";
