@@ -160,6 +160,14 @@
     <desc>case user name</desc>
   </entry>
 
+  <entry id="REALUSER">
+    <type>char</type>
+    <default_value>$ENV{USER}</default_value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>username of user who created case</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- definitions runtimes -->
   <!-- ===================================================================== -->
@@ -381,19 +389,25 @@
     </desc>
   </entry>
 
-  <entry id="PAUSE_COMPONENT_LIST">
-    <type>char</type>
-    <default_value>none</default_value>
-    <values match="last">
-      <value compset="_DESP">cpl</value>
-    </values>
+  <entry id="PAUSE_ACTIVE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      A colon-separated list of components to receive pause and resume signals
-      A value of 'all' means all components will pause and resume
-      A value of 'none' means that no components will pause or resume
+      Pause the model at times specified by PAUSE_OPTION and PAUSE_N.
+      Components 'pause' by writing a restart file.
     </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
   </entry>
 
   <entry id="BARRIER_N">
@@ -402,7 +416,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+      Sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
   </entry>
 
@@ -533,7 +547,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <valid_values>nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -734,6 +748,15 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
+  <entry id="SMP_PRESENT">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies that at least one of the components is built threaded (DO NOT EDIT)</desc>
+  </entry>
+
   <entry id="USE_PETSC">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -761,6 +784,15 @@
     machines.</desc>
   </entry>
 
+  <entry id="USE_MOAB">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the MOAB library</desc>
+  </entry>
+
   <entry id="USE_TRILINOS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -779,7 +811,7 @@
     <valid_values></valid_values>
     <default_value>gmake</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>GNU make command</desc>
   </entry>
 
@@ -788,7 +820,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>Number of processors for gmake</desc>
   </entry>
 
@@ -895,20 +927,11 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
-
-  <entry id="TIMER_LEVEL">
-    <type>integer</type>
-    <default_value>12</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>timer output depth</desc>
-  </entry>
-
   <entry id="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
@@ -919,7 +942,7 @@
     <type>char</type>
     <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
     <default_value>ESMF_LOGKIND_NONE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>
       Determines what ESMF log files (if any) are generated when
@@ -1446,12 +1469,20 @@
     <desc>glc2ice runoff mapping file</desc>
   </entry>
 
-  <entry id="GLC2OCN_RMAPNAME">
+  <entry id="GLC2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>glc2ocn runoff mapping file</desc>
+    <desc>glc2ocn runoff mapping file for liquid runoff</desc>
+  </entry>
+
+  <entry id="GLC2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file for ice runoff</desc>
   </entry>
 
   <entry id="OCN2WAV_SMAPNAME">
@@ -1682,15 +1713,15 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value compclass="ATM"> 0</value>
-      <value compclass="CPL"> 0</value>
-      <value compclass="OCN"> 0</value>
-      <value compclass="WAV"> 0</value>
-      <value compclass="GLC"> 0</value>
-      <value compclass="ICE"> 0</value>
-      <value compclass="ROF"> 0</value>
-      <value compclass="LND"> 0</value>
-      <value compclass="ESP"> 0</value>
+      <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP"> $MAX_MPITASKS_PER_NODE</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -1814,7 +1845,7 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component</desc>
+    <desc>The mpi global processors stride associated with the mpi tasks for the a component</desc>
   </entry>
 
   <entry id="TOTALPES">
@@ -1822,7 +1853,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
+    <desc>total number of MPI tasks (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">
@@ -1836,6 +1867,14 @@
   <entry id="MAX_MPITASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>pes or cores per node for accounting purposes </desc>
+  </entry>
+
+  <entry id="COSTPES_PER_NODE">
+    <type>integer</type>
+    <default_value>$MAX_MPITASKS_PER_NODE</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>pes or cores per node for accounting purposes </desc>
@@ -2057,15 +2096,15 @@
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
     <values>
-      <value compclass="ATM">1</value>
-      <value compclass="CPL">1</value>
-      <value compclass="OCN">1</value>
-      <value compclass="WAV">1</value>
-      <value compclass="GLC">1</value>
-      <value compclass="ICE">1</value>
-      <value compclass="ROF">1</value>
-      <value compclass="LND">1</value>
-      <value compclass="ESP">1</value>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
     </values>
   </entry>
 
@@ -2159,6 +2198,14 @@
     <desc>Expected relative memory usage growth for test</desc>
   </entry>
 
+  <entry id="TEST_TPUT_TOLERANCE">
+    <type>real</type>
+    <default_value>0.25</default_value>
+    <group>test</group>
+    <file>env_test.xml</file>
+    <desc>Expected throughput deviation</desc>
+  </entry>
+
   <entry id="GENERATE_BASELINE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -2232,14 +2279,6 @@
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
-  </entry>
-
-  <entry id="USER_MODS_FULLPATH">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>user_mods</group>
-    <file>env_case.xml</file>
-    <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -2342,11 +2381,21 @@
   <entry id="DATA_ASSIMILATION">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
     <group>external_tools</group>
     <file>env_run.xml</file>
     <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
   </entry>
+
   <entry id="DATA_ASSIMILATION_CYCLES">
     <type>integer</type>
     <valid_values></valid_values>
@@ -2367,15 +2416,15 @@
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for queue</desc>
  </entry>
 
  <entry id="USER_REQUESTED_WALLTIME">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for walltime</desc>
  </entry>
 
@@ -2412,6 +2461,14 @@
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
+ </entry>
+
+ <entry id="CHARGE_ACCOUNT">
+   <type>char</type>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
+   <desc>project to charge in scripts if different from PROJECT</desc>
  </entry>
 
  <entry id="MODEL_VERSION">

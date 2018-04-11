@@ -136,7 +136,8 @@ contains
     character(len=CX)      :: glc2lnd_fmapname
     character(len=CX)      :: glc2lnd_smapname
     character(len=CX)      :: glc2ice_rmapname
-    character(len=CX)      :: glc2ocn_rmapname
+    character(len=CX)      :: glc2ocn_liq_rmapname
+    character(len=CX)      :: glc2ocn_ice_rmapname
     character(len=CX)      :: ice2atm_fmapname
     character(len=CX)      :: ice2atm_smapname
     character(len=CX)      :: ice2wav_smapname
@@ -297,9 +298,13 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_LogWrite('atm2ocn_vmapname = '// trim(atm2ocn_vmapname), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call NUOPC_CompAttributeGet(gcomp, name='glc2ocn_rmapname', value=glc2ocn_rmapname, rc=rc)
+    call NUOPC_CompAttributeGet(gcomp, name='glc2ocn_liq_rmapname', value=glc2ocn_liq_rmapname, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite('glc2ocn_rmapname = '// trim(glc2ocn_rmapname), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite('glc2ocn_liq_rmapname = '// trim(glc2ocn_liq_rmapname), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='glc2ocn_ice_rmapname', value=glc2ocn_ice_rmapname, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_LogWrite('glc2ocn_ice_rmapname = '// trim(glc2ocn_ice_rmapname), ESMF_LOGMSG_INFO, rc=dbrc)
 
     call NUOPC_CompAttributeGet(gcomp, name='wav2ocn_smapname', value=wav2ocn_smapname, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1713,14 +1718,14 @@ contains
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname='Flgg_rofl', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Flgg_rofl', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_rmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_liq_rmapname)
 
     longname = 'glc frozen runoff flux to ocean'
     stdname  = 'glacier_frozen_runoff_flux_to_ocean'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname='Fogg_rofi', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Fogg_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_rmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_ice_rmapname)
 
     !-----------------------------
     ! glc -> ice

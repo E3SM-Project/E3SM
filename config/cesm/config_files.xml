@@ -111,10 +111,7 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value component="mct">$CIMEROOT/src/drivers/mct</value>
-      <value component="nuopc">$CIMEROOT/src/drivers/nuopc</value>
-      <value component="drv">$CIMEROOT/src/drivers/mct</value>
-      <value component="drv-nuopc">$CIMEROOT/src/drivers/nuopc</value>
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value> 
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -232,7 +229,6 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
@@ -251,7 +247,6 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_pes.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_pes.xml</value>
@@ -269,7 +264,6 @@
     <values>
       <value>$CIMEROOT/config/cesm/config_archive.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="datm">$COMP_ROOT_DIR_ATM/cime_config/config_archive.xml</value>
@@ -313,7 +307,6 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/testlist_allactive.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testlist_drv.xml</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/testdefs/testlist_drv.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testlist_cam.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testlist_cism.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testlist_clm.xml</value>
@@ -334,7 +327,6 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/testmods_dirs</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testmods_dirs</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/testdefs/testmods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testmods_dirs</value>
@@ -354,7 +346,6 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/usermods_dirs</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/usermods_dirs</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/usermods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/usermods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/usermods_dirs</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/usermods_dirs</value>
@@ -374,7 +365,6 @@
     <default_value>unset</default_value>
     <values>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
-      <value component="drv-nuopc">$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
@@ -416,9 +406,8 @@
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
-    <default_value>$CIMEROOT/src/drivers/mct/cime_config/config_component_$MODEL.xml</default_value>
     <values>
-      <value component="drv-nuopc">$CIMEROOT/src/drivers/nuopc/cime_config/config_component_$MODEL.xml</value>
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE/cime_config/config_component_$MODEL.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

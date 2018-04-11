@@ -46,19 +46,10 @@
     <desc>logical to save timing files in rundir</desc>
   </entry>
 
-  <entry id="SAVE_TIMING_DIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>timing</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Where to auto archive timing data</desc>
-  </entry>
-
   <entry id="TPROF_TOTAL">
     <type>integer</type>
     <default_value>0</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Determines number of times profiler is called over the model run period.
     This sets values for tprof_option and tprof_n that determine the timing output file frequency
@@ -70,7 +61,25 @@
     <default_value>2</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer output depth</desc>
+    <desc>
+    integer indicating maximum detail level to profile. This xml
+    variable is used to set the namelist variable
+    timing_detail_limit. This namelist variable is used by perf_mod
+    (in $CIMEROOT/src/share/timing/perf_mod.F90) to turn timers off
+    and on depending on calls to the routine t_adj_detailf. If in the
+    code a statement appears like t_adj_detailf(+1), then the current
+    timer detail level is incremented by 1 and compared to the
+    time_detail_limit obtained from the namelist.  If the limit is
+    exceeded then the timer is turned off.
+    </desc>
+  </entry>
+
+  <entry id="TIMER_LEVEL">
+    <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Maximum code stack depth of enabled timers.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
@@ -148,6 +157,18 @@
     </desc>
   </entry>
 
+  <entry id="CPL_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match="last">
+      <value/>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
+  </entry>
+
   <entry id="NCPL_BASE_PERIOD">
     <type>char</type>
     <valid_values>hour,day,year,decade</valid_values>
@@ -182,13 +203,13 @@
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne60np4.pg3">96</value>
       <value compset=".+" grid="a%ne60np4.pg4">96</value>
-      <value compset=".+" grid="a%ne120np4">96</value>
-      <value compset=".+" grid="a%ne120np4.pg2">96</value>
-      <value compset=".+" grid="a%ne120np4.pg3">96</value>
-      <value compset=".+" grid="a%ne120np4.pg4">96</value>
-      <value compset=".+" grid="a%ne240np4">144</value>
-      <value compset=".+" grid="a%ne240np4.pg2">144</value>
-      <value compset=".+" grid="a%ne240np4.pg3">144</value>
+      <value compset=".+" grid="a%ne120np4">192</value>
+      <value compset=".+" grid="a%ne120np4.pg2">192</value>
+      <value compset=".+" grid="a%ne120np4.pg3">192</value>
+      <value compset=".+" grid="a%ne120np4.pg4">192</value>
+      <value compset=".+" grid="a%ne240np4">384</value>
+      <value compset=".+" grid="a%ne240np4.pg2">384</value>
+      <value compset=".+" grid="a%ne240np4.pg3">384</value>
       <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
@@ -242,10 +263,11 @@
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_POP2" grid="oi%gx1v6">24</value>
       <value compset="_POP2" grid="oi%gx1v7">24</value>
-      <!-- <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value> -->
-      <!-- <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value> -->
-      <!-- <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value> -->
-      <!-- <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value> -->
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
+      <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
+      <value compset="_DATM.*_CLM.*_SICE.*_SOCN">1</value>
+      <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
     </values>
     <group>run_coupling</group>
@@ -482,12 +504,14 @@
     <valid_values>0,1,3,5,10,36</valid_values>
     <default_value>10</default_value>
     <values match="last">
-      <value compset="_SGLC">0</value>
+      <value compset="_CLM40.*_SGLC">0</value>
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
-    <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    <desc>Number of glacier elevation classes used in CLM.
+    0 implies no glacier_mec (glacier multiple elevation classes)
+    landunit in CLM. 0 is only valid for CLM40.
+    Used by both CLM and the coupler (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">

@@ -463,7 +463,7 @@ module ESM
           return  ! bail out
         endif
         if (.not. is_set) then
-           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' model unavailable = OCN:'//trim(model), &
+           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' model unavailable = ATM:'//trim(model), &
                 line=__LINE__, file=u_FILE_u, rcToReturn=rc)
            return 
         end if
