@@ -22,7 +22,7 @@ import six
 import collections
 
 from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
-import update_e3sm_tests
+import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.compilers import Compilers
@@ -949,7 +949,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     def test_a_phases(self):
     ###########################################################################
         # exclude the MEMLEAK tests here.
-        tests = update_e3sm_tests.get_full_test_names(["cime_test_only",
+        tests = get_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_P1.f09_g16.X",
                                                        "^TESTMEMLEAKPASS_P1.f09_g16.X",
                                                        "^TESTTESTDIFF_P1.f19_g16_rx1.A",
@@ -1026,7 +1026,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_b_full(self):
     ###########################################################################
-        tests = update_e3sm_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
+        tests = get_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
                            output_root=TEST_ROOT,compiler=self._compiler, mpilib=TEST_MPILIB)
@@ -1092,7 +1092,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_c_use_existing(self):
     ###########################################################################
-        tests = update_e3sm_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
+        tests = get_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
@@ -1229,7 +1229,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def assert_num_leftovers(self):
     ###########################################################################
-        num_tests_in_tiny = len(update_e3sm_tests.get_test_suite("cime_test_only_pass"))
+        num_tests_in_tiny = len(get_tests.get_test_suite("cime_test_only_pass"))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -1483,7 +1483,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
         # Test that re-running works
-        tests = update_e3sm_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
+        tests = get_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
         for test in tests:
             casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
 
