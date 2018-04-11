@@ -83,7 +83,7 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     manic = os.path.join(srcroot, "manage_externals","checkout_externals")
     out = None
     if os.path.exists(manic):
-        out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
+        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
         if version is not None and version != "unknown":
