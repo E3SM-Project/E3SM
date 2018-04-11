@@ -7,7 +7,7 @@ list tested grids, compsets, etc.
 
 from standard_script_setup import *
 from CIME.utils import expect
-import update_e3sm_tests
+import get_tests
 
 import sys, argparse, os
 
@@ -36,7 +36,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("suites", nargs="+",
-                        help="The tests suites to list. Test suites: {}".format(", ".join(update_e3sm_tests.get_test_suites())))
+                        help="The tests suites to list. Test suites: {}".format(", ".join(get_tests.get_test_suites())))
 
     parser.add_argument("-t", "--thing-to-list", choices=("compsets", "grids", "testcases", "tests"), default="tests",
                         help="The thing you want to list")
@@ -44,7 +44,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if (not args.suites):
-        args.suites = update_e3sm_tests.get_test_suites()
+        args.suites = get_tests.get_test_suites()
 
     return args.thing_to_list, args.suites
 
@@ -53,7 +53,7 @@ def list_tests(thing_to_list, suites):
 ###############################################################################
     things = set()
     for suite in suites:
-        tests = update_e3sm_tests.get_test_suite(suite)
+        tests = get_tests.get_test_suite(suite)
         for test in tests:
             testcase, _, grid, compset = CIME.utils.parse_test_name(test)[:4]
             if (thing_to_list == "compsets"):

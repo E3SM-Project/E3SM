@@ -30,3 +30,4 @@ class PEM(SystemTestsCompareTwo):
             ntasks = self._case.get_value("NTASKS_{}".format(comp))
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_{}".format(comp), int(ntasks/2))
+        self._case.case_setup(test_mode=True, reset=True)
