@@ -1021,9 +1021,9 @@ contains
 !print *, "elem%t", elem(ie)%state%t(1,1,:,tl%n0)
 !endif
 
-!            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%np1,nets,nete)
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%np1,nets,nete)
             !in this call n0_qdp is not used
-            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%np1,n0_qdp,dt_q*vsplit,nets,nete)
+!            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%np1,n0_qdp,dt_q*vsplit,nets,nete)
 !if(hybrid%masterthread) then
 !ie=1
 !print *,"AFTER 1st elem, tl%n0 time velocity 1 column"
