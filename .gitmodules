@@ -11,7 +11,7 @@
 	branch = cice/develop
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
-	url = git@github.com:ACME-Climate/fates.git
+	url = git@github.com:NGEET/fates-release.git
 [submodule "alm-mpp"]
 	path = components/clm/src/external_models/mpp
 	url = git@github.com:ACME-Climate/mpp.git
