@@ -23,7 +23,6 @@ module hetfrz_classnuc
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use wv_saturation, only: svp_water, svp_ice
 #ifdef CAM_SHAN_OPT
-
 #else
 use shr_spfn_mod,  only: erf => shr_spfn_erf
 #endif
@@ -248,11 +247,26 @@ subroutine hetfrz_classnuc_calc( &
       norm_theta_imm = (ERF(x2_imm)-ERF(x1_imm))*0.5_r8
       dim_theta = 0.0_r8
       pdf_imm_theta = 0.0_r8
+#ifdef CAM_SHAN_OPT
       do i = i1,i2
          dim_theta(i) = 1._r8/180._r8*pi+(i-1)*pdf_d_theta
-         pdf_imm_theta(i) = exp(-((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8))/ &
+         pdf_imm_theta(i) = -((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8)
+      end do
+      do i = i1, i2
+         pdf_imm_theta(i) = exp(pdf_imm_theta(i))
+      end do
+      do i = i1, i2
+         pdf_imm_theta(i) = pdf_imm_theta(i)/(dim_theta(i)*imm_dust_var_theta*SQRT(2*pi))/norm_theta_imm
+      end do
+
+#else
+      do i = i1,i2
+         dim_theta(i) = 1._r8/180._r8*pi+(i-1)*pdf_d_theta
+         pdf_imm_theta(i) =
+         exp(-((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8))/ &
                                 (dim_theta(i)*imm_dust_var_theta*SQRT(2*pi))/norm_theta_imm
       end do
+#endif
    end if
 
    ! get saturation vapor pressures
@@ -391,6 +405,21 @@ subroutine hetfrz_classnuc_calc( &
    if (pdf_imm_in) then
       dim_Jimm_dust_a1 = 0.0_r8
       dim_Jimm_dust_a3 = 0.0_r8
+#ifdef CAM_SHAN_OPT
+      do i = i1,i2
+         dim_Jimm_dust_a1(i) = EXP((-dga_imm_dust-dim_f_imm_dust_a1(i)*dg0imm_dust_a1)/(kboltz*T))
+         dim_Jimm_dust_a3(i) = EXP((-dga_imm_dust-dim_f_imm_dust_a3(i)*dg0imm_dust_a3)/(kboltz*T))
+      end do
+
+      do i = i1,i2
+         dim_Jimm_dust_a1(i) = Aimm_dust_a1*r_dust_a1**2/SQRT(dim_f_imm_dust_a1(i))*dim_Jimm_dust_a1(i) 
+         dim_Jimm_dust_a1(i) = max(dim_Jimm_dust_a1(i), 0._r8)
+
+         dim_Jimm_dust_a3(i) = Aimm_dust_a3*r_dust_a3**2/SQRT(dim_f_imm_dust_a3(i))*dim_Jimm_dust_a3(i)
+         dim_Jimm_dust_a3(i) = max(dim_Jimm_dust_a3(i), 0._r8)
+      end do
+
+#else
       do i = i1,i2
          ! 1/sqrt(f)
          dim_Jimm_dust_a1(i) = Aimm_dust_a1*r_dust_a1**2/SQRT(dim_f_imm_dust_a1(i))*EXP((-dga_imm_dust-dim_f_imm_dust_a1(i)* &
@@ -401,18 +430,14 @@ subroutine hetfrz_classnuc_calc( &
             dg0imm_dust_a3)/(kboltz*T))
          dim_Jimm_dust_a3(i) = max(dim_Jimm_dust_a3(i), 0._r8)
       end do
+#endif
    end if
 
    ! Limit to 1% of available potential IN (for BC), no limit for dust 
    if (pdf_imm_in) then
       sum_imm_dust_a1 = 0._r8
       sum_imm_dust_a3 = 0._r8
-!      do i = i1,i2-1
-!         sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a1(i)*deltat)+ &
-!            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a1(i+1)*deltat)))*pdf_d_theta
-!         sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
-!            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
-!      end do
+#ifdef CAM_SHAN_OPT
       do i = i1,i2
          shan_t1(i) = exp(-dim_Jimm_dust_a1(i)*deltat)
          shan_t2(i) = exp(-dim_Jimm_dust_a3(i)*deltat)
@@ -425,6 +450,28 @@ subroutine hetfrz_classnuc_calc( &
             pdf_imm_theta(i+1)*shan_t2(i+1)))*pdf_d_theta
       end do
 
+      if (sum_imm_dust_a1 > 0.99_r8) then
+         sum_imm_dust_a1 = 1.0_r8
+      end if
+      if (sum_imm_dust_a3 > 0.99_r8) then
+         sum_imm_dust_a3 = 1.0_r8
+      end if
+#else
+      do i = i1,i2-1
+         sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a1(i)*deltat)+ &
+            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a1(i+1)*deltat)))*pdf_d_theta
+         sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
+            pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
+      end do
+      do i = i1,i2
+           if (sum_imm_dust_a1 > 0.99_r8) then
+               sum_imm_dust_a1 = 1.0_r8
+           end if
+           if (sum_imm_dust_a3 > 0.99_r8) then
+               sum_imm_dust_a3 = 1.0_r8
+           end if
+      end do
+#endif
       do i = i1,i2
       	   if (sum_imm_dust_a1 > 0.99_r8) then
                sum_imm_dust_a1 = 1.0_r8
