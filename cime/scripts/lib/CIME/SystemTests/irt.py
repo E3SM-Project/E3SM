@@ -25,6 +25,7 @@ class IRT(RestartTest):
                              run_one_description = 'initial',
                              run_two_description = 'restart',
                              multisubmit = False)
+        self._skip_pnl = False
 
     def _case_one_custom_postrun_action(self):
         self._case.case_st_archive()

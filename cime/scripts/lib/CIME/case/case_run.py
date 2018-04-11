@@ -65,6 +65,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     if skip_pnl:
         case.create_namelists(component='cpl')
     else:
+        logger.info("Generating namelists for {}".format(caseroot))
         case.create_namelists()
 
     logger.info("-------------------------------------------------------------------------")

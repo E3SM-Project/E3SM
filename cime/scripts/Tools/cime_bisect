@@ -10,6 +10,8 @@ from CIME.XML.machines import Machines
 
 import argparse, sys, os, re
 
+logger = logging.getLogger(__name__)
+
 _MACHINE = Machines()
 
 ###############################################################################
@@ -48,25 +50,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("good", help="Name of most recent known good commit.")
 
-    parser.add_argument("testargs", nargs="+", help="String to pass to create_test. Combine with single quotes if it includes multiple args.")
-
     parser.add_argument("-B", "--bad", default="HEAD",
                         help="Name of bad commit, default is current HEAD.")
-
-    parser.add_argument("-r", "--test-root",
-                        help="Path to testroot to use for testcases for bisect. WARNING. This will be cleared by this script.")
-
-    parser.add_argument("-n", "--check-namelists", action="store_true",
-                        help="Consider a commit to be broken if namelist check fails")
-
-    parser.add_argument("-t", "--check-throughput", action="store_true",
-                        help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
-
-    parser.add_argument("-m", "--check-memory", action="store_true",
-                        help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
-
-    parser.add_argument("-l", "--check-memleak", action="store_true",
-                        help="Consider a commit to be broken if a memleak is detected")
 
     parser.add_argument("-a", "--all-commits", action="store_true",
                         help="Test all commits, not just merges")
@@ -74,9 +59,31 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-C", "--cime-integration", action="store_true",
                         help="Bisect CIME instead of the whole code. Useful for finding errors after CIME merges")
 
+    parser.add_argument("-S", "--script",
+                        help="Use your own custom script instead")
+
+    ct_modifiers = parser.add_argument_group("create_test", "flags for modifying create_test call to be bisected")
+
+    ct_modifiers.add_argument("testargs", nargs="*", help="String to pass to create_test. Combine with single quotes if it includes multiple args.")
+
+    ct_modifiers.add_argument("-r", "--test-root",
+                        help="Path to testroot to use for testcases for bisect. WARNING. This will be cleared by this script.")
+
+    ct_modifiers.add_argument("-n", "--check-namelists", action="store_true",
+                        help="Consider a commit to be broken if namelist check fails")
+
+    ct_modifiers.add_argument("-t", "--check-throughput", action="store_true",
+                        help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
+
+    ct_modifiers.add_argument("-m", "--check-memory", action="store_true",
+                        help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
+
+    ct_modifiers.add_argument("-l", "--check-memleak", action="store_true",
+                        help="Consider a commit to be broken if a memleak is detected")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    if (args.test_root is None):
+    if args.test_root is None:
         args.test_root = os.path.join(_MACHINE.get_value("CIME_OUTPUT_ROOT"), "cime_bisect")
 
     if args.cime_integration:
@@ -89,16 +96,20 @@ that you run this script from the cime direcory.
 
     expect(os.path.isdir(".git"), "Please run the root of a repo")
 
+    expect( not (bool(args.script) and (bool(args.testargs) or args.check_namelists or args.check_throughput or args.check_memory or args.check_memleak) ),
+            "Makes no sense to use custom script but also ask for create_test modifiers")
+
     return args.testargs, args.good, args.bad, args.test_root, \
-        args.check_namelists, args.check_throughput, args.check_memory, args.check_memleak, args.all_commits
+        args.check_namelists, args.check_throughput, args.check_memory, args.check_memleak, args.all_commits, args.script
 
 ###############################################################################
 def cime_bisect(testargs, good, bad, testroot,
-                check_namelists, check_throughput, check_memory, check_memleak, commits_to_skip):
+                check_namelists, check_throughput, check_memory, check_memleak, commits_to_skip,
+                custom_script):
 ###############################################################################
-    print("####################################################")
-    print("TESTING WITH ARGS '{}'".format(testargs))
-    print("####################################################")
+    logger.info("####################################################")
+    logger.info("TESTING WITH ARGS '{}'".format(testargs))
+    logger.info("####################################################")
 
     if os.path.exists("scripts/create_test"):
         create_test = os.path.join(os.getcwd(), "scripts", "create_test")
@@ -109,8 +120,8 @@ def cime_bisect(testargs, good, bad, testroot,
 
     # Basic setup
     run_cmd_no_fail("git bisect start")
-    run_cmd_no_fail("git bisect good {}".format(good))
-    run_cmd_no_fail("git bisect bad {}".format(bad))
+    run_cmd_no_fail("git bisect good {}".format(good), verbose=True)
+    run_cmd_no_fail("git bisect bad {}".format(bad), verbose=True)
     if commits_to_skip:
         run_cmd_no_fail("git bisect skip {}".format(" ".join(commits_to_skip)))
 
@@ -134,7 +145,11 @@ def cime_bisect(testargs, good, bad, testroot,
             bisect_cmd += " --wait-ignore-memleak"
 
     try:
-        cmd = "git bisect run sh -c '{}'".format(bisect_cmd)
+        if custom_script:
+            cmd = "git bisect run {}".format(custom_script)
+        else:
+            cmd = "git bisect run sh -c '{}'".format(bisect_cmd)
+
         output = run_cmd(cmd, verbose=True)[1]
 
         # Get list of potentially bad commits from output
@@ -146,10 +161,10 @@ def cime_bisect(testargs, good, bad, testroot,
 
         expect(len(bad_commits_filtered) == 1, bad_commits_filtered)
 
-        print("####################################################")
-        print("BAD MERGE FOR ARGS '{}' IS:".format(testargs))
-        print("####################################################")
-        print(run_cmd_no_fail("git show {}".format(bad_commits_filtered.pop())))
+        logger.info("####################################################")
+        logger.info("BAD MERGE FOR ARGS '{}' IS:".format(testargs))
+        logger.info("####################################################")
+        logger.warning(run_cmd_no_fail("git show {}".format(bad_commits_filtered.pop())))
 
     finally:
         run_cmd_no_fail("git bisect reset")
@@ -157,7 +172,7 @@ def cime_bisect(testargs, good, bad, testroot,
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    testargs, good, bad, testroot, check_namelists, check_throughput, check_memory, check_memleak, all_commits = \
+    testargs, good, bad, testroot, check_namelists, check_throughput, check_memory, check_memleak, all_commits, custom_script = \
         parse_command_line(sys.argv, description)
 
     # Important: we only want to test merges
@@ -165,14 +180,17 @@ def _main_func(description):
         commits_we_want_to_test = run_cmd_no_fail("git rev-list {}..{} --merges --first-parent".format(good, bad)).splitlines()
         all_commits_            = run_cmd_no_fail("git rev-list {}..{}".format(good, bad)).splitlines()
         commits_to_skip         = set(all_commits_) - set(commits_we_want_to_test)
-        print("Skipping these non-merge commits")
+        logger.info("Skipping {} non-merge commits".format(len(commits_to_skip)))
         for item in commits_to_skip:
-            print(item)
+            logger.debug(item)
     else:
         commits_to_skip = set()
 
-    for set_of_test_args in testargs:
-        cime_bisect(set_of_test_args, good, bad, testroot, check_namelists, check_throughput, check_memory, check_memleak, commits_to_skip)
+    if custom_script:
+        cime_bisect(custom_script, good, bad, testroot, check_namelists, check_throughput, check_memory, check_memleak, commits_to_skip, custom_script)
+    else:
+        for set_of_test_args in testargs:
+            cime_bisect(set_of_test_args, good, bad, testroot, check_namelists, check_throughput, check_memory, check_memleak, commits_to_skip, custom_script)
 
 ###############################################################################
 

@@ -4,9 +4,7 @@ API for checking input for testcase
 from CIME.XML.standard_module_setup import *
 from CIME.utils import SharedArea, find_files
 from CIME.XML.inputdata import Inputdata
-from CIME.Servers.ftp import FTP
-from CIME.Servers.svn import SVN
-from CIME.Servers.wget import WGET
+import CIME.Servers
 
 import glob, shutil
 
@@ -122,13 +120,20 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
     expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
+
     if download:
+        if protocal not in vars(CIME.Servers):
+            logger.warning("Client protocal {} not enabled".format(protocal))
+            return False
+
         if protocal == "svn":
-            server = SVN(address)
+            server = CIME.Servers.SVN(address)
+        elif protocal == "gftp":
+            server = CIME.Servers.GridFTP(address)
         elif protocal == "ftp":
-            server = FTP(address)
+            server = CIME.Servers.FTP(address)
         elif protocal == "wget":
-            server = WGET(address)
+            server = CIME.Servers.WGET(address)
         else:
             expect(False, "Unsupported inputdata protocal: {}".format(protocal))
 

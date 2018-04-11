@@ -10,17 +10,17 @@ Case Control System Part 1: Basic Usage
 #######################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    introduction-and-overview.rst
-   case-basics.rst
    create-a-case.rst
    setting-up-a-case.rst
    building-a-case.rst
    running-a-case.rst
-   customizing-a-case.rst
    cloning-a-case.rst
+   use_cases/use-cases.rst
+   cime-config.rst
    troubleshooting.rst
 
 .. _users-guide2:
@@ -30,18 +30,19 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
 #######################################################################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    cime-internals.rst
-   creating-new-compsets.rst
+   compsets.rst
+   grids.rst
+   machine.rst
+   pes-threads.rst
    porting-cime.rst
-   optimizing-processor-layout.rst
+   timers.rst
    testing.rst
    unit_testing.rst
    multi-instance.rst
-   adding-cases.rst
-   use_cases/use-cases.rst
 
 
 Indices and tables

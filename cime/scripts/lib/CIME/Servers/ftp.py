@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class FTP(GenericServer):
     def __init__(self, address, user='', passwd=''):
         ftp_server, root_address = address.split('/', 1)
+        logger.info("server address {} root path {}".format(ftp_server, root_address))
         self.ftp = FTPpy(ftp_server)
 
         stat = self.ftp.login(user, passwd)
@@ -37,8 +38,8 @@ class FTP(GenericServer):
     def getfile(self, rel_path, full_path):
         stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
 
-        if (stat != 0):
-            logging.warning("FAIL: FTP repo '{}' does not have file '{}'\n".
-                            format(self._ftp_server,rel_path))
+        if (stat != '226 Transfer complete.'):
+            logging.warning("FAIL: Failed to retreve file '{}' from FTP repo '{}' stat={}\n".
+                            format(rel_path, self._ftp_server, stat))
             return False
         return True
