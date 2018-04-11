@@ -14,7 +14,7 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 import six
-from update_e3sm_tests import get_recommended_test_time
+from get_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
 from CIME.test_status import *
 from CIME.XML.machines import Machines
@@ -384,8 +384,8 @@ class TestScheduler(object):
             if rc != 0:
                 self._log_output(test,
                                  "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".
-                                 format(phase, test, cmd, 
-                                        output.encode('utf-8') + "\n" + errput.encode('utf-8')))
+                                 format(phase, test, cmd,
+                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
@@ -399,8 +399,8 @@ class TestScheduler(object):
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
                                  "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".
-                                 format(phase, test, cmd, 
-                                        output.encode('utf-8') + "\n" + errput.encode('utf-8')))
+                                 format(phase, test, cmd,
+                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 return True, errput
 
     ###########################################################################
