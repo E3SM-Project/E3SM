@@ -633,6 +633,7 @@ contains
          npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
+         alpha_ptase          => veg_vp%alpha_ptase                   , &
          decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
@@ -657,9 +658,9 @@ contains
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
-                    biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * veg_vp%alpha_ptase(veg_pp%itype(p)) 
+                    biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
                     biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j) + &
-                            ptase_tmp  * veg_pp%wtcol(p) * (1._r8-veg_vp%alpha_ptase(veg_pp%itype(p)))
+                            ptase_tmp  * veg_pp%wtcol(p) * (1._r8 - alpha_ptase(veg_pp%itype(p)))
                     biochem_pmin_vr_pot(c,j) = biochem_pmin_vr_pot(c,j) + ptase_tmp * veg_pp%wtcol(p)
                 end if
             enddo
