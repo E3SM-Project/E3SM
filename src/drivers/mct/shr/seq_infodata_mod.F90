@@ -975,7 +975,8 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
        atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
        glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-       mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
+       mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
+       glc_valid_input)
 
 
     implicit none
@@ -1141,7 +1142,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
     logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
     real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
-    character(SHR_KIND_CL)  optional, intent(OUT) :: model_doi_url
+    character(SHR_KIND_CL), optional, intent(OUT) :: model_doi_url
     logical,                optional, intent(OUT) :: glc_valid_input
     character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
     character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
@@ -1384,7 +1385,7 @@ CONTAINS
        end if
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
-    if ( present(model_doi_url) ) model_doi_url = model_doi_url
+    if ( present(model_doi_url) ) model_doi_url = infodata%model_doi_url
 
     if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
 
@@ -2308,6 +2309,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
+    call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
 
     call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
