@@ -16,10 +16,10 @@
     TIME = Time period (e.g. 2000, HIST, 20TR, RCP8...)
     ATM  = [CAM4, CAM5, SATM]
     LND  = [CLM45, SLND]
-    ICE  = [MPASCICE, CICE, DICE, SICE]
+    ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, ,AQUAP, SOCN]
     ROF  = [MOSART, SROF]
-    GLC  = [MPASLISIA, MPASLIALB, CISM1, CISM2, SGLC]
+    GLC  = [MALI, MALISIA, CISM1, CISM2, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
     ESP  = [SESP]
     BGC  = optional BGC scenario
@@ -776,11 +776,11 @@
     <lname>2000_DATM%QIA_CLM45%CN_SICE_SOCN_MOSART_CISM1_SWAV_TEST</lname>
   </compset>
 
-  <!---IG compsets with MPASLI -->
+  <!---IG compsets with MALI -->
 
   <compset>
     <alias>IGCLM45_MLI</alias>
-    <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_MPASLI_SWAV</lname>
+    <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_MALISIA_SWAV</lname>
   </compset>
 
   <compset>

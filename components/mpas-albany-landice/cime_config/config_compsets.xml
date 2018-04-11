@@ -39,22 +39,21 @@
 
   </help>
 
-  <!-- D compsets -->
-  <compset> 
-    <alias>D</alias>
-    <support_level>Requires additional user-supplied datasets</support_level>
-    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV</lname>
+  <!---TG compsets -->
+
+  <compset>
+    <alias>TG_MLI</alias>
+    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_MALI_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>DIAF</alias>
-    <support_level>Requires additional user-supplied datasets</support_level>
-    <lname>2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV</lname>
+    <alias>MALISIA</alias>
+    <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_MALISIA_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>DTEST</alias>
-    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+    <alias>MALI</alias>
+    <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_MALI_SWAV</lname>
   </compset>
 
 </compsets>

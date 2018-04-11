@@ -123,7 +123,7 @@ _TEST_SUITES = {
                          "NCK.f19_g16_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
-                         "ERS.f09_g16_g.MPASLISIA",
+                         "ERS.f09_g16_g.MALISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI"
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
@@ -139,7 +139,7 @@ _TEST_SUITES = {
                            ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","allactive-mach-pet"),
                            "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
-                           "SMS.f09_g16_a.MPASLIALB",
+                           "SMS.f09_g16_a.MALI",
                            "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
 			   ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"),
                            ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"))
