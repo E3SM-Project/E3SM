@@ -166,7 +166,7 @@ module mpas_init_atm_gwd
 !      call mpas_pool_get_array(mesh, 'gamma', hgamma)
 !      call mpas_pool_get_array(mesh, 'sigma', hsigma)
 
-      allocate(hlanduse(nCells))
+      allocate(hlanduse(nCells+1))    ! +1, since we access hlanduse(cellsOnCell(i,iCell)) later on for iCell=1,nCells
 
       iErr = read_global_30s_topo(config_geog_data_path, geog_sub_path)
       if (iErr /= 0) then
