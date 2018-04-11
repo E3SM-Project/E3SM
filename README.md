@@ -17,7 +17,7 @@
   * [Quick Start Guide for AIMS4/ACME1](https://acme-climate.github.io/acme_diags/docs/html/quick-guide-aims4.html)
   * [Model vs Model Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
   * [Observation vs Observation Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
-  * [Model vs Observation: comparing temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
+  * [Model vs Observation](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
