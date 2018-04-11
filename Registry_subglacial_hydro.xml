@@ -43,7 +43,7 @@
 		/>
 		<nml_option name="config_SGH_till_drainage" type="real" default_value="3.1709792e-11" units="m s^{-1}"
 		            description="background subglacial till drainage rate"
-                            possible_values="positive real number.  Default value is 0.001 m/yr"
+                            possible_values="positive real number.  Default value is 0.001 m/yr in SI units."
 		/>
 		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
 		            description="Advection method for SGH. 'fo'=first-order upwind; 'fct'=flux-corrected transport. FCT currently not enabled."
@@ -82,7 +82,7 @@
 		            description="power of beta parameter in subglacial water flux formula (in channels)"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="COMPLICATED"
+		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
 		            description="conductivity coefficient (in channels)"
 		            possible_values="positive real number"
 		/>
@@ -170,7 +170,7 @@
                      description="subglacial water velocity reconstructed on cell centers, x-component" />
                 <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="subglacial water velocity reconstructed on cell centers, y-component" />
-                <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="?"
+                <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="m^2 s^{-1} Pa^{-1}"
                      description="effective Darcy hydraulic conductivity on edges in subglacial hydrology system" />
                 <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
                      description="water layer thickness on edges in subglacial hydrology system" />
@@ -186,7 +186,7 @@
                      description="normal component of gradient of hydropotentialBase" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="tangent component of gradient of hydropotentialBase" />
-                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="?"
+             <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="magnitude of the gradient of hydropotentialBase, on Edges" />
                 <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of waterPressure in subglacial hydrology system" />
