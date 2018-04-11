@@ -70,7 +70,7 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>
-      integer indicating maximum detail level to profile. This xml
+    integer indicating maximum detail level to profile. This xml
     variable is used to set the namelist variable
     timing_detail_limit. This namelist variable is used by perf_mod
     (in $CIMEROOT/src/share/timing/perf_mod.F90) to turn timers off
@@ -79,10 +79,6 @@
     timer detail level is incremented by 1 and compared to the
     time_detail_limit obtained from the namelist.  If the limit is
     exceeded then the timer is turned off.
-
-
-
-
     </desc>
   </entry>
 
