@@ -3,11 +3,11 @@
 	url = git@github.com:ACME-Climate/fates.git
 [submodule "alm-mpp"]
 	path = components/clm/src/external_models/mpp
-	url = git@github.com:ACME-Climate/mpp.git
+	url = git@github.com:MPP-LSM/MPP.git
 	branch = alm/develop
 [submodule "sbetr"]
 	path = components/clm/src/external_models/sbetr
-	url = git@github.com:ACME-Climate/sbetr.git
+	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "components/mpaso/model"]
 	path = components/mpas-ocean/model
 	url = git@github.com:ACME-Climate/MPAS.git
