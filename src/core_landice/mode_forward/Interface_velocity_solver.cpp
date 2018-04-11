@@ -2197,6 +2197,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     write_ascii_mesh_field(thicknessUncertaintyData, "thickness_uncertainty");
 
     write_ascii_mesh_field(elevationData, "surface_height");
+    write_ascii_mesh_field(bedTopographyData, "bed_topography");
 
     write_ascii_mesh_field(betaData, "basal_friction");
 
@@ -2233,10 +2234,10 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     outfile.open ("surface_velocity.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
        outfile << nVertices << " " << 2 << "\n";  //number of vertices, number of components per vertex
-       for(int i = 0; i<nVertices; ++i) {
+       for(int i = 0; i<nVertices; ++i)
          outfile << observedVeloXData[i] << "\n";
+       for(int i = 0; i<nVertices; ++i)
          outfile << observedVeloYData[i] << "\n";
-       }
        outfile.close();
     }
     else {
