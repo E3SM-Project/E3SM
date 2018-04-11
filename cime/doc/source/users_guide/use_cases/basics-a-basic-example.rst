@@ -1,11 +1,11 @@
 .. _use-cases-basic-example:
 
-A basic example
----------------
+Setting up a multi-year run
+----------------------------
 
-This shows all of the steps necessary to create, set up, build, and run a case. It assumes that ``$CIMEROOT`` is the CIME root directory and that the machine is Yellowstone.
+This shows all of the steps necessary to do a multi-year simulation.
 
-1. Create a new case named EXAMPLE_CASE in the **~/cesm** directory. Use an 1850 control compset at 1-degree resolution.
+1. Create a new case named EXAMPLE_CASE in your **$HOME** directory. Use an 1850 control compset at 1-degree resolution (CESM components/resolution).
 
    ::
 
@@ -36,7 +36,7 @@ This shows all of the steps necessary to create, set up, build, and run a case. 
 
    (seq_mct_drv): ===============       SUCCESSFUL TERMINATION OF CPL7-CESM ===============
 
-5. Set the case to resubmit itself 10 times so it will run a total of 11 years (including the initial year), and resubmit the case. (Note that a resubmit will automatically change the run to be a continuation run).
+5. In the same case directory, Set the case to resubmit itself 10 times so it will run a total of 11 years (including the initial year), and resubmit the case. (Note that a resubmit will automatically change the run to be a continuation run).
 
    ::
 

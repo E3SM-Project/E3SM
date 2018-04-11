@@ -103,6 +103,7 @@ class ERI(SystemTestsCommon):
         # if the initial case is hybrid this will put the reference data in the correct location
         clone1.check_all_input_data()
 
+        self._skip_pnl = False
         self.run_indv(st_archive=True, suffix=None)
 
         #
@@ -142,14 +143,13 @@ class ERI(SystemTestsCommon):
         rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
 
-        if not os.path.exists(rundir2):
-            os.makedirs(rundir2)
-
         _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
         self._skip_pnl = False
         # run ref2 case (all component history files will go to short term archiving)
+        clone2.case_setup(test_mode=True, reset=True)
 
+        self._skip_pnl = False
         self.run_indv(suffix="hybrid", st_archive=True)
 
         #
@@ -197,6 +197,7 @@ class ERI(SystemTestsCommon):
                 os.remove(dst)
             os.symlink(item, dst)
 
+        self._skip_pnl = False
         # run branch case (short term archiving is off)
         self.run_indv()
 

@@ -230,7 +230,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 logger.info('Doing second run: ' + self._run_two_description)
                 self._activate_case2()
                 # This assures that case two namelists are populated
-                self._case2.case_setup(test_mode=True, reset=True)
+                self._skip_pnl = False
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
                     self._case2.check_case()
