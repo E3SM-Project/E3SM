@@ -57,13 +57,13 @@
                 <var name="regionalIceThicknessMean" type="real" dimensions="nRegions Time" units="m"
                         description="mean ice thickness within region"
                 />
-                <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
+                <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="area-integrated surface mass balance within region"
                 />
                 <var name="regionalAvgNetAccumulation" type="real" dimensions="nRegions Time" units="m yr^{-1}"
                         description="average sfcMassBal, as a thickness rate. Positive values represent ice gain."
                 />
-                <var name="regionalSumBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
+                <var name="regionalSumBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="area-integrated basal mass balance within region"
                 />
                 <var name="regionalSumGroundedBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
@@ -78,10 +78,10 @@
                 <var name="regionalAvgSubshelfMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}"
                         description="average floatingBasalMassBal value, as a thickness rate. Positive values represent ice loss."
                 />
-                <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^-1"
+                <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="area-integrated calving flux within region"
                 />
-                <var name="regionalSumGroundingLineFlux" type="real" dimensions="nRegions Time" units="kg yr^-1"
+                <var name="regionalSumGroundingLineFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="total mass flux across all grounding lines (note that flux from floating to grounded ice makes a negative contribution to this metric)"
                 />
                 <var name="regionalSurfaceSpeedMax" type="real" dimensions="nRegions Time" units="m yr^{-1}"
