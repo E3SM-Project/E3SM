@@ -215,6 +215,9 @@ plt.grid(True)
 plt.legend()
 plt.xlabel('delta x (m)')
 plt.ylabel('error in W (m)')
+print "avg W err=", Werr[hasice].mean()
+print "max W err=", Werr[hasice].max()
+
 
 ax = fig.add_subplot(2,1,2)
 plt.plot(dx, Perr[hasice].mean()/1.0e5, 's', label='avg P err')
@@ -224,6 +227,8 @@ plt.grid(True)
 plt.legend()
 plt.xlabel('delta x (m)')
 plt.ylabel('error in P (bar)')
+print "avg P err=", Perr[hasice].mean()/1.0e5
+print "max P err=", Perr[hasice].max()/1.0e5
 
 
 print "plotting complete"
