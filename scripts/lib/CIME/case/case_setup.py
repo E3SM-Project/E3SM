@@ -158,7 +158,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("SMP_PRESENT", threaded)
             if threaded:
                 smt_factor = max(1,int(case.get_value("MAX_TASKS_PER_NODE") / cost_per_node))
-                print "HERE smt_factor {} threads {}".format(smt_factor, case.thread_count)
                 case.set_value("TOTALPES", case.total_tasks * case.thread_count / smt_factor)
             else:
                 case.set_value("TOTALPES", case.total_tasks)
