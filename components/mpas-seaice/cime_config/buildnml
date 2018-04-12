@@ -165,7 +165,7 @@ chdir "$CASEBUILD/mpassiconf";
 
 my $input_file = "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc";
 if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
-    $input_file = "$RUNDIR/mpas-cice.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
+    $input_file = "$RUNDIR/mpascice.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
     if (! -e "$input_file") {
         die " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: $input_file ";
     }
@@ -208,7 +208,7 @@ while ($inst_counter <= $NINST_ICE) {
     # -----------------------------------------------------
 
     SetupTools::create_namelist_infile("$CASEROOT", 
-				       "$CASEROOT/user_nl_mpassi${inst_string}",
+				       "$CASEROOT/user_nl_mpascice${inst_string}",
 				       "$CASEBUILD/mpassiconf/cesm_namelist"); 
 
     # -----------------------------------------------------
@@ -301,7 +301,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
         } else {
                 print $stream_file '                  io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
         }
-	print $stream_file '                  filename_template="mpas-cice.rst.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '                  filename_template="mpascice.rst.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '                  filename_interval="output_interval"' . "\n";
 	print $stream_file '                  input_interval="initial_only"' . "\n";
 	print $stream_file '                  clobber_mode="truncate"' . "\n";
@@ -328,7 +328,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="output"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
@@ -421,7 +421,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="none"' . "\n";
@@ -436,7 +436,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="regionalStatisticsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.regionalStatistics.$Y.$M.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.regionalStatistics.$Y.$M.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -459,7 +459,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="conservationCheckOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.conservationCheck.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.conservationCheck.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -491,7 +491,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="conservationCheckRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
 	print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.rst.am.conservationCheck.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.conservationCheck.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="conservationCheckAMPKG"' . "\n";
@@ -503,7 +503,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="loadBalanceOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.cice_loadBalance.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.cice_loadBalance.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
@@ -518,7 +518,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="maximumIcePresenceOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.cice_maximumIcePresence.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.cice_maximumIcePresence.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="01-00-00_00:00:00"' . "\n";
@@ -533,7 +533,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsDailyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -544,7 +544,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsDailyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsDailyAMPKG"' . "\n";
@@ -556,7 +556,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsMonthlyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -633,7 +633,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
@@ -645,7 +645,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.hist.am.timeSeriesStatsClimatology.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsClimatology.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
@@ -661,7 +661,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '<stream name="timeSeriesStatsClimatologyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
-	print $stream_file '        filename_template="mpas-cice.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
