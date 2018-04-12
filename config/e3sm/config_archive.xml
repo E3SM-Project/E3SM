@@ -71,7 +71,7 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpassi" compclass="ice">
+  <comp_archive_spec compname="mpascice" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
