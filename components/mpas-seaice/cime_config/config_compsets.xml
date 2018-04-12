@@ -2,6 +2,11 @@
 
 <compsets>
 
+   <help>
+   Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+   or in the CIME documenation
+   </help>
+
   <!-- ACME D compsets -->
 
   <compset>
