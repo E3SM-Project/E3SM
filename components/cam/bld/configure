@@ -1204,16 +1204,6 @@ if ($scam eq 'ON' and $dyn_pkg ne 'eul') {
 EOF
 }
 
-# Check that model is configured for serial execution.  Note that configuring with spmd
-# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
-# The model should run if built for threading.
-if ($scam eq 'ON' and $spmd ne 'OFF') {
-    die <<"EOF";
-**  ERROR: SCAM mode assumes a serial build.
-**         Requested parallel modes are: spmd=$spmd  smp=$smp
-EOF
-}
-
 if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
