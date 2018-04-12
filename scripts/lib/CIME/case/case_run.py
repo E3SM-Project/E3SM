@@ -180,6 +180,15 @@ def _post_run_check(case, lid):
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
+def _save_logs(case, lid):
+###############################################################################
+    rundir = case.get_value("RUNDIR")
+    logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
+    for logfile in logfiles:
+        if os.path.isfile(logfile):
+            logfile_gz = gzip_existing_file(logfile)
+
+######################################################################################
 def _resubmit_check(case):
 ###############################################################################
 
@@ -264,7 +273,7 @@ def case_run(self, skip_pnl=False):
             _do_data_assimilation(data_assimilation_script, self.get_value("CASEROOT"), cycle, lid,
                                  self.get_value("RUNDIR"))
             self.read_xml()
-
+        _save_logs(self, lid)
         save_postrun_provenance(self)
 
     if postrun_script:
@@ -272,6 +281,7 @@ def case_run(self, skip_pnl=False):
         _do_external(postrun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="postrun")
         self.read_xml()
+        _save_logs(self, lid)
 
     logger.warning("check for resubmit")
     _resubmit_check(self)

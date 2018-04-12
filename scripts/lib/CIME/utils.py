@@ -1435,8 +1435,8 @@ def ls_sorted_by_mtime(path):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    logdir = case.get_value("LOGDIR")
-    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(logdir, model)))
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(rundir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
