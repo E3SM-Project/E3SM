@@ -123,6 +123,7 @@ class TestScheduler(object):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
+        self._cime_driver     = "mct"
         self._save_timing     = save_timing
         self._queue           = queue
         self._test_data       = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -420,6 +421,7 @@ class TestScheduler(object):
             create_newcase_cmd += " --compiler {}".format(compiler)
         if "Vnuopc" in case_opts:
             create_newcase_cmd += " --driver nuopc "
+            self._cime_driver = "nuopc"
         if self._project is not None:
             create_newcase_cmd += " --project {} ".format(self._project)
         if self._output_root is not None:
@@ -520,7 +522,7 @@ class TestScheduler(object):
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
-        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        drv_config_file = files.get_value("CONFIG_CPL_FILE", comp_interface=self._cime_driver)
         drv_comp = Component(drv_config_file, "CPL")
         envtest.add_elements_by_group(files, {}, "env_test.xml")
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")

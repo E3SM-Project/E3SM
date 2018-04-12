@@ -34,7 +34,7 @@ class Files(EntryID):
             self.read(config_files_override)
             self.overwrite_existing_entries()
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, comp_interface="mct"):
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, comp_interface=None):
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
@@ -56,7 +56,9 @@ class Files(EntryID):
                 value = value.replace("$"+comp_root_dir_var_name, comp_root_dir)
 
         if resolved and value is not None:
-            value = value.replace("$COMP_INTERFACE", comp_interface)
+            if "COMP_INTERFACE" in value:
+                expect(comp_interface != None, "comp_interface must have valid value for vid = {}".format(vid))
+                value = value.replace("$COMP_INTERFACE", comp_interface)
             value = self.get_resolved_value(value)
 
         return value
