@@ -1079,18 +1079,17 @@ class Case(object):
         if get_model() == "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
             if "cism" in components:
-                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "glimmer-cism")
+                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "source_cism")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                readme_file = os.path.join(directory, "README")
+                    readme_file = os.path.join(directory, "README")
+                    str_to_write = """Put source mods for the source_cism library in this subdirectory.
+This includes any files from $COMP_ROOT_DIR_GLC/source_cism. Anything
+else (e.g., mods to source_glc or drivers) goes in the src.cism
+directory, NOT in this subdirectory."""
 
-                str_to_write = """
-                Put source mods for the glimmer-cism library in the glimmer-cism subdirectory
-                This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism
-                Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/"""
-
-                with open(readme_file, "w") as fd:
-                    fd.write(str_to_write)
+                    with open(readme_file, "w") as fd:
+                        fd.write(str_to_write)
 
     def create_caseroot(self, clone=False):
         if not os.path.exists(self._caseroot):
