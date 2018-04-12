@@ -30,9 +30,19 @@ my $MALI_USE_ALBANY = `./xmlquery MALI_USE_ALBANY -value`;
 # Copy MALI source
 #---------------------------------------------------------------------------
 
-my $srccpy = "cp -fpR $SRCROOT/components/$component/model/src/* $OBJROOT/$component_dir/source/.";
 mkdir "$OBJROOT/$component_dir";
 mkdir "$OBJROOT/$component_dir/source";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_landice $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
 system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
 
 my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";

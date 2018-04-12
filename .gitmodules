@@ -8,12 +8,6 @@
 [submodule "sbetr"]
 	path = components/clm/src/external_models/sbetr
 	url = git@github.com:ACME-Climate/sbetr.git
-[submodule "components/mpaso/model"]
-	path = components/mpas-ocean/model
-	url = git@github.com:ACME-Climate/MPAS.git
-[submodule "components/mpassi/model"]
-	path = components/mpas-seaice/model
-	url = git@github.com:ACME-Climate/MPAS.git
-[submodule "components/mpas-albany-landice/model"]
-	path = components/mpas-albany-landice/model
+[submodule "components/mpas-source"]
+	path = components/mpas-source
 	url = git@github.com:ACME-Climate/MPAS.git
