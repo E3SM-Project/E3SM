@@ -1,9 +1,9 @@
 """
 functions for building CIME models
 """
-import glob, shutil, time, threading, gzip, subprocess
+import glob, shutil, time, threading, subprocess
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file
 from CIME.provenance            import save_build_provenance
 from CIME.locked_files          import lock_file, unlock_file
 
@@ -542,23 +542,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 ###############################################################################
 def post_build(case, logs, build_complete=False):
 ###############################################################################
-
-    logdir = case.get_value("LOGDIR")
-
-    #zip build logs to CASEROOT/logs
-    if logdir:
-        bldlogdir = os.path.join(logdir, "bld")
-        if not os.path.exists(bldlogdir):
-            os.makedirs(bldlogdir)
-
     for log in logs:
-        logger.info("Copying build log {} to {}".format(log, bldlogdir))
-        with open(log, 'rb') as f_in:
-            with gzip.open("{}.gz".format(log), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        if "sharedlibroot" not in log:
-            shutil.copy("{}.gz".format(log), os.path.join(bldlogdir, "{}.gz".format(os.path.basename(log))))
-        os.remove(log)
+        gzip_existing_file(log)
 
     if build_complete:
 
