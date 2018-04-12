@@ -76,7 +76,7 @@ if ($BUILD_COMPLETE eq 'FALSE') {
     my $spmd = '-spmd';
     if ($MPILIB eq 'mpi-serial') {$spmd = "-nospmd";}
     my $smp = '-smp';
-    if (($SMP_PRESET eq 'FALSE')) {$smp = "-nosmp";}
+    if (($SMP_PRESENT eq 'FALSE')) {$smp = "-nosmp";}
 
     # The ocean component setting is only used by CAM to do attribute matching for
     # setting default tuning parameter values.  In SOM mode we want to use the same
