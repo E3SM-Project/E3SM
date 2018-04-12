@@ -1063,18 +1063,31 @@ class Case(object):
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
+        components.extend(['share', 'drv'])
+        readme_message = """Put source mods for the {component} library in this directory.
+
+WARNING: SourceMods are not kept under version control, and can easily
+become out of date if changes are made to the source code on which they
+are based. We only recommend using SourceMods for small, short-term
+changes that just apply to one or two cases. For larger or longer-term
+changes, including gradual, incremental changes towards a final
+solution, we highly recommend making changes in the main source tree,
+leveraging version control (git or svn).
+"""
+
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
             if not os.path.exists(directory):
                 os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot, "SourceMods", "src.share")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot,"SourceMods","src.drv")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+                # Besides giving some information on SourceMods, this
+                # README file serves one other important purpose: By
+                # putting a file inside each SourceMods subdirectory, we
+                # prevent aggressive scrubbers from scrubbing these
+                # directories due to being empty (which can cause builds
+                # to fail).
+                readme_file = os.path.join(directory, "README")
+                with open(readme_file, "w") as fd:
+                    fd.write(readme_message.format(component=component))
 
         if get_model() == "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
