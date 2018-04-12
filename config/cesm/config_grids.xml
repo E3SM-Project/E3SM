@@ -620,11 +620,11 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="f10_f10" not_compset="_POP">
+    <model_grid alias="f10_f10_mg37" not_compset="_POP">
       <grid name="atm">10x15</grid>
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
-      <mask>usgs</mask>
+      <mask>gx3v7</mask>
     </model_grid>
 
     <model_grid alias="f10_f10_musgs" not_compset="_POP">
@@ -632,6 +632,13 @@
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
       <mask>usgs</mask>
+    </model_grid>
+
+    <model_grid alias="f10_g37">
+      <grid name="atm">10x15</grid>
+      <grid name="lnd">10x15</grid>
+      <grid name="ocnice">gx3v7</grid>
+      <mask>gx3v7</mask>
     </model_grid>
 
     <!--  spectral element grids -->
@@ -1091,8 +1098,10 @@
 
     <domain name="10x15">
       <nx>24</nx>   <ny>19</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.fv10x15_USGS.110713.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.clm/domain.camocn.10x15_USGS_070807.nc</file>
+      <file grid="atm|lnd" mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.fv10x15_USGS.110713.nc</file>
+      <file grid="ocnice"  mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.fv10x15_USGS_070807.nc</file>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.fv10x15_gx3v7.180321.nc</file>
+      <file grid="ocnice"  mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.fv10x15_gx3v7.180321.nc</file>
       <desc>10x15 is FV 10-deg grid:</desc>
       <support>For low resolution testing</support>
     </domain>
