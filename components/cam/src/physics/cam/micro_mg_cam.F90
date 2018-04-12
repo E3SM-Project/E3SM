@@ -1129,7 +1129,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: prec_pcw(:)          ! Sfc flux of precip from microphysics [ m/s ]
    real(r8), pointer :: snow_pcw(:)          ! Sfc flux of snow from microphysics [ m/s ]
 
+#ifdef CAM_SHAN_OPT
+   real(r8), contiguous, pointer :: ast(:,:)          ! Relative humidity cloud fraction
+#else
    real(r8), pointer :: ast(:,:)          ! Relative humidity cloud fraction
+#endif
    real(r8), pointer :: alst_mic(:,:)
    real(r8), pointer :: aist_mic(:,:)
    real(r8), pointer :: cldo(:,:)         ! Old cloud fraction
@@ -1419,12 +1423,22 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    real(r8), pointer :: cmeliq(:,:)
 
+#ifdef CAM_SHAN_OPT
+   real(r8), contiguous, pointer :: cld(:,:)          ! Total cloud fraction
+   real(r8), contiguous, pointer :: concld(:,:)       ! Convective cloud fraction
+   real(r8), contiguous, pointer :: iciwpst(:,:)      ! Stratiform in-cloud ice water path for radiation
+   real(r8), contiguous, pointer :: iclwpst(:,:)      ! Stratiform in-cloud liquid water path for radiation
+   real(r8), contiguous, pointer :: cldfsnow(:,:)     ! Cloud fraction for liquid+snow
+   real(r8), contiguous, pointer :: icswp(:,:)        ! In-cloud snow water path
+
+#else
    real(r8), pointer :: cld(:,:)          ! Total cloud fraction
    real(r8), pointer :: concld(:,:)       ! Convective cloud fraction
    real(r8), pointer :: iciwpst(:,:)      ! Stratiform in-cloud ice water path for radiation
    real(r8), pointer :: iclwpst(:,:)      ! Stratiform in-cloud liquid water path for radiation
    real(r8), pointer :: cldfsnow(:,:)     ! Cloud fraction for liquid+snow
    real(r8), pointer :: icswp(:,:)        ! In-cloud snow water path
+#endif
 
    real(r8) :: icimrst(state%psetcols,pver) ! In stratus ice mixing ratio
    real(r8) :: icwmrst(state%psetcols,pver) ! In stratus water mixing ratio
@@ -2422,6 +2436,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    cldfsnow = 0._r8
 
    do k = top_lev, pver
+
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do i = 1, ncol
          ! Limits for in-cloud mixing ratios consistent with MG microphysics
          ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
@@ -2435,7 +2453,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          ! Note: uses stratiform cloud fraction!
          iciwpst(i,k)   = min(state_loc%q(i,k,ixcldice)/max(mincld,ast(i,k)),0.005_r8) * state_loc%pdel(i,k) / gravit
          iclwpst(i,k)   = min(state_loc%q(i,k,ixcldliq)/max(mincld,ast(i,k)),0.005_r8) * state_loc%pdel(i,k) / gravit
-
          ! ------------------------------ !
          ! Adjust cloud fraction for snow !
          ! ------------------------------ !
