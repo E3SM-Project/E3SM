@@ -112,10 +112,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         multi_driver = case.get_value("MULTI_DRIVER")
-        nthrds = 1
         for comp in models:
             ntasks = case.get_value("NTASKS_{}".format(comp))
-            nthrds = max(nthrds,case.get_value("NTHRDS_{}".format(comp)))
             if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
@@ -131,8 +129,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
                 case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
-        if nthrds > 1:
-            case.set_value("BUILD_THREADED",True)
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")

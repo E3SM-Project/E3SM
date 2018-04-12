@@ -1602,13 +1602,13 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=False) as case:
-            build_threaded = case.get_value("BUILD_THREADED")
+            build_threaded = case.get_value("SMP_PRESENT")
             self.assertFalse(build_threaded)
 
             build_threaded = case.get_build_threaded()
             self.assertFalse(build_threaded)
 
-            case.set_value("BUILD_THREADED", True)
+            case.set_value("FORCE_BUILD_THREADED", True)
 
             build_threaded = case.get_build_threaded()
             self.assertTrue(build_threaded)
@@ -1623,7 +1623,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=False) as case:
-            build_threaded = case.get_value("BUILD_THREADED")
+            build_threaded = case.get_value("SMP_PRESENT")
             self.assertTrue(build_threaded)
 
             build_threaded = case.get_build_threaded()
