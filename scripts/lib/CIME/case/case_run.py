@@ -180,23 +180,6 @@ def _post_run_check(case, lid):
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
-def _save_logs(case, lid):
-###############################################################################
-    logdir = case.get_value("LOGDIR")
-    if logdir is not None and len(logdir) > 0:
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-
-        caseroot = case.get_value("CASEROOT")
-        rundir = case.get_value("RUNDIR")
-        logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
-        for logfile in logfiles:
-            if os.path.isfile(logfile):
-                logfile_gz = gzip_existing_file(logfile)
-                shutil.copy(logfile_gz,
-                            os.path.join(caseroot, logdir, os.path.basename(logfile_gz)))
-
-###############################################################################
 def _resubmit_check(case):
 ###############################################################################
 
@@ -282,8 +265,6 @@ def case_run(self, skip_pnl=False):
                                  self.get_value("RUNDIR"))
             self.read_xml()
 
-        _save_logs(self, lid)       # Copy log files back to caseroot
-
         save_postrun_provenance(self)
 
     if postrun_script:
@@ -291,8 +272,6 @@ def case_run(self, skip_pnl=False):
         _do_external(postrun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="postrun")
         self.read_xml()
-
-    _save_logs(self, lid)       # Copy log files back to caseroot
 
     logger.warning("check for resubmit")
     _resubmit_check(self)

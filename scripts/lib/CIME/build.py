@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                  lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
-    logs = []
-
     thread_bad_results = []
     for model, comp, nthrds, _, config_dir in complist:
         if buildlist is not None and model.lower() not in buildlist:
@@ -56,13 +54,10 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 
         # build the component library
         # thread_bad_results captures error output from thread (expected to be empty)
-        # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
                   thread_bad_results, smp, compiler))
         t.start()
-
-        logs.append(file_build)
 
     # Wait for threads to finish
     while(threading.active_count() > 1):
@@ -96,9 +91,8 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
         shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
 
-        logs.append(file_build)
 
-    return logs
+    return
 
 ###############################################################################
 def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
@@ -218,7 +212,6 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     libs = ["gptl", comp_interface, "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
-    logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
     for lib in libs:
         if buildlist is not None and lib not in buildlist:
@@ -243,7 +236,6 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                        [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
-        logs.append(file_build)
         if lib == "pio":
             bldlog = open(file_build, "r")
             for line in bldlog:
@@ -269,14 +261,12 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
             smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
             # thread_bad_results captures error output from thread (expected to be empty)
-            # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
             _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
                                 file_build, thread_bad_results, smp, compiler)
-            logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
-    return logs
+    return
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
@@ -512,23 +502,22 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
                                complist, ninst_build, smp_value, model_only, buildlist)
 
     t2 = time.time()
-    logs = []
 
     if not model_only:
-        logs = _build_libraries(case, exeroot, sharedpath, caseroot,
-                                cimeroot, libroot, lid, compiler, buildlist, comp_interface)
+        _build_libraries(case, exeroot, sharedpath, caseroot,
+                         cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-        logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
-                                lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
+        _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+                                lid, caseroot, cimeroot, compiler, buildlist, comp_interface)
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object
             case.read_xml()
             # Note, doing buildlists will never result in the system thinking the build is complete
 
-    post_build(case, logs, build_complete=not (buildlist or sharedlib_only))
+    _post_build(case, build_complete=not (buildlist or sharedlib_only))
 
     t3 = time.time()
 
@@ -540,28 +529,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     return True
 
 ###############################################################################
-def post_build(case, logs, build_complete=False):
+def _post_build(case, build_complete=False):
 ###############################################################################
-
-    logdir = case.get_value("LOGDIR")
-
-    #zip build logs to CASEROOT/logs
-    if logdir:
-        bldlogdir = os.path.join(logdir, "bld")
-        if not os.path.exists(bldlogdir):
-            os.makedirs(bldlogdir)
-
-    for log in logs:
-        logger.info("Copying build log {} to {}".format(log, bldlogdir))
-        with open(log, 'rb') as f_in:
-            with gzip.open("{}.gz".format(log), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        if "sharedlibroot" not in log:
-            shutil.copy("{}.gz".format(log), os.path.join(bldlogdir, "{}.gz".format(os.path.basename(log))))
-        os.remove(log)
-
     if build_complete:
-
         # Set XML to indicate build complete
         case.set_value("BUILD_COMPLETE", True)
         case.set_value("BUILD_STATUS", 0)

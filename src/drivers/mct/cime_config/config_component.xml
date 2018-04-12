@@ -52,14 +52,6 @@
     <desc>full pathname of case</desc>
   </entry>
 
-  <entry id="LOGDIR">
-    <type>char</type>
-    <default_value>$CASEROOT/logs</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Extra copies of the component log files will be saved here.</desc>
-  </entry>
-
   <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
