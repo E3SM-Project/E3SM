@@ -617,8 +617,8 @@ contains
     integer  :: c,fc,p,j,l
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
-    real(r8) :: biochem_pmin_vr_pot(bounds%begc:bounds%endc,1:ndecomp_pools)
-    real(r8) :: biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:ndecomp_pools)
+    real(r8) :: biochem_pmin_vr_pot(bounds%begc:bounds%endc,1:nlevdecomp)
+    real(r8) :: biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp)
     real(r8) :: sop_tot
     integer  :: dt
     real(r8) :: ptase_tmp
@@ -689,7 +689,7 @@ contains
             end do
         end do
     end do
-
+    ! rescale biochem_pmin
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -702,11 +702,10 @@ contains
             enddo
         enddo
     end do
-
+   ! rescale biochem_pmin_to_ecosysp, biochem_pmin_to_plant_vr
    do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
-            do l = 1, ndecomp_pools
                if ( (biochem_pmin_vr_pot(c,j) > biochem_pmin_vr(c,j)) .and. biochem_pmin_vr_pot(c,j) > 0._r8 ) then
                   biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j) * &
                                                         biochem_pmin_vr(c,j) / biochem_pmin_vr_pot(c,j)
@@ -715,9 +714,9 @@ contains
                                                         biochem_pmin_vr(c,j) / biochem_pmin_vr_pot(c,j)
                   end do
                end if
-            end do
         end do
     end do 
+    ! sum up biochem_pmin_to_plant
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        do p = col_pp%pfti(c), col_pp%pftf(c)
