@@ -3,7 +3,7 @@ create_clone is a member of the Case class from file case.py
 """
 import os, glob, shutil
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, check_name
+from CIME.utils import expect
 from CIME.user_mod_support import apply_user_mods
 from CIME.locked_files         import lock_file
 from CIME.simple_compare            import compare_files
