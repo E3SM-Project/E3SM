@@ -32,7 +32,7 @@ complib: $(COMPLIB)  Depends
 
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-BUILD_THREADED ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
+SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
 SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
 LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
 SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
@@ -48,7 +48,7 @@ ifeq ($(strip $(SMP)),TRUE)
    THREADDIR = threads
    compile_threaded = true
 else
-   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+   ifeq ($(strip $(SMP_PRESENT)),TRUE)
       THREADDIR = threads
       compile_threaded = true
    else
