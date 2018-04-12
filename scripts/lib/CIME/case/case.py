@@ -363,12 +363,12 @@ class Case(object):
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                item = env_file.get_resolved_value(item, 
+                item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item, recurse=recurse+1, 
+                item = self.get_resolved_value(item, recurse=recurse+1,
                                                allow_unresolved_envvars=allow_unresolved_envvars)
 
         return item
