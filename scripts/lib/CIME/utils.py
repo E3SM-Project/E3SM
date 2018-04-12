@@ -126,9 +126,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     >>> check_name("/some/file/path/case.name", fullpath=True)
     True
+    >>> check_name("mycase+mods")
+    False
+    >>> check_name("mycase?mods")
+    False
+    >>> check_name("mycase*mods")
+    False
     """
 
-    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
