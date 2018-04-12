@@ -6090,7 +6090,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"133 node version gets 6 SYPD. This will be the default and M size"</comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -6127,7 +6127,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment>"39 node version gets 2.1 SYPD."</comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
@@ -6164,7 +6164,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
         <comment>"285 node version gets 11.5 SYPD"</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -6201,7 +6201,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="cori-haswell">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"185 nodes, 32x1, ~5sypd (wmod185)"</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -6234,7 +6234,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment>"15 nodes, 32x1, ~.5sypd (wmod015)"</comment>
         <ntasks>
           <ntasks_atm>288</ntasks_atm>
@@ -6271,7 +6271,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="cori-knl">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
         <comment>"cori-knl ne30 coupled compest on 120 nodes, 64x2, (kmod125) sypd=4.1"</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -6306,7 +6306,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>"cori-knl ne30 coupled compest on 60 nodes, 67x4, (kmod060) sypd=2.82"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>268</MAX_TASKS_PER_NODE>
@@ -6341,7 +6341,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="S">
         <comment>"cori-knl ne30 coupled compest on 31 nodes, 67x4, (kmod031) sypd=1.93"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>268</MAX_TASKS_PER_NODE>
@@ -6376,7 +6376,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="T">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="T">
         <comment>"cori-knl ne30 coupled compest on 17 nodes, 67x4, (kmod017) sypd=1.1"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>268</MAX_TASKS_PER_NODE>
@@ -6555,7 +6555,7 @@
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30_r%r05_m%oEC60to30_g%null_w%null">
     <mach name="titan">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
@@ -6592,7 +6592,7 @@
   </grid>
   <grid name="any">
     <mach name="blues|bebop">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
@@ -6666,7 +6666,7 @@
   </grid>
   <grid name="a%ne120np4_l%ne120np4_oi%oRRS15to5_r%r0.+_m%oRRS15to5_g%null_w%null">
     <mach name="titan|edison|cori-haswell">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>9600</ntasks_atm>
@@ -6703,7 +6703,7 @@
   </grid>
   <grid name="a%ne120np4_l%ne120np4_oi%oRRS18to6_r%r0.+_m%oRRS18to6_g%null_w%null">
     <mach name="titan|edison|cori-haswell">
-      <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>9600</ntasks_atm>
@@ -6740,7 +6740,7 @@
   </grid>
   <grid name="a%ne120np4">
     <mach name="mira">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="S">
         <comment>ne120 coupled-compset on 1024 nodes</comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -6773,7 +6773,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>ne120 coupled-compset on 2048 nodes</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -6806,7 +6806,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
         <comment>ne120 coupled-compset on 4096 nodes</comment>
         <ntasks>
           <ntasks_atm>10800</ntasks_atm>
@@ -7016,7 +7016,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>ne120-wcycl on 145 nodes, MPI-only</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7051,7 +7051,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="MT">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="MT">
         <comment>ne120-wcycl on 145 nodes, threaded</comment>
         <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7086,7 +7086,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
         <comment>ne120 coupled-compset on 466 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7121,7 +7121,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="XL">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="XL">
         <comment>ne120-wcycl on 863 nodes, MPI-only</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7156,7 +7156,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="XLT">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="XLT">
         <comment>ne120-wcycl on 863 nodes, threaded</comment>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7193,7 +7193,7 @@
       </pes>
     </mach>
     <mach name="cori-knl">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
         <comment>cori-knl ne120 coupled compset on 1025 nodes, 33x8, (hmod1025vc) s=0.93</comment>
         <MAX_MPITASKS_PER_NODE>33</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>264</MAX_TASKS_PER_NODE>
@@ -7228,7 +7228,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>cori-knl ne120 coupled-compset on 448 nodes, 33x8, (hmod448b) sypd=0.56</comment>
         <MAX_MPITASKS_PER_NODE>33</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>264</MAX_TASKS_PER_NODE>
@@ -7263,7 +7263,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="S">
         <comment>cori-knl ne120 coupled-compset on 207 nodes, 33x8, (hmod207) sypd=0.37</comment>
         <MAX_MPITASKS_PER_NODE>33</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>264</MAX_TASKS_PER_NODE>
@@ -7298,7 +7298,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="T">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="T">
         <comment>cori-knl ne120 coupled-compset on 131 nodes, 33x8, (hmod131) sypd=0.25</comment>
         <MAX_MPITASKS_PER_NODE>33</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>264</MAX_TASKS_PER_NODE>
@@ -7551,7 +7551,7 @@
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30.*_r%r05_m%oEC60to30.*_g%null_w%null">
     <mach name="anvil">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
@@ -7584,7 +7584,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 54 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -7617,7 +7617,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 105 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -7652,7 +7652,7 @@
       </pes>
     </mach>
     <mach name="theta">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>ne30-wcycl on 8 nodes</comment>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7687,7 +7687,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="XL">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="XL">
         <comment>ne30-wcycl on 128 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -7862,7 +7862,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset="CAM5.+CLM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="M">
+      <pes compset="CAM5.+CLM.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="M">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
@@ -7895,7 +7895,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".+CAM5.+CLM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="L">
+      <pes compset=".+CAM5.+CLM.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="L">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
@@ -8043,7 +8043,7 @@
   </grid>
   <grid name="a%ne4np4">
     <mach name="cori-knl">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>"cori-knl ne4 coupled compest on 3 nodes, 67x2, OCN by itself on 1 node sypd=18.2"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>134</MAX_TASKS_PER_NODE>
@@ -8117,7 +8117,7 @@
   </grid>
   <grid name=".*oi%oRRS30to10.*">
     <mach name="theta">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>30to10-gmpas on 32 nodes</comment>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -8154,7 +8154,7 @@
       </pes>
     </mach>
     <mach name="cori-knl">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl G 30to10 on 52 nodes, 64x2</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -8191,7 +8191,7 @@
       </pes>
     </mach>
     <mach name="cori-haswell">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-haswell G 30to10 on 48 nodes</comment>
         <ntasks>
           <ntasks_atm>512</ntasks_atm>
@@ -8226,7 +8226,7 @@
       </pes>
     </mach>
     <mach name="edison">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl G 30to10 on 128 nodes</comment>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
@@ -8261,7 +8261,7 @@
       </pes>
     </mach>
     <mach name="titan">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>30to10-gmpas on 32 nodes</comment>
         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
