@@ -49,6 +49,7 @@ class EnvMachSpecific(EnvBase):
             else:
                 for node in nodes:
                     self.add_child(node)
+
     def _get_modules_for_case(self, case, job=None):
         module_nodes = self.get_children("modules", root=self.get_child("module_system"))
         modules_to_load = None
@@ -81,7 +82,6 @@ class EnvMachSpecific(EnvBase):
             self._load_envs(envs_to_set, verbose=verbose)
 
         self._get_resources_for_case(case)
-
 
     def _get_resources_for_case(self, case):
         resource_nodes = self.get_children("resource_limits")
@@ -145,7 +145,8 @@ class EnvMachSpecific(EnvBase):
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
 
-        lines = ["source {}".format(sh_init_cmd)]
+        if sh_init_cmd:
+            lines = ["source {}".format(sh_init_cmd)]
 
         if "SOFTENV_ALIASES" in os.environ:
             lines.append("source $SOFTENV_ALIASES")
