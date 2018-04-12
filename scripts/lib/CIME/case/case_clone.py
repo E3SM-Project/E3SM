@@ -28,6 +28,8 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     expect(not os.path.isdir(newcaseroot),
            "New caseroot directory {} already exists".format(newcaseroot))
     newcasename = os.path.basename(newcaseroot)
+    expect(check_name(newcasename),
+           "New case name invalid {} ".format(newcasename))
     newcase_cimeroot = os.path.abspath(get_cime_root())
 
     # create clone from case to case
