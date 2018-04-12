@@ -186,7 +186,7 @@ def _save_logs(case, lid):
     logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
     for logfile in logfiles:
         if os.path.isfile(logfile):
-            logfile_gz = gzip_existing_file(logfile)
+            gzip_existing_file(logfile)
 
 ######################################################################################
 def _resubmit_check(case):
