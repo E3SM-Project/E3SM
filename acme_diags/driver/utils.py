@@ -132,7 +132,7 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
         var1_domain = mask_by(
             var1, land_ocean_frac, low_limit=region_value)
         var2_domain = var2.regrid(
-            var1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
+            var1.getGrid(), regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
         var2_domain = mask_by(
             var2_domain, land_ocean_frac, low_limit=region_value)
     else:
