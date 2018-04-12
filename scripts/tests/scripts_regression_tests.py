@@ -1608,7 +1608,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             build_threaded = case.get_build_threaded()
             self.assertFalse(build_threaded)
 
-            case.set_value("FORCE_BUILD_THREADED", True)
+            case.set_value("FORCE_BUILD_SMP", True)
 
             build_threaded = case.get_build_threaded()
             self.assertTrue(build_threaded)
