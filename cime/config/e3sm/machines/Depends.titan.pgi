@@ -27,3 +27,8 @@ modal_aer_opt.o: modal_aer_opt.F90
 zm_conv.o: zm_conv.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -target-cpu=istanbul $<
 
+check_energy.o: check_energy.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -target-cpu=istanbul $<
+
+read_volc_radiation_data.o: read_volc_radiation_data.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -target-cpu=istanbul $<
