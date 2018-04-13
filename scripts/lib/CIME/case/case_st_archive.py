@@ -538,19 +538,23 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                                dout_s_root, casename, rundir)
 
 ###############################################################################
-def restore_from_archive(self, rest_dir=None):
+def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
 ###############################################################################
     """
     Take archived restart files and load them into current case.  Use rest_dir if provided otherwise use most recent
     restore_from_archive is a member of Class Case
     """
-    dout_sr = self.get_value("DOUT_S_ROOT")
-    rundir = self.get_value("RUNDIR")
+    if dout_s_root is None:
+        dout_s_root = self.get_value("DOUT_S_ROOT")
+    if rundir is None:
+        rundir = self.get_value("RUNDIR")
     if rest_dir is not None:
         if not os.path.isabs(rest_dir):
-            rest_dir = os.path.join(dout_sr, "rest", rest_dir)
+            rest_dir = os.path.join(dout_s_root, "rest", rest_dir)
     else:
-        rest_dir = ls_sorted_by_mtime(os.path.join(dout_sr, "rest"))[-1]
+        rest_dir = os.path.join(dout_s_root, "rest", ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+
+    logger.info("Restoring restart from {}".format(rest_dir))
 
     for item in glob.glob("{}/*".format(rest_dir)):
         base = os.path.basename(item)
@@ -661,6 +665,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     if os.path.exists(testdir):
         logger.info("Removing existing test directory {}".format(testdir))
         shutil.rmtree(testdir)
+    dout_s_root=os.path.join(testdir,"archive")
     for config_archive_file in config_archive_files:
         archive = Archive(infile=config_archive_file, files=files)
         comp_archive_specs = archive.get_children("comp_archive_spec")
@@ -677,10 +682,17 @@ def test_st_archive(self, testdir="st_archive_test"):
                         fd.write(archive.get(file_node,"disposition")+"\n")
     logger.debug("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
-                          dout_s_root=os.path.join(testdir,"archive"),
-                          casename="casename", rundir=testdir, testonly=True)
+                     dout_s_root=dout_s_root,
+                     casename="casename", rundir=testdir, testonly=True)
 
     _check_disposition(testdir)
+    onlyfiles = [f for f in os.listdir(testdir) if os.path.isfile(os.path.join(testdir, f))]
+    # Now test the restore capability
+    for _file in onlyfiles:
+        os.remove(os.path.join(testdir,_file))
+
+    restore_from_archive(self, rundir=testdir, dout_s_root=dout_s_root)
+
 
     return True
 
