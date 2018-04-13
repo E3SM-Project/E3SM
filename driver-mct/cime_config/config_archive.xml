@@ -8,8 +8,8 @@
       <rpointer_content >$CASE.cpl$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
     <test_file_names>
-      <rest_file disposition="copy">casename.cpl.r.1976-01-01-00000.nc</rest_file>
-      <rest_file disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</rest_file>
+      <tfile disposition="copy">casename.cpl.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 
