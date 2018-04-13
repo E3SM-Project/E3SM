@@ -152,7 +152,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.initialize_derived_attributes()
 
-            cost_per_node = case.get_value("MAX_MPITASKS_PER_NODE")
+            cost_per_node = case.get_value("COSTPES_PER_NODE")
             case.set_value("COST_PES", case.num_nodes * cost_per_node)
             threaded = case.get_build_threaded()
             case.set_value("SMP_PRESENT", threaded)
