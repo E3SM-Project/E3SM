@@ -48,17 +48,7 @@
     </xs:complexType>
   </xs:element>
 
- <xs:element name="rest_file">
-   <xs:complexType>
-     <xs:simpleContent>
-       <xs:extension base="xs:string">
-         <xs:attribute ref="disposition" />
-       </xs:extension>
-     </xs:simpleContent>
-   </xs:complexType>
- </xs:element>
-
- <xs:element name="hist_file">
+ <xs:element name="tfile">
    <xs:complexType>
      <xs:simpleContent>
        <xs:extension base="xs:string">
@@ -72,8 +62,7 @@
   <xs:element name="test_file_names">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="rest_file" minOccurs="0" maxOccurs="unbounded"/>
-        <xs:element ref="hist_file" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="tfile" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>

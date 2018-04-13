@@ -115,12 +115,12 @@ def _get_component_archive_entries(components, archive):
     case's compset components.
     """
     for compname in components:
-        logger.info("compname is {} ".format(compname))
+        logger.debug("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
             yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
         else:
-            logger.info("No entry found for {}".format(compname))
+            logger.debug("No entry found for {}".format(compname))
 
 ###############################################################################
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,
@@ -258,10 +258,10 @@ def _archive_history_files(case, archive, archive_entry,
                                "history file {} does not exist ".format(srcfile))
                         destfile = join(archive_histdir, histfile)
                         if histfile in histfiles_savein_rundir:
-                            logger.debug("histfiles_savein_rundir; copying \n  {} to \n  {} ".format(srcfile, destfile))
+                            logger.info("copying {} to {} ".format(srcfile, destfile))
                             safe_copy(srcfile, destfile)
                         else:
-                            logger.debug("_archive_history_files; moving \n  {} to \n  {} ".format(srcfile, destfile))
+                            logger.info("moving {} to {} ".format(srcfile, destfile))
                             archive_file_fn(srcfile, destfile)
 
 ###############################################################################
@@ -393,7 +393,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
     casename = re.escape(casename)
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
-        logger.info("suffix is {} ninst {}".format(suffix, ninst))
+        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
         for i in range(ninst):
             restfiles = ""
             if compname.find("mpas") == 0:
@@ -401,17 +401,16 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
-                pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
+                pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                print "files {} rundir {}".format(files,rundir)
                 if ninst_strings:
                     pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
                 else:
                     pattern =                     r'\.' + suffix + r'\.' + datename_str
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
-            logger.info("pattern is {} restfiles {}".format(pattern, restfiles))
+            logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
@@ -440,13 +439,13 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     last_restart_file_fn(srcfile, destfile)
-                    logger.debug("{} {} \n  {} to \n  {}".format(
-                        "datename_is_last", last_restart_file_fn_msg, srcfile, destfile))
+                    logger.info("{} file {} to {}".format(last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history restart file {} for last date does not exist ".format(srcfile))
+                        logger.info("Copying {} to {}".format(srcfile, destfile))
                         safe_copy(srcfile, destfile)
                         logger.debug("datename_is_last + histfiles_for_restart copying \n  {} to \n  {}".format(srcfile, destfile))
                 else:
@@ -457,7 +456,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
-                        logger.debug("_archive_restarts_date_comp; moving \n   {} to \n   {}".format(srcfile, destfile))
+                        logger.info("moving file {} to {}".format(srcfile, destfile))
 
                         # need to copy the history files needed for interim restarts - since
                         # have not archived all of the history files yet
@@ -466,11 +465,11 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                             destfile = os.path.join(archive_restdir, histfile)
                             expect(os.path.isfile(srcfile),
                                    "hist file {} does not exist ".format(srcfile))
+                            logger.info("copying {} to {}".format(srcfile, destfile))
                             safe_copy(srcfile, destfile)
-                            logger.debug("interim_restarts: copying \n  {} to \n  {}".format(srcfile, destfile))
                     else:
                         srcfile = os.path.join(rundir, restfile)
-                        logger.debug("removing interim restart file {}".format(srcfile))
+                        logger.info("removing interim restart file {}".format(srcfile))
                         if (os.path.isfile(srcfile)):
                             try:
                                 os.remove(srcfile)
@@ -510,14 +509,14 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
     datenames = _get_datenames(casename, rundir, case.get_value('MULTI_DRIVER'))
-    logger.info("datenames {} ".format(datenames))
+    logger.debug("datenames {} ".format(datenames))
     histfiles_savein_rundir_by_compname = {}
     for datename in datenames:
         datename_is_last = False
         if datename == datenames[-1]:
             datename_is_last = True
 
-        logger.info("datename {} last_date {}".format(datename,last_date))
+        logger.debug("datename {} last_date {}".format(datename,last_date))
         if last_date is None or datename <= last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
@@ -553,12 +552,12 @@ def restore_from_archive(self, rest_dir=None):
     else:
         rest_dir = ls_sorted_by_mtime(os.path.join(dout_sr, "rest"))[-1]
 
-    logger.info("Restoring from {} to {}".format(rest_dir, rundir))
     for item in glob.glob("{}/*".format(rest_dir)):
         base = os.path.basename(item)
         dst = os.path.join(rundir, base)
         if os.path.exists(dst):
             os.remove(dst)
+        logger.info("Restoring {} from {} to {}".format(item, rest_dir, rundir))
 
         safe_copy(item, rundir)
 
@@ -659,6 +658,9 @@ def test_st_archive(self, testdir="st_archive_test"):
     config_archive_files = archive.get_all_config_archive_files(files)
     # create the run directory testdir and populate it with rest_file and hist_file from
     # config_archive.xml test_file_names
+    if os.path.exists(testdir):
+        logger.info("Removing existing test directory {}".format(testdir))
+        shutil.rmtree(testdir)
     for config_archive_file in config_archive_files:
         archive = Archive(infile=config_archive_file, files=files)
         comp_archive_specs = archive.get_children("comp_archive_spec")
@@ -669,18 +671,31 @@ def test_st_archive(self, testdir="st_archive_test"):
                 if not os.path.exists(testdir):
                     os.makedirs(os.path.join(testdir,"archive"))
 
-                for rest_file_node in archive.get_children("rest_file", root=test_file_names):
-                    with open(os.path.join(testdir,archive.text(rest_file_node)), 'w') as fd:
-                        fd.write(archive.get(rest_file_node,"disposition")+"\n")
-
-                for hist_file_node in archive.get_children("hist_file", root=test_file_names):
-                    with open(os.path.join(testdir,archive.text(hist_file_node)), 'w') as fd:
-                        fd.write(archive.get(hist_file_node,"disposition")+"\n")
-    logger.info("testing components: {} ".format(list(set(components))))
+                for file_node in archive.get_children("tfile", root=test_file_names):
+                    fname = os.path.join(testdir,archive.text(file_node))
+                    with open(fname, 'w') as fd:
+                        fd.write(archive.get(file_node,"disposition")+"\n")
+    logger.debug("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
                           dout_s_root=os.path.join(testdir,"archive"),
                           casename="casename", rundir=testdir, testonly=True)
 
+    _check_disposition(testdir)
 
-#        print " {} {}".format(len(config_archive_files), config_archive_files)
     return True
+
+def _check_disposition(testdir):
+    copyfilelist = []
+    for root, dirs, files in os.walk(testdir):
+        for _file in files:
+            with open(os.path.join(root, _file), "r") as fd:
+                disposition = fd.readline()
+            if root == testdir:
+                expect(disposition != "move", "Failed to move file {} to archive".format(_file))
+                if "copy" in disposition:
+                    copyfilelist.append(_file)
+            elif "ignore" in disposition:
+                expect(False, "Moved file {} with dispostion ignore to directory {}".format(_file, root))
+            elif "copy" in disposition:
+                expect(_file in copyfilelist, "File {} with disposition copy was moved to directory {}"
+                       .format(_file, root))
