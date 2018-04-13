@@ -603,6 +603,52 @@ subroutine microp_aero_run ( &
    wsubi(:ncol,:top_lev-1) = 0.001_r8
    wsig(:ncol,:top_lev-1)  = 0.001_r8
 
+#ifdef CAM_SHAN_OPT
+
+  select case (trim(eddy_scheme))
+  case ('diag_TKE', 'CLUBB_SGS')
+    do k = top_lev, pver
+       do i = 1, ncol
+            wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
+            wsub(i,k) = min(wsub(i,k),10._r8)
+            wsig(i,k) = max(0.001_r8, wsub(i,k))
+       end do
+     end do
+   case default
+     do k = top_lev, pver
+       do i = 1, ncol
+            ! get sub-grid vertical velocity from diff coef.
+            ! following morrison et al. 2005, JAS
+            ! assume mixing length of 30 m
+            dum = (kvh(i,k) + kvh(i,k+1))/2._r8/30._r8
+            ! use maximum sub-grid vertical vel of 10 m/s
+            dum = min(dum, 10._r8)
+            ! set wsub to value at current vertical level
+            wsub(i,k)  = dum
+       end do
+     end do
+   end select
+
+   if (eddy_scheme == 'CLUBB_SGS') then
+     do k = top_lev, pver
+        do i = 1, ncol
+           wsubi(i,k) = max(0.2_r8, wsub(i,k))
+           wsubi(i,k) = min(wsubi(i,k), 10.0_r8)
+           wsub(i,k)  = max(0.20_r8, wsub(i,k))
+        end do
+     end do
+   else
+     do k = top_lev, pver
+        do i = 1, ncol
+           wsubi(i,k) = max(0.001_r8, wsub(i,k))
+           if (.not. use_preexisting_ice) then
+              wsubi(i,k) = min(wsubi(i,k), 0.2_r8)
+           endif
+           wsub(i,k)  = max(0.20_r8, wsub(i,k))
+        end do
+     end do
+   end if
+#else
    do k = top_lev, pver
       do i = 1, ncol
 
@@ -636,6 +682,8 @@ subroutine microp_aero_run ( &
 
       end do
    end do
+
+#endif
 
    !!.......................................................... 
    !! Initialization
@@ -889,8 +937,13 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
    real(r8) :: wlarge,sigma
    real(r8) :: xx, yy 
    real(r8) :: zz(nbin) 
+#ifdef CAM_SHAN_OPT
+   real(r8) :: sumwa, yy0
+   integer :: sump
+#else
    real(r8) :: wa(nbin) 
-   integer  :: kp(nbin) 
+   integer  :: kp(nbin)
+#endif 
    integer  :: i, k
    integer  :: ibin
 
@@ -904,6 +957,29 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
 
       xx = 6._r8 * sigma / nbin
 
+#ifdef CAM_SHAN_OPT
+      yy0 = wlarge - 3._r8*sigma + 0.5*xx
+      do ibin = 1, nbin
+         yy = yy0 + (ibin-1)*xx
+         zz(ibin) = yy * exp(-1.*(yy-wlarge)**2/(2*sigma**2))/(sigma*sqrt(2*pi))*xx
+      end do
+
+      sump = 0
+      sumwa = 0._r8
+      do ibin = 1, nbin
+         if (zz(ibin) .gt. 0._r8) then
+            sump = 1
+            sumwa = sumwa + zz(ibin)
+         end if
+      end do
+
+      if (sump .gt. 0) then
+         ww(i, k) = sumwa
+      else
+         ww(i, k) = 0.001_r8
+      end if
+
+#else
       do ibin = 1, nbin
          yy = wlarge - 3._r8*sigma + 0.5*xx
          yy = yy + (ibin-1)*xx
@@ -930,6 +1006,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
       end if 
 
       !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k) 
+#endif
 
   end do
   end do

@@ -1535,8 +1535,34 @@ end subroutine modal_size_parameters
       real(r8) x(pcols),dx,t(pcols),y(pcols),dy,u(pcols), &
              tu(pcols),tuc(pcols),tcu(pcols),tcuc(pcols)
 
+#ifdef CAM_SHAN_OPT
+      integer  :: shani(ncol)
+      logical  :: shanf(ncol)
+      real(r8) :: shanr(ncol)
+#endif
+
       if(ix(1).gt.0)go to 30
       if(im.gt.1)then
+#ifdef CAM_SHAN_OPT
+        do ic=1,ncol
+          do i=1,im
+            if(x(ic).lt.xtab(i))go to 10
+          enddo
+   10     shani(ic) = i
+        end do
+
+        do ic =1, ncol
+          i = shani(ic)
+          ix(ic)=max0(i-1,1)
+          ip1=min(ix(ic)+1,im)
+          dx=(xtab(ip1)-xtab(ix(ic)))
+          if(abs(dx).gt.1.e-20_r8)then
+             t(ic)=(x(ic)-xtab(ix(ic)))/dx
+          else 
+             t(ic)=0._r8
+          endif
+        end do
+#else
         do ic=1,ncol
           do i=1,im
             if(x(ic).lt.xtab(i))go to 10
@@ -1550,6 +1576,7 @@ end subroutine modal_size_parameters
              t(ic)=0._r8
           endif
 	end do
+#endif
       else
         ix(:ncol)=1
         t(:ncol)=0._r8

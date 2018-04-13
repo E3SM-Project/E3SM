@@ -24,7 +24,11 @@ use cam_history,    only: addfld, add_default, outfld
 
 use ref_pres,       only: top_lev => trop_cloud_top_lev
 use wv_saturation,  only: qsat_water
+
+#ifdef CAM_SHAN_OPT
+#else
 use shr_spfn_mod,   only: erf => shr_spfn_erf
+#endif
 
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
