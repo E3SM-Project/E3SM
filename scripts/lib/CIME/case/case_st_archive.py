@@ -114,8 +114,6 @@ def _get_component_archive_entries(components, archive):
     (archive_entry, compname, compclass) for one component in this
     case's compset components.
     """
-    print "HERE1 {}".format(components)
-
     for compname in components:
         logger.info("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
@@ -267,7 +265,7 @@ def _archive_history_files(case, archive, archive_entry,
                             archive_file_fn(srcfile, destfile)
 
 ###############################################################################
-def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
+def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
 ###############################################################################
     """
     query restart files to determine history files that are needed for restarts
@@ -280,9 +278,12 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
     rest_hist_varname = archive.get_entry_value('rest_history_varname', archive_entry)
     if rest_hist_varname != 'unset':
         cmd = "ncdump -v {} {} ".format(rest_hist_varname, os.path.join(rundir, restfile))
-        rc, out, error = run_cmd(cmd)
-        if rc != 0:
-            logger.info(" WARNING: {} failed rc={:d}\n    out={}\n    err={}".format(cmd, rc, out, error))
+        if testonly:
+            out = "{} =".format(rest_hist_varname)
+        else:
+            rc, out, error = run_cmd(cmd)
+            if rc != 0:
+                logger.info(" WARNING: {} failed rc={:d}\n    out={}\n    err={}".format(cmd, rc, out, error))
         logger.debug(" get_histfiles_for_restarts: \n    out={}".format(out))
 
         searchname = "{} =".format(rest_hist_varname)
@@ -306,10 +307,10 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
     return histfiles
 
 ###############################################################################
-def _archive_restarts_date(case, archive,
+def _archive_restarts_date(case, casename, rundir, archive,
                            datename, datename_is_last, last_date,
                            archive_restdir, archive_file_fn, components=None,
-                           link_to_last_restart_files=False):
+                           link_to_last_restart_files=False, testonly=False):
 ###############################################################################
     """
     Archive restart files for a single date
@@ -330,25 +331,27 @@ def _archive_restarts_date(case, archive,
     histfiles_savein_rundir_by_compname = {}
 
     for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
-        logger.debug('Archiving restarts for {} ({})'.format(compname, compclass))
+        logger.info('Archiving restarts for {} ({})'.format(compname, compclass))
 
         # archive restarts
-        histfiles_savein_rundir = _archive_restarts_date_comp(case, archive, archive_entry,
+        histfiles_savein_rundir = _archive_restarts_date_comp(case, casename, rundir,
+                                                              archive, archive_entry,
                                                               compclass, compname,
                                                               datename, datename_is_last,
                                                               last_date, archive_restdir,
                                                               archive_file_fn,
-                                                              link_to_last_restart_files)
+                                                              link_to_last_restart_files=
+                                                              link_to_last_restart_files,
+                                                              testonly=testonly)
         histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
     return histfiles_savein_rundir_by_compname
 
 ###############################################################################
-def _archive_restarts_date_comp(case, archive, archive_entry,
+def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                                 compclass, compname, datename, datename_is_last,
                                 last_date, archive_restdir, archive_file_fn,
-                                rundir, casename,
-                                link_to_last_restart_files=False):
+                                link_to_last_restart_files=False, testonly=False):
 ###############################################################################
     """
     Archive restart files for a single date and single component
@@ -358,8 +361,6 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     True); if False (the default), copy them. (This has no effect on the
     history files that are associated with these restart files.)
     """
-    rundir = case.get_value("RUNDIR")
-    casename = case.get_value("CASE")
     datename_str = _datetime_str(datename)
 
     if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
@@ -392,6 +393,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     casename = re.escape(casename)
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
+        logger.info("suffix is {} ninst {}".format(suffix, ninst))
         for i in range(ninst):
             restfiles = ""
             if compname.find("mpas") == 0:
@@ -402,13 +404,14 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                print "files {} rundir {}".format(files,rundir)
                 if ninst_strings:
                     pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
                 else:
                     pattern =                     r'\.' + suffix + r'\.' + datename_str
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
-                logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
+            logger.info("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
@@ -423,7 +426,8 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 # obtain array of history files for restarts
                 # need to do this before archiving restart files
                 histfiles_for_restart = get_histfiles_for_restarts(rundir, archive,
-                                                                   archive_entry, restfile)
+                                                                   archive_entry, restfile,
+                                                                   testonly=testonly)
 
                 if datename_is_last and histfiles_for_restart:
                     for histfile in histfiles_for_restart:
@@ -479,7 +483,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
 
 ###############################################################################
 def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only,
-                     components=None,dout_s_root=None, casename=None, rundir=None):
+                     components=None,dout_s_root=None, casename=None, rundir=None, testonly=False):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -506,17 +510,20 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
     datenames = _get_datenames(casename, rundir, case.get_value('MULTI_DRIVER'))
+    logger.info("datenames {} ".format(datenames))
     histfiles_savein_rundir_by_compname = {}
     for datename in datenames:
         datename_is_last = False
         if datename == datenames[-1]:
             datename_is_last = True
 
+        logger.info("datename {} last_date {}".format(datename,last_date))
         if last_date is None or datename <= last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
-                case, archive, datename, datename_is_last, last_date, archive_restdir, archive_file_fn, components)
+                case, casename, rundir, archive, datename, datename_is_last,
+                last_date, archive_restdir, archive_file_fn, components, testonly=testonly)
             if datename_is_last:
                 histfiles_savein_rundir_by_compname = histfiles_savein_rundir_by_compname_this_date
 
@@ -526,10 +533,10 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         logger.info('Archiving history files for {} ({})'.format(compname, compclass))
         histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
         logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-        case._archive_history_files(archive, archive_entry,
+        _archive_history_files(case, archive, archive_entry,
                                compclass, compname, histfiles_savein_rundir,
-                                    last_date, archive_file_fn,
-                                    dout_s_root, casename, rundir)
+                               last_date, archive_file_fn,
+                               dout_s_root, casename, rundir)
 
 ###############################################################################
 def restore_from_archive(self, rest_dir=None):
@@ -581,6 +588,8 @@ def archive_last_restarts(self, archive_restdir, last_date=None, link_to_restart
     archive_file_fn = _get_archive_file_fn(copy_only=False)
 
     _ = _archive_restarts_date(case=self,
+                               casename=casename,
+                               rundir=rundir,
                                archive=archive,
                                datename=last_datename,
                                datename_is_last=True,
@@ -670,7 +679,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     logger.info("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
                           dout_s_root=os.path.join(testdir,"archive"),
-                          casename="casename", rundir=testdir)
+                          casename="casename", rundir=testdir, testonly=True)
 
 
 #        print " {} {}".format(len(config_archive_files), config_archive_files)

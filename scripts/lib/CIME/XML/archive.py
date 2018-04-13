@@ -82,5 +82,25 @@ class Archive(GenericXML):
         return list(set(config_archive_files))
 
     def get_entry(self, compname):
-        components = self.get_optional_child('components')
-        return None if components is None else self.get_optional_child('comp_archive_spec', attributes={"compname":compname}, root=components)
+        return self.get_optional_child('comp_archive_spec',
+                                       attributes={"compname":compname})
+
+    def get_rest_file_extensions(self, archive_entry):
+        file_extensions = []
+        nodes = self.get_children('rest_file_extension', root=archive_entry)
+        for node in nodes:
+            file_extensions.append(self.text(node))
+        return file_extensions
+
+    def get_hist_file_extensions(self, archive_entry):
+        file_extensions = []
+        nodes = self.get_children('hist_file_extension', root=archive_entry)
+        for node in nodes:
+            file_extensions.append(self.text(node))
+        return file_extensions
+
+    def get_entry_value(self, name, archive_entry):
+        node = self.get_optional_child(name, root=archive_entry)
+        if node is not None:
+            return self.text(node)
+        return None
