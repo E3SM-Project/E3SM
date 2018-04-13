@@ -80,3 +80,7 @@ class Archive(GenericXML):
                     config_archive_files.append(compval)
 
         return list(set(config_archive_files))
+
+    def get_entry(self, compname):
+        components = self.get_optional_child('components')
+        return None if components is None else self.get_optional_child('comp_archive_spec', attributes={"compname":compname}, root=components)

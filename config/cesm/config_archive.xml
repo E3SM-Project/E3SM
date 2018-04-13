@@ -13,8 +13,13 @@
     </rpointer>
     <test_file_names>
       <rest_file disposition="copy">casename.cam.r.1976-01-01-00000.nc</rest_file>
+      <rest_file disposition="copy">casename.cam.rh4.1976-01-01-00000.nc</rest_file>
       <hist_file disposition="move">casename.cam.h0.1976-01-01-00000.nc</hist_file>
       <hist_file disposition="ignore">casename.cam.h0.1976-01-01-00000.nc.base</hist_file>
+      <hist_file disposition="move">casename.cam_0002.e.postassim.1976-01-01-00000.nc</hist_file>
+      <hist_file disposition="move">casename.cam_0002.e.preassim.1976-01-01-00000.nc</hist_file>
+      <hist_file disposition="move">casename.cam.i.1976-01-01-00000.nc</hist_file>
+      <hist_file disposition="ignore">anothercasename.cam.i.1976-01-01-00000.nc</hist_file>
     </test_file_names>
   </comp_archive_spec>
 
@@ -99,6 +104,11 @@
       <rpointer_file>rpointer.ocn$NINST_STRING.tavg</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.rh.$DATENAME.nc</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <rest_file disposition="copy">casename.pop_0001.r.1976-01-01-00000.nc</rest_file>
+      <rest_file disposition="copy">casename.pop.r.1976-01-01-00000.nc</rest_file>
+      <hist_file disposition="move">casename.pop.h0.1976-01-01-00000.nc</hist_file>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="cism" compclass="glc">
@@ -121,6 +131,7 @@
       <rpointer_content>unset</rpointer_content>
     </rpointer>
     </comp_archive_spec>
+
     <comp_archive_spec compclass="esp" compname="dart">
       <rest_file_extension>r</rest_file_extension>
       <hist_file_extension>[ei]</hist_file_extension>
@@ -129,5 +140,8 @@
         <rpointer_file>rpointer.unset</rpointer_file>
         <rpointer_content>unset</rpointer_content>
       </rpointer>
+      <test_file_names>
+      <hist_file disposition="move">casename.dart.e.pop_preassim_priorinf_mean.1976-01-01-00000.nc</hist_file>
+      </test_file_names>
     </comp_archive_spec>
   </components>

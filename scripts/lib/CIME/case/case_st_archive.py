@@ -24,23 +24,20 @@ def _get_archive_file_fn(copy_only):
     return safe_copy if copy_only else shutil.move
 
 ###############################################################################
-def _get_datenames(case):
+def _get_datenames(casename, rundir, multi_driver):
 ###############################################################################
     """
     Returns the date objects specifying the times of each file
     Note we are assuming that the coupler restart files exist and are consistent with other component datenames
     Not doc-testable due to filesystem dependence
     """
-    casename = case.get_value("CASE")
-    rundir = case.get_value("RUNDIR")
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
 
     # The MULTI_DRIVER option requires a more careful search for dates.
     # When True, each date has NINST cpl_####.r files.
-    multidriver = case.get_value('MULTI_DRIVER')
-    logger.debug("_get_datenames:  multidriver = {} ".format(multidriver))
+    logger.debug("_get_datenames:  multidriver = {} ".format(multi_driver))
 
-    if multidriver :
+    if multi_driver :
         files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
     else:
         files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
@@ -110,22 +107,22 @@ def _get_ninst_info(case, compclass):
     return ninst, ninst_strings
 
 ###############################################################################
-def _get_component_archive_entries(case, archive):
+def _get_component_archive_entries(components, archive):
 ###############################################################################
     """
     Each time this generator function is called, it yields a tuple
     (archive_entry, compname, compclass) for one component in this
     case's compset components.
     """
-    compset_comps = case.get_compset_components()
-    compset_comps.append('drv')
-    compset_comps.append('dart')
+    print "HERE1 {}".format(components)
 
-    for compname in compset_comps:
-        logger.debug("compname is {} ".format(compname))
+    for compname in components:
+        logger.info("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
             yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
+        else:
+            logger.info("No entry found for {}".format(compname))
 
 ###############################################################################
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,
@@ -207,7 +204,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
 ###############################################################################
 def _archive_history_files(case, archive, archive_entry,
                            compclass, compname, histfiles_savein_rundir,
-                           last_date, archive_file_fn):
+                           last_date, archive_file_fn, dout_s_root, casename, rundir):
 ###############################################################################
     """
     perform short term archiving on history files in rundir
@@ -216,8 +213,7 @@ def _archive_history_files(case, archive, archive_entry,
     """
 
     # determine history archive directory (create if it does not exist)
-    dout_s_root = case.get_value("DOUT_S_ROOT")
-    casename = re.escape(case.get_value("CASE"))
+
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
@@ -231,7 +227,7 @@ def _archive_history_files(case, archive, archive_entry,
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
-    rundir = case.get_value("RUNDIR")
+
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
             if ninst_string:
@@ -312,7 +308,7 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
 ###############################################################################
 def _archive_restarts_date(case, archive,
                            datename, datename_is_last, last_date,
-                           archive_restdir, archive_file_fn,
+                           archive_restdir, archive_file_fn, components=None,
                            link_to_last_restart_files=False):
 ###############################################################################
     """
@@ -326,9 +322,14 @@ def _archive_restarts_date(case, archive,
     logger.info('-------------------------------------------')
     logger.debug("last date: {}".format(last_date))
 
+    if components is None:
+        components = case.get_compset_components()
+        components.append('drv')
+        components.append('dart')
+
     histfiles_savein_rundir_by_compname = {}
 
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
+    for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
         logger.debug('Archiving restarts for {} ({})'.format(compname, compclass))
 
         # archive restarts
@@ -346,6 +347,7 @@ def _archive_restarts_date(case, archive,
 def _archive_restarts_date_comp(case, archive, archive_entry,
                                 compclass, compname, datename, datename_is_last,
                                 last_date, archive_restdir, archive_file_fn,
+                                rundir, casename,
                                 link_to_last_restart_files=False):
 ###############################################################################
     """
@@ -476,7 +478,8 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     return histfiles_savein_rundir
 
 ###############################################################################
-def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only):
+def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only,
+                     components=None,dout_s_root=None, casename=None, rundir=None):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -484,15 +487,25 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     logger.debug('In archive_process...')
 
-    dout_s_root = case.get_value("DOUT_S_ROOT")
+    if dout_s_root is None:
+        dout_s_root = case.get_value("DOUT_S_ROOT")
+    if rundir is None:
+        rundir = case.get_value("RUNDIR")
+    if casename is None:
+        casename = re.escape(case.get_value("CASE"))
+    if components is None:
+        components = case.get_compset_components()
+        components.append('drv')
+        components.append('dart')
+
     archive_file_fn = _get_archive_file_fn(copy_only)
 
     # archive log files
-    _archive_log_files(case.get_value("DOUT_S_ROOT"), case.get_value("RUNDIR"),
+    _archive_log_files(dout_s_root, rundir,
                        archive_incomplete_logs, archive_file_fn)
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
-    datenames = _get_datenames(case)
+    datenames = _get_datenames(casename, rundir, case.get_value('MULTI_DRIVER'))
     histfiles_savein_rundir_by_compname = {}
     for datename in datenames:
         datename_is_last = False
@@ -503,18 +516,20 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
-                case, archive, datename, datename_is_last, last_date, archive_restdir, archive_file_fn)
+                case, archive, datename, datename_is_last, last_date, archive_restdir, archive_file_fn, components)
             if datename_is_last:
                 histfiles_savein_rundir_by_compname = histfiles_savein_rundir_by_compname_this_date
 
     # archive history files
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
+
+    for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
         logger.info('Archiving history files for {} ({})'.format(compname, compclass))
         histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
         logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-        _archive_history_files(case, archive, archive_entry,
+        case._archive_history_files(archive, archive_entry,
                                compclass, compname, histfiles_savein_rundir,
-                               last_date, archive_file_fn)
+                                    last_date, archive_file_fn,
+                                    dout_s_root, casename, rundir)
 
 ###############################################################################
 def restore_from_archive(self, rest_dir=None):
@@ -631,6 +646,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
 def test_st_archive(self, testdir="st_archive_test"):
     archive = Archive()
     files = Files()
+    components = []
     config_archive_files = archive.get_all_config_archive_files(files)
     # create the run directory testdir and populate it with rest_file and hist_file from
     # config_archive.xml test_file_names
@@ -638,6 +654,7 @@ def test_st_archive(self, testdir="st_archive_test"):
         archive = Archive(infile=config_archive_file, files=files)
         comp_archive_specs = archive.get_children("comp_archive_spec")
         for comp_archive_spec in comp_archive_specs:
+            components.append(archive.get(comp_archive_spec, 'compname'))
             test_file_names = archive.get_optional_child("test_file_names", root=comp_archive_spec)
             if test_file_names is not None:
                 if not os.path.exists(testdir):
@@ -650,8 +667,11 @@ def test_st_archive(self, testdir="st_archive_test"):
                 for hist_file_node in archive.get_children("hist_file", root=test_file_names):
                     with open(os.path.join(testdir,archive.text(hist_file_node)), 'w') as fd:
                         fd.write(archive.get(hist_file_node,"disposition")+"\n")
+    logger.info("testing components: {} ".format(list(set(components))))
+    _archive_process(self, archive, None, False, False,components=list(set(components)),
+                          dout_s_root=os.path.join(testdir,"archive"),
+                          casename="casename", rundir=testdir)
 
-    print "{}".format( len(comp_archive_specs))
 
 #        print " {} {}".format(len(config_archive_files), config_archive_files)
     return True
