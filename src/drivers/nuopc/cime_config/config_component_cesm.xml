@@ -503,7 +503,8 @@
     <valid_values>0,1,3,5,10,36</valid_values>
     <default_value>10</default_value>
     <values match="last">
-      <value compset="_CLM40.*_SGLC">0</value>
+      <value compset="SGLC">0</value>
+      <!-- <value compset="_CLM40.*_SGLC">0</value> -->
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
