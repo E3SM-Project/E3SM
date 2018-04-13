@@ -876,7 +876,7 @@ contains
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
     real(kind=real_kind) :: dp, dt_q, dt_remap
-    real(kind=real_kind) :: dp_np1(np,np)
+    real(kind=real_kind) :: dp_np1(np,np), ps_force(np,np,nets:nete)
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
@@ -962,6 +962,10 @@ contains
       enddo
     enddo
 
+!save ps when forcing was sent to homme
+    do ie=nets,nete
+      ps_force(:,:, ie) = elem(ie)%state%ps_v(:,:,tl%n0)
+    enddo
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
@@ -1021,7 +1025,7 @@ contains
 !print *, "elem%t", elem(ie)%state%t(1,1,:,tl%n0)
 !endif
 
-            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%np1,nets,nete)
+            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%np1,nets,nete,ps_force)
             !in this call n0_qdp is not used
 !            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%np1,n0_qdp,dt_q*vsplit,nets,nete)
 !if(hybrid%masterthread) then
