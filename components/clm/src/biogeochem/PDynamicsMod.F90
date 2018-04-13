@@ -645,6 +645,7 @@ contains
 
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
+    biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp) = 0._r8
       
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
@@ -670,17 +671,24 @@ contains
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
+            ! sum total
             sop_tot = 0._r8
             do l = 1,ndecomp_pools
+             if (is_soil(l)) then
                 sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
+             end if
             end do
+            ! get profile
             do l = 1,ndecomp_pools
+             if (is_soil(l)) then
                 if (sop_tot > 1e-12) then 
                     sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                 else
                     sop_profile(l) = 0._r8
                 end if
+              end if
             end do
+            ! cauculation actual biochem_pmin_ppool
             do l = 1,ndecomp_pools
                 if (is_soil(l)) then
                    biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr_pot(c,j) * sop_profile(l)&
@@ -689,7 +697,7 @@ contains
             end do
         end do
     end do
-    ! rescale biochem_pmin
+    ! calculate biochem_pmin
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -720,11 +728,13 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        do p = col_pp%pfti(c), col_pp%pftf(c)
+        if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
           biochem_pmin_to_plant_patch(p) = 0._r8
           do j = 1,nlevdecomp
              biochem_pmin_to_plant_patch(p) = biochem_pmin_to_plant_patch(p) + &
                                               biochem_pmin_to_plant_vr_patch(p,j) * col_pp%dz(c,j)
           end do
+        end if
        end do
     end do
 
