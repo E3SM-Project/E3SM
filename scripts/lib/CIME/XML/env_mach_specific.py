@@ -144,7 +144,7 @@ class EnvMachSpecific(EnvBase):
         module_system = self.get_module_system_type()
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
-
+        lines = []
         if sh_init_cmd:
             lines = ["source {}".format(sh_init_cmd)]
 
