@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
 <compsets>
+   <help>
+   Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+   or in the CIME documenation
+   </help>
 
   <compset>
     <alias>F1850C5L45BGC</alias>
