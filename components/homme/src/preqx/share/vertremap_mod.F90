@@ -151,7 +151,7 @@ contains
 
 !routine to apply external forcing to homme on Lagrangian levels
 !that is, unrelated to whether remap stage was done or not
-  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,dt,np1,nets,nete)
+  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,dt,np1,nets,nete,ps_first)
   use kinds,          only: real_kind
   use hybvcoord_mod,  only: hvcoord_t
   use control_mod,    only: rsplit
@@ -164,6 +164,7 @@ contains
   integer :: ie,i,j,k
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
+  real (kind=real_kind), dimension(np,np,nets:nete),intent(in)  :: ps_first
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
   real (kind=real_kind) :: ps_forcing(np,np)
 
@@ -174,10 +175,19 @@ contains
      ps_forcing(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,np1),3)
      do k=1,nlev
         !obtain dp for forcing
-        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:)
+
+!        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+!             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:)
+        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0+ &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_first(:,:,ie)
+
+        dp_forcing(:,:,k) = dp_forcing(:,:,k) * (ps_forcing(:,:) / ps_first(:,:,ie))
+
         dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
      enddo
+
+!  print *,"ie=",ie," min value of dp_star", minval(dp_star)
+!  if (hybrid%masterthread) print *, "min value of dp_star", minval(dp_star)
 
      !consider forcing is for pressure levels that are based on
      !eta coordinate and current surface pressure.
