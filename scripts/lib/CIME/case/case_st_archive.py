@@ -693,6 +693,9 @@ def test_st_archive(self, testdir="st_archive_test"):
 
     restore_from_archive(self, rundir=testdir, dout_s_root=dout_s_root)
 
+    restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
+    for _file in restfiles:
+        expect(os.path.isfile(os.path.join(testdir,_file)), "Expected file {} to be restored from rest dir".format(_file))
 
     return True
 
