@@ -157,8 +157,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             threaded = case.get_build_threaded()
             case.set_value("SMP_PRESENT", threaded)
             if threaded and case.total_tasks * case.thread_count > cost_per_node:
-                smt_factor = max(1,int(case.get_value("MAX_TASKS_PER_NODE") / cost_per_node))
-                case.set_value("TOTALPES", case.total_tasks * case.thread_count / smt_factor)
+                smt_factor = max(1.0,int(case.get_value("MAX_TASKS_PER_NODE") / cost_per_node))
+                case.set_value("TOTALPES", int(case.total_tasks * max(1.0,float(case.thread_count) / smt_factor)))
             else:
                 case.set_value("TOTALPES", case.total_tasks*case.thread_count)
 
