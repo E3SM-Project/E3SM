@@ -305,6 +305,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
+        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
+
         cls._do_teardown.append(testdir)
 
     def test_aa_no_flush_on_instantiate(self):
