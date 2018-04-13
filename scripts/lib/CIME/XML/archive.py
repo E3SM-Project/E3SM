@@ -62,14 +62,14 @@ class Archive(ArchiveBase):
         for comp in component_nodes:
             compval = self.text(comp)
             if "COMP_ROOT_DIR" in compval:
-                search = re.search("\$(COMP_ROOT_DIR_[^\/]+)", compval)
+                search = re.search(r"\$(COMP_ROOT_DIR_[^\/]+)", compval)
                 if search:
                     match = search.group(1)
                     comp_root_dir_node = files.get_child("entry", {"id": match})
                     new_component_nodes = files.get_children("value",
                                                              root=files.get_child("values", root=comp_root_dir_node))
                     for new_comp in new_component_nodes:
-                        newcompval = re.sub("\$COMP_ROOT_DIR_[^\/]+", self.text(new_comp), compval)
+                        newcompval = re.sub(r"\$COMP_ROOT_DIR_[^\/]+", self.text(new_comp), compval)
                         newcompval = files.get_resolved_value(newcompval)
                         if os.path.isfile(newcompval):
                             config_archive_files.append(newcompval)

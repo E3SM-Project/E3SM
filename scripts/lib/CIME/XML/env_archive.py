@@ -6,7 +6,7 @@ from CIME.XML.archive_base import ArchiveBase
 from CIME.XML.env_base import EnvBase
 
 logger = logging.getLogger(__name__)
-
+# pylint: disable=super-init-not-called
 class EnvArchive(ArchiveBase,EnvBase):
 
     def __init__(self, case_root=None, infile="env_archive.xml"):

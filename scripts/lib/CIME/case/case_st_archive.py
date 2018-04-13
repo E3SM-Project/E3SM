@@ -566,7 +566,7 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
         safe_copy(item, rundir)
 
 ###############################################################################
-def archive_last_restarts(self, archive_restdir, last_date=None, link_to_restart_files=False):
+def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to_restart_files=False):
 ###############################################################################
     """
     Convenience function for archiving just the last set of restart
@@ -582,10 +582,10 @@ def archive_last_restarts(self, archive_restdir, last_date=None, link_to_restart
     files that are associated with these restart files.)
     """
     archive = self.get_env('archive')
-    datenames = _get_datenames(self)
+    datenames = _get_datenames(self, rundir, self.get_value('MULTI_DRIVER'))
     expect(len(datenames) >= 1, "No restart dates found")
     last_datename = datenames[-1]
-
+    casename = self.get_value("CASE")
     # Not currently used for anything if we're only archiving the last
     # set of restart files, but needed to satisfy the following interface
     archive_file_fn = _get_archive_file_fn(copy_only=False)
@@ -698,7 +698,7 @@ def test_st_archive(self, testdir="st_archive_test"):
 
 def _check_disposition(testdir):
     copyfilelist = []
-    for root, dirs, files in os.walk(testdir):
+    for root, _, files in os.walk(testdir):
         for _file in files:
             with open(os.path.join(root, _file), "r") as fd:
                 disposition = fd.readline()
