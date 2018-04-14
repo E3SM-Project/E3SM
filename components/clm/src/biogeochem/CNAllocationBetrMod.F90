@@ -868,11 +868,15 @@ contains
         leaf_totc=leafc(p) + leafc_storage(p) + leafc_xfer(p)
         leaf_totn=leafn(p) + leafn_storage(p) + leafn_xfer(p)
         leaf_totp=leafp(p) + leafp_storage(p) + leafp_xfer(p)
-        cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1.e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
+        if(abs(leaf_totc)<1.e-20_r8)then
+          cn_scalar(p) = 1._r8
+          cp_scalar(p) = 1._r8
+        else
+          cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1.e-20_r8) - leafcn(ivt(p))*(1._r8- cn_stoich_var)) / &
                 (leafcn(ivt(p)) - leafcn(ivt(p))*(1._r8- cn_stoich_var)),0.0_r8),1.0_r8)
-
-        cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1.e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-           (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
+          cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1.e-20_r8) - leafcp(ivt(p))*(1._r8- cp_stoich_var)) / &
+            (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
+        endif
       else
         cn_scalar(p) = 1._r8
         cp_scalar(p) = 1._r8
