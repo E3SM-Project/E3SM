@@ -83,8 +83,10 @@ if ($BUILD_COMPLETE eq 'FALSE') {
     # tunings as the fully coupled B compset, so set the ocean component to pop in
     # that case.
     my $ocn = $COMP_OCN;
-    # DOCN_MODE no longer in CIME
-    # if ($DOCN_MODE eq 'som') {$ocn = "pop";}
+    if ($ocn eq 'docn'){
+       my $DOCN_MODE  == `./xmlquery  DOCN_MODE --value`;
+       if ($DOCN_MODE eq 'som') {$ocn = "pop";}
+    }
     my $comp;
     if ($COMP_INTERFACE eq 'mct' ) {$comp = "mct";}
     if ($COMP_INTERFACE eq 'esmf') {$comp = "esmf";}
