@@ -5,7 +5,7 @@
 <entry_id version="2.0">
 
   <!--
-      Values to use by default for creation of DOCN model docn namelists.
+      Values to use by default for creation of DLND model dlnd namelists.
       The element names are the same as the corresponding namelist
       variables.  Values that depend on the model configuration use
       attributes to express the dependency.  The recognized attributes
@@ -27,7 +27,7 @@
 
       For strm_datvar - the following substitutions will be made below
       Replace any instance of the following substring indicators with the appropriate values:
-      %glc  => GLC elevation class from the range 1 to GLC_NEC,
+      %glc  => GLC elevation class from the range 0 to GLC_NEC,
                obtained from the GLC_NEC xml variable
 
       Replace any instance of $VARNAME with the xml variable value obtained from any
@@ -79,7 +79,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value stream="sno.cplhist">$DIN_LOC_ROOT/lnd/dlnd7</value>
+      <value>null</value>
     </values>
   </entry>
 
@@ -89,7 +89,7 @@
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
-      <value stream="sno.cplhist">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
+      <value>null</value>
     </values>
   </entry>
 
@@ -100,11 +100,11 @@
     <desc>Stream domain variable name(s).</desc>
     <values>
       <value>
-        time    time
-        xc      lon
-        yc      lat
-        area    area
-        mask    mask
+        time         time
+        doml_lon     lon
+        doml_lat     lat
+        doml_aream   area
+        doml_mask    mask
       </value>
     </values>
   </entry>

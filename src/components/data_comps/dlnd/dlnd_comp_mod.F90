@@ -69,7 +69,7 @@ module dlnd_comp_mod
        "lfrac       ","fv          ","ram1        ",                               &
        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     "                 /)
 
-  integer(IN), parameter :: nflds_snow = 3   ! number of snow fields in each elevation class
+  integer(IN), parameter :: nflds_snow  = 3   ! number of snow fields in each elevation class
   integer(IN), parameter :: nec_len    = 2   ! length of elevation class index in field names
   ! for these snow fields, the actual field names will have the elevation class index at
   ! the end (e.g., Sl_tsrf01, tsrf01)
@@ -127,6 +127,7 @@ CONTAINS
     integer(IN)        :: nu        ! unit number
     character(CL)      :: calendar  ! model calendar
     integer(IN)        :: glc_nec   ! number of elevation classes
+    integer(IN)        :: nflds_glc_nec  ! number of snow fields separated by elev class
     integer(IN)        :: field_num ! field number
     character(nec_len) :: nec_str   ! elevation class, as character string
 
@@ -182,25 +183,32 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     glc_nec = glc_get_num_elevation_classes()
+    if (glc_nec == 0) then
+       nflds_glc_nec = 0
+    else
+       nflds_glc_nec = (glc_nec+1)*nflds_snow
+    end if
 
     ! Start with non-snow fields
-    allocate(avofld(nflds_nosnow + glc_nec*nflds_snow))
-    allocate(avifld(nflds_nosnow + glc_nec*nflds_snow))
+    allocate(avofld(nflds_nosnow + nflds_glc_nec))
+    allocate(avifld(nflds_nosnow + nflds_glc_nec))
     avofld(1:nflds_nosnow) = avofld_nosnow
     avifld(1:nflds_nosnow) = avifld_nosnow
     field_num = nflds_nosnow
 
     ! Append each snow field
-    do k = 1, nflds_snow
-       do n = 1, glc_nec
-          ! nec_str will be something like '02' or '10'
-          nec_str = glc_elevclass_as_string(n)
+    if (glc_nec > 0) then
+       do k = 1, nflds_snow
+          do n = 0, glc_nec
+             ! nec_str will be something like '02' or '10'
+             nec_str = glc_elevclass_as_string(n)
 
-          field_num = field_num + 1
-          avofld(field_num) = trim(avofld_snow(k))//nec_str
-          avifld(field_num) = trim(avifld_snow(k))//nec_str
+             field_num = field_num + 1
+             avofld(field_num) = trim(avofld_snow(k))//nec_str
+             avifld(field_num) = trim(avifld_snow(k))//nec_str
+          end do
        end do
-    end do
+    end if
 
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
