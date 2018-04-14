@@ -971,7 +971,7 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
-       nx, ny, nt, write_now, flds, yr_offset)
+       nx, ny, nt, write_now, flds, yr_offset, av_to_write)
 
     implicit none
 
@@ -988,6 +988,10 @@ contains
     logical                  , optional, intent(in) :: write_now ! write a sample now, if not used, write every call
     character(*)             , optional, intent(in) :: flds      ! list of fields to write
     integer                  , optional, intent(in) :: yr_offset ! offset to apply to current year when generating file name
+
+    ! If av_to_write is provided, then write fields from this attribute vector.
+    ! Otherwise, get the attribute vector from 'comp', based on 'flow'.
+    type(mct_avect), target  , optional, intent(in) :: av_to_write
 
     !--- local ---
     type(mct_gGrid), pointer :: dom
@@ -1079,10 +1083,14 @@ contains
     enddo
 
     if (iamin_CPLID) then
-       if (flow == 'c2x') then
-          av => component_get_c2x_cx(comp)
-       else if (flow == 'x2c') then
-          av => component_get_x2c_cx(comp)
+       if (present(av_to_write)) then
+          av => av_to_write
+       else
+          if (flow == 'c2x') then
+             av => component_get_c2x_cx(comp)
+          else if (flow == 'x2c') then
+             av => component_get_x2c_cx(comp)
+          end if
        end if
        dom   => component_get_dom_cx(comp)
        gsmap => component_get_gsmap_cx(comp)
