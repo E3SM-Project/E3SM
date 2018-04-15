@@ -3,7 +3,7 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the MPASO configuration of CESM1.
+# This script builds the namelists for the MPASO configuration of E3SM
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
@@ -197,12 +197,12 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-my $cesmroot = abs_path("$CIMEROOT/../");
-if (! -d "$cesmroot") {
-    die "** Invalid CESM root directory: $cesmroot ** ";
+my $srcroot = abs_path("$CIMEROOT/../");
+if (! -d "$srcroot") {
+    die "** Invalid srcroot directory: $srcroot ** ";
 }
 
-print "CESM ROOT IS: $cesmroot\n";
+print "SRCROOT IS: $srcroot\n";
 
 my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
@@ -431,7 +431,7 @@ if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Determine namelist 

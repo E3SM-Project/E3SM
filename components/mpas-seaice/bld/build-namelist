@@ -189,12 +189,12 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-my $cesmroot = abs_path("$CIMEROOT/../");
-if (! -d "$cesmroot") {
-    die "** Invalid CESM root directory: $cesmroot ** ";
+my $srcroot = abs_path("$CIMEROOT/../");
+if (! -d "$srcroot") {
+    die "** Invalid SRCROOT directory: $srcroot ** ";
 }
 
-print "CESM ROOT IS: $cesmroot\n";
+print "SRCROOT IS: $srcroot\n";
 
 my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
@@ -323,7 +323,7 @@ if (defined $opts{'infile'}) {
         my $val = $nl_infile->get_variable_value($group, $var);
         my @broken = split(/&/,$var);
         my $check_grp = 0; # If 1, make sure group found in definitions file
-                           # matches that specified in user_nl_mpassi
+                           # matches that specified in user_nl_mpascice
 
         # if variable has ampersand, truncate it unless it is type derived
         if ($broken[1]) {
@@ -346,14 +346,14 @@ if (defined $opts{'infile'}) {
         $nl_check_var->set_variable_value($group, $var_local,$val);
         eval { $nl_check_valid = $definition->validate($nl_check_var); };
         (not $@) or die <<"EOF";
-** ERROR: either $var_local is not a valid MPASSI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpassi. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpassi using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpassi_in namelist containing $var_local.**
+** ERROR: either $var_local is not a valid MPASSI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpascice. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpascice using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpassi_in namelist containing $var_local.**
 EOF
 
-        # If group was specified in user_nl_mpassi, make sure it matches
+        # If group was specified in user_nl_mpascice, make sure it matches
         # the group in the definitions file.
         my @group_valid = $nl_check_valid->get_group_names();
         ((not $check_grp) or ($broken[1] eq $group_valid[0])) or die <<"EOF";
-** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_mpassi. **
+** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_mpascice. **
 EOF
 
         # Add variable to validated namelist
@@ -364,7 +364,7 @@ EOF
     # If preview is desired and something has been changed in $nl_infile_valid,
     # output everything in $nl_infile_valid
     if (($preview == 1) && ($nl_infile_valid->get_group_names)) {
-      print " - The following values have been set in user_nl_mpassi:\n";
+      print " - The following values have been set in user_nl_mpascice:\n";
       print_nl_to_screen($nl_infile_valid);
     }
     # Merge input values into namelist.  Previously specified values have higher
@@ -421,7 +421,7 @@ if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 print "MPASSI build-namelist: ice_grid is $ICE_GRID \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Determine namelist
