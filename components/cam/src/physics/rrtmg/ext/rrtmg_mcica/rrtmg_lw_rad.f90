@@ -477,14 +477,18 @@
 
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
-            do k = 1, nlay
-               do ig = 1, ngptlw 
+            do ig = 1, ngptlw 
+               do k = 1, nlay
+!            do k = 1, nlay
+! shan               do ig = 1, ngptlw 
                   taut(k,ig) = taug(k,ig)
                enddo
             enddo
          elseif (iaer .eq. 10) then
-            do k = 1, nlay
-               do ig = 1, ngptlw 
+            do ig = 1, ngptlw 
+               do k = 1, nlay
+!            do k = 1, nlay
+!               do ig = 1, ngptlw 
                   taut(k,ig) = taug(k,ig) + taua(k,ngb(ig))
                enddo
             enddo
@@ -619,7 +623,7 @@
                                                         !    Dimensions: (nlay)
       real(kind=r8), intent(out) :: wbrodl(:)           ! broadening gas column density (mol/cm2)
                                                         !    Dimensions: (nlay)
-      real(kind=r8), intent(out) :: wkl(:,:)            ! molecular amounts (mol/cm-2)
+      real(kind=r8), contiguous, intent(out) :: wkl(:,:)            ! molecular amounts (mol/cm-2)
                                                         !    Dimensions: (mxmol,nlay)
       real(kind=r8), intent(out) :: wx(:,:)             ! cross-section amounts (mol/cm-2)
                                                         !    Dimensions: (maxxsec,nlay)
@@ -713,6 +717,7 @@
 
       pz(0) = plev(iplon,nlay+1)
       tz(0) = tlev(iplon,nlay+1)
+
       do l = 1, nlay
          pavel(l) = play(iplon,nlay-l+1)
          tavel(l) = tlay(iplon,nlay-l+1)

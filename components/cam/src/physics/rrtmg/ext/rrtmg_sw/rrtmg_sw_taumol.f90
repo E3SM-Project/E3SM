@@ -24,7 +24,13 @@
       use rrsw_con, only: oneminus
       use rrsw_wvn, only: nspa, nspb
       use rrsw_vsn, only: hvrtau, hnamtau
-
+#ifdef CAM_SHAN_OPT
+      use, intrinsic :: ieee_arithmetic
+      use ieee_exceptions
+      use spmd_utils 
+      use parrrsw
+      use perf_mod
+#endif
       implicit none
 
       contains
@@ -170,58 +176,60 @@
       integer, intent(in) :: nlayers            ! total number of layers
 
       integer, intent(in) :: laytrop            ! tropopause layer index
-      integer, intent(in) :: jp(:)              ! 
+      integer, contiguous, intent(in) :: jp(:)              ! 
                                                            !   Dimensions: (nlayers)
-      integer, intent(in) :: jt(:)              !
+      integer, contiguous, intent(in) :: jt(:)              !
                                                            !   Dimensions: (nlayers)
-      integer, intent(in) :: jt1(:)             !
+      integer, contiguous, intent(in) :: jt1(:)             !
                                                            !   Dimensions: (nlayers)
 
-      real(kind=r8), intent(in) :: colh2o(:)             ! column amount (h2o)
+      real(kind=r8), contiguous, intent(in) :: colh2o(:)             ! column amount (h2o)
                                                            !   Dimensions: (nlayers)
       real(kind=r8), intent(in) :: colco2(:)             ! column amount (co2)
                                                            !   Dimensions: (nlayers)
       real(kind=r8), intent(in) :: colo3(:)              ! column amount (o3)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colch4(:)             ! column amount (ch4)
+      real(kind=r8), contiguous, intent(in) :: colch4(:)             ! column amount (ch4)
                                                            !   Dimensions: (nlayers)
                                                            !   Dimensions: (nlayers)
       real(kind=r8), intent(in) :: colo2(:)              ! column amount (o2)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colmol(:)             ! 
+      real(kind=r8), contiguous, intent(in) :: colmol(:)             ! 
                                                            !   Dimensions: (nlayers)
 
-      integer, intent(in) :: indself(:)    
+      integer, contiguous, intent(in) :: indself(:)    
                                                            !   Dimensions: (nlayers)
-      integer, intent(in) :: indfor(:)
+      integer, contiguous, intent(in) :: indfor(:)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: selffac(:)
+      real(kind=r8), contiguous, intent(in) :: selffac(:)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: selffrac(:)
+      real(kind=r8), contiguous, intent(in) :: selffrac(:)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: forfac(:)
+      real(kind=r8), contiguous, intent(in) :: forfac(:)
                                                            !   Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: forfrac(:)
+      real(kind=r8), contiguous, intent(in) :: forfrac(:)
                                                            !   Dimensions: (nlayers)
 
-      real(kind=r8), intent(in) :: &                     !
+      real(kind=r8), contiguous, intent(in) :: &                     !
                          fac00(:), fac01(:), &             !   Dimensions: (nlayers)
                          fac10(:), fac11(:) 
 
 ! ----- Output -----
-      real(kind=r8), intent(out) :: sfluxzen(:)          ! solar source function
+      real(kind=r8), contiguous, intent(out) :: sfluxzen(:)          ! solar source function
                                                            !   Dimensions: (ngptsw)
-      real(kind=r8), intent(out) :: taug(:,:)            ! gaseous optical depth 
+      real(kind=r8), contiguous, intent(out) :: taug(:,:)            ! gaseous optical depth 
                                                            !   Dimensions: (nlayers,ngptsw)
-      real(kind=r8), intent(out) :: taur(:,:)            ! Rayleigh 
+      real(kind=r8), contiguous, intent(out) :: taur(:,:)            ! Rayleigh 
                                                            !   Dimensions: (nlayers,ngptsw)
 !      real(kind=r8), intent(out) :: ssa(:,:)             ! single scattering albedo (inactive)
                                                            !   Dimensions: (nlayers,ngptsw)
 
+      call ieee_set_halting_mode(ieee_usual, .true.)
+
       hvrtau = '$Revision: 1.2 $'
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
-
+      call t_startf('TAUMOL')
       call taumol16
       call taumol17
       call taumol18
@@ -236,7 +244,7 @@
       call taumol27
       call taumol28
       call taumol29
-
+      call t_stopf('TAUMOL')
 !-------------
       contains
 !-------------
@@ -269,6 +277,9 @@
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          speccomb = colh2o(lay) + strrat1*colch4(lay)
          specparm = colh2o(lay)/speccomb 
@@ -315,6 +326,9 @@
       laysolfr = nlayers
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
             laysolfr = lay
@@ -364,6 +378,9 @@
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          speccomb = colh2o(lay) + strrat*colco2(lay)
          specparm = colh2o(lay)/speccomb 
@@ -410,6 +427,9 @@
       laysolfr = nlayers
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
             laysolfr = lay
@@ -485,6 +505,9 @@
       laysolfr = laytrop
       
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -581,6 +604,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop      
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -679,6 +705,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -761,6 +790,9 @@
       laysolfr = laytrop
       
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -809,6 +841,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          speccomb = colh2o(lay) + strrat*colco2(lay)
          specparm = colh2o(lay)/speccomb 
@@ -885,6 +920,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -986,6 +1024,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -1056,6 +1097,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -1155,6 +1199,9 @@
       laysolfr = laytrop
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
             laysolfr = min(lay+1,laytrop)
@@ -1285,6 +1332,9 @@
       laysolfr = nlayers
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
             laysolfr = lay
@@ -1371,6 +1421,9 @@
       laysolfr = nlayers
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
             laysolfr = lay
@@ -1467,6 +1520,9 @@
       laysolfr = nlayers
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
             laysolfr = lay

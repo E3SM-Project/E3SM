@@ -52,32 +52,32 @@
       integer, intent (in) :: klev                   ! number of model layers
       integer, intent (in) :: kw                     ! g-point index
 
-      real(kind=r8), intent(in) :: pref(:)                    ! direct beam reflectivity
+      real(kind=r8), contiguous, intent(in) :: pref(:)                    ! direct beam reflectivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(in) :: prefd(:)                   ! diffuse beam reflectivity
+      real(kind=r8), contiguous, intent(in) :: prefd(:)                   ! diffuse beam reflectivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(in) :: ptra(:)                    ! direct beam transmissivity
+      real(kind=r8), contiguous, intent(in) :: ptra(:)                    ! direct beam transmissivity
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(in) :: ptrad(:)                   ! diffuse beam transmissivity
-                                                                 !   Dimensions: (nlayers+1)
-
-      real(kind=r8), intent(in) :: pdbt(:)
-                                                                 !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(in) :: ptdbt(:)
+      real(kind=r8), contiguous, intent(in) :: ptrad(:)                   ! diffuse beam transmissivity
                                                                  !   Dimensions: (nlayers+1)
 
-      real(kind=r8), intent(inout) :: prdnd(:)
+      real(kind=r8), contiguous, intent(in) :: pdbt(:)
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(inout) :: prup(:)
+      real(kind=r8), contiguous, intent(in) :: ptdbt(:)
                                                                  !   Dimensions: (nlayers+1)
-      real(kind=r8), intent(inout) :: prupd(:)
+
+      real(kind=r8), contiguous, intent(inout) :: prdnd(:)
+                                                                 !   Dimensions: (nlayers+1)
+      real(kind=r8), contiguous, intent(inout) :: prup(:)
+                                                                 !   Dimensions: (nlayers+1)
+      real(kind=r8), contiguous, intent(inout) :: prupd(:)
                                                                  !   Dimensions: (nlayers+1)
 
 ! Output
-      real(kind=r8), intent(out) :: pfd(:,:)                   ! downwelling flux (W/m2)
+      real(kind=r8), contiguous, intent(out) :: pfd(:,:)                   ! downwelling flux (W/m2)
                                                                  !   Dimensions: (nlayers+1,ngptsw)
                                                                  ! unadjusted for earth/sun distance or zenith angle
-      real(kind=r8), intent(out) :: pfu(:,:)                   ! upwelling flux (W/m2)
+      real(kind=r8), contiguous, intent(out) :: pfu(:,:)                   ! upwelling flux (W/m2)
                                                                  !   Dimensions: (nlayers+1,ngptsw)
                                                                  ! unadjusted for earth/sun distance or zenith angle
 

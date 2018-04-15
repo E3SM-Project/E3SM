@@ -508,14 +508,24 @@
 
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
+#ifdef CAM_SHAN_OPT
+            do ig = 1, ngptlw 
+               do k = 1, nlayers
+#else
             do k = 1, nlayers
                do ig = 1, ngptlw 
+#endif
                   taut(k,ig) = taug(k,ig)
                enddo
             enddo
          elseif (iaer .eq. 10) then
+#ifdef CAM_SHAN_OPT
+            do ig = 1, ngptlw
+               do k = 1, nlayers
+#else
             do k = 1, nlayers
                do ig = 1, ngptlw 
+#endif
                   taut(k,ig) = taug(k,ig) + taua(k,ngb(ig))
                enddo
             enddo
@@ -846,8 +856,13 @@
 ! modify to reverse layer indexing here if necessary.
 
       if (iaer .ge. 1) then 
+#ifdef CAM_SHAN_OPT
+         do ib = 1, nbndlw
+            do l = 1, nlayers-1
+#else
          do l = 1, nlayers-1
             do ib = 1, nbndlw
+#endif
                taua(l,ib) = tauaer(iplon,nlayers-l,ib)
             enddo
          enddo

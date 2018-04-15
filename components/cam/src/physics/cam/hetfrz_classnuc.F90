@@ -262,8 +262,7 @@ subroutine hetfrz_classnuc_calc( &
 #else
       do i = i1,i2
          dim_theta(i) = 1._r8/180._r8*pi+(i-1)*pdf_d_theta
-         pdf_imm_theta(i) =
-         exp(-((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8))/ &
+         pdf_imm_theta(i) = exp(-((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8))/ &
                                 (dim_theta(i)*imm_dust_var_theta*SQRT(2*pi))/norm_theta_imm
       end do
 #endif

@@ -24,6 +24,13 @@
       use rrlw_wvn, only: nspa, nspb
       use rrlw_vsn, only: hvrtau, hnamtau
 
+#ifdef CAM_SHAN_OPT
+!      use, intrinsic :: ieee_arithmetic
+!      use ieee_exceptions
+      use spmd_utils 
+      use perf_mod
+#endif
+
       implicit none
 
       contains
@@ -177,19 +184,19 @@
 
 ! ----- Input -----
       integer, intent(in) :: nlayers         ! total number of layers
-      real(kind=r8), intent(in) :: pavel(:)           ! layer pressures (mb) 
+      real(kind=r8), contiguous, intent(in) :: pavel(:)           ! layer pressures (mb) 
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: wx(:,:)            ! cross-section amounts (mol/cm2)
+      real(kind=r8), contiguous, intent(in) :: wx(:,:)            ! cross-section amounts (mol/cm2)
                                                       !    Dimensions: (maxxsec,nlayers)
-      real(kind=r8), intent(in) :: coldry(:)          ! column amount (dry air)
+      real(kind=r8), contiguous, intent(in) :: coldry(:)          ! column amount (dry air)
                                                       !    Dimensions: (nlayers)
 
       integer, intent(in) :: laytrop         ! tropopause layer index
-      integer, intent(in) :: jp(:)           ! 
+      integer, contiguous, intent(in) :: jp(:)           ! 
                                                       !    Dimensions: (nlayers)
-      integer, intent(in) :: jt(:)           !
+      integer, contiguous, intent(in) :: jt(:)           !
                                                       !    Dimensions: (nlayers)
-      integer, intent(in) :: jt1(:)          !
+      integer, contiguous, intent(in) :: jt1(:)          !
                                                       !    Dimensions: (nlayers)
       real(kind=r8), intent(in) :: planklay(:,:)      ! 
                                                       !    Dimensions: (nlayers,nbndlw)
@@ -198,49 +205,49 @@
       real(kind=r8), intent(in) :: plankbnd(:)        ! 
                                                       !    Dimensions: (nbndlw)
 
-      real(kind=r8), intent(in) :: colh2o(:)          ! column amount (h2o)
+      real(kind=r8), contiguous, intent(in) :: colh2o(:)          ! column amount (h2o)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colco2(:)          ! column amount (co2)
+      real(kind=r8), contiguous, intent(in) :: colco2(:)          ! column amount (co2)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colo3(:)           ! column amount (o3)
+      real(kind=r8), contiguous, intent(in) :: colo3(:)           ! column amount (o3)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: coln2o(:)          ! column amount (n2o)
+      real(kind=r8), contiguous, intent(in) :: coln2o(:)          ! column amount (n2o)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colco(:)           ! column amount (co)
+      real(kind=r8), contiguous, intent(in) :: colco(:)           ! column amount (co)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colch4(:)          ! column amount (ch4)
+      real(kind=r8), contiguous, intent(in) :: colch4(:)          ! column amount (ch4)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colo2(:)           ! column amount (o2)
+      real(kind=r8), contiguous, intent(in) :: colo2(:)           ! column amount (o2)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: colbrd(:)          ! column amount (broadening gases)
-                                                      !    Dimensions: (nlayers)
-
-      integer, intent(in) :: indself(:)
-                                                      !    Dimensions: (nlayers)
-      integer, intent(in) :: indfor(:)
-                                                      !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: selffac(:)
-                                                      !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: selffrac(:)
-                                                      !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: forfac(:)
-                                                      !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: forfrac(:)
+      real(kind=r8), contiguous, intent(in) :: colbrd(:)          ! column amount (broadening gases)
                                                       !    Dimensions: (nlayers)
 
-      integer, intent(in) :: indminor(:)
+      integer, contiguous, intent(in) :: indself(:)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: minorfrac(:)
+      integer, contiguous, intent(in) :: indfor(:)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: scaleminor(:)
+      real(kind=r8), contiguous, intent(in) :: selffac(:)
                                                       !    Dimensions: (nlayers)
-      real(kind=r8), intent(in) :: scaleminorn2(:)
+      real(kind=r8), contiguous, intent(in) :: selffrac(:)
+                                                      !    Dimensions: (nlayers)
+      real(kind=r8), contiguous, intent(in) :: forfac(:)
+                                                      !    Dimensions: (nlayers)
+      real(kind=r8), contiguous, intent(in) :: forfrac(:)
                                                       !    Dimensions: (nlayers)
 
-      real(kind=r8), intent(in) :: &                  !
+      integer, contiguous, intent(in) :: indminor(:)
+                                                      !    Dimensions: (nlayers)
+      real(kind=r8), contiguous, intent(in) :: minorfrac(:)
+                                                      !    Dimensions: (nlayers)
+      real(kind=r8), contiguous, intent(in) :: scaleminor(:)
+                                                      !    Dimensions: (nlayers)
+      real(kind=r8), contiguous, intent(in) :: scaleminorn2(:)
+                                                      !    Dimensions: (nlayers)
+
+      real(kind=r8), contiguous, intent(in) :: &                  !
                        fac00(:), fac01(:), &          !    Dimensions: (nlayers)
                        fac10(:), fac11(:) 
-      real(kind=r8), intent(in) :: &                  !
+      real(kind=r8), contiguous, intent(in) :: &                  !
                        rat_h2oco2(:),rat_h2oco2_1(:), &
                        rat_h2oo3(:),rat_h2oo3_1(:), & !    Dimensions: (nlayers)
                        rat_h2on2o(:),rat_h2on2o_1(:), &
@@ -249,9 +256,9 @@
                        rat_o3co2(:),rat_o3co2_1(:)
 
 ! ----- Output -----
-      real(kind=r8), intent(out) :: fracs(:,:)        ! planck fractions
+      real(kind=r8), contiguous, intent(out) :: fracs(:,:)        ! planck fractions
                                                       !    Dimensions: (nlayers,ngptlw)
-      real(kind=r8), intent(out) :: taug(:,:)         ! gaseous optical depth 
+      real(kind=r8), contiguous, intent(out) :: taug(:,:)         ! gaseous optical depth 
                                                       !    Dimensions: (nlayers,ngptlw)
 
       hvrtau = '$Revision: 1.7 $'
@@ -314,6 +321,9 @@
 ! foreign continuum is interpolated (in temperature) separately.
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
 
          ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(1) + 1
@@ -346,6 +356,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT 
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
 
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(1) + 1
@@ -401,6 +414,9 @@
 ! foreign continuum is interpolated (in temperature) separately.
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
 
          ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(2) + 1
@@ -425,6 +441,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
 
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(2) + 1
@@ -954,6 +973,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
 
          speccomb = colo3(lay) + rat_o3co2(lay)*colco2(lay)
@@ -1240,6 +1262,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
 
          speccomb = colo3(lay) + rat_o3co2(lay)*colco2(lay)
@@ -1326,6 +1351,9 @@
 ! is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
 
 ! In atmospheres where the amount of CO2 is too great to be considered
@@ -1368,6 +1396,9 @@
 
 ! Upper atmosphere loop
 ! Nothing important goes on above laytrop in this band.
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
 
          do ig = 1, ng6
@@ -1692,6 +1723,9 @@
 ! separately.
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
 
 !  In atmospheres where the amount of CO2 is too great to be considered
@@ -2065,6 +2099,9 @@
 ! foreign continuum is interpolated (in temperature) separately.
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(10) + 1
          ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(10) + 1
@@ -2087,6 +2124,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(10) + 1
          ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(10) + 1
@@ -2137,6 +2177,9 @@
 ! foreign continuum is interpolated (in temperature) separately.
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(11) + 1
          ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(11) + 1
@@ -2163,6 +2206,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(11) + 1
          ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(11) + 1
@@ -2675,6 +2721,9 @@
 ! and foreign continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = 1, laytrop
          ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(14) + 1
          ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(14) + 1
@@ -2696,6 +2745,9 @@
       enddo
 
 ! Upper atmosphere loop
+#ifdef CAM_SHAN_OPT
+!DIR$ simd
+#endif
       do lay = laytrop+1, nlayers
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(14) + 1
          ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(14) + 1
