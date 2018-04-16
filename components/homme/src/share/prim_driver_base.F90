@@ -856,7 +856,7 @@ contains
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use vertremap_mod,      only: vertical_remap, remap_vsplit_dyn
+    use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
 #if USE_OPENACC
@@ -876,7 +876,7 @@ contains
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
     real(kind=real_kind) :: dp, dt_q, dt_remap
-    real(kind=real_kind) :: dp_np1(np,np), ps_force(np,np,nets:nete)
+    real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
@@ -911,6 +911,7 @@ contains
 
 
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
+!og: dt_remap here?
 #ifndef CAM
     ! Apply HOMME test case forcing
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
@@ -931,14 +932,13 @@ contains
 
 ! sorf out, no vsplit is vsplit=-1 or 0 or either?
     elseif (ftype==2) then
-      if( vsplit < 1 )then
-
-!        if (hybrid%masterthread) print *,"case ftype=2, vsplit < 1"
-
-        call t_startf("ApplyCAMForcing_dynamics")
-        call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-        call t_stopf("ApplyCAMForcing_dynamics")
+      call t_startf("ApplyCAMForcing_dynamics")
+      if (vsplit > 0) then
+        call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt, nets, nete)
+      else 
+        call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt_remap, nets, nete)
       endif
+      call t_stopf("ApplyCAMForcing_dynamics")
     endif
 
     if (compute_diagnostics) then
@@ -953,7 +953,6 @@ contains
     endif
 
     !initialize dp3d from ps
-    !orig code
     do ie=nets,nete
       do k=1,nlev
         elem(ie)%state%dp3d(:,:,k,tl%n0)=&
@@ -962,10 +961,6 @@ contains
       enddo
     enddo
 
-!save ps when forcing was sent to homme
-    do ie=nets,nete
-      ps_force(:,:, ie) = elem(ie)%state%ps_v(:,:,tl%n0)
-    enddo
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
@@ -977,72 +972,20 @@ contains
 !if (hybrid%masterthread) print *,"rsplit,vsplit", rsplit,vsplit
 !if (hybrid%masterthread) print *,"dt_q", dt_q
 
-    if(vsplit < 1) then
-      ! Loop over rsplit vertically lagrangian timesiteps
+    ! Loop over rsplit vertically lagrangian timesiteps
+    call t_startf("prim_step_rX")
+    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+    call t_stopf("prim_step_rX")
 
-!if (hybrid%masterthread) print *,"vsplit < 1 case, MAIN RUN"
+    do r=2,rsplit
+      !put this i-fstatement above? branching
+      if(vsplit>0) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
 
+      call TimeLevel_update(tl,"leapfrog")
       call t_startf("prim_step_rX")
-      call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+      call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
       call t_stopf("prim_step_rX")
-
-      do r=2,rsplit
-        call TimeLevel_update(tl,"leapfrog")
-        call t_startf("prim_step_rX")
-        call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
-        call t_stopf("prim_step_rX")
-      enddo
-    else
-
-!PUT in namelist check that vsplit neq 0?
-      !new logic, with vsplit and ftype=2 only for now
-      do r=1,rsplit
-
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN"
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=",r
- 
-        if( r == 1 )then
-          !no need to recompute ps_, so, smaller call
-
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=1"
-!if (hybrid%masterthread) print *,"r=1, dt_q*vsplit",dt_q*vsplit," and dt=",dt
-!if (hybrid%masterthread) print *,"Applying appCAMforcing_d"
-          call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_q*vsplit,nets,nete)
-        else
-          !example: default for ne30 rsplit=6, vsplit=3 then mod(r-1,3) will
-          !return : 0, 1, 2, 0, 1, 2 and remap happens for r=1, r=4
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, r=",r
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, mod statement=",mod((r-1), vsplit)
-          if( mod((r-1), vsplit) == 0 )then
-            
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, MAIN RUN, inside mod statement, apply remapforcing"
-            !remap + forcing
-!if (hybrid%masterthread) print *,"vsplit >= 1 case, dt_q*vsplit", dt_q*vsplit," and dt=",dt
-!if(hybrid%masterthread) then
-!ie=1
-!print *,"BEFORE 1st elem, tl%n0 time velocity 1 column"
-!print *, "elem%v", elem(ie)%state%v(1,1,1,:,tl%n0)
-!print *, "elem%t", elem(ie)%state%t(1,1,:,tl%n0)
-!endif
-
-            call remap_vsplit_dyn(hybrid,elem,hvcoord,dt_q*vsplit,tl%np1,nets,nete,ps_force)
-            !in this call n0_qdp is not used
-!            call ApplyCAMForcing_dynamics(elem,hvcoord,tl%np1,n0_qdp,dt_q*vsplit,nets,nete)
-!if(hybrid%masterthread) then
-!ie=1
-!print *,"AFTER 1st elem, tl%n0 time velocity 1 column"
-!print *, "elem%v", elem(ie)%state%v(1,1,1,:,tl%n0)
-!print *, "elem%t", elem(ie)%state%t(1,1,:,tl%n0)
-!endif
-
-          endif
-          call TimeLevel_update(tl,"leapfrog")
-        endif !if-statement r == 1
-        call t_startf("prim_step_rX")
-        call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
-        call t_stopf("prim_step_rX")
-      enddo
-    endif !vsplit if-statement
+    enddo
 
     ! defer fi3nal timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
