@@ -132,17 +132,17 @@ USAGE, OPTIONS, AND EXAMPLES
     by each category.
 
     Example:
-    To modify the yellowstone PGI allactive prebeta test list example, one would execute the following command:
-	manage_testlists -query -outputlist -machine yellowstone -compiler pgi \
-             -category prebeta -component allactive > yellowstone.txt
+    To modify the cheyenne PGI allactive prebeta test list example, one would execute the following command:
+	manage_testlists -query -outputlist -machine cheyenne -compiler pgi \
+             -category prebeta -component allactive > cheyenne.txt
 
-    Make any modifications necessary to yellowstone.txt
+    Make any modifications necessary to cheyenne.txt
 
-    manage_testlists -synclist -machine yellowstone -compiler pgi \
-             -category prebeta -component allactive -file yellowstone.txt
+    manage_testlists -synclist -machine cheyenne -compiler pgi \
+             -category prebeta -component allactive -file cheyenne.txt
 
-    This command will delete all tests that match yellowstone, the pgi compiler, and the prebeta category.
-    Then all the potentially modified tests in yellowstone.txt will be added back in.
+    This command will delete all tests that match cheyenne, the pgi compiler, and the prebeta category.
+    Then all the potentially modified tests in cheyenne.txt will be added back in.
 
     -removetests:
 
@@ -153,8 +153,8 @@ USAGE, OPTIONS, AND EXAMPLES
     Want to delete all the BG1850CN tests?
     manage_testlists -removetests -compset BG1850CN -component allactive
 
-    want to delte the yellowstone aux_science tests using only the gnu compiler?
-    manage_testlists -removetests -category aux_science -machine yellowstone \
+    want to delte the cheyenne aux_science tests using only the gnu compiler?
+    manage_testlists -removetests -category aux_science -machine cheyenne \
         -compiler gnu -component allactive
 
     Want to remove only tests with the 'clm/decStart' testmod?

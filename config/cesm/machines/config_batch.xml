@@ -298,6 +298,11 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
 
+    <directives queue="premium">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+
     <directives queue="economy">
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
@@ -309,6 +314,7 @@
     </directives>
     <queues>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
       <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
     </queues>
@@ -474,7 +480,7 @@
       <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
     </queues>
   </batch_system>
-  
+
   <batch_system MACH="lawrencium-lr2" type="slurm">
     <batch_submit>sbatch</batch_submit>
     <directives>
@@ -487,7 +493,7 @@
       <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
     </queues>
   </batch_system>
-  
+
   <batch_system MACH="stampede2-skx" type="slurm" >
     <batch_submit>ssh stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
@@ -540,15 +546,6 @@
       <arg flag="-p" name="$JOB_QUEUE"/>
       <arg flag="--account" name="$PROJECT"/>
     </submit_args>
-  </batch_system>
-
-  <batch_system MACH="yellowstone" type="lsf" version="9.1">
-    <queues>
-      <queue walltimemax="24:00" nodemin="1" nodemax="1" >caldera</queue>
-      <queue walltimemax="12:00" nodemin="9" nodemax="546" default="true">regular</queue>
-      <queue walltimemax="12:00" nodemin="16385" nodemax="2184">capability</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="546">premium</queue>
-    </queues>
   </batch_system>
 
   <batch_system MACH="lbl-lr3" type="slurm">

@@ -350,7 +350,7 @@ def get_extension(model, filepath):
     'h'
     >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
     '0002.h0'
-    >>> get_extension("pop","PFS.f09_g16.B1850.yellowstone_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
+    >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
     """
     basename = os.path.basename(filepath)
