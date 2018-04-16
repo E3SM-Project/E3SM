@@ -264,7 +264,7 @@ def write_drv_flds_in_file(case, nmlgen, files):
 
         # Now create drv_flds_in
         config = {}
-        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}, comp_interface="mct"))
         definition_file = [os.path.join(definition_dir, "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True
@@ -287,7 +287,7 @@ def _create_component_modelio_namelists(case, files):
 
     # will need to create a new namelist generator
     infiles = []
-    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}, comp_interface="mct"))
     definition_file = [os.path.join(definition_dir, "namelist_definition_modelio.xml")]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
@@ -355,7 +355,7 @@ def buildnml(case, caseroot, component):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     files = Files()
-    definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv"})]
+    definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv"}, comp_interface="mct")]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
     if os.path.isfile(user_definition):

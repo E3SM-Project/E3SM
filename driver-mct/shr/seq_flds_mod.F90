@@ -129,7 +129,7 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
-  use shr_flds_mod      , only : seq_flds_dom_coord, seq_flds_dom_other
+  use shr_flds_mod      , only : shr_flds_dom_coord, shr_flds_dom_other
 
   implicit none
   public
@@ -217,7 +217,6 @@ module seq_flds_mod
   ! combined state/flux fields
   !----------------------------------------------------------------------------
 
-  character(CXX) :: seq_flds_dom_fields
   character(CXX) :: seq_flds_a2x_fields
   character(CXX) :: seq_flds_x2a_fields
   character(CXX) :: seq_flds_i2x_fields
@@ -562,6 +561,9 @@ contains
     units    = '1'
     attname  = 'frac'
     call metadata_set(attname, longname, stdname, units)
+
+    shr_flds_dom_coord  = trim(dom_coord )
+    shr_flds_dom_other  = trim(dom_other )
 
     !----------------------------------------------------------
     ! states/fluxes from atm
@@ -3188,7 +3190,6 @@ contains
     ! state + flux fields
     !----------------------------------------------------------------------------
 
-    seq_flds_dom_coord  = trim(dom_coord )
     seq_flds_a2x_states = trim(a2x_states)
     seq_flds_x2a_states = trim(x2a_states)
     seq_flds_i2x_states = trim(i2x_states)
@@ -3210,7 +3211,6 @@ contains
     seq_flds_w2x_states = trim(w2x_states)
     seq_flds_x2w_states = trim(x2w_states)
 
-    seq_flds_dom_other  = trim(dom_other )
     seq_flds_a2x_fluxes = trim(a2x_fluxes)
     seq_flds_x2a_fluxes = trim(x2a_fluxes)
     seq_flds_i2x_fluxes = trim(i2x_fluxes)
@@ -3269,7 +3269,6 @@ contains
        write(logunit,"(A)") subname//': seq_flds_x2w_fluxes= ',trim(seq_flds_x2w_fluxes)
     end if
 
-    call catFields(seq_flds_dom_fields, seq_flds_dom_coord , seq_flds_dom_other )
     call catFields(seq_flds_a2x_fields, seq_flds_a2x_states, seq_flds_a2x_fluxes)
     call catFields(seq_flds_x2a_fields, seq_flds_x2a_states, seq_flds_x2a_fluxes)
     call catFields(seq_flds_i2x_fields, seq_flds_i2x_states, seq_flds_i2x_fluxes)
