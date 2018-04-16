@@ -38,13 +38,16 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
     else:
         inputdata = Inputdata()
 
-        while not success:
-            if download:
+        if download:
+            while not success:
                 protocal, address = inputdata.get_next_server()
                 expect(protocal is not None, "Failed to find input data")
                 logger.info("Checking server {} with protocal {}".format(address, protocal))
+                success = self.check_input_data(protocal=protocal, address=address, download=download,
+                                                input_data_root=input_data_root, data_list_dir=data_list_dir)
+        else:
             success = self.check_input_data(protocal=protocal, address=address, download=download,
-                                       input_data_root=input_data_root, data_list_dir=data_list_dir)
+                                            input_data_root=input_data_root, data_list_dir=data_list_dir)
 
     self.stage_refcase()
 
@@ -67,19 +70,10 @@ def stage_refcase(self):
         rundir       = self.get_value("RUNDIR")
 
         refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
-        expect(os.path.isdir(refdir),
-"""
-*****************************************************************
-prestage ERROR: $refdir is not on local disk
-obtain this data from the svn input data repository
-> mkdir -p {}
-> cd {}
-> cd ..
-> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/{}
-or set GET_REFCASE to FALSE in env_run.xml
-and prestage the restart data to $RUNDIR manually
-*****************************************************************
-""".format(refdir, refdir, refdir))
+        if not os.path.isdir(refdir):
+            with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
+                      fd.write("refdir = {}".format(os.path.join(run_refdir, run_refcase, run_refdate)))
+            return
 
         logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
 
@@ -101,7 +95,8 @@ and prestage the restart data to $RUNDIR manually
             if not os.path.exists("{}/{}".format(rundir, rcbaseline)):
                 logger.info("Staging file {}".format(rcfile))
                 os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
-
+        # Backward compatibility, some old refcases have cam2 in the name
+        # link to local cam file.
         for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*").format(rundir)):
             camfile = cam2file.replace("cam2", "cam")
             os.symlink(cam2file, camfile)
@@ -136,6 +131,8 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
             server = CIME.Servers.WGET(address)
         else:
             expect(False, "Unsupported inputdata protocal: {}".format(protocal))
+
+
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
