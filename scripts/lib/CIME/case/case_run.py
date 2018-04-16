@@ -3,7 +3,7 @@ case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils                     import run_sub_or_cmd, append_status
+from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -28,7 +28,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
-        shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
+        safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
     case.check_lockedfiles()

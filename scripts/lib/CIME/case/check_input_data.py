@@ -2,11 +2,11 @@
 API for checking input for testcase
 """
 from CIME.XML.standard_module_setup import *
-from CIME.utils import SharedArea, find_files
+from CIME.utils import SharedArea, find_files, safe_copy
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, shutil
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ and prestage the restart data to $RUNDIR manually
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
-            shutil.copy(rpointerfile, rundir)
+            safe_copy(rpointerfile, rundir)
 
         # link everything else
 

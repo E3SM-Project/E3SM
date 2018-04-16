@@ -7,7 +7,7 @@ import logging
 import xml.etree.ElementTree as xmlet
 
 import CIME.utils
-from CIME.utils import expect, Timeout, run_cmd_no_fail
+from CIME.utils import expect, Timeout, run_cmd_no_fail, safe_copy
 from CIME.XML.machines import Machines
 from CIME.test_status import *
 
@@ -175,9 +175,9 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                     log_dst_dir = os.path.join(log_dir, "{}_{}_logs".format(test_name, param))
                     os.makedirs(log_dst_dir)
                     for log_file in glob.glob(os.path.join(log_src_dir, "*log*")):
-                        shutil.copy(log_file, log_dst_dir)
+                        safe_copy(log_file, log_dst_dir)
                     for log_file in glob.glob(os.path.join(log_src_dir, "*.cprnc.out*")):
-                        shutil.copy(log_file, log_dst_dir)
+                        safe_copy(log_file, log_dst_dir)
 
                     need_to_upload = True
 
