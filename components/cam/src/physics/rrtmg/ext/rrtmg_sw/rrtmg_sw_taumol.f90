@@ -25,8 +25,8 @@
       use rrsw_wvn, only: nspa, nspb
       use rrsw_vsn, only: hvrtau, hnamtau
 #ifdef CAM_SHAN_OPT
-      use, intrinsic :: ieee_arithmetic
-      use ieee_exceptions
+!      use, intrinsic :: ieee_arithmetic
+!      use ieee_exceptions
       use spmd_utils 
       use parrrsw
       use perf_mod
@@ -224,7 +224,7 @@
 !      real(kind=r8), intent(out) :: ssa(:,:)             ! single scattering albedo (inactive)
                                                            !   Dimensions: (nlayers,ngptsw)
 
-      call ieee_set_halting_mode(ieee_usual, .true.)
+!      call ieee_set_halting_mode(ieee_usual, .true.)
 
       hvrtau = '$Revision: 1.2 $'
 

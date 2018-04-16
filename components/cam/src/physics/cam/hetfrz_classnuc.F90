@@ -374,8 +374,12 @@ subroutine hetfrz_classnuc_calc( &
          m = cos(dim_theta(i))
          dim_f_imm_dust_a1(i) = (2+m)*(1-m)**2/4._r8
 
+#ifdef CAM_SHAN_OPT
+         dim_f_imm_dust_a3(i) = dim_f_imm_dust_a1(i)
+#else
          m = cos(dim_theta(i))
          dim_f_imm_dust_a3(i) = (2+m)*(1-m)**2/4._r8
+#endif
       end do
    end if
 
@@ -410,11 +414,16 @@ subroutine hetfrz_classnuc_calc( &
          dim_Jimm_dust_a3(i) = EXP((-dga_imm_dust-dim_f_imm_dust_a3(i)*dg0imm_dust_a3)/(kboltz*T))
       end do
 
+      do i = i1, i2
+         dim_f_imm_dust_a1(i) = SQRT(dim_f_imm_dust_a1(i))
+         dim_f_imm_dust_a3(i) = SQRT(dim_f_imm_dust_a1(i))
+      end do
+
       do i = i1,i2
-         dim_Jimm_dust_a1(i) = Aimm_dust_a1*r_dust_a1**2/SQRT(dim_f_imm_dust_a1(i))*dim_Jimm_dust_a1(i) 
+         dim_Jimm_dust_a1(i) = Aimm_dust_a1*r_dust_a1**2/dim_f_imm_dust_a1(i)*dim_Jimm_dust_a1(i) 
          dim_Jimm_dust_a1(i) = max(dim_Jimm_dust_a1(i), 0._r8)
 
-         dim_Jimm_dust_a3(i) = Aimm_dust_a3*r_dust_a3**2/SQRT(dim_f_imm_dust_a3(i))*dim_Jimm_dust_a3(i)
+         dim_Jimm_dust_a3(i) = Aimm_dust_a3*r_dust_a3**2/dim_f_imm_dust_a3(i)*dim_Jimm_dust_a3(i)
          dim_Jimm_dust_a3(i) = max(dim_Jimm_dust_a3(i), 0._r8)
       end do
 
