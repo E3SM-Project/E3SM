@@ -1924,12 +1924,12 @@ contains
          '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
          ptr_patch=this%dwt_conv_nflux_patch, default='inactive')
 
-    this%dwt_prod10n_gain_patch(begc:endc) = spval
+    this%dwt_prod10n_gain_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN_PATCH', units='gN/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
          ptr_col=this%dwt_prod10n_gain_patch, default='inactive')
 
-    this%dwt_prod100n_gain_patch(begc:endc) = spval
+    this%dwt_prod100n_gain_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_PROD100N_GAIN_PATCH', units='gN/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
          ptr_col=this%dwt_prod100n_gain_patch, default='inactive')
