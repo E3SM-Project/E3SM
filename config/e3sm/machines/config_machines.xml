@@ -281,12 +281,11 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.1.163</command>
+      <command name="load">intel/18.0.2.199</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu/6.0.4</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
@@ -426,12 +425,11 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.1.163</command>
+      <command name="load">intel/18.0.2.199</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu/6.0.4</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
