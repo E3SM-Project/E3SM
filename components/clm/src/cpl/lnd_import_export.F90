@@ -25,6 +25,7 @@ contains
     ! !USES:
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
+    use clm_varctl       , only : is_rst_step
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -199,7 +200,7 @@ contains
         met_nvars=7
         if (metdata_type(1:3) == 'cpl') met_nvars=14
 
-        if (nstep .eq. 0) then
+        if (is_rst_step) then
           !meteorological forcing
           if (index(metdata_type, 'qian') .gt. 0) then 
             atm2lnd_vars%metsource = 0   
@@ -378,7 +379,6 @@ contains
             else if (atm2lnd_vars%metsource == 5) then 
                     metdata_fname = 'WCYCL1850S.ne30_' // trim(metvars(v)) // '_0076-0100_z' // zst(2:3) // '.nc'
             end if
-  
             ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
             if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
        
@@ -497,7 +497,7 @@ contains
             end if
           end do
         end if
-
+        is_rst_step=.false.
         tindex = atm2lnd_vars%tindex(g,:,:)
 
         !get weights for linear interpolation 
@@ -510,7 +510,6 @@ contains
              wt2(v) = 1._r8
           end if
         end do
-
         !Air temperature
         atm2lnd_vars%forc_t_not_downscaled_grc(g)  = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &

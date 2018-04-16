@@ -373,7 +373,7 @@ module clm_varctl
    character(len=fname_len), public :: co2_file       = ' '    ! co2 file for CPL_BYPASS mode
    character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
 
-
+   logical, public :: is_rst_step=.true.
 contains
 
   !---------------------------------------------------------------------------
