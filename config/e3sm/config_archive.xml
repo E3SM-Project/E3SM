@@ -90,20 +90,6 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="pop" compclass="ocn">
-    <rest_file_extension>r</rest_file_extension>
-    <hist_file_extension>h\d*|d[dovt]</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING.restart</rpointer_file>
-      <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</rpointer_content>
-    </rpointer>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
-      <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="mpaso" compclass="ocn">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -123,17 +109,6 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="cism" compclass="glc">
-    <rest_file_extension>[ri]</rest_file_extension>
-    <hist_file_extension>h\d*</hist_file_extension>
-    <hist_file_extension>initial_hist</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
-      <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -141,16 +116,6 @@
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./mali$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>\..*</rest_file_extension>
-    <hist_file_extension>hi</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
-      <rpointer_content>unset</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
