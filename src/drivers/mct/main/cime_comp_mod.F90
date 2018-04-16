@@ -1443,7 +1443,11 @@ contains
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
 
+#ifdef COMPARE_TO_NUOPC
+    skip_ocean_run = .false.
+#else
     skip_ocean_run = .true.
+#endif
     if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
     cpl2ocn_first = .true.
@@ -1699,6 +1703,10 @@ contains
 #endif
     if (single_column) areafact_samegrid = .true.
 
+#ifdef COMPARE_TO_NUOPC
+    areafact_samegrid = .true.
+#endif
+
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
 
@@ -1933,7 +1941,8 @@ contains
     !  Data or dead atmosphere may just return on this phase.
     !----------------------------------------------------------
 
-    if (atm_present) then
+    if (atm_prognostic) then
+
        call t_startf('CPL:comp_init_cc_atm2')
        call t_adj_detailf(+2)
 

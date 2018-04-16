@@ -55,6 +55,7 @@ module dice_comp_mod
   character(CS) :: myModelName = 'ice'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
+  integer(IN)   :: dbug = 2              ! debug level (higher is more)
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
@@ -449,6 +450,7 @@ CONTAINS
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
+    character(*), parameter :: F01   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
@@ -664,6 +666,67 @@ CONTAINS
     end if
 
     call t_stopf('dice_datamode')
+
+    !----------------------------------------------------------
+    ! Debug output
+    !----------------------------------------------------------
+
+    if (dbug > 1 .and. my_task == master_task) then
+       do n = 1,lsize
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdr    = ', currentYMD, currentTOD, n, x2i%rattr(kswvdr,n)    
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swndr    = ', currentYMD, currentTOD, n, x2i%rattr(kswndr,n)        
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdf    = ', currentYMD, currentTOD, n, x2i%rattr(kswvdf,n)        
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swndf    = ', currentYMD, currentTOD, n, x2i%rattr(kswndf,n)        
+          write(logunit,F01)'import: ymd,tod,n,Fioo_q        = ', currentYMD, currentTOD, n, x2i%rattr(kq,n)            
+          write(logunit,F01)'import: ymd,tod,n,Sa_z          = ', currentYMD, currentTOD, n, x2i%rattr(kz,n)            
+          write(logunit,F01)'import: ymd,tod,n,Sa_u          = ', currentYMD, currentTOD, n, x2i%rattr(kua,n)           
+          write(logunit,F01)'import: ymd,tod,n,Sa_v          = ', currentYMD, currentTOD, n, x2i%rattr(kva,n)           
+          write(logunit,F01)'import: ymd,tod,n,Sa_ptem       = ', currentYMD, currentTOD, n, x2i%rattr(kptem,n)         
+          write(logunit,F01)'import: ymd,tod,n,Sa_shum       = ', currentYMD, currentTOD, n, x2i%rattr(kshum,n)         
+          write(logunit,F01)'import: ymd,tod,n,Sa_dens       = ', currentYMD, currentTOD, n, x2i%rattr(kdens,n)         
+          write(logunit,F01)'import: ymd,tod,n,Sa_tbot       = ', currentYMD, currentTOD, n, x2i%rattr(ktbot,n)         
+          write(logunit,F01)'import: ymd,tod,n,So_s          = ', currentYMD, currentTOD, n, x2i%rattr(ksalinity,n)     
+          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphidry = ', currentYMD, currentTOD, n, x2i%rattr(kbcphidry,n)     
+          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphodry = ', currentYMD, currentTOD, n, x2i%rattr(kbcphodry,n)     
+          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphiwet = ', currentYMD, currentTOD, n, x2i%rattr(kbcphiwet,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphidry = ', currentYMD, currentTOD, n, x2i%rattr(kocphidry,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphodry = ', currentYMD, currentTOD, n, x2i%rattr(kocphodry,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphiwet = ', currentYMD, currentTOD, n, x2i%rattr(kocphiwet,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry1  = ', currentYMD, currentTOD, n, x2i%rattr(kdstdry1,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry2  = ', currentYMD, currentTOD, n, x2i%rattr(kdstdry2,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry3  = ', currentYMD, currentTOD, n, x2i%rattr(kdstdry3,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry4  = ', currentYMD, currentTOD, n, x2i%rattr(kdstdry4,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet1  = ', currentYMD, currentTOD, n, x2i%rattr(kdstwet1,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet2  = ', currentYMD, currentTOD, n, x2i%rattr(kdstwet2,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet3  = ', currentYMD, currentTOD, n, x2i%rattr(kdstwet3,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet4  = ', currentYMD, currentTOD, n, x2i%rattr(kdstwet4,n)
+
+          write(logunit,F01)'export: ymd,tod,n,Si_ifrac      = ', currentYMD, currentTOD, n, i2x%rattr(kiFrac ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_t          = ', currentYMD, currentTOD, n, i2x%rattr(kt     ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_tref       = ', currentYMD, currentTOD, n, i2x%rattr(ktref  ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_qref       = ', currentYMD, currentTOD, n, i2x%rattr(kqref  ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_avsdr      = ', currentYMD, currentTOD, n, i2x%rattr(kavsdr ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_anidr      = ', currentYMD, currentTOD, n, i2x%rattr(kanidr ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_avsdf      = ', currentYMD, currentTOD, n, i2x%rattr(kavsdf ,n)
+          write(logunit,F01)'export: ymd,tod,n,Si_anidf      = ', currentYMD, currentTOD, n, i2x%rattr(kanidf ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_swnet    = ', currentYMD, currentTOD, n, i2x%rattr(kswnet ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_sen      = ', currentYMD, currentTOD, n, i2x%rattr(ksen   ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_lat      = ', currentYMD, currentTOD, n, i2x%rattr(klat   ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_lwup     = ', currentYMD, currentTOD, n, i2x%rattr(klwup  ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_evap     = ', currentYMD, currentTOD, n, i2x%rattr(kevap  ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_taux     = ', currentYMD, currentTOD, n, i2x%rattr(ktauxa ,n)
+          write(logunit,F01)'export: ymd,tod,n,Faii_tauy     = ', currentYMD, currentTOD, n, i2x%rattr(ktauya ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_melth    = ', currentYMD, currentTOD, n, i2x%rattr(kmelth ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_meltw    = ', currentYMD, currentTOD, n, i2x%rattr(kmeltw ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_swpen    = ', currentYMD, currentTOD, n, i2x%rattr(kswpen ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_taux     = ', currentYMD, currentTOD, n, i2x%rattr(ktauxo ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_tauy     = ', currentYMD, currentTOD, n, i2x%rattr(ktauyo ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_salt     = ', currentYMD, currentTOD, n, i2x%rattr(ksalt  ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_bcpho    = ', currentYMD, currentTOD, n, i2x%rattr(kbcpho ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_bcphi    = ', currentYMD, currentTOD, n, i2x%rattr(kbcphi ,n)
+          write(logunit,F01)'export: ymd,tod,n,Fioi_flxdst   = ', currentYMD, currentTOD, n, i2x%rattr(kflxdst,n)
+       end do
+    end if
 
     !--------------------
     ! Write restart

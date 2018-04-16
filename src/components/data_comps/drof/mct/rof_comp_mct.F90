@@ -150,6 +150,12 @@ CONTAINS
     ! Fill infodata that needs to be returned from drof
     !----------------------------------------------------------------------------
 
+    if (dbug > 1) then
+       if (my_task == master_task) then
+          call mct_aVect_info(2, r2x, istr='initial diag'//':AV')
+       end if
+    end if
+
     call seq_infodata_PutData(infodata, &
          rof_nx=SDROF%nxg, &
          rof_ny=SDROF%nyg )
@@ -217,7 +223,9 @@ CONTAINS
        currentYMD, currentTOD, case_name=case_name)
 
     if (dbug > 1) then
-       call mct_aVect_info(2, r2x, istr='run diag'//':AV')
+       if (my_task == master_task) then
+          call mct_aVect_info(2, r2x, istr='run diag'//':AV')
+       end if
     end if
 
     call shr_file_setLogUnit (shrlogunit)

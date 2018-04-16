@@ -67,7 +67,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: atm_present               ! flag
     logical           :: atm_prognostic            ! flag
     integer(IN)       :: shrlogunit                ! original log unit
@@ -82,12 +81,18 @@ CONTAINS
     real(R8)          :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)          :: orbObliqr                 ! orb obliquity (radians)
     real(R8)          :: nextsw_cday               ! calendar of next atm sw
+    integer           :: first_time = .true.
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
     integer(IN) , parameter :: master_task=0 ! task number of master task
     character(*), parameter :: subName = "(atm_init_mct) "
     !-------------------------------------------------------------------------------
+
+    ! Only call the datm atmosphere initialization once
+    if (.not. first_time) then
+       RETURN
+    end if
 
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
@@ -99,7 +104,6 @@ CONTAINS
 
     ! Obtain infodata variables
     call seq_infodata_getData(infodata,&
-         !atm_phase=phase, &
          single_column=scmMode, &
          scmlat=scmlat, &
          scmlon=scmLon, &
@@ -186,7 +190,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (dbug > 1) then
-       call mct_aVect_info(2, a2x, istr="initial diag"//':AV')
+       if (my_task == master_task) then
+          call mct_aVect_info(2, a2x, istr="initial diag"//':AV')
+       end if
     endif
 
     !----------------------------------------------------------------------------
@@ -198,6 +204,8 @@ CONTAINS
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+    first_time = .false.
 
   end subroutine atm_init_mct
 
@@ -251,7 +259,9 @@ CONTAINS
        currentYMD, currentTOD, case_name=case_name)
 
     if (dbug > 1) then
-       call mct_aVect_info(2, a2x, istr='run diag'//':AV')
+       if (my_task == master_task) then
+          call mct_aVect_info(2, a2x, istr='run diag'//':AV')
+       end if
     end if
 
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )

@@ -41,6 +41,7 @@ COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --valu
 NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+COMPARE_TO_NUOPC ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPARE_TO_NUOPC --value)
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -114,6 +115,10 @@ ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DESMFUSE_$(COMP_ESP)
 else
    CPPDEFS += -DMCT_INTERFACE
+endif
+
+ifeq ($(COMPARE_TO_NUOPC), TRUE)
+   CPPDEFS += -DCOMPARE_TO_NUOPC
 endif
 
 ifeq ($(strip $(MPILIB)),mpi-serial)

@@ -56,7 +56,7 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare", comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", compname, comp_interface) + "\n")
         elif compname.startswith('s'):
-            out.write(os.path.join(cimeroot, "src", "components", "stub_comps",compname, "cpl") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps", compname, comp_interface) + "\n")
 
     # Build the component
     run_gmake(case, compclass, libroot, bldroot)

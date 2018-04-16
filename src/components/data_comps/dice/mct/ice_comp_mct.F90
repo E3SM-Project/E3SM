@@ -157,6 +157,16 @@ CONTAINS
          ice_ny=SDICE%nyg )
 
     !----------------------------------------------------------------------------
+    ! diagnostics
+    !----------------------------------------------------------------------------
+
+    if (dbug > 1) then
+       if (my_task == master_task) then
+          call mct_aVect_info(2, i2x, istr='initial diag'//':AV')
+       end if
+    end if
+
+    !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
@@ -220,7 +230,9 @@ CONTAINS
          currentYMD, currentTOD, case_name=case_name)
 
     if (dbug > 1) then
-       call mct_aVect_info(2, i2x, istr='run diag'//':AV')
+       if (my_task == master_task) then
+          call mct_aVect_info(2, i2x, istr='run diag'//':AV')
+       end if
     end if
 
     call shr_file_setLogUnit (shrlogunit)

@@ -165,7 +165,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (dbug > 1) then
-      call mct_aVect_info(2, w2x, istr="initial diag"//':AV')
+       if (my_task == master_task) then
+          call mct_aVect_info(2, w2x, istr="initial diag"//':AV')
+       end if
     endif
 
     !----------------------------------------------------------------------------
@@ -231,6 +233,12 @@ CONTAINS
        currentYMD, currentTOD, case_name=case_name)
 
     call shr_sys_flush(logunit)
+
+    if (dbug > 1) then
+       if (my_task == master_task) then
+          call mct_aVect_info(2, w2x, istr="run diag"//':AV')
+       end if
+    endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

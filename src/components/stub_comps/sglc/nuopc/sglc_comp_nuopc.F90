@@ -1,5 +1,5 @@
-module srof_comp_nuopc
+module sglc_comp_nuopc
 
   ! This is only needed here to satisfy the current cime build requirements
 
-end module srof_comp_nuopc
+end module sglc_comp_nuopc
