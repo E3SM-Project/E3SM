@@ -15,7 +15,7 @@ module vertremap_mod
 
   implicit none
   private
-  public :: vertical_remap, remap_vsplit_dyn
+  public :: vertical_remap
 
 contains
 
@@ -149,134 +149,6 @@ contains
   call t_stopf('vertical_remap')
   end subroutine vertical_remap
 
-!routine to apply external forcing to homme on Lagrangian levels
-!that is, unrelated to whether remap stage was done or not
-  subroutine remap_vsplit_dyn(hybrid,elem,hvcoord,dt,np1,nets,nete,ps_first)
-  use kinds,          only: real_kind
-  use hybvcoord_mod,  only: hvcoord_t
-  use control_mod,    only: rsplit
-  use hybrid_mod,     only: hybrid_t
-  type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
-  type (element_t), intent(inout) :: elem(:)
-  integer, intent(in) :: np1, nets, nete
-  type (hvcoord_t)                :: hvcoord
-  real (kind=real_kind)           :: dt
-  integer :: ie,i,j,k
-
-  real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
-  real (kind=real_kind), dimension(np,np,nets:nete),intent(in)  :: ps_first
-  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
-  real (kind=real_kind) :: ps_forcing(np,np)
-
-!  if (hybrid%masterthread) print *,"IN REMAP_VSPLIT_DYN, dt=",dt 
-
-  call t_startf('remap_vsplit_dyn')
-   do ie=nets,nete
-     ps_forcing(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,np1),3)
-     do k=1,nlev
-        !obtain dp for forcing
-
-!        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-!             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_forcing(:,:)
-        dp_forcing(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0+ &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_first(:,:,ie)
-
-        dp_forcing(:,:,k) = dp_forcing(:,:,k) * (ps_forcing(:,:) / ps_first(:,:,ie))
-
-        dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
-     enddo
-
-!  print *,"ie=",ie," min value of dp_star", minval(dp_star)
-!  if (hybrid%masterthread) print *, "min value of dp_star", minval(dp_star)
-
-     !consider forcing is for pressure levels that are based on
-     !eta coordinate and current surface pressure.
-
-     !not sure whether to check both dp_star and dp_forcing?
-
-    if (minval(dp_star)<0) then
-        do k=1,nlev
-        do i=1,np
-        do j=1,np
-           if (dp_star(i,j,k ) < 0) then
-              print *,"In remap_vsplit_dyn: level = ",k
-              print *,"In remap_vsplit_dyn: column location lat,lon(radians):",&
-                      elem(ie)%spherep(i,j)%lat,elem(ie)%spherep(i,j)%lon
-           endif
-        enddo
-        enddo
-        enddo
-        call abortmp('In remap_vsplit_dyn: negative layer thickness. timestep or remap time too large')
-     endif
-
-     !we don't support REMAP_TE since it is off by default
-
-     ! remap forcing T
-     ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
-
-     call t_startf('vertical_remap1_1')
-     !remap from dp_forcing to dp_star
-     call remap1(ttmp,np,1,dp_forcing,dp_star)
-     call t_stopf('vertical_remap1_1')
-     !add forcing to temperature
-     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
-
-!if (hybrid%masterthread) print *,"IN REMAP_ ttmp/dp_star",ttmp(1,1,1,1)/dp_star(1,1,1)
-!if (hybrid%masterthread) print *,"IN REMAP_ ttmp/dp_star*dt",ttmp(1,1,1,1)/dp_star(1,1,1)*dt
-
-
-     !remap forcing V
-     ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_forcing
-     ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_forcing
-
-     call t_startf('vertical_remap1_2')
-     !remap from dp_forcing to dp_star
-     call remap1(ttmp,np,2,dp_forcing,dp_star)
-     call t_stopf('vertical_remap1_2')
-     !add forcing back
-     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)/dp_star(:,:,:)*dt
-     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)/dp_star(:,:,:)*dt
-
-!if (hybrid%masterthread) print *,"IN REMAP_ vttmp/dp_star",ttmp(1,1,1,1)/dp_star(1,1,1)
-!if (hybrid%masterthread) print *,"IN REMAP_ vttmp/dp_star*dt",ttmp(1,1,1,1)/dp_star(1,1,1)*dt
-
-  enddo
-  call t_stopf('remap_vsplit_dyn')
-  end subroutine remap_vsplit_dyn
-
-
-
-!new version without remap
-  subroutine remap_vsplit_dyn_(hybrid,elem,hvcoord,dt,np1,nets,nete)
-  use kinds,          only: real_kind
-  use hybvcoord_mod,  only: hvcoord_t
-  use control_mod,    only: rsplit
-  use hybrid_mod,     only: hybrid_t
-  type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure(shared)
-  type (element_t), intent(inout) :: elem(:)
-  integer, intent(in) :: np1, nets, nete
-  type (hvcoord_t)                :: hvcoord
-  real (kind=real_kind)           :: dt
-  integer :: ie,i,j,k
-
-  real (kind=real_kind), dimension(np,np,nlev)  :: dp_forcing,dp_star
-  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
-  real (kind=real_kind) :: ps_forcing(np,np)
-
-  call t_startf('remap_vsplit_dyn')
-  do ie=nets,nete
-     ttmp(:,:,:,1)=elem(ie)%derived%FT(:,:,:)*dp_forcing
-
-     elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1) + ttmp(:,:,:,1)*dt
-
-     ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)
-     ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)
-
-     elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1) + ttmp(:,:,:,1)*dt
-     elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1) + ttmp(:,:,:,2)*dt
-  enddo
-  call t_stopf('remap_vsplit_dyn')
-  end subroutine remap_vsplit_dyn_
 
 end module 
 
