@@ -1,8 +1,8 @@
 # E3SM Diagnostics Package
 
-[![Install](https://anaconda.org/acme/acme_diags/badges/installer/conda.svg)](https://anaconda.org/acme/acme_diags)
-[![Downloads](https://anaconda.org/acme/acme_diags/badges/downloads.svg)](https://anaconda.org/acme/acme_diags)
-[![Version](https://anaconda.org/acme/acme_diags/badges/version.svg)](https://anaconda.org/acme/acme_diags)
+[![Install](https://anaconda.org/e3sm/acme_diags/badges/installer/conda.svg)](https://anaconda.org/e3sm/acme_diags)
+[![Downloads](https://anaconda.org/e3sm/acme_diags/badges/downloads.svg)](https://anaconda.org/e3sm/acme_diags)
+[![Version](https://anaconda.org/e3sm/acme_diags/badges/version.svg)](https://anaconda.org/e3sm/acme_diags)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1009157.svg)](https://doi.org/10.5281/zenodo.1009157)
 
 
@@ -55,5 +55,3 @@ In addition to default model versus observation comparison, the package also pro
 
 <img src="misc/example_fig7.png" alt="Figure7" style="width: 280px;"/>
 <h5 align="center">Figure 7: An example of Taylor diagram summarizing metrics calculated based on lat-lon contour plots diagnostics of several key variables</h5>
-
-
