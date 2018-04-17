@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="5.3">
+<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="6.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -79,7 +79,7 @@
 
         <nml_record name="dimensions" in_defaults="true">
 
-                <nml_option name="config_nvertlevels"           type="integer"       default_value="41"
+                <nml_option name="config_nvertlevels"           type="integer"       default_value="55"
                      units="-"
                      description="The number of vertical levels to be used in the model"
                      possible_values="Positive integer values"/>
