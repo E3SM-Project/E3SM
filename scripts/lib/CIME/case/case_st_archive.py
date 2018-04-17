@@ -45,7 +45,7 @@ def _get_datenames(casename, rundir, multi_driver):
     logger.debug("  cpl files : {} ".format(files))
 
     if not files:
-        expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
+        logger.warning('Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
 
     datenames = []
     for filename in files:
