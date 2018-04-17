@@ -44,8 +44,6 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
         success = self.check_input_data(protocal=protocal, address=address, download=download,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
-        inputdata = Inputdata()
-
         if download:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
         else:
@@ -53,6 +51,7 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
                                             input_data_root=input_data_root, data_list_dir=data_list_dir)
 
     self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
+    return success
 
 def _downloadfromserver(case, input_data_root, data_list_dir):
     # needs to be downloaded
@@ -88,8 +87,12 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         if not os.path.isdir(refdir):
             logger.warning("Refcase not found in {}, will attempt to download from inputdata".format(refdir))
             with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
-                      fd.write("refdir = {}{}".format(refdir, os.sep))
-            success = _downloadfromserver(self, input_data_root=din_loc_root, data_list_dir="Buildconf")
+                fd.write("refdir = {}{}".format(refdir, os.sep))
+            if input_data_root is None:
+                input_data_root = din_loc_root
+            if data_list_dir is None:
+                data_list_dir = "Buildconf"
+            success = _downloadfromserver(self, input_data_root=input_data_root, data_list_dir=data_list_dir)
             expect(success, "Could not download refcase from any server")
 
         logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
