@@ -1,4 +1,46 @@
 ======================================================================
+
+Originator: Chris Fischer 
+Date: 4-17-2018
+Tag: cime5.4.0-alpha.30
+Answer Changes: None
+Tests: scripts_regression_tests, code checker 
+Dependencies:
+
+Brief Summary:
+    - Change the CESM inputdata server precedence order to gridftp, svn, ftp, wget.
+    - Fix totalpes to properly include threads.
+    - Refactor BUILD_THREADED case value.
+
+User interface changes: 
+    - New FORCE_BUILD_THREADED.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+9af0120 Merge pull request #2477 from ESMCI/fischer/gftp_svn_ftp
+d556876 Merge pull request #2465 from jedwards4b/fix_totalpes
+ed78b14 Merge pull request #2466 from ESMCI/jgfouca/refactor_build_threaded
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_inputdata.xml
+M       config/cesm/machines/config_batch.xml
+M       config/config_tests.xml
+M       scripts/Tools/Makefile
+M       scripts/create_test
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/test_utils.py
+M       scripts/manage_pes
+M       scripts/manage_testlists
+M       scripts/tests/scripts_regression_tests.py
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.pio
+M       src/drivers/mct/cime_config/config_component.xml
+
+======================================================================
+
+======================================================================
 Originator: Chris Fischer 
 Date: 4-13-2018
 Tag: cime5.4.0-alpha.29
