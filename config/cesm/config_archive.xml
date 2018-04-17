@@ -133,6 +133,21 @@
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <!-- Should copy rpointer file(s) -->
+      <tfile disposition="copy">rpointer.glc</tfile>
+      <tfile disposition="copy">rpointer_9999.glc</tfile>
+      <!-- Should only copy last restart file -->
+      <tfile disposition="ignore">casename.cism.r.1975-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.cism.r.1976-01-01-00000.nc</tfile>
+      <!-- Should copy all history files -->
+      <tfile disposition="move">casename.cism.initial_hist.0001-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cism.h.1975-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cism.h.1976-01-01-00000.nc</tfile>
+      <!-- Should ignore files created by test suite, files from other cases, etc. -->
+      <tfile disposition="ignore">casename.cism.h.1976-01-01-00000.nc.base</tfile>
+      <tfile disposition="ignore">anothercasename.cism.r.1976-01-01-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="ww3" compclass="wav">
