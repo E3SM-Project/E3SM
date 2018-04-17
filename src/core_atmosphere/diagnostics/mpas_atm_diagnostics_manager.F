@@ -7,8 +7,6 @@
 !
 module mpas_atm_diagnostics_manager
 
-    use mpas_io_units, only : stderrUnit
-
     private
 
     public :: mpas_atm_diag_setup, &

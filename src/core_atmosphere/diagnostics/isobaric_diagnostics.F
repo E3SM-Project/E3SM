@@ -12,6 +12,7 @@ module isobaric_diagnostics
     use mpas_derived_types
     use mpas_pool_routines
     use mpas_constants
+    use mpas_log, only : mpas_log_write
 
     type (MPAS_pool_type), pointer :: mesh
     type (MPAS_pool_type), pointer :: state
@@ -369,8 +370,8 @@ module isobaric_diagnostics
         
        !--------------------------------------------------------------------------------------------------
        
-       ! write(0,*)
-       ! write(0,*) '--- enter subroutine interp_diagnostics:'
+       ! call mpas_log_write('')
+       ! call mpas_log_write('--- enter subroutine interp_diagnostics:')
        
         call mpas_pool_get_dimension(mesh, 'nCells', nCells)
         call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -608,7 +609,7 @@ module isobaric_diagnostics
             temperature_700hPa(1:nCells) = field_interp(1:nCells,4)
             temperature_850hPa(1:nCells) = field_interp(1:nCells,5)
             temperature_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate temperature:'
+           ! call mpas_log_write('--- end interpolate temperature:')
         end if
        
        
@@ -627,7 +628,7 @@ module isobaric_diagnostics
             relhum_700hPa(1:nCells) = field_interp(1:nCells,4)
             relhum_850hPa(1:nCells) = field_interp(1:nCells,5)
             relhum_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate relative humidity:'
+           ! call mpas_log_write('--- end interpolate relative humidity:')
         end if
        
         if (NEED_DEWPOINT) then
@@ -645,7 +646,7 @@ module isobaric_diagnostics
             dewpoint_700hPa(1:nCells) = field_interp(1:nCells,4)
             dewpoint_850hPa(1:nCells) = field_interp(1:nCells,5)
             dewpoint_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate relative humidity:'
+           ! call mpas_log_write('--- end interpolate relative humidity:')
         end if
        
         if (NEED_UZONAL) then
@@ -663,7 +664,7 @@ module isobaric_diagnostics
             uzonal_700hPa(1:nCells) = field_interp(1:nCells,4)
             uzonal_850hPa(1:nCells) = field_interp(1:nCells,5)
             uzonal_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate zonal wind:'
+           ! call mpas_log_write('--- end interpolate zonal wind:')
         end if
        
         if (NEED_UMERIDIONAL) then
@@ -681,7 +682,7 @@ module isobaric_diagnostics
             umeridional_700hPa(1:nCells) = field_interp(1:nCells,4)
             umeridional_850hPa(1:nCells) = field_interp(1:nCells,5)
             umeridional_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate meridional wind:'
+           ! call mpas_log_write('--- end interpolate meridional wind:')
         end if
        
         if(allocated(field_in)) deallocate(field_in)
@@ -713,7 +714,7 @@ module isobaric_diagnostics
             height_700hPa(1:nCells) = field_interp(1:nCells,4)
             height_850hPa(1:nCells) = field_interp(1:nCells,5)
             height_925hPa(1:nCells) = field_interp(1:nCells,6)
-           ! write(0,*) '--- end interpolate height:'
+           ! call mpas_log_write('--- end interpolate height:')
         
            !... vertical velocity
             do iCell = 1, nCells
@@ -732,7 +733,7 @@ module isobaric_diagnostics
        
             if(allocated(field_in)) deallocate(field_in)
             if(allocated(press_in)) deallocate(press_in)
-           ! write(0,*) '--- end interpolate vertical velocity:'
+           ! call mpas_log_write('--- end interpolate vertical velocity:')
         end if
 
         if(allocated(field_interp)) deallocate(field_interp)
@@ -775,7 +776,7 @@ module isobaric_diagnostics
             vorticity_700hPa(1:nVertices) = field_interp(1:nVertices,4)
             vorticity_850hPa(1:nVertices) = field_interp(1:nVertices,5)
             vorticity_925hPa(1:nVertices) = field_interp(1:nVertices,6)
-           ! write(0,*) '--- end interpolate relative vorticity:'
+           ! call mpas_log_write('--- end interpolate relative vorticity:')
 
             if(allocated(field_interp)) deallocate(field_interp)
             if(allocated(press_interp)) deallocate(press_interp)
@@ -891,9 +892,6 @@ module isobaric_diagnostics
         if(allocated(pressure)    ) deallocate(pressure    )
         if(allocated(dewpoint)    ) deallocate(dewpoint )
        
-       !formats:
-       ! 201 format(i5,4(1x,e15.8))
-   
     end subroutine interp_diagnostics
 
 
@@ -920,19 +918,16 @@ module isobaric_diagnostics
    
    !--------------------------------------------------------------------------------------------------
    
-   !formats:
-   ! 201 format(i5,8(1x,e15.8))
-   
-   !write(0,*)
-   !write(0,*) '--- enter subroutine interp_tofixed_pressure:'
-   !write(0,*) '... ncol     = ',ncol
-   !write(0,*) '... nlev_in  = ',nlev_in
-   !write(0,*) '... nlev_out = ',nlev_out
+   !call mpas_log_write('')
+   !call mpas_log_write('--- enter subroutine interp_tofixed_pressure:')
+   !call mpas_log_write('... ncol     = $i',intArgs=(/ncol/))
+   !call mpas_log_write('... nlev_in  = $i',intArgs=(/nlev_in/))
+   !call mpas_log_write('... nlev_out = $i',intArgs=(/nlev_out/))
    !i1=1 ; i2=ncol
    !do k = 1, nlev_in
-   !   write(0,201) k,pres_in(i1,k),field_in(i1,k),pres_in(i2,k),field_in(i2,k)
+   !   call mpas_log_write('$i $r $r $r $r', intArgs=(/k/), realArgs=(/pres_in(i1,k),field_in(i1,k),pres_in(i2,k),field_in(i2,k)/))
    !enddo
-   !write(0,*)
+   !call mpas_log_write('')
    
     do icol = 1, ncol
        kupper(icol) = 1
@@ -951,7 +946,7 @@ module isobaric_diagnostics
              if(pres_out(icol,k).gt.pres_in(icol,kk).and.pres_out(icol,k).le.pres_in(icol,kk+1)) then
                 kupper(icol) = kk
                 kount = kount + 1
-   !            write(0,201) kupper(icol),pres_out(icol,k),pres_in(icol,kk),pres_in(icol,kk+1)
+   !            call mpas_log_write('$i $i $r $r $r', intArgs=(/k,kupper(icol)/), realArgs=(/pres_out(icol,k),pres_in(icol,kk),pres_in(icol,kk+1)/))
              endif
           enddo
    
@@ -980,10 +975,10 @@ module isobaric_diagnostics
        enddo
    
     35 continue
-   !   write(0,201) kupper(i1),pres_out(i1,k),pres_in(i1,kupper(i1)),pres_in(i1,kupper(i1)+1), &
-   !                field_out(i1,k),field_in(i1,kupper(i1)),field_in(i1,kupper(i1)+1)
-   !   write(0,201) kupper(i2),pres_out(i2,k),pres_in(i2,kupper(i2)),pres_in(i2,kupper(i2)+1), &
-   !                field_out(i2,k),field_in(i2,kupper(i2)),field_in(i2,kupper(i2)+1)
+   !   call mpas_log_write('$i $r $r $r $r $r $r', intArgs=(/kupper(i1)/), &
+   !                       realArgs=(/pres_out(i1,k),pres_in(i1,kupper(i1)),pres_in(i1,kupper(i1)+1),field_out(i1,k),field_in(i1,kupper(i1)),field_in(i1,kupper(i1)+1)/))
+   !   call mpas_log_write('$i $r $r $r $r $r $r', intArgs=(/kupper(i2)/), &
+   !                       realArgs=(/pres_out(i2,k),pres_in(i2,kupper(i2)),pres_in(i2,kupper(i2)+1),field_out(i2,k),field_in(i2,kupper(i2)),field_in(i2,kupper(i2)+1)/))
    
     enddo
    
@@ -1051,10 +1046,10 @@ module isobaric_diagnostics
           end do
       
           if ( level(icol) .eq. -1 ) then
-             write(0,*) 'Troubles finding level ', pconst,' above ground.'
-             write(0,*) 'Problems first occur at (',icol,')'
-             write(0,*) 'Surface pressure = ',p(1,icol),' hPa.'
-             write(0,*) '*** MSLP field will not be computed'
+             call mpas_log_write('Troubles finding level $r above ground.', realArgs=(/pconst/))
+             call mpas_log_write('Problems first occur at ($i)', intArgs=(/icol/))
+             call mpas_log_write('Surface pressure = $r hPa.', realArgs=(/p(1,icol)/))
+             call mpas_log_write('*** MSLP field will not be computed')
              slp(:) = 0.0
              return
           end if
@@ -1070,10 +1065,10 @@ module isobaric_diagnostics
           khi = min ( klo + 1        , nlev_in - 1 )
       
           if ( klo .eq. khi ) then
-             write(0,*) 'Trapping levels are weird.'
-             write(0,*) 'icol = ',icol
-             write(0,*) 'klo = ',klo,', khi = ',khi, ': and they should not be equal.'
-             write(0,*) '*** MSLP field will not be computed'
+             call mpas_log_write('Trapping levels are weird.')
+             call mpas_log_write('icol = $i', intArgs=(/icol/))
+             call mpas_log_write('klo = $i, khi = $i: and they should not be equal.', intArgs=(/klo,khi/))
+             call mpas_log_write('*** MSLP field will not be computed')
              slp(:) = 0.0
              return
           end if
@@ -1091,11 +1086,6 @@ module isobaric_diagnostics
       
           t_surf(icol) = t_at_pconst*(p(1,icol)/p_at_pconst)**(gamma*rr/grav)
           t_msl(icol) = t_at_pconst+gamma*z_at_pconst
-      !   if (icol.eq.500) then
-      !      write(0,*) plo,phi,tlo,thi,zlo,zhi,p_at_pconst,t_at_pconst,z_at_pconst
-      !      write(0,*) t_surf(icol),t_msl(icol),level(icol),klo,khi
-      !      write(0,*) height(klo,icol),height(khi,icol),height(khi+1,icol)
-      !   endif
       
        end do
       
@@ -1115,7 +1105,7 @@ module isobaric_diagnostics
                    kcount = kcount+1
                 end if
           end do
-      !   write(0,*) 'These number of points had t_msl adjusted ', kcount
+      !   call mpas_log_write('These number of points had t_msl adjusted $i', intArgs=(/kcount/))
        end if
       
        do icol = 1 , ncol
@@ -1176,7 +1166,7 @@ module isobaric_diagnostics
        ! Check that pressure is increasing with index
        !
        if (press_in(1,1) > press_in(1,nVertLevels)) then
-           write(stderrUnit,*) 'Error in compute_layer_mean: pressure should increase with index'
+           call mpas_log_write('Error in compute_layer_mean: pressure should increase with index', messageType=MPAS_LOG_ERR)
            layerMean(:) = 0.0
            return
        end if

@@ -26,6 +26,7 @@ module init_atm_core
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: state, mesh 
       character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: initial_time
       character (len=StrKIND), pointer :: config_start_time
       real (kind=RKIND), pointer :: sphere_radius
       integer :: ierr
@@ -38,11 +39,13 @@ module init_atm_core
          call mpas_pool_get_subpool(block % structs, 'state', state)
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
          call mpas_pool_get_array(state, 'xtime', xtime)
+         call mpas_pool_get_array(state, 'initial_time', initial_time)
          call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
          call mpas_pool_get_config(block % configs, 'config_start_time', config_start_time)
 
          startTimeStamp = config_start_time
          xtime = config_start_time
+         initial_time = config_start_time
          domain % sphere_radius = a      ! Appears in output files
          sphere_radius = a               ! Used in setting up test cases
 
@@ -98,7 +101,7 @@ module init_atm_core
       use mpas_derived_types
       use mpas_decomp
       use mpas_stream_manager
-      use mpas_io_units, only : stderrUnit
+      use mpas_log, only : mpas_log_write
    
       implicit none
    
@@ -110,10 +113,10 @@ module init_atm_core
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-      write(stderrUnit,'(a)') ''
-      write(stderrUnit,'(a)') '********************************************************'
-      write(stderrUnit,'(a)') '   Finished running the init_atmosphere core'
-      write(stderrUnit,'(a)') '********************************************************'
+      call mpas_log_write('')
+      call mpas_log_write('********************************************************')
+      call mpas_log_write('   Finished running the init_atmosphere core')
+      call mpas_log_write('********************************************************')
    
    end function init_atm_core_finalize
    

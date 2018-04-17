@@ -1,5 +1,5 @@
-! TBH:  This version is for use with the ESMF library embedded in the WRF 
-! TBH:  distribution.  
+! TBH:  This version is for use with the ESMF library embedded in the WRF
+! TBH:  distribution.
 MODULE ESMF
    USE ESMF_AlarmMod
    USE ESMF_BaseMod

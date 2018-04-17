@@ -7,12 +7,16 @@
 !
 module mpas_init_atm_gwd
 
+   use mpas_derived_types, only : MPAS_LOG_ERR
    use mpas_framework
    use mpas_timekeeping
+   use mpas_log, only : mpas_log_write
 
    public :: compute_gwd_fields
 
    private
+
+   integer, parameter :: I1KIND = selected_int_kind(2)
 
    real (kind=RKIND), parameter :: Re = 6371229.0_RKIND        ! Earth radius in MPAS-Atmosphere
    real (kind=RKIND), parameter :: Pi = 2.0_RKIND * asin(1.0_RKIND)
@@ -21,8 +25,11 @@ module mpas_init_atm_gwd
    integer, parameter :: topo_x = 43200            ! x-dimension of global 30-arc-second topography array
    integer, parameter :: topo_y = 21600            ! y-dimension of global 30-arc-second topography array
    real (kind=RKIND), parameter :: pts_per_degree = real(topo_x,RKIND) / 360.0_RKIND
-   real (kind=RKIND), parameter :: start_lat = -90.0_RKIND
-   real (kind=RKIND), parameter :: start_lon = -180.0_RKIND
+
+   ! The following are set at the beginning of the compute_gwd_fields routine depending
+   ! on the source of topography data to be used
+   real (kind=RKIND) :: start_lat
+   real (kind=RKIND) :: start_lon
 
    ! Nominal delta-x (in meters) for sub-grid topography cells
    real (kind=RKIND), parameter ::  sg_delta = 2.0 * Pi * Re / (360.0_RKIND * real(pts_per_degree,RKIND))
@@ -32,7 +39,15 @@ module mpas_init_atm_gwd
    real (kind=RKIND), dimension(:,:), pointer :: dxm   ! Size (meters) in zonal direction of a grid cell
    real (kind=RKIND) :: box_mean                       ! Mean value of topography in box
    integer :: nx, ny                                   ! Dimensions of box covering grid cell
+   integer (kind=I1KIND), dimension(:,:), pointer :: landuse         ! Global 30-arc-second landuse
+   integer (kind=I1KIND), dimension(:,:), pointer :: box_landuse     ! Subset of landuse covering a grid cell
 
+   ! NB: At present, only the USGS GLCC land cover dataset is supported, so we can assume 16 == water 
+   !     See the read_global_30s_landuse function 
+   integer (kind=I1KIND), parameter :: WATER = 16
+
+   integer (kind=I1KIND), dimension(:), pointer :: hlanduse ! Dominant land mask (0 or 1)
+   real (kind=RKIND) :: hc   ! critical height
 
    contains
 
@@ -79,16 +94,50 @@ module mpas_init_atm_gwd
       real (kind=RKIND), dimension(:), pointer :: var2d, con, oa1, oa2, oa3, oa4, ol1, ol2, ol3, ol4
       real (kind=RKIND), dimension(:), pointer :: elvmax, htheta, hgamma, hsigma
       character(len=StrKIND), pointer :: config_geog_data_path
+      character(len=StrKIND), pointer :: config_topo_data
+      character(len=StrKIND) :: geog_sub_path
+
+      ! Variables for smoothing variance
+      integer, dimension(:,:), pointer:: cellsOnCell
+      integer (kind=I1KIND) :: sum_landuse
+      real (kind=RKIND) :: sum_var
 
 
       allocate(topo(topo_x,topo_y))
+      allocate(landuse(topo_x,topo_y))
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', mesh)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
 
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
       call mpas_pool_get_config(domain % configs, 'config_geog_data_path', config_geog_data_path)
+      call mpas_pool_get_config(domain % configs, 'config_topo_data', config_topo_data)
       call mpas_pool_get_config(domain % configs, 'config_gwd_cell_scaling', config_gwd_cell_scaling)
+
+      select case(trim(config_topo_data))
+         case('GTOPO30')
+            call mpas_log_write('--- Using GTOPO30 terrain dataset for GWDO static fields')
+            geog_sub_path = 'topo_30s/'
+            start_lat =  -90.0_RKIND
+            start_lon = -180.0_RKIND
+         case('GMTED2010')
+            call mpas_log_write('--- Using GMTED2010 terrain dataset for GWDO static fields')
+            geog_sub_path = 'topo_gmted2010_30s/'
+
+            ! NB: the GMTED2010 data on disk actually has start_lon = 0.0, but the read_global_30s_topo()
+            !     routine will shift the dataset when writing to the topo array so that the start_lon seen
+            !     by the rest of this code is -180.0.
+            start_lat =  -90.0_RKIND
+            start_lon = -180.0_RKIND
+         case('default')
+            call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Invalid topography dataset '''//trim(config_topo_data) &
+                                          //''' selected for config_topo_data',                      messageType=MPAS_LOG_ERR)
+            call mpas_log_write('   Possible options are: ''GTOPO30'', ''GMTED2010''',               messageType=MPAS_LOG_ERR)
+            call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
+      end select
+      call mpas_log_write('')
 
       !
       ! Retrieve pointers to arrays holding the latitudes and longitudes of
@@ -100,6 +149,7 @@ module mpas_init_atm_gwd
       call mpas_pool_get_array(mesh, 'lonCell', lonCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'var2d', var2d)
       call mpas_pool_get_array(mesh, 'con', con)
@@ -116,9 +166,17 @@ module mpas_init_atm_gwd
 !      call mpas_pool_get_array(mesh, 'gamma', hgamma)
 !      call mpas_pool_get_array(mesh, 'sigma', hsigma)
 
-      iErr = read_global_30s_topo(config_geog_data_path)
+      allocate(hlanduse(nCells+1))    ! +1, since we access hlanduse(cellsOnCell(i,iCell)) later on for iCell=1,nCells
+
+      iErr = read_global_30s_topo(config_geog_data_path, geog_sub_path)
       if (iErr /= 0) then
-         write(stderrUnit,*) 'Error reading global 30-arc-sec topography for GWD statistics'
+         call mpas_log_write('Error reading global 30-arc-sec topography for GWD statistics', messageType=MPAS_LOG_ERR)
+         return
+      end if
+
+      iErr = read_global_30s_landuse(config_geog_data_path)
+      if (iErr /= 0) then
+         call mpas_log_write('Error reading global 30-arc-sec landuse for GWD statistics', messageType=MPAS_LOG_ERR)
          return
       end if
 
@@ -130,15 +188,15 @@ module mpas_init_atm_gwd
       ! is the case.
       !
       if (maxval(dcEdge(1:nEdges)) < 1.0_RKIND) then
-         write(stderrUnit,*) 'Computing GWD statistics on a unit sphere'
+         call mpas_log_write('Computing GWD statistics on a unit sphere')
          onUnitSphere = .true.
       else
          onUnitSphere = .false.
       end if
 
       if (config_gwd_cell_scaling /= 1.0) then
-         write(stderrUnit,*) 'Using effective cell diameters scaled by a factor of ', config_gwd_cell_scaling
-         write(stderrUnit,*) 'in the computation of GWD static fields.'
+         call mpas_log_write('Using effective cell diameters scaled by a factor of $r', realArgs=(/config_gwd_cell_scaling/))
+         call mpas_log_write('in the computation of GWD static fields.')
       end if
 
       !
@@ -183,17 +241,48 @@ module mpas_init_atm_gwd
          oa2(iCell) = get_oa2()
          oa3(iCell) = get_oa3()
          oa4(iCell) = get_oa4()
+
+         ! Critical height, to be used in OL computation
+         ! See Appendix of Kim, Y-J, 1996: Representation of Sub-Grid Scale Orographic Effects
+         ! in a General Circulation Model. J. Climate, 9, 2698-2717.
+         hc = 1116.2_RKIND - 0.878_RKIND * var2d(iCell)
+
          ol1(iCell) = get_ol1()
          ol2(iCell) = get_ol2()
          ol3(iCell) = get_ol3()
          ol4(iCell) = get_ol4()
+
+         hlanduse(iCell) = get_dom_landmask()  ! get dominant land mask in cell
+
 !         elvmax(iCell) = get_elvmax()
 !         htheta(iCell) = get_htheta()
 !         hgamma(iCell) = get_hgamma()
 !         hsigma(iCell) = get_hsigma()
       end do
 
+
+      ! Smooth variance at isolated points
+      do iCell = 1,nCells
+         sum_landuse = 0_I1KIND
+         sum_var     = 0.0_RKIND
+         do i=1,nEdgesOnCell(iCell)
+             sum_landuse = sum_landuse + hlanduse(cellsOnCell(i,iCell)) 
+             sum_var     = sum_var     + var2d(cellsOnCell(i,iCell))
+         end do
+
+         if (sum_landuse == int(nEdgesOnCell(iCell),kind=I1KIND) .and. hlanduse(iCell) == 0_I1KIND) then
+             call mpas_log_write('smoothing out a water point, iCell = $i', intArgs=(/iCell/))
+             var2d(iCell) = sum_var / real(nEdgesOnCell(iCell),kind=RKIND)
+         else if (sum_landuse == 0_I1KIND .and. hlanduse(iCell) == 1_I1KIND) then
+             call mpas_log_write('smoothing out a land point, iCell = $i', intArgs=(/iCell/))
+             var2d(iCell) = sum_var / real(nEdgesOnCell(iCell),kind=RKIND)
+         end if
+      end do
+
+
       deallocate(topo)
+      deallocate(landuse)
+      deallocate(hlanduse)
 
       iErr = 0
 
@@ -206,17 +295,18 @@ module mpas_init_atm_gwd
    !
    !> \brief   Reads global 30-arc-second topography into 'topo' module variable
    !> \author  Michael Duda
-   !> \date    31 October 2016
+   !> \date    28 August 2017
    !> \details 
    !>  This subroutine reads the global 30-arc-second topography from the subdirectory 
-   !>  'topo_30s' of the path provided as an argument.
+   !>  identified by the 'sub_path' argument within the 'path' provided as the first argument.
    !
    !-----------------------------------------------------------------------
-   function read_global_30s_topo(path) result(iErr)
+   function read_global_30s_topo(path, sub_path) result(iErr)
 
       implicit none
 
       character(len=*), intent(in) :: path
+      character(len=*), intent(in) :: sub_path
 
       integer :: iErr
 
@@ -225,7 +315,7 @@ module mpas_init_atm_gwd
       integer, parameter :: tile_bdr = 3        ! number of layers of border/halo points surrounding each tile
 
       integer :: istatus
-      integer :: ix, iy
+      integer :: ix, iy, ishift, ix_shift
       integer :: isigned, endian, wordsize, nx, ny, nz
       real (kind=R4KIND) :: scalefactor
       real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
@@ -241,19 +331,30 @@ module mpas_init_atm_gwd
       ny = tile_y + 2*tile_bdr
       nz = 1
 
+      ishift = 0
+
+      !
+      ! For GMTED2010 data, the dataset starts at 0.0 longitude, but we need to shift the starting location
+      ! in the topo array to -180.0, so we introduce an offset in the x-coordinate of topo_x/2
+      !
+      if (trim(sub_path) == 'topo_gmted2010_30s/') then
+         ishift = topo_x / 2
+      end if
+
       do iy=1,topo_y,tile_y
       do ix=1,topo_x,tile_x
-         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//'/topo_30s/', ix, '-', (ix+tile_x-1), '.', &
+         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//trim(sub_path), ix, '-', (ix+tile_x-1), '.', &
                                                                                       iy, '-', (iy+tile_y-1)
          call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
                            scalefactor, wordsize, istatus)
          if (istatus /= 0) then
-            write(stderrUnit,*) 'Error reading topography tile '//trim(filename)
+            call mpas_log_write('Error reading topography tile '//trim(filename), messageType=MPAS_LOG_ERR)
             iErr = 1
             return
          end if
 
-         topo(ix:(ix+tile_x-1),iy:(iy+tile_y-1)) = tile((tile_bdr+1):(tile_x+tile_bdr),(tile_bdr+1):(tile_y+tile_bdr),1)
+         ix_shift = mod((ix-1) + ishift, topo_x) + 1
+         topo(ix_shift:(ix_shift+tile_x-1),iy:(iy+tile_y-1)) = tile((tile_bdr+1):(tile_x+tile_bdr),(tile_bdr+1):(tile_y+tile_bdr),1)
 
       end do
       end do
@@ -263,6 +364,107 @@ module mpas_init_atm_gwd
       iErr = 0
 
    end function read_global_30s_topo
+
+
+   !***********************************************************************
+   !
+   !  function read_global_30s_landuse
+   !
+   !> \brief   Reads global 30-arc-second landuse into 'landuse' module variable
+   !> \author  Michael Duda
+   !> \date    14 March 2017
+   !> \details 
+   !>  This subroutine reads the global 30-arc-second USGS landuse from
+   !>   the subdirectory 'landuse_30s' of the path provided as an argument.
+   !
+   !-----------------------------------------------------------------------
+   function read_global_30s_landuse(path) result(iErr)
+
+      implicit none
+
+      character(len=*), intent(in) :: path
+
+      integer :: iErr
+
+      integer, parameter :: tile_x = 1200       ! x-dimension of each tile of global 30-arc-second landuse
+      integer, parameter :: tile_y = 1200       ! y-dimension of each tile of global 30-arc-second landuse
+
+      integer :: istatus
+      integer :: ix, iy
+      integer :: isigned, endian, wordsize, nx, ny, nz
+      real (kind=R4KIND) :: scalefactor
+      real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
+      character(len=StrKIND) :: filename
+
+      allocate(tile(tile_x,tile_y,1))
+
+      isigned  = 1
+      endian   = 0
+      wordsize = 1
+      scalefactor = 1.0
+      nx = tile_x
+      ny = tile_y
+      nz = 1
+
+      do iy=1,topo_y,tile_y
+      do ix=1,topo_x,tile_x
+         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//'/landuse_30s/', ix, '-', (ix+tile_x-1), '.', &
+                                                                                      iy, '-', (iy+tile_y-1)
+         call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
+                           scalefactor, wordsize, istatus)
+         if (istatus /= 0) then
+            call mpas_log_write('Error reading landuse tile '//trim(filename))
+            iErr = 1
+            return
+         end if
+
+         landuse(ix:(ix+tile_x-1),iy:(iy+tile_y-1)) = int(tile(1:tile_x,1:tile_y,1), kind=I1KIND)
+
+      end do
+      end do
+
+      deallocate(tile)
+
+      iErr = 0
+
+   end function read_global_30s_landuse
+
+
+   !***********************************************************************
+   !
+   !  function get_dom_landmask
+   !
+   !> \brief   Returns the dominant land mask in a cell
+   !> \author  May Wong
+   !> \date    
+   !> \details 1 = land, 0 = water
+   !
+   !-----------------------------------------------------------------------
+   integer (kind=I1KIND) function get_dom_landmask( )
+
+      implicit none
+
+      integer :: i, j      
+      real (kind=RKIND) :: xland
+      xland = 0.0_RKIND
+
+      ! Get dominant land/water mask in the box
+      do j=1,ny
+      do i=1,nx
+         if (box_landuse(i,j) /= WATER) then
+            xland = xland + 1.0_RKIND
+         end if
+      end do
+      end do
+      xland = xland / real(nx*ny,kind=RKIND)
+
+      if (xland >= 0.5_RKIND) then
+         get_dom_landmask = 1_I1KIND
+      else
+         get_dom_landmask = 0_I1KIND
+      end if 
+
+   end function get_dom_landmask 
 
 
    !***********************************************************************
@@ -294,6 +496,7 @@ module mpas_init_atm_gwd
       integer :: i, j, ii, jj, ic, jc
       real (kind=RKIND) :: sg_lat
 
+
       !
       ! Get number of points to extract in the zonal direction
       !
@@ -320,6 +523,9 @@ module mpas_init_atm_gwd
 
       if (associated(box)) deallocate(box)
       allocate(box(nx,ny))
+
+      if (associated(box_landuse)) deallocate(box_landuse)
+      allocate(box_landuse(nx,ny))
 
       if (associated(dxm)) deallocate(dxm)
       allocate(dxm(nx,ny))
@@ -351,12 +557,14 @@ module mpas_init_atm_gwd
          end do
  
          box(i,j) = topo(ii,jj)
+         box_landuse(i,j) = landuse(ii,jj)
          sg_lat = (start_lat + (real(jj-1,RKIND) + 0.5) / pts_per_degree) / rad2deg  ! Add 0.5 for cell center
          dxm(i,j) = sg_delta * cos(sg_lat)
          box_mean = box_mean + box(i,j)
 
       end do
       end do
+
 
       !
       ! Compute mean topography in the extracted box
@@ -400,7 +608,7 @@ module mpas_init_atm_gwd
    !
    !  function get_con
    !
-   !> \brief   Computes orographic convexityof sub-grid-scale terrain
+   !> \brief   Computes orographic convexity of sub-grid-scale terrain
    !> \author  Michael Duda
    !> \date    29 May 2015
    !> \details 
@@ -411,24 +619,61 @@ module mpas_init_atm_gwd
       implicit none
 
       integer :: i, j
-      real (kind=RKIND) :: s2, s4, var
+      real (kind=RKIND) :: s2, s4, var, xland, mean_land, mean_water, oro
 
       s2 = 0.0
       s4 = 0.0
+      mean_land = 0.0
+      mean_water = 0.0
+      xland = 0.0
+
+      !
+      ! Compute grid-box mean
+      !
+      do j=1,ny
+         do i=1,nx
+            if (box_landuse(i,j) /= WATER) then
+               xland = xland + 1.0
+               mean_land = mean_land + box(i,j)
+            else
+               mean_water = mean_water + box(i,j)
+            end if
+         end do
+      end do
+      if (xland > 0.0) then
+         mean_land = mean_land / xland
+      end if
+      if (xland < real(nx*ny,kind=RKIND)) then
+         mean_water = mean_water / (real(nx*ny,kind=RKIND) - xland)
+      end if
+      xland = xland / real(nx*ny,kind=RKIND)
+ 
+      if (xland >= 0.5_RKIND) then
+         oro = mean_land
+      else
+         oro = mean_water
+      end if
 
       do j=1,ny
          do i=1,nx
             s2 = s2 + (box(i,j) - box_mean)**2
-            s4 = s4 + (box(i,j) - box_mean)**4
+            s4 = s4 + (box(i,j) - oro)**4
          end do
       end do
 
       var = s2 / real(nx*ny,RKIND)
- 
-      if (abs(var) < 1.0e-5) then
+
+      if (sqrt(var) < 1.0) then
          get_con = 0.0
       else
          get_con = s4 / (var**2 * real(nx*ny,RKIND))
+      end if
+
+      !
+      ! Zero-ing all convexity statistics over dominantly water points.
+      !
+      if (xland < 0.5_RKIND) then
+         get_con = 0.0
       end if
 
    end function get_con
@@ -621,7 +866,7 @@ module mpas_init_atm_gwd
 
       do j=ny/4,3*ny/4
          do i=1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -654,7 +899,7 @@ module mpas_init_atm_gwd
 
       do j=1,ny
          do i=nx/4,3*nx/4
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -687,13 +932,13 @@ module mpas_init_atm_gwd
 
       do j=1,ny/2
          do i=1,nx/2
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
       do j=ny/2+1,ny
          do i=nx/2+1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -726,13 +971,13 @@ module mpas_init_atm_gwd
 
       do j=ny/2+1,ny
          do i=1,nx/2
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
       do j=1,ny/2
          do i=nx/2+1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do

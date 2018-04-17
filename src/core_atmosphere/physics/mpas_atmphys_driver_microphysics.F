@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_microphysics
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
  
  use mpas_atmphys_constants
  use mpas_atmphys_init_microphysics
@@ -81,6 +81,9 @@
 ! * added parameterization of the WSM6 cloud microphysics from WRF version 3.8.1. To initialize WSM6 as in its
 !   original version, set the hail_option to 0.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
+! * since we removed the local variable microp_scheme from mpas_atmphys_vars.F, now defines microp_scheme as a
+!   pointer to config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 !--- initialization option for WSM6 from WRF version 3.8.1. this option could also be set as a namelist parameter.
  integer,parameter:: hail_opt = 0
@@ -90,8 +93,18 @@
 
 
 !=================================================================================================================
- subroutine allocate_microphysics
+ subroutine allocate_microphysics(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
 !sounding variables:
  if(.not.allocated(rho_p)    ) allocate(rho_p(ims:ime,kms:kme,jms:jme) )
@@ -154,8 +167,18 @@
  end subroutine allocate_microphysics
 
 !=================================================================================================================
- subroutine deallocate_microphysics
+ subroutine deallocate_microphysics(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
 !sounding variables:
  if(allocated(rho_p)     ) deallocate(rho_p     )
@@ -218,18 +241,24 @@
  end subroutine deallocate_microphysics
 
 !=================================================================================================================
- subroutine microphysics_init(dminfo,mesh,sfc_input,diag_physics)
+ subroutine microphysics_init(dminfo,configs,mesh,sfc_input,diag_physics)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
+!local pointer:
+ character(len=StrKIND),pointer:: microp_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
   microp_select: select case(microp_scheme)
 
@@ -264,30 +293,36 @@
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend
 
+!local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
+
 !local variables and arrays:
  logical:: log_microphysics
  integer:: i,icell,icount,istep,j,k,kk
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '---enter subroutine driver_microphysics:'
+!call mpas_log_write('')
+!call mpas_log_write('---enter subroutine driver_microphysics:')
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
 !... allocation of microphysics arrays:
 !$OMP MASTER
- call allocate_microphysics
+ call allocate_microphysics(configs)
 !$OMP END MASTER
 !$OMP BARRIER
 
 !... initialization of precipitation related arrays:
- call precip_from_MPAS(diag_physics,its,ite)
+ call precip_from_MPAS(configs,diag_physics,its,ite)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
- call microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
+ call microphysics_from_MPAS(configs,mesh,state,time_lev,diag,diag_physics,its,ite)
 
 !... call to different cloud microphysics schemes:
  microp_select: select case(microp_scheme)
     
     case ("mp_kessler")
+       call mpas_timer_start('Kessler')
        call kessler( &
                   t        = th_p      , qv    = qv_p  , qc     = qc_p     ,                &
                   qr       = qr_p      , rho   = rho_p , pii    = pi_p     ,                &
@@ -300,9 +335,11 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
+       call mpas_timer_stop('Kessler')
 
     case ("mp_thompson")
        istep = 1
+       call mpas_timer_start('Thompson')
        do while (istep .le. n_microp)
        call mp_gt_driver( &
                   th        = th_p        , qv         = qv_p         , qc         = qc_p         , &
@@ -322,8 +359,10 @@
                            )
        istep = istep + 1
        enddo
+       call mpas_timer_stop('Thompson')
 
     case ("mp_wsm6")
+       call mpas_timer_start('WSM6')
        call wsm6( &
                   th       = th_p        , q          = qv_p         , qc       = qc_p      , &
                   qr       = qr_p        , qi         = qi_p         , qs       = qs_p      , &
@@ -343,6 +382,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme     , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte       &
                )
+       call mpas_timer_stop('WSM6')
 
     case default
        
@@ -355,10 +395,10 @@
     !the computation of simulated radar reflectivity:
     if(trim(microp_scheme) == "mp_wsm6"     .or. &
        trim(microp_scheme) == "mp_thompson") then
-       call compute_radar_reflectivity(diag_physics,its,ite)
+       call compute_radar_reflectivity(configs,diag_physics,its,ite)
     else
-       write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
-       write(0,*) '            since WSM6 or Thompson microphysics scheme was not selected'
+       call mpas_log_write('*** NOTICE: NOT computing simulated radar reflectivity')
+       call mpas_log_write('            since WSM6 or Thompson microphysics scheme was not selected')
     end if
 
     !calculate the relative humidity over water if the temperature is strictly greater than 0.C,
@@ -372,30 +412,32 @@
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
- call microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
+ call microphysics_to_MPAS(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 
 !... deallocation of all microphysics arrays:
 !$OMP BARRIER
 !$OMP MASTER
- call deallocate_microphysics
+ call deallocate_microphysics(configs)
 !$OMP END MASTER
 
-!write(0,*) '---enter subroutine driver_microphysics:'
-!write(0,*)
+!call mpas_log_write('---enter subroutine driver_microphysics:')
+!call mpas_log_write('')
 
  end subroutine driver_microphysics
 
 !=================================================================================================================
- subroutine precip_from_MPAS(diag_physics,its,ite)
+ subroutine precip_from_MPAS(configs,diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  integer,intent(in):: its,ite
 
 !output variables:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,pointer:: nCellsSolve
  real,dimension(:),pointer:: graupelncv,rainncv,snowncv,sr 
 
@@ -403,6 +445,8 @@
  integer:: i,j
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(diag_physics,'graupelncv',graupelncv)
  call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
@@ -422,7 +466,7 @@
  enddo
 
 !variables specific to different cloud microphysics schemes:
- microp_select_init: select case(microp_scheme)
+ microp_select: select case(microp_scheme)
 
     case ("mp_thompson","mp_wsm6")
        do j = jts, jte
@@ -443,7 +487,7 @@
 
     case default
 
- end select microp_select_init
+ end select microp_select
 
  end subroutine precip_from_MPAS
 
@@ -453,13 +497,13 @@
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
-
  integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,dimension(:),pointer:: i_rainnc
 
  real(kind=RKIND),pointer:: config_bucket_rainnc
@@ -473,6 +517,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme       )
  call mpas_pool_get_config(configs,'config_bucket_rainnc',config_bucket_rainnc)
 
  call mpas_pool_get_array(diag_physics,'i_rainnc'  ,i_rainnc  )
@@ -538,16 +583,18 @@
  end subroutine precip_to_MPAS
 
 !=================================================================================================================
- subroutine compute_radar_reflectivity(diag_physics,its,ite)
+ subroutine compute_radar_reflectivity(configs,diag_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  real(kind=RKIND),dimension(:),pointer:: refl10cm_max,refl10cm_1km,refl10cm_1km_max
 
 !local variables and arrays:
@@ -556,6 +603,8 @@
  real(kind=RKIND):: w1,w2
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(diag_physics,'refl10cm_max',refl10cm_max)
  call mpas_pool_get_array(diag_physics,'refl10cm_1km',refl10cm_1km)

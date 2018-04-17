@@ -159,6 +159,9 @@ module init_atm_bitarray
    !   ARRAYS OF THE SAME DIMENSIONS.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    subroutine bitarray_merge(b1, b2)
+
+      use mpas_derived_types, only : MPAS_LOG_CRIT
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -169,7 +172,7 @@ module init_atm_bitarray
       integer :: i, j
   
       if (b1%x_int_dim /= b2%x_int_dim .or. b1%y_int_dim /= b2%y_int_dim) then
-         write(0,*) 'ERROR: In bitarray_merge(), b1 and b2 have different dimensions.'
+         call mpas_log_write('In bitarray_merge(), b1 and b2 have different dimensions.', messageType=MPAS_LOG_CRIT)
       end if
   
       do i=1,b1%x_int_dim
@@ -187,6 +190,9 @@ module init_atm_bitarray
    ! Purpose: To deallocate all allocated memory associated with the bit array
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    subroutine bitarray_destroy(b)
+
+      use mpas_derived_types, only : MPAS_LOG_WARN
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -196,7 +202,7 @@ module init_atm_bitarray
       if (associated(b%iarray)) then
          deallocate(b%iarray)
       else
-         write(0,*) 'WARNING: In bitarray_destroy(), b is not allocated.'
+         call mpas_log_write('In bitarray_destroy(), b is not allocated.', messageType=MPAS_LOG_WARN)
       end if
  
    end subroutine bitarray_destroy

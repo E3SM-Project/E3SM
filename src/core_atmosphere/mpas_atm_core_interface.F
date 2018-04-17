@@ -8,7 +8,10 @@
 module atm_core_interface
 
    use mpas_attlist
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
+   use mpas_io_units
 
    contains
 
@@ -41,6 +44,7 @@ module atm_core_interface
       core % setup_packages => atm_setup_packages
       core % setup_decompositions => atm_setup_decompositions
       core % setup_clock => atm_setup_clock
+      core % setup_log => atm_setup_log
       core % get_mesh_stream => atm_get_mesh_stream
       core % setup_immutable_streams => atm_setup_immutable_streams
       core % setup_derived_dimensions => atm_setup_derived_dimensions
@@ -52,14 +56,6 @@ module atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
-
-write(0,*) ''
-#ifdef SINGLE_PRECISION
-write(0,'(a)') 'Using default single-precision reals'
-#else
-write(0,'(a)') 'Using default double-precision reals'
-#endif
-write(0,*) ''
 
    end subroutine atm_setup_core
 
@@ -145,8 +141,7 @@ write(0,*) ''
 
       ierr = atmphys_setup_packages(configs,packages,iocontext)
       if(ierr /= 0) then
-         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere', &
-                                      deferredAbort=.true.)
+         call mpas_log_write('Package setup failed for atmphys in core_atmosphere', messageType=MPAS_LOG_ERR)
       endif
 #endif
 
@@ -190,6 +185,57 @@ write(0,*) ''
 
    !***********************************************************************
    !
+   !  function atm_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman
+   !> \date    14 February 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function atm_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types, only : mpas_log_type, domain_type
+      use mpas_log, only : mpas_log_init, mpas_log_open
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, err=local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+      call mpas_log_write('')
+#ifdef SINGLE_PRECISION
+      call mpas_log_write('Using default single-precision reals')
+#else
+      call mpas_log_write('Using default double-precision reals')
+#endif
+      call mpas_log_write('')
+
+   end function atm_setup_log!}}}
+
+
+   !***********************************************************************
+   !
    !  function atm_get_mesh_stream
    !
    !> \brief   Returns the name of the stream containing mesh information
@@ -221,7 +267,7 @@ write(0,*) ''
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.', deferredAbort=.true.)
+         call mpas_log_write('config_do_restart was not found when defining mesh stream.', messageType=MPAS_LOG_ERR)
          ierr = 1
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'

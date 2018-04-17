@@ -26,13 +26,13 @@
       type (MPAS_Time_type) :: ringTime
       type (MPAS_Time_type) :: prevRingTime
       type (MPAS_TimeInterval_type) :: ringTimeInterval
-      type (MPAS_Alarm_type), pointer :: next
+      type (MPAS_Alarm_type), pointer :: next => null()
    end type
    
    type MPAS_Clock_type
       integer :: direction
       integer :: nAlarms
       type (ESMF_Clock) :: c
-      type (MPAS_Alarm_type), pointer :: alarmListHead
+      type (MPAS_Alarm_type), pointer :: alarmListHead => null()
    end type
 

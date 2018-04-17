@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<config case="P75">
+
+        <!-- Set up needed files and executables -->
+       <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+
+
+        <namelist name="namelist.landice.P75" mode="forward">
+                <template file="mismip_template.xml" path_base="script_configuration_dir"/>
+                <option name="config_start_time">0000-01-01_00:00:00</option>
+                <option name="config_stop_time">0100-01-01_00:00:00</option>
+                <option name="config_adaptive_timestep_force_interval">0001-00-00_00:00:00</option>
+        </namelist>
+
+        <streams name="streams.landice.P75S" keep="immutable" mode="forward">
+                <template file="mismip_template.xml" path_base="script_configuration_dir"/>
+                <stream name="input">
+                        <attribute name="filename_template">P75S.nc</attribute>
+                </stream>
+                <stream name="output">
+                        <attribute name="filename_template">output.nc</attribute>
+                        <attribute name="filename_interval">none</attribute>
+                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">overwrite</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
+                </stream>
+                <stream name="outputmask">
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                </stream>
+                <stream name="restart">
+                        <attribute name="filename_template">rst.$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">0005-00-00_00:00:00</attribute>
+                </stream>
+                
+        </streams>
+
+
+
+
+        <streams name="streams.landice.P75R" keep="immutable" mode="forward">
+                <template file="mismip_template.xml" path_base="script_configuration_dir"/>
+                <stream name="input">
+                        <attribute name="filename_template">P75R.nc</attribute>
+                </stream>
+                <stream name="output">
+                        <attribute name="filename_template">output.nc</attribute>
+                        <attribute name="filename_interval">none</attribute>
+                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">overwrite</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
+                </stream>
+                <stream name="outputmask">
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                </stream>
+                <stream name="restart">
+                        <attribute name="filename_template">rst.$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">0005-00-00_00:00:00</attribute>
+                </stream>
+                
+        </streams>
+
+
+   <!-- no script, just set up the namelist and streams above -->
+
+</config>
+

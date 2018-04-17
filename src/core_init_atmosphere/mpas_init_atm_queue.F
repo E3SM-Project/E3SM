@@ -118,6 +118,9 @@ module init_atm_queue
    !    actually removing the item 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    function q_peek(q)
+
+      use mpas_derived_types, only : MPAS_LOG_ERR
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -130,7 +133,7 @@ module init_atm_queue
       if (associated(q%head)) then
          q_peek = q%head%data 
       else
-         write(0,*) 'ERROR: q_peek(): Trying to peek at an empty queue'
+         call mpas_log_write('q_peek(): Trying to peek at an empty queue', messageType=MPAS_LOG_ERR)
       end if
  
    end function q_peek
@@ -174,6 +177,9 @@ module init_atm_queue
    ! Purpose: To return the item stored at the head of the queue
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    function q_remove(q)
+
+      use mpas_derived_types, only : MPAS_LOG_ERR
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -198,7 +204,7 @@ module init_atm_queue
          end if 
          q%length = q%length - 1
       else
-         write(0,*) 'ERROR: q_remove(): Trying to remove from an empty queue'
+         call mpas_log_write('q_peek(): Trying to remove from an empty queue', messageType=MPAS_LOG_ERR)
       end if
  
    end function q_remove

@@ -17,14 +17,14 @@
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
+!>     cp Registry_TEMPLATE.xml Registry_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
-!>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically tempLate uses camel case (variable names), like yourNewName,
+!>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically temPlate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
-!>  
+!>     note: do not replace 'filename_template' in Registry_yourNewName.xml
+!>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
@@ -36,10 +36,10 @@
 !>      - Adding a compute if test can subroutine call
 !>      - Adding a restart if test can subroutine call
 !>      - Adding a finalize if test can subroutine call
-!>  
+!>
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
 !>     new analysis member to the list of members. See another analysis member
-!>     in that file for an example. 
+!>     in that file for an example.
 !>     NOTE: If your analysis member depends on other files, add a dependency
 !>           line for the member and list them there. See okubo weiss for an example.
 !>
@@ -186,7 +186,6 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: temPlateAM
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -237,7 +236,7 @@ contains
       end do
 
       ! mpi gather/scatter calls may be placed here.
-      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
+      ! Here are some examples.  See mpas_ocn_global_stats.F for further details.
 !      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
 !      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
 !      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))

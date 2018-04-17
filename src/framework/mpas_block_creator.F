@@ -30,7 +30,7 @@ module mpas_block_creator
    use mpas_domain_routines
    use mpas_field_routines
    use mpas_pool_routines
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    contains
 
@@ -1029,7 +1029,7 @@ module mpas_block_creator
 
        iErr = block_ptr % domain % core % setup_block(block_ptr)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Block setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Block setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        ! Set block's local id
@@ -1188,7 +1188,7 @@ module mpas_block_creator
        nVerticesCursor => nVerticesCursor % next
        indexToCellCursor => indexToCellCursor % next
        indexToEdgeCursor => indexToEdgeCursor % next
-       indexToVertexCursor => indextoVertexcursor % next
+       indexToVertexCursor => indexToVertexcursor % next
      end do
 
    end subroutine mpas_block_creator_finalize_block_phase1!}}}
@@ -1258,12 +1258,12 @@ module mpas_block_creator
 
        iErr = block_ptr % domain % core % setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, domain % dminfo % total_blocks)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Decomposed dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Decomposed dimension setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        iErr = block_ptr % domain % core % setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
@@ -1294,7 +1294,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoCellID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToCellID_blk')
        call mpas_deallocate_field(indexFieldBlk)
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID', indexField)
@@ -1321,7 +1321,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoEdgeID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToEdgeID_blk')
        call mpas_deallocate_field(indexFieldBlk)
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID', indexField)
@@ -1348,7 +1348,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoVertexID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToVertexID_blk')
        call mpas_deallocate_field(indexFieldBlk)
        call mpas_pool_set_error_level(err_level)
 
@@ -1780,10 +1780,8 @@ module mpas_block_creator
       character(len=*), intent(in) :: fieldName
 
 
-      write(stderrUnit,*) '********************************************************************************'
-      write(stderrUnit,*) 'ERROR: Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
-                          //' was neither read nor defined.'
-      call mpas_dmpar_global_abort('********************************************************************************')
+      call mpas_log_write('Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
+                          //' was neither read nor defined.', MPAS_LOG_CRIT)
 
    end subroutine missing_dim_abort 
 

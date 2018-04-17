@@ -25,7 +25,7 @@ module ocn_equation_of_state_linear
    use mpas_pool_routines
    use ocn_constants
    use mpas_dmpar
-   use mpas_io_units
+   use mpas_log
 
    implicit none
    private
@@ -70,13 +70,14 @@ contains
 !> \brief   Calls equation of state
 !> \author  Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine uses a linear equation of state to update the density
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
-      tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
+   subroutine ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, & !{{{
+       indexT, indexS, tracers, density, err, tracersSurfaceLayerValue, thermalExpansionCoeff, &
+       salineContractionCoeff)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -105,6 +106,7 @@ contains
       implicit none
 
       type (mpas_pool_type), intent(in) :: meshPool
+      integer, intent(in) :: nCells
       character(len=*), intent(in) :: displacement_type
       integer, intent(in) :: k_displaced, indexT, indexS
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -117,12 +119,11 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
       integer :: iCell, k, k_displaced_local, k_ref
-      integer, pointer :: nCells, nVertLevels
+      integer, pointer :: nVertLevels
       character(len=60) :: displacement_type_local
       type (dm_info) :: dminfo
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       err = 0
@@ -134,14 +135,14 @@ contains
       ! test of request to address out of bounds
       if (displacement_type_local == 'absolute' .and.   &
          (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
-         write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
-             ' k_displaced must be between 1 and nVertLevels for ', &
-             'displacement_type = absolute'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_log_write('Abort: In equation_of_state_linear' // &
+             ' k_displaced must be between 1 and nVertLevels for ' // &
+             'displacement_type = absolute', MPAS_LOG_CRIT)
       endif
 
       ! if surfaceDisplaced, then compute density at all levels based on surface values
       if (displacement_type_local == 'surfaceDisplaced') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -150,12 +151,14 @@ contains
                      + config_eos_linear_beta  * (tracersSurfaceLayerValue(indexS,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
 
       ! if absolute, then compute density at all levels based on pressure of k_displaced value
       ! but since linear EOS does not (at present) have a pressure dependency, this just returns density
       if (displacement_type_local == 'absolute') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -164,11 +167,13 @@ contains
                      + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
       ! if relative, then compute density at all levels based on k+k_displaced pressure value
       ! but since (at present) linear EOS has not dependence on pressure, it returns density
       if (displacement_type_local == 'relative') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -177,22 +182,27 @@ contains
                      + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
       if (present(thermalExpansionCoeff)) then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha / density(k,iCell)
             end do
          end do
+         !$omp end do
       endif
 
       if (present(salineContractionCoeff)) then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                salineContractionCoeff(k,iCell) = config_eos_linear_beta / density(k,iCell)
             end do
          end do
+         !$omp end do
       endif
 
    end subroutine ocn_equation_of_state_linear_density!}}}
@@ -204,11 +214,11 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing quantities
 !> \author  Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

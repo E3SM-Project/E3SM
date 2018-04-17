@@ -1,26 +1,26 @@
 module mpas_stream_manager
 
 #define COMMA ,
-#define STREAM_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define STREAM_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define STREAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define STREAM_DEBUG_WRITE(M) ! call mpas_log_write(M)
+#define STREAM_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define STREAM_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
     use mpas_kind_types
     use mpas_derived_types
     use mpas_field_routines
     use mpas_pool_routines
     use mpas_timekeeping
-    use mpas_io_units
+    use mpas_log
     use mpas_io_streams
     use mpas_stream_list
     use mpas_sort
     use mpas_threading
-    use mpas_abort, only : mpas_dmpar_global_abort
 
 
     public :: MPAS_stream_mgr_init, &
               MPAS_stream_mgr_finalize, &
               MPAS_stream_mgr_create_stream, &
+              MPAS_stream_mgr_validate_streams, &
               MPAS_stream_mgr_destroy_stream, &
               MPAS_stream_mgr_get_clock, &
               MPAS_stream_mgr_set_property, &
@@ -43,6 +43,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_get_next_stream, &
               MPAS_stream_mgr_get_next_field, &
               MPAS_stream_mgr_stream_exists, &
+              MPAS_stream_mgr_get_stream_interval, &
               MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
@@ -413,6 +414,112 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_validate_streams
+    !
+    !> \brief Validate all streams or one stream, if optional argument streamID is present.
+    !> \author Dom Heinzeller
+    !> \date   12 September 2017
+    !> \details
+    !>  Validates all streams of a stream manager, or one stream if optional argument
+    !>  streamID is specified. A low-level validation of streams happens within
+    !>  xml_stream_parser in xml_stream_parser.c (e.g. immutable streams must not be
+    !>  specified as mutable streams etc.). MPAS_stream_mgr_validate_streams performs
+    !>  higher-level checks that should stay separate from the low-level checks and
+    !>  that may require additional logic or settings not necessarily present when
+    !>  calling xml_stream_parser.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_validate_streams(manager, streamID, ierr)!{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in), optional :: streamID
+        integer, intent(out), optional :: ierr
+
+        character(len=StrKIND) :: stream_name
+        character(len=StrKIND) :: filename_interval
+        integer :: direction, io_type
+        character (len=StrKIND) :: message
+        integer :: err_local
+
+        ! For future validation of SIONlib data - need to check that there is only one timestamp per file
+        type (MPAS_TimeInterval_type) :: time_interval_zero, time_interval_file, time_interval_input, time_interval_output
+
+        if (present(streamID)) then
+           STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_validate_streams() for '//trim(streamID))
+        else
+           STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_validate_streams() for all streams')
+        end if
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+        call mpas_set_timeInterval(time_interval_zero, dt = 0.0_RKIND)
+
+        if (present(streamID)) then
+           call MPAS_stream_mgr_begin_iteration(manager, streamID, ierr=err_local)
+           if (err_local .eq. MPAS_STREAM_MGR_ERROR) then
+              if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+              return
+           end if
+        end if
+
+        call MPAS_stream_mgr_begin_iteration(manager)
+        do while (MPAS_stream_mgr_get_next_stream(manager, streamID = stream_name, directionProperty = direction, &
+                                                  filenameIntervalProperty = filename_interval))
+           if (present(streamID)) then
+              if (trim(streamID) .ne. trim(stream_name)) cycle
+           end if
+           STREAM_DEBUG_WRITE('-- Validating stream '//trim(stream_name))
+           call MPAS_stream_mgr_get_property(manager, stream_name, MPAS_STREAM_PROPERTY_IOTYPE, io_type)
+
+#if 0
+           ! Placeholder for testing additional consistency checks for future SIONlib implementation,
+           ! and demo of how to use MPAS_stream_mgr_get_stream_interval for directions input/output.
+           if (io_type == MPAS_IO_SIONLIB) then
+
+               if (trim(filename_interval) /= 'none') then
+                  call mpas_set_timeInterval(time_interval_file, timeString=filename_interval)
+               else
+                  call mpas_set_timeInterval(time_interval_file, dt = 0.0_RKIND)
+               end if
+
+               if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+                  time_interval_input = MPAS_stream_mgr_get_stream_interval(manager, stream_name, MPAS_STREAM_INPUT, err_local)
+                  if (err_local /= MPAS_STREAM_MGR_NOERR) then
+                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                     return
+                  end if
+                  if (time_interval_input .gt. time_interval_zero) then
+                     if ( (time_interval_file .eq. time_interval_zero) .or. (time_interval_file .gt. time_interval_input) ) then
+                        message = 'Filename interval is larger than input interval for SIONlib stream ''' // trim(stream_name) //''' (only one time stamp per file allowed).'
+                        call mpas_log_write(message, MPAS_LOG_CRIT)
+                     end if
+                  end if
+               end if
+
+               if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
+                  time_interval_output = MPAS_stream_mgr_get_stream_interval(manager, stream_name, MPAS_STREAM_OUTPUT, err_local)
+                  if (err_local /= MPAS_STREAM_MGR_NOERR) then
+                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                     return
+                  end if
+                  if (time_interval_output .gt. time_interval_zero) then
+                     if ( (time_interval_file .eq. time_interval_zero) .or. (time_interval_file .gt. time_interval_output) ) then
+                        message = 'Filename interval is larger than output interval for SIONlib stream ''' // trim(stream_name) //''' (only one time stamp per file allowed).'
+                        call mpas_log_write(message, MPAS_LOG_CRIT)
+                     end if
+                  end if
+               end if
+
+           end if
+#endif
+
+        end do
+
+    end subroutine MPAS_stream_mgr_validate_streams!}}}
+
+
+    !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_destroy_stream
     !
     !> \brief Free all memory associated with a stream in an MPAS stream manager.
@@ -768,8 +875,7 @@ module mpas_stream_manager
            call mpas_pool_get_config(stream % field_pool, fieldName, value=test_ptr)
            call mpas_pool_set_error_level(err_level)
            if (associated(test_ptr)) then
-               STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
-               if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+               STREAM_WARNING_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
                return
            end if
 
@@ -795,7 +901,7 @@ module mpas_stream_manager
                   call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
                end if
            else
-               write(stderrUnit, *) ' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.'
+               call mpas_log_write(' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.')
            end if
         end if
 
@@ -910,8 +1016,8 @@ module mpas_stream_manager
                        call mpas_pool_get_config(stream % field_pool, itr % memberName, value=test_ptr)
 
                        if ( associated(test_ptr) ) then
-                           STREAM_ERROR_WRITE('Requested field '//trim(itr % memberName)//' already in stream '//trim(streamID))
-                           if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                           STREAM_WARNING_WRITE('Requested field '//trim(itr % memberName)//' already in stream '//trim(streamID))
+                           cycle  ! skip the rest of this do-loop iteration
                        end if
 
                        if ( info % isActive ) then
@@ -923,7 +1029,8 @@ module mpas_stream_manager
                               call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
                            end if
                        else
-                           write(stderrUnit, *) ' * Requested field '//trim(itr % memberName)//' is deactivated due to packages, or is a scratch variable.'
+                           call mpas_log_write(' * Requested field '//trim(itr % memberName)// &
+                                   ' is deactivated due to packages, or is a scratch variable.')
                        end if
 
                    end if
@@ -1329,7 +1436,11 @@ module mpas_stream_manager
 
         threadNum = mpas_threading_get_thread_num()
         
-        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms()')
+        if (present(streamID)) then
+            STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms() for stream ' // trim(streamID))
+        else
+            STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms()')
+        end if
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
@@ -1467,7 +1578,6 @@ module mpas_stream_manager
             end if
         end if
 
-        
         if ( threadNum == 0 ) then
            if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
                if (associated(stream)) then
@@ -1502,6 +1612,90 @@ module mpas_stream_manager
         end if
 
     end function MPAS_stream_mgr_ringing_alarms !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_stream_interval
+    !
+    !> \brief Returns the minimum input/output interval for a stream
+    !> \author Dom Heinzeller
+    !> \date   28 August 2017
+    !> \details
+    !>  Returns the minimum input or output interval for a given stream attached
+    !>  to a stream manager. The mandatory input argument direction can take
+    !>  values of MPAS_STREAM_INPUT (return minimum input interval) or
+    !>  MPAS_STREAM_OUTPUT (return minimum output interval). If an error occurs,
+    !>  a time interval of length zero and an error flag != MPAS_STREAM_MGR_NOERR
+    !>  are returned.
+    !>  Note: This function doesn't support streamID regular expressions
+    !
+    !-----------------------------------------------------------------------
+    function MPAS_stream_mgr_get_stream_interval(manager, streamID, direction, ierr) result(interval)
+
+       implicit none
+
+       type (MPAS_TimeInterval_type) :: interval
+
+       type (MPAS_streamManager_type), intent(in) :: manager
+       character(len=*), intent(in) :: streamID
+       integer, intent(in) :: direction
+       integer, intent(out) :: ierr
+
+       type (mpas_stream_list_type), pointer :: streamCursor, alarmCursor
+
+       ierr = MPAS_STREAM_MGR_NOERR
+       nullify(streamCursor)
+       call mpas_set_timeInterval(interval, dt = 0.0_RKIND)
+
+       if ( mpas_stream_list_query(manager % streams, streamID, streamCursor) ) then
+
+          if (direction == MPAS_STREAM_INPUT) then
+
+             if (streamCursor % direction == MPAS_STREAM_INPUT .or. streamCursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                alarmCursor => streamCursor % alarmList_in % head
+                call mpas_minimum_alarm_interval(manager % streamClock, alarmCursor, interval)
+             else if (streamCursor % direction == MPAS_STREAM_OUTPUT) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for output-only stream '// trim(streamID))
+             else if (streamCursor % direction == MPAS_STREAM_NONE) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for inactive stream '// trim(streamID))
+             else
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for stream '// trim(streamID) // ' with unknown direction')
+             end if
+
+          else if (direction == MPAS_STREAM_OUTPUT) then
+
+             if (streamCursor % direction == MPAS_STREAM_OUTPUT .or. streamCursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                alarmCursor => streamCursor % alarmList_out % head
+                call mpas_minimum_alarm_interval(manager % streamClock, alarmCursor, interval)
+             else if (streamCursor % direction == MPAS_STREAM_INPUT) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for input-only stream '// trim(streamID))
+             else if (streamCursor % direction == MPAS_STREAM_NONE) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for inactive stream '// trim(streamID))
+             else
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for stream '// trim(streamID) // ' with unknown direction')
+             end if
+
+          else
+
+             ierr = MPAS_STREAM_MGR_ERROR
+             call MPAS_stream_mesg(manager % errorLevel, 'Invalid direction encountered in MPAS_stream_mgr_get_stream_interval')
+
+          end if
+
+       else
+
+          ierr = MPAS_STREAM_MGR_ERROR
+          call MPAS_stream_mesg(manager % errorLevel, 'Stream ''' // trim(streamID) // ''' does not exist. Cannot retrieve stream input/output intervals')
+
+       end if
+
+    end function MPAS_stream_mgr_get_stream_interval
 
 
     !-----------------------------------------------------------------------
@@ -1560,7 +1754,7 @@ module mpas_stream_manager
                       stream_cursor % io_type = propertyValue
 
                   case default
-                      STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                      STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property $i' COMMA intArgs=(/propertyName/))
                       STREAM_ERROR_WRITE('    or specified property is not of type integer.')
                       if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
               end select
@@ -1645,7 +1839,7 @@ module mpas_stream_manager
                        call mpas_set_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
 
                    case default
-                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property $i' COMMA intArgs=(/propertyName/))
                        STREAM_ERROR_WRITE('    or specified property is not of type character.')
                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                end select
@@ -1718,7 +1912,7 @@ module mpas_stream_manager
                        stream_cursor % immutable = propertyValue
 
                    case default
-                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                       STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property $i' COMMA intArgs=(/propertyName/))
                        STREAM_ERROR_WRITE('      or specified property is not of type logical.')
                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                end select
@@ -1740,7 +1934,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_int
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -1793,7 +1987,7 @@ module mpas_stream_manager
                 propertyValue = stream_cursor % io_type
 
             case default
-                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property $i' COMMA intArgs=(/propertyName/))
                 STREAM_ERROR_WRITE('    or specified property is not of type integer.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
@@ -1804,7 +1998,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_char
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -1903,7 +2097,7 @@ module mpas_stream_manager
                 end if
 
             case default
-                STREAM_ERROR_WRITE(' MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE(' MPAS_stream_mgr_get_property(): No such property $i' COMMA intArgs=(/propertyName/))
                 STREAM_ERROR_WRITE('   or specified property is not of type character.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
@@ -1914,7 +2108,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_logical
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -1964,7 +2158,7 @@ module mpas_stream_manager
                 propertyValue = stream_cursor % immutable
 
             case default
-                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property $i' COMMA intArgs=(/propertyName/))
                 STREAM_ERROR_WRITE('    or specified property is not of type logical.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
@@ -2985,20 +3179,20 @@ module mpas_stream_manager
 
                ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
                if ( recordSeek ) then
-                   STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                   STREAM_DEBUG_WRITE(' -- File exists on disk: ' // trim(stream % filename))
                    call mpas_get_time(writeTime, dateTimeString=now_string)
     
                    ! Look for exact record (in the case of overwriting)
                    ! This also gets the number of records in the file.
                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                   STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
     
                    if ( stream % nRecords == 0 ) then
                        ! If we didn't find an exact time, set record to point to the end of the file.
                        ! This might result in non-monotonic timestamps in the output file.
                        stream % nRecords = maxRecords + 1
-                       STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
-                       STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                       STREAM_DEBUG_WRITE(' -- No exact time match found for ' // trim(now_string) // ' appending record instead.')
+                       STREAM_DEBUG_WRITE(' -- Setting record to: $i' COMMA intArgs=(/stream % nRecords/))
                    end if
                end if
 
@@ -3013,7 +3207,6 @@ module mpas_stream_manager
            else
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-    
                    call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, temp_filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
@@ -3071,20 +3264,20 @@ module mpas_stream_manager
 
                    ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
                    if ( recordSeek ) then
-                       STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                       STREAM_DEBUG_WRITE(' -- File exists on disk: ' // trim(stream % filename))
                        call mpas_get_time(writeTime, dateTimeString=now_string)
            
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
                        stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
            
                        if ( stream % nRecords == 0 ) then
                            ! If we didn't find an exact time, set record to point to the end of the file.
                            ! This might result in non-monotonic timestamps in the output file.
                            stream % nRecords = maxRecords + 1
-                           STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
-                           STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                           STREAM_DEBUG_WRITE(' -- No exact time match found for ' // trim(now_string) // ' appending record instead.')
+                           STREAM_DEBUG_WRITE(' -- Setting record to: $i' COMMA intArgs=(/stream % nRecords/))
                        end if
                    end if
 
@@ -3102,7 +3295,7 @@ module mpas_stream_manager
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
                        tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA tempRecord COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/tempRecord COMMA maxRecords COMMA local_ierr/))
            
                        if ( tempRecord /= 0 .and. stream % nRecords < maxRecords ) then
                            ! If we found an exact result
@@ -3111,14 +3304,14 @@ module mpas_stream_manager
                            maxRecords = stream % nRecords
                            stream % nRecords = tempRecord
                            tempRecord = maxRecords
-                           STREAM_DEBUG_WRITE(' -- Exact time match found for ' COMMA trim(now_string) )
-                           STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                           STREAM_DEBUG_WRITE(' -- Exact time match found for ' // trim(now_string) )
+                           STREAM_DEBUG_WRITE(' -- Setting record to: $i' COMMA intArgs=(/stream % nRecords/))
                        else if ( tempRecord == 0 .and. stream % nRecords < maxRecords ) then
                            ! If we didn't find an exact time, set record to point to the end of the file.
                            ! This might result in non-monotonic timestamps in the output file.
                            stream % nRecords = maxRecords + 1
-                           STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
-                           STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                           STREAM_DEBUG_WRITE(' -- No exact time match found for ' // trim(now_string) // ' appending record instead.')
+                           STREAM_DEBUG_WRITE(' -- Setting record to: $i' COMMA intArgs=(/stream % nRecords/))
                        end if
                    end if
                end if
@@ -3139,14 +3332,14 @@ module mpas_stream_manager
            ! unless this stream is using blockWrite
            !
            if ( .not. stream % blockWrite ) then
-              STREAM_DEBUG_WRITE(' -- Prewrite reindex for stream ' COMMA trim(stream % name))
+              STREAM_DEBUG_WRITE(' -- Prewrite reindex for stream ' // trim(stream % name))
               call prewrite_reindex(manager % allFields, stream % field_pool)
            end if
 
            ! 
            ! Write the stream
            ! 
-           STREAM_DEBUG_WRITE(' -- Writing stream ' COMMA trim(stream % name))
+           STREAM_DEBUG_WRITE(' -- Writing stream ' // trim(stream % name))
            call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
 
            !
@@ -3154,7 +3347,7 @@ module mpas_stream_manager
            ! unless this stream is using blockWrite
            !
            if ( .not. stream % blockWrite ) then
-              STREAM_DEBUG_WRITE(' -- Postwrite reindex for stream ' COMMA trim(stream % name))
+              STREAM_DEBUG_WRITE(' -- Postwrite reindex for stream ' // trim(stream % name))
               call postwrite_reindex(manager % allFields, stream % field_pool)
            end if
 
@@ -3447,7 +3640,7 @@ module mpas_stream_manager
                call mpas_expand_string(when, blockID_local, stream % filename_template, temp_filename)
            end if
 
-           STREAM_DEBUG_WRITE(' -- Stream filename is: ' COMMA trim(temp_filename) )
+           STREAM_DEBUG_WRITE(' -- Stream filename is: ' // trim(temp_filename) )
 
            !
            ! If the stream is not valid, assume that we have not yet written this
@@ -3518,7 +3711,7 @@ module mpas_stream_manager
               stream % timeLevel = timeLevel
            end if
 
-           STREAM_DEBUG_WRITE(' Seeking time of ' COMMA trim(when))
+           STREAM_DEBUG_WRITE(' Seeking time of ' // trim(when))
 
            !
            ! With multiple times per file, we need to get the record number from MPAS_seekStream.
@@ -3527,11 +3720,11 @@ module mpas_stream_manager
 
            if ( stream % nRecords == 0 .and. temp_maxRecords == 0 ) then
                stream % nRecords = 1
-               STREAM_WARNING_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain a seekable xtime variable. Forcing a read of the first time record.')
+               STREAM_WARNING_WRITE('File ' // trim(stream % filename) // ' does not contain a seekable xtime variable. Forcing a read of the first time record.')
            else if (stream % nRecords /= 0) then
-               STREAM_DEBUG_WRITE('   Seeked record is: ' COMMA stream % nRecords COMMA ' out of ' COMMA temp_maxRecords COMMA ' with a time stamp of ' COMMA trim(temp_actualWhen) COMMA ' filename was ' COMMA trim(stream % filename))
+               STREAM_DEBUG_WRITE('   Seeked record is: $i out of $i with a time stamp of ' // trim(temp_actualWhen) // ' filename was ' // trim(stream % filename) COMMA intArgs=(/stream%nRecords COMMA temp_maxRecords/))
            else if (temp_maxRecords /= 0 .and. whence == MPAS_STREAM_EXACT_TIME) then
-               STREAM_ERROR_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain the time ' COMMA trim(when))
+               STREAM_ERROR_WRITE('File ' // trim(stream % filename) // ' does not contain the time ' // trim(when))
                ierr = MPAS_STREAM_MGR_ERROR
                return
            end if
@@ -3613,7 +3806,7 @@ module mpas_stream_manager
               
               call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, blockID_local, test_filename, ierr=local_ierr)
 
-              STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
+              STREAM_DEBUG_WRITE(' --- Retesting filename is ' // trim(test_filename))
 
               inquire(file=trim(test_filename), exist=retestFile)
 
@@ -3621,7 +3814,7 @@ module mpas_stream_manager
               if ( retestFile ) then
                   call mpas_createStream(testStream, manager % ioContext, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
               else
-                  STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
+                  STREAM_DEBUG_WRITE(' Filename: ' // trim(test_filename) // ' does not exist.')
               end if
            end if
 
@@ -3629,7 +3822,7 @@ module mpas_stream_manager
            if ( retestFile ) then
               test_record = MPAS_seekStream(testStream, when, whence, test_actualWhen, maxRecords=test_maxRecords, ierr=local_ierr)
 
-              STREAM_DEBUG_WRITE(' -- Test record is ' COMMA test_record COMMA ' out of ' COMMA test_maxRecords COMMA ' with a time of ' COMMA trim(test_actualWhen))
+              STREAM_DEBUG_WRITE(' -- Test record is $i out of $i with a time of ' // trim(test_actualWhen) COMMA intArgs=(/test_record COMMA test_maxRecords/))
 
               if ( test_record /= 0 ) then
                  if ( whence == MPAS_STREAM_NEAREST ) then
@@ -3772,9 +3965,9 @@ module mpas_stream_manager
         character(len=*), intent(in) :: mesg
 
         if (level /= MPAS_STREAM_ERR_SILENT) then
-            write(stderrUnit, *) trim(mesg)
+            call mpas_log_write(trim(mesg), MPAS_LOG_ERR)
             if  (level == MPAS_STREAM_ERR_FATAL) then
-                call mpas_dmpar_global_abort(mesg)
+                call mpas_log_write(mesg, MPAS_LOG_CRIT)
             end if
         end if
 
@@ -3847,7 +4040,7 @@ module mpas_stream_manager
         else
             if ( present(ierr) ) ierr = MPAS_STREAM_MGR_ERROR
             if ( manager % errorLevel /= MPAS_STREAM_ERR_SILENT ) then
-                write(stderrUnit, *) 'ERROR: Stream ' // trim(streamID) // ' does not exist. Filename creation failed...'
+                call mpas_log_write('ERROR: Stream ' // trim(streamID) // ' does not exist. Filename creation failed...')
             end if
         end if
 
@@ -3891,7 +4084,8 @@ module mpas_stream_manager
         character(len=StrKIND) :: when_string
         type (MPAS_Time_type) :: filetime
         type (MPAS_TimeInterval_type) :: intv, rem, zeroIntv
-        integer :: nrecs, nfiles, irec, direction
+        integer (kind=I8KIND) :: nrecs
+        integer :: nfiles, irec, direction
         logical :: in_future
 
         STREAM_DEBUG_WRITE(' ** Building Filename')
@@ -3908,18 +4102,18 @@ module mpas_stream_manager
            direction = -1
         end if
 
-!       call mpas_get_time(when, dateTimeString=temp_string)
-        STREAM_DEBUG_WRITE(' ** when is: ' COMMA trim(temp_string))
+        call mpas_get_time(when, dateTimeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** when is: ' // trim(temp_string))
 
-!       call mpas_get_time(ref_time, dateTimeString=temp_string)
-        STREAM_DEBUG_WRITE(' ** ref_time is: ' COMMA trim(temp_string))
+        call mpas_get_time(ref_time, dateTimeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** ref_time is: ' // trim(temp_string))
 
-!       call mpas_get_timeInterval(intv, timeString=temp_string)
-        STREAM_DEBUG_WRITE(' ** intv is: ' COMMA trim(temp_string))
+        call mpas_get_timeInterval(intv, timeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** intv is: ' // trim(temp_string))
 
         call mpas_interval_division(ref_time, intv, filename_interval, nrecs, rem) 
 
-!       STREAM_DEBUG_WRITE(' ** Divisions are: ' COMMA nrecs)
+!       STREAM_DEBUG_WRITE(' ** Divisions are: $i' COMMA intArgs=(/nrecs/))
 
         call mpas_set_timeInterval(zeroIntv, s=0)
 
@@ -3935,7 +4129,7 @@ module mpas_stream_manager
             filetime = when
         end if
         call mpas_get_time(filetime, dateTimeString=when_string)
-        STREAM_DEBUG_WRITE(' ** filetime start is: ' COMMA trim(when_string))
+        STREAM_DEBUG_WRITE(' ** filetime start is: ' // trim(when_string))
 
         call mpas_expand_string(when_string, blockID, filename_template, filename)
 
@@ -4064,7 +4258,7 @@ module mpas_stream_manager
                 end if
                 call mpas_pool_set_error_level(err_level)
 
-                STREAM_DEBUG_WRITE('Is field '''//trim(itr % memberName)//''' active in stream '''//trim(stream % name)//'? ' COMMA active_field)
+                STREAM_DEBUG_WRITE('Is field '''//trim(itr % memberName)//''' active in stream '''//trim(stream % name)//'? $l' COMMA logicArgs=(/active_field/))
 
                 if (.not. active_field) cycle FIELD_LOOP
 
@@ -4240,7 +4434,7 @@ module mpas_stream_manager
                             case (1)
 !                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
 !                                call MPAS_streamUpdateField(stream % stream, char1d)
-                                 write(stderrUnit,*) 'Error: In update_stream, unsupported type field1DChar.'
+                                 call mpas_log_write('In update_stream, unsupported type field1DChar.', MPAS_LOG_ERR)
                         end select
                 end select
 
@@ -5553,16 +5747,17 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_derived_types, only : MPAS_streamManager_type, &
-                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, MPAS_STREAM_PROPERTY_ACTIVE, &
                                         MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                         MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                         MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
                                         MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_STREAM_PROPERTY_IOTYPE
     use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
+    use mpas_derived_types, only : MPAS_LOG_ERR
+    use mpas_log
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION, &
                         MPAS_IO_NETCDF, MPAS_IO_PNETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF5
-    use mpas_io_units, only : stderrUnit
 
     implicit none
 
@@ -5638,11 +5833,11 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
         ! If we can't set a property on this immutable stream, most likely the stream wasn't defined in the core's Registry.xml file
         if (ierr /= MPAS_STREAM_MGR_NOERR) then
-            write(stderrUnit,*) '********************************************************************************'
-            write(stderrUnit,*) ' Error: Stream '''//trim(streamID)//''' was not defined in the Registry.xml file as '
-            write(stderrUnit,*) '        an immutable stream. Immutable streams may only be defined in the Registry.xml'
-            write(stderrUnit,*) '        file for a core.'
-            write(stderrUnit,*) '********************************************************************************'
+            call mpas_log_write('********************************************************************************', MPAS_LOG_ERR)
+            call mpas_log_write(' Error: Stream '''//trim(streamID)//''' was not defined in the Registry.xml file as ', MPAS_LOG_ERR)
+            call mpas_log_write('        an immutable stream. Immutable streams may only be defined in the Registry.xml', MPAS_LOG_ERR)
+            call mpas_log_write('        file for a core.', MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************', MPAS_LOG_ERR)
             ierr_c = 1
             return
         end if
@@ -5664,6 +5859,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     if (trim(filename_interval) /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME_INTV, filename_interval, ierr=ierr)
+    end if
+
+    if (direction_c == 4) then
+       call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_ACTIVE, .false., ierr=ierr)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
@@ -5815,10 +6014,13 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_derived_types, only : MPAS_streamManager_type, MPAS_Clock_type, MPAS_Time_type, MPAS_TimeInterval_type, &
-                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME
-    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
+                                   MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME, &
+                                   MPAS_STOP_TIME, MPAS_STREAM_PROPERTY_REF_TIME
+    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm, MPAS_stream_mgr_set_property, &
+                                    MPAS_stream_mgr_get_property
     use mpas_kind_types, only : StrKIND
-    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
+    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_get_time, mpas_set_timeInterval, mpas_get_clock_time, &
+                                 mpas_adjust_alarm_to_reference_time
 
     implicit none
 
@@ -5831,14 +6033,17 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     type (MPAS_streamManager_type), pointer :: manager
     type (MPAS_Clock_type), pointer :: clock
-    character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval
+    character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval, alarmString
     type (MPAS_Time_type) :: alarmTime_local
     type (MPAS_TimeInterval_type) :: alarmInterval_local
+    character(len=StrKIND) :: streamReferenceTimeString
+    type (MPAS_Time_type) :: streamReferenceTime
     integer :: idirection
-    integer :: ierr
+    integer :: ierr, ierr_tmp
 
 
     ierr = 0
+    ierr_tmp = 0
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
@@ -5860,20 +6065,37 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     call MPAS_stream_mgr_get_clock(manager, clock)
 
-    if (trim(alarmTime) == 'start') then
-        alarmTime_local = mpas_get_clock_time(clock, MPAS_START_TIME, ierr=ierr)
+    if (trim(alarmTime) == 'start' .and. trim(alarmInterval) == 'final_only') then
+        alarmTime_local = mpas_get_clock_time(clock, MPAS_STOP_TIME, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
+        call mpas_get_time(alarmTime_local, dateTimeString=alarmString)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, alarmString, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
+    else if (trim(alarmTime) == 'start') then
+        alarmTime_local = mpas_get_clock_time(clock, MPAS_START_TIME, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
     else
         call mpas_set_time(alarmTime_local, dateTimeString=alarmTime)
     end if
 
-    if (trim(alarmInterval) == 'initial_only') then
-        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, ierr=ierr)
+    if (trim(alarmInterval) == 'initial_only' .or. trim(alarmInterval) == 'final_only') then
+        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
     else
         call mpas_set_timeInterval(alarmInterval_local, timeString=alarmInterval)
-        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, alarmTimeInterval=alarmInterval_local, ierr=ierr)
+        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, alarmTimeInterval=alarmInterval_local, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
+        ! Now calibrate alarm to use the stream's reference time as the time coordinate origin for the stream's output alarm.
+        call MPAS_stream_mgr_get_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, streamReferenceTimeString, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
+        call mpas_set_time(streamReferenceTime, dateTimeString=streamReferenceTimeString, ierr=ierr_tmp)
+        ierr = ior(ierr, ierr_tmp)
+        call mpas_adjust_alarm_to_reference_time(clock, alarmID, streamReferenceTime, ierr)
+        ierr = ior(ierr, ierr_tmp)
     end if
 
-    call MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, idirection, ierr=ierr)
+    call MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, idirection, ierr=ierr_tmp)
+    ierr = ior(ierr, ierr_tmp)
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
@@ -5901,7 +6123,6 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, package
-    integer :: idirection
     integer :: ierr
 
 

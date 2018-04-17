@@ -3,9 +3,9 @@ MODULE module_sf_bem
 !  Variables and constants used in the BEM module
 ! -----------------------------------------------------------------------
 
-use mpas_abort, only : mpas_dmpar_global_abort
 #ifdef mpas
-#define FATAL_ERROR(M) call mpas_dmpar_global_abort( M )
+use mpas_atmphys_utilities, only: physics_error_fatal
+#define FATAL_ERROR(M) call physics_error_fatal( M )
 #else
 #define FATAL_ERROR(M) write(0,*) M ; stop
 #endif

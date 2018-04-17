@@ -1,0 +1,48 @@
+	<nml_record name="AM_pointwiseStats">
+		<nml_option name="config_AM_pointwiseStats_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member pointwiseStats is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_pointwiseStats_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_pointwiseStats_output_stream" type="character" default_value="pointwiseStatsOutput" units="unitless"
+			description="Name of the stream that the pointwiseStats analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_pointwiseStats_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_pointwiseStats_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="pointwiseStatsAMPKG" description="This package includes variables required for the pointwiseStats analysis member."/>
+	</packages>
+	<streams>
+		<stream name="pointwiseStatsOutput" type="output"
+				filename_template="analysis_members/pointwiseStats.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="pointwiseStatsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<var name="pointNames"/>
+			<var name="pointCellGlobalID"/>
+			<var name="xtime"/>
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="latPoint"/>
+			<var name="lonPoint"/>
+			<var name="xPoint"/>
+			<var name="yPoint"/>
+			<var name="zPoint"/>
+
+		</stream>
+	</streams>

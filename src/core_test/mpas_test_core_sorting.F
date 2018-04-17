@@ -9,7 +9,7 @@
 module test_core_sorting
 
    use mpas_derived_types
-   use mpas_io_units
+   use mpas_log
 
    private
 
@@ -47,7 +47,7 @@ module test_core_sorting
       integer :: count_start, count_stop, count_rate
 
 
-      write(stderrUnit,*) 'Sorting tests:'
+      call mpas_log_write('Sorting tests:')
       
       !
       ! Random values
@@ -61,7 +61,7 @@ module test_core_sorting
       call mpas_timer_stop('sorting: random')
       call system_clock(count=count_stop)
       call system_clock(count_rate=count_rate)
-      write(stderrUnit,*) '    random input timing         (quicksort): ', real(count_stop - count_start) / real(count_rate)
+      call mpas_log_write('    random input timing         (quicksort): $r', realArgs=(/real(count_stop - count_start) / real(count_rate)/))
       
       !
       ! Values in sorted, ascending order
@@ -75,7 +75,7 @@ module test_core_sorting
       call mpas_timer_stop('sorting: sorted')
       call system_clock(count=count_stop)
       call system_clock(count_rate=count_rate)
-      write(stderrUnit,*) '    sorted input timing         (quicksort): ', real(count_stop - count_start) / real(count_rate)
+      call mpas_log_write('    sorted input timing         (quicksort): $r', realArgs=(/real(count_stop - count_start) / real(count_rate)/))
       
       !
       ! Values in sorted, descending order
@@ -89,7 +89,7 @@ module test_core_sorting
       call mpas_timer_stop('sorting: reverse sorted')
       call system_clock(count=count_stop)
       call system_clock(count_rate=count_rate)
-      write(stderrUnit,*) '    reverse sorted input timing (quicksort): ', real(count_stop - count_start) / real(count_rate)
+      call mpas_log_write('    reverse sorted input timing (quicksort): $r', realArgs=(/real(count_stop - count_start) / real(count_rate)/))
       
       !
       ! Constant values
@@ -101,7 +101,7 @@ module test_core_sorting
       call mpas_timer_stop('sorting: constant')
       call system_clock(count=count_stop)
       call system_clock(count_rate=count_rate)
-      write(stderrUnit,*) '    constant input timing       (quicksort): ', real(count_stop - count_start) / real(count_rate)
+      call mpas_log_write('    constant input timing       (quicksort): $r', realArgs=(/real(count_stop - count_start) / real(count_rate)/))
 
       !
       ! Construct theoretically worst-case input for quicksort based on current
@@ -131,7 +131,7 @@ module test_core_sorting
       call mpas_timer_stop('sorting: worst-case')
       call system_clock(count=count_stop)
       call system_clock(count_rate=count_rate)
-      write(stderrUnit,*) '    ''worst-case'' input timing   (quicksort): ', real(count_stop - count_start) / real(count_rate)
+      call mpas_log_write('    ''worst-case'' input timing   (quicksort): $r', realArgs=(/real(count_stop - count_start) / real(count_rate)/))
       
       err = 0
 

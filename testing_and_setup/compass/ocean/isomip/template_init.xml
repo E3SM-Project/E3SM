@@ -1,0 +1,53 @@
+<template>
+	<namelist>
+		<option name="config_init_configuration">'isomip'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_eos_type">'jm'</option>
+		<option name="config_use_rx1_constraint">.true.</option>
+		<option name="config_rx1_max">5.0</option>
+	</namelist>
+
+	<streams>
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="edgeMask" type="var"/>
+				<member name="cullCell" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="rx1Cell" type="var"/>
+				<member name="rx1Edge" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="rx1MaxEdge" type="var"/>
+				<member name="globalRx1Max" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="landIceDraft" type="var"/>
+				<member name="modifySSHMask" type="var"/>
+				<member name="rx1InitSmoothingMask" type="var"/>
+				<member name="verticalStretch" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
+

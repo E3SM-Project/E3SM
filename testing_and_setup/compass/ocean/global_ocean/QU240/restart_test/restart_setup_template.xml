@@ -1,0 +1,18 @@
+<template>
+	<namelist>
+		<option name="config_start_time">0001-01-01_00:00:00</option>
+		<option name="config_run_duration">'0000_08:00:00'</option>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
+	</namelist>
+	<streams>
+		<stream name="output">
+			<attribute name="output_interval">0000-00-00_08:00:00</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="filename_template">../restarts/rst.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="filename_interval">output_interval</attribute>
+			<attribute name="output_interval">0000-00-00_00:00:01</attribute>
+		</stream>
+	</streams>
+</template>

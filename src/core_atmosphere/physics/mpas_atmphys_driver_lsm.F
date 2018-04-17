@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_lsm
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_landuse
@@ -82,6 +82,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-11.
 ! * added the calculation of surface variables over seaice cells when config_frac_seaice is set to true.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
+! * since we removed the local variable lsm_scheme from mpas_atmphys_vars.F, now defines lsm_scheme as a
+!   pointer to config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
+
 
 !
 ! DOCUMENTATION:
@@ -685,7 +689,12 @@
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
 
+!local pointers:
+ character(len=StrKIND),pointer:: lsm_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
 
  lsm_select: select case (trim(lsm_scheme))
 
@@ -715,27 +724,25 @@
 
 !local pointers:
  logical,pointer:: config_sfc_albedo
+ character(len=StrKIND),pointer:: lsm_scheme
  character(len=StrKIND),pointer:: mminlu
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_lsm:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_lsm:')
 
- call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
+ call mpas_pool_get_config(configs,'config_sfc_albedo',config_sfc_albedo)
+ call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
-
-!formats:
- 101 format(2i6,8(1x,e15.8))
- 102 format(3i6,8(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
-! write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
  lsm_select: select case (trim(lsm_scheme))
 
     case("noah")
+       call mpas_timer_start('Noah')
        call lsm( &
                 dz8w      = dz_p      , p8w3d     = pres2_hyd_p  , t3d       = t_p          , &  
                 qv3d      = qv_p      , xland     = xland_p      , xice      = xice_p       , &
@@ -782,6 +789,7 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,           &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
                     )
+       call mpas_timer_stop('Noah')
                 
 
     case default
@@ -791,7 +799,7 @@
 !copy local arrays to MPAS grid:
  call lsm_to_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 
-!write(0,*) '--- end subroutine driver_lsm.'
+!call mpas_log_write('--- end subroutine driver_lsm.')
 
  end subroutine driver_lsm
 

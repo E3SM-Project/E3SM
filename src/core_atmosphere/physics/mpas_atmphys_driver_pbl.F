@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_pbl
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -63,14 +63,27 @@
 ! * updated the call to subroutine ysu in comjunction with updating module_bl_ysu.F from WRF version 3.6.1 to
 !   WRF version 3.8.1
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-27.
+! * since we removed the local variable pbl_scheme from mpas_atmphys_vars.F, now defines pbl_scheme as a pointer
+!   to config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
 
 
 !=================================================================================================================
- subroutine allocate_pbl
+ subroutine allocate_pbl(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  if(.not.allocated(hfx_p)  ) allocate(hfx_p(ims:ime,jms:jme)  )
  if(.not.allocated(qfx_p)  ) allocate(qfx_p(ims:ime,jms:jme)  )
@@ -148,8 +161,18 @@
  end subroutine allocate_pbl
 
 !=================================================================================================================
- subroutine deallocate_pbl
+ subroutine deallocate_pbl(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  if(allocated(hfx_p)  ) deallocate(hfx_p  )
  if(allocated(qfx_p)  ) deallocate(qfx_p  )
@@ -241,6 +264,8 @@
  integer:: i,k,j
 
 !local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
  real(kind=RKIND),dimension(:),pointer:: hfx,hpbl,qfx,ust,wspd,xland,znt
  real(kind=RKIND),dimension(:),pointer:: delta,wstar
 
@@ -256,6 +281,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  call mpas_pool_get_array(diag_physics,'hfx'   ,hfx   )
  call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
@@ -408,8 +435,11 @@
  end subroutine pbl_from_MPAS
 
 !=================================================================================================================
- subroutine pbl_to_MPAS(diag_physics,tend_physics,its,ite)
+ subroutine pbl_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -421,7 +451,10 @@
  integer:: i,k,j
 
 !local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
  integer,dimension(:),pointer:: kpbl
+
  real(kind=RKIND),dimension(:),pointer  :: hpbl
  real(kind=RKIND),dimension(:,:),pointer:: kzh,kzm,kzq
  real(kind=RKIND),dimension(:,:),pointer:: rublten,rvblten,rthblten,rqvblten,rqcblten,rqiblten, &
@@ -436,6 +469,8 @@
                                            qdiss,qshear,qwt
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  call mpas_pool_get_array(diag_physics,'kpbl' ,kpbl )
  call mpas_pool_get_array(diag_physics,'hpbl' ,hpbl )
@@ -554,16 +589,18 @@
 
 !local pointers:
  logical,pointer:: config_do_restart
+ character(len=StrKIND),pointer:: pbl_scheme
 
 !local variables:
  integer:: initflag
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_pbl:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_pbl:')
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme       )
 
 !copy MPAS arrays to local arrays:
  call pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
@@ -574,6 +611,7 @@
  pbl_select: select case (trim(pbl_scheme))
 
     case("bl_ysu")
+       call mpas_timer_start('YSU')
        call ysu ( &
                  p3d      = pres_hyd_p , p3di     = pres2_hyd_p , psfc     = psfc_p     , &
                  th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
@@ -599,8 +637,10 @@
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                 )
+       call mpas_timer_stop('YSU')
 
     case("bl_mynn")
+       call mpas_timer_start('MYNN_pbl')
        call  mynn_bl_driver ( &
                  p        = pres_hyd_p  , exner    = pi_p        , ps       = psfc_p     , &
                  th       = th_p        , dz       = dz_p        , u        = u_p        , &
@@ -630,15 +670,16 @@
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                             )
+       call mpas_timer_stop('MYNN_pbl')
 
     case default
 
  end select pbl_select
 
 !copy local arrays to MPAS grid:
- call pbl_to_MPAS(diag_physics,tend_physics,its,ite)
+ call pbl_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_pbl.'
+!call mpas_log_write('--- end subroutine driver_pbl.')
 
  end subroutine driver_pbl
 

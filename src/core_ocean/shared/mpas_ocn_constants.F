@@ -64,6 +64,7 @@ module ocn_constants
       T0_Kelvin        ,&! zero point for Celsius
       mpercm           ,&! meters per m
       cmperm           ,&! m per meter
+      days_per_second  ,&! days per second
       salt_to_ppt      ,&! salt (kg/kg) to ppt
       ppt_to_salt      ,&! salt ppt to kg/kg
       mass_to_Sv       ,&! mass flux to Sverdrups
@@ -87,7 +88,7 @@ contains
 !> \brief   Initializes the ocean constants
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine sets up constants for use in the ocean model.
 !
 !-----------------------------------------------------------------------
@@ -96,8 +97,12 @@ contains
        type (mpas_pool_type), pointer :: packagePool
        integer :: n
 
+       real (kind=RKIND), pointer :: config_density0
+
        ocnConfigs => configPool
        ocnPackages => packagePool
+
+       call mpas_pool_get_config(configPool, 'config_density0', config_density0)
 
        !-----------------------------------------------------------------------
        !
@@ -109,7 +114,7 @@ contains
 
        T0_Kelvin = 273.16_RKIND               ! zero point for Celsius
        rho_air   = 1.2_RKIND                  ! ambient air density (kg/m^3)
-       rho_sw    = 1.026e3_RKIND              ! density of salt water (kg/m^3)
+       rho_sw    = config_density0            ! density of salt water (kg/m^3)
        rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
        rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
        cp_sw     = 3.996e3_RKIND              ! specific heat salt water
@@ -131,6 +136,7 @@ contains
        !
        !-----------------------------------------------------------------------
 
+       days_per_second = 1._RKIND/86400._RKIND     ! days per second
        salt_to_ppt   = 1000._RKIND        ! salt (kg/kg) to ppt
        ppt_to_salt   = 1.e-3_RKIND        ! salt ppt to kg/kg
        mass_to_Sv    = 1.0e-12_RKIND      ! mass flux to Sverdrups
@@ -155,7 +161,7 @@ contains
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
-       latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg 
+       latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg
        ocn_ref_salinity       = SHR_CONST_OCN_REF_SAL   ! psu
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
 #endif

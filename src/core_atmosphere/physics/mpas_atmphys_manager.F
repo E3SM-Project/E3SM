@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_manager
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
  use mpas_timekeeping
  use mpas_stream_manager
@@ -97,7 +96,34 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 ! * added initialization of variables has_reqc,has_reqi,and has_reqs needed in the calls to radiation codes
 !   rrtmg_lwrad and rrmtg_swrad.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-07-007.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+! * in subroutine physics_run_init, removed the initialization of the local variable gwdo_scheme. gwdo_scheme
+!   is no longer needed and can be replaced with config_gwdo_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable lsm_scheme. lsm_scheme
+!   is no longer needed and can be replaced with config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable sfclayer_scheme.
+!   sfclayer_scheme is no longer needed and can be replaced with config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable pbl_scheme. pbl_scheme
+!   is no longer needed and can be replaced with config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_cld_scheme.
+!   radt_cld_scheme is no longer needed and can be replaced with config_radt_cld_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_lw_scheme.
+!   radt_lw_scheme is no longer needed and can be replaced with config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_sw_scheme.
+!   radt_sw_scheme is no longer needed and can be replaced with config_radt_sw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable convection_scheme.
+!   convection_scheme is no longer needed and can be replaced with config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable microp_scheme.
+!   microp_scheme is no longer needed and can be replaced with config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -151,8 +177,8 @@
  real(kind=RKIND):: xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_timetracker: itimestep = $i', intArgs=(/itimestep/))
 
  call mpas_pool_get_config(domain%blocklist%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme  )
@@ -170,13 +196,6 @@
  call mpas_pool_get_config(domain%blocklist%configs,'config_deepsoiltemp_update',config_deepsoiltemp_update)
 
 !update the current julian day and current year:
- 100 format('     YEAR        =', i5   ,/, &
-            '     JULDAY      =', i5   ,/, &
-            '     GMT         =', f16.9,/, &
-            '     UTC_H       =', f16.9,/, &
-            '     CURR_JULDAY =', f16.9,/, &
-            '     LEAP_YEAR   =', 1x,l1,/, &
-            '     TIME STAMP  =', 1x,a32,/)
 
  currTime = mpas_get_clock_time(clock,MPAS_NOW,ierr)
  call mpas_get_time(curr_time=currTime,dateTimeString=timeStamp,YYYY=yr,H=h,M=m, &
@@ -188,7 +207,13 @@
  julday = DoY
  curr_julday = real(julday-1) + utc_h / 24.0
  LeapYear = isLeapYear(year)
-! write(0,100) year,julday,gmt,utc_h,curr_julday,LeapYear,timeStamp
+! call mpas_log_write('     YEAR        =$i', intArgs=(/year/))
+! call mpas_log_write('     JULDAY      =$i', intArgs=(/julday/))
+! call mpas_log_write('     GMT         =$r', realArgs=(/gmt/))
+! call mpas_log_write('     UTC_H       =$r', realArgs=(/utc_h/))
+! call mpas_log_write('     CURR_JULDAY =$r', realArgs=(/curr_julday/))
+! call mpas_log_write('     LEAP_YEAR   =$l', logicArgs=(/LeapYear/))
+! call mpas_log_write('     TIME STAMP  ='//trim(timeStamp))
 
  block => domain % blocklist
  do while(associated(block))
@@ -203,7 +228,7 @@
     !monthly values to current day:
     if(mpas_is_alarm_ringing(clock,greenAlarmID,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,greenAlarmID,ierr=ierr)
-       write(0,*) '--- time to update background surface albedo, greeness fraction.'
+       call mpas_log_write('--- time to update background surface albedo, greeness fraction.')
        call physics_update_surface(timeStamp,config_sfc_albedo,mesh,sfc_input)
     endif
 
@@ -239,7 +264,7 @@
     elseif(config_radtlw_interval == "none") then
        l_radtlw = .true.
     endif
-    write(0,*) '--- time to run the LW radiation scheme L_RADLW =',l_radtlw
+    call mpas_log_write('--- time to run the LW radiation scheme L_RADLW =$l',logicArgs=(/l_radtlw/))
  endif
 
  if(trim(config_radt_sw_scheme) /= "off") then
@@ -253,7 +278,7 @@
     elseif(config_radtsw_interval == "none") then
        l_radtsw = .true.
     endif
-    write(0,*) '--- time to run the SW radiation scheme L_RADSW =',l_radtsw
+    call mpas_log_write('--- time to run the SW radiation scheme L_RADSW =$l',logicArgs=(/l_radtsw/))
  endif
 
 !check to see if it is time to run the parameterization of convection:
@@ -268,7 +293,7 @@
     elseif(config_conv_interval == "none") then
        l_conv = .true.
     endif
-    write(0,*) '--- time to run the convection scheme L_CONV    =',l_conv
+    call mpas_log_write('--- time to run the convection scheme L_CONV    =$l',logicArgs=(/l_conv/))
  endif
 
 !check to see if it is time to update ozone to the current julian day in the RRTMG radiation codes:
@@ -279,7 +304,7 @@
        if((l_radtlw .and. trim(config_radt_lw_scheme) .eq. "rrtmg_lw") .or. &
            l_radtsw .and. trim(config_radt_sw_scheme) .eq. "rrtmg_sw" ) then
           call o3climatology_from_MPAS(curr_julday,mesh,atm_input,diag_physics)
-          write(0,*) '--- time to update the ozone climatology for RRTMG radiation codes'
+          call mpas_log_write('--- time to update the ozone climatology for RRTMG radiation codes')
        endif
     
        block => block % next
@@ -296,7 +321,7 @@
        call mpas_reset_clock_alarm(clock,camAlarmID,ierr=ierr)
        doabsems = .true.
     endif
-    write(0,*) '--- time to update CAM absorptivity and emissivity arrays DOABSEMS =',doabsems
+    call mpas_log_write('--- time to update CAM absorptivity and emissivity arrays DOABSEMS =$l',logicArgs=(/doabsems/))
  endif
 
 !check to see if it is time to save the local CAM arrays absnst_p, absnxt_p, and emstot_p to
@@ -307,7 +332,7 @@
        call mpas_reset_clock_alarm(clock,camlwAlarmID,camlwTimeStep,ierr=ierr)
        l_camlw = .true.
     endif
-    write(0,*) '--- time to write local CAM arrays to MPAS arrays L_CAMLW          =',l_camlw
+    call mpas_log_write('--- time to write local CAM arrays to MPAS arrays L_CAMLW          =$l',logicArgs=(/l_camlw/))
  endif
 
 !check to see if it is time to apply limit to the accumulated rain due to cloud microphysics
@@ -318,7 +343,7 @@
        call mpas_reset_clock_alarm(clock,acrainAlarmID,acrainTimeStep,ierr=ierr)
        l_acrain = .true.
     endif
-    write(0,*) '--- time to apply limit to accumulated rainc and rainnc L_ACRAIN   =',l_acrain
+    call mpas_log_write('--- time to apply limit to accumulated rainc and rainnc L_ACRAIN   =$l',logicArgs=(/l_acrain/))
  endif
 
 !check to see if it is time to apply limit to the accumulated radiation diagnostics due to
@@ -329,7 +354,7 @@
        call mpas_reset_clock_alarm(clock,acradtAlarmID,acradtTimeStep,ierr=ierr)
        l_acradt = .true.
     endif
-    write(0,*) '--- time to apply limit to accumulated radiation diags. L_ACRADT   =',l_acradt
+    call mpas_log_write('--- time to apply limit to accumulated radiation diags. L_ACRADT   =$l',logicArgs=(/l_acradt/))
  endif
 
 !check to see if it is time to calculate additional physics diagnostics:
@@ -341,7 +366,7 @@
  if (mpas_is_alarm_ringing(clock,diagAlarmID,interval=dtInterval,ierr=ierr)) then
     l_diags = .true.
  end if
- write(0,*) '--- time to calculate additional physics_diagnostics               =',l_diags
+ call mpas_log_write('--- time to calculate additional physics_diagnostics               =$l',logicArgs=(/l_diags/))
 
  end subroutine physics_timetracker
 
@@ -358,14 +383,10 @@
 
 !local pointers:
  character(len=StrKIND),pointer:: config_convection_scheme,      &
-                                  config_gwdo_scheme,            &
                                   config_lsm_scheme,             &
                                   config_microp_scheme,          &
-                                  config_pbl_scheme,             &
-                                  config_radt_cld_scheme,        &
                                   config_radt_lw_scheme,         &
-                                  config_radt_sw_scheme,         &
-                                  config_sfclayer_scheme
+                                  config_radt_sw_scheme
 
  character(len=StrKIND),pointer:: config_conv_interval,          &
                                   config_pbl_interval,           &
@@ -394,18 +415,14 @@
  integer:: ierr
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_run_init:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_run_init:')
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
- call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
  call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
- call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
- call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
  call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
- call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  call mpas_pool_get_config(configs,'config_conv_interval'    ,config_conv_interval    )
  call mpas_pool_get_config(configs,'config_pbl_interval'     ,config_pbl_interval     )
@@ -433,26 +450,6 @@
  call mpas_pool_get_dimension(state,'num_aerosols',nAerosols)
 
 !initialization of gmt, julian day, and alarms:
- 101 format('     YEAR        =', i5   ,/, &
-            '     JULDAY      =', i5   ,/, &
-            '     GMT         =', f16.9,/, &
-            '     UTC_H       =', f16.9,/, &
-            '     CURR_JULDAY =', f16.9,/)
-
- 102 format('     DT_RADTLW   =', f16.9,/, &
-            '     DT_RADTSW   =', f16.9,/, &
-            '     DT_CU       =', f16.9,/, &
-            '     DT_PBL      =', f16.9,/)
-            
- 103 format('     IMS =', i4,3x,'IME =', i8,/,  &
-            '     JMS =', i4,3x,'JME =', i8,/,  &
-            '     KMS =', i4,3x,'KME =', i8,//, &
-            '     IDS =', i4,3x,'IDE =', i8,/,  &
-            '     JDS =', i4,3x,'JDE =', i8,/,  &
-            '     KDS =', i4,3x,'KDE =', i8,//, &
-            '     ITS =', i4,3x,'ITE =', i8,/,  &
-            '     JTS =', i4,3x,'JTE =', i8,/,  &
-            '     KTS =', i4,3x,'KTE =', i8,/)
 
  startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
  call mpas_get_time(curr_time=startTime,YYYY=yr,H=h,M=m,S=s,S_n=s_n,S_d=s_d,DoY=DoY,ierr=ierr)
@@ -461,7 +458,11 @@
  gmt    = utc_h
  julday = DoY
  curr_julday = real(julday-1)
-! write(0,101) year,julday,gmt,utc_h,curr_julday
+! call mpas_log_write('     YEAR        =$i', intArgs=(/year/))
+! call mpas_log_write('     JULDAY      =$i', intArgs=(/julday/))
+! call mpas_log_write('     GMT         =$r', realArgs=(/gmt/))
+! call mpas_log_write('     UTC_H       =$r', realArgs=(/utc_h/))
+! call mpas_log_write('     CURR_JULDAY =$r', realArgs=(/curr_julday/))
 
 !set alarms for calling the longwave and shortwave radiation schemes, the convection schemes,
 !and the PBL schemes at intervals different (greater) than the dynamical time-step:
@@ -639,7 +640,10 @@
     end if
  endif
 
- write(0,102) dt_radtlw,dt_radtsw,dt_cu,dt_pbl
+ call mpas_log_write('     DT_RADTLW   =$r', realArgs=(/dt_radtlw/))
+ call mpas_log_write('     DT_RADTSW   =$r', realArgs=(/dt_radtsw/))
+ call mpas_log_write('     DT_CU       =$r', realArgs=(/dt_cu/))
+ call mpas_log_write('     DT_PBL      =$r', realArgs=(/dt_pbl/))
 
 !initialization of physics dimensions to mimic a rectangular grid:
  ims=1   ; ime = nCellsSolve
@@ -654,23 +658,19 @@
  jts=jms ; jte = jme
  kts=kms ; kte = kme-1
 
- write(0,103) ims,ime,jms,jme,kms,kme, &
-              ids,ide,jds,jde,kds,kde, &
-              its,ite,jts,jte,kts,kte
+ call mpas_log_write('     IMS =$i   IME =$i', intArgs=(/ims,ime/))
+ call mpas_log_write('     JMS =$i   JME =$i', intArgs=(/jms,jme/))
+ call mpas_log_write('     KMS =$i   KME =$i', intArgs=(/kms,kme/))
+ call mpas_log_write('     IDS =$i   IDE =$i', intArgs=(/ids,ide/))
+ call mpas_log_write('     JDS =$i   JDE =$i', intArgs=(/jds,jde/))
+ call mpas_log_write('     KDS =$i   KDE =$i', intArgs=(/kds,kde/))
+ call mpas_log_write('     ITS =$i   ITE =$i', intArgs=(/its,ite/))
+ call mpas_log_write('     JTS =$i   JTE =$i', intArgs=(/jts,jte/))
+ call mpas_log_write('     KTS =$i   KTE =$i', intArgs=(/kts,kte/))
 
 !initialization local physics variables:
  num_months = nMonths
  num_soils  = nSoilLevels
-
- convection_scheme = trim(config_convection_scheme)
- lsm_scheme        = trim(config_lsm_scheme)
- microp_scheme     = trim(config_microp_scheme)
- pbl_scheme        = trim(config_pbl_scheme)
- gwdo_scheme       = trim(config_gwdo_scheme)
- radt_cld_scheme   = trim(config_radt_cld_scheme)
- radt_lw_scheme    = trim(config_radt_lw_scheme)
- radt_sw_scheme    = trim(config_radt_sw_scheme)
- sfclayer_scheme   = trim(config_sfclayer_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 
@@ -680,15 +680,15 @@
 !... cloud microphysics:
  dt_microp = dt_dyn
  n_microp  = 1
- if(trim(microp_scheme)=='mp_thompson') then
+ if(trim(config_microp_scheme)=='mp_thompson') then
     dt_microp = 90._RKIND
     n_microp  = max(nint(dt_dyn/dt_microp),1)
     dt_microp = dt_dyn / n_microp
     if(dt_dyn <= dt_microp) dt_microp = dt_dyn
  endif
- write(0,*) '--- specifics on cloud microphysics option microp_scheme = ',trim(microp_scheme)
- write(0,*) '--- dt_microp = ', dt_microp
- write(0,*) '--- n_microp  = ', n_microp
+ call mpas_log_write('--- specifics on cloud microphysics option microp_scheme = '//trim(config_microp_scheme))
+ call mpas_log_write('--- dt_microp = $r', realArgs=(/dt_microp/))
+ call mpas_log_write('--- n_microp  = $i', intArgs=(/n_microp/))
 !... convection:
  l_conv = .false.
  n_cu   = nint(dt_cu/dt_dyn)
@@ -715,12 +715,12 @@
 
     !initializes the number of aerosols, and the prescribed vertical dimensions for
     !aerosols and ozone mixing ratios:
-    write(0,*)
-    write(0,*) '--- doabsems     = ',doabsems
-    write(0,*) '--- cam_abs_dim1 = ', cam_abs_dim1
-    write(0,*) '--- cam_abs_dim2 = ', cam_abs_dim2
-    write(0,*) '--- nAerosols    = ', nAerosols
-    write(0,*) '--- naerLevels   = ', naerLevels 
+    call mpas_log_write('')
+    call mpas_log_write('--- doabsems     = $l', logicArgs=(/doabsems/))
+    call mpas_log_write('--- cam_abs_dim1 = $i', intArgs=(/cam_abs_dim1/))
+    call mpas_log_write('--- cam_abs_dim2 = $i', intArgs=(/cam_abs_dim2/))
+    call mpas_log_write('--- nAerosols    = $i', intArgs=(/nAerosols/))
+    call mpas_log_write('--- naerLevels   = $i', intArgs=(/naerLevels/))
     num_aerosols  = nAerosols
     num_aerLevels = naerLevels
 
@@ -741,18 +741,18 @@
  has_reqi = 0
  has_reqs = 0
  if(config_microp_re) then
-    if(trim(microp_scheme)=='mp_thompson' .or. &
-       trim(microp_scheme)=='mp_wsm6') then
-       if(trim(radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
+    if(trim(config_microp_scheme)=='mp_thompson' .or. &
+       trim(config_microp_scheme)=='mp_wsm6') then
+       if(trim(config_radt_lw_scheme)=='rrtmg_lw' .and. trim(config_radt_sw_scheme)=='rrtmg_sw') then
           has_reqc = 1
           has_reqi = 1
           has_reqs = 1
        endif
     endif
  endif
- write(0,*) '--- has_reqc  = ', has_reqc
- write(0,*) '--- has_reqi  = ', has_reqi
- write(0,*) '--- has_reqs  = ', has_reqs
+ call mpas_log_write('--- has_reqc  = $i', intArgs=(/has_reqc/))
+ call mpas_log_write('--- has_reqi  = $i', intArgs=(/has_reqi/))
+ call mpas_log_write('--- has_reqs  = $i', intArgs=(/has_reqs/))
 
  end subroutine physics_run_init
 

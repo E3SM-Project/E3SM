@@ -11,7 +11,7 @@
  use mpas_pool_routines
  use mpas_timekeeping
  use mpas_timer
- use mpas_abort, only : mpas_dmpar_global_abort
+ use mpas_log, only : mpas_log_write
  
  use init_atm_hinterp
  use init_atm_llxy
@@ -67,7 +67,7 @@
     call mpas_get_time(curr_time, dateTimeString=timeString)
     xtime = timeString
 
-!   write(0,*) 'Processing ',trim(config_sfc_prefix)//':'//timeString(1:13)
+!   call mpas_log_write('Processing '//trim(config_sfc_prefix)//':'//timeString(1:13))
 
     !read the sea-surface temperature and sea-ice data from the surface file, and interpolate the
     !data to the MPAS grid:
@@ -145,23 +145,23 @@
 !
  call mpas_dmpar_max_int(dminfo, maxval(landmask(1:nCells)), global_max_landmask)
  if (global_max_landmask == 0) then
-    call mpas_dmpar_global_abort('*******************************************************************************', deferredAbort=.true.)
-    call mpas_dmpar_global_abort('The global maximum of the ''landmask'' field is zero, which suggests that this',  deferredAbort=.true.)
-    call mpas_dmpar_global_abort('field was not in the input file.  A ''landmask'' field is needed to properly',    deferredAbort=.true.)
-    call mpas_dmpar_global_abort('interpolate surface fields.',                                                     deferredAbort=.true.)
-    call mpas_dmpar_global_abort('Please rerun after specifying a static or initial conditions file as input in',   deferredAbort=.true.)
-    call mpas_dmpar_global_abort('the ''streams.init_atmosphere'' file.',                                           deferredAbort=.true.)
-    call mpas_dmpar_global_abort('*******************************************************************************')
+    call mpas_log_write('*******************************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('The global maximum of the ''landmask'' field is zero, which suggests that this',  messageType=MPAS_LOG_ERR)
+    call mpas_log_write('field was not in the input file.  A ''landmask'' field is needed to properly',    messageType=MPAS_LOG_ERR)
+    call mpas_log_write('interpolate surface fields.',                                                     messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Please rerun after specifying a static or initial conditions file as input in',   messageType=MPAS_LOG_ERR)
+    call mpas_log_write('the ''streams.init_atmosphere'' file.',                                           messageType=MPAS_LOG_ERR)
+    call mpas_log_write('*******************************************************************************', messageType=MPAS_LOG_CRIT)
  end if
 
 !open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString,istatus)
  if(istatus /= 0) then
-    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
-    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
-    call mpas_dmpar_global_abort('********************************************************************************')
+    call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      messageType=MPAS_LOG_ERR)
+    call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
  else
-    write(0,*) 'Processing file ',trim(config_sfc_prefix)//':'//timeString(1:13)
+    call mpas_log_write('Processing file '//trim(config_sfc_prefix)//':'//timeString(1:13))
  end if
 
 !scan through all fields in the file, looking for the LANDSEA field:
@@ -178,7 +178,7 @@
        maskslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
        maskslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
        maskslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
-!      write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
+!      call mpas_log_write('minval, maxval of LANDSEA = $r $r', realArgs=(/minval(maskslab), maxval(maskslab)/))
     end if
     deallocate(field % slab)
     call read_next_met_field(field,istatus)
@@ -188,15 +188,15 @@
 !read sea-surface temperatures and seaice data. open intermediate file:
  call read_met_init(trim(config_sfc_prefix),.false.,timeString(1:13),istatus)
  if(istatus /= 0) then
-    call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
-    call mpas_dmpar_global_abort('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      deferredAbort=.true.)
-    call mpas_dmpar_global_abort('********************************************************************************')
+    call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Error opening surface file '//trim(config_sfc_prefix)//':'//timeString(1:13),      messageType=MPAS_LOG_ERR)
+    call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
  end if
 
  if(.not. have_landmask) then
-    write(0,*) '********************************************************************************'
-    write(0,*) 'Landsea mask not available from the surface file '
-    write(0,*) '********************************************************************************'
+    call mpas_log_write('********************************************************************************')
+    call mpas_log_write('Landsea mask not available from the surface file ')
+    call mpas_log_write('********************************************************************************')
  end if
 
 !scan through all fields in the file, looking for the SST,SKINTEMP, or SEAICE field:
@@ -205,7 +205,7 @@
 
     !sea-surface data:
     if((trim(field % field) == 'SKINTEMP') .or. (trim(field % field) ==  'SST')) then
-!      write(0,*) '... Processing SST:'
+!      call mpas_log_write('... Processing SST:')
        sst(1:nCells) = 0.0_RKIND
        destField1d => sst
 
@@ -230,7 +230,7 @@
 
     !sea-ice data:
     else if(trim(field % field) == 'SEAICE') then
-!      write(0,*) '... Processing SEAICE:'
+!      call mpas_log_write('... Processing SEAICE:')
        xice(1:nCells) = 0.0_RKIND
        destField1d => xice
 
@@ -319,14 +319,14 @@
                  knownj = 1.0_RKIND, &
                  lat1 = real(field % startlat,RKIND), &
                  lon1 = real(field % startlon,RKIND))
-!   write(0,*) '--- The projection is PROJ_LATLON.'
+!   call mpas_log_write('--- The projection is PROJ_LATLON.')
  else if(field % iproj == PROJ_GAUSS) then
     call map_set(PROJ_GAUSS, proj, &
                  nlat = nint(field % deltalat), &
                  loninc = 360.0_RKIND / real(field % nx,RKIND), &
                  lat1 = real(field % startlat,RKIND), &
                  lon1 = real(field % startlon,RKIND))
-!   write(0,*) '--- The projection is PROJ_GAUSS.'
+!   call mpas_log_write('--- The projection is PROJ_GAUSS.')
  else if(field % iproj == PROJ_PS) then
     call map_set(PROJ_PS, proj, &
                  dx = real(field % dx,RKIND), &
@@ -336,7 +336,7 @@
                  knownj = real(field % ny / 2.0,RKIND), &
                  lat1 = real(field % startlat,RKIND), &
                  lon1 = real(field % startlon,RKIND))
-!   write(0,*) '--- The projection is PROJ_PS.'
+!   call mpas_log_write('--- The projection is PROJ_PS.')
  end if
 
  nInterpPoints = nCells

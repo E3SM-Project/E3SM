@@ -1,0 +1,28 @@
+<template>
+	<namelist>
+		<option name="config_AM_debugDiagnostics_enable">.true.</option>
+		<option name="config_AM_debugDiagnostics_compute_interval">'output_interval'</option>
+		<option name="config_AM_debugDiagnostics_compute_on_startup">.true.</option>
+		<option name="config_AM_debugDiagnostics_write_on_startup">.true.</option>
+		<option name="config_AM_debugDiagnostics_output_stream">'debugDiagnosticsOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="debugDiagnosticsOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">debugDiagnosticsOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">append</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/debugDiagnostics.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="packages">debugDiagnosticsAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="globalRx1Max" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

@@ -1,0 +1,21 @@
+<driver_script name="setup_shmip_experiment_E.py">
+        <case name="setup_valley_mesh">
+                <step executable="./setup_valley_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_E1">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_E2">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_E3">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_E4">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
+        <case name="experiment_E5">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Running setup_test step" post_message="     Complete"/>
+        </case>
+</driver_script>
+

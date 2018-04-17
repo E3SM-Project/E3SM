@@ -1,0 +1,36 @@
+<template>
+	<namelist>
+		<option name="config_AM_zonalMean_enable">.true.</option>
+		<option name="config_AM_zonalMean_compute_on_startup">.true.</option>
+		<option name="config_AM_zonalMean_write_on_startup">.true.</option>
+		<option name="config_AM_zonalMean_compute_interval">'output_interval'</option>
+		<option name="config_AM_zonalMean_output_stream">'zonalMeanOutput'</option>
+		<option name="config_AM_zonalMean_num_bins">180</option>
+		<option name="config_AM_zonalMean_min_bin">-1.0e34</option>
+		<option name="config_AM_zonalMean_max_bin">-1.0e34</option>
+	</namelist>
+
+	<streams>
+		<stream name="zonalMeanOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">zonalMeanOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_12:00:00</attribute>
+			<attribute name="filename_template">analysis_members/zonalMeans.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">zonalMeanAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="tracersZonalMean" type="var_array"/>
+				<member name="xtime" type="var"/>
+				<member name="binCenterZonalMean" type="var"/>
+				<member name="binBoundaryZonalMean" type="var"/>
+				<member name="velocityZonalZonalMean" type="var"/>
+				<member name="velocityMeridionalZonalMean" type="var"/>
+				<member name="refZMid" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

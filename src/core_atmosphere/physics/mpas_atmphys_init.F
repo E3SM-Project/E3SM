@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_init
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
  use mpas_timekeeping
 
@@ -135,8 +134,8 @@
  integer:: iCell,iLag,iEdge,nEdges_m
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_init:'
+! call mpas_log_write('')
+! call mpas_log_write('--- enter subroutine physics_init:')
 
  call mpas_pool_get_config(configs,'config_do_restart'       ,config_do_restart       )
  call mpas_pool_get_config(configs,'config_o3climatology'    ,config_o3climatology    )
@@ -275,7 +274,7 @@
 
 !initialization of xicem:
  if(.not.config_do_restart) then
-!    write(0,*) '--- initialization of xicem:'
+!    call mpas_log_write('--- initialization of xicem:')
     do iCell = 1, nCellsSolve
        xicem(iCell) = xice(iCell)
     enddo
@@ -285,7 +284,7 @@
 !sea-surface temperature is applied. This avoids having the array sstsk equal to
 !zero over land:
  if(.not. config_do_restart) then
-!    write(0,*) '--- initialization of sstsk:'
+!    call mpas_log_write('--- initialization of sstsk:')
     do iCell = 1, nCellsSolve
        sstsk(iCell) = sst(iCell)
     enddo
@@ -294,7 +293,7 @@
 ! initialized the 1D ocean mixed-layer model  (code from wrf module_sf_oml)
  if (config_oml1d) then
    if (.not. config_do_restart) then
-      write(0,*) '--- initialization of 1D ocean mixed layer model '
+      call mpas_log_write('--- initialization of 1D ocean mixed layer model ')
       do iCell = 1, nCellsSolve
         t_oml(iCell) = sst(iCell)
         t_oml_initial(iCell) = sst(iCell)
@@ -355,10 +354,10 @@
 
 !initialization of cloud microphysics processes:
  if(config_microp_scheme .ne. 'off') &
-    call microphysics_init(dminfo,mesh,sfc_input,diag_physics)
+    call microphysics_init(dminfo,configs,mesh,sfc_input,diag_physics)
 
 !initialization of surface layer processes:
- if(config_sfclayer_scheme .ne. 'off') call init_sfclayer
+ if(config_sfclayer_scheme .ne. 'off') call init_sfclayer(configs)
 
 !initialization of land-surface model:
 !if(.not. config_do_restart) then
@@ -370,10 +369,10 @@
  init_done = .false.
  if(config_radt_sw_scheme.ne.'off') then
     if(trim(config_radt_sw_scheme) .eq. 'cam_sw') then
-       call init_radiation_sw(dminfo,mesh,atm_input,diag,state,time_lev)
+       call init_radiation_sw(dminfo,configs,mesh,atm_input,diag,diag_physics,state,time_lev)
        init_done = .true.
     else
-       call init_radiation_sw(dminfo)
+       call init_radiation_sw(dminfo,configs)
     endif
  endif
 
@@ -383,19 +382,19 @@
  if(config_radt_lw_scheme.ne.'off') then    
     if(trim(config_radt_lw_scheme) .eq. 'cam_lw') then
        if(.not. init_done) then
-          call init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
+          call init_radiation_lw(dminfo,configs,mesh,atm_input,diag,diag_physics,state,time_lev)
        else
-!          write(0,*)
-!          write(0,*) '--- camrad lw initialization done above'
+!          call mpas_log_write('')
+!          call mpas_log_write('--- camrad lw initialization done above')
        endif
     else
-       call init_radiation_lw(dminfo)
+       call init_radiation_lw(dminfo,configs)
     endif
  endif
 
-! write(0,*)
-! write(0,*) '--- end subroutine physics_init'
-! write(0,*)
+! call mpas_log_write('')
+! call mpas_log_write('--- end subroutine physics_init')
+! call mpas_log_write('')
 
  end subroutine physics_init
 

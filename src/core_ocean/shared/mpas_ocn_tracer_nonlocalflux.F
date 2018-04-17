@@ -14,13 +14,14 @@
 !> \date   11/25/13
 !> \version SVN:$Id:$
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tracer tendencies due to non-local vertical fluxes computed in CVMix KPP
 !
 !-----------------------------------------------------------------------
 
 module ocn_tracer_nonlocalflux
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
@@ -63,7 +64,7 @@ contains
 !> \brief   Computes tendency term due to non-local flux transport
 !> \author  Todd Ringler
 !> \date    11/25/13
-!> \details 
+!> \details
 !>  This routine computes the tendency for tracers based the vertical divergence of non-local fluxes.
 !
 !-----------------------------------------------------------------------
@@ -107,23 +108,27 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, iTracer, nTracers
-      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, k, iTracer, nTracers, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:,:), pointer :: cellMask
       real (kind=RKIND) :: fluxTopOfCell, fluxBottomOfCell
 
       err = 0
 
       if (.not. nonLocalFluxOn) return
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_timer_start('non-local flux')
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
+      nCells = nCellsArray( 1 )
+
+      !$omp do schedule(runtime) private(k, iTracer, fluxTopOfCell, fluxBottomOfCell)
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
 
@@ -131,7 +136,7 @@ contains
           do iTracer = 1, nTracers
             fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
             fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
           end do
         end do
 
@@ -139,19 +144,22 @@ contains
         k = maxLevelCell(iCell)
         do iTracer = 1, nTracers
           fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
-          fluxBottomOfCell = 0.0
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+          fluxBottomOfCell = 0.0_RKIND
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do
 
         ! enforce boundary conditions at top of column
         k = 1
         do iTracer = 1, nTracers
-          fluxTopOfCell = 0.0
+          fluxTopOfCell = 0.0_RKIND
           fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do
 
       end do
+      !$omp end do
+
+      call mpas_timer_stop('non-local flux')
 
    !--------------------------------------------------------------------
 
@@ -165,7 +173,7 @@ contains
 !> \author  Todd Ringler
 !> \date    11/25/13
 !> \version SVN:$Id$
-!> \details 
+!> \details
 !>  This routine initializes quantities related to nonlocal flux computation
 !
 !-----------------------------------------------------------------------

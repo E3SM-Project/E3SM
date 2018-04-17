@@ -1,0 +1,33 @@
+<template>
+	<namelist>
+		<option name="config_disable_redi_k33">.false.</option>
+		<option name="config_disable_redi_horizontal_term1">.false.</option>
+		<option name="config_disable_redi_horizontal_term2">.false.</option>
+		<option name="config_disable_redi_horizontal_term3">.false.</option>
+		<option name="config_check_zlevel_consistency">.false.</option>
+		<option name="config_check_ssh_consistency">.true.</option>
+		<option name="config_filter_btr_mode">.false.</option>
+		<option name="config_prescribe_velocity">.false.</option>
+		<option name="config_prescribe_thickness">.false.</option>
+		<option name="config_include_KE_vertex">.false.</option>
+		<option name="config_check_tracer_monotonicity">.false.</option>
+		<option name="config_disable_thick_all_tend">.false.</option>
+		<option name="config_disable_thick_hadv">.false.</option>
+		<option name="config_disable_thick_vadv">.false.</option>
+		<option name="config_disable_thick_sflux">.false.</option>
+		<option name="config_disable_vel_all_tend">.false.</option>
+		<option name="config_disable_vel_coriolis">.false.</option>
+		<option name="config_disable_vel_pgrad">.false.</option>
+		<option name="config_disable_vel_hmix">.false.</option>
+		<option name="config_disable_vel_surface_stress">.false.</option>
+		<option name="config_disable_vel_vmix">.false.</option>
+		<option name="config_disable_vel_vadv">.false.</option>
+		<option name="config_disable_tr_all_tend">.false.</option>
+		<option name="config_disable_tr_adv">.false.</option>
+		<option name="config_disable_tr_hmix">.false.</option>
+		<option name="config_disable_tr_vmix">.false.</option>
+		<option name="config_disable_tr_sflux">.false.</option>
+		<option name="config_disable_tr_nonlocalflux">.false.</option>
+		<option name="config_read_nearest_restart">.false.</option>
+	</namelist>
+</template>
