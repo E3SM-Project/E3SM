@@ -52,8 +52,8 @@ class Testlist(GenericXML):
             files = Files()
         schema = files.get_schema("TESTS_SPEC_FILE")
         GenericXML.__init__(self, infile, schema=schema)
-        if self.get_version() < 2.0:
-            logger.warning("{} is an unsupported version of the testfile format and will be ignored".format(infile))
+        expect(self.get_version() >= 2.0,
+               "{} is an unsupported version of the testfile format and will be ignored".format(infile))
 
     def get_tests(self, machine=None, category=None, compiler=None, compset=None, grid=None, supported_only=False):
         tests = []
