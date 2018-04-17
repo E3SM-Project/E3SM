@@ -9,14 +9,9 @@ logger = logging.getLogger(__name__)
 class ArchiveBase(GenericXML):
 
     def get_entry(self, compname):
-        components = self.get_optional_child('components')
-        if components is None:
-            return self.get_optional_child('comp_archive_spec',
-                                           attributes={"compname":compname})
-        else:
-            return self.get_optional_child('comp_archive_spec',
-                                           attributes={"compname":compname},
-                                           root=components)
+        return self.scan_optional_child('comp_archive_spec',
+                                        attributes={"compname":compname})
+
 
     def get_rest_file_extensions(self, archive_entry):
         file_extensions = []

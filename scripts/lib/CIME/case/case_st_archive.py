@@ -117,10 +117,13 @@ def _get_component_archive_entries(components, archive):
     for compname in components:
         logger.debug("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
-        if archive_entry is not None:
-            yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
-        else:
+        if archive_entry is None:
             logger.debug("No entry found for {}".format(compname))
+            compclass = "unknown"
+        else:
+            compclass = archive.get(archive_entry, "compclass")
+        yield(archive_entry, compname, compclass)
+
 
 ###############################################################################
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,
@@ -220,6 +223,9 @@ def _archive_history_files(case, archive, archive_entry,
     if compname == 'drv':
         compname = 'cpl'
 
+    if compname == 'clm':
+        compname = r'clm2?'
+
     # determine ninst and ninst_string
     ninst, ninst_string = _get_ninst_info(case, compclass)
 
@@ -233,12 +239,12 @@ def _archive_history_files(case, archive, archive_entry,
                     # Not correct, but MPAS' multi-instance name format is unknown.
                     newsuffix =                    compname + r'\d*'
                 else:
-                    newsuffix = casename + r'\.' + compname + r'\d*' + ninst_string[i]
+                    newsuffix = casename + r'\.' + compname + r'_?' + r'\d*' + ninst_string[i]
             else:
                 if compname.find('mpas') == 0:
                     newsuffix =                    compname + r'\d*'
                 else:
-                    newsuffix = casename + r'\.' + compname + r'\d*'
+                    newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
             newsuffix += r'\.' + suffix
             if not suffix.endswith('$'):
                 newsuffix += r'\.'
@@ -666,8 +672,10 @@ def test_st_archive(self, testdir="st_archive_test"):
         logger.info("Removing existing test directory {}".format(testdir))
         shutil.rmtree(testdir)
     dout_s_root=os.path.join(testdir,"archive")
+    archive = Archive()
+    schema = files.get_schema("ARCHIVE_SPEC_FILE")
     for config_archive_file in config_archive_files:
-        archive = Archive(infile=config_archive_file, files=files)
+        archive.read(config_archive_file, schema)
         comp_archive_specs = archive.get_children("comp_archive_spec")
         for comp_archive_spec in comp_archive_specs:
             components.append(archive.get(comp_archive_spec, 'compname'))
@@ -680,12 +688,14 @@ def test_st_archive(self, testdir="st_archive_test"):
                     fname = os.path.join(testdir,archive.text(file_node))
                     with open(fname, 'w') as fd:
                         fd.write(archive.get(file_node,"disposition")+"\n")
-    logger.debug("testing components: {} ".format(list(set(components))))
+
+    logger.info("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
                      dout_s_root=dout_s_root,
                      casename="casename", rundir=testdir, testonly=True)
 
     _check_disposition(testdir)
+
     onlyfiles = [f for f in os.listdir(testdir) if os.path.isfile(os.path.join(testdir, f))]
     # Now test the restore capability
     for _file in onlyfiles:
@@ -705,8 +715,9 @@ def _check_disposition(testdir):
         for _file in files:
             with open(os.path.join(root, _file), "r") as fd:
                 disposition = fd.readline()
+            logger.info("Checking testfile {} with disposition {}".format(_file, disposition))
             if root == testdir:
-                expect(disposition != "move", "Failed to move file {} to archive".format(_file))
+                expect("move" not in disposition, "Failed to move file {} to archive".format(_file))
                 if "copy" in disposition:
                     copyfilelist.append(_file)
             elif "ignore" in disposition:
