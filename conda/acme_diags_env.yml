@@ -1,8 +1,9 @@
 name: acme_diags_env
 channels:
+  - e3sm
+  - anaconda
   - conda-forge
   - cdat
-  - anaconda
   - defaults
 dependencies:
   - asn1crypto=0.24.0
