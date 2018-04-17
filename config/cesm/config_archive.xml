@@ -13,7 +13,7 @@
     </rpointer>
     <test_file_names>
       <tfile disposition="copy">rpointer.atm</tfile>
-      <tfile disposition="copy">rpointer_9999.atm</tfile>
+      <tfile disposition="copy">rpointer.atm_9999</tfile>
       <tfile disposition="copy">casename.cam.r.1976-01-01-00000.nc</tfile>
       <tfile disposition="copy">casename.cam.rh4.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.cam.h0.1976-01-01-00000.nc</tfile>
@@ -37,7 +37,7 @@
     </rpointer>
     <test_file_names>
       <tfile disposition="copy">rpointer.lnd</tfile>
-      <tfile disposition="copy">rpointer_9999.lnd</tfile>
+      <tfile disposition="copy">rpointer.lnd_9999</tfile>
       <tfile disposition="copy">casename.clm2.r.1976-01-01-00000.nc</tfile>
       <tfile disposition="copy">casename.clm2.rh4.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.clm2.h0.1976-01-01-00000.nc</tfile>
@@ -124,7 +124,7 @@
     <test_file_names>
       <!-- Should copy rpointer file(s) -->
       <tfile disposition="copy">rpointer.glc</tfile>
-      <tfile disposition="copy">rpointer_9999.glc</tfile>
+      <tfile disposition="copy">rpointer.glc_9999</tfile>
       <!-- Should only copy last restart file -->
       <tfile disposition="ignore">casename.cism.r.1975-01-01-00000.nc</tfile>
       <tfile disposition="copy">casename.cism.r.1976-01-01-00000.nc</tfile>

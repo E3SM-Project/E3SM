@@ -676,18 +676,21 @@ def test_st_archive(self, testdir="st_archive_test"):
     schema = files.get_schema("ARCHIVE_SPEC_FILE")
     for config_archive_file in config_archive_files:
         archive.read(config_archive_file, schema)
-        comp_archive_specs = archive.get_children("comp_archive_spec")
-        for comp_archive_spec in comp_archive_specs:
-            components.append(archive.get(comp_archive_spec, 'compname'))
-            test_file_names = archive.get_optional_child("test_file_names", root=comp_archive_spec)
-            if test_file_names is not None:
-                if not os.path.exists(testdir):
-                    os.makedirs(os.path.join(testdir,"archive"))
+    comp_archive_specs = archive.get_children("comp_archive_spec")
+    for comp_archive_spec in comp_archive_specs:
+        components.append(archive.get(comp_archive_spec, 'compname'))
+        test_file_names = archive.get_optional_child("test_file_names", root=comp_archive_spec)
+        if test_file_names is not None:
+            if not os.path.exists(testdir):
+                os.makedirs(os.path.join(testdir,"archive"))
 
-                for file_node in archive.get_children("tfile", root=test_file_names):
-                    fname = os.path.join(testdir,archive.text(file_node))
-                    with open(fname, 'w') as fd:
-                        fd.write(archive.get(file_node,"disposition")+"\n")
+            for file_node in archive.get_children("tfile", root=test_file_names):
+                fname = os.path.join(testdir,archive.text(file_node))
+                disposition = archive.get(file_node, "disposition")
+                logger.info("Create file {} with disposition {}".
+                            format(fname, disposition))
+                with open(fname, 'w') as fd:
+                    fd.write(disposition+"\n")
 
     logger.info("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
@@ -698,14 +701,14 @@ def test_st_archive(self, testdir="st_archive_test"):
 
     onlyfiles = [f for f in os.listdir(testdir) if os.path.isfile(os.path.join(testdir, f))]
     # Now test the restore capability
-    for _file in onlyfiles:
-        os.remove(os.path.join(testdir,_file))
+    testdir2 = os.path.join(testdir,"run2")
+    os.makedirs(testdir2)
 
-    restore_from_archive(self, rundir=testdir, dout_s_root=dout_s_root)
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
 
     restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
-        expect(os.path.isfile(os.path.join(testdir,_file)), "Expected file {} to be restored from rest dir".format(_file))
+        expect(os.path.isfile(os.path.join(testdir2,_file)), "Expected file {} to be restored from rest dir".format(_file))
 
     return True
 
@@ -725,3 +728,12 @@ def _check_disposition(testdir):
             elif "copy" in disposition:
                 expect(_file in copyfilelist, "File {} with disposition copy was moved to directory {}"
                        .format(_file, root))
+    for _file in copyfilelist:
+        expect(find(_file, os.path.join(testdir,"archive")),
+               "File {} was not copied to archive.".format(_file))
+
+def find(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return True
+    return False
