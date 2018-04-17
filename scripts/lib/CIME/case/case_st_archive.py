@@ -720,7 +720,13 @@ def _check_disposition(testdir):
                 disposition = fd.readline()
             logger.info("Checking testfile {} with disposition {}".format(_file, disposition))
             if root == testdir:
-                expect("move" not in disposition, "Failed to move file {} to archive".format(_file))
+                if "move" in disposition:
+                    if find(_file,os.path.join(testdir, "archive")):
+                        expect(False,
+                               "Copied file {} to archive with disposition move".format(_file))
+                    else:
+                        expect(False,
+                               "Failed to move file {} to archive".format(_file))
                 if "copy" in disposition:
                     copyfilelist.append(_file)
             elif "ignore" in disposition:
