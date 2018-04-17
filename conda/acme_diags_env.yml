@@ -6,6 +6,7 @@ channels:
   - cdat
   - defaults
 dependencies:
+  - acme_diags=1.3.1
   - asn1crypto=0.24.0
   - backports=1.0
   - backports.functools_lru_cache=1.5
