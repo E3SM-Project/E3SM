@@ -18,7 +18,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.seasons = []
         self.regions = ['global']
         self.regrid_tool = 'esmf'
-        self.regrid_method = 'conserve'
+        self.regrid_method = 'conservative'
         self.plevs = []
 
         # Plotting related
