@@ -8,6 +8,12 @@
     <protocal>gftp</protocal>
     <address>ftp://gridanon.cgd.ucar.edu:2811/cesm/inputdata/</address>
   </server>
+
+  <server>
+    <protocal>svn</protocal>
+    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
+  </server>
+
   <server>
     <comment> ftp requires the python package ftplib </comment>
     <protocal>ftp</protocal>
@@ -17,11 +23,6 @@
   <server>
     <protocal>wget</protocal>
     <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
-  </server>
-
-  <server>
-    <protocal>svn</protocal>
-    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 
 </inputdata>
