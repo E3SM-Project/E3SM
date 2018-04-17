@@ -676,16 +676,7 @@ class TestScheduler(object):
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
             total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
-            threads = eval(run_cmd_no_fail("./xmlquery NTHRDS --value", from_dir=test_dir))
-            max_threads = 0
-            for item in threads:
-                _, comp_threads = item.split(":")
-                comp_threads = int(comp_threads)
-                if comp_threads > max_threads:
-                    max_threads = comp_threads
-
-            max_cores = total_pes * max_threads
-            return max_cores
+            return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
             if self._cime_model == "cesm":
