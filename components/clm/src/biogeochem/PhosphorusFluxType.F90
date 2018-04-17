@@ -656,7 +656,7 @@ contains
     allocate(this%smin_p_to_plant_col         (begc:endc                   )) ; this%smin_p_to_plant_col         (:)   = nan
     allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
-    allocate(this%supplement_to_plantp        (begp:endp                   )) ; this%supplement_to_plantp        (:)   = nan
+    allocate(this%supplement_to_plantp        (begp:endp                   )) ; this%supplement_to_plantp        (:)   = 0.d0
 
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
