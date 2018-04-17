@@ -131,7 +131,7 @@ dependencies:
   - output_viewer=1.2.3
   - vcs=8.0
   - vcsaddons=8.0
-  - vtk-cdat=8.0.1.8.0
+  - vtk-cdat=8.0.1.8.0=py27_mesalib_1
   - cdat_info=8.0
   - cdms2=3.0
   - cdtime=3.0
