@@ -134,22 +134,22 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/17.0.2.174</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.1.163</command>
+      <command name="load">intel/18.0.2.199</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="gnu">
       <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
@@ -158,7 +158,7 @@
 
     <modules compiler="gnu7">
       <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/7.2.0</command>
       <command name="rm">cray-libsci</command>
@@ -279,14 +279,13 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
@@ -314,7 +313,7 @@
 
     <modules>
       <command name="rm">git</command>
-      <command name="load">git/2.15.1</command>
+      <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
       <command name="rm">zlib</command>
@@ -387,7 +386,6 @@
       <command name="rm">craype</command>
       <command name="rm">craype-mic-knl</command>
       <command name="rm">craype-haswell</command>
-
       <command name="rm">PrgEnv-intel</command>
       <command name="rm">PrgEnv-cray</command>
       <command name="rm">PrgEnv-gnu</command>
@@ -425,13 +423,13 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
@@ -440,7 +438,7 @@
 
     <modules compiler="gnu7">
       <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/7.2.0</command>
       <command name="rm">cray-libsci</command>
@@ -470,7 +468,7 @@
     </modules>
     <modules>
       <command name="rm">git</command>
-      <command name="load">git/2.15.1</command>
+      <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
       <command name="rm">zlib</command>
