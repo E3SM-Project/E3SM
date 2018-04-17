@@ -1,0 +1,29 @@
+<template>
+	<namelist>
+		<option name="config_AM_surfaceAreaWeightedAverages_enable">.true.</option>
+		<option name="config_AM_surfaceAreaWeightedAverages_compute_on_startup">.true.</option>
+		<option name="config_AM_surfaceAreaWeightedAverages_write_on_startup">.true.</option>
+		<option name="config_AM_surfaceAreaWeightedAverages_compute_interval">'output_interval'</option>
+		<option name="config_AM_surfaceAreaWeightedAverages_output_stream">'surfaceAreaWeightedAveragesOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="surfaceAreaWeightedAveragesOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">surfaceAreaWeightedAveragesOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/surfaceAreaWeightedAverages.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">surfaceAreaWeightedAveragesAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="minValueWithinOceanRegion" type="var_array"/>
+				<member name="maxValueWithinOceanRegion" type="var_array"/>
+				<member name="avgValueWithinOceanRegion" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

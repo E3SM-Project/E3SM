@@ -25,7 +25,7 @@ former file contents moved to ESMF_BaseMod
 so user code can be compiled without requiring
 the preprocessor.
 
-#endif 
+#endif
 
 #if 0
 i left the following macro here in case it is needed for our internal use.
@@ -33,4 +33,4 @@ i left the following macro here in case it is needed for our internal use.
 
 #define ESMF_SRCLINE __FILE__, __LINE__
 
-#endif 
+#endif

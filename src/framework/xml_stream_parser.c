@@ -34,6 +34,13 @@ void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
 
 
 /*
+ *  Interface routines for writing log messages; defined in mpas_log.F
+ *  messageType_c may be any of "MPAS_LOG_OUT", "MPAS_LOG_WARN", "MPAS_LOG_ERR", or "MPAS_LOG_CRIT"
+ */
+void mpas_log_write_c(const char *message_c, const char *messageType_c);
+
+
+/*
  *  Stack node type used for basic syntax checking of XML
  */
 struct stacknode {
@@ -60,9 +67,10 @@ static char *global_file;
  *********************************************************************************/
 void fmt_err(const char *mesg)
 {
-	fprintf(stderr,"********************************************************************************\n");
-	fprintf(stderr,"* Error: In file %s, %s\n", global_file, mesg);
-	fprintf(stderr,"********************************************************************************\n");
+	char msgbuf[MSGSIZE];
+
+	snprintf(msgbuf, MSGSIZE, "In file %s, %s", global_file, mesg);
+	mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 }
 
 
@@ -75,9 +83,10 @@ void fmt_err(const char *mesg)
  *********************************************************************************/
 void fmt_warn(const char *mesg)
 {
-	fprintf(stderr,"********************************************************************************\n");
-	fprintf(stderr,"* Warning: In file %s, %s\n", global_file, mesg);
-	fprintf(stderr,"********************************************************************************\n");
+	char msgbuf[MSGSIZE];
+
+	snprintf(msgbuf, MSGSIZE, "In file %s, %s", global_file, mesg);
+	mpas_log_write_c(msgbuf, "MPAS_LOG_WARN");
 }
 
 /*********************************************************************************
@@ -89,9 +98,10 @@ void fmt_warn(const char *mesg)
  *********************************************************************************/
 void fmt_info(const char *mesg)
 {
-	fprintf(stderr,"\n");
-	fprintf(stderr," Information: In file %s, %s\n", global_file, mesg);
-	fprintf(stderr,"\n");
+	char msgbuf[MSGSIZE];
+
+	snprintf(msgbuf, MSGSIZE, "In file %s, %s", global_file, mesg);
+	mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 }
 
 
@@ -280,6 +290,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 	int rank;
 	struct stat s;
 	int err;
+	char msgbuf[MSGSIZE];
 
 #ifdef _MPI
 	MPI_Comm comm;
@@ -293,9 +304,8 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 	if (rank == 0) {
 		iofd = open(fname, O_RDONLY);
 		if (iofd <= 0) {
-			fprintf(stderr, "********************************************************************************\n\n");
-			fprintf(stderr, "Error: Could not open run-time I/O config file %s\n\n", fname);
-			fprintf(stderr, "********************************************************************************\n");
+			snprintf(msgbuf, MSGSIZE, "Could not open run-time I/O config file %s", fname);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		}
 
@@ -412,6 +422,16 @@ int attribute_check(ezxml_t stream)
 		}
 		if ( strstr(s_filename_intv, "output_interval") != NULL && strstr(s_output, "initial_only") != NULL) {
 			snprintf(msgbuf, MSGSIZE, "stream \"%s\" cannot have a value of \"output_interval\" for the \"filename_interval\" attribute, when \"output_interval\" is set to \"initial_only\".", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
+		if ( strstr(s_filename_intv, "input_interval") != NULL && strstr(s_input, "final_only") != NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" cannot have a value of \"input_interval\" for the \"filename_interval\" attribute, when \"input_interval\" is set to \"final_only\".", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
+		if ( strstr(s_filename_intv, "output_interval") != NULL && strstr(s_output, "final_only") != NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" cannot have a value of \"output_interval\" for the \"filename_interval\" attribute, when \"output_interval\" is set to \"final_only\".", s_name);
 			fmt_err(msgbuf);
 			return 1;
 		}
@@ -713,7 +733,8 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 				node = pop_tag();
 				parse_xml_tag_name(&tag_buf[1], tmp_node.name);    /* NB: &tag_buf[1] to skip over '/' character */
 				if (strncmp(tmp_node.name, node->name, (size_t)MSGSIZE) != 0) {
-					fprintf(stderr, "Found unexpected closing tag \"%s\" at line %i.\n", tmp_node.name, start_line);
+					snprintf(msgbuf, MSGSIZE, "Found unexpected closing tag \"%s\" at line %i.", tmp_node.name, start_line);
+					fmt_err(msgbuf);
 					snprintf(msgbuf, MSGSIZE, "line %i, unclosed or badly nested XML tag \"%s\".", node->line, node->name);
 					fmt_err(msgbuf);
 
@@ -837,7 +858,8 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 			}
 			err = mkdir(filename_path, S_IRWXU | S_IRWXG | S_IRWXO);
 			if ( ! err ) {
-				fprintf(stderr, "        *** created directory %s for stream \"%s\"\n", filename_path, stream);
+				snprintf(msgbuf, MSGSIZE, "        *** created directory %s for stream \"%s\"", filename_path, stream);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			} else if ( errno == EEXIST ) {
 				/* directory exists, need to check permissions */
 				if (access(filename_path, W_OK) != 0) {
@@ -880,9 +902,8 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 	else {
 		err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
 		if (retval != 0) {
-			fprintf(stderr, "********************************************************************************\n");
-			fprintf(stderr, "* Please check the standard error log from task 0 for error messages.\n");
-			fprintf(stderr, "********************************************************************************\n");
+			snprintf(msgbuf, MSGSIZE, "Please check the standard error log from task 0 for error messages.");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 		}
 	}
 #endif
@@ -919,6 +940,7 @@ int extract_stream_interval(const char *interval, const char *interval_type, con
 	const char *streamID2;
 	ezxml_t stream2_xml;
 	ezxml_t streammatch_xml;
+	char msgbuf[MSGSIZE];
 
 
 	if ( strncmp(interval, "stream:", 7) == 0 ) {
@@ -944,13 +966,16 @@ int extract_stream_interval(const char *interval, const char *interval_type, con
 		interval_name[copy_to] = '\0';
 
 		if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, interval_type) == 0 ) {
-			fprintf(stderr, "ERROR: Attribute '%s' of stream '%s' references itself.\n", interval_type, streamID);
+			snprintf(msgbuf, MSGSIZE, "Attribute '%s' of stream '%s' references itself.", interval_type, streamID);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		}
 
 		if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ) {
-			fprintf(stderr, "ERROR: Attribute '%s' of stream '%s' references an invalid attribute: '%s'.\n", interval_type, streamID, interval_name);
-			fprintf(stderr, "       Valid attributes are 'input_interval' and 'output_interval'.\n");
+			snprintf(msgbuf, MSGSIZE, "Attribute '%s' of stream '%s' references an invalid attribute: '%s'.", interval_type, streamID, interval_name);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
+			snprintf(msgbuf, MSGSIZE, "       Valid attributes are 'input_interval' and 'output_interval'.");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		}
 
@@ -977,17 +1002,20 @@ int extract_stream_interval(const char *interval, const char *interval_type, con
 			*interval2 = ezxml_attr(streammatch_xml, interval_name);
 		} 
 		else {
-			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' refers to an undefined stream named '%s'.\n", interval_type, streamID, match_stream_name);
+			snprintf(msgbuf, MSGSIZE, "The '%s' attribute of stream '%s' refers to an undefined stream named '%s'.", interval_type, streamID, match_stream_name);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		}
 
 
 		if ( *interval2 == NULL ) {
-			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' refers to an undefined attribute named '%s' of stream '%s'.\n", interval_type, streamID, interval_name, match_stream_name);
+			snprintf(msgbuf, MSGSIZE, "The '%s' attribute of stream '%s' refers to an undefined attribute named '%s' of stream '%s'.", interval_type, streamID, interval_name, match_stream_name);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		} 
 		else if ( strcmp(*interval2, "input_interval") == 0 || strcmp(*interval2, "output_interval") == 0 || strncmp(*interval2, "stream:", 7) == 0 ) {
-			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' contains an unexpandable value: '%s'.\n", interval_type, streamID, *interval2);
+			snprintf(msgbuf, MSGSIZE, "The '%s' attribute of stream '%s' contains an unexpandable value: '%s'.", interval_type, streamID, *interval2);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 			return 1;
 		}
 	}
@@ -1050,7 +1078,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 	packages_local[0] = '\0';
 
-	fprintf(stderr, "\nParsing run-time I/O configuration from %s ...\n", fname);
+	snprintf(msgbuf, MSGSIZE, "\nParsing run-time I/O configuration from %s ...", fname);
+	mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 	*status = 0;
 
 	global_file = fname;
@@ -1061,9 +1090,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 	streams = ezxml_parse_str(xml_buf, bufsize);
 	if (!streams) {
-		fprintf(stderr, "********************************************************************************\n\n");
-		fprintf(stderr, "Error: Problems encountered while parsing run-time I/O config file %s\n", fname);
-		fprintf(stderr, "********************************************************************************\n\n");
+		snprintf(msgbuf, MSGSIZE, "Problems encountered while parsing run-time I/O config file %s", fname);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 		*status = 1;
 		return;
 	}	
@@ -1119,23 +1147,21 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			/* Check for an input;output stream. Handle first as this is the most complicated case. */
 			if ( strstr(direction, "input") != NULL && strstr(direction, "output") != NULL ) {
 
-				/* If input interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
-				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+				/* If input interval is an interval (i.e. not initial_only/final_only or none) set filename_interval to the interval. */
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ){
 					filename_interval = interval_in2;
-
-				/* If output interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
-				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+				/* If output interval is an interval (i.e. not initial_only/final_only or none) set filename_interval to the interval. */
+				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ){
 					filename_interval = interval_out2;
 				}
 			/* Check for an input stream. */
 			} else if ( strstr(direction, "input") != NULL ) {
-				if ( strstr(interval_in2, "initial_only") == NULL && strstr(interval_in2, "none") == NULL ){
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ){
 					filename_interval = interval_in2;
 				}
-
 			/* Check for an output stream. */
 			} else if ( strstr(direction, "output") != NULL ) {
-				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ){
 					filename_interval = interval_out2;
 				}
 			}
@@ -1148,13 +1174,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			 * to force it's value to be none as well.
 			 */
 			if ( strstr(filename_interval, "input_interval") != NULL ) {
-				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ) {
 					filename_interval = interval_in2;
 				} else {
 					filename_interval = NULL;
 				}
 			} else if ( strstr(filename_interval, "output_interval") != NULL ) {
-				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ) {
 					filename_interval = interval_out2;
 				} else {
 					filename_interval = NULL;
@@ -1168,37 +1194,45 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			sprintf(filename_interval_string, "%s", filename_interval);
 		}
 
-		fprintf(stderr, "\n");
-		fprintf(stderr, " -----  found immutable stream \"%s\" in %s  -----\n", streamID, fname);
-		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
-		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
+		snprintf(msgbuf, MSGSIZE, "\n -----  found immutable stream \"%s\" in %s  -----", streamID, fname);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "filename template:", filename_template);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "filename interval:", filename_interval_string);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 
 		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
 		iclobber = 0;
 		if (clobber != NULL) {
 			if (strstr(clobber, "never_modify") != NULL) {
 				iclobber = 0;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "never_modify");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "never_modify");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "append") != NULL) {
 				iclobber = 1;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "append");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "append");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "truncate") != NULL) {             /* Synonym for "replace_files" */
 				iclobber = 2;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "truncate");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "truncate");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "replace_files") != NULL) {        /* Synonym for "truncate" */
 				iclobber = 2;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "replace_files");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "replace_files");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "overwrite") != NULL) {
 				iclobber = 3;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "overwrite");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else {
 				iclobber = 0;
-				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized clobber_mode specification; existing files will not be modified");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1207,42 +1241,51 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		if (iotype != NULL) {
 			if (strstr(iotype, "pnetcdf,cdf5") != NULL) {
 				i_iotype = 1;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Parallel-NetCDF (CDF-5, large variable support)");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Parallel-NetCDF (CDF-5, large variable support)");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "pnetcdf") != NULL) {
 				i_iotype = 0;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Parallel-NetCDF");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Parallel-NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "netcdf4") != NULL) {
 				i_iotype = 3;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "NetCDF-4/HDF5");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "NetCDF-4/HDF5");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "netcdf") != NULL) {
 				i_iotype = 2;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Serial NetCDF");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Serial NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else {
 				i_iotype = 0;
-				fprintf(stderr, "        *** unrecognized io_type specification; defaulting to Parallel-NetCDF\n");
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized io_type specification; defaulting to Parallel-NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "input, output");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "input, output");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else if (strstr(direction, "input") != NULL) {
 			itype = 1;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "input");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "input");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else if (strstr(direction, "output") != NULL)  {
 			itype = 2;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "output");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "output");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else  {
 			itype = 4;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "none");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "none");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 		if (reference_time != NULL) {
@@ -1251,15 +1294,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else {
 			snprintf(ref_time_local, 256, "initial_time");
 		}
-		fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "reference time:", ref_time_local);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
-			fprintf(stderr, "        %-20s%s\n", "record interval:", rec_intv_local);
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "record interval:", rec_intv_local);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else {
 			snprintf(rec_intv_local, 256, "none");
-			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "record interval:", "-");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 		if (precision != NULL && strstr(precision, "single") != NULL) {
@@ -1270,11 +1316,14 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 		else {
 			iprec = 0;
-			if (precision != NULL)
-				fprintf(stderr, "        *** unrecognized precision specification; reverting to native precision\n");
+			if (precision != NULL) {
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized precision specification; reverting to native precision");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+			}
 		}
 		if (iprec != 0) {
-			fprintf(stderr, "        %-20s%i %s\n", "real precision:", iprec, "bytes");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%i %s", "real precision:", iprec, "bytes");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 
@@ -1302,9 +1351,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 			if ( strcmp(interval_in, interval_in2) != 0 ) {
-				fprintf(stderr, "        %-20s%s (%s)\n", "input alarm:", interval_in, interval_in2);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s (%s)", "input alarm:", interval_in, interval_in2);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			} else {
-				fprintf(stderr, "        %-20s%s\n", "input alarm:", interval_in);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "input alarm:", interval_in);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1316,9 +1367,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 			if ( strcmp(interval_out, interval_out2) != 0 ) {
-				fprintf(stderr, "        %-20s%s (%s)\n", "output alarm:", interval_out, interval_out2);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s (%s)", "output alarm:", interval_out, interval_out2);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			} else {
-				fprintf(stderr, "        %-20s%s\n", "output alarm:", interval_out);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "output alarm:", interval_out);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1334,7 +1387,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				fmt_warn(msgbuf);
 			}
 			else {
-				fprintf(stderr, "        %-20s%s\n", "package:", package);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s\n", "package:", package);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 
 			while ((package = strsep(&packages, ";")) != NULL) {
@@ -1344,7 +1398,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 					fmt_warn(msgbuf);
 				}
 				else {
-					fprintf(stderr, "        %-20s%s\n", "package:", package);
+					snprintf(msgbuf, MSGSIZE, "        %-20s%s", "package:", package);
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 			}
 
@@ -1401,23 +1456,21 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			/* Check for an input;output stream. Handle first as this is the most complicated case. */
 			if ( strstr(direction, "input") != NULL && strstr(direction, "output") != NULL ) {
 
-				/* If input interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
-				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+				/* If input interval is an interval (i.e. not initial_only/final_only or none) set filename_interval to the interval. */
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ){
 					filename_interval = interval_in2;
-
-				/* If output interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
-				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+				/* If output interval is an interval (i.e. not initial_only/final_only or none) set filename_interval to the interval. */
+				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ){
 					filename_interval = interval_out2;
 				}
 			/* Check for an input stream. */
 			} else if ( strstr(direction, "input") != NULL ) {
-				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ){
 					filename_interval = interval_in2;
 				}
-
 			/* Check for an output stream. */
 			} else if ( strstr(direction, "output") != NULL ) {
-				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ){
 					filename_interval = interval_out2;
 				}
 			}
@@ -1430,13 +1483,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			 * to force it's value to be none as well.
 			 */
 			if ( strstr(filename_interval, "input_interval") != NULL ) {
-				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "final_only") == NULL && strstr(interval_in, "none") == NULL ) {
 					filename_interval = interval_in2;
 				} else {
 					filename_interval = NULL;
 				}
 			} else if ( strstr(filename_interval, "output_interval") != NULL ) {
-				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "final_only") == NULL && strstr(interval_out, "none") == NULL ) {
 					filename_interval = interval_out2;
 				} else {
 					filename_interval = NULL;
@@ -1450,37 +1503,45 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			sprintf(filename_interval_string, "%s", filename_interval);
 		}
 
-		fprintf(stderr, "\n");
-		fprintf(stderr, " -----  found stream \"%s\" in %s  -----\n", streamID, fname);
-		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
-		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
+		snprintf(msgbuf, MSGSIZE, "\n -----  found stream \"%s\" in %s  -----", streamID, fname);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "filename template:", filename_template);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "filename interval:", filename_interval_string);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 
 		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
 		iclobber = 0;
 		if (clobber != NULL) {
 			if (strstr(clobber, "never_modify") != NULL) {
 				iclobber = 0;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "never_modify");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "never_modify");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "append") != NULL) {
 				iclobber = 1;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "append");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "append");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "truncate") != NULL) {             /* Synonym for "replace_files" */
 				iclobber = 2;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "truncate");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "truncate");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "replace_files") != NULL) {        /* Synonym for "truncate" */
 				iclobber = 2;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "replace_files");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "replace_files");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(clobber, "overwrite") != NULL) {
 				iclobber = 3;
-				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "clobber mode:", "overwrite");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else {
 				iclobber = 0;
-				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized clobber_mode specification; existing files will not be modified");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1489,42 +1550,51 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		if (iotype != NULL) {
 			if (strstr(iotype, "pnetcdf,cdf5") != NULL) {
 				i_iotype = 1;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Parallel-NetCDF (CDF-5, large variable support)");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Parallel-NetCDF (CDF-5, large variable support)");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "pnetcdf") != NULL) {
 				i_iotype = 0;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Parallel-NetCDF");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Parallel-NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "netcdf4") != NULL) {
 				i_iotype = 3;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "NetCDF-4/HDF5");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "NetCDF-4/HDF5");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "netcdf") != NULL) {
 				i_iotype = 2;
-				fprintf(stderr, "        %-20s%s\n", "I/O type:", "Serial NetCDF");
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Serial NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else {
 				i_iotype = 0;
-				fprintf(stderr, "        *** unrecognized io_type specification; defaulting to Parallel-NetCDF\n");
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized io_type specification; defaulting to Parallel-NetCDF");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "input, output");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "input, output");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else if (strstr(direction, "input") != NULL) {
 			itype = 1;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "input");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "input");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else if (strstr(direction, "output") != NULL)  {
 			itype = 2;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "output");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "output");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else  {
 			itype = 4;
-			fprintf(stderr, "        %-20s%s\n", "direction:", "none");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "direction:", "none");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 		if (reference_time != NULL) {
@@ -1533,15 +1603,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else {
 			snprintf(ref_time_local, 256, "initial_time");
 		}
-		fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
+		snprintf(msgbuf, MSGSIZE, "        %-20s%s", "reference time:", ref_time_local);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
-			fprintf(stderr, "        %-20s%s\n", "record interval:", rec_intv_local);
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "record interval:", rec_intv_local);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 		else {
 			snprintf(rec_intv_local, 256, "none");
-			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%s", "record interval:", "-");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 		if (precision != NULL && strstr(precision, "single") != NULL) {
@@ -1552,11 +1625,14 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 		else {
 			iprec = 0;
-			if (precision != NULL)
-				fprintf(stderr, "        *** unrecognized precision specification; reverting to native precision\n");
+			if (precision != NULL) {
+				snprintf(msgbuf, MSGSIZE, "        *** unrecognized precision specification; reverting to native precision");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+			}
 		}
 		if (iprec != 0) {
-			fprintf(stderr, "        %-20s%i %s\n", "real precision:", iprec, "bytes");
+			snprintf(msgbuf, MSGSIZE, "        %-20s%i %s", "real precision:", iprec, "bytes");
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 		}
 
 
@@ -1584,9 +1660,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 			if ( strcmp(interval_in, interval_in2) != 0 ) {
-				fprintf(stderr, "        %-20s%s (%s)\n", "input alarm:", interval_in, interval_in2);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s (%s)", "input alarm:", interval_in, interval_in2);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			} else {
-				fprintf(stderr, "        %-20s%s\n", "input alarm:", interval_in);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "input alarm:", interval_in);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1598,9 +1676,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 			if ( strcmp(interval_out, interval_out2) != 0 ) {
-				fprintf(stderr, "        %-20s%s (%s)\n", "output alarm:", interval_out, interval_out2);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s (%s)", "output alarm:", interval_out, interval_out2);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			} else {
-				fprintf(stderr, "        %-20s%s\n", "output alarm:", interval_out);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "output alarm:", interval_out);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 		}
 
@@ -1616,7 +1696,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				fmt_warn(msgbuf);
 			}
 			else {
-				fprintf(stderr, "        %-20s%s\n", "package:", package);
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "package:", package);
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 
 			while ((package = strsep(&packages, ";")) != NULL) {
@@ -1626,7 +1707,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 					fmt_warn(msgbuf);
 				}
 				else {
-					fprintf(stderr, "        %-20s%s\n", "package:", package);
+					snprintf(msgbuf, MSGSIZE, "        %-20s%s", "package:", package);
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 			}
 
@@ -1768,8 +1850,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 	free(xml_buf);
 
-	fprintf(stderr, "\n");
-	fprintf(stderr, " ----- done parsing run-time I/O from %s -----\n\n", fname);
+	snprintf(msgbuf, MSGSIZE, "\n ----- done parsing run-time I/O from %s -----\n", fname);
+	mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 }
 
 
@@ -1793,6 +1875,7 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 	ezxml_t stream_xml;
 	const char *streamID, *filename_template, *reference_time, *c_filename_interval, *xml_iotype;
 	int found;
+	char msgbuf[MSGSIZE];
 
 	*status = 0;
 
@@ -1809,9 +1892,8 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 
 	streams = ezxml_parse_str(xml_buf, bufsize);
 	if (!streams) {
-		fprintf(stderr, "********************************************************************************\n\n");
-		fprintf(stderr, "Error: Problems encountered while parsing run-time I/O config file %s\n", fname);
-		fprintf(stderr, "********************************************************************************\n\n");
+		snprintf(msgbuf, MSGSIZE, "Problems encountered while parsing run-time I/O config file %s", fname);
+		mpas_log_write_c(msgbuf, "MPAS_LOG_ERR");
 		*status = 1;
 		return;
 	}	
@@ -1831,7 +1913,9 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 
 		if (strcmp(streamID, streamname) == 0) {
 			found = 1;
-			fprintf(stderr, "Found mesh stream with filename template %s\n", filename_template);
+			snprintf(msgbuf, MSGSIZE, "Found mesh stream with filename template %s", filename_template);
+			mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+
 			sprintf(filename, "%s", filename_template);
 			if ( reference_time == NULL ) {
 				sprintf(ref_time, "initial_time");
@@ -1855,28 +1939,35 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 			}
 
 			if ( xml_iotype == NULL ) {
-				fprintf(stderr, "Using default io_type for mesh stream\n");
+				snprintf(msgbuf, MSGSIZE, "Using default io_type for mesh stream");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+
 				sprintf(io_type, "pnetcdf");
 			} else {
 				if (strstr(xml_iotype, "pnetcdf,cdf5") != NULL) {
 					sprintf(io_type, "%s", xml_iotype);
-					fprintf(stderr, "Using io_type Parallel-NetCDF (CDF-5, large variable support) for mesh stream\n");
+					snprintf(msgbuf, MSGSIZE, "Using io_type Parallel-NetCDF (CDF-5, large variable support) for mesh stream");
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 				else if (strstr(xml_iotype, "pnetcdf") != NULL) {
 					sprintf(io_type, "%s", xml_iotype);
-					fprintf(stderr, "Using io_type Parallel-NetCDF for mesh stream\n");
+					snprintf(msgbuf, MSGSIZE, "Using io_type Parallel-NetCDF for mesh stream");
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 				else if (strstr(xml_iotype, "netcdf4") != NULL) {
 					sprintf(io_type, "%s", xml_iotype);
-					fprintf(stderr, "Using io_type NetCDF-4/HDF5 for mesh stream\n");
+					snprintf(msgbuf, MSGSIZE, "Using io_type NetCDF-4/HDF5 for mesh stream");
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 				else if (strstr(xml_iotype, "netcdf") != NULL) {
 					sprintf(io_type, "%s", xml_iotype);
-					fprintf(stderr, "Using io_type Serial NetCDF for mesh stream\n");
+					snprintf(msgbuf, MSGSIZE, "Using io_type Serial NetCDF for mesh stream");
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 				else {
 					sprintf(io_type, "pnetcdf");
-					fprintf(stderr, "*** unrecognized io_type specification for mesh stream; defaulting to Parallel-NetCDF\n");
+					snprintf(msgbuf, MSGSIZE, "*** unrecognized io_type specification for mesh stream; defaulting to Parallel-NetCDF");
+					mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 				}
 			}
 			break;

@@ -10,7 +10,7 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log, only : mpas_log_write
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -45,6 +45,7 @@ module atm_core
       type (mpas_pool_type), pointer :: diag
       type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
       character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: initial_time1, initial_time2
       type (MPAS_Time_Type) :: startTime
 
       integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
@@ -57,7 +58,7 @@ module atm_core
       !
       call mpas_atm_threading_init(domain % blocklist, ierr)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Threading setup failed for core '//trim(domain % core % coreName))
+         call mpas_log_write('Threading setup failed for core '//trim(domain % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
 
@@ -94,11 +95,9 @@ module atm_core
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
       end if
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         call mpas_dmpar_global_abort('********************************************************************************', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Error reading initial conditions', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('********************************************************************************')
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Error reading initial conditions',                                                 messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
       end if
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -128,11 +127,9 @@ module atm_core
       !
       call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', whence=MPAS_STREAM_NEAREST, ierr=ierr)
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         call mpas_dmpar_global_abort('********************************************************************************', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Error reading IAU files', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('********************************************************************************')
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Error reading IAU files',                                                          messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
       end if
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='iau', ierr=ierr)
 
@@ -156,6 +153,13 @@ module atm_core
 
          call mpas_pool_get_array(state, 'xtime', xtime, 1)
          xtime = startTimeStamp
+
+         ! Initialize initial_time in second time level. We need to do this because initial state
+         ! is read into time level 1, and if we write output from the set of state arrays that
+         ! represent the original time level 2, the initial_time field will be invalid.
+         call mpas_pool_get_array(state, 'initial_time', initial_time1, 1)
+         call mpas_pool_get_array(state, 'initial_time', initial_time2, 2)
+         initial_time2 = initial_time1
 
          block => block % next
       end do
@@ -222,14 +226,14 @@ module atm_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
+               call mpas_log_write('config_run_duration and config_stop_time are inconsistent: using config_run_duration.', messageType=MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          call mpas_log_write('Neither config_run_duration nor config_stop_time were specified.', messageType=MPAS_LOG_ERR)
           ierr = 1
       end if
 
@@ -346,7 +350,9 @@ module atm_core
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
       allocate(ke_vertex(nVertLevels,nVertices+1))  ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
+      ke_vertex(:,nVertices+1) = 0.0_RKIND
       allocate(ke_edge(nVertLevels,nEdges+1))       ! ke_edge is a module variable defined in mpas_atm_time_integration.F
+      ke_edge(:,nEdges+1) = 0.0_RKIND
 
       call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
 
@@ -411,10 +417,10 @@ module atm_core
       ! Before calling physics_init, ensure that mminlu contains the name of the land use dataset
       call mpas_pool_get_array(sfc_input, 'mminlu', mminlu)
       if (len_trim(mminlu) == 0) then
-            write(0,*) '****************************************************************'
-            write(0,*) 'No information on land use dataset is available.'
-            write(0,*) 'Assume that we are using ''USGS''.'
-            write(0,*) '****************************************************************'
+            call mpas_log_write('****************************************************************')
+            call mpas_log_write('No information on land use dataset is available.')
+            call mpas_log_write('Assume that we are using ''USGS''.')
+            call mpas_log_write('****************************************************************')
             write(mminlu,'(a)') 'USGS'
       end if
 
@@ -442,10 +448,10 @@ module atm_core
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
 
-      write(0,*) 'min/max of meshScalingDel2 = ', minval(meshScalingDel2(1:nEdgesSolve)), &
-                                                  maxval(meshScalingDel2(1:nEdgesSolve))
-      write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdgesSolve)), &
-                                                  maxval(meshScalingDel4(1:nEdgesSolve))
+      call mpas_log_write('min/max of meshScalingDel2 = $r $r', &
+                          realArgs=(/minval(meshScalingDel2(1:nEdgesSolve)), maxval(meshScalingDel2(1:nEdgesSolve))/))
+      call mpas_log_write('min/max of meshScalingDel4 = $r $r', &
+                          realArgs=(/minval(meshScalingDel4(1:nEdgesSolve)), maxval(meshScalingDel4(1:nEdgesSolve))/))
 
    end subroutine atm_mpas_init_block
    
@@ -529,15 +535,13 @@ module atm_core
       if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-         call mpas_dmpar_global_abort('********************************************************************************', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Error writing one or more output streams', &
-                                      deferredAbort=.true.)
-         call mpas_dmpar_global_abort('********************************************************************************')
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Error writing one or more output streams',                                         messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
       end if
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-         write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
-         write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
+         call mpas_log_write('Timing for diagnostic computation: $r s', realArgs=(/real(diag_stop_time - diag_start_time, kind=RKIND)/))
+         call mpas_log_write('Timing for stream output: $r s', realArgs=(/real(output_stop_time - output_start_time, kind=RKIND)/))
       end if
 
       call mpas_atm_diag_reset()
@@ -558,8 +562,8 @@ module atm_core
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
 
-         write(0,*) ' '
-         write(0,*) 'Begin timestep ', trim(timeStamp)
+         call mpas_log_write('')
+         call mpas_log_write('Begin timestep '//trim(timeStamp))
 
          !
          ! Read external field updates
@@ -574,17 +578,15 @@ module atm_core
                                             actualWhen=read_time, ierr=ierr)
                   call mpas_dmpar_get_time(input_stop_time)
                   if (ierr /= MPAS_STREAM_MGR_NOERR) then
-                     call mpas_dmpar_global_abort('********************************************************************************', &
-                                                  deferredAbort=.true.)
-                     call mpas_dmpar_global_abort('Error reading input stream '//trim(input_stream), &
-                                                  deferredAbort=.true.)
-                     call mpas_dmpar_global_abort('********************************************************************************')
+                     call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+                     call mpas_log_write('Error reading input stream '//trim(input_stream),                                  messageType=MPAS_LOG_ERR)
+                     call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
                   end if
 
-                  write(0,*) '----------------------------------------------------------------------'
-                  write(0,*) '  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time)
-                  write(0,'(a,f9.4,a)') '   Timing for stream input: ', (input_stop_time - input_start_time), ' s'
-                  write(0,*) '----------------------------------------------------------------------'
+                  call mpas_log_write('----------------------------------------------------------------------')
+                  call mpas_log_write('  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time))
+                  call mpas_log_write('   Timing for stream input: $r s', realArgs=(/real(input_stop_time - input_start_time, kind=RKIND)/))
+                  call mpas_log_write('----------------------------------------------------------------------')
 
                   call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID=input_stream, direction=MPAS_STREAM_INPUT, ierr=ierr)
                end if
@@ -596,7 +598,7 @@ module atm_core
          call atm_do_timestep(domain, dt, itimestep)
          call mpas_dmpar_get_time(integ_stop_time)
          call mpas_timer_stop("time integration")   
-         write(0,'(a,f9.4,a)') ' Timing for integration step: ', (integ_stop_time - integ_start_time), ' s'
+         call mpas_log_write(' Timing for integration step: $r s', realArgs=(/real(integ_stop_time - integ_start_time, kind=RKIND)/))
 
          ! Move time level 2 fields back into time level 1 for next time step
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
@@ -653,15 +655,13 @@ module atm_core
          if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-            call mpas_dmpar_global_abort('********************************************************************************', &
-                                         deferredAbort=.true.)
-            call mpas_dmpar_global_abort('Error writing one or more output streams', &
-                                         deferredAbort=.true.)
-            call mpas_dmpar_global_abort('********************************************************************************')
+            call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Error writing one or more output streams',                                         messageType=MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
          end if
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
-            write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
+            call mpas_log_write('Timing for diagnostic computation: $r s', realArgs=(/real(diag_stop_time - diag_start_time, kind=RKIND)/))
+            call mpas_log_write('Timing for stream output: $r s', realArgs=(/real(output_stop_time - output_start_time, kind=RKIND)/))
          end if
 
          ! reset any diagnostics here
@@ -880,7 +880,6 @@ module atm_core
       use mpas_timekeeping
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
       use mpas_atm_threading, only : mpas_atm_threading_finalize
-      use mpas_io_units, only : stderrUnit
    
 #ifdef DO_PHYSICS
       use mpas_atmphys_finalize
@@ -913,10 +912,10 @@ module atm_core
       !
       call mpas_atm_threading_finalize(domain % blocklist)
 
-      write(stderrUnit,'(a)') ''
-      write(stderrUnit,'(a)') '********************************************************'
-      write(stderrUnit,'(a)') '   Finished running the atmosphere core'
-      write(stderrUnit,'(a)') '********************************************************'
+      call mpas_log_write('')
+      call mpas_log_write('********************************************************')
+      call mpas_log_write('   Finished running the atmosphere core')
+      call mpas_log_write('********************************************************')
    
    end function atm_core_finalize
 
@@ -1039,7 +1038,7 @@ module atm_core
                   end if
                end do
                if (j > vertexDegree) then
-                  write(stderrUnit,*) 'Unexpected error while identifying kiteForCell'
+                  call mpas_log_write('Unexpected error while identifying kiteForCell', messageType=MPAS_LOG_ERR)
                end if
             else
                kiteForCell(i,iCell) = 1

@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_driver
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_driver_cloudiness
@@ -148,8 +147,8 @@
  integer,dimension(:),pointer:: cellSolveThreadStart, cellSolveThreadEnd
 
 !=================================================================================================================
-!write(0,*)
-!write(0,*) '--- enter subroutine mpas_atmphys_driver:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine mpas_atmphys_driver:')
 
  call mpas_timer_start('physics driver')
 
@@ -189,14 +188,14 @@
     call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
 
     !allocate arrays shared by all physics parameterizations:
-    call allocate_forall_physics
+    call allocate_forall_physics(block%configs)
 
     !physics prep step:
     time_lev = 1
 
 !$OMP PARALLEL DO
     do thread=1,nThreads
-       call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics, &
+       call MPAS_to_physics(block%configs,mesh,state,time_lev,diag,diag_physics, &
                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
     end do
 !$OMP END PARALLEL DO
@@ -215,7 +214,7 @@
     !call to short wave radiation scheme:
     if(l_radtsw) then
        time_lev = 1
-       call allocate_radiation_sw(xtime_s)
+       call allocate_radiation_sw(block%configs,xtime_s)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_radiation_sw(itimestep,block%configs,mesh,state,time_lev,diag_physics, &
@@ -228,7 +227,7 @@
     !call to long wave radiation scheme:
     if(l_radtlw) then
        time_lev = 1
-       call allocate_radiation_lw(xtime_s)
+       call allocate_radiation_lw(block%configs,xtime_s)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
@@ -251,19 +250,19 @@
     !deallocate all radiation arrays:
     if(config_radt_sw_scheme.ne.'off' .or. config_radt_lw_scheme.ne.'off') &
        call deallocate_cloudiness
-    if(config_radt_sw_scheme.ne.'off') call deallocate_radiation_sw
-    if(config_radt_lw_scheme.ne.'off') call deallocate_radiation_lw
+    if(config_radt_sw_scheme.ne.'off') call deallocate_radiation_sw(block%configs)
+    if(config_radt_lw_scheme.ne.'off') call deallocate_radiation_lw(block%configs)
 
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
-       call allocate_sfclayer(config_frac_seaice)
+       call allocate_sfclayer(block%configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input, &
                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_sfclayer(config_frac_seaice)
+       call deallocate_sfclayer(block%configs)
     endif
 
     !call to 1d ocean mixed-layer model
@@ -283,14 +282,15 @@
 
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
-       call allocate_pbl
+       call allocate_pbl(block%configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_pbl(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
                           cellSolveThreadStart(thread),cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_pbl
+       call deallocate_pbl(block%configs)
+
     endif
 
     !call to gravity wave drag over orography scheme:
@@ -308,19 +308,19 @@
     !call to convection scheme:
 !$OMP PARALLEL DO
     do thread=1,nThreads
-       call update_convection_step1(diag_physics,tend_physics, &
+       call update_convection_step1(block%configs,diag_physics,tend_physics, &
                             cellSolveThreadStart(thread),cellSolveThreadEnd(thread))
     end do
 !$OMP END PARALLEL DO
     if(l_conv) then
-       call allocate_convection
+       call allocate_convection(block%configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_convection
+       call deallocate_convection(block%configs)
     endif
     !update diagnostics:
     if(config_convection_scheme .ne. 'off') then
@@ -333,7 +333,7 @@
     end if
 
     !deallocate arrays shared by all physics parameterizations:
-    call deallocate_forall_physics
+    call deallocate_forall_physics(block%configs)
 
     block => block % next
  end do 
@@ -342,8 +342,8 @@
 
  call mpas_timer_stop('physics driver')
 
-!write(0,*) '--- enter subroutine mpas_atmphys_driver:'
-!write(0,*)
+!call mpas_log_write('--- enter subroutine mpas_atmphys_driver:')
+!call mpas_log_write('')
 
  end subroutine physics_driver
 

@@ -15,7 +15,6 @@
  module mpas_atmphys_lsm_noahinit
  use mpas_dmpar
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_constants
@@ -123,11 +122,11 @@
  call mpas_pool_get_array(sfc_input,'snowh' , snowh )
 
 !reads the NOAH LSM tables:
- write(0,*)
+ call mpas_log_write('')
  call physics_message('--- initialize NOAH LSM tables' )
  call soil_veg_gen_parm(dminfo,mminlu,mminsl)
  call physics_message('--- end initialize NOAH LSM tables' )
- write(0,*)
+ call mpas_log_write('')
 
  if(.not.restart) then
 
@@ -240,8 +239,8 @@
 !-----READ IN VEGETATION PROPERTIES FROM VEGPARM.TBL
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '       enter subroutine soil_veg_gen_parm:'
+!call mpas_log_write('')
+!call mpas_log_write('       enter subroutine soil_veg_gen_parm:')
 
 !read in the vegetation properties from vegparm.tbl:
 
@@ -343,26 +342,26 @@
  DM_BCAST_INTEGER(bare)
  DM_BCAST_INTEGER(natural)
 
-!write(0,*) ' LUTYPE  = ',trim(lutype)
-!write(0,*) ' LUCATS  = ',lucats
-!write(0,*) ' IINDEX  = ',iindex
-!write(0,*) ' LUMATCH = ',lumatch
+!call mpas_log_write(' LUTYPE  = '//trim(lutype))
+!call mpas_log_write(' LUCATS  = $i',intArgs=(/lucats/))
+!call mpas_log_write(' IINDEX  = $i',intArgs=(/iindex/))
+!call mpas_log_write(' LUMATCH = $i',intArgs=(/lumatch/))
 
-!write(0,*) ' TOPT_DATA   = ',topt_data
-!write(0,*) ' CMCMAX_DATA = ',cmcmax_data
-!write(0,*) ' CFACTR_DATA = ',cfactr_data
-!write(0,*) ' RSMAX_DATA  = ',rsmax_data
-!write(0,*) ' BARE        = ',bare
-!write(0,*) ' NATURAL     = ',natural
+!call mpas_log_write(' TOPT_DATA   = $r',realArgs=(/topt_data/))
+!call mpas_log_write(' CMCMAX_DATA = $r',realArgs=(/cmcmax_data/))
+!call mpas_log_write(' CFACTR_DATA = $r',realArgs=(/cfactr_data/))
+!call mpas_log_write(' RSMAX_DATA  = $r',realArgs=(/rsmax_data/))
+!call mpas_log_write(' BARE        = $i',intArgs=(/bare/))
+!call mpas_log_write(' NATURAL     = $i',intArgs=(/natural/))
 
-!write(0,*)
+!call mpas_log_write('')
 !do lc = 1, lucats
-!   write(0,101) lc,shdtbl(lc),float(nrotbl(lc)),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
+!   call mpas_log_write('$i $r $r $r $r $r $r $r $r $r $r $r $r $r $r $r', intArgs=(/lc/), &
+!                realArgs=(/shdtbl(lc),float(nrotbl(lc)),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
 !                maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),     &
-!                albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc)
+!                albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc)/))
 !enddo
-!101 format(i4,15(3x,f9.5))
- write(0,*) '    end read VEGPARM.TBL'
+ call mpas_log_write('    end read VEGPARM.TBL')
 
 !read in soil properties from soilparm.tbl:
 
@@ -434,17 +433,18 @@
  DM_BCAST_REALS(wltsmc)
  DM_BCAST_REALS(qtz)
 
-!write(0,*) ' LUMATCH=',lumatch
-!write(0,*) ' SLTYPE =',trim(sltype)
-!write(0,*) ' MMINSL =',mminsl
-!write(0,*) ' SLCATS =',slcats
-!write(0,*) ' IINDEX =',iindex
-!write(0,*)
+!call mpas_log_write(' LUMATCH=$i',intArgs=(/lumatch/))
+!call mpas_log_write(' SLTYPE ='//trim(sltype))
+!call mpas_log_write(' MMINSL ='//mminsl)
+!call mpas_log_write(' SLCATS =$i',intArgs=(/slcats/))
+!call mpas_log_write(' IINDEX =$i',intArgs=(/iindex/))
+!call mpas_log_write('')
 !do lc = 1, slcats
-!   write(0,101) lc,bb(lc),drysmc(lc),f11(lc),maxsmc(lc),refsmc(lc),satpsi(lc), &
-!                satdk(lc),satdw(lc),wltsmc(lc),qtz(lc)
+!   call mpas_log_write('$i $r $r $r $r $r $r $r $r $r $r', intArgs=(/lc/), &
+!                realArgs=(/bb(lc),drysmc(lc),f11(lc),maxsmc(lc),refsmc(lc),satpsi(lc), &
+!                satdk(lc),satdw(lc),wltsmc(lc),qtz(lc)/))
 !enddo
- write(0,*) '    end read SOILPARM.TBL'
+ call mpas_log_write('    end read SOILPARM.TBL')
 
 !read in general parameters from genparm.tbl:
 
@@ -509,15 +509,15 @@
  DM_BCAST_REAL(smhigh_data)
  DM_BCAST_REAL(lvcoef_data)
 
-!write(0,*)
+!call mpas_log_write('')
 !write(mess,*) 'input general parameters'
 !call physics_message(mess)
-!write(0,*) 'NUM_SLOPE=',num_slope
+!call mpas_log_write('NUM_SLOPE=$i',intArgs=(/num_slope/))
 !do lc = 1, slpcats
-!   write(0,101) lc,slope_data(lc)
+!   call mpas_log_write('$i $r', intArgs=(/lc/),realArgs=(/slope_data(lc)/))
 !enddo
-!write(0,*) '       end subroutine soil_veg_gen_parm:'
- write(0,*) '    end read GENPARM.TBL'
+!call mpas_log_write('       end subroutine soil_veg_gen_parm:')
+ call mpas_log_write('    end read GENPARM.TBL')
 
  end subroutine soil_veg_gen_parm
 

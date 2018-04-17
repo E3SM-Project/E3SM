@@ -9,10 +9,9 @@ module mpas_timekeeping
 
    use mpas_kind_types
    use mpas_derived_types
-   use mpas_io_units
    use mpas_dmpar
    use mpas_threading
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ESMF
    use ESMF_BaseMod
@@ -45,6 +44,7 @@ module mpas_timekeeping
 
    interface operator (*)
       module procedure mul_ti_n
+      module procedure mul_ti_n8
    end interface
 
    interface operator (/)
@@ -111,7 +111,7 @@ module mpas_timekeeping
 !        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
 !#endif
       else
-         write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
+         call mpas_log_write('mpas_timekeeping_init: Invalid calendar type', MPAS_LOG_ERR)
       end if
 
       yearWidth = 4
@@ -146,7 +146,7 @@ module mpas_timekeeping
       yearWidth = yearWidthIn
 
       if (yearWidthIn <= 0) then
-          write(stderrUnit,*) 'ERROR: mpas_set_year_width: yearWidth cannot be less than or equal to zero.' 
+          call mpas_log_write('mpas_set_year_width: yearWidth cannot be less than or equal to zero.', MPAS_LOG_ERR)
           ierr = 1
           return
       end if
@@ -179,7 +179,7 @@ module mpas_timekeeping
             if (present(stopTime)) then
                if (stopTime /= stop_time) then
                   if (present(ierr)) ierr = 1   ! stopTime and runDuration are inconsistent
-                  write(stderrUnit,*) 'ERROR: MPAS_createClock: stopTime and runDuration are inconsistent'
+                  call mpas_log_write('MPAS_createClock: stopTime and runDuration are inconsistent', MPAS_LOG_ERR)
                   return
                end if
             end if
@@ -187,7 +187,7 @@ module mpas_timekeeping
             stop_time = stopTime
          else
             if (present(ierr)) ierr = 1   ! neither stopTime nor runDuration are specified
-            write(stderrUnit,*) 'ERROR: MPAS_createClock: neither stopTime nor runDuration are specified'
+            call mpas_log_write('MPAS_createClock: neither stopTime nor runDuration are specified', MPAS_LOG_ERR)
             return
          end if
 
@@ -489,9 +489,9 @@ module mpas_timekeeping
 
       if ( len_trim(alarmID) > ShortStrKIND ) then
          if ( threadNum == 0 ) then
-            write(stderrUnit, *) 'ERROR: Length of alarmID ''' // trim(alarmID) // ''' is ', len_trim(alarmID), ' which is longer than the allowable length of ', ShortStrKIND
+            call mpas_log_write('Length of alarmID ''' // trim(alarmID) // ''' is $i which is longer than the allowable length of $i', &
+                   MPAS_LOG_CRIT, intArgs=(/len_trim(alarmID), ShortStrKIND/))
          end if
-         call mpas_dmpar_global_abort('ERROR: alarmID length is too long')
       end if
 
       ! Add a new entry to the linked list of alarms for this clock
@@ -504,14 +504,14 @@ module mpas_timekeeping
             alarmPtr => clock % alarmListHead
             do while (associated(alarmPtr % next))
                if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  call mpas_log_write('OOPS -- we have a duplicate alarmID' // trim(alarmID), MPAS_LOG_ERR)
                   if (present(ierr)) ierr = 1
                   return
                end if
                alarmPtr => alarmPtr % next
             end do
                if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  call mpas_log_write('OOPS -- we have a duplicate alarmID' // trim(alarmID), MPAS_LOG_ERR)
                   if (present(ierr)) ierr = 1
                   return
                end if
@@ -665,6 +665,53 @@ module mpas_timekeeping
 
 
    !-----------------------------------------------------------------------
+   !  routine mpas_minimum_alarm_interval
+   !
+   !> \brief This function returns the shortest alarm interval in an alarm list
+   !> \author Dom Heinzeller
+   !> \date   08/23/2017
+   !> \details This function returns the shortest alarm interval in an alarm list.
+   !>   If the alarm list is empty or contains contains only one-off events (e.g.
+   !>   initial_only, final_only), the resulting interval is set to zero. This
+   !>   routine modifies the alarmListPtr and potentially leaves it in an
+   !>   undefined status upon exit.
+   !-----------------------------------------------------------------------
+   subroutine mpas_minimum_alarm_interval(clock, alarmListPtr, interval)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      type (MPAS_stream_list_type), pointer :: alarmListPtr
+      type (MPAS_TimeInterval_type), intent(out) :: interval
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: zero_interval
+
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      call mpas_set_timeInterval(interval, dt = 0.0_RKIND)
+
+      do while(associated(alarmListPtr))
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+            if (trim(alarmPtr % alarmID) == trim(alarmListPtr % name)) then
+               if (alarmPtr % isRecurring) then
+                  if (interval .eq. zero_interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  else if (alarmPtr % ringTimeInterval .lt. interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  end if
+               end if
+               exit
+            end if
+            alarmPtr => alarmPtr % next
+         end do
+         alarmListPtr => alarmListPtr % next
+      end do
+
+   end subroutine mpas_minimum_alarm_interval
+
+
+   !-----------------------------------------------------------------------
    !  routine mpas_alarm_get_next_ring_time
    !
    !> \brief This function returns the next ring time of an alarm.
@@ -723,21 +770,21 @@ module mpas_timekeeping
          alarmPtr => clock % alarmListHead
          do while (associated(alarmPtr))
             if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-               write(stderrUnit,*) 'ALARM ', trim(alarmID)
+               call mpas_log_write('ALARM ' // trim(alarmID))
 
-               write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
-               
-               write(stderrUnit,*) 'isSet', alarmPtr % isSet
+               call mpas_log_write('isRecurring $l', logicArgs=(/alarmPtr % isRecurring/))
+
+               call mpas_log_write('isSet $l', logicArgs=(/alarmPtr % isSet/))
 
                call mpas_get_time(alarmPtr % ringTime, dateTimeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'ringTime', printString
+               call mpas_log_write('ringTime ' // printString)
 
                call mpas_get_time(alarmPtr % prevRingTime, dateTimeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'prevRingTime', printString
+               call mpas_log_write('prevRingTime ' // printString)
 
                call mpas_get_timeInterval(alarmPtr % ringTimeInterval, timeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'ringTimeInterval', printString
-               
+               call mpas_log_write('ringTimeInterval ' // printString)
+
                exit
             end if
             alarmPtr => alarmPtr % next
@@ -746,7 +793,6 @@ module mpas_timekeeping
       !$omp barrier
 
    end subroutine mpas_print_alarm
-
 
 
    logical function mpas_is_alarm_ringing(clock, alarmID, interval, ierr)
@@ -873,7 +919,7 @@ module mpas_timekeeping
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
       type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
-      integer :: nDivs
+      integer (kind=I8KIND) :: nDivs
       integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
@@ -921,6 +967,75 @@ module mpas_timekeeping
       !$omp barrier
 
    end subroutine mpas_reset_clock_alarm
+
+
+   ! Adjust the previous ring time of a recurring alarm to be away from a provided reference time
+   ! by an integer multiple of the alarm's interval.
+   ! This is useful if the alarm's default prevRingTime, which is the current time when the alarm
+   ! is created, is not desired.
+   subroutine mpas_adjust_alarm_to_reference_time(clock, alarmID, referenceTime, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: clock
+      character (len=*), intent(in) :: alarmID
+      type (MPAS_Time_type) :: referenceTime
+      type (MPAS_Time_type) :: now
+      integer, intent(out) :: ierr
+
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: searchInterval, searchRemainder
+      integer (kind=I8KIND) :: nDivs
+      integer :: threadNum
+      integer :: ierr_tmp
+
+      ierr = 0
+      ierr_tmp = 0
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+
+               if (alarmPtr % isRecurring) then
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+                  now = mpas_get_clock_time(clock, MPAS_NOW, ierr_tmp)
+                  ierr = ior(ierr, ierr_tmp)
+                  if(clock % direction == MPAS_FORWARD) then
+                     if (now > referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  else ! MPAS_REVERSE
+                     if (now < referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  end if  ! forward direction
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+               end if  ! isRecurring
+            exit ! exit after we found the alarm we were looking for
+            end if ! if this alarm we were looking for
+            alarmPtr => alarmPtr % next
+         end do
+      end if ! thread check
+
+      !$omp barrier
+   end subroutine mpas_adjust_alarm_to_reference_time
 
 
 
@@ -1049,7 +1164,7 @@ module mpas_timekeeping
          else if (size(subStrings) /= 1) then
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
+            call mpas_log_write('Invalid DateTime string ' // dateTimeString, MPAS_LOG_ERR)
             return
          else
             deallocate(subStrings)
@@ -1072,7 +1187,7 @@ module mpas_timekeeping
             else
                deallocate(subStrings)
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: Invalid DateTime string (invalid time substring)', dateTimeString
+               call mpas_log_write('Invalid DateTime string (invalid time substring) ' // dateTimeString, MPAS_LOG_ERR)
                return
             end if
 
@@ -1087,7 +1202,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
+            call mpas_log_write('Invalid DateTime string' // dateTimeString, MPAS_LOG_ERR)
             return
          end if
 
@@ -1101,7 +1216,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string (invalid date substring)', dateTimeString
+            call mpas_log_write('Invalid DateTime string (invalid date substring) ' // dateTimeString, MPAS_LOG_ERR)
             return
          end if
 
@@ -1116,13 +1231,13 @@ module mpas_timekeeping
             if (present(MM)) then
                if (MM /= month) then
                   if (present(ierr)) ierr = 1
-                  write(stderrUnit,*) 'ERROR: MPAS_setTime : DoY and MM are inconsistent - using DoY'
+                  call mpas_log_write('MPAS_setTime : DoY and MM are inconsistent - using DoY', MPAS_LOG_WARN)
                end if
             end if
             if (present(DD)) then
                if (DD /= day) then
                   if (present(ierr)) ierr = 1
-                  write(stderrUnit,*) 'ERROR: MPAS_setTime : DoY and DD are inconsistent - using DoY'
+                  call mpas_log_write('MPAS_setTime : DoY and DD are inconsistent - using DoY', MPAS_LOG_WARN)
                end if
             end if
          else
@@ -1130,7 +1245,7 @@ module mpas_timekeeping
                month = MM
             else
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: MPAS_setTime : Neither DoY nor MM are specified'
+               call mpas_log_write('MPAS_setTime : Neither DoY nor MM are specified', MPAS_LOG_ERR)
                return
             end if
 
@@ -1138,13 +1253,13 @@ module mpas_timekeeping
                day = DD
             else
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: MPAS_setTime : Neither DoY nor DD are specified'
+               call mpas_log_write('MPAS_setTime : Neither DoY nor DD are specified', MPAS_LOG_ERR)
                return
             end if
          end if
 
          if (.not. isValidDate(YYYY,month,day)) then
-            write(stderrUnit,*) 'ERROR: MPAS_setTime : Invalid date'
+            call mpas_log_write('MPAS_setTime : Invalid date', MPAS_LOG_ERR)
             return
          end if
 
@@ -1314,7 +1429,7 @@ module mpas_timekeeping
          else if (size(subStrings) /= 1) then
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             return
          else ! no second decimals are present - do nothing here
             deallocate(subStrings)
@@ -1345,7 +1460,7 @@ module mpas_timekeeping
                year = 0
                month = 0
                day = 0
-               !write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+               !call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             end if
 
             deallocate(subStrings)
@@ -1358,7 +1473,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             return
          end if
 
@@ -1382,7 +1497,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string (invalid time substring) ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string (invalid time substring) ' // trim(timeString), MPAS_LOG_ERR)
             return
          end if
 
@@ -1403,7 +1518,7 @@ module mpas_timekeeping
 
 !     if (interval <= zeroInterval) then
 !        if (present(ierr)) ierr = 1   
-!        write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
+!        call mpas_log_write('TimeInterval must be greater than zero: '// trim(timeString), MPAS_LOG_ERR) !'ERROR: TimeInterval cannot be negative'
 !     end if
       
    end subroutine mpas_set_timeInterval
@@ -1439,7 +1554,8 @@ module mpas_timekeeping
       else
           if ( interval % ti % YR /= 0 .or. interval % ti % MM /= 0 ) then
              if (present(ierr)) ierr = 1
-             write(stderrUnit,*) 'ERROR: mpas_get_timeInterval cannnot return time interval information for an interval containing months and years without a startTimeIn argument.'
+             call mpas_log_write('mpas_get_timeInterval cannnot return time interval information for an interval containing ' // &
+                 'months and years without a startTimeIn argument.', MPAS_LOG_ERR)
              return
           end if
           call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
@@ -1569,6 +1685,18 @@ module mpas_timekeeping
    end function mul_ti_n
 
 
+   type (MPAS_TimeInterval_type) function mul_ti_n8(ti, n8)
+
+      implicit none
+
+      type (MPAS_TimeInterval_type), intent(in) :: ti
+      integer (kind=I8KIND), intent(in) :: n8
+
+      mul_ti_n8 % ti = ti % ti * n8
+
+   end function mul_ti_n8
+
+
    type (MPAS_TimeInterval_type) function div_ti_n(ti, n)
 
       implicit none
@@ -1603,10 +1731,10 @@ module mpas_timekeeping
       type (MPAS_Time_type), intent(in) :: ref_time
       type (MPAS_TimeInterval_type), intent(in) :: num
       type (MPAS_TimeInterval_type), intent(in) :: den
-      integer, intent(out) :: n
+      integer (kind=I8KIND), intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      integer :: m
+      integer (kind=I8KIND) :: m
       type (MPAS_Time_type) :: target_time
       type (MPAS_Time_type) :: updated_time
 
@@ -1620,8 +1748,8 @@ module mpas_timekeeping
       ! Avoid division by zero
       !
       if (den == zero) then
-         write(stderrUnit,*) 'Error: Attempting to divide by zero.'
-         n = 0
+         call mpas_log_write('mpas_interval_division: Attempting to divide by zero.', MPAS_LOG_WARN)
+         n = 0_I8KIND
          rem = zero
          return
       end if
@@ -1634,7 +1762,7 @@ module mpas_timekeeping
       ! numerator == denominator
       !
       if (target_time == updated_time) then
-         n = 1
+         n = 1_I8KIND
          rem = zero
          return
       end if
@@ -1644,29 +1772,29 @@ module mpas_timekeeping
       ! denominator > numerator
       !
       if ( target_time < updated_time ) then
-         n = 0
+         n = 0_I8KIND
          rem = num
          return
       end if
 
       ! One interval of den already fits into num
-      n = 1
+      n = 1_I8KIND
 
       ! Search forward, doubling the interval each time
       do while (target_time > updated_time)
-         n = n * 2
+         n = n * 2_I8KIND
          temp = den * n
          updated_time = ref_time + temp
       end do
 
-      n = n / 2
+      n = n / 2_I8KIND
       m = n
       temp = den * n
       updated_time = ref_time + temp
 
 
       ! Search backward, halving the interval each time
-      do while ( m > 0 )
+      do while ( m > 0_I8KIND )
          temp = den * m
 
          if ( updated_time + temp <= target_time ) then
@@ -1674,7 +1802,7 @@ module mpas_timekeeping
             n = n + m
          end if
 
-         m = m / 2
+         m = m / 2_I8KIND
       end do
 
       rem = target_time - updated_time
@@ -2096,12 +2224,12 @@ module mpas_timekeeping
                         else if ( blockID < 10000000 ) then
                            write(timePart, '(i7)') blockID
                         else
-                           call mpas_dmpar_global_abort('ERROR: Block expansion does not yet support block IDs with more than 7 digits')
+                           call mpas_log_write('Block expansion does not yet support block IDs with more than 7 digits', MPAS_LOG_CRIT)
                         end if
                         outString = trim(outString) // trim(timePart)
                      case default
-                        write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
-                        call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')
+                        call mpas_log_write('ERROR: mpas_expand_string option $$'//inString(i:i)// &
+                               ' is not a valid expansion character.', MPAS_LOG_CRIT)
                   end select
 
                   curLen = len_trim(outString)
@@ -2117,19 +2245,4 @@ module mpas_timekeeping
     end subroutine mpas_expand_string!}}}
  
 
-
-
 end module mpas_timekeeping
-
-
-subroutine wrf_error_fatal(msg)
-
-   use mpas_abort, only : mpas_dmpar_global_abort
-
-   implicit none
-
-   character (len=*) :: msg
-
-   call mpas_dmpar_global_abort('ERROR: mpas_timekeeping: '//trim(msg))
-
-end subroutine wrf_error_fatal

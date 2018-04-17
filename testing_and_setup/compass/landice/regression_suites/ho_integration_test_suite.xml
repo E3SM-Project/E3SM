@@ -1,0 +1,32 @@
+<regression_suite name="ho_integration_test_suite">
+
+        <test name="HO dome restart test" core="landice" configuration="dome" resolution="2000m" test="ho_restart_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="HO dome decomposition test" core="landice" configuration="dome" resolution="2000m" test="ho_decomposition_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="HO dome vs. SIA dome test" core="landice" configuration="dome" resolution="2000m" test="ho_vs_sia_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="HO dome varres restart test" core="landice" configuration="dome" resolution="variable_resolution" test="ho_restart_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="HO dome varres decomposition test" core="landice" configuration="dome" resolution="variable_resolution" test="ho_decomposition_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="Circular shelf decomposition test" core="landice" configuration="circular-shelf" resolution="1250m" test="decomposition_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <test name="Confined shelf decomposition test" core="landice" configuration="confined-shelf" resolution="5000m" test="decomposition_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+</regression_suite>
+

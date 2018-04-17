@@ -189,9 +189,9 @@ contains
       ! Check that the cell IDs are actually exactly representable in
       ! floating point format.
       if (nTotalCellsGlobal >= 16777216) then
-         write(stderrUnit,*) "Error: Maximum number of cells is not exactly representable " // &
+         call mpas_log_write("Error: Maximum number of cells is not exactly representable " // &
                              "as float. Compile in double precision or change OW eddy " // &
-                             "tracking method to use integers"
+                             "tracking method to use integers")
          err = 1
       end if
 #endif
@@ -657,7 +657,7 @@ contains
       call mpas_timer_start("CC eddy stats")
       call ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, nLocalCCs, &
                                   nEdgesOnCell, cellsOnCell, OW_cc_id, OW_thresh)
-      call mpas_timer_stop("CC local")
+      call mpas_timer_stop("CC eddy stats")
 
    end subroutine ocn_compute_OW_component_IDs!}}}
 
@@ -881,8 +881,7 @@ contains
                ! Found a new eddy.
                curCC = curCC + 1
                if (curCC > nLocalCCs) then
-                  write (stderrUnit,*) "ERROR: curCC > nLocalCCs", curCC, nLocalCCs
-                  write (stderrUnit,*) "THIS IS A BUG!"
+                  call mpas_log_write("curCC > nLocalCCs.  THIS IS A BUG!", MPAS_LOG_CRIT) !, curCC, nLocalCCs
                end if
                ! Put this cell into the list of cells to be processed as
                ! seed for the flood fill of this eddy
@@ -1041,7 +1040,7 @@ contains
 
       offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
 
-      aggregated = -1.0e34
+      aggregated = -1.0e34_RKIND
       do i = 1, numCCs
          aggregated(9*(i-1) + 1 + offset) = origCCId(i)
          aggregated(9*(i-1) + 2 + offset) = sumVol(i)
@@ -1129,12 +1128,12 @@ contains
       call mpas_timer_stop("sort/reduce")
 
       ! only output if IO node
+      call mpas_timer_start("output")
       if (dminfo % my_proc_id == IO_NODE) then
          ! Output aggregated
-         call mpas_timer_start("output")
          call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords,xtime)
-         call mpas_timer_stop("output")
       end if
+      call mpas_timer_stop("output")
 
    end subroutine ocn_aggregate_eddy_stats!}}}
 
@@ -1233,12 +1232,17 @@ contains
       fileID = mpas_get_free_unit()
 
       ! Create output file.
-      open(fileID, file=trim(config_AM_okuboWeiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
+      open(fileID, file=trim(config_AM_okuboWeiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', &
+           POSITION='rewind')
 
       if (use_lat_lon_coords) then
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average ' &
+                              // 'latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average ' &
+                              // 'meridional velocity, m/s", "average vertical velocity, m/s"'
       else
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"'
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average ' &
+                              // 'y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, ' &
+                              // 'm/s", "average z-velocity, m/s"'
       end if
 
       ! Output number of eddies and statistics for each eddy
@@ -1247,8 +1251,10 @@ contains
          v = aggData(9*(i-1)+2)
          write (fileID, '(I10, A)', advance='no') int(aggData(9*(i-1)+9)), ', '
          write (fileID, '(ES12.5, A)', advance='no') v, ', '
-         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5, A)', advance='no') aggData(9*(i-1)+3)/v, ', ', aggData(9*(i-1)+4)/v, ', ', aggData(9*(i-1)+5)/v, ', '
-         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5)') aggData(9*(i-1)+6)/v, ', ', aggData(9*(i-1)+7)/v, ', ', aggData(9*(i-1)+8)/v
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5, A)', advance='no') aggData(9*(i-1)+3)/v, ', ', aggData(9*(i-1)+4)/v, &
+                                                                           ', ', aggData(9*(i-1)+5)/v, ', '
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5)') aggData(9*(i-1)+6)/v, ', ', aggData(9*(i-1)+7)/v, ', ', &
+                                                          aggData(9*(i-1)+8)/v
       end do
 
       close(fileID)
@@ -1380,9 +1386,9 @@ contains
          enddo
       enddo
 
-      velocityGradient = 0.0
+      velocityGradient = 0.0_RKIND
       do iCell = 1, nCellsCompute
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)

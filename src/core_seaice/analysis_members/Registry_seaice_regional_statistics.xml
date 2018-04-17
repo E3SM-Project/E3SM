@@ -1,0 +1,146 @@
+	<nml_record name="AM_regionalStatistics" mode="forward;analysis">
+		<nml_option name="config_AM_regionalStatistics_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member regionalStatistics is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_regionalStatistics_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_regionalStatistics_output_stream" type="character" default_value="regionalStatisticsOutput" units="unitless"
+			description="Name of the stream that the regionalStatistics analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_regionalStatistics_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_regionalStatistics_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_regionalStatistics_ice_extent_limit" type="real" default_value="0.15" units="unitless"
+			description="sea-ice fraction limit for ice extent."
+			possible_values="real value between 0 and 1"
+		/>
+	</nml_record>
+	<packages>
+		<package name="regionalStatisticsAMPKG" description="This package includes variables required for the regionalStatistics analysis member."/>
+	</packages>
+	<var_struct name="regionalStatisticsAM" time_levs="1" packages="regionalStatisticsAMPKG">
+		<var name="uVelocityCell" type="real" dimensions="nCells" units="m/s"
+			description="U ice velocity on cells"
+		/>
+		<var name="vVelocityCell" type="real" dimensions="nCells" units="m/s"
+			description="V ice velocity on cells"
+		/>
+		<var name="totalIceArea" type="real" dimensions="nRegions Time" units="km^2"
+			description="Total sea-ice area by region"
+		/>
+		<var name="totalIceExtent" type="real" dimensions="nRegions Time" units="km^2"
+			description="Total sea-ice extent by region"
+		/>
+		<var name="totalIceVolume" type="real" dimensions="nRegions Time" units="km^3"
+			description="Total sea-ice volume by region"
+		/>
+		<var name="totalSnowVolume" type="real" dimensions="nRegions Time" units="km^3"
+			description="Total snow volume by region"
+		/>
+		<var name="totalKineticEnergy" type="real" dimensions="nRegions Time" units="J"
+			description="Total kinetic energy by region"
+		/>
+		<var name="rmsIceSpeed" type="real" dimensions="nRegions Time" units="m/s"
+			description="RMS ice speed by region"
+		/>
+		<var name="averageAlbedo" type="real" dimensions="nRegions Time" units="-"
+			description="Average albedo by region"
+		/>
+		<var name="maximumIceVolume" type="real" dimensions="nRegions Time" units="km^2"
+			description="Maximum sea-ice volume by region"
+		/>
+		<var name="maximumIceVolumeLocked" type="real" dimensions="nRegions Time" units="km^2"
+			description="Maximum sea-ice volume by region for dynamically locked cells"
+		/>
+		<var name="maximumIceVolumeNotLocked" type="real" dimensions="nRegions Time" units="km^2"
+			description="Maximum sea-ice volume by region for non-dynamically locked cells"
+		/>
+		<var name="maximumIcePressure" type="real" dimensions="nRegions Time" units="kN/m"
+			description="Maximum sea-ice pressure by region"
+		/>
+		<var name="maximumIceSpeed" type="real" dimensions="nRegions Time" units="m/s"
+			description="Maximum sea-ice speed by region"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="regionalStatisticsOutput" type="output"
+				filename_template="analysis_members/regionalStatistics.nc"
+				filename_interval="none"
+				output_interval="00-00-00_01:00:00"
+				packages="regionalStatisticsAMPKG"
+				clobber_mode="replace_files"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="daysSinceStartOfSim"/>
+			<var name="regionNames"/>
+			<var name="totalIceArea"/>
+			<var name="totalIceExtent"/>
+			<var name="totalIceVolume"/>
+			<var name="totalSnowVolume"/>
+			<var name="totalKineticEnergy"/>
+			<var name="rmsIceSpeed"/>
+			<var name="averageAlbedo"/>
+			<var name="maximumIceVolume"/>
+			<var name="maximumIceVolumeLocked"/>
+			<var name="maximumIceVolumeNotLocked"/>
+			<var name="maximumIcePressure"/>
+			<var name="maximumIceSpeed"/>
+		</stream>
+		<stream name="regionalStatistics_ice_aggregate"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_cell_aggregate"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_ice_areal_average"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_cell_areal_average"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_min"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_max"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+	</streams>

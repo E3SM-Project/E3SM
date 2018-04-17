@@ -1,0 +1,31 @@
+<template>
+	<namelist>
+		<option name="config_AM_eddyProductVariables_enable">.true.</option>
+		<option name="config_AM_eddyProductVariables_compute_interval">'output_interval'</option>
+		<option name="config_AM_eddyProductVariables_compute_on_startup">.true.</option>
+		<option name="config_AM_eddyProductVariables_write_on_startup">.true.</option>
+		<option name="config_AM_eddyProductVariables_text_file">.false.</option>
+		<option name="config_AM_eddyProductVariables_directory">'analysis_members'</option>
+		<option name="config_AM_eddyProductVariables_output_stream">'eddyProductVariablesOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="eddyProductVariablesOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">eddyProductVariablesOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">append</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/eddyProductVariables.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="packages">eddyProductVariablesAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="SSHSquared" type="var"/>
+				<member name="velocityZonalSquared" type="var"/>
+				<member name="velocityZonalTimesTemperature" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

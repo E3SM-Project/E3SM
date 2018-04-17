@@ -13,7 +13,6 @@
  module mpas_atmphys_landuse
  use mpas_dmpar
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_utilities
@@ -125,8 +124,8 @@
  real(kind=RKIND),dimension(max_cats,max_seas):: albd,slmo,sfem,sfz0,therin,scfx,sfhc
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine landuse_init_forMPAS:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine landuse_init_forMPAS:')
 
  call mpas_pool_get_config(configs,'config_do_restart' ,config_do_restart )
  call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
@@ -157,10 +156,10 @@
  call mpas_pool_get_array(diag_physics,'z0'        , z0        )
  call mpas_pool_get_array(diag_physics,'znt'       , znt       )
  
-!write(0,*)
-!write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
-!write(0,*) '--- config_frac_seaice = ',config_frac_seaice
-!write(0,*) '--- xice_threshold     = ',xice_threshold
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine landuse_init_forMPAS: julian day=$i', intArgs=(/julday/))
+!call mpas_log_write('--- config_frac_seaice = $l', logicArgs=(/config_frac_seaice/))
+!call mpas_log_write('--- xice_threshold     = $r', realArgs=(/xice_threshold/))
 
 !reads in the landuse properties from landuse.tbl:
  if(dminfo % my_proc_id == IO_NODE) then
@@ -198,10 +197,10 @@
                                      therin(ic,is),scfx(ic,is),sfhc(ic,is)
        enddo
 !      do ic = 1, lucats
-!         write(0,101) ic,albd(ic,is),slmo(ic,is),sfem(ic,is),sfz0(ic,is), &
-!                therin(ic,is),scfx(ic,is),sfhc(ic,is)
+!         call mpas_log_write('$i $r $r $r $r $r $r $r $r', intArgs=(/ic/), realArgs=(/albd(ic,is),slmo(ic,is),sfem(ic,is),sfz0(ic,is), &
+!                therin(ic,is),scfx(ic,is),sfhc(ic,is)/))
 !      enddo
-!      if(is .lt. luseas) write(0,*)
+!      if(is .lt. luseas) call mpas_log_write('')
     enddo
 
 !defines the index isurban, iswater and, isice as a function of sfc_input_data:
@@ -243,12 +242,12 @@
  DM_BCAST_MACRO(therin)
  DM_BCAST_MACRO(sfhc)
  DM_BCAST_MACRO(scfx)
-!write(0,*) '--- isice   =',isice
-!write(0,*) '--- iswater =',iswater
-!write(0,*) '--- isurban =',isurban
+!call mpas_log_write('--- isice   =$i',intArgs=(/isice/))
+!call mpas_log_write('--- iswater =$i',intArgs=(/iswater/))
+!call mpas_log_write('--- isurban =$i',intArgs=(/isurban/))
  if(config_do_restart) then
-    write(0,*) '--- config_do_restart =', config_do_restart
-    write(0,*) '--- skip the end of landuse_init_forMPAS'
+    call mpas_log_write('--- config_do_restart =$l', logicArgs=(/config_do_restart/))
+    call mpas_log_write('--- skip the end of landuse_init_forMPAS')
     return
  endif
 
@@ -308,11 +307,7 @@
 
  enddo
 
-!write(0,*) '--- end subroutine landuse_init_forMPAS'
-
-!formats:
- 101 format(i6,8(1x,e15.8))
- 102 format(i6,1x,8e15.8)
+!call mpas_log_write('--- end subroutine landuse_init_forMPAS')
 
  end subroutine landuse_init_forMPAS
 

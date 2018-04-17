@@ -1,0 +1,110 @@
+	<nml_record name="AM_regionalStats" mode="forward;analysis">
+		<nml_option name="config_AM_regionalStats_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, landice analysis member regionalStats is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_regionalStats_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computations should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_regionalStats_stream_name" type="character" default_value="regionalStatsOutput" units="unitless"
+			description="Name of the stream that the regionalStats analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+                <nml_option name="config_AM_regionalStats_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if analysis member computations occur on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_regionalStats_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="regionalStatsAMPKG" description="This package includes variables required for the regionalStats analysis member."/>
+	</packages>
+
+	<var_struct name="regionalStatsAM" time_levs="1" packages="regionalStatsAMPKG">
+
+                <var name="regionalIceArea" type="real" dimensions="nRegions Time" units="m^2"
+                        description="total ice sheet area within region"
+                />
+                <var name="regionalIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+                        description="total ice sheet volume within region"
+                />
+                <var name="regionalVolumeAboveFloatation" type="real" dimensions="nRegions Time" units="m^3"
+                        description="total ice sheet volume above floatation"
+                />
+                <var name="regionalGroundedIceArea" type="real" dimensions="nRegions Time" units="m^2"
+                        description="total grounded ice sheet area within region"
+                />
+                <var name="regionalGroundedIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+                        description="total grounded ice sheet volume within region"
+                />
+                <var name="regionalFloatingIceArea" type="real" dimensions="nRegions Time" units="m^2"
+                        description="total floating ice sheet area within region"
+                />
+                <var name="regionalFloatingIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+                        description="total floating ice sheet volume within region"
+                />
+                <var name="regionalIceThicknessMin" type="real" dimensions="nRegions Time" units="m"
+                        description="min ice thickness within region"
+                />
+                <var name="regionalIceThicknessMax" type="real" dimensions="nRegions Time" units="m"
+                        description="max ice thickness within region"
+                />
+                <var name="regionalIceThicknessMean" type="real" dimensions="nRegions Time" units="m"
+                        description="mean ice thickness within region"
+                />
+                <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated surface mass balance within region"
+                />
+                <var name="regionalAvgNetAccumulation" type="real" dimensions="nRegions Time" units="m yr^{-1}"
+                        description="average sfcMassBal, as a thickness rate. Positive values represent ice gain."
+                />
+                <var name="regionalSumBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated basal mass balance within region"
+                />
+                <var name="regionalSumGroundedBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="total, area integrated grounded basal mass balance. Positive values represent ice gain."
+                />
+                <var name="regionalAvgGroundedBasalMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}"
+                        description="average groundedBasalMassBal value, as a thickness rate. Positive values represent ice loss."
+                />
+                <var name="regionalSumFloatingBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="total, area integrated floating basal mass balance. Positive values represent ice gain."
+                />
+                <var name="regionalAvgSubshelfMelt" type="real" dimensions="nRegions Time" units="m yr^{-1}"
+                        description="average floatingBasalMassBal value, as a thickness rate. Positive values represent ice loss."
+                />
+                <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated calving flux within region"
+                />
+                <var name="regionalSumGroundingLineFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="total mass flux across all grounding lines (note that flux from floating to grounded ice makes a negative contribution to this metric)"
+                />
+                <var name="regionalSurfaceSpeedMax" type="real" dimensions="nRegions Time" units="m yr^{-1}"
+                        description="maximum surface speed in the domain"
+                />
+                <var name="regionalBasalSpeedMax" type="real" dimensions="nRegions Time" units="m yr^{-1}"
+                        description="maximum basal speed in the domain"
+                />
+
+ 	</var_struct>
+
+	<streams>
+		<stream name="regionalStatsOutput" type="output"
+			mode="forward;analysis"
+			filename_template="regionalStats.nc"
+			filename_interval="01-00-00_00:00:00"
+			output_interval="00-00-01_00:00:00"
+			reference_time="0000-01-01_00:00:00"
+			packages="regionalStatsAMPKG"
+			clobber_mode="truncate"
+			runtime_format="single_file">
+			<var name="xtime"/> 
+			<var name="regionalIceArea"/> 
+			<var name="regionalIceVolume"/> 
+		</stream>
+	</streams>

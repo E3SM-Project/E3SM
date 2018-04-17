@@ -1,0 +1,40 @@
+<template>
+	<namelist>
+		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
+		<option name="config_AM_mixedLayerDepths_compute_interval">'output_interval'</option>
+		<option name="config_AM_mixedLayerDepths_output_stream">'mixedLayerDepthsOutput'</option>
+		<option name="config_AM_mixedLayerDepths_write_on_startup">.true.</option>
+		<option name="config_AM_mixedLayerDepths_compute_on_startup">.true.</option>
+		<option name="config_AM_mixedLayerDepths_Tthreshold">.true.</option>
+		<option name="config_AM_mixedLayerDepths_Dthreshold">.true.</option>
+		<option name="config_AM_mixedLayerDepths_crit_temp_threshold">0.2</option>
+		<option name="config_AM_mixedLayerDepths_crit_dens_threshold">0.03</option>
+		<option name="config_AM_mixedLayerDepths_reference_pressure">1.0E5</option>
+		<option name="config_AM_mixedLayerDepths_Tgradient">.true.</option>
+		<option name="config_AM_mixedLayerDepths_Dgradient">.true.</option>
+		<option name="config_AM_mixedLayerDepths_temp_gradient_threshold">5E-7</option>
+		<option name="config_AM_mixedLayerDepths_den_gradient_threshold">5E-8</option>
+		<option name="config_AM_mixedLayerDepths_interp_method">1</option>
+	</namelist>
+
+	<streams>
+		<stream name="mixedLayerDepthsOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">mixedLayerDepthsOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/mixedLayerDepths.$Y-$M-$D.nc</attribute>
+			<attribute name="packages">mixedLayerDepthsAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="tThreshMLD" type="var"/>
+				<member name="dThreshMLD" type="var"/>
+				<member name="tGradMLD" type="var"/>
+				<member name="dGradMLD" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

@@ -7,7 +7,7 @@
 !
 
 #define COMMA ,
-#define ACCESSOR_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define ACCESSOR_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
 !***********************************************************************
 !
@@ -29,10 +29,11 @@ module mpas_field_accessor
                                    field0DReal, field1DReal, field2DReal, field3DReal, field4DReal, field5DReal, &
                                    field0DInteger, field1DInteger, field2DInteger, field3DInteger, &
                                    field0DChar, field1DChar, &
-                                   field0DLogical
+                                   field0DLogical, &
+                                   MPAS_LOG_ERR
     use mpas_kind_types, only : RKIND, StrKIND
     use mpas_pool_routines, only : mpas_pool_get_field_info, mpas_pool_get_field
-    use mpas_io_units, only : stderrUnit
+    use mpas_log
 
     interface mpas_field_access_missing_value
         module procedure mpas_field_access_msgval_real

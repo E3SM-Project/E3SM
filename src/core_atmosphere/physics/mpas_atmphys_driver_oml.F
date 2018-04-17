@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_driver_oml
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_constants
@@ -85,8 +84,8 @@
   real(kind=RKIND):: f_coriolis
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_oml1d:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_oml1d:')
 
 ! namelist parameters for ocean mixed layer model
  call mpas_pool_get_config(configs,'config_oml1d'               ,config_oml1d )
@@ -144,7 +143,7 @@
 
  end if
 
-!write(0,*) '--- end subroutine driver_oml1d.'
+!call mpas_log_write('--- end subroutine driver_oml1d.')
 
  end subroutine driver_oml1d
 

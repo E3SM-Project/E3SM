@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_cloudiness
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants, only: ep_2
  use mpas_atmphys_vars
@@ -49,6 +49,9 @@
 !   cloud formation, but changes to the cloud water and cloud ice mixing ratios only affect the long wave and
 !   short wave radiation codes.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-05.
+! * since we removed the local variable radt_cld_scheme from mpas_atmphys_vars.F, now defines radt_cld_scheme
+!   as a pointer to config_radt_cld_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
@@ -177,24 +180,33 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
+!local variables and pointers:
+ character(len=StrKIND),pointer:: radt_cld_scheme
+
  integer:: i,j,k
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_cloudiness:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_cloudiness:')
+
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
 !copy MPAS arrays to local arrays:
  call cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
     case("cld_incidence")
+      call mpas_timer_start('calc_cldincidence')
       call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi,its,ite)
+      call mpas_timer_stop('calc_cldincidence')
 
     case("cld_fraction")
+      call mpas_timer_start('calc_cldfraction')
       call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p,its,ite)
+      call mpas_timer_stop('calc_cldfraction')
 
     case("cld_fraction_thompson")
+      call mpas_timer_start('cal_cldfra3')
       call cal_cldfra3( &
            cldfra = cldfrac_p , qv     = qvrad_p    , qc = qcrad_p , qi  = qirad_p , &
            qs     = qsrad_p   , p      = pres_hyd_p , t  = t_p     , rho = rho_p   , &
@@ -203,6 +215,7 @@
            ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme ,   &
            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                       )
+      call mpas_timer_stop('cal_cldfra3')
 
     case default
 
@@ -211,7 +224,7 @@
 !copy local arrays to MPAS grid:
  call cloudiness_to_MPAS(diag_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_cloudiness.'
+!call mpas_log_write('--- end subroutine driver_cloudiness.')
 
  end subroutine driver_cloudiness
 

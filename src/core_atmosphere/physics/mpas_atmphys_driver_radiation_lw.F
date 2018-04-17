@@ -9,12 +9,11 @@
  module mpas_atmphys_driver_radiation_lw
  use mpas_kind_types
  use mpas_pool_routines
- use mpas_derived_types
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_driver_radiation_sw, only: radconst
  use mpas_atmphys_constants
  use mpas_atmphys_manager, only: gmt,curr_julday,julday,year
- use mpas_atmphys_o3climatology, only: vinterp_ozn
  use mpas_atmphys_camrad_init
  use mpas_atmphys_rrtmg_lwinit
  use mpas_atmphys_vars
@@ -22,6 +21,7 @@
 !wrf physics:
  use module_ra_cam            
  use module_ra_rrtmg_lw
+ use module_ra_rrtmg_vinterp
 
  implicit none
  private
@@ -82,23 +82,35 @@
 ! * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * substituted "use mpas_atmphys_o3climatology" with "use module_ra_rrtmg_vinterp" since we moved subroutine
+!   vinterp_ozn to is own module in physics_wrf.
+!   laura D. Fowler (laura@ucar.edu) / 2017-01-27.
 ! * in subroutines radiation_lw_from_MPAS and radiation_lw_to_MPAS, revised the initialization of re_cloud,
 !   re_ice, re_snow, and rre_cloud, rre_ice, and rre_snow to handle the case when the cloud microphysics
 !   parameterization is turned off, i.e. config_microp_scheme='off'.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-10.
+! * since we removed the local variable radt_lw_scheme from mpas_atmphys_vars.F, now defines radt_lw_scheme
+!   as a pointer to config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
 
 
 !=================================================================================================================
- subroutine allocate_radiation_lw(xtime_s)
+ subroutine allocate_radiation_lw(configs,xtime_s)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  real(kind=RKIND),intent(in):: xtime_s
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -194,8 +206,18 @@
  end subroutine allocate_radiation_lw
 
 !=================================================================================================================
- subroutine deallocate_radiation_lw
+ subroutine deallocate_radiation_lw(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -296,6 +318,8 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_lw_scheme
+ character(len=StrKIND),pointer:: microp_scheme
  logical,pointer:: config_microp_re
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
@@ -313,14 +337,14 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
- call mpas_pool_get_config(configs,'config_microp_re'    ,config_microp_re    )
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme      )
+ call mpas_pool_get_config(configs,'config_microp_scheme' ,microp_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_re'     ,config_microp_re    )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
- call mpas_pool_get_array(mesh,'m_hybi' ,m_hybi )
 
- call mpas_pool_get_array(state,'m_ps'    ,m_ps    ,time_lev)
  call mpas_pool_get_array(state,'aerosols',aerosols,time_lev)
 
  call mpas_pool_get_array(sfc_input,'skintemp',skintemp)
@@ -336,6 +360,8 @@
  call mpas_pool_get_array(diag_physics,'cldfrac'   ,cldfrac   )
  call mpas_pool_get_array(diag_physics,'o3clim'    ,o3clim    )
  call mpas_pool_get_array(diag_physics,'o3vmr'     ,o3vmr     )
+ call mpas_pool_get_array(diag_physics,'m_hybi'    ,m_hybi    )
+ call mpas_pool_get_array(diag_physics,'m_ps'      ,m_ps      )
 
  do j = jts,jte
  do i = its,ite
@@ -406,9 +432,10 @@
                 enddo
                 enddo
              else
-                has_reqc = 0
-                has_reqi = 0
-                has_reqs = 0
+                ! These are set in module mpas_atmphys_manager and should not be set again
+                !has_reqc = 0
+                !has_reqi = 0
+                !has_reqs = 0
                 do j = jts,jte
                 do k = kts,kte
                 do i = its,ite
@@ -584,10 +611,6 @@
 
  end select radiation_lw_select
 
-!format:
- 101 format(i3,2i6,12(1x,e15.8))
- 102 format(i6,12(1x,e15.8))
-
  end subroutine radiation_lw_from_MPAS
 
 !=================================================================================================================
@@ -604,6 +627,8 @@
  integer,intent(in):: its,ite
 
 !local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+ character(len=StrKIND),pointer:: microp_scheme
  logical,pointer:: config_microp_re
 
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
@@ -618,7 +643,9 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_microp_re',config_microp_re)
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme  )
+ call mpas_pool_get_config(configs,'config_microp_scheme' ,microp_scheme   )
+ call mpas_pool_get_config(configs,'config_microp_re'     ,config_microp_re)
 
  call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
  call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
@@ -716,7 +743,7 @@
  call mpas_pool_get_array(diag_physics,'abstot',abstot)
  call mpas_pool_get_array(diag_physics,'emstot',emstot)
 
-!write(0,*) '--- writing absnxt,abstot,and emstot to restart =', l_camlw
+!call mpas_log_write('--- writing absnxt,abstot,and emstot to restart = $l', logicArgs=(/l_camlw/))
  do j = jts,jte
  do n = 1,cam_abs_dim1
  do k = kts,kte
@@ -742,13 +769,15 @@
  end subroutine radiation_camlw_to_MPAS
 
 !=================================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
+ subroutine init_radiation_lw(dminfo,configs,mesh,atm_input,diag,diag_physics,state,time_lev)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in),optional:: mesh
  type(mpas_pool_type),intent(in),optional:: diag
+ type(mpas_pool_type),intent(in),optional:: diag_physics
 
  integer,intent(in),optional:: time_lev
 
@@ -756,7 +785,12 @@
  type(mpas_pool_type),intent(inout),optional:: atm_input
  type(mpas_pool_type),intent(inout),optional:: state
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
@@ -764,7 +798,7 @@
        call rrtmg_initlw_forMPAS(dminfo)
 
     case("cam_lw")
-       call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
+       call camradinit(dminfo,mesh,atm_input,diag,diag_physics,state,time_lev)
     
     case default
 
@@ -794,19 +828,17 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_lw_scheme
 
 !local variables:
  integer:: o3input
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,100)
+!call mpas_log_write(' --- enter subroutine driver_radiation_lw: ')
 
-!formats:
- 100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
- 101 format(i8,12(1x,e15.8))
-
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme      )
 
 !copy MPAS arrays to local arrays:
  call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input,its,ite)
@@ -818,6 +850,7 @@
        o3input = 0
        if(config_o3climatology) o3input = 2
 
+       call mpas_timer_start('RRTMG_lw')
        call rrtmg_lwrad( &
             p3d        = pres_hyd_p    , p8w       = pres2_hyd_p , pi3d     = pi_p     , &
             t3d        = t_p           , t8w       = t2_p        , dz8w     = dz_p     , &
@@ -839,17 +872,23 @@
             ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                        )
+       call mpas_timer_stop('RRTMG_lw')
 
     case ("cam_lw")
        xtime_m = xtime_s/60.
 
+! This should be OMP MASTER with barrier afterwards or OMP SINGLE, since declin and solcon
+! are global variables in mpas_atmphys_vars.F and race conditions may occur otherwise!
+!$OMP SINGLE
        !... calculates solar declination:
        call radconst(declin,solcon,curr_julday,degrad,dpd)
+!$OMP END SINGLE
 
 !... convert the radiation time_step to minutes:
        radt = dt_radtlw/60.
 
-!      write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
+!      call mpas_log_write('--- enter subroutine camrad_lw: doabsems=$l',logicArgs=(/doabsems/))
+       call mpas_timer_start('CAMRAD_lw')
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -898,6 +937,7 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                   )
+       call mpas_timer_stop('CAMRAD_lw')
 
     case default
 
@@ -906,7 +946,7 @@
 !copy local arrays to MPAS grid:
  call radiation_lw_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_radiation_lw.'
+!call mpas_log_write('--- end subroutine driver_radiation_lw.')
 
  end subroutine driver_radiation_lw
 

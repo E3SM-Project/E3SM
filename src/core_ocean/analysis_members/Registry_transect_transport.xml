@@ -1,0 +1,55 @@
+	<nml_record name="AM_transectTransport" mode="forward;analysis">
+		<nml_option name="config_AM_transectTransport_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member transectTransport is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_transectTransport_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_transectTransport_output_stream" type="character" default_value="transectTransportOutput" units="unitless"
+			description="Name of the stream that the transectTransport analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_transectTransport_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_transectTransport_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_transectTransport_transect_group" type="character" default_value="all" units="unitless"
+			description="The name of the transect group that holds the transects for which the transport should be caclulated."
+			possible_values="Either of '', 'all' or any valid transect group name."
+		/>
+	</nml_record>
+	<packages>
+		<package name="transectTransportAMPKG" description="This package includes variables required for the transectTransport analysis member."/>
+	</packages>
+	<var_struct name="transectTransportAM" time_levs="1" packages="transectTransportAMPKG">
+		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects" units="NA"
+			 description="max of transectEdgeMasks for this processor."
+		/>
+		<var name="transectVolumeTransport" type="real" dimensions="nTransects Time" units="Sv"
+			description="Transport through transect of edges."
+		/>
+		<var name="transectVolumeTransportZ" type="real" dimensions="nVertLevels nTransects Time" units="Sv"
+			description="Transport through transect of edges, with depth coordinate."
+		/>
+	</var_struct>
+	<streams>
+		<stream name="transectTransportOutput" type="output"
+				mode="forward;analysis"
+				filename_template="analysis_members/transectTransport.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="transectTransportAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="transectVolumeTransport"/>
+			<var name="transectVolumeTransportZ"/>
+		</stream>
+	</streams>

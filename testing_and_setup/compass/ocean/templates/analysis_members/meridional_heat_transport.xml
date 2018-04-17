@@ -1,0 +1,34 @@
+<template>
+	<namelist>
+		<option name="config_AM_meridionalHeatTransport_enable">.true.</option>
+		<option name="config_AM_meridionalHeatTransport_compute_interval">'output_interval'</option>
+		<option name="config_AM_meridionalHeatTransport_compute_on_startup">.true.</option>
+		<option name="config_AM_meridionalHeatTransport_write_on_startup">.true.</option>
+		<option name="config_AM_meridionalHeatTransport_output_stream">'meridionalHeatTransportOutput'</option>
+		<option name="config_AM_meridionalHeatTransport_num_bins">180</option>
+		<option name="config_AM_meridionalHeatTransport_min_bin">-1.0e34</option>
+		<option name="config_AM_meridionalHeatTransport_max_bin">-1.0e34</option>
+	</namelist>
+
+	<streams>
+		<stream name="meridionalHeatTransportOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">meridionalHeatTransportOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">0001_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/meridionalHeatTransport.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="packages">meridionalHeatTransportAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="binBoundaryMerHeatTrans" type="var"/>
+				<member name="meridionalHeatTransportLatZ" type="var"/>
+				<member name="meridionalHeatTransportLat" type="var"/>
+				<member name="refZMid" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

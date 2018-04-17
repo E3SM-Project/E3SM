@@ -80,9 +80,9 @@
 !                               ESMF_CALKIND_GREGORIAN =  ESMF_CalKind_Flag(1), &
 !                               ESMF_CALKIND_JULIAN =     ESMF_CalKind_Flag(2), &
 !                           ! like Gregorian, except Feb always has 28 days
-!                               ESMF_CALKIND_NOLEAP =     ESMF_CalKind_Flag(3), & 
+!                               ESMF_CALKIND_NOLEAP =     ESMF_CalKind_Flag(3), &
 !                           ! 12 months, 30 days each
-!                               ESMF_CALKIND_360DAY =     ESMF_CalKind_Flag(4), & 
+!                               ESMF_CALKIND_360DAY =     ESMF_CalKind_Flag(4), &
 !                           ! user defined
 !                               ESMF_CALKIND_GENERIC =    ESMF_CalKind_Flag(5), &
 !                           ! track base time seconds only
@@ -117,7 +117,7 @@
         type(ESMF_DaysPerYear) :: DaysPerYear
       end type
 !------------------------------------------------------------------------------
-! !PUBLIC DATA: added by Juanxiong He, in order to breakthe cycle call between 
+! !PUBLIC DATA: added by Juanxiong He, in order to breakthe cycle call between
 ! ESMF_Stubs and ESMF_Time
    TYPE(ESMF_Calendar), public, save, pointer :: defaultCal   ! Default Calendar
    TYPE(ESMF_Calendar), public, save, pointer :: gregorianCal ! gregorian Calendar
@@ -192,7 +192,7 @@
 
 ! !DESCRIPTION:
 !     Creates and sets a {\tt calendar} to the given built-in
-!     {\tt ESMF\_CalKind_Flag}. 
+!     {\tt ESMF\_CalKind_Flag}.
 !
 !     This is a private method; invoke via the public overloaded entry point
 !     {\tt ESMF\_CalendarCreate()}.
@@ -213,14 +213,14 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!    
+!
 !EOP
 ! !REQUIREMENTS:
 !     TMGn.n.n
       type(ESMF_DaysPerYear) :: dayspy
 
       if ( present(rc) ) rc = ESMF_FAILURE
-! Calendar is hard-coded.  Use ESMF library if more flexibility is needed.  
+! Calendar is hard-coded.  Use ESMF library if more flexibility is needed.
 !      write(6,*) 'tcx ESMF_CalendarCreate ',calkindflag%caltype, ESMF_CALKIND_NOLEAP%caltype, ESMF_CALKIND_GREGORIAN%caltype
       if ( calkindflag%caltype  == ESMF_CALKIND_NOLEAP%caltype ) then
 !         write(6,*) 'tcx ESMF_CalendarCreate: initialize noleap calendar '
@@ -233,11 +233,11 @@
          call wrf_error_fatal( "Error:: ESMF_CalendarCreate invalid calendar")
       endif
 
-!$$$ This is a bug on some systems -- need initial value set by compiler at 
-!$$$ startup.  
+!$$$ This is a bug on some systems -- need initial value set by compiler at
+!$$$ startup.
       ESMF_CalendarCreate%Set = .true.
       ESMF_CalendarCreate%SecondsPerDay = SECONDS_PER_DAY
-! DaysPerYear and SecondsPerYear are incorrect for Gregorian calendars...  
+! DaysPerYear and SecondsPerYear are incorrect for Gregorian calendars...
       dayspy%D = size(daym)
       dayspy%Dn = 0
       dayspy%Dd = 1
@@ -276,7 +276,7 @@
 
 !==============================================================================
 
-SUBROUTINE initdaym 
+SUBROUTINE initdaym
   IMPLICIT NONE
   INTEGER i,j,m
 

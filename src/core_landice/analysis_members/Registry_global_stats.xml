@@ -1,0 +1,107 @@
+	<nml_record name="AM_globalStats" mode="forward;analysis">
+		<nml_option name="config_AM_globalStats_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, landice analysis member globalStats is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_globalStats_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computations should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_globalStats_stream_name" type="character" default_value="globalStatsOutput" units="unitless"
+			description="Name of the stream that the globalStats analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_globalStats_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if analysis member computations occur on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_globalStats_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="globalStatsAMPKG" description="This package includes variables required for the globalStats analysis member."/>
+	</packages>
+	<var_struct name="globalStatsAM" time_levs="1" packages="globalStatsAMPKG">
+
+                <var name="totalIceVolume" type="real" dimensions="Time" units="m^3"
+                        description="total ice sheet volume"
+                />
+                <var name="volumeAboveFloatation" type="real" dimensions="Time" units="m^3"
+                        description="total ice sheet volume above floatation"
+                />
+                <var name="totalIceArea" type="real" dimensions="Time" units="m^2"
+                        description="total ice sheet area"
+                />
+                <var name="floatingIceVolume" type="real" dimensions="Time" units="m^3"
+                        description="total floating ice sheet volume"
+                />
+                <var name="floatingIceArea" type="real" dimensions="Time" units="m^2"
+                        description="total floating ice sheet area"
+                />
+                <var name="groundedIceVolume" type="real" dimensions="Time" units="m^3"
+                        description="total grounded ice sheet volume"
+                />
+                <var name="groundedIceArea" type="real" dimensions="Time" units="m^2"
+                        description="total grounded ice sheet area"
+                />
+                <var name="iceThicknessMean" type="real" dimensions="Time" units="m"
+                        description="spatially averaged ice thickness"
+                />
+                <var name="iceThicknessMax" type="real" dimensions="Time" units="m"
+                        description="maximum ice thickness in domain"
+                />
+                <var name="iceThicknessMin" type="real" dimensions="Time" units="m"
+                        description="minimum ice thickness in domain"
+                />
+                <var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated surface mass balance. Positive values represent ice gain."
+                />
+                <var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}"
+                        description="average sfcMassBal, as a thickness rate. Positive values represent ice gain."
+                />
+                <var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated basal mass balance. Positive values represent ice gain."
+                />
+                <var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated grounded basal mass balance. Positive values represent ice gain."
+                />
+                <var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}"
+                        description="average groundedBasalMassBal value, as a thickness rate. Positive values represent ice loss."
+                />
+                <var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated floating basal mass balance. Positive values represent ice gain."
+                />
+                <var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}"
+                        description="average floatingBasalMassBal value, as a thickness rate. Positive values represent ice loss."
+                />
+                <var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated mass loss due to calving. Positive values represent ice loss."
+                />
+                <var name="groundingLineFlux" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total mass flux across all grounding lines.  Note that flux from floating to grounded ice makes a negative contribution to this metric."
+                />
+                <var name="surfaceSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
+                        description="maximum surface speed in the domain"
+                />
+                <var name="basalSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
+                        description="maximum basal speed in the domain"
+                />
+
+ 	</var_struct>
+	<streams>
+		<stream name="globalStatsOutput" type="output"
+				mode="forward;analysis"
+				filename_template="globalStats.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="globalStatsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+                        <var name="daysSinceStart"/>
+                        <var_struct name="globalStatsAM"/>
+		</stream>
+	</streams>

@@ -16,6 +16,7 @@
  use mpas_derived_types
  use mpas_atmphys_constants
  use mpas_atmphys_utilities
+ use mpas_log, only : mpas_log_write
 
 !wrf physics
  use module_ra_rrtmg_sw
@@ -96,8 +97,8 @@
 #endif
 
     if(istat /= 0) then
-         write(0,*) 'rrtmg_unit=',rrtmg_unit
-         write(0,*) 'istat=',istat
+         call mpas_log_write('rrtmg_unit=$i',intArgs=(/rrtmg_unit/))
+         call mpas_log_write('istat=$i',intArgs=(/istat/))
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -207,7 +208,7 @@
          rayl, strrat1, layreffr, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -290,7 +291,7 @@
 
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -372,7 +373,7 @@
          rayl, strrat, layreffr, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -454,7 +455,7 @@
          rayl, strrat, layreffr, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -538,7 +539,7 @@
          rayl, layreffr, absch4o, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -620,7 +621,7 @@
          rayl, strrat, layreffr, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -702,7 +703,7 @@
          rayl, strrat, layreffr, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -774,7 +775,7 @@
          raylo, givfac, layreffr, kao, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -860,7 +861,7 @@
          forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -924,7 +925,7 @@
          raylo, layreffr, abso3ao, abso3bo, kao, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -963,7 +964,7 @@
          raylo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -1032,7 +1033,7 @@
          raylo, scalekur, layreffr, kao, kbo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -1100,7 +1101,7 @@
          rayl, strrat, layreffr, kao, kbo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)
@@ -1179,16 +1180,16 @@
 !     JT = 1 refers to a temperature of 245.6, JT = 2 refers to 252.8,
 !     etc.  The second index runs over the g-channel (1 to 16).
 
-!     write(0,*)
-!     write(0,*) '--- enter subroutine sw_kgb29:'
-!     write(0,*) '--- rrtmg_unit= ', rrtmg_unit
+!     call mpas_log_write('')
+!     call mpas_log_write('--- enter subroutine sw_kgb29:')
+!     call mpas_log_write('--- rrtmg_unit= $i', intArgs=(/rrtmg_unit/))
 
       istat = 0
       if(dminfo % my_proc_id == IO_NODE) read (unit=rrtmg_unit,iostat=istat) &
          rayl, layreffr, absh2oo, absco2o, kao, kbo, selfrefo, forrefo, sfluxrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)

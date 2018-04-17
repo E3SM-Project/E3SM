@@ -14,6 +14,8 @@ module init_atm_hinterp
 
    use init_atm_bitarray
    use init_atm_queue
+   use mpas_derived_types, only : MPAS_LOG_WARN
+   use mpas_log, only : mpas_log_write
 
    integer, parameter :: SIXTEEN_POINT=1, FOUR_POINT=2, N_NEIGHBOR=3, &
                          AVERAGE4=4, AVERAGE16=5, W_AVERAGE4=6, W_AVERAGE16=7, &
@@ -89,7 +91,7 @@ module init_atm_hinterp
             j = j + 1
          else
             if (index(interp_string(p1:p2-1),'average_gcell') == 0) &
-               write(0,*) 'WARNING: Unrecognized interpolation method '//interp_string(p1:p2-1)
+               call mpas_log_write('Unrecognized interpolation method '//interp_string(p1:p2-1), messageType=MPAS_LOG_WARN)
          end if
          p1 = p2 + 1
          p2 = index(interp_string(p1:iend),'+') + p1 - 1
@@ -131,7 +133,7 @@ module init_atm_hinterp
             j = j + 1
          else
             if (index(interp_string(p1:p2-1),'average_gcell') == 0) &
-               write(0,*) 'WARNING: Unrecognized interpolation method '//interp_string(p1:p2-1)
+               call mpas_log_write('Unrecognized interpolation method '//interp_string(p1:p2-1), messageType=MPAS_LOG_WARN)
          end if
       end if
 
@@ -169,55 +171,55 @@ module init_atm_hinterp
   
       ! No more interpolation methods to try
       if (interp_list(idx) == 0) then
-!write(0,*) 'Returning missing value'
+!call mpas_log_write('Returning missing value')
          interp_sequence = msgval
          return
       end if
   
       if (interp_list(idx) == FOUR_POINT) then
-!write(0,*) 'Calling four_pt'
+!call mpas_log_write('Calling four_pt')
          interp_sequence = four_pt(xx, yy, izz, array, start_x, end_x, &
                                    start_y, end_y, start_z, end_z, &
                                    msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == AVERAGE4) then
-!write(0,*) 'Calling four_pt_average'
+!call mpas_log_write('Calling four_pt_average')
          interp_sequence = four_pt_average(xx, yy, izz, array, start_x, end_x, &
                                            start_y, end_y, start_z, end_z, &
                                            msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == W_AVERAGE4) then
-!write(0,*) 'Calling wt_four_pt_average'
+!call mpas_log_write('Calling wt_four_pt_average')
          interp_sequence = wt_four_pt_average(xx, yy, izz, array, start_x, end_x, &
                                               start_y, end_y, start_z, end_z, &
                                               msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == N_NEIGHBOR) then
-!write(0,*) 'Calling nearest_neighbor'
+!call mpas_log_write('Calling nearest_neighbor')
          interp_sequence = nearest_neighbor(xx, yy, izz, array, start_x, end_x, &
                                             start_y, end_y, start_z, end_z, &
                                             msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == SIXTEEN_POINT) then
-!write(0,*) 'Calling sixteen_pt'
+!call mpas_log_write('Calling sixteen_pt')
          interp_sequence = sixteen_pt(xx, yy, izz, array, start_x, end_x, &
                                       start_y, end_y, start_z, end_z, &
                                       msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == SEARCH) then
-!write(0,*) 'Calling search_extrap'
+!call mpas_log_write('Calling search_extrap')
          interp_sequence = search_extrap(xx, yy, izz, array, start_x, end_x, &
                                          start_y, end_y, start_z, end_z, &
                                          msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == AVERAGE16) then
-!write(0,*) 'Calling sixteen_pt_average'
+!call mpas_log_write('Calling sixteen_pt_average')
          interp_sequence = sixteen_pt_average(xx, yy, izz, array, start_x, end_x, &
                                               start_y, end_y, start_z, end_z, &
                                               msgval, interp_list, idx+1, maskval, mask_array)
 
       else if (interp_list(idx) == W_AVERAGE16) then
-!write(0,*) 'Calling wt_sixteen_pt_average'
+!call mpas_log_write('Calling wt_sixteen_pt_average')
          interp_sequence = wt_sixteen_pt_average(xx, yy, izz, array, start_x, end_x, &
                                                  start_y, end_y, start_z, end_z, &
                                                  msgval, interp_list, idx+1, maskval, mask_array)

@@ -9,9 +9,9 @@
  module mpas_atmphys_initialize_real
  use mpas_kind_types
  use mpas_dmpar
- use mpas_derived_types
  use mpas_pool_routines
  use mpas_init_atm_surface
+ use mpas_log, only : mpas_log_write
 
  use mpas_atmphys_date_time
  use mpas_atmphys_utilities
@@ -92,8 +92,8 @@
  integer:: iSoil,nSoilLevels
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter physics_initialize_real:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter physics_initialize_real:')
 
  call mpas_pool_get_config(configs, 'config_sfc_prefix', config_sfc_prefix)
  call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -132,7 +132,7 @@
 !input file. calling this subroutine will overwrite the arrays sst and seaice already read
 !in the file defined by config_input_name:
  if(config_input_sst) then
-    write(0,*) '--- read sea-surface temperature from auxillary file:'
+    call mpas_log_write('--- read sea-surface temperature from auxillary file:')
     call interp_sfc_to_MPAS(config_start_time(1:13),mesh,fg,dims,dminfo,config_sfc_prefix)
     call physics_init_sst(mesh,fg,dims,configs)
  endif
@@ -173,7 +173,7 @@
 !initialize seaice points:
  call physics_init_seaice(mesh,fg,dims,configs)
  
-! write(0,*) '--- end physics_initialize_real:'
+! call mpas_log_write('--- end physics_initialize_real:')
 
  end subroutine physics_initialize_real
 
@@ -280,8 +280,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: dzs,zs
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine init_soil_layers_depth:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine init_soil_layers_depth:')
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -357,8 +357,8 @@
  character(len=StrKIND) :: errstring
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine init_soil_layers_properties:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine init_soil_layers_properties:')
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -379,8 +379,8 @@
 
  call mpas_pool_get_config(configs, 'config_nsoillevels', config_nsoillevels)
 
- write(0,*) 'nSoilLevels   =',nSoilLevels
- write(0,*) 'nFGSoilLevels =',nFGSoilLevels
+ call mpas_log_write('nSoilLevels   = $i',intArgs=(/nSoilLevels/))
+ call mpas_log_write('nFGSoilLevels = $i',intArgs=(/nFGSoilLevels/))
 
 
 !check that interpolation of the meteorological data to the MPAS grid did not create negative
@@ -394,11 +394,9 @@
     enddo
  enddo
  if(num_st .gt. 0) then
-    write(errstring,*) 'Error in interpolation of st_fg to MPAS grid: num_st =', num_st
-    call mpas_dmpar_global_abort(trim(errstring))
+    call mpas_log_write('Error in interpolation of st_fg to MPAS grid: num_st = $i', messageType=MPAS_LOG_CRIT, intArgs=(/num_st/))
  elseif(num_sm .gt. 0) then
-    write(errstring,*) 'Error in interpolation of sm_fg to MPAS grid: num_sm =', num_sm
-    call mpas_dmpar_global_abort(trim(errstring))
+    call mpas_log_write('Error in interpolation of sm_fg to MPAS grid: num_sm = $i', messageType=MPAS_LOG_CRIT, intArgs=(/num_sm/))
  endif 
 
  if(config_nsoillevels .ne. 4) &
@@ -427,7 +425,7 @@
 
     if(iCell .eq. 1) then
        do ifgSoil = 1,nFGSoilLevels+2
-          write(0,101) ifgSoil,zhave(ifgSoil,iCell)
+          call mpas_log_write('$i $r', intArgs=(/ifgSoil/), realArgs=(/zhave(ifgSoil,iCell)/))
        enddo
     endif
 
@@ -442,8 +440,9 @@
 
        noah: do iSoil = 1 , nSoilLevels
           input: do ifgSoil = 1 , nFGSoilLevels+2-1
-             if(iCell .eq. 1) write(0,102) iSoil,ifgSoil,zs(iSoil,iCell), &
-                zhave(ifgSoil,iCell),zhave(ifgSoil+1,iCell)
+             if(iCell .eq. 1) call mpas_log_write('$i $i $r $r $r', &
+                                                  intArgs=(/iSoil,ifgSoil/), &
+                                                  realArgs=(/zs(iSoil,iCell), zhave(ifgSoil,iCell),zhave(ifgSoil+1,iCell)/))
 
              if(zs(iSoil,iCell).ge.zhave(ifgSoil,iCell) .and. &
                 zs(iSoil,iCell).le.zhave(ifgSoil+1,iCell)) then
@@ -452,8 +451,9 @@
                       (st_input(ifgSoil,iCell) * (zhave(ifgSoil+1,iCell)-zs(iSoil,iCell))    &
                     +  st_input(ifgSoil+1,iCell) * (zs(iSoil,iCell)-zhave(ifgSoil,iCell)))   &
                          / (zhave(ifgSoil+1,iCell)-zhave(ifgSoil,iCell))
-                if(iCell .eq. 1) write(6,102) iSoil,ifgSoil,zs(iSoil,iCell), &
-                   zhave(ifgSoil,iCell),zhave(ifgSoil+1,iCell)
+                if(iCell .eq. 1) call mpas_log_write('$i $i $r $r $r', &
+                                                  intArgs=(/iSoil,ifgSoil/), &
+                                                  realArgs=(/zs(iSoil,iCell), zhave(ifgSoil,iCell),zhave(ifgSoil+1,iCell)/))
                          
                 smois(iSoil,iCell) = &
                        (sm_input(ifgSoil,iCell) * (zhave(ifgSoil+1,iCell)-zs(iSoil,iCell))   &
@@ -466,7 +466,7 @@
                 exit input
              endif
           enddo input
-          if(iCell.eq. 1) write(0,*)
+          if(iCell.eq. 1) call mpas_log_write('')
        enddo noah
 
     elseif(landmask(iCell) .eq. 0) then
@@ -495,10 +495,6 @@
     endif
 
  enddo
-
-!formats:
- 101 format(i4,4(1x,e15.8))
- 102 format(2i5,5(1x,e15.8))
 
  if(allocated(zhave)   ) deallocate(zhave )
  if(allocated(st_input)) deallocate(st_input)
@@ -530,8 +526,8 @@
  logical, pointer :: config_frac_seaice
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_init_sst:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_init_sst:')
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
 
@@ -549,8 +545,8 @@
  elseif(config_frac_seaice) then
     xice_threshold = 0.02
  endif
- write(0,*) '--- config_frac_seaice      :', config_frac_seaice
- write(0,*) '--- xice_threshold          :', xice_threshold
+ call mpas_log_write('--- config_frac_seaice      : $l', logicArgs=(/config_frac_seaice/))
+ call mpas_log_write('--- xice_threshold          : $r', realArgs=(/xice_threshold/))
 
  do iCell = 1, nCellsSolve
     seaice(iCell) = 0._RKIND
@@ -572,7 +568,7 @@
        num_seaice_changes
  call physics_message(mess)
 
-!write(0,*) '--- end subroutine physics_init_sst:'
+!call mpas_log_write('--- end subroutine physics_init_sst:')
 
  end subroutine physics_init_sst
 
@@ -613,8 +609,8 @@
  real(kind=RKIND),parameter:: total_depth        = 3.   ! 3-meter soil depth.
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter physics_init_seaice:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter physics_init_seaice:')
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
  call mpas_pool_get_config(configs, 'config_landuse_data', config_landuse_data)
@@ -650,7 +646,7 @@
     case default
        CALL physics_error_fatal ('Invalid Land Use Dataset '//trim(config_landuse_data))
  end select sfc_input_select1
- write(0,*) '--- isice_lu   = ',isice_lu
+ call mpas_log_write('--- isice_lu   = $i', intArgs=(/isice_lu/))
 
 !assign the threshold value for xice as a function of config_frac_seaice:
  if(.not. config_frac_seaice) then
@@ -665,8 +661,8 @@
  elseif(config_frac_seaice) then
     xice_threshold = 0.02
  endif
- write(0,*) '--- config_frac_seaice      :', config_frac_seaice
- write(0,*) '--- xice_threshold          :', xice_threshold
+ call mpas_log_write('--- config_frac_seaice      : $l', logicArgs=(/config_frac_seaice/))
+ call mpas_log_write('--- xice_threshold          : $r', realArgs=(/xice_threshold/))
 
 !convert seaice points to land points when the sea-ice fraction is greater than the
 !prescribed threshold:
@@ -696,12 +692,13 @@
        
     elseif(xice(iCell) .lt. xice_threshold) then
        if(xice(iCell) .gt. 0._RKIND) &
-          write(0,101) iCell,DBLE(landmask(iCell)),xland(iCell),xice(iCell)
+          call mpas_log_write('$i $r $r $r', intArgs=(/iCell/), &
+                                             realArgs=(/real(landmask(iCell),kind=RKIND),xland(iCell),xice(iCell)/))
        xice(iCell) = 0._RKIND
     endif
 
  enddo
- write(0,*)
+ call mpas_log_write('')
  write(mess,fmt='(A,i12)') 'number of seaice cells converted to land cells 2 =', &
        num_seaice_changes
  call physics_message(mess)
@@ -713,9 +710,8 @@
        seaice(iCell) = 1._RKIND
     endif
  enddo
- 101 format(i9,5(1x,e15.8))
 
-!write(0,*) '--- end physics_init_seaice:'
+!call mpas_log_write('--- end physics_init_seaice:')
 
  end subroutine physics_init_seaice
 

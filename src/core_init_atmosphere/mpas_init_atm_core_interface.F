@@ -8,6 +8,11 @@
 module init_atm_core_interface
 
    use mpas_attlist
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
+   use mpas_io_units
+   use mpas_log, only : mpas_log_write
 
    contains
 
@@ -40,6 +45,7 @@ module init_atm_core_interface
       core % setup_packages => init_atm_setup_packages
       core % setup_decompositions => init_atm_setup_decompositions
       core % setup_clock => init_atm_setup_clock
+      core % setup_log => init_atm_setup_log
       core % get_mesh_stream => init_atm_get_mesh_stream
       core % setup_immutable_streams => init_atm_setup_immutable_streams
       core % setup_derived_dimensions => init_atm_setup_derived_dimensions
@@ -51,14 +57,6 @@ module init_atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
-
-write(0,*) ''
-#ifdef SINGLE_PRECISION
-write(0,'(a)') 'Using default single-precision reals'
-#else
-write(0,'(a)') 'Using default double-precision reals'
-#endif
-write(0,*) ''
 
    end subroutine init_atm_setup_core
 
@@ -106,7 +104,6 @@ write(0,*) ''
 
       use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
-      use mpas_io_units, only : stderrUnit
 
       implicit none
 
@@ -157,9 +154,9 @@ write(0,*) ''
           .not. associated(vertical_stage_out) .or. &
           .not. associated(met_stage_in) .or. &
           .not. associated(met_stage_out)) then
-         write(stderrUnit,*) '********************************************************************************'
-         write(stderrUnit,*) '* Error while setting up packages for init_atmosphere core.'
-         write(stderrUnit,*) '********************************************************************************'
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('* Error while setting up packages for init_atmosphere core.',                      messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
          ierr = 1
          return
       end if
@@ -244,6 +241,58 @@ write(0,*) ''
       call mpas_create_clock(core_clock, start_time, dt, stopTime=stop_time)
 
    end function init_atm_setup_clock
+
+
+   !***********************************************************************
+   !
+   !  function init_atm_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman
+   !> \date    14 February 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function init_atm_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types, only : mpas_log_type, domain_type
+      use mpas_log, only : mpas_log_init, mpas_log_open
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, err=local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+      call mpas_log_write('')
+#ifdef SINGLE_PRECISION
+      call mpas_log_write('Using default single-precision reals')
+#else
+      call mpas_log_write('Using default double-precision reals')
+#endif
+      call mpas_log_write('')
+
+
+   end function init_atm_setup_log!}}}
 
 
    !***********************************************************************

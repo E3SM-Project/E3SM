@@ -7,7 +7,6 @@
 !
 !=================================================================================================================
  module mpas_atmphys_finalize
- use mpas_derived_types
  use mpas_pool_routines
 
  use module_mp_thompson
@@ -52,8 +51,8 @@
 !=================================================================================================================
  subroutine mp_thompson_deallocate
 !=================================================================================================================
-!write(0,*)
-!write(0,*) '--- enter subroutine mp_thompson_deallocate:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine mp_thompson_deallocate:')
 
  if(allocated(tcg_racg) ) deallocate(tcg_racg ) 
  if(allocated(tmr_racg) ) deallocate(tmr_racg )
@@ -89,7 +88,7 @@
  if(allocated(tnc_wev)  ) deallocate(tnc_wev  )
  if(allocated(tnccn_act)) deallocate(tnccn_act)
 
-!write(0,*) '--- end subroutine mp_thompson_deallocate'
+!call mpas_log_write('--- end subroutine mp_thompson_deallocate')
 
  end subroutine mp_thompson_deallocate
 

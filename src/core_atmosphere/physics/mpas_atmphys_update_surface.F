@@ -9,7 +9,6 @@
  module mpas_atmphys_update_surface
  use mpas_dmpar
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_date_time
@@ -168,12 +167,12 @@
  call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
  call mpas_pool_get_array(diag_physics,'xicem'     ,xicem     )
 
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_update_sst:'
-!write(0,*) '--- config_frac_seaice =', config_frac_seaice
-!write(0,*) '--- xice_threshold     =', xice_threshold
-!write(0,*) '--- isice  =', isice
-!write(0,*) '--- iswater=', iswater
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_update_sst:')
+!call mpas_log_write('--- config_frac_seaice =$l', logicArgs=(/config_frac_seaice/))
+!call mpas_log_write('--- xice_threshold     =$r', realArgs=(/xice_threshold/))
+!call mpas_log_write('--- isice  =$i', intArgs=(/isice/))
+!call mpas_log_write('--- iswater=$i', intArgs=(/iswater/))
 
  if(config_frac_seaice) then
     do iCell = 1,nCellsSolve
@@ -267,10 +266,10 @@
        tslb(1,iCell) = sst(iCell)
     endif
  enddo
-!write(0,*)
-!write(0,*) '--- nb of seaice points converted to land points  = ',nb_to_land
-!write(0,*) '--- nb of seaice points converted to ocean points = ',nb_to_ocean
-!write(0,*) '--- nb of seaice points less than xice threshold  = ',nb_removed
+!call mpas_log_write('')
+!call mpas_log_write('--- nb of seaice points converted to land points  = $i',intArgs=(/nb_to_land/))
+!call mpas_log_write('--- nb of seaice points converted to ocean points = $i',intArgs=(/nb_to_ocean/))
+!call mpas_log_write('--- nb of seaice points less than xice threshold  = $i',intArgs=(/nb_removed/))
 
 !finally, update the sea-ice flag. save xice prior to next update:
  do iCell = 1, nCellsSolve
@@ -290,11 +289,11 @@
 !enddo
 !call mpas_dmpar_min_real(dminfo,local_min,global_sst_min)
 !call mpas_dmpar_max_real(dminfo,local_max,global_sst_max)
-!write(0,*)
-!write(0,*) '--- min local SST   = ',local_min
-!write(0,*) '--- max local SST   = ',local_max
-!write(0,*) '--- min global SST  = ',global_sst_min
-!write(0,*) '--- max global SST  = ',global_sst_max
+!call mpas_log_write('')
+!call mpas_log_write('--- min local SST   = $r',realArgs=(/local_min/))
+!call mpas_log_write('--- max local SST   = $r',realArgs=(/local_max/))
+!call mpas_log_write('--- min global SST  = $r',realArgs=(/global_sst_min/))
+!call mpas_log_write('--- max global SST  = $r',realArgs=(/global_sst_max/))
 
 !local_min =  999._RKIND
 !local_max = -999._RKIND
@@ -306,14 +305,14 @@
 !call mpas_dmpar_max_real(dminfo,local_max,global_xice_max)
 !if(local_min .eq.  999._RKIND) local_min = 0._RKIND
 !if(local_max .eq. -999._RKIND) local_max = 0._RKIND
-!write(0,*)
-!write(0,*) '--- min local XICE  = ',local_min
-!write(0,*) '--- max local XICE  = ',local_max
-!write(0,*) '--- min global XICE = ',global_xice_min
-!write(0,*) '--- max global XICE = ',global_xice_max
+!call mpas_log_write('')
+!call mpas_log_write('--- min local XICE  = $r',realArgs=(/local_min/))
+!call mpas_log_write('--- max local XICE  = $r',realArgs=(/local_max/))
+!call mpas_log_write('--- min global XICE = $r',realArgs=(/global_xice_min/))
+!call mpas_log_write('--- max global XICE = $r',realArgs=(/global_xice_max/))
 
-!write(0,*) '--- end subroutine physics_update_sst'
-!write(0,*)
+!call mpas_log_write('--- end subroutine physics_update_sst')
+!call mpas_log_write('')
 
  end subroutine physics_update_sst
 
@@ -351,8 +350,8 @@
  real(kind=RKIND):: usw, qo, swo, us, tb, dtc, dtw, alw, dtwo, delt, f1
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_update_sstskin:'
+! call mpas_log_write('')
+! call mpas_log_write('--- enter subroutine physics_update_sstskin:')
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
@@ -482,8 +481,8 @@
  real(kind=RKIND):: deltat,julian,tprior,yrday
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_update_deepsoiltemp:' 
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_update_deepsoiltemp:')
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nLags'      ,nLags      )
@@ -516,11 +515,11 @@
 !... update the deep soil temperature at the end of the day:
  deltat = (julian_in-nint(julian_in))*24.*3600.
 
-!write(0,*) '--- yrday          = ',yrday
-!write(0,*) '--- julian_in      = ',julian_in
-!write(0,*) '--- nint(julian_in)= ',nint(julian_in)
-!write(0,*) '--- deltat         = ',deltat
-!write(0,*) '--- nint(deltat)-dt= ',nint(deltat) .lt. dt
+!call mpas_log_write('--- yrday          = $r',realArgs=(/yrday/))
+!call mpas_log_write('--- julian_in      = $r',realArgs=(/julian_in/))
+!call mpas_log_write('--- nint(julian_in)= $i',intArgs=(/nint(julian_in)/))
+!call mpas_log_write('--- deltat         = $r',realArgs=(/deltat/))
+!call mpas_log_write('--- nint(deltat)-dt= $l',logicArgs=(/nint(deltat) .lt. dt/))
 
  if(abs(deltat) .le. dt/2) then
     julian = julian_in - 1. + dt/(3600.*24.)
