@@ -7,7 +7,7 @@ are members of class Case from file case.py
 import shutil, glob, re, os
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force
+from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force, safe_copy
 from CIME.date                      import get_file_date
 from os.path                        import isdir, join
 
@@ -19,7 +19,7 @@ def _get_archive_file_fn(copy_only):
     """
     Returns the function to use for archiving some files
     """
-    return shutil.copyfile if copy_only else shutil.move
+    return safe_copy if copy_only else shutil.move
 
 ###############################################################################
 def _get_datenames(case):
@@ -134,7 +134,7 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
         # Copy of all rpointer files for latest restart date
         rpointers = glob.glob(os.path.join(rundir, 'rpointer.*'))
         for rpointer in rpointers:
-            shutil.copy(rpointer, os.path.join(archive_restdir, os.path.basename(rpointer)))
+            safe_copy(rpointer, os.path.join(archive_restdir, os.path.basename(rpointer)))
     else:
         # Generate rpointer file(s) for interim restarts for the one datename and each
         # possible value of ninst_strings
@@ -263,7 +263,7 @@ def _archive_history_files(case, archive, archive_entry,
                         destfile = join(archive_histdir, histfile)
                         if histfile in histfiles_savein_rundir:
                             logger.debug("histfiles_savein_rundir; copying \n  {} to \n  {} ".format(srcfile, destfile))
-                            shutil.copy(srcfile, destfile)
+                            safe_copy(srcfile, destfile)
                         else:
                             logger.debug("_archive_history_files; moving \n  {} to \n  {} ".format(srcfile, destfile))
                             archive_file_fn(srcfile, destfile)
@@ -379,7 +379,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
         last_restart_file_fn = symlink_force
         last_restart_file_fn_msg = "linking"
     else:
-        last_restart_file_fn = shutil.copy
+        last_restart_file_fn = safe_copy
         last_restart_file_fn_msg = "copying"
 
     # the compname is drv but the files are named cpl
@@ -439,7 +439,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history restart file {} for last date does not exist ".format(srcfile))
-                        shutil.copy(srcfile, destfile)
+                        safe_copy(srcfile, destfile)
                         logger.debug("datename_is_last + histfiles_for_restart copying \n  {} to \n  {}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
@@ -458,7 +458,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                             destfile = os.path.join(archive_restdir, histfile)
                             expect(os.path.isfile(srcfile),
                                    "hist file {} does not exist ".format(srcfile))
-                            shutil.copy(srcfile, destfile)
+                            safe_copy(srcfile, destfile)
                             logger.debug("interim_restarts: copying \n  {} to \n  {}".format(srcfile, destfile))
                     else:
                         srcfile = os.path.join(rundir, restfile)
@@ -536,7 +536,7 @@ def restore_from_archive(self, rest_dir=None):
         if os.path.exists(dst):
             os.remove(dst)
 
-        shutil.copy(item, rundir)
+        safe_copy(item, rundir)
 
 ###############################################################################
 def archive_last_restarts(self, archive_restdir, last_date=None, link_to_restart_files=False):

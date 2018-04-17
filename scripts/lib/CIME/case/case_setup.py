@@ -7,11 +7,9 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job, safe_copy
 from CIME.test_status       import *
 from CIME.locked_files      import unlock_file, lock_file
-
-import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ def _build_usernl_files(case, model, comp):
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
-            shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
+            safe_copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
         if ninst == 1:
             ninst = case.get_value("NINST_{}".format(model))
@@ -55,14 +53,14 @@ def _build_usernl_files(case, model, comp):
                     # to user_nl_foo_INST; otherwise, copy the original
                     # user_nl_foo from model_dir
                     if os.path.exists(nlfile):
-                        shutil.copy(nlfile, inst_nlfile)
+                        safe_copy(nlfile, inst_nlfile)
                     elif os.path.exists(model_nl):
-                        shutil.copy(model_nl, inst_nlfile)
+                        safe_copy(model_nl, inst_nlfile)
         else:
             # ninst = 1
             if not os.path.exists(nlfile):
                 if os.path.exists(model_nl):
-                    shutil.copy(model_nl, nlfile)
+                    safe_copy(model_nl, nlfile)
 
 ###############################################################################
 def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):

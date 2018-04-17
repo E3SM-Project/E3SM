@@ -3,10 +3,12 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
+
 import xml.etree.ElementTree as ET
 #pylint: disable=import-error
 from distutils.spawn import find_executable
-import getpass, shutil
+import getpass
 import six
 from copy import deepcopy
 
@@ -121,7 +123,7 @@ class GenericXML(object):
             new_case = os.path.dirname(newfile)
             if not os.path.exists(new_case):
                 os.makedirs(new_case)
-            shutil.copy(self.filename, newfile)
+            safe_copy(self.filename, newfile)
 
         self.tree = None
         self.filename = newfile
