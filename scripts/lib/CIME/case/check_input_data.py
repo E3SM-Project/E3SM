@@ -2,7 +2,7 @@
 API for checking input for testcase
 """
 from CIME.XML.standard_module_setup import *
-from CIME.utils import SharedArea, find_files, safe_copy
+from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
@@ -10,7 +10,7 @@ import glob
 
 logger = logging.getLogger(__name__)
 
-def _download_if_in_repo(server, input_data_root, rel_path):
+def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     """
     Return True if successfully downloaded
     """
@@ -20,13 +20,21 @@ def _download_if_in_repo(server, input_data_root, rel_path):
     full_path = os.path.join(input_data_root, rel_path)
     logging.info("Trying to download file: '{}' to path '{}'".format(rel_path, full_path))
     # Make sure local path exists, create if it does not
-    if(not os.path.exists(os.path.dirname(full_path))):
+    if isdirectory or full_path.endswith(os.sep):
+        if not os.path.exists(full_path):
+            logger.info("Creating directory {}".format(full_path))
+            os.makedirs(full_path)
+        isdirectory = True
+    elif not os.path.exists(os.path.dirname(full_path)):
         os.makedirs(os.path.dirname(full_path))
 
     # Use umask to make sure files are group read/writable. As long as parent directories
     # have +s, then everything should work.
     with SharedArea():
-        return server.getfile(rel_path, full_path)
+        if isdirectory:
+            return server.getdirectory(rel_path, full_path)
+        else:
+            return server.getfile(rel_path, full_path)
 
 ###############################################################################
 def check_all_input_data(self, protocal=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
@@ -39,19 +47,26 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
         inputdata = Inputdata()
 
         if download:
-            while not success:
-                protocal, address = inputdata.get_next_server()
-                expect(protocal is not None, "Failed to find input data")
-                logger.info("Checking server {} with protocal {}".format(address, protocal))
-                success = self.check_input_data(protocal=protocal, address=address, download=download,
-                                                input_data_root=input_data_root, data_list_dir=data_list_dir)
+            success = _downloadfromserver(self, input_data_root, data_list_dir)
         else:
-            success = self.check_input_data(protocal=protocal, address=address, download=download,
+            success = self.check_input_data(protocal=protocal, address=address, download=False,
                                             input_data_root=input_data_root, data_list_dir=data_list_dir)
 
-    self.stage_refcase()
+    self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
 
-def stage_refcase(self):
+def _downloadfromserver(case, input_data_root, data_list_dir):
+    # needs to be downloaded
+    success = False
+    protocal = 'svn'
+    inputdata = Inputdata()
+    while not success and protocal is not None:
+        protocal, address = inputdata.get_next_server()
+        logger.info("Checking server {} with protocal {}".format(address, protocal))
+        success = case.check_input_data(protocal=protocal, address=address, download=True,
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
+    return success
+
+def stage_refcase(self, input_data_root=None, data_list_dir=None):
     get_refcase  = self.get_value("GET_REFCASE")
     run_type     = self.get_value("RUN_TYPE")
     continue_run = self.get_value("CONTINUE_RUN")
@@ -71,9 +86,11 @@ def stage_refcase(self):
 
         refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
         if not os.path.isdir(refdir):
+            logger.warning("Refcase not found in {}, will attempt to download from inputdata".format(refdir))
             with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
-                      fd.write("refdir = {}".format(os.path.join(run_refdir, run_refcase, run_refdate)))
-            return
+                      fd.write("refdir = {}{}".format(refdir, os.sep))
+            success = _downloadfromserver(self, input_data_root=din_loc_root, data_list_dir="Buildconf")
+            expect(success, "Could not download refcase from any server")
 
         logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
 
@@ -101,10 +118,13 @@ def stage_refcase(self):
             camfile = cam2file.replace("cam2", "cam")
             os.symlink(cam2file, camfile)
 
+    return True
+
 def check_input_data(case, protocal="svn", address=None, input_data_root=None, data_list_dir="Buildconf", download=False):
     """
     Return True if no files missing
     """
+    case.load_env(reset=True)
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
@@ -173,7 +193,8 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                             logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
 
                             if (download):
-                                success = _download_if_in_repo(server, input_data_root, rel_path.strip('/'))
+                                success = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
+                                                               isdirectory=rel_path.endswith(os.sep))
                                 if not success:
                                     no_files_missing = False
                         else:

@@ -15,14 +15,14 @@
   </server>
 
   <server>
-    <comment> ftp requires the python package ftplib </comment>
-    <protocal>ftp</protocal>
-    <address>ftp.cgd.ucar.edu/cesm/inputdata</address>
+    <protocal>wget</protocal>
+    <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
   </server>
 
   <server>
-    <protocal>wget</protocal>
-    <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
+    <comment> ftp requires the python package ftplib </comment>
+    <protocal>ftp</protocal>
+    <address>ftp.cgd.ucar.edu/cesm/inputdata</address>
   </server>
 
 </inputdata>

@@ -31,9 +31,10 @@ class FTP(GenericServer):
         stat = self.ftp.nlst(rel_path)
 
         if rel_path not in stat:
-            logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
-            return None
-        return self
+            if not stat[0].startswith(rel_path):
+                logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
+                return False
+        return True
 
     def getfile(self, rel_path, full_path):
         stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
@@ -43,3 +44,8 @@ class FTP(GenericServer):
                             format(rel_path, self._ftp_server, stat))
             return False
         return True
+
+    def getdirectory(self, rel_path, full_path):
+        stat = self.ftp.nlst(rel_path)
+        for _file in stat:
+            self.getfile(_file, full_path+os.sep+os.path.basename(_file))
