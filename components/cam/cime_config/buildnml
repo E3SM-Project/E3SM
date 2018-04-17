@@ -40,7 +40,6 @@ my $RUN_REFCASE	        = `./xmlquery  RUN_REFCASE		-value`;
 my $RUN_REFDATE	        = `./xmlquery  RUN_REFDATE		-value`;
 my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD		-value`;
 my $UTILROOT		= `./xmlquery  UTILROOT			-value`;
-my $DOCN_MODE		= `./xmlquery  DOCN_MODE		-value`;
 my $COMPILER		= `./xmlquery  COMPILER                 -value`; # for chem preprocessor 
 my $BUILD_THREADED      = `./xmlquery  BUILD_THREADED		-value`;
 my $OS                  = lc `./xmlquery OS                     -value`;
@@ -84,7 +83,10 @@ if ($BUILD_COMPLETE eq 'FALSE') {
     # tunings as the fully coupled B compset, so set the ocean component to pop in
     # that case.
     my $ocn = $COMP_OCN;
-    if ($DOCN_MODE eq 'som') {$ocn = "pop";}
+    if ($ocn eq 'docn'){
+       my $DOCN_MODE  == `./xmlquery  DOCN_MODE --value`;
+       if ($DOCN_MODE eq 'som') {$ocn = "pop";}
+    }
     my $comp;
     if ($COMP_INTERFACE eq 'mct' ) {$comp = "mct";}
     if ($COMP_INTERFACE eq 'esmf') {$comp = "esmf";}

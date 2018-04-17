@@ -387,7 +387,7 @@ sub check_for_perl_utils {
 
   my $cfgdir = shift;
 
-  # Determine CESM root directory and perl5lib root directory
+  # Determine E3SM root directory and perl5lib root directory
   my $cesmroot = abs_path( "$cfgdir/../../../");
   my $perl5lib_dir = "$cesmroot/cime/utils/perl5lib";
 
@@ -569,7 +569,7 @@ sub read_namelist_defaults {
 #-------------------------------------------------------------------------------
 
 sub check_cesm_inputdata {
-  # Check that the CESM inputdata root directory has been specified.  This must be
+  # Check that the E3SM inputdata root directory has been specified.  This must be
   # a local or nfs mounted directory.
 
   my ($opts, $nl_flags) = @_;
@@ -582,7 +582,7 @@ sub check_cesm_inputdata {
     $nl_flags->{'inputdata_rootdir'} = $ENV{'CSMDATA'};
   }
   else {
-    fatal_error("CESM inputdata root directory must be specified by either -csmdata\n" .
+    fatal_error("E3SM inputdata root directory must be specified by either -csmdata\n" .
                 "argument or by the CSMDATA environment variable.\n");
   }
   if ( ! defined($ENV{'DIN_LOC_ROOT'}) ) {
@@ -590,10 +590,10 @@ sub check_cesm_inputdata {
   }
 
   if ($opts->{'test'}) {
-    (-d $nl_flags->{'inputdata_rootdir'})  or  fatal_error("CESM inputdata root is not a directory: \"$nl_flags->{'inputdata_rootdir'}\"\n");
+    (-d $nl_flags->{'inputdata_rootdir'})  or  fatal_error("E3SM inputdata root is not a directory: \"$nl_flags->{'inputdata_rootdir'}\"\n");
   }
 
-  verbose_message("CESM inputdata root directory: $nl_flags->{'inputdata_rootdir'}");
+  verbose_message("E3SM inputdata root directory: $nl_flags->{'inputdata_rootdir'}");
 }
 
 #-------------------------------------------------------------------------------
@@ -3434,7 +3434,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $inputdata_rootdir -- CESM inputdata root directory
+#  $inputdata_rootdir -- E3SM inputdata root directory
 
   my $test_files = shift;
   my $inputdata_rootdir = shift;
@@ -3504,7 +3504,7 @@ sub add_default {
 
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
-    # the CESM inputdata root directory.
+    # the E3SM inputdata root directory.
     if (not defined $settings{'no_abspath'}) {
       if (defined $settings{'set_abspath'}) {
         $val = set_abs_filepath($val, $settings{'set_abspath'});
