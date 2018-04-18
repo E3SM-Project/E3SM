@@ -848,10 +848,10 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, ftype, qsplit, rsplit, vsplit, disable_diagnostics
+    use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
-    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics
+    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -874,6 +874,7 @@ contains
 
     real(kind=real_kind) :: dp, dt_q, dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
+    real(kind=real_kind) :: dp_forcing(np,np,nlev,nets:nete) !store dp at time when forcing was received
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
@@ -922,15 +923,14 @@ contains
     !   ftype=-1: do not apply forcing
 
     if (ftype==0) then
-      ! no vsplit for ftype=0 yet
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
 
-! sorf out, no vsplit is vsplit=-1 or 0 or either?
-    elseif (ftype==2) then
+    elseif ( ( ftype==2 ) .or. (ftype == 3)) then
       call t_startf("ApplyCAMForcing_dynamics")
-      if (vsplit > 0) then
+      if (ftype == 3) then
+        !no need to adjust dp here, it is the same
         call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt, nets, nete)
       else 
         call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt_remap, nets, nete)
@@ -955,6 +955,7 @@ contains
         elem(ie)%state%dp3d(:,:,k,tl%n0)=&
              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+        dp_forcing(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,tl%n0) ! temp var, it should be moved to elem(:)
       enddo
     enddo
 
@@ -966,7 +967,6 @@ contains
 #endif
 
 !if (hybrid%masterthread) print *,"ftype", ftype
-!if (hybrid%masterthread) print *,"rsplit,vsplit", rsplit,vsplit
 !if (hybrid%masterthread) print *,"dt_q", dt_q
 
     ! Loop over rsplit vertically lagrangian timesiteps
@@ -976,7 +976,7 @@ contains
 
     do r=2,rsplit
       !put this i-fstatement above? branching
-      if(vsplit>0) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp, dt, dp_forcing, nets, nete)
 
       call TimeLevel_update(tl,"leapfrog")
       call t_startf("prim_step_rX")

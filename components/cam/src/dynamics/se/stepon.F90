@@ -269,7 +269,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (ftype==2) then
+      if ( (ftype==2) .or. (ftype==3) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
