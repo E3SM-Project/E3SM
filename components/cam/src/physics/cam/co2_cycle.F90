@@ -24,6 +24,8 @@ use constituents,   only: cnst_add, cnst_get_ind, cnst_name, cnst_longname, sflx
 use chem_surfvals,  only: chem_surfvals_get
 use co2_data_flux
 use cam_abortutils,     only: endrun
+use physics_types,  only: physics_state
+use physics_buffer, only: physics_buffer_desc
 
 implicit none
 private
@@ -186,7 +188,7 @@ function co2_implements_cnst(name)
   end function co2_implements_cnst
 
 !===============================================================================  
-subroutine co2_init
+subroutine co2_init (state, pbuf2d )
 
 !----------------------------------------------------------------------- 
 ! 
@@ -197,8 +199,12 @@ subroutine co2_init
 !
 !-----------------------------------------------------------------------
 
-    use cam_history, only: addfld, horiz_only, add_default
- 
+    use cam_history,    only: addfld, horiz_only, add_default
+
+    type(physics_state), pointer       :: state(:)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+
     integer :: m, mm
       
     if (.not. co2_flag) return
@@ -221,11 +227,11 @@ subroutine co2_init
  
     ! Read flux data
     if (co2_readFlux_ocn) then
-       call read_data_flux ( co2flux_ocn_file,  data_flux_ocn )
+       call read_data_flux ( co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
     end if
  
     if (co2_readFlux_fuel) then
-       call read_data_flux ( co2flux_fuel_file, data_flux_fuel )
+       call read_data_flux ( co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
     end if
  
   end subroutine co2_init

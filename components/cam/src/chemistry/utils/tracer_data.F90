@@ -611,9 +611,9 @@ contains
 
     type(trfile),        intent(inout) :: file
     type(trfld),         intent(inout) :: flds(:)
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
+    type(physics_state), optional, intent(in)    :: state(begchunk:endchunk)
     
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), optional, pointer :: pbuf2d(:,:)
     integer :: ncol
     real(r8) :: data_time
     real(r8) :: t(pcols,pver)          ! input temperature (K)
@@ -639,7 +639,11 @@ contains
     ! Should not impact other runs?
        if ( file%curr_mod_time >= data_time ) then
           call t_startf('read_next_trcdata')
-          call read_next_trcdata(state, flds, file )
+          if(present(state)) then
+             call read_next_trcdata(flds, file, state )
+          else
+             call read_next_trcdata(flds, file)
+          endif
           call t_stopf('read_next_trcdata')
           if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam
        end if
@@ -649,7 +653,11 @@ contains
     ! need to interpolate the data, regardless
     ! each mpi task needs to interpolate
     call t_startf('interpolate_trcdata')
-    call interpolate_trcdata( state, flds, file, pbuf2d )
+    if(present(state)) then
+       call interpolate_trcdata(flds, file, state, pbuf2d )
+    else
+       call interpolate_trcdata(flds, file)
+    endif
     call t_stopf('interpolate_trcdata')
 
     file%initialized = .true.
@@ -1100,7 +1108,7 @@ contains
 
 !------------------------------------------------------------------------
 !------------------------------------------------------------------------
-  subroutine read_next_trcdata(state, flds, file )
+  subroutine read_next_trcdata(flds, file, state )
     
     use shr_const_mod, only:pi => shr_const_pi
     use physics_types,only : physics_state
@@ -1114,7 +1122,7 @@ contains
 
     type (trfile), intent(inout) :: file
     type (trfld),intent(inout) :: flds(:)
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
+    type(physics_state), optional, intent(in)    :: state(begchunk:endchunk)
     
     integer :: recnos(4),i,f,nflds      ! 
     integer :: cnt4(4)            ! array of counts for each dimension
@@ -1160,12 +1168,16 @@ contains
                       scm_dgnum(n)**3)*exp(4.5_r8*(log(scm_std(n))**2) )) 
         enddo
       enddo
-      
-      do k = 1, pver
-        do ii = 1, state(begchunk)%ncol
-          rho(ii,k) = state(begchunk)%pmid(ii,k)/(rair*state(begchunk)%t(ii,k))
-        enddo
-      enddo
+      if(present(state)) then
+         do k = 1, pver
+            do ii = 1, state(begchunk)%ncol
+               rho(ii,k) = state(begchunk)%pmid(ii,k)/(rair*state(begchunk)%t(ii,k))
+            enddo
+         enddo
+      else
+         call endrun ('tracer_data.F90(subr read_next_trcdata):' // &
+              'computing rho - STATE must be passed as an argument for if single_column and scm_observed_aero are TRUE' )         
+      endif
     end if
 
     do while( .not. times_found )
@@ -1285,60 +1297,66 @@ contains
              ! data read from the forcing file.  
              !
              if(single_column .and. scm_observed_aero) then
-                kk=index(trim(flds(f)%fldnam),'_')-1
-                if(index(trim(flds(f)%fldnam),'1') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
-                     if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
-                                rho,pp,q_a(1,1),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(2).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(2),flds(f)%input(i)%data, &
-                                rho,pp,q_a(1,2),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(3).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(3),flds(f)%input(i)%data, &
-                               rho,pp,q_a(1,3),state(begchunk)%ncol)
-                    elseif(flds(f)%fldnam(1:kk).eq.arnam(4).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(4),flds(f)%input(i)%data, &
-                                rho,pp,q_a(1,4),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(5).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(5),flds(f)%input(i)%data, &
-                                rho,pp,q_a(1,5),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(6),flds(f)%input(i)%data, &
-                                rho,pp,q_a(1,6),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(7),flds(f)%input(i)%data, &
-                                rho,pp,scm_num(1),state(begchunk)%ncol)
-                     endif
-                elseif(index(trim(flds(f)%fldnam),'2') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
-                     if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
-                                rho,pp,q_a(2,1),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(3).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(3),flds(f)%input(i)%data, &
-                               rho,pp,q_a(2,2),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(6),flds(f)%input(i)%data, &
-                                rho,pp,q_a(2,3),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(7),flds(f)%input(i)%data, &
-                                rho,pp,scm_num(2),state(begchunk)%ncol)
-                     endif
-                elseif(index(trim(flds(f)%fldnam),'3') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
-                     if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
-                                rho,pp,q_a(3,3),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(5).and.index(trim(flds(f)%fldnam),'log') < 1) then
-                           call replace_aero_data(flds(f)%fldnam,arnam(5),flds(f)%input(i)%data, &
-                                rho,pp,q_a(3,1),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                if(present(state)) then
+                   kk=index(trim(flds(f)%fldnam),'_')-1
+                   if(index(trim(flds(f)%fldnam),'1') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
+                      if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,1),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(2).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(2),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,2),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(3).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(3),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,3),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(4).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(4),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,4),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(5).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(5),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,5),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(6),flds(f)%input(i)%data, &
+                              rho,pp,q_a(1,6),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(7),flds(f)%input(i)%data, &
+                              rho,pp,scm_num(1),state(begchunk)%ncol)
+                      endif
+                   elseif(index(trim(flds(f)%fldnam),'2') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
+                      if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
+                              rho,pp,q_a(2,1),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(3).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(3),flds(f)%input(i)%data, &
+                              rho,pp,q_a(2,2),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(6),flds(f)%input(i)%data, &
+                              rho,pp,q_a(2,3),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(7),flds(f)%input(i)%data, &
+                              rho,pp,scm_num(2),state(begchunk)%ncol)
+                      endif
+                   elseif(index(trim(flds(f)%fldnam),'3') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
+                      if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(1),flds(f)%input(i)%data, &
+                              rho,pp,q_a(3,3),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(5).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                         call replace_aero_data(flds(f)%fldnam,arnam(5),flds(f)%input(i)%data, &
+                              rho,pp,q_a(3,1),state(begchunk)%ncol)
+                      elseif(flds(f)%fldnam(1:kk).eq.arnam(6).and.index(trim(flds(f)%fldnam),'log') < 1) then
                            call replace_aero_data(flds(f)%fldnam,arnam(6),flds(f)%input(i)%data, &
                                 rho,pp,q_a(3,2),state(begchunk)%ncol)
-                     elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
+                        elseif(flds(f)%fldnam(1:kk).eq.arnam(7).and.index(trim(flds(f)%fldnam),'log') < 1) then
                            call replace_aero_data(flds(f)%fldnam,arnam(7),flds(f)%input(i)%data, &
                                 rho,pp,scm_num(3),state(begchunk)%ncol)
+                        endif
                      endif
-                endif 
-             endif !scm_observed_aero
+                  else
+                     call endrun ('tracer_data.F90(subr read_next_trcdata):' // &
+                     'call replace_aero_data - STATE must be passed as an '  // & 
+                     'argument for if single_column and scm_observed_aero are  TRUE' )
+                  endif !scm_observed_aero
+               endif
           endif
 
        enddo
@@ -1705,19 +1723,20 @@ contains
 
 !------------------------------------------------------------------------------
 
-  subroutine interpolate_trcdata( state, flds, file, pbuf2d )
+  subroutine interpolate_trcdata( flds, file, state, pbuf2d )
     use mo_util,      only : rebin
     use physics_types,only : physics_state
     use physconst,    only : cday
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field
+    use phys_grid,      only : get_ncols_p
 
     implicit none
 
-    type(physics_state), intent(in) :: state(begchunk:endchunk)                 
+    type(physics_state), optional, intent(in) :: state(begchunk:endchunk)                 
     type (trfld),        intent(inout) :: flds(:)
     type (trfile),       intent(inout) :: file
     
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), optional, pointer :: pbuf2d(:,:)
 
 
     real(r8) :: fact1, fact2
@@ -1740,7 +1759,7 @@ contains
        fact2 = 1._r8-fact1
 !$OMP PARALLEL DO PRIVATE (C, NCOL, F)
        do c = begchunk,endchunk
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if ( file%has_ps ) then
              file%ps_in(1)%data(:ncol,c) = fact1*file%ps_in(1)%data(:ncol,c) + fact2*file%ps_in(3)%data(:ncol,c) 
           endif
@@ -1755,7 +1774,7 @@ contains
 
 !$OMP PARALLEL DO PRIVATE (C, NCOL, F)
        do c = begchunk,endchunk
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if ( file%has_ps ) then
              file%ps_in(2)%data(:ncol,c) = fact1*file%ps_in(2)%data(:ncol,c) + fact2*file%ps_in(4)%data(:ncol,c) 
           endif
@@ -1811,7 +1830,7 @@ contains
           else
              data_out => data_out3d(:,:,c+chnk_offset)
           endif
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if (file%alt_data) then
 
              if (fact2 == 0) then  ! This needed as %data is not set if fact2=0 (and lahey compiler core dumps)
@@ -1819,10 +1838,16 @@ contains
              else
                 datain(:ncol,:) = fact1*flds(f)%input(nm)%data(:ncol,:,c) + fact2*flds(f)%input(np)%data(:ncol,:,c) 
              end if
-             do i = 1,ncol
-                model_z(1:pverp) = m2km * state(c)%zi(i,pverp:1:-1)
-                call rebin( file%nlev, pver, file%ilevs, model_z, datain(i,:), data_out(i,:) )
-             enddo
+             if(present(state)) then
+                do i = 1,ncol
+                   model_z(1:pverp) = m2km * state(c)%zi(i,pverp:1:-1)
+                   call rebin( file%nlev, pver, file%ilevs, model_z, datain(i,:), data_out(i,:) )
+                enddo
+             else
+                call endrun ('tracer_data.F90(subr interpolate_trcdata):' // &
+                     'STATE must be passed as an argument for rebin' )
+
+             endif
 
           else
 
@@ -1864,11 +1889,21 @@ contains
                 if ( file%top_bndry ) then
                    call vert_interp_ub(ncol, file%nlev, file%levs,  datain(:ncol,:), data_out(:ncol,:) )
                 else if(file%conserve_column) then
-                   call vert_interp_mixrat(ncol,file%nlev,pver,state(c)%pint, &
-                        datain, data_out(:,:), &
-                        file%p0,ps,file%hyai,file%hybi)
+                   if(present(state)) then
+                      call vert_interp_mixrat(ncol,file%nlev,pver,state(c)%pint, &
+                           datain, data_out(:,:), &
+                           file%p0,ps,file%hyai,file%hybi)
+                   else
+                      call endrun ('tracer_data.F90(subr interpolate_trcdata):' // & 
+                           'STATE must be passed as an argument for vert_interp_mixrat' )
+                   endif
                 else
-                   call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
+                   if(present(state)) then
+                      call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
+                   else
+                      call endrun ('tracer_data.F90(subr interpolate_trcdata):' // &
+                           'STATE must be passed as an argument for vert_interp' )
+                   endif
                 endif
              endif
 
