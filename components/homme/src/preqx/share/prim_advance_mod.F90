@@ -24,7 +24,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, applyCAMforcing, vertical_mesh_init2
 
   type (EdgeBuffer_t) :: edge3p1
   real (kind=real_kind), allocatable :: ur_weights(:)
@@ -691,6 +691,33 @@ contains
   enddo
   end subroutine applyCAMforcing_dynamics
 
+
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,np1_q,dt,dp_forcing,nets,nete)
+
+  use hybvcoord_mod,  only: hvcoord_t
+
+  implicit none
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_q
+  real (kind=real_kind),  intent(in)    :: dp_forcing(np,np,nlev,nets:nete)
+
+  integer :: i,j,k,ie,q
+  real (kind=real_kind) :: v1,dp
+
+  do ie=nets,nete
+     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
+                                    dt*elem(ie)%derived%FT(:,:,:)*elem(ie)%state%dp3d(:,:,:,np1)/dp_forcing(:,:,:,ie)
+!vel indices are np,np,2,k,time
+     do k=1,nlev
+       elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
+                                       dt*elem(ie)%derived%FM(:,:,1,k)*elem(ie)%state%dp3d(:,:,k,np1)/dp_forcing(:,:,k,ie)
+       elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) + &
+                                       dt*elem(ie)%derived%FM(:,:,2,k)*elem(ie)%state%dp3d(:,:,k,np1)/dp_forcing(:,:,k,ie)
+     enddo
+  enddo
+  end subroutine applyCAMforcing_dynamics_dp
 
 
   subroutine advance_hypervis_dp(edge3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)

@@ -36,7 +36,6 @@ module namelist_mod
     cubed_sphere_map, &
     qsplit,        &
     rsplit,        &
-    vsplit,        &
     rk_stage_user, &
     LFTfreq,       &
     prescribed_wind, &
@@ -216,7 +215,6 @@ module namelist_mod
       cubed_sphere_map, &
       qsplit,        &
       rsplit,        &
-      vsplit,        &
       rk_stage_user, &
       LFTfreq,       &
       disable_diagnostics, &
@@ -340,7 +338,6 @@ module namelist_mod
     se_phys_tscale=0
     se_nsplit = 1
     qsize = qsize_d
-    vsplit = -1
 #else
     ndays         = 0
     nmax          = 12
@@ -348,7 +345,6 @@ module namelist_mod
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
-    vsplit = -1
     pertlim = 0.0_real_kind
 #endif
     sub_case      = 1
@@ -679,7 +675,6 @@ module namelist_mod
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(vsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -817,33 +812,6 @@ module namelist_mod
        call abortmp('The semi-Lagrange Transport option requires 0 < rsplit')
     end if
 
-#ifdef CAM
-!to make vsplit > 0 work, we need: ftype=2 (for now), 
-!nsplit=1, and 
-!rsplit = Factor * ( nsplit * vsplit ), rsplit > 0
-    if( vsplit > 0 )then
-
-
-    if (par%masterproc) write (iulog,*) "VSPLIT>0, nsplit, rsplit, ftype",nsplit, rsplit,ftype
-    if (par%masterproc) write (iulog,*) "VSPLIT>0, se_nsplit, rsplit, se_ftype",se_nsplit, rsplit,se_ftype
-       if((rsplit == 0).OR.(nsplit > 1).OR.(ftype .ne. 2))then
-         call abortmp('in CAM vsplit > 0 requires rsplit > 0, nsplit = 1 and ftype=2')
-       else
-         if ( mod( rsplit, vsplit ) > 0 ) call abortmp('in CAM vsplit should be multiplier of rsplit')
-       endif
-    endif
-#else
-!what to do about ftype when no cam?
-    if( vsplit > 0 )then
-       if( (rsplit == 0) )then
-         call abortmp('in homme vsplit > 0 requires rsplit > 0')
-       else
-         if ( mod( rsplit, vsplit ) > 0 ) call abortmp('in homme vsplit should be multiplier of rsplit')
-       endif
-    endif
-#endif
-
-
 !=======================================================================================================!
 #ifdef CAM
     nmpi_per_node=1
@@ -946,7 +914,6 @@ module namelist_mod
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
-       write(iulog,*)"readnl: interpolation for vertical remap frequency vsplit (-1,0=disabled): ",vsplit
 
        write(iulog,*)"readnl: runtype       = ",runtype
 

@@ -5776,14 +5776,6 @@ If rsplit=0, vertically lagrangian code is off.
 Default: Set by build-namelist.
 </entry>
 
-<entry id="vsplit" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Controls how often interpolation of physics tendencies ((T, v), ftype=2 only)
-happens at vertically lagrangian levels. Interpolation is done
-every vsplit tracer timesteps, only if vsplit > 0, ftype=2, and rsplit > 0.  
-Default: Set by build-namelist.
-</entry>
-
 
 
 <entry id="tstep_type" type="integer" category="se"
