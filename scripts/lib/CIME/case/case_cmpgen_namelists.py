@@ -29,8 +29,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
                             if "README" not in os.path.basename(item)\
                             and not item.endswith("doc")\
                             and not item.endswith("prescribed")\
-                            and not os.path.basename(item).startswith(".")] + \
-                            glob.glob("{}/*user_nl*".format(test_dir))
+                            and not os.path.basename(item).startswith(".")]
 
     comments = "NLCOMP\n"
     for item in all_items_to_compare:
