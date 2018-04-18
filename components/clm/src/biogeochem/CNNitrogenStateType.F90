@@ -1970,7 +1970,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%frootn_patch(begp:endp)             , &
-         flux_out_grc_area = dwt_frootn_to_litter(begp:endp))
+         flux_out_col_area = dwt_frootn_to_litter(begp:endp))
 
     ! 5) FROOTN_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
@@ -2073,7 +2073,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%livecrootn_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_livecrootn_to_litter(begp:endp))
+         flux_out_col_area = dwt_livecrootn_to_litter(begp:endp))
 
     ! 16) LIVECROOTN_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
@@ -2097,7 +2097,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%deadcrootn_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_deadcrootn_to_litter(begp:endp))
+         flux_out_col_area = dwt_deadcrootn_to_litter(begp:endp))
 
     ! 19) DEADCROOTN_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
