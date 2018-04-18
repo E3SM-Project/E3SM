@@ -13,13 +13,16 @@ class NODEFAIL(ERS):
         """
         initialize an object interface to the ERS system test
         """
+        # we need to hard code the regular queue on cheyenne, otherwise this test
+        # runs in the share queue and intermitently fails due to a lack of resources
+        if case.get_value("MACH") == "cheyenne":
+            if case.get_value("USER_REQUESTED_QUEUE", subgroup="case.test") != "regular":
+                case.set_value("USER_REQUESTED_QUEUE","regular", subgroup="case.test")
+                case.case_setup(reset=True)
         ERS.__init__(self, case)
 
         self._fail_sentinel = os.path.join(case.get_value("RUNDIR"), "FAIL_SENTINEL")
         self._fail_str      = case.get_value("NODE_FAIL_REGEX")
-        if case.get_value("MACH") == "cheyenne":
-            case.set_value("JOB_QUEUE","regular", subgroup="case.test")
-            case.case_setup(reset=True)
 
     def _restart_fake_phase(self):
         # Swap out model.exe for one that emits node failures
