@@ -13,8 +13,6 @@ class NODEFAIL(ERS):
         """
         initialize an object interface to the ERS system test
         """
-        # we need to hard code the regular queue on cheyenne, otherwise this test
-        # runs in the share queue and intermitently fails due to a lack of resources
         ERS.__init__(self, case)
 
         self._fail_sentinel = os.path.join(case.get_value("RUNDIR"), "FAIL_SENTINEL")
