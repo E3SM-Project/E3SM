@@ -441,7 +441,7 @@ class TestScheduler(object):
             comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL",{"component":"drv-nuopc"}, resolved=False)
             files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
 
-            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
+            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component}, comp_interface=self._cime_driver)
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
                 error = "Missing testmod file '{}'".format(test_mod_file)

@@ -52,14 +52,6 @@
     <desc>full pathname of case</desc>
   </entry>
 
-  <entry id="LOGDIR">
-    <type>char</type>
-    <default_value>$CASEROOT/logs</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Extra copies of the component log files will be saved here.</desc>
-  </entry>
-
   <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
@@ -74,6 +66,14 @@
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>Buildconf directory location (derived variable not in namelist)</desc>
+  </entry>
+
+  <entry id="LOGDIR">
+    <type>char</type>
+    <default_value>$CASEROOT/logs</default_value>
+    <group>run_desc</group>
+    <file>env_run.xml</file>
+    <desc>Extra copies of the component log files will be saved here.</desc>
   </entry>
 
   <entry id="SCRIPTSROOT">
@@ -438,13 +438,13 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: false
+      ESP component runs after driver 'pause cycle' If any component
+      'pauses' (see PAUSE_OPTION,
+      PAUSE_N and PAUSE_ACTIVE_XXX XML variables),
+      the ESP component (if present) will be run to process the
+      component 'pause' (restart) files and set any required 'resume'
+      signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
+      ignored.  default: false
     </desc>
   </entry>
 

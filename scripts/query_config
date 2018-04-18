@@ -23,7 +23,7 @@ def query_grids(long_output):
     query all grids.
     """
     files = Files()
-    config_file = files.get_value("GRIDS_SPEC_FILE")
+    config_file = files.get_value("GRIDS_SPEC_FILE", comp_interface="mct")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
 
@@ -38,7 +38,7 @@ def query_machines(machine_name='all'):
     query machines. Defaule: all
     """
     files = Files()
-    config_file = files.get_value("MACHINES_SPEC_FILE")
+    config_file = files.get_value("MACHINES_SPEC_FILE", comp_interface="mct")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     # Provide a special machine name indicating no need for a machine name
@@ -80,7 +80,7 @@ def print_compset(name, files, all_components=False):
     """
 
     # Determine the config_file for the target component
-    config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name})
+    config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name}, comp_interface="mct")
     # only error out if we aren't printing all otherwise exit quitely
     if not all_components:
         expect((config_file),
@@ -139,9 +139,9 @@ def query_component(name, all_components=False):
         logger.debug ("{}: valid_components {}".format(comp, valid_components))
         # determine if config_file is on disk
         if name is None:
-            config_file = files.get_value(string)
+            config_file = files.get_value(string, comp_interface="mct")
         elif name in valid_components:
-            config_file = files.get_value(string, attribute={"component":name})
+            config_file = files.get_value(string, attribute={"component":name}, comp_interface="mct")
             logger.debug("query {}".format(config_file))
         if config_file is not None:
             match_found = True
@@ -208,7 +208,7 @@ def parse_command_line(args, description):
     parser.add_argument("--grids", action="store_true",
                         help="Query supported model grids for {} model.".format(cime_model))
 
-    config_file = files.get_value("MACHINES_SPEC_FILE")
+    config_file = files.get_value("MACHINES_SPEC_FILE", comp_interface="mct")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     machines = Machines(config_file, machine="Query")
@@ -244,7 +244,7 @@ def get_components():
     These are then stored in comps_array
     """
     files = Files()
-    infile = files.get_value("CONFIG_CPL_FILE")
+    infile = files.get_value("CONFIG_CPL_FILE", comp_interface="mct")
     config_drv = Component(infile, "CPL")
     return files, config_drv.get_valid_model_components()
 
@@ -293,7 +293,7 @@ class Machines(CIME.XML.machines.Machines):
         # if we can't find the specified machine
         if single_machine and machine_name is None:
             files = Files()
-            config_file = files.get_value("MACHINES_SPEC_FILE")
+            config_file = files.get_value("MACHINES_SPEC_FILE", comp_interface="mct")
             print("Machine is not listed in config file: {}".format(config_file))
         else:  # write out machines
             if single_machine:

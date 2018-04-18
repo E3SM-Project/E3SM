@@ -362,7 +362,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
-    <valid_values>acme,cesm</valid_values>
+    <valid_values>e3sm,cesm</valid_values>
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
@@ -428,6 +428,32 @@
     </values>
   </entry>
 
+  <entry id="orb_iyear_align">
+    <type>integer</type>
+    <category>orbital</category>
+    <group>DRIVER_attributes</group>
+    <desc>
+      model year associated with orb_iyear when orb_mode is variable_year. (default: 1990)
+    </desc>
+    <values>
+      <value>1990</value>
+      <value iyear="1850" cime_model="cesm">1850</value>
+    </values>
+  </entry>
+
+  <entry id="orb_iyear">
+    <type>integer</type>
+    <category>orbital</category>
+    <group>DRIVER_attributes</group>
+    <desc>
+      year of orbit, used when orb_mode is fixed_year or variable_year. (default: 1990)
+    </desc>
+    <values>
+      <value>1990</value>
+      <value iyear="1850" cime_model="cesm">1850</value>
+    </values>
+  </entry>
+
   <entry id="orb_eccen">
     <type>real</type>
     <category>orbital</category>
@@ -464,30 +490,6 @@
     </desc>
     <values>
       <value>1.e36</value>
-    </values>
-  </entry>
-
-  <entry id="orb_iyear_align">
-    <type>integer</type>
-    <category>orbital</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      model year associated with orb_iyear when orb_mode is variable_year. (default: 1990)
-    </desc>
-    <values>
-      <value>1990</value>
-    </values>
-  </entry>
-
-  <entry id="orb_iyear">
-    <type>integer</type>
-    <category>orbital</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      year of orbit, used when orb_mode is fixed_year or variable_year. (default: 1990)
-    </desc>
-    <values>
-      <value>1990</value>
     </values>
   </entry>
 
@@ -808,6 +810,18 @@
     </values>
   </entry>
 
+  <entry id="model_doi_url" modify_via_xml="MODEL_DOI_URL">
+    <type>char</type>
+    <category>expdef</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      model doi url
+    </desc>
+    <values>
+      <value>$MODEL_DOI_URL</value>
+    </values>
+  </entry>
+
   <entry id="username" modify_via_xml="USER">
     <type>char</type>
     <category>expdef</category>
@@ -948,6 +962,46 @@
   <!-- =========================================== -->
   <!-- MED general attributes                      -->
   <!-- =========================================== -->
+
+  <entry id="flux_convergence">
+    <type>real</type>
+    <category>control</category>
+    <group>MED_attributes</group>
+    <desc>
+      Iterate atmocn flux calculation to this % difference
+      Setting this to zero will always do flux_max_iteration
+    </desc>
+    <values>
+      <value cime_model='cesm'>0.0</value>
+      <value cime_model='e3sm'>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="flux_max_iteration">
+    <type>integer</type>
+    <category>control</category>
+    <group>MED_attributes</group>
+    <desc>
+      Iterate atmocn flux calculation a max of this value
+    </desc>
+    <values>
+      <value cime_model='cesm'>5</value>
+      <value cime_model='e3sm'>2</value>
+    </values>
+  </entry>
+
+  <entry id="coldair_outbreak_mod">
+    <type>logical</type>
+    <category>control</category>
+    <group>MED_attributes</group>
+    <desc>
+      if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
+    </desc>
+    <values>
+      <value cime_model='e3sm'>.false.</value>
+      <value cime_model='cesm'>.true.</value>
+    </values>
+  </entry>
 
   <entry id="info_debug" modify_via_xml="INFO_DBUG">
     <type>integer</type>
@@ -2111,7 +2165,7 @@ n    </desc>
     </desc>
     <values>
       <value>.false.</value>
-      <value BGC_MODE="CO2A">.true.</value>
+      <value BGC_MODE="CO2A.*">.true.</value>
     </values>
   </entry>
 
@@ -2148,6 +2202,21 @@ n    </desc>
       <value BGC_MODE="CO2C">.true.</value>
     </values>
   </entry>
+
+  <entry id="flds_bgc_oi">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true. BGC fields will be passed back and forth between the ocean and seaice
+      via the coupler.
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value BGC_MODE=".*_OI">.true.</value>
+    </values>
+  </entry>
+
 
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
@@ -2198,34 +2267,6 @@ n    </desc>
     </values>
   </entry>
 
-  <!-- =========================== -->
-  <!-- -group seq_cplflds_custom   -->
-  <!-- =========================== -->
-
-  <!-- <entry id="cplflds_custom"> -->
-  <!--   <type>char(200)</type> -->
-  <!--   <category>flds</category> -->
-  <!--   <group>seq_cplflds_userspec</group> -->
-  <!--   <desc> -->
-  <!--     New fields that are user specidied can be added as namelist variables -->
-  <!--     by the user in the cpl namelist flds_user using the namelist variable -->
-  <!--     array cplflds_customs. The user specified new fields must follow the -->
-  <!--     above naming convention. -->
-  <!--     As an example, say you want to add a new state 'foo' that is passed -->
-  <!--     from the land to the atm - you would do this as follows -->
-  <!--     &amp;flds_user -->
-  <!--     cplflds_custom = 'Sa_foo->a2x', 'Sa_foo->x2a' -->
-  <!--     / -->
-  <!--     This would add the field 'Sa_foo' to the character strings defining the -->
-  <!--     attribute vectors a2x and x2a. It is assumed that code would need to be -->
-  <!--     introduced in the atm and land components to deal with this new attribute -->
-  <!--     vector field. -->
-  <!--     Modify user_nl_cpl to edit this. -->
-  <!--   </desc> -->
-  <!--   <values> -->
-  <!--     <value>''</value> -->
-  <!--   </values> -->
-  <!-- </entry> -->
 
   <!-- =========================== -->
   <!-- CLOCK Attributes            -->
@@ -2363,13 +2404,13 @@ n    </desc>
     <category>time</category>
     <group>CLOCK_attributes</group>
     <desc>
-      true => ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: true
+      true => ESP component runs after driver 'pause cycle' If any
+      component 'pauses' (see PAUSE_OPTION,
+      PAUSE_N and DATA_ASSIMILATION_XXX XML
+      variables), the ESP component (if present) will be run to
+      process the component 'pause' (restart) files and set any
+      required 'resume' signals.  If true, esp_cpl_dt and
+      esp_cpl_offset settings are ignored.  default: true
     </desc>
     <values>
       <value>.true.</value>
@@ -2804,28 +2845,110 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
-    <type>char</type>
+  <entry id="pause_active_atm" modify_via_xml="PAUSE_ACTIVE_ATM">
+    <type>logical</type>
     <category>time</category>
     <group>CLOCK_attributes</group>
     <desc>
-      A colon-separated list of component types (e.g., ocn,atm) to receive a
-      resume signal after a pause has happened. Special values "all" or "none"
-      may be used in place of a list
+      Whether Pause signals are active for component atm
     </desc>
     <values>
-      <value>$PAUSE_COMPONENT_LIST</value>
+      <value>$PAUSE_ACTIVE_ATM</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_cpl" modify_via_xml="PAUSE_ACTIVE_CPL">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component CPL
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_ocn" modify_via_xml="PAUSE_ACTIVE_OCN">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component ocn
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_OCN</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_wav" modify_via_xml="PAUSE_ACTIVE_WAV">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component wav
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_glc" modify_via_xml="PAUSE_ACTIVE_GLC">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component glc
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_GLC</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_rof" modify_via_xml="PAUSE_ACTIVE_ROF">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component rof
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_ROF</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_ice" modify_via_xml="PAUSE_ACTIVE_ICE">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component ice
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_ICE</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_lnd" modify_via_xml="PAUSE_ACTIVE_LND">
+    <type>logical</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Pause signals are active for component lnd
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_LND</value>
     </values>
   </entry>
 
   <!-- =========================== -->
-  <!-- group seq_ccsm_pes          -->
+  <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 
   <entry id="atm_ntasks" modify_via_xml="NTASKS_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the atm components.
       set by NTASKS_ATM in env_configure.xml.
@@ -2837,8 +2960,8 @@ n    </desc>
 
   <entry id="atm_nthreads" modify_via_xml="NTHRDS_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the atm component.
       set by NTHRDS_ATM in env_configure.xml.
@@ -2850,8 +2973,8 @@ n    </desc>
 
   <entry id="atm_rootpe" modify_via_xml="ROOTPE_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the atm component.
       set by ROOTPE_ATM in env_configure.xml.
@@ -2863,8 +2986,8 @@ n    </desc>
 
   <entry id="atm_pestride" modify_via_xml="PSTRID_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the atm component.
       set by PSTRID_ATM in env_configure.xml.
@@ -2876,8 +2999,8 @@ n    </desc>
 
   <entry id="atm_layout" modify_via_xml="NINST_ATM_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance atms (if there are more than 1)
@@ -2889,8 +3012,8 @@ n    </desc>
 
   <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
@@ -2902,8 +3025,8 @@ n    </desc>
 
   <entry id="lnd_nthreads" modify_via_xml="NTHRDS_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_LND in env_configure.xml.
@@ -2915,8 +3038,8 @@ n    </desc>
 
   <entry id="lnd_rootpe" modify_via_xml="ROOTPE_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
@@ -2928,8 +3051,8 @@ n    </desc>
 
   <entry id="lnd_pestride" modify_via_xml="PSTRID_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
@@ -2941,8 +3064,8 @@ n    </desc>
 
   <entry id="lnd_layout" modify_via_xml="NINST_LND_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance lnds (if there are more than 1)
@@ -2954,8 +3077,8 @@ n    </desc>
 
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the ice components.
       set by NTASKS_ICE in env_configure.xml.
@@ -2967,8 +3090,8 @@ n    </desc>
 
   <entry id="ice_nthreads" modify_via_xml="NTHRDS_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the ice component.
       set by NTHRDS_ICE in env_configure.xml.
@@ -2980,8 +3103,8 @@ n    </desc>
 
   <entry id="ice_rootpe" modify_via_xml="ROOTPE_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the ice component.
       set by ROOTPE_ICE in env_configure.xml.
@@ -2993,8 +3116,8 @@ n    </desc>
 
   <entry id="ice_pestride" modify_via_xml="PSTRID_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the ice component.
       set by PSTRID_ICE in env_configure.xml.
@@ -3006,8 +3129,8 @@ n    </desc>
 
   <entry id="ice_layout" modify_via_xml="NINST_ICE_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance ices (if there are more than 1)
@@ -3019,8 +3142,8 @@ n    </desc>
 
   <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the ocn components.
       set by NTASKS_OCN in env_configure.xml.
@@ -3032,8 +3155,8 @@ n    </desc>
 
   <entry id="ocn_nthreads" modify_via_xml="NTHRDS_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the ocn component.
       set by NTHRDS_OCN in env_configure.xml.
@@ -3045,8 +3168,8 @@ n    </desc>
 
   <entry id="ocn_rootpe" modify_via_xml="ROOTPE_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the ocn component.
       set by ROOTPE_OCN in env_configure.xml.
@@ -3058,8 +3181,8 @@ n    </desc>
 
   <entry id="ocn_pestride" modify_via_xml="PSTRID_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the ocn component.
       set by PSTRID_OCN in env_configure.xml.  default: 1
@@ -3071,8 +3194,8 @@ n    </desc>
 
   <entry id="ocn_layout" modify_via_xml="NINST_OCN_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance ocns (if there are more than 1)
@@ -3084,8 +3207,8 @@ n    </desc>
 
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the glc components.
       set by NTASKS_GLC in env_configure.xml.
@@ -3097,8 +3220,8 @@ n    </desc>
 
   <entry id="glc_nthreads" modify_via_xml="NTHRDS_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the glc component.
       set by NTHRDS_GLC in env_configure.xml.
@@ -3110,8 +3233,8 @@ n    </desc>
 
   <entry id="glc_rootpe" modify_via_xml="ROOTPE_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the glc component.
       set by ROOTPE_GLC in env_configure.xml.
@@ -3123,8 +3246,8 @@ n    </desc>
 
   <entry id="glc_pestride" modify_via_xml="PSTRID_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the glc component.
       set by PSTRID_GLC in env_configure.xml.
@@ -3136,8 +3259,8 @@ n    </desc>
 
   <entry id="glc_layout" modify_via_xml="NINST_GLC_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance glcs (if there are more than 1)
@@ -3149,8 +3272,8 @@ n    </desc>
 
   <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the wav components.
       set by NTASKS_WAV in env_configure.xml.
@@ -3162,8 +3285,8 @@ n    </desc>
 
   <entry id="wav_nthreads" modify_via_xml="NTHRDS_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the wav component.
       set by NTHRDS_WAV in env_configure.xml.
@@ -3175,8 +3298,8 @@ n    </desc>
 
   <entry id="wav_rootpe" modify_via_xml="ROOTPE_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the wav component.
       set by ROOTPE_WAV in env_configure.xml.
@@ -3188,8 +3311,8 @@ n    </desc>
 
   <entry id="wav_pestride" modify_via_xml="PSTRID_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the wav component.
       set by PSTRID_WAV in env_configure.xml.
@@ -3201,8 +3324,8 @@ n    </desc>
 
   <entry id="wav_layout" modify_via_xml="NINST_WAV_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance wavs (if there are more than 1)
@@ -3214,8 +3337,8 @@ n    </desc>
 
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
@@ -3227,8 +3350,8 @@ n    </desc>
 
   <entry id="rof_nthreads" modify_via_xml="NTHRDS_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_ROF in env_configure.xml.
@@ -3240,8 +3363,8 @@ n    </desc>
 
   <entry id="rof_rootpe" modify_via_xml="ROOTPE_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
@@ -3253,8 +3376,8 @@ n    </desc>
 
   <entry id="rof_pestride" modify_via_xml="PSTRID_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
@@ -3266,8 +3389,8 @@ n    </desc>
 
   <entry id="rof_layout" modify_via_xml="NINST_ROF_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance lnds (if there are more than 1)
@@ -3279,8 +3402,8 @@ n    </desc>
 
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the esp components.
       set by NTASKS_ESP in env_configure.xml.
@@ -3292,8 +3415,8 @@ n    </desc>
 
   <entry  id="esp_nthreads" modify_via_xml="NTHRDS_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the esp component.
       set by NTHRDS_ESP in env_configure.xml.
@@ -3305,8 +3428,8 @@ n    </desc>
 
   <entry  id="esp_rootpe" modify_via_xml="ROOTPE_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the esp component.
       set by ROOTPE_ESP in env_configure.xml.
@@ -3318,8 +3441,8 @@ n    </desc>
 
   <entry  id="esp_pestride" modify_via_xml="PSTRID_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the esp component.
       set by PSTRID_ESP in env_configure.xml.
@@ -3331,8 +3454,8 @@ n    </desc>
 
   <entry  id="esp_layout" modify_via_xml="NINST_ESP_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance external system processor (if there are more than 1)
@@ -3344,8 +3467,8 @@ n    </desc>
 
   <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the cpl components.
       set by NTASKS_CPL in env_configure.xml.
@@ -3357,8 +3480,8 @@ n    </desc>
 
   <entry id="cpl_nthreads" modify_via_xml="NTHRDS_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the cpl component.
       set by NTHRDS_CPL in env_configure.xml.
@@ -3370,8 +3493,8 @@ n    </desc>
 
   <entry id="cpl_rootpe" modify_via_xml="ROOTPE_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the cpl component.
       set by ROOTPE_CPL in env_configure.xml.
@@ -3383,8 +3506,8 @@ n    </desc>
 
   <entry id="cpl_pestride" modify_via_xml="PSTRID_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the cpl component.
       set by PSTRID_CPL in env_configure.xml.
@@ -3396,8 +3519,8 @@ n    </desc>
 
   <entry id="esmf_logging" modify_via_xml="ESMF_LOGFILE_KIND">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       Determines what ESMF log files (if any) are generated when
           USE_ESMF_LIB is TRUE.
@@ -3779,6 +3902,102 @@ n    </desc>
     </desc>
     <values>
       <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component atm
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ATM</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_cpl" modify_via_xml="DATA_ASSIMILATION_CPL">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component CPL
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ocn" modify_via_xml="DATA_ASSIMILATION_OCN">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component ocn
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_OCN</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_wav" modify_via_xml="DATA_ASSIMILATION_WAV">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component wav
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_glc" modify_via_xml="DATA_ASSIMILATION_GLC">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component glc
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_GLC</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_rof" modify_via_xml="DATA_ASSIMILATION_ROF">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component rof
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ROF</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ice" modify_via_xml="DATA_ASSIMILATION_ICE">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component ice
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ICE</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_lnd" modify_via_xml="DATA_ASSIMILATION_LND">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      Whether Data Assimilation is on for component lnd
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_LND</value>
     </values>
   </entry>
 

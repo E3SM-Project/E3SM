@@ -20,7 +20,7 @@ module med_phases_aofluxes_mod
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
-  use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal
+  use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_const_mod         , only : shr_const_spval, shr_const_pi
   use seq_timemgr_mod       , only : seq_timemgr_EclockGetData
   use med_constants_mod     , only : med_constants_dbug_flag
@@ -614,15 +614,18 @@ contains
           allocate(ownedElemCoords(spatialDim*numOwnedElements))
           allocate(lons(numOwnedElements))
           allocate(lats(numOwnedElements))
-          ! tcraig tcx temporary until update esmf
-          lons = 0.0
-          lats = 0.0
-          ! call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! do n = 1,lsize
-          !    lons(n) = ownedElemCoords(2*n-1)
-          !    lats(n) = ownedElemCoords(2*n)
-          ! end do
+          ! tcraig tcx temporary until update esmf 
+          ! TODO: WHY THIS? - causes all comparisons to fail when ocean albedos are needed - was this needed for MOM6?
+          !lons = 0.0
+          !lats = 0.0
+
+          ! TODO: For now - removing comments that tcraig put in
+          call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          do n = 1,lsize
+             lons(n) = ownedElemCoords(2*n-1)
+             lats(n) = ownedElemCoords(2*n)
+          end do
        else if (geomtype == ESMF_GEOMTYPE_GRID) then
           call ESMF_LogWrite(trim(subname)//" : FBATM is on a grid ", ESMF_LOGMSG_INFO, rc=rc)
           call ESMF_FieldGet(lfield, grid=lgrid, rc=rc)
@@ -705,6 +708,9 @@ contains
     real(r8)      :: gust_fac = huge(1.0_r8) ! wind gust factor
     logical       :: cold_start              ! .true. to initialize internal fields in shr_flux diurnal
     logical       :: read_restart            ! .true. => continue run
+    real(r8)      :: flux_convergence        ! convergence criteria for imlicit flux computation
+    integer       :: flux_max_iteration      ! maximum number of iterations for convergence
+    logical       :: coldair_outbreak_mod    ! cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     logical,save  :: first_call = .true.
     character(*),parameter :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
     character(*),parameter :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
@@ -723,6 +729,20 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
+
+    if (first_call) then
+       call NUOPC_CompAttributeGet(gcomp, name='coldair_outbreak_mod', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) coldair_outbreak_mod
+
+       call NUOPC_CompAttributeGet(gcomp, name='flux_max_iteration', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) flux_max_iteration
+
+       call NUOPC_CompAttributeGet(gcomp, name='flux_convergence', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) flux_convergence
+    end if
 
     cold_start = .false.   ! use restart data or data from last timestep
     if (first_call) then
@@ -868,14 +888,28 @@ contains
        call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
        call shr_flux_atmocn (lsize , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            shum , shum_16O , shum_HDO, shum_18O, dens , &
+            tbot, uocn, vocn , &
             tocn , mask, sen , lat , lwup , &
-            roce_16O, roce_HDO, roce_18O,    &
+            roce_16O, roce_HDO, roce_18O, &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            duu10n,ustar, re  , ssq)
-            !missval should not be needed if flux calc
-            !consistent with mrgx2a fraction
-            !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+            duu10n, ustar, re, ssq, missval=0.0_r8)
+
+!        do n = 1,lsize
+!           write(6,100)'import: n,zbot      = ',n,zbot(n)
+!           write(6,100)'import: n,ubot      = ',n,ubot(n)
+!           write(6,100)'import: n,vbot      = ',n,vbot(n)
+!           write(6,100)'import: n,thbot     = ',n,thbot(n)
+!           write(6,100)'import: n,prec_gust = ',n,prec_gust(n)
+!           write(6,100)'import: n,tocn      = ',n,tocn(n)
+!           write(6,100)'import: n,uocn      = ',n,uocn(n)
+!           write(6,100)'import: n,vocn      = ',n,vocn(n)
+!           write(6,100)'export: n,latent    = ',n,lat(n)
+!           write(6,100)'export: n,sensible  = ',n,lat(n)
+!           write(6,100)'export: n,taux      = ',n,taux(n)
+!           write(6,100)'export: n,tauy      = ',n,tauy(n)
+!        end do
+! 100    format "('(atmocn_flux) ',a,i8,d21.14)"
     endif
 
     do n = 1,lsize
