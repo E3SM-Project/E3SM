@@ -102,9 +102,13 @@ def _compare_data(gold_lines, comp_lines, case):
         if (norm_gold_value != norm_comp_value):
             comments += "Inequivalent lines {} != {}\n".format(gold_value, comp_value)
             comments += "  NORMALIZED: {} != {}\n".format(norm_gold_value, norm_comp_value)
-
-        gidx += 1
-        cidx += 1
+            if gnum < cnum:
+                cidx += 1
+            elif cnum < gnum:
+                gidx += 1
+        else:
+            gidx += 1
+            cidx += 1
 
     return comments
 
