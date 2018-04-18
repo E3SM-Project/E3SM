@@ -3065,15 +3065,15 @@ contains
             this%dispvegc_patch(p) + &
             this%storvegc_patch(p)
 
+       if (use_crop) then
+          this%totvegc_patch(p) = this%totvegc_patch(p) + this%cropseedc_deficit_patch(p)
+       end if
+
        ! total pft-level carbon, including xsmrpool, ctrunc
        this%totpftc_patch(p) = &
             this%totvegc_patch(p) + &
             this%xsmrpool_patch(p) + &
             this%ctrunc_patch(p)
-
-       if (use_crop) then 
-          this%totvegc_patch(p) = this%totvegc_patch(p) + this%cropseedc_deficit_patch(p)
-       end if
 
        ! (WOODC) - wood C
        this%woodc_patch(p) = &
