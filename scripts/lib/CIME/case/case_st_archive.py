@@ -7,7 +7,7 @@ are members of class Case from file case.py
 import shutil, glob, re, os
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force, safe_copy
+from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force, safe_copy, find_files
 from CIME.date                      import get_file_date
 from CIME.XML.archive       import Archive
 from CIME.XML.files            import Files
@@ -721,7 +721,7 @@ def _check_disposition(testdir):
             logger.info("Checking testfile {} with disposition {}".format(_file, disposition))
             if root == testdir:
                 if "move" in disposition:
-                    if find(_file,os.path.join(testdir, "archive")):
+                    if find_files(os.path.join(testdir, "archive"), _file):
                         expect(False,
                                "Copied file {} to archive with disposition move".format(_file))
                     else:
@@ -735,11 +735,5 @@ def _check_disposition(testdir):
                 expect(_file in copyfilelist, "File {} with disposition copy was moved to directory {}"
                        .format(_file, root))
     for _file in copyfilelist:
-        expect(find(_file, os.path.join(testdir,"archive")),
+        expect(find_files(os.path.join(testdir,"archive"), _file) != [],
                "File {} was not copied to archive.".format(_file))
-
-def find(name, path):
-    for root, dirs, files in os.walk(path):
-        if name in files:
-            return True
-    return False
