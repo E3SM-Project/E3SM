@@ -242,7 +242,7 @@ contains
     !
     ! !USES
     use clm_varsur, only : wt_lunit, wt_nat_patch
-    use subgridMod, only : subgrid_get_gcellinfo
+    use subgridMod, only : subgrid_get_topounitinfo
     use clm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
     !
     ! !ARGUMENTS:
@@ -267,7 +267,7 @@ contains
     ! level to assign PFTs on veg landunit for each topounit. Also, use the existing landunit weights on the 
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
-    call subgrid_get_gcellinfo(gi, nveg=npfts)
+    call subgrid_get_topounitinfo(ti, gi, nveg=npfts)
     wtlunit2topounit = wt_lunit(gi, ltype)
 
     if (npfts > 0) then
@@ -294,7 +294,7 @@ contains
     use clm_varsur      , only : wt_lunit, wt_glc_mec
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec
     use column_varcon   , only : icemec_class_to_col_itype
-    use subgridMod      , only : subgrid_get_gcellinfo
+    use subgridMod      , only : subgrid_get_topounitinfo
     use pftvarcon       , only : noveg
 
     !
@@ -324,13 +324,13 @@ contains
     ! Later, this information will come from new surface datasat.
 
     if (ltype == istwet) then
-       call subgrid_get_gcellinfo(gi, nwetland=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nwetland=npfts)
     else if (ltype == istdlak) then
-       call subgrid_get_gcellinfo(gi, nlake=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nlake=npfts)
     else if (ltype == istice) then 
-       call subgrid_get_gcellinfo(gi, nglacier=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nglacier=npfts)
     else if (ltype == istice_mec) then
-       call subgrid_get_gcellinfo(gi, nglacier_mec=npfts, glcmask = glcmask)
+       call subgrid_get_topounitinfo(ti, gi, nglacier_mec=npfts, glcmask = glcmask)
     else
        write(iulog,*)' set_landunit_wet_ice_lake: ltype of ',ltype,' not valid'
        write(iulog,*)' only istwet, istdlak, istice and istice_mec ltypes are valid'
@@ -342,9 +342,10 @@ contains
     if (npfts > 0) then
 
        if (npfts /=1 .and. ltype /= istice_mec) then
-          write(iulog,*)' set_landunit_wet_ice_lake: compete landunit must'// &
+          write(iulog,*)' set_landunit_wet_ice_lake: landunit must'// &
                ' have one pft '
           write(iulog,*)' current value of npfts=',npfts
+          write(iulog,*)' landunit type = ',ltype
           call endrun(msg=errMsg(__FILE__, __LINE__))
        end if
 
@@ -399,7 +400,7 @@ contains
     ! !USES
     use clm_varsur      , only : wt_lunit, wt_cft
     use landunit_varcon , only : istcrop, istsoil
-    use subgridMod      , only : subgrid_get_gcellinfo
+    use subgridMod      , only : subgrid_get_topounitinfo
     use clm_varctl      , only : create_crop_landunit
     use clm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
     !
@@ -425,7 +426,7 @@ contains
     ! level to assign PFTs on landunit for each topounit. Also, use the existing landunit weights on the 
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
-    call subgrid_get_gcellinfo(gi, ncrop=npfts)
+    call subgrid_get_topounitinfo(ti, gi, ncrop=npfts)
     wtlunit2topounit = wt_lunit(gi, ltype)
 
     if (npfts > 0) then
@@ -467,7 +468,7 @@ contains
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
     use clm_varpar      , only : maxpatch_urb
     use clm_varsur      , only : wt_lunit
-    use subgridMod      , only : subgrid_get_gcellinfo
+    use subgridMod      , only : subgrid_get_topounitinfo
     use UrbanParamsType , only : urbinp
     use decompMod       , only : ldecomp
     use pftvarcon       , only : noveg
@@ -502,11 +503,11 @@ contains
 
     select case (ltype)
     case (isturb_tbd)
-       call subgrid_get_gcellinfo(gi, nurban_tbd=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nurban_tbd=npfts)
     case (isturb_hd)
-       call subgrid_get_gcellinfo(gi, nurban_hd=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nurban_hd=npfts)
     case (isturb_md)
-       call subgrid_get_gcellinfo(gi, nurban_md=npfts)
+       call subgrid_get_topounitinfo(ti, gi, nurban_md=npfts)
     case default
        write(iulog,*)' set_landunit_urban: unknown ltype: ', ltype
        call endrun(msg=errMsg(__FILE__, __LINE__))
