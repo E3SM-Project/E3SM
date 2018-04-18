@@ -17,6 +17,9 @@ class NODEFAIL(ERS):
 
         self._fail_sentinel = os.path.join(case.get_value("RUNDIR"), "FAIL_SENTINEL")
         self._fail_str      = case.get_value("NODE_FAIL_REGEX")
+        if case.get_value("MACH") == "cheyenne":
+            case.set_value("JOB_QUEUE","regular", subgroup="case.test")
+            case.case_setup(reset=True)
 
     def _restart_fake_phase(self):
         # Swap out model.exe for one that emits node failures
