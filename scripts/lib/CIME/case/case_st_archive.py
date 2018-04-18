@@ -702,7 +702,6 @@ def test_st_archive(self, testdir="st_archive_test"):
 
     _check_disposition(testdir)
 
-    onlyfiles = [f for f in os.listdir(testdir) if os.path.isfile(os.path.join(testdir, f))]
     # Now test the restore capability
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
