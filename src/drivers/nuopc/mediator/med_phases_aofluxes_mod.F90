@@ -722,15 +722,12 @@ contains
     write(tmpstr,'(2i12)') tod,dt
     call ESMF_LogWrite(trim(subname)//" : tod,dt= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-    call NUOPC_CompAttributeGet(gcomp, name='gust_fac', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) gust_fac
-
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
-
+    cold_start = .false.   ! use restart data or data from last timestep
     if (first_call) then
+       call NUOPC_CompAttributeGet(gcomp, name='gust_fac', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) gust_fac
+
        call NUOPC_CompAttributeGet(gcomp, name='coldair_outbreak_mod', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) coldair_outbreak_mod
@@ -742,13 +739,19 @@ contains
        call NUOPC_CompAttributeGet(gcomp, name='flux_convergence', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) flux_convergence
-    end if
 
-    cold_start = .false.   ! use restart data or data from last timestep
-    if (first_call) then
+       call shr_flux_adjust_constants(&
+            flux_convergence_tolerance=flux_convergence, &
+            flux_convergence_max_iteration=flux_max_iteration, &
+            coldair_outbreak_mod=coldair_outbreak_mod)
+
+       call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) read_restart
        if (.not.read_restart) then
           cold_start = .true.
        end if
+
        first_call = .false.
     end if
 
@@ -893,7 +896,7 @@ contains
             tocn , mask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O, &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            duu10n, ustar, re, ssq, missval=0.0_r8)
+            duu10n, ustar, re, ssq)
 
 !        do n = 1,lsize
 !           write(6,100)'import: n,zbot      = ',n,zbot(n)
@@ -909,7 +912,8 @@ contains
 !           write(6,100)'export: n,taux      = ',n,taux(n)
 !           write(6,100)'export: n,tauy      = ',n,tauy(n)
 !        end do
-! 100    format "('(atmocn_flux) ',a,i8,d21.14)"
+! 100    format ('(atmocn_flux) ',a,i8,d21.14)
+!        call shr_sys_abort()
     endif
 
     do n = 1,lsize

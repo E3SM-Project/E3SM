@@ -32,15 +32,16 @@ module shr_fire_emis_mod
   character(len=CS), public :: shr_fire_emis_fields_token = ''       ! emissions fields token
   character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds
   character(len=CS), public :: shr_fire_emis_ztop_token = 'Sl_fztop' ! token for emissions top of vertical distribution
+  integer, parameter :: name_len=16
 
   ! fire emissions component data structure (or user defined type)
   type shr_fire_emis_comp_t
-     character(len=16)     :: name            ! emissions component name (in fire emissions input table)
-     integer               :: index
-     real(r8), pointer     :: emis_factors(:) ! function of plant-function-type (PFT)
-     real(r8)              :: coeff           ! emissions component coeffecient
-     real(r8)              :: molec_weight    ! molecular weight of the fire emissions compound (g/mole)
-     type(shr_fire_emis_comp_t), pointer :: next_emiscomp ! points to next member in the linked list
+     character(len=name_len)             :: name            ! emissions component name (in fire emissions input table)
+     integer                             :: index
+     real(r8), pointer                   :: emis_factors(:) ! function of plant-function-type (PFT)
+     real(r8)                            :: coeff           ! emissions component coeffecient
+     real(r8)                            :: molec_weight    ! molecular weight of the fire emissions compound (g/mole)
+     type(shr_fire_emis_comp_t), pointer :: next_emiscomp   ! points to next member in the linked list
   endtype shr_fire_emis_comp_t
 
   type shr_fire_emis_comp_ptr
@@ -114,23 +115,17 @@ contains
        inquire( file=trim(NLFileName), exist=exists)
 
        if ( exists ) then
-
           unitn = shr_file_getUnit()
           open( unitn, file=trim(NLFilename), status='old' )
-          if ( loglev > 0 ) write(logunit,F00) &
-               'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
-
+          if ( loglev > 0 ) write(logunit,F00) 'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
           ! If ierr /= 0, no namelist present.
-
           if (ierr == 0) then
              read(unitn, fire_emis_nl, iostat=ierr)
-
              if (ierr > 0) then
                 call shr_sys_abort( 'problem on read of fire_emis_nl namelist in shr_fire_emis_readnl' )
              endif
           endif
-
           close( unitn )
           call shr_file_freeUnit( unitn )
        end if
@@ -181,8 +176,11 @@ contains
              call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(item%name))
           endif
        enddo
-
-       shr_fire_emis_mechcomps(i)%name = item%name
+       if (len_trim(item%name) .le. name_len) then
+          shr_fire_emis_mechcomps(i)%name = item%name(1:name_len)
+       else
+          call shr_sys_abort("shr_file_emis_init : name too long for data structure :"//trim(item%name))
+       endif
        shr_fire_emis_mechcomps(i)%n_emis_comps = item%n_terms
        allocate(shr_fire_emis_mechcomps(i)%emis_comps(item%n_terms))
 

@@ -52,9 +52,9 @@ module shr_megan_mod
 
   ! chemical compound in CAM mechanism that has MEGAN emissions
   type shr_megan_mechcomp_t
-     character(len=16)             :: name           ! compound name
+     character(len=16)                 :: name           ! compound name
      type(shr_megan_comp_ptr), pointer :: megan_comps(:) ! an array of pointers to megan emis compounds
-     integer                       :: n_megan_comps  ! number of megan emis compounds that make up the emissions for this mechanis compound
+     integer                           :: n_megan_comps  ! number of megan emis compounds that make up the emissions for this mechanis compound
   end type shr_megan_mechcomp_t
 
   type(shr_megan_mechcomp_t), pointer :: shr_megan_mechcomps(:) ! array of chemical compounds (in CAM mechanism) that have MEGAN emissions
@@ -195,8 +195,11 @@ contains
              call shr_sys_abort( 'shr_megan_init : duplicate compound names : '//trim(item%name))
           endif
        enddo
-
-       shr_megan_mechcomps(i)%name = item%name
+       if (len_trim(item%name) .le. len(shr_megan_mechcomps(i)%name)) then
+          shr_megan_mechcomps(i)%name = item%name(1:len(shr_megan_mechcomps(i)%name))
+       else
+          call shr_sys_abort( 'shr_megan_init : name too long for data structure : '//trim(item%name))
+       endif
        shr_megan_mechcomps(i)%n_megan_comps = item%n_terms
        allocate(shr_megan_mechcomps(i)%megan_comps(item%n_terms))
 
