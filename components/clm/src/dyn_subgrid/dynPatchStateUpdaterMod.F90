@@ -50,8 +50,6 @@ module dynPatchStateUpdaterMod
      ! (dwt / pwtgcell_new) from last call to set_new_weights; only valid for growing
      ! patches
      real(r8), allocatable :: growing_new_fraction(:)
-     real(r8), allocatable :: pwtcol_old(:)
-     real(r8), allocatable :: pwtcol_new(:)
 
    contains
      ! Public routines
@@ -132,8 +130,6 @@ contains
     this%growing_old_fraction(:) = nan
     allocate(this%growing_new_fraction(begp:endp))
     this%growing_new_fraction(:) = nan
-    allocate(this%pwtcol_old(begp:endp)); this%pwtcol_old(:) = nan
-    allocate(this%pwtcol_new(begp:endp)); this%pwtcol_old(:) = nan
 
   end function constructor
 
@@ -163,7 +159,6 @@ contains
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
        this%pwtgcell_old(p) = veg_pp%wtgcell(p)
-       this%pwtcol_old(p)   = veg_pp%wtcol(p)
        this%cwtgcell_old(c) = col_pp%wtgcell(c)
     end do
 
@@ -189,8 +184,7 @@ contains
 
     do p = bounds%begp, bounds%endp
        this%pwtgcell_new(p) = veg_pp%wtgcell(p)
-       this%pwtcol_new(p)   = veg_pp%wtcol(p)
-       this%dwt(p) = this%pwtgcell_new(p) - this%pwtgcell_old(p)
+       this%dwt(p)          = this%pwtgcell_new(p) - this%pwtgcell_old(p)
        if (this%dwt(p) > 0._r8) then
           this%growing_old_fraction(p) = this%pwtgcell_old(p)/ this%pwtgcell_new(p)
           this%growing_new_fraction(p) = this%dwt(p)         / this%pwtgcell_new(p)
@@ -293,15 +287,13 @@ contains
           if (present(seed)) then
              var(p) = var(p) + seed(p) * this%growing_new_fraction(p)
              if (present(seed_addition)) then
-                !seed_addition(p) = seed_addition(p) + seed(p) * this%dwt(p)
-                seed_addition(p) = seed_addition(p) + seed(p) * (this%pwtcol_new(p)   - this%pwtcol_old(p))
+                seed_addition(p) = seed_addition(p) + seed(p) * this%dwt(p)
              end if
           end if
 
        else if (this%dwt(p) < 0._r8) then
           if (present(flux_out_grc_area)) then
-             !flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * this%dwt(p)
-             flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * (this%pwtcol_new(p)   - this%pwtcol_old(p))
+             flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * this%dwt(p)
           end if
           if (present(flux_out_col_area)) then
              ! No need to check for divide by 0 here: If dwt < 0 then we must have had
