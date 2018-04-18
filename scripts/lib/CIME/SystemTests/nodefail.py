@@ -15,10 +15,6 @@ class NODEFAIL(ERS):
         """
         # we need to hard code the regular queue on cheyenne, otherwise this test
         # runs in the share queue and intermitently fails due to a lack of resources
-        if case.get_value("MACH") == "cheyenne":
-            if case.get_value("USER_REQUESTED_QUEUE", subgroup="case.test") != "regular":
-                case.set_value("USER_REQUESTED_QUEUE","regular", subgroup="case.test")
-                case.case_setup(reset=True)
         ERS.__init__(self, case)
 
         self._fail_sentinel = os.path.join(case.get_value("RUNDIR"), "FAIL_SENTINEL")

@@ -474,6 +474,14 @@ class TestScheduler(object):
 
         if self._queue is not None:
             create_newcase_cmd += " --queue={}".format(self._queue)
+        else:
+            # We need to hard code the queue for this test on cheyenne
+            # otherwise it runs in share and fails intermittently
+            test_case = CIME.utils.parse_test_name(test)[0]
+            if test_case == "NODEFAIL":
+                machine = machine if machine is not None else self._machobj.get_machine_name()
+                if machine == "cheyenne":
+                    create_newcase_cmd += " --queue=regular"
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime {}".format(self._walltime)
