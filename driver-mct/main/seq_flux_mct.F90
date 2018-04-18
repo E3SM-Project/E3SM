@@ -1030,23 +1030,6 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
-
-       do n = 1,lsize
-          write(6,100)'import: n,zbot      = ',n,zbot(n)
-          write(6,100)'import: n,ubot      = ',n,ubot(n)
-          write(6,100)'import: n,vbot      = ',n,vbot(n)
-          write(6,100)'import: n,thbot     = ',n,thbot(n)
-          write(6,100)'import: n,prec_gust = ',n,prec_gust(n)
-          write(6,100)'import: n,tocn      = ',n,tocn(n)
-          write(6,100)'import: n,uocn      = ',n,uocn(n)
-          write(6,100)'import: n,vocn      = ',n,vocn(n)
-          write(6,100)'export: n,latent    = ',n,lat(n)
-          write(6,100)'export: n,sensible  = ',n,lat(n)
-          write(6,100)'export: n,taux      = ',n,taux(n)
-          write(6,100)'export: n,tauy      = ',n,tauy(n)
-       end do
-100    format "('(atmocn_flux) ',a,i8,d21.14)"
-       call shr_sys_abort()
     endif
 
     !--- create temporary aVects on exchange, atm, or ocn decomp as needed
