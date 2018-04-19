@@ -1,4 +1,6 @@
-![Energy Exascale Earth System Model (E3SM)](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)
+[![E3SM Logo](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)](https://e3sm.org)
+
+Energy Exascale Earth System Model (E3SM)
 ================================================================================
 
 E3SM is a state-of-the-art fully coupled model of the Earth's climate including
@@ -40,8 +42,8 @@ Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/)
 
 Contributing
 --------------------------------------------------------------------------------
-Please refer to [Developing E3SM](https://e3sm.org/model/running-e3sm/developing-e3sm/)
- for details on our code development process for submitting pull requests.
+Please refer to [Contributing](CONTRIBUTING) for details on our code development
+process for submitting pull requests.
 
 Acknowledgement
 --------------------------------------------------------------------------------
