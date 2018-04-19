@@ -70,12 +70,10 @@ contains
 
       if (.not.use_ed) then
 
-         do fc = 1, num_soilc_with_inactive
-            c = filter_soilc_with_inactive(fc)
-
-            cs%seedc_col(c) = cs%seedc_col(c) &
-                 - cf%dwt_seedc_to_leaf_col(c)     * dt &
-                 - cf%dwt_seedc_to_deadstem_col(c) * dt
+         do g = bounds%begg, bounds%endg
+            cs%seedc_grc(c) = cs%seedc_grc(g) &
+                 - cf%dwt_seedc_to_leaf_grc(g)     * dt &
+                 - cf%dwt_seedc_to_deadstem_grc(g) * dt
          end do
 
          do j = 1,nlevdecomp

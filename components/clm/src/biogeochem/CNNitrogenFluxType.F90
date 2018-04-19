@@ -321,9 +321,6 @@ module CNNitrogenFluxType
      real(r8), pointer :: dwt_prod100n_gain_patch                   (:)     ! patch (gN/m2/s) addition to 100-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
      real(r8), pointer :: dwt_crop_productn_gain_patch              (:)     ! patch (gN/m2/s) addition to crop product pool from landcover change; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
 
-     real(r8), pointer :: dwt_seedn_to_leaf_col                     (:)     ! col (gN/m2/s) seed source to PFT-level
-     real(r8), pointer :: dwt_seedn_to_deadstem_col                 (:)     ! col (gN/m2/s) seed source to PFT-level
-     real(r8), pointer :: dwt_seedn_to_npool_col                    (:)     ! col (gN/m2/s) seed source to PFT level
      real(r8), pointer :: dwt_conv_nflux_col                        (:)     ! col (gN/m2/s) conversion N flux (immediate loss to atm)
      real(r8), pointer :: dwt_prod10n_gain_col                      (:)     ! col (gN/m2/s) addition to 10-yr wood product pool
      real(r8), pointer :: dwt_prod100n_gain_col                     (:)     ! col (gN/m2/s) addition to 100-yr wood product pool
@@ -333,6 +330,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: dwt_livecrootn_to_cwdn_col                (:,:)   ! col (gN/m3/s) live coarse root to CWD due to landcover change
      real(r8), pointer :: dwt_deadcrootn_to_cwdn_col                (:,:)   ! col (gN/m3/s) dead coarse root to CWD due to landcover change
      real(r8), pointer :: dwt_nloss_col                             (:)     ! col (gN/m2/s) total nitrogen loss from product pools and conversion
+
+     real(r8), pointer :: dwt_seedn_to_npool_patch                  (:)     ! col (gN/m2/s) seed source to PFT level
+     real(r8), pointer :: dwt_seedn_to_npool_grc                    (:)     ! col (gN/m2/s) seed source to PFT level
 
      ! wood product pool loss fluxes
      real(r8), pointer :: prod1n_loss_col                           (:)     ! col (gN/m2/s) decomposition loss from 1-yr crop product pool
@@ -651,14 +651,14 @@ contains
     allocate(this%dwt_prod100n_gain_patch           (begp:endp))                  ; this%dwt_prod100n_gain_patch      (:) =nan
     allocate(this%dwt_crop_productn_gain_patch      (begp:endp))                  ; this%dwt_crop_productn_gain_patch (:) =nan
 
-    allocate(this%dwt_seedn_to_leaf_col      (begc:endc))                   ; this%dwt_seedn_to_leaf_col      (:)   = nan
-    allocate(this%dwt_seedn_to_deadstem_col  (begc:endc))                   ; this%dwt_seedn_to_deadstem_col  (:)   = nan
-    allocate(this%dwt_seedn_to_npool_col     (begc:endc))                   ; this%dwt_seedn_to_npool_col     (:)   = nan
     allocate(this%dwt_conv_nflux_col         (begc:endc))                   ; this%dwt_conv_nflux_col         (:)   = nan
     allocate(this%dwt_prod10n_gain_col       (begc:endc))                   ; this%dwt_prod10n_gain_col       (:)   = nan
     allocate(this%dwt_prod100n_gain_col      (begc:endc))                   ; this%dwt_prod100n_gain_col      (:)   = nan
     allocate(this%dwt_nloss_col              (begc:endc))                   ; this%dwt_nloss_col              (:)   = nan
     allocate(this%wood_harvestn_col          (begc:endc))                   ; this%wood_harvestn_col          (:)   = nan
+
+    allocate(this%dwt_seedn_to_npool_grc     (begg:endg))                   ; this%dwt_seedn_to_npool_grc     (:)   = nan
+    allocate(this%dwt_seedn_to_npool_patch   (begp:endp))                   ; this%dwt_seedn_to_npool_patch   (:)   = nan
 
     allocate(this%dwt_frootn_to_litr_met_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n_col     (:,:) = nan
     allocate(this%dwt_frootn_to_litr_cel_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n_col     (:,:) = nan
@@ -1934,20 +1934,15 @@ contains
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
          ptr_col=this%dwt_prod100n_gain_patch, default='inactive')
 
-    this%dwt_seedn_to_leaf_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDN_TO_LEAF', units='gN/m^2/s', &
-         avgflag='A', long_name='seed source to PFT-level leaf', &
-         ptr_col=this%dwt_seedn_to_leaf_col, default='inactive')
-
-    this%dwt_seedn_to_deadstem_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDN_TO_DEADSTEM', units='gN/m^2/s', &
-         avgflag='A', long_name='seed source to PFT-level deadstem', &
-         ptr_col=this%dwt_seedn_to_deadstem_col, default='inactive')
-
-    this%dwt_seedn_to_npool_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL', units='gN/m^2/s', &
+    this%dwt_seedn_to_npool_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level npool', &
-         ptr_col=this%dwt_seedn_to_npool_col, default='inactive')
+         ptr_gcell=this%dwt_seedn_to_npool_patch, default='inactive')
+
+    this%dwt_seedn_to_npool_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_PATCH', units='gN/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level npool', &
+         ptr_patch=this%dwt_seedn_to_npool_patch, default='inactive')
 
     this%dwt_conv_nflux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
@@ -2842,12 +2837,10 @@ contains
        this%dwt_seedn_to_leaf_grc(g)     = 0._r8
        this%dwt_seedn_to_deadstem_grc(g) = 0._r8
        this%dwt_conv_nflux_grc(g)        = 0._r8
+       this%dwt_seedn_to_npool_grc(g)    = 0._r8
     end do
 
     do c = bounds%begc,bounds%endc
-       this%dwt_seedn_to_leaf_col(c)     = 0._r8
-       this%dwt_seedn_to_deadstem_col(c) = 0._r8
-       this%dwt_seedn_to_npool_col(c)    = 0._r8
        this%dwt_conv_nflux_col(c)        = 0._r8
        this%dwt_prod10n_gain_col(c)      = 0._r8
        this%dwt_prod100n_gain_col(c)     = 0._r8

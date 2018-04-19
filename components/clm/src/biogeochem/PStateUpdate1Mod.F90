@@ -73,13 +73,11 @@ contains
 
       if (.not.use_ed) then
 
-         do fc = 1, num_soilc_with_inactive
-            c = filter_soilc_with_inactive(fc)
-
-            ps%seedp_col(c) = ps%seedp_col(c) &
-                 - pf%dwt_seedp_to_leaf_col(c)     * dt &
-                 - pf%dwt_seedp_to_deadstem_col(c) * dt &
-                 - pf%dwt_seedp_to_ppool_col(c)    * dt
+         do g = bounds%begg, bounds%endg
+            ps%seedp_grc(g) = ps%seedp_grc(g) &
+                 - pf%dwt_seedp_to_leaf_grc(g)     * dt &
+                 - pf%dwt_seedp_to_deadstem_grc(g) * dt &
+                 - pf%dwt_seedp_to_ppool_grc(g)    * dt
          end do
 
          do j = 1,nlevdecomp

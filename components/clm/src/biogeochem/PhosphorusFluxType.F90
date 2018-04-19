@@ -266,9 +266,8 @@ module PhosphorusFluxType
      real(r8), pointer :: dwt_prod100p_gain_patch                   (:)     ! patch (gP/m2/s) addition to 100-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
      real(r8), pointer :: dwt_crop_productp_gain_patch              (:)     ! patch (gP/m2/s) addition to crop product pool from landcover change; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
 
-     real(r8), pointer :: dwt_seedp_to_leaf_col                     (:)     ! col (gP/m2/s) seed source to PFT-level
-     real(r8), pointer :: dwt_seedp_to_deadstem_col                 (:)     ! col (gP/m2/s) seed source to PFT-level
-     real(r8), pointer :: dwt_seedp_to_ppool_col                    (:)     ! col (gP/m2/s) seed source to PFT-level
+     real(r8), pointer :: dwt_seedp_to_ppool_grc                    (:)     ! col (gP/m2/s) seed source to PFT-level
+     real(r8), pointer :: dwt_seedp_to_ppool_patch                  (:)     ! col (gP/m2/s) seed source to PFT-level
 
      real(r8), pointer :: dwt_conv_pflux_col                        (:)     ! col (gP/m2/s) conversion P flux (immediate loss to atm)
      real(r8), pointer :: dwt_prod10p_gain_col                      (:)     ! col (gP/m2/s) addition to 10-yr wood product pool
@@ -582,9 +581,8 @@ contains
     allocate(this%dwt_prod100p_gain_patch           (begp:endp))                  ; this%dwt_prod100p_gain_patch      (:) =nan
     allocate(this%dwt_crop_productp_gain_patch      (begp:endp))                  ; this%dwt_crop_productp_gain_patch (:) =nan
 
-    allocate(this%dwt_seedp_to_leaf_col      (begc:endc))                   ; this%dwt_seedp_to_leaf_col      (:)   = nan
-    allocate(this%dwt_seedp_to_deadstem_col  (begc:endc))                   ; this%dwt_seedp_to_deadstem_col  (:)   = nan
-    allocate(this%dwt_seedp_to_ppool_col     (begc:endc))                   ; this%dwt_seedp_to_ppool_col     (:)   = nan
+    allocate(this%dwt_seedp_to_ppool_grc     (begg:endg))                   ; this%dwt_seedp_to_ppool_grc     (:)   = nan
+    allocate(this%dwt_seedp_to_ppool_patch   (begp:endp))                   ; this%dwt_seedp_to_ppool_patch   (:)   = nan
     allocate(this%dwt_conv_pflux_col         (begc:endc))                   ; this%dwt_conv_pflux_col         (:)   = nan
     allocate(this%dwt_prod10p_gain_col       (begc:endc))                   ; this%dwt_prod10p_gain_col       (:)   = nan
     allocate(this%dwt_prod100p_gain_col      (begc:endc))                   ; this%dwt_prod100p_gain_col      (:)   = nan
@@ -1539,20 +1537,15 @@ contains
             avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100p_gain_patch, default='inactive')
 
-    this%dwt_seedp_to_leaf_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF', units='gP/m^2/s', &
-         avgflag='A', long_name='seed source to PFT-level leaf', &
-         ptr_col=this%dwt_seedp_to_leaf_col, default='inactive')
+    this%dwt_seedp_to_ppool_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level', &
+         ptr_gcell=this%dwt_seedp_to_ppool_grc, default='inactive')
 
-    this%dwt_seedp_to_deadstem_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM', units='gP/m^2/s', &
-         avgflag='A', long_name='seed source to PFT-level deadstem', &
-         ptr_col=this%dwt_seedp_to_deadstem_col, default='inactive')
-
-    this%dwt_seedp_to_ppool_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL', units='gP/m^2/s', &
-         avgflag='A', long_name='seed source to PFT-level deadstem', &
-         ptr_col=this%dwt_seedp_to_ppool_col, default='inactive')
+    this%dwt_seedp_to_ppool_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level', &
+         ptr_patch=this%dwt_seedp_to_ppool_patch, default='inactive')
 
     this%dwt_conv_pflux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
@@ -2253,13 +2246,17 @@ contains
     type(bounds_type), intent(in)  :: bounds 
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, j          ! indices
+    integer  :: c, g, j          ! indices
     !-----------------------------------------------------------------------
 
+    do g = bounds%begg, bounds%endg
+       this%dwt_seedp_to_leaf_grc(g)     = 0._r8
+       this%dwt_seedp_to_deadstem_grc(g) = 0._r8
+       this%dwt_conv_pflux_grc(g)        = 0._r8
+       this%dwt_seedp_to_ppool_grc(g)    = 0._r8
+    end do
+
     do c = bounds%begc,bounds%endc
-       this%dwt_seedp_to_leaf_col(c)     = 0._r8
-       this%dwt_seedp_to_deadstem_col(c) = 0._r8
-       this%dwt_seedp_to_ppool_col(c)    = 0._r8
        this%dwt_conv_pflux_col(c)        = 0._r8
        this%dwt_prod10p_gain_col(c)      = 0._r8
        this%dwt_prod100p_gain_col(c)     = 0._r8
