@@ -723,6 +723,46 @@ contains
        end do
     end do
     
+    do p = bounds%begp, bounds%endp
+       g = veg_pp%gridcell(p)
+
+       ! Note that patch-level fluxes are stored per unit GRIDCELL area - thus, we don't
+       ! need to multiply by the patch's gridcell weight when translating patch-level
+       ! fluxes into gridcell-level fluxes.
+
+       cf%dwt_conv_cflux_patch(p) = -conv_cflux(p)/dt
+       cf%dwt_conv_cflux_grc(g) = &
+            cf%dwt_conv_cflux_grc(g) + &
+            cf%dwt_conv_cflux_patch(p)
+
+       if ( use_c13 ) then
+          ! C13 column-level flux updates
+          c13_cf%dwt_conv_cflux_patch(p) = -conv_c13flux(p)/dt
+          c13_cf%dwt_conv_cflux_grc(g) = &
+               c13_cf%dwt_conv_cflux_grc(g) + &
+               c13_cf%dwt_conv_cflux_patch(p)
+       endif
+
+       if ( use_c14 ) then
+          ! C14 column-level flux updates
+          c14_cf%dwt_conv_cflux_patch(p) = -conv_c14flux(p)/dt
+          c14_cf%dwt_conv_cflux_grc(g) = &
+               c14_cf%dwt_conv_cflux_grc(g) + &
+               c14_cf%dwt_conv_cflux_patch(p)
+       endif
+
+       nf%dwt_conv_nflux_patch(p) = -conv_nflux(p)/dt
+       nf%dwt_conv_nflux_grc(g) = &
+            nf%dwt_conv_nflux_grc(g) + &
+            nf%dwt_conv_nflux_patch(p)
+
+       pf%dwt_conv_pflux_patch(p) = -conv_pflux(p)/dt
+       pf%dwt_conv_pflux_grc(g) = &
+            pf%dwt_conv_pflux_grc(g) + &
+            pf%dwt_conv_pflux_patch(p)
+
+    end do
+
     ! Deallocate pft-level flux arrays
     deallocate(dwt_leafc_seed)
     deallocate(dwt_leafn_seed)
