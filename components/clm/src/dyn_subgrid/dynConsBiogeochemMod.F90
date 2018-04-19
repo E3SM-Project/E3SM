@@ -431,44 +431,79 @@ contains
          )
 
     ! calculate column-level seeding fluxes
-    do pi = 1,max_patch_per_col
-       do c = bounds%begc, bounds%endc
-          if ( pi <=  col_pp%npfts(c) ) then
-             p = col_pp%pfti(c) + pi - 1
-             
-             ! C fluxe
-             cf%dwt_seedc_to_leaf_col(c) = cf%dwt_seedc_to_leaf_col(c) + dwt_leafc_seed(p)/dt
-             cf%dwt_seedc_to_deadstem_col(c) = cf%dwt_seedc_to_deadstem_col(c) &
-                  + dwt_deadstemc_seed(p)/dt
+    do p = bounds%begp, bounds%endp
+       g = veg_pp%gridcell(p)
 
-             if ( use_c13 ) then
-                c13_cf%dwt_seedc_to_leaf_col(c) = c13_cf%dwt_seedc_to_leaf_col(c) + dwt_leafc13_seed(p)/dt
-                c13_cf%dwt_seedc_to_deadstem_col(c) = c13_cf%dwt_seedc_to_deadstem_col(c) &
-                     + dwt_deadstemc13_seed(p)/dt
-             endif
-             
-             if ( use_c14 ) then	
-                c14_cf%dwt_seedc_to_leaf_col(c) = c14_cf%dwt_seedc_to_leaf_col(c) + dwt_leafc14_seed(p)/dt
-                c14_cf%dwt_seedc_to_deadstem_col(c) = c14_cf%dwt_seedc_to_deadstem_col(c) &
-                     + dwt_deadstemc14_seed(p)/dt
-             endif
-             
-             ! N fluxes
-             nf%dwt_seedn_to_leaf_col(c) = nf%dwt_seedn_to_leaf_col(c) + dwt_leafn_seed(p)/dt
-             nf%dwt_seedn_to_deadstem_col(c) = nf%dwt_seedn_to_deadstem_col(c) &
-                  + dwt_deadstemn_seed(p)/dt
-             nf%dwt_seedn_to_npool_col(c) = nf%dwt_seedn_to_npool_col(c) &
-                  + dwt_npool_seed(p)/dt
-             ! P fluxes
-             pf%dwt_seedp_to_leaf_col(c) = pf%dwt_seedp_to_leaf_col(c) + dwt_leafp_seed(p)/dt
-             pf%dwt_seedp_to_deadstem_col(c) = pf%dwt_seedp_to_deadstem_col(c) &
-                  + dwt_deadstemp_seed(p)/dt
-             pf%dwt_seedp_to_ppool_col(c) = pf%dwt_seedp_to_ppool_col(c) &
-                  + dwt_ppool_seed(p)/dt
-          end if
-       end do
+       ! C fluxes
+       cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+       cf%dwt_seedc_to_leaf_grc(g)   = &
+            cf%dwt_seedc_to_leaf_grc(g) + &
+            cf%dwt_seedc_to_leaf_patch(p)
+
+       cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+       cf%dwt_seedc_to_deadstem_grc(g)   = &
+            cf%dwt_seedc_to_deadstem_grc(g) + &
+            cf%dwt_seedc_to_deadstem_patch(p)
+
+       if ( use_c13 ) then
+          c13_cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+          c13_cf%dwt_seedc_to_leaf_grc(g)   = &
+               c13_cf%dwt_seedc_to_leaf_grc(g) + &
+               c13_cf%dwt_seedc_to_leaf_patch(p)
+
+          c13_cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+          c13_cf%dwt_seedc_to_deadstem_grc(g)   = &
+               c13_cf%dwt_seedc_to_deadstem_grc(g) + &
+               c13_cf%dwt_seedc_to_deadstem_patch(p)
+       endif
+
+       if ( use_c14 ) then
+          c14_cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+          c14_cf%dwt_seedc_to_leaf_grc(g)   = &
+               c14_cf%dwt_seedc_to_leaf_grc(g) + &
+               c14_cf%dwt_seedc_to_leaf_patch(p)
+
+          c14_cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+          c14_cf%dwt_seedc_to_deadstem_grc(g)   = &
+               c14_cf%dwt_seedc_to_deadstem_grc(g) + &
+               c14_cf%dwt_seedc_to_deadstem_patch(p)
+       endif
+
+       ! N fluxes
+       nf%dwt_seedn_to_leaf_patch(p)   = dwt_leafn_seed(p)/dt
+       nf%dwt_seedn_to_leaf_grc(g)     = &
+            nf%dwt_seedn_to_leaf_grc(g) + &
+            nf%dwt_seedn_to_leaf_patch(p)
+
+       nf%dwt_seedn_to_deadstem_patch(p) = dwt_deadstemn_seed(p)/dt
+       nf%dwt_seedn_to_deadstem_grc(g)   = &
+            cf%dwt_seedc_to_deadstem_grc(g) + &
+            cf%dwt_seedc_to_deadstem_patch(p)
+
+
+       nf%dwt_seedn_to_npool_patch(p) = dwt_npool_seed(p)/dt
+       nf%dwt_seedn_to_npool_grc(g)   = &
+            nf%dwt_seedn_to_npool_grc(g) + &
+            nf%dwt_seedn_to_npool_patch(p)
+
+       ! P fluxes
+       pf%dwt_seedp_to_leaf_patch(p)   = dwt_leafp_seed(p)/dt
+       pf%dwt_seedp_to_leaf_grc(g)     = &
+            pf%dwt_seedp_to_leaf_grc(g) + &
+            pf%dwt_seedp_to_leaf_patch(p)
+
+       pf%dwt_seedp_to_deadstem_patch(p) = dwt_deadstemp_seed(p)/dt
+       pf%dwt_seedp_to_deadstem_grc(g)   = &
+            pf%dwt_seedp_to_deadstem_grc(g) + &
+            pf%dwt_seedp_to_deadstem_patch(p)
+
+
+       pf%dwt_seedp_to_ppool_patch(p) = dwt_npool_seed(p)/dt
+       pf%dwt_seedp_to_ppool_grc(g)   = &
+            pf%dwt_seedp_to_ppool_grc(g) + &
+            pf%dwt_seedp_to_ppool_patch(p)
+
     end do
-    
     
     ! calculate pft-to-column for fluxes into litter and CWD pools
     do j = 1, nlevdecomp

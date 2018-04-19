@@ -71,6 +71,7 @@ module PhosphorusStateType
      real(r8), pointer :: ptrunc_vr_col                (:,:)       ! col (gP/m3) vertically-resolved column-level sink for P truncation
 
      ! wood product pools, for dynamic landcover
+     real(r8), pointer :: seedp_grc                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
      real(r8), pointer :: seedp_col                    (:)     ! col (gP/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod1p_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
      real(r8), pointer :: prod10p_col                  (:)     ! col (gP/m2) wood product P pool, 10-year lifespan
@@ -192,10 +193,12 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
     integer           :: begc,endc
+    integer           :: begg,endg
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
 
     allocate(this%grainp_patch             (begp:endp))                   ; this%grainp_patch             (:)   = nan     
     allocate(this%grainp_storage_patch     (begp:endp))                   ; this%grainp_storage_patch     (:)   = nan
@@ -244,6 +247,7 @@ contains
     allocate(this%cwdp_col                 (begc:endc))                   ; this%cwdp_col                 (:)   = nan
     allocate(this%sminp_col                (begc:endc))                   ; this%sminp_col                (:)   = nan
     allocate(this%ptrunc_col               (begc:endc))                   ; this%ptrunc_col               (:)   = nan
+    allocate(this%seedp_grc                (begg:endg))                   ; this%seedp_grc                (:)   = nan
     allocate(this%seedp_col                (begc:endc))                   ; this%seedp_col                (:)   = nan
     allocate(this%prod1p_col               (begc:endc))                   ; this%prod1p_col               (:)   = nan
     allocate(this%prod10p_col              (begc:endc))                   ; this%prod10p_col              (:)   = nan
@@ -618,6 +622,11 @@ contains
          avgflag='A', long_name='total column-level P but excl product pools', &
          ptr_col=this%totcolp_col)
 
+    this%seedp_grc(begg:endg) = spval
+    call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
+         avgflag='A', long_name='P pool for seeding new PFTs ', &
+         ptr_gcell=this%seedp_grc, default='inactive')
+
     this%seedp_col(begc:endc) = spval
     call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
          avgflag='A', long_name='P pool for seeding new PFTs ', &
@@ -853,6 +862,10 @@ contains
        this%prod10p_col(c)  = 0._r8	  
        this%prod100p_col(c) = 0._r8	  
        this%totprodp_col(c) = 0._r8	  
+    end do
+
+    do g = bounds%begg, bounds%endg
+       this%seedp_grc(g) = 0._r8
     end do
 
     ! initialize fields for special filters
