@@ -708,13 +708,13 @@ contains
 
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
-                                    dt*elem(ie)%derived%FT(:,:,:)*elem(ie)%state%dp3d(:,:,:,np1)/dp_forcing(:,:,:,ie)
+                                    dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)*dp_forcing(:,:,:,ie)
 !vel indices are np,np,2,k,time
      do k=1,nlev
        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,1,k)*elem(ie)%state%dp3d(:,:,k,np1)/dp_forcing(:,:,k,ie)
+                                       dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)*dp_forcing(:,:,k,ie)
        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,2,k)*elem(ie)%state%dp3d(:,:,k,np1)/dp_forcing(:,:,k,ie)
+                                       dt*elem(ie)%derived%FM(:,:,2,k)/elem(ie)%state%dp3d(:,:,k,np1)*dp_forcing(:,:,k,ie)
      enddo
   enddo
   end subroutine applyCAMforcing_dynamics_dp
