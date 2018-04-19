@@ -668,6 +668,8 @@ def test_st_archive(self, testdir="st_archive_test"):
     archive = Archive()
     files = Files()
     components = []
+    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
+
     config_archive_files = archive.get_all_config_archive_files(files)
     # create the run directory testdir and populate it with rest_file and hist_file from
     # config_archive.xml test_file_names
