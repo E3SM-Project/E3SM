@@ -71,13 +71,14 @@ def stage_refcase(self):
 """
 *****************************************************************
 prestage ERROR: $refdir is not on local disk
-obtain this data from the svn input data repository
+obtain this data from the input data repository and either place it
+in the local $DIN_LOC_ROOT as follows
 > mkdir -p {}
 > cd {}
 > cd ..
-> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/{}
+> (download data)
 or set GET_REFCASE to FALSE in env_run.xml
-and prestage the restart data to $RUNDIR manually
+and place the restart data directly in the $RUNDIR
 *****************************************************************
 """.format(refdir, refdir, refdir))
 
