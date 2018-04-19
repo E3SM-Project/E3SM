@@ -1,8 +1,6 @@
-Except for the separable pieces descibed below, the E3SM v1.0 code is released
-(1) under the following 3-Clause BSD Open Source license 
-as well as 
-(2) inheriting the CCSM Version 3.0 license that formed the initial basis
-for the E3SM code.
+Except for the separable pieces descibed below, E3SM is released
+(1) under the following 3-Clause BSD Open Source license as well as 
+(2) inheriting the CCSM Version 3.0 license that formed the initial basis for the E3SM code.
 
 *******************************************************************************
 (1)
@@ -31,7 +29,7 @@ for the accuracy, completeness, or usefulness of any information, data,
 apparatus, product, or process disclosed, or represents that its use would 
 not infringe privately owned rights.
 
-*******************
+*******************************************************************************
 
 (2)
 CCSM Version 3.0
@@ -42,8 +40,6 @@ the National Science Foundation, the Department of Energy,
 the National Aeronautics and Space Administration, and the University 
 Corporation for Atmospheric Research's National Center for Atmospheric Research.
 
-Except for the segregable components listed below, 
-CCSM is public domain software.
 *******************************************************************************
 
 Separable Pieces with their own copyright and license:
