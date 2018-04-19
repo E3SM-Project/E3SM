@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<config case="uniform_res">
+
+        <!-- Set up needed files and executables -->
+        <add_executable source="periodic_hex" dest="periodic_grid"/>
+        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
+        <add_executable source="model" dest="landice_model"/>
+        <add_executable source="metis" dest="metis"/>
+        <add_executable source="mark_periodic_boundaries" dest="mark_periodic_boundaries_for_culling.py"/>
+        <add_executable source="translate_planar_grid" dest="translate_planar_grid.py"/>
+        <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
+        <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
+        <add_executable source="mask_creator" dest="MpasMaskCreator.x"/>
+        <add_executable source="mark_domain_boundaries_dirichlet" dest="mark_domain_boundaries_dirichlet.py"/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="ais14to4km.20160713.nc" dest="ais_input_data.nc"/>
+        <!--<add_link source_path="script_configuration_dir" source="ais30to1.20160713.nc" dest="ais_input_data.nc"/>-->
+        <add_link source_path="script_configuration_dir" source="thwaites_minimal.geojson" dest="."/>
+        <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
+        <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
+        <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.sh" dest="."/>
+
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+                <stream name="input">
+                   <attribute name="filename_template">thwaites_uniform_resolution.nc</attribute>
+                </stream>
+        </streams>
+
+
+        <run_script name="setup_test.py">
+
+                <!-- make base mesh -->
+                <step executable="./periodic_grid" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                </step>
+
+                <!-- mark cells for culling -->
+                <step executable="./mark_periodic_boundaries_for_culling.py" >
+                        <argument flag="-f">grid.nc</argument>
+                </step>
+
+                <!-- cull cells -->
+                <step executable="./MpasCellCuller.x" >
+                        <argument flag="">grid.nc</argument>
+                        <argument flag="">culled_grid1.nc</argument>
+                </step>
+
+                <!-- Translate mesh to land on Thwaites -->
+                <step executable="./translate_planar_grid.py" >
+                        <argument flag="-f">culled_grid1.nc</argument>
+                        <argument flag="-x">-1.65e6</argument>
+                        <argument flag="-y">-560000.0</argument>
+                </step>
+
+                <!-- Add lat/lon  -->
+                <step executable="./set_lat_lon_fields_in_planar_grid.py" >
+                        <argument flag="-f">culled_grid1.nc</argument>
+                        <argument flag="-p">ais-bedmap2</argument>
+                </step>
+
+                <!-- Make regional culling mask -->
+                <step executable="./MpasMaskCreator.x" >
+                        <argument flag="">culled_grid1.nc</argument>
+                        <argument flag="">thwaites_mask.nc</argument>
+                        <argument flag="-f">thwaites_minimal.geojson</argument>
+                </step>
+
+                <!-- cull cells to mask -->
+                <step executable="./MpasCellCuller.x" >
+                        <argument flag="">culled_grid1.nc</argument>
+                        <argument flag="">culled_grid2.nc</argument>
+                        <argument flag="-i">thwaites_mask.nc</argument>
+                </step>
+
+                <!-- Convert from basic MPAS mesh to MPASLI mesh -->
+                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                        <argument flag="-i">culled_grid2.nc</argument>
+                        <argument flag="-o">thwaites_uniform_resolution.nc</argument>
+                        <argument flag="-l">10</argument>
+                        <argument flag="--diri"></argument>
+                        <argument flag="--beta"></argument>
+                        <argument flag="--thermal"></argument>
+                </step>
+
+                <!-- Set up initial condition on to landice mesh -->
+                <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                        <argument flag="-s">ais_input_data.nc</argument>
+                        <argument flag="-d">thwaites_uniform_resolution.nc</argument>
+                        <argument flag="-m">d</argument>
+                </step>
+
+                <!-- mark edges of domain as dirichlet -->
+                <step executable="./mark_domain_boundaries_dirichlet.py">
+                        <argument flag="-f">thwaites_uniform_resolution.nc</argument>
+                </step>
+
+                <!-- Set up SMB and beta modifications -->
+                <step executable="./finalize_thwaites_initial_conditions.sh">
+                        <argument flag="">thwaites_uniform_resolution.nc</argument>
+                </step>
+
+                <!-- Set up a graph file 
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">16</argument>
+                </step> -->
+
+        </run_script>
+
+</config>

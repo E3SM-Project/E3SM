@@ -1,0 +1,17 @@
+<driver_script name="setup_and_run_testcase.py">
+        <case name="setup_mesh">
+                <step executable="./setup_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
+        </case>
+        <case name="1proc_run">
+                <step executable="./1proc_run.py" quiet="false" pre_message=" * Running 1proc_run step" post_message="     Complete"/>
+        </case>
+        <case name="3proc_run">
+                <step executable="./3proc_run.py" quiet="false" pre_message=" * Running 3proc_run step" post_message="     Complete"/>
+        </case>
+        <validation>
+                <compare_fields file1="1proc_run/output.nc" file2="3proc_run/output.nc">
+                        <template file="output_comparison.xml" path_base="script_test_dir"/>
+                </compare_fields>
+        </validation>
+</driver_script>
+

@@ -1,0 +1,13 @@
+&periodic_grid
+! Notes for Thwaites:
+! * We want xmax-xmin = 400 km
+!   nx = 400000/dc + 2
+! * ymax-ymin = 200 km
+!   ny = 200000/(sqrt(3)/2*dc) + 2 but must be even
+   dc = 8000.0,
+   nx = 52,
+   ny = 32,
+   nVertLevels = 1,
+   nTracers = 1,
+   nproc = 1
+/
