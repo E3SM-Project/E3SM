@@ -505,6 +505,47 @@ contains
 
     end do
     
+    ! calculate patch-to-column slash fluxes into litter and CWD pools
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+
+       ! fine and coarse root to litter and CWD slash carbon fluxes
+       cf%dwt_slash_cflux_col(c) =            &
+            cf%dwt_slash_cflux_col(c)       + &
+            dwt_frootc_to_litter(p)     /dt + &
+            dwt_livecrootc_to_litter(p) /dt + &
+            dwt_deadcrootc_to_litter(p) /dt
+
+       if ( use_c13 ) then
+          c13_cf%dwt_slash_cflux_col(c) =          &
+               c13_cf%dwt_slash_cflux_col(c)     + &
+               dwt_frootc13_to_litter(p)     /dt + &
+               dwt_livecrootc13_to_litter(p) /dt + &
+               dwt_deadcrootc13_to_litter(p) /dt
+       endif
+
+       if ( use_c14 ) then
+          c14_cf%dwt_slash_cflux_col(c) =          &
+               c14_cf%dwt_slash_cflux_col(c)     + &
+               dwt_frootc14_to_litter(p)     /dt + &
+               dwt_livecrootc14_to_litter(p) /dt + &
+               dwt_deadcrootc14_to_litter(p) /dt
+       endif
+
+       nf%dwt_slash_nflux_col(c) =            &
+            nf%dwt_slash_nflux_col(c)       + &
+            dwt_frootn_to_litter(p)     /dt + &
+            dwt_livecrootn_to_litter(p) /dt + &
+            dwt_deadcrootn_to_litter(p) /dt
+
+       pf%dwt_slash_pflux_col(c) =            &
+            pf%dwt_slash_pflux_col(c)       + &
+            dwt_frootp_to_litter(p)     /dt + &
+            dwt_livecrootp_to_litter(p) /dt + &
+            dwt_deadcrootp_to_litter(p) /dt
+
+    end do
+
     ! calculate pft-to-column for fluxes into litter and CWD pools
     do j = 1, nlevdecomp
        do pi = 1,max_patch_per_col
