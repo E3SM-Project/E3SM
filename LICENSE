@@ -49,6 +49,8 @@ Name            Code Location               Institution(s)      License
 Software
 -----------
 CIME            cime/                        NCAR, SNL, ANL      BSD
+MCT             cime/src/externals/mct       ANL                 BSD
+GPTL            cime/src/share/timing        author              non-commerical
 
 Ocean/Ice       under components/
 -----------     -----------------
@@ -65,7 +67,7 @@ MPP             external_models/mpqp         LBNL                BSD
 
 Atmosphere      under components/cam/src
 -----------     ------------------------
-CLUBB           physics/clubb                authors             notice
+CLUBB           physics/clubb                authors             --
 rrtmg           physics/rrtmg                AER                 non-commercial
 COSP            physics/cosp                 BCC                 BSD      
 Cosp/MISR       physics/cosp/MISR_simulator  author              BSD
@@ -76,7 +78,8 @@ icarus-scops    physics/icarus-scops         BCC                 BSD
 
 -------------------------------------------------------------------------------
 
-Institution Notes:
+Institution Names:
+NCAR =  University Corporation for Atmospheric Research
 LANL =  Los Alamos National Security, LLC
 SNL  =  National Technology & Engineering Solutions of Sandia, LLC 
 LBNL =  The Regents of the University of California, 
@@ -84,4 +87,5 @@ LBNL =  The Regents of the University of California,
 ANL  =  UChicago Argonne, LLC 
 BCC  =  British Crown Copyright, the UK Met Office
 AER  =  Atmospheric & Environmental Research, Inc.
+CNRS =  Centre National de la Recherche Scientifique
 *******************************************************************************
