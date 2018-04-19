@@ -42,7 +42,7 @@ Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/)
 
 Contributing
 --------------------------------------------------------------------------------
-Please refer to [Contributing](CONTRIBUTING) for details on our code development
+Please refer to [Contributing](CONTRIBUTING.md) for details on our code development
 process for submitting pull requests.
 
 Acknowledgement
