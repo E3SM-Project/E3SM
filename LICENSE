@@ -1,9 +1,7 @@
 Except for the separable pieces descibed below, E3SM is released
-(1) under the following 3-Clause BSD Open Source license as well as 
-(2) inheriting the CCSM Version 3.0 license that formed the initial basis for the E3SM code.
+under the following 3-Clause BSD Open Source license.
 
 *******************************************************************************
-(1)
 Copyright © 2018, UChicago Argonne, LLC All Rights Reserved
 
 Software Name: Energy Exascale Earth System Model (E3SM)
@@ -31,14 +29,15 @@ not infringe privately owned rights.
 
 *******************************************************************************
 
-(2)
-CCSM Version 3.0
-Copyright Notice and Disclaimer
+E3SM was developed from CESM1.3beta10
+CESM Copyright Notice and Disclaimer:
 
-The Community Climate System Model (CCSM) was developed in cooperation with 
+The Community Earth System Model (CESM) was developed in cooperation with
 the National Science Foundation, the Department of Energy, 
 the National Aeronautics and Space Administration, and the University 
 Corporation for Atmospheric Research's National Center for Atmospheric Research.
+
+CESM is public domain software.
 
 *******************************************************************************
 
