@@ -1,6 +1,95 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-19-2018
+Tag: cime5.6.0
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Don't access data servers if no data is needed.
+    - Add a test of the st_archive capability.
+    - Improve help message for resubmitting to dash.
+    - Simple compare improvement.
+    - Force the NODEFAIL test to run on the cheyenne regular queue.
+    - Download refcase from servers for hybrid.
+    - Add a warning if an unsupported testlist.xml is encountered.
+    - Replace TOTALPES with total_tasks.
+    - Fix massive misuse of TOTALPES for mpi -np all across e3sm.
+    - Fix test_scheduler's computation of procs needed for a test.
+    - Transition CIME to using a custom util for copying files.
+    - Minor fix to help msgs for options for e3sm mgmt tools.
+
+User interface changes: 
+    - case.st_archive now has a --test option.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0cd58a7 Merge pull request #2489 from jedwards4b/nodatanoserver
+aeb0f47 Merge pull request #2470 from jedwards4b/st_archive_test
+f1c2759 Improve help message for resubmitting to dash
+afc640c Merge pull request #2487 from jedwards4b/simple_compare_improvement
+9410812 Merge pull request #2486 from jedwards4b/nodefail_fix
+d3c73b7 Merge pull request #2481 from jedwards4b/cid_decesm
+b0afec2 Merge pull request #2482 from jedwards4b/testlist_format
+3874d08 replace TOTALPES with total_tasks
+28265be Fix massive misuse of TOTALPES for mpi -np all across e3sm
+9344b16 Merge pull request #2479 from ESMCI/jgfouca/fix_test_sched_procs_needed
+f48c994 Merge pull request #2475 from ESMCI/jgfouca/safer_copy
+adae0ae Minor fix to help msgs for options for e3sm mgmt tools
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.st_archive
+M	config/e3sm/config_archive.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/template.st_archive
+M	config/xml_schemas/config_archive.xsd
+M	scripts/Tools/e3sm_cime_merge
+M	scripts/Tools/e3sm_cime_split
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/gftp.py
+M	scripts/lib/CIME/Servers/svn.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/archive.py
+A	scripts/lib/CIME/XML/archive_base.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/locked_files.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-17-2018
 Tag: cime5.4.0-alpha.30
 Answer Changes: None
