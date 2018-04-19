@@ -44,11 +44,10 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
         success = self.check_input_data(protocal=protocal, address=address, download=download,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
-        if download:
+        success = self.check_input_data(protocal=protocal, address=address, download=False,
+                                   input_data_root=input_data_root, data_list_dir=data_list_dir)
+        if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
-        else:
-            success = self.check_input_data(protocal=protocal, address=address, download=False,
-                                            input_data_root=input_data_root, data_list_dir=data_list_dir)
 
     self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
