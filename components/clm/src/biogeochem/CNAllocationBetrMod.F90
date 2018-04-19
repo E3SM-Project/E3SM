@@ -808,11 +808,6 @@ contains
 
 
 !  the following parameter are defined uniformly for all grids
-     km_decomp_nh4                => veg_vp%km_decomp_nh4                         , &
-     km_decomp_no3                => veg_vp%km_decomp_no3                         , &
-     km_decomp_p                  => veg_vp%km_decomp_p                           , &
-     km_nit                       => veg_vp%km_nit                                , &
-     km_den                       => veg_vp%km_den                                , &
 
      km_plant_nh4                 => veg_vp%km_plant_nh4                          , &
      km_plant_no3                 => veg_vp%km_plant_no3                          , &
@@ -828,17 +823,8 @@ contains
      plant_p_km_vr_patch          => PlantMicKinetics_vars%plant_p_km_vr_patch        , & !
      vmax_minsurf_p_vr_col        => PlantMicKinetics_vars%vmax_minsurf_p_vr_col      , & !
      km_minsurf_p_vr_col          => PlantMicKinetics_vars%km_minsurf_p_vr_col        , &
-     km_den_no3_vr_col            => PlantMicKinetics_vars%km_den_no3_vr_col          , &
-     km_nit_nh4_vr_col            => PlantMicKinetics_vars%km_nit_nh4_vr_col          , &
-     km_decomp_p_vr_col           => PlantMicKinetics_vars%km_decomp_p_vr_col         , &
-     km_decomp_nh4_vr_col         => PlantMicKinetics_vars%km_decomp_nh4_vr_col       , &
-     km_decomp_no3_vr_col         => PlantMicKinetics_vars%km_decomp_no3_vr_col       , &
      plant_eff_ncompet_b          => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch  , &
      plant_eff_pcompet_b          => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch  , &
-     decomp_eff_ncompet_b         => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
-     decomp_eff_pcompet_b         => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
-     den_eff_ncompet_b            => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col   , &
-     nit_eff_ncompet_b            => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col   , &
      minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
      minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &
      km_minsurf_nh4_vr_col        => PlantMicKinetics_vars%km_minsurf_nh4_vr_col      , &
@@ -906,13 +892,6 @@ contains
       endif
       !the following is temporary set using alm, in the future, it will be
       !set through the betr_alm interface
-      km_den_no3_vr_col(c,j) = km_den
-      km_nit_nh4_vr_col(c,j) = km_nit
-      km_decomp_p_vr_col(c,j) = km_decomp_p
-      km_decomp_no3_vr_col(c,j) = km_decomp_no3
-      km_decomp_nh4_vr_col(c,j) = km_decomp_nh4
-      decomp_eff_ncompet_b(c,j) = 0._r8
-      decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
           plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) 
@@ -951,19 +930,9 @@ contains
           plant_eff_ncompet_b(p,j) = 0._r8
           plant_eff_pcompet_b(p,j) = 0._r8
         end if
-        !effective n competing decomposers
-        decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
-              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
-        !effective p competing decomposers
-        decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
-              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
 
       end do
 
-
-      !lines below are a crude approximation
-      den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
-      nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
     enddo
   end do
   end associate
