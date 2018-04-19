@@ -35,7 +35,7 @@ def _get_datenames(casename, rundir):
 
     files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
     if not files:
-         files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
+        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
 
     logger.debug("  cpl files : {} ".format(files))
 
@@ -198,7 +198,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         logger.info("moving {} to {}".format(srcfile, destfile))
 
 ###############################################################################
-def _archive_history_files(case, archive, archive_entry,
+def _archive_history_files(archive, archive_entry,
                            compclass, compname, histfiles_savein_rundir,
                            last_date, archive_file_fn, dout_s_root, casename, rundir):
 ###############################################################################
@@ -393,7 +393,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
             pfile = re.compile(pattern)
             files = [f for f in os.listdir(rundir) if pfile.search(f)]
-            pattern =  '_?' + '\d*'  +  r'\.' + suffix + r'\.' + datename_str
+            pattern =  r'_?' + r'\d*'  +  r'\.' + suffix + r'\.' + datename_str
             pfile = re.compile(pattern)
             restfiles = [f for f in files if pfile.search(f)]
             logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
@@ -519,7 +519,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
             logger.info('Archiving history files for {} ({})'.format(compname, compclass))
             histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
             logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-            _archive_history_files(case, archive, archive_entry,
+            _archive_history_files(archive, archive_entry,
                                    compclass, compname, histfiles_savein_rundir,
                                    last_date, archive_file_fn,
                                    dout_s_root, casename, rundir)
