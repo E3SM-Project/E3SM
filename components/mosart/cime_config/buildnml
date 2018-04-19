@@ -23,6 +23,7 @@ my $RUN_TYPE		= `./xmlquery  RUN_TYPE		 -value`;
 my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE	 -value`;
 my $RUN_REFCASE	        = `./xmlquery  RUN_REFCASE 	 -value`;
 my $RUN_REFDATE	        = `./xmlquery  RUN_REFDATE	 -value`;
+my $RUN_REFDIR	        = `./xmlquery  RUN_REFDIR	 -value`;
 my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD 	 -value`;
 my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT	 -value`;
 my $UTILROOT		= `./xmlquery  UTILROOT		 -value`;
@@ -97,7 +98,7 @@ while ($inst_counter <= $NINST_ROF) {
 	    # set search directory
 	    $refdir = "$RUNDIR";
 	    if ($GET_REFCASE eq 'TRUE') {
-		$refdir = "$DIN_LOC_ROOT/ccsm4_init/$RUN_REFCASE/$RUN_REFDATE";
+		$refdir = "$DIN_LOC_ROOT/$RUN_REFDIR/$RUN_REFCASE/$RUN_REFDATE";
 	    }
 
 	    # search for clm or mosart files with instance or not
