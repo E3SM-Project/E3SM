@@ -24,7 +24,7 @@ def _get_archive_file_fn(copy_only):
     return safe_copy if copy_only else shutil.move
 
 ###############################################################################
-def _get_datenames(casename, rundir, multi_driver):
+def _get_datenames(casename, rundir):
 ###############################################################################
     """
     Returns the date objects specifying the times of each file
@@ -33,14 +33,9 @@ def _get_datenames(casename, rundir, multi_driver):
     """
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
 
-    # The MULTI_DRIVER option requires a more careful search for dates.
-    # When True, each date has NINST cpl_####.r files.
-    logger.debug("_get_datenames:  multidriver = {} ".format(multi_driver))
-
-    if multi_driver :
-        files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
-    else:
-        files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
+    files = sorted(glob.glob(os.path.join(rundir, casename +      '.cpl.r.*.nc')))
+    if not files:
+         files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl_0001.r.*.nc')))
 
     logger.debug("  cpl files : {} ".format(files))
 
@@ -227,48 +222,39 @@ def _archive_history_files(case, archive, archive_entry,
         compname = r'clm2?'
 
     # determine ninst and ninst_string
-    ninst, ninst_string = _get_ninst_info(case, compclass)
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
 
     for suffix in archive.get_hist_file_extensions(archive_entry):
-        for i in range(ninst):
-            if ninst_string:
-                if compname.find('mpas') == 0:
-                    # Not correct, but MPAS' multi-instance name format is unknown.
-                    newsuffix =                    compname + r'\d*'
+        if compname.find('mpas') == 0:
+            newsuffix =                    compname + r'\d*'
+        else:
+            newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
+        newsuffix += r'\.' + suffix
+        if not suffix.endswith('$'):
+            newsuffix += r'\.'
+
+        logger.debug("short term archiving suffix is {} ".format(newsuffix))
+
+        pfile = re.compile(newsuffix)
+        histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+        logger.debug("histfiles = {} ".format(histfiles))
+
+        if histfiles:
+            for histfile in histfiles:
+                file_date = get_file_date(os.path.basename(histfile))
+                if last_date is None or file_date is None or file_date <= last_date:
+                    srcfile = join(rundir, histfile)
+                    expect(os.path.isfile(srcfile),
+                           "history file {} does not exist ".format(srcfile))
+                    destfile = join(archive_histdir, histfile)
+                if histfile in histfiles_savein_rundir:
+                    logger.info("copying {} to {} ".format(srcfile, destfile))
+                    safe_copy(srcfile, destfile)
                 else:
-                    newsuffix = casename + r'\.' + compname + r'_?' + r'\d*' + ninst_string[i]
-            else:
-                if compname.find('mpas') == 0:
-                    newsuffix =                    compname + r'\d*'
-                else:
-                    newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
-            newsuffix += r'\.' + suffix
-            if not suffix.endswith('$'):
-                newsuffix += r'\.'
-
-            logger.debug("short term archiving suffix is {} ".format(newsuffix))
-
-            pfile = re.compile(newsuffix)
-            histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-            logger.debug("histfiles = {} ".format(histfiles))
-
-            if histfiles:
-                for histfile in histfiles:
-                    file_date = get_file_date(os.path.basename(histfile))
-                    if last_date is None or file_date is None or file_date <= last_date:
-                        srcfile = join(rundir, histfile)
-                        expect(os.path.isfile(srcfile),
-                               "history file {} does not exist ".format(srcfile))
-                        destfile = join(archive_histdir, histfile)
-                        if histfile in histfiles_savein_rundir:
-                            logger.info("copying {} to {} ".format(srcfile, destfile))
-                            safe_copy(srcfile, destfile)
-                        else:
-                            logger.info("moving {} to {} ".format(srcfile, destfile))
-                            archive_file_fn(srcfile, destfile)
+                    logger.info("moving {} to {} ".format(srcfile, destfile))
+                    archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
@@ -379,9 +365,6 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                             case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'),
                             archive, archive_entry, archive_restdir, datename, datename_is_last)
 
-    # determine ninst and ninst_string
-    ninst, ninst_strings = _get_ninst_info(case, compclass)
-
     # move all but latest restart files into the archive restart directory
     # copy latest restart files to archive restart directory
     histfiles_savein_rundir = []
@@ -400,23 +383,19 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
 
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
-        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
-        for i in range(ninst):
-            restfiles = ""
-            if compname.find("mpas") == 0:
-                pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
-                pfile = re.compile(pattern)
-                restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-            else:
-                pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
-                pfile = re.compile(pattern)
-                files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                if ninst_strings:
-                    pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
-                else:
-                    pattern =                     r'\.' + suffix + r'\.' + datename_str
-                pfile = re.compile(pattern)
-                restfiles = [f for f in files if pfile.search(f)]
+#        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
+        restfiles = ""
+        if compname.find("mpas") == 0:
+            pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
+            pfile = re.compile(pattern)
+            restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+        else:
+            pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
+            pfile = re.compile(pattern)
+            files = [f for f in os.listdir(rundir) if pfile.search(f)]
+            pattern =  '_?' + '\d*'  +  r'\.' + suffix + r'\.' + datename_str
+            pfile = re.compile(pattern)
+            restfiles = [f for f in files if pfile.search(f)]
             logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
@@ -515,7 +494,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                        archive_incomplete_logs, archive_file_fn)
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
-    datenames = _get_datenames(casename, rundir, case.get_value('MULTI_DRIVER'))
+    datenames = _get_datenames(casename, rundir)
     logger.debug("datenames {} ".format(datenames))
     histfiles_savein_rundir_by_compname = {}
     for datename in datenames:
@@ -591,7 +570,7 @@ def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to
     """
     archive = self.get_env('archive')
     casename = self.get_value("CASE")
-    datenames = _get_datenames(casename, rundir, self.get_value('MULTI_DRIVER'))
+    datenames = _get_datenames(casename, rundir)
     expect(len(datenames) >= 1, "No restart dates found")
     last_datename = datenames[-1]
 
@@ -668,7 +647,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     archive = Archive()
     files = Files()
     components = []
-    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
+#    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
 
     config_archive_files = archive.get_all_config_archive_files(files)
     # create the run directory testdir and populate it with rest_file and hist_file from
