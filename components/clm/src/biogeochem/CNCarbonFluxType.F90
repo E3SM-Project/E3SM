@@ -315,7 +315,6 @@ module CNCarbonFluxType
      real(r8), pointer :: m_c_to_litr_met_fire_col                  (:,:)   ! C from leaf, froot, xfer and storage C to litter labile C by fire (gC/m3/s) 
      real(r8), pointer :: m_c_to_litr_cel_fire_col                  (:,:)   ! C from leaf, froot, xfer and storage C to litter cellulose C by fire (gC/m3/s) 
      real(r8), pointer :: m_c_to_litr_lig_fire_col                  (:,:)   ! C from leaf, froot, xfer and storage C to litter lignin C by fire (gC/m3/s) 
-     real(r8), pointer :: lf_conv_cflux_col                         (:)     ! (gC/m2/s) conversion C flux due to BET and BDT area decreasing (immediate loss to atm)
      real(r8), pointer :: somc_fire_col                             (:)     ! (gC/m2/s) carbon emissions due to peat burning
 
      real(r8), pointer :: decomp_cpools_sourcesink_col              (:,:,:) ! change in decomposing c pools. Used to update concentrations concurrently with vertical transport (gC/m3/timestep)  
@@ -774,7 +773,6 @@ contains
      allocate(this%bgc_cpool_ext_loss_vr_col         (begc:endc, 1:nlevdecomp_full,ndecomp_pools))
      this%bgc_cpool_ext_loss_vr_col(:,:,:) = nan
 
-     allocate(this%lf_conv_cflux_col                 (begc:endc))                  ; this%lf_conv_cflux_col         (:)  =nan
      allocate(this%lithr_col                         (begc:endc))                  ; this%lithr_col                 (:)  =nan
      allocate(this%somhr_col                         (begc:endc))                  ; this%somhr_col                 (:)  =nan
      allocate(this%hr_vr_col                         (begc:endc,1:nlevdecomp_full)); this%hr_vr_col                 (:,:)=nan
@@ -2894,12 +2892,6 @@ contains
             avgflag='A', long_name='soil C loss', &
             ptr_col=this%somhr_col)
 
-       ! F. Li and S. Levis
-       this%lf_conv_cflux_col(begc:endc) = spval
-       call hist_addfld1d (fname='LF_CONV_CFLUX', units='gC/m^2/s', &
-            avgflag='A', long_name='conversion carbon due to BET and BDT area decreasing', &
-            ptr_col=this%lf_conv_cflux_col, default='inactive')   
-
        this%somc_fire_col(begc:endc) = spval
        call hist_addfld1d (fname='SOMC_FIRE', units='gC/m^2/s', &
             avgflag='A', long_name='C loss due to peat burning', &
@@ -4073,7 +4065,6 @@ contains
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-          this%lf_conv_cflux_col(c)         = 0._r8
           this%dwt_conv_cflux_col(c)        = 0._r8
           this%dwt_prod10c_gain_col(c)      = 0._r8
           this%dwt_prod100c_gain_col(c)     = 0._r8
@@ -4741,7 +4732,6 @@ contains
     
     do c = bounds%begc,bounds%endc
        this%dwt_conv_cflux_col(c)           = 0._r8
-       this%lf_conv_cflux_col(c)            = 0._r8
        this%dwt_prod10c_gain_col(c)         = 0._r8
        this%dwt_prod100c_gain_col(c)        = 0._r8
        this%dwt_slash_cflux_col(c)          = 0._r8
