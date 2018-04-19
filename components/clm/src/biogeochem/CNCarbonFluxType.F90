@@ -4080,6 +4080,7 @@ contains
           this%prod1c_loss_col(c)           = 0._r8
           this%prod10c_loss_col(c)          = 0._r8
           this%prod100c_loss_col(c)         = 0._r8
+          this%dwt_slash_cflux_col(c)       = 0._r8
           do j = 1, nlevdecomp_full
              this%dwt_frootc_to_litr_met_c_col(c,j) = 0._r8
              this%dwt_frootc_to_litr_cel_c_col(c,j) = 0._r8
@@ -4743,6 +4744,7 @@ contains
        this%lf_conv_cflux_col(c)            = 0._r8
        this%dwt_prod10c_gain_col(c)         = 0._r8
        this%dwt_prod100c_gain_col(c)        = 0._r8
+       this%dwt_slash_cflux_col(c)          = 0._r8
     end do
 
     do j = 1, nlevdecomp_full

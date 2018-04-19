@@ -320,6 +320,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: dwt_prod10n_gain_patch                    (:)     ! patch (gN/m2/s) addition to 10-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
      real(r8), pointer :: dwt_prod100n_gain_patch                   (:)     ! patch (gN/m2/s) addition to 100-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
      real(r8), pointer :: dwt_crop_productn_gain_patch              (:)     ! patch (gN/m2/s) addition to crop product pool from landcover change; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
+     real(r8), pointer :: dwt_slash_nflux_col                       (:)     ! (gN/m2/s) conversion slash flux due to landcover change
 
      real(r8), pointer :: dwt_conv_nflux_col                        (:)     ! col (gN/m2/s) conversion N flux (immediate loss to atm)
      real(r8), pointer :: dwt_prod10n_gain_col                      (:)     ! col (gN/m2/s) addition to 10-yr wood product pool
@@ -650,6 +651,7 @@ contains
     allocate(this%dwt_prod10n_gain_patch            (begp:endp))                  ; this%dwt_prod10n_gain_patch       (:) =nan
     allocate(this%dwt_prod100n_gain_patch           (begp:endp))                  ; this%dwt_prod100n_gain_patch      (:) =nan
     allocate(this%dwt_crop_productn_gain_patch      (begp:endp))                  ; this%dwt_crop_productn_gain_patch (:) =nan
+    allocate(this%dwt_slash_nflux_col               (begc:endc))                  ; this%dwt_slash_nflux_col          (:) =nan
 
     allocate(this%dwt_conv_nflux_col         (begc:endc))                   ; this%dwt_conv_nflux_col         (:)   = nan
     allocate(this%dwt_prod10n_gain_col       (begc:endc))                   ; this%dwt_prod10n_gain_col       (:)   = nan
@@ -1934,6 +1936,11 @@ contains
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
          ptr_col=this%dwt_prod100n_gain_patch, default='inactive')
 
+    this%dwt_slash_nflux_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_SLASH_NFLUX', units='gN/m^2/s', &
+         avgflag='A', long_name='slash N flux to litter and CWD due to land use', &
+         ptr_col=this%dwt_slash_nflux_col)
+
     this%dwt_seedn_to_npool_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level npool', &
@@ -2844,6 +2851,7 @@ contains
        this%dwt_conv_nflux_col(c)        = 0._r8
        this%dwt_prod10n_gain_col(c)      = 0._r8
        this%dwt_prod100n_gain_col(c)     = 0._r8
+       this%dwt_slash_nflux_col(c)       = 0._r8
     end do
 
     do j = 1, nlevdecomp_full
