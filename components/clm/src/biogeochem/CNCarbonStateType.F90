@@ -116,11 +116,14 @@ module CNCarbonStateType
 
      ! Balance checks
      real(r8), pointer :: begcb_patch              (:)     ! patch carbon mass, beginning of time step (gC/m**2)
-     real(r8), pointer :: begcb_col                (:)     ! patch carbon mass, beginning of time step (gC/m**2)
+     real(r8), pointer :: begcb_col                (:)     ! column carbon mass, beginning of time step (gC/m**2)
+     real(r8), pointer :: begcb_grc                (:)     ! grid cell carbon mass, beginning of time step (gC/m**2)
      real(r8), pointer :: endcb_patch              (:)     ! patch carbon mass, end of time step (gC/m**2)
-     real(r8), pointer :: endcb_col                (:)     ! patch carbon mass, end of time step (gC/m**2)
+     real(r8), pointer :: endcb_col                (:)     ! column carbon mass, end of time step (gC/m**2)
+     real(r8), pointer :: endcb_grc                (:)     ! grid cell carbon mass, end of time step (gC/m**2)
      real(r8), pointer :: errcb_patch              (:)     ! patch carbon balance error for the timestep (gC/m**2)
-     real(r8), pointer :: errcb_col                (:)     ! patch carbon balance error for the timestep (gC/m**2)
+     real(r8), pointer :: errcb_col                (:)     ! column carbon balance error for the timestep (gC/m**2)
+     real(r8), pointer :: errcb_grc                (:)     ! grid cell carbon balance error for the timestep (gC/m**2)
      
      real(r8), pointer :: totpftc_beg_col(:)
      real(r8), pointer :: cwdc_beg_col(:)
@@ -260,10 +263,13 @@ contains
     allocate(this%decomp_som2c_vr_col(begc:endc,1:nlevdecomp_full)); this%decomp_som2c_vr_col(:,:)= nan
     allocate(this%begcb_patch (begp:endp));     this%begcb_patch (:) = nan
     allocate(this%begcb_col   (begc:endc));     this%begcb_col   (:) = nan
+    allocate(this%begcb_grc   (begg:endg));     this%begcb_grc   (:) = nan
     allocate(this%endcb_patch (begp:endp));     this%endcb_patch (:) = nan
     allocate(this%endcb_col   (begc:endc));     this%endcb_col   (:) = nan
+    allocate(this%endcb_grc   (begg:endg));     this%endcb_grc   (:) = nan
     allocate(this%errcb_patch (begp:endp));     this%errcb_patch (:) = nan
     allocate(this%errcb_col   (begc:endc));     this%errcb_col   (:) = nan
+    allocate(this%errcb_grc   (begg:endg));     this%errcb_grc   (:) = nan
 
     allocate(this%cropseedc_deficit_patch  (begp:endp)) ; this%cropseedc_deficit_patch  (:) = nan
     allocate(this%seedc_grc                (begg:endg)) ; this%seedc_grc                (:) = nan
