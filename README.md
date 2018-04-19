@@ -15,6 +15,7 @@ Table of Contents
 - [Supported Machines](#supportedmachines)
 - [Running](#running)
 - [Contributing](#contributing)
+- [Acknowledge](#acknowledge)
 - [License](#license)
 
 Quick Start
@@ -29,8 +30,7 @@ E3SM is high-performance computing application and generally requires a cluster
 with several hundred nodes to run a scientifically validated case at a useful
 simulation speed.
 
-To run E3SM, it is recommended that you obtain time on [Supported Machine]
-(https://e3sm.org/model/running-e3sm/supported-machines/)
+To run E3SM, it is recommended that you obtain time on a [Supported Machine](https://e3sm.org/model/running-e3sm/supported-machines/)
 
 Running
 --------------------------------------------------------------------------------
@@ -42,9 +42,14 @@ Contributing
 Please refer to [Developing E3SM](https://e3sm.org/model/running-e3sm/developing-e3sm/)
  for details on our code development process for submitting pull requests.
 
+Acknowledge
+--------------------------------------------------------------------------------
+The Energy Exascale Earth System Model (E3SM) Project should be acknowledged in 
+publications as the origin of model or data used in the research using [these 
+guidelines](https://e3sm.org/resources/policies/acknowledge-e3sm/).
+
 License
 --------------------------------------------------------------------------------
 The E3SM model became open development at the time of first model and data release.
 Please see [LICENSE](LICENSE) for details.
-
 
