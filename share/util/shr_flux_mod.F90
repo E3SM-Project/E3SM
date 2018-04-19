@@ -462,6 +462,12 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
 
 END subroutine shr_flux_atmOcn
 
+real(R8) elemental function cuberoot(a)
+  real(R8), intent(in) :: a
+  real(R8), parameter :: one_third = 1._R8/3._R8
+  cuberoot = sign(abs(a)**one_third, a)
+end function cuberoot
+
 !===============================================================================
 ! !BOP =========================================================================
 !
@@ -696,7 +702,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: tdiff(nMax)               ! tbot - ts
    real(R8)    :: vscl
 
-
    qsat(Tk)   = 640380.0_R8 / exp(5107.4_R8/Tk)
    cdn(Umps)  =   0.0027_R8 / Umps + 0.000142_R8 + 0.0000764_R8 * Umps
    psimhu(xd) = log((1.0_R8+xd*(2.0_R8+xd))*(1.0_R8+xd*xd)/8.0_R8) - 2.0_R8*atan(xd) + 1.571_R8
@@ -879,7 +884,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             Kvisc = 0.0_R8
             dif3 = 0.0_R8
 
-            ustarw  = ustar*sqrt(rbot(n)/rhocn)
+            ustarw  = ustar*sqrt(max(tiny,rbot(n)/rhocn))
             Qnsol   = lwdn(n) - shr_const_stebol*(tSkin(n))**4 + &
                  rbot(n)*ustar*(cp*tstar + shr_const_latvap*qstar)
             Hd      = (Qnsol   + Qsol*(1.0_R8-swpen(n)) ) / rcpocn
@@ -891,8 +896,10 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                  (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
             Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
             Hb = min(Hb , 0.0_R8)
-            lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8)**(-1/3)
+
+!            lambdaV = lambdaC*(1.0_R8/cuberoot(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
+!                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8))
+            lambdaV = 6.5_R8
             cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )
 
             !--- REGIME ---
@@ -929,7 +936,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                      Kvisc = Prandtl* kappa0 + NUzero * FofRi
                   else
                      regime(n) = 4.0_R8
-                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1/3)
+                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *cuberoot(1.0_R8-7.0_R8*doL)
                      Kvisc = Kdiff
                   endif
                endif
