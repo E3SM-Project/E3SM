@@ -30,17 +30,27 @@ class SLR(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
+    #=================================================================
+    # Compile model with multiple instances
+    #=================================================================
     def build_phase(self, sharedlib_only=False, model_only=False):
 
-        ninst = 3
+        #total number of initial conditions
+        n_inic_cond = 12
+
+        #For each initial condition, we need to run 3 simulations:
+        #1. Default
+        #2. With Positive Perturbation
+        #3. With Negative Perturb
+        
+        ninst = n_inic_cond * 3
 
         #BSINGH: For debugging only - Building the model can take 
         #significant amount of time. Setting fake_bld to True can save 
         #that time
-        fake_bld = False
+        fake_bld = True
 
         # Build exectuable with multiple instances
-        # (in the development phase we use 3)
         # Lay all of the components out concurrently
 
         # Only want this to happen once. It will impact the sharedlib build
@@ -73,19 +83,15 @@ class SLR(SystemTestsCommon):
         # namelist files before job starts running. 
         #=================================================================
 
-        # time step size = 2 s
-        dtime = 2
-
-        # change the coupling frequency accordingly
-        ncpl  = 86400 / dtime
-        self._case.set_value("ATM_NCPL",ncpl)
-
-        # simulation length = 10 minutes
-        nsteps = 600/dtime
-        self._case.set_value("STOP_N",     nsteps)
+        #=================================================================
+        #Settings common to all instances
+        #=================================================================
+            
+        #Coupler settings which are applicable to ALL the instances (as there is only one coupler for all instances)
+        self._case.set_value("STOP_N",     "1")
         self._case.set_value("STOP_OPTION","nsteps")
 
-        # namelist specifications for each instance
+        #Prepare paths for namelist file
         
         # generate paths/file names to get files to set initial conditons
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
@@ -97,34 +103,42 @@ class SLR(SystemTestsCommon):
         file_suf_atm = "-01-00000.nc"
         file_suf_lnd = "-01-00000.nc"
 
-
-        for iinst in range(1, ninst+1):
+        def write_nl(iinst,prt=0):
 
             with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
-                 open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile: 
+                 open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile:
 
                  # atm/lnd intitial conditions
 
                  inst_label_2digits = str(iinst).zfill(2)
 
-                 atmnlfile.write("!ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                 lndnlfile.write("!finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                 #atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                 #lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
-                 # time step sizes
-
-                 atmnlfile.write("dtime = "+str(dtime)+" \n")
-                 atmnlfile.write("iradsw = 2 \n")
-                 atmnlfile.write("iradlw = 2 \n")
-
-                 lndnlfile.write("dtime = "+str(dtime)+" \n")
+                 # initial condition files to use for atm and land
+                 atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                 lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                  # atm model output
-
                  atmnlfile.write("avgflag_pertape = 'I' \n")
                  atmnlfile.write("nhtfrq = 1 \n")
-                 atmnlfile.write("mfilt  = 1000 \n")
-                 atmnlfile.write("ndens  = 1 \n")
+                 atmnlfile.write("mfilt  = 1  \n")
+                 atmnlfile.write("ndens  = 1  \n")
                  atmnlfile.write("empty_htapes = .true. \n")
                  atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
+                 atmnlfile.write("pergro_mods  = .true. \n")
+                 atmnlfile.write("pergro_test_active = .true. \n")
+                 
+                 if(prt <> 0):
+                     atmnlfile.write(" pertlim = "+str(prt)+" \n")
 
-       #self.run_indv()
+        for iinst in range(1, ninst+1,3):
+            write_nl(iinst,prt=0)
+
+
+    #=================================================================
+    # run_phase
+    #=================================================================
+    def run_phase(self):
+
+        self.run_indv()        
