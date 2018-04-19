@@ -26,7 +26,7 @@ module CNBalanceCheckMod
 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
-  use subgridAveMod       , only : p2c
+  use subgridAveMod       , only : p2c, c2g
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran:
@@ -51,6 +51,9 @@ module CNBalanceCheckMod
   public :: ColCBalanceCheck
   public :: ColNBalanceCheck
   public :: ColPBalanceCheck
+  public :: BeginGridCBalance
+  public :: BeginGridNBalance
+  public :: BeginGridPBalance
   !-----------------------------------------------------------------------
 
 contains
@@ -637,5 +640,89 @@ contains
     end associate
 
   end subroutine ColPBalanceCheck
+
+  !-----------------------------------------------------------------------
+  subroutine BeginGridCBalance(bounds, carbonstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Calculate the beginning carbon balance for mass conservation checks
+    ! at grid cell level
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds
+    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    !
+    !-----------------------------------------------------------------------
+
+    associate(                                        &
+         totcolc   =>  carbonstate_vars%totcolc_col , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         begcb_grc =>  carbonstate_vars%begcb_grc     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         )
+
+      call c2g( bounds = bounds, &
+           carr = totcolc(bounds%begc:bounds%endc), &
+           garr = begcb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+    end associate
+
+  end subroutine BeginGridCBalance
+ 
+  !-----------------------------------------------------------------------
+  subroutine BeginGridNBalance(bounds, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Calculate the beginning nitrogen balance for mass conservation checks
+    ! at grid cell level
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !-----------------------------------------------------------------------
+
+    associate(                                         &
+         totcoln   => nitrogenstate_vars%totcoln_col , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         begnb_grc => nitrogenstate_vars%begnb_grc     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         )
+
+      call c2g( bounds = bounds, &
+           carr = totcoln(bounds%begc:bounds%endc), &
+           garr = begnb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+    end associate
+
+  end subroutine BeginGridNBalance
+
+  !-----------------------------------------------------------------------
+  subroutine BeginGridPBalance(bounds, phosphorusstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Calculate the beginning phosphorus balance for mass conservation checks
+    ! at grid cell level
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !
+    !-----------------------------------------------------------------------
+
+    associate(                                           &
+         totcolp   => phosphorusstate_vars%totcolp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         begpb_grc => phosphorusstate_vars%begpb_grc     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         )
+
+      call c2g( bounds = bounds, &
+           carr = totcolp(bounds%begc:bounds%endc), &
+           garr = begpb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+
+    end associate
+
+  end subroutine BeginGridPBalance
 
 end module CNBalanceCheckMod
