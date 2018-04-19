@@ -760,11 +760,11 @@ module ESM
            write(logunit,*) trim(subname)//":wav_present="//trim(wav_present)
            write(logunit,*) trim(subname)//":glc_present="//trim(glc_present)
            write(logunit,*) trim(subname)//":med_present="//trim(med_present)
-        end if
 
-        ! Print out colon delimited string of fields from mediator log file
-        call esmFlds_Concat(child, logunit, rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           ! Print out colon delimited string of fields from mediator log file
+           call esmFlds_Concat(logunit, rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        end if
 
       else
 
@@ -840,6 +840,12 @@ module ESM
 
     call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_DriverPrint(driver, orderflag=.true.)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
 
     if (mastertask) then
        call NUOPC_FreeFormatPrint(runSeqFF, rc=rc)

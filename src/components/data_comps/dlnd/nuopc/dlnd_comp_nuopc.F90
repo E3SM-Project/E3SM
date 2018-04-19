@@ -433,9 +433,11 @@ module dlnd_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-      call mct_aVect_info(2, d2x, istr='initial diag'//':AV', pe=localPet)
-      call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (my_task == master_task) then
+          call mct_aVect_info(2, d2x, istr='initial diag'//':AV')
+       end if
+       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
 #ifdef USE_ESMF_METADATA
@@ -562,9 +564,11 @@ module dlnd_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-      call mct_aVect_info(2, d2x, istr='run diag'//':AV', pe=localPet)
-      call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (my_task == master_task) then
+          call mct_aVect_info(2, d2x, istr='run diag'//':AV')
+       end if
+       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
     if (master_task) then

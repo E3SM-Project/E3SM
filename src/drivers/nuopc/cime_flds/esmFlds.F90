@@ -164,6 +164,8 @@ contains
     character(len=*), parameter :: subname='(shr_nuopc_fldList_Init)'
     !--------------------------------------
 
+    rc = ESMF_SUCCESS
+
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -2528,91 +2530,65 @@ contains
 
   !================================================================================
 
-  subroutine esmFlds_Concat(gcomp, logunit, rc)
+  subroutine esmFlds_Concat(logunit, rc)
 
     !----------------------------------------------------------------------------
     ! creation of colon delimited field list
     !----------------------------------------------------------------------------
 
     ! input/output variables
-    type(ESMF_GridComp)    :: gcomp
     integer, intent(in)    :: logunit
     integer, intent(inout) :: rc
 
     ! local variables
-    type(ESMF_VM)  :: vm
-    integer        :: localPet
-    logical        :: mastertask
     character(CXX) :: concatFr, concatTo
     character(len=*), parameter :: subname='(esmFlds_Concat)'
     !--------------------------------------
 
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    rc = ESMF_SUCCESS
 
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    mastertask = .false.
-    if (localPet == 0) mastertask=.true.
-
-    ! Determine character list of fields
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compatm), fldListTo(compatm), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_a2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2a        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_a2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2a        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(complnd), fldListTo(complnd), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_l2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2l        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_l2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2l        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compice), fldListTo(compice), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_i2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2i        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_i2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2i        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compocn), fldListTo(compocn), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_o2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2o        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_o2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2o        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compglc), fldListTo(compglc), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_g2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2g        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_g2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2g        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(comprof), fldListTo(comprof), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compwav), fldListTo(compwav), concatFr, concatTo, flds_scalar_name)
-    if (mastertask) then
-       write(logunit, "(A)") subname//': flds_w2x        = ',trim(concatFr)
-       write(logunit, "(A)") '-------------------------------------------------'
-       write(logunit, "(A)") subname//': flds_x2w        = ',trim(concatTo)
-       write(logunit, "(A)") '-------------------------------------------------'
-    end if
+    write(logunit, "(A)") subname//': flds_w2x        = ',trim(concatFr)
+    write(logunit, "(A)") '-------------------------------------------------'
+    write(logunit, "(A)") subname//': flds_x2w        = ',trim(concatTo)
+    write(logunit, "(A)") '-------------------------------------------------'
 
   end subroutine esmFlds_Concat
 
