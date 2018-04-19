@@ -249,12 +249,12 @@ def _archive_history_files(archive, archive_entry,
                     expect(os.path.isfile(srcfile),
                            "history file {} does not exist ".format(srcfile))
                     destfile = join(archive_histdir, histfile)
-                if histfile in histfiles_savein_rundir:
-                    logger.info("copying {} to {} ".format(srcfile, destfile))
-                    safe_copy(srcfile, destfile)
-                else:
-                    logger.info("moving {} to {} ".format(srcfile, destfile))
-                    archive_file_fn(srcfile, destfile)
+                    if histfile in histfiles_savein_rundir:
+                        logger.info("copying {} to {} ".format(srcfile, destfile))
+                        safe_copy(srcfile, destfile)
+                    else:
+                        logger.info("moving {} to {} ".format(srcfile, destfile))
+                        archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
