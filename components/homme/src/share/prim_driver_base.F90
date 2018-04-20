@@ -882,25 +882,6 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
 
-
-    !initialize dp3d from ps
-    !init code is here because dp3d needs to be computed on hybrid levels after
-    !remap used dp3d=dpstar . would it be better to instead rearrange vars in
-    !remap, so that dp3d immediately after remap has correct values? store dpstar in a
-    !temp instead of using dp3d=dpstar. if this is the first timestep, test
-    !cases need to init it. dp3d is recomputed in prim_energy, too, so this
-    !would save recomputing there, too.
-    do ie=nets,nete
-      do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-
-!!!!! move calls to cam
-        dp_forcing(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,tl%n0) ! temp var, it should be moved to elem(:)
-      enddo
-    enddo
-
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -970,6 +951,16 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
+
+    !initialize dp3d from ps
+    do ie=nets,nete
+      do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+        dp_forcing(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,tl%n0) ! temp var, it should be moved to elem(:)
+      enddo
+    enddo
 
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
