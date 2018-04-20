@@ -19,7 +19,6 @@ from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 #import CIME.utils
 #from CIME.check_lockedfiles import *
-import pdb
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,6 @@ class SLR(SystemTestsCommon):
     # Compile model with multiple instances
     #=================================================================
     def build_phase(self, sharedlib_only=False, model_only=False):
-        pdb.set_trace()
         #total number of initial conditions
         n_inic_cond = 12
 
