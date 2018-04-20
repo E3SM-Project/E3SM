@@ -405,6 +405,13 @@ module CNNitrogenFluxType
 
      real(r8), pointer :: nflx_plant_to_soilbgc_col                 (:)
      real(r8), pointer :: som_n_runoff_col                          (:) => null()
+
+     real(r8), pointer :: nflx_input_litr_met_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_cel_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_lig_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_cwd_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_minn_input_nh4_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_minn_input_no3_vr_col              (:,:) => null()
    contains
 
      procedure , public  :: Init   
@@ -830,6 +837,13 @@ contains
     
     allocate(this%nflx_plant_to_soilbgc_col   (begc:endc)) ;             this%nflx_plant_to_soilbgc_col(:)= nan    
     allocate(this%som_n_runoff_col            (begc:endc)) ;             this%som_n_runoff_col      (:)  = nan
+
+    allocate(this%nflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_met_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cel_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_lig_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cwd_vr_col(:,:)=nan
+    allocate(this%nflx_minn_input_nh4_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_nh4_vr_col(:,:)=nan
+    allocate(this%nflx_minn_input_no3_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_no3_vr_col(:,:)=nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1553,6 +1567,37 @@ contains
        call hist_addfld_decomp (fname='F_NIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
             avgflag='A', long_name='nitrification flux', &
             ptr_col=this%f_nit_vr_col)
+
+       this%nflx_input_litr_met_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_INPUT_LITR_MET'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved metabolic nitrogen input', &
+            ptr_col=this%nflx_input_litr_met_vr_col, default='inactive')
+
+       this%nflx_input_litr_cel_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_INPUT_LITR_CEL'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved cellulose nitrogen input', &
+            ptr_col=this%nflx_input_litr_cel_vr_col, default='inactive')
+
+       this%nflx_input_litr_lig_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_INPUT_LITR_LIG'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved lignin nitrogen input', &
+            ptr_col=this%nflx_input_litr_lig_vr_col, default='inactive')
+ 
+       this%nflx_input_litr_cwd_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_INPUT_LITR_CWD'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved CWD nitrogen input', &
+            ptr_col=this%nflx_input_litr_cwd_vr_col, default='inactive')  
+
+       this%nflx_minn_input_nh4_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_MINN_INPUT_NH4'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically NH4 nitrogen input', &
+            ptr_col=this%nflx_minn_input_nh4_vr_col, default='inactive')
+
+       this%nflx_minn_input_no3_vr_col(begc:endc,:)=spval
+       call hist_addfld_decomp (fname='NFLX_MINN_INPUT_NO3'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='vertically NO3 nitrogen input', &
+            ptr_col=this%nflx_minn_input_no3_vr_col, default='inactive')
+                                                                            
     end if
 
     if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &

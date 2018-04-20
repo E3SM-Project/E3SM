@@ -415,6 +415,13 @@ module CNCarbonFluxType
     !------------------------------------------------------------------------
      real(r8), pointer :: cflx_plant_to_soilbgc_col(:)
      real(r8), pointer :: som_c_runoff_col(:)    => null()
+
+
+     real(r8), pointer :: cflx_input_litr_met_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_cel_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_lig_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_cwd_vr_col              (:,:) => null()
+
    contains
 
      procedure , public  :: Init   
@@ -829,6 +836,11 @@ contains
      !------------------------------------------------------------------------
      allocate(this%cflx_plant_to_soilbgc_col (begc:endc)); this%cflx_plant_to_soilbgc_col(:) = nan
      allocate(this%som_c_runoff_col(begc:endc)); this%som_c_runoff_col(:) = nan
+
+     allocate(this%cflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_met_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cel_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_lig_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cwd_vr_col(:,:)=nan
   end subroutine InitAllocate; 
 
   !------------------------------------------------------------------------
@@ -3052,6 +3064,27 @@ contains
           call hist_addfld2d (fname='F_CO2_SOIL_vr', units='gC/m^3/s', type2d='levdcmp', &
                avgflag='A', long_name='total vertically resolved soil-atm. CO2 exchange', &
                ptr_col=this%f_co2_soil_vr_col)
+
+          this%cflx_input_litr_met_vr_col(begc:endc,:)=spval
+          call hist_addfld2d (fname='CFLX_INPUT_LITR_MET_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='vertically resolved metabolic carbon input', &
+               ptr_col=this%cflx_input_litr_met_vr_col, default='inactive')
+
+          this%cflx_input_litr_cel_vr_col(begc:endc,:)=spval
+          call hist_addfld2d (fname='CFLX_INPUT_LITR_CEL_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='vertically resolved cellulose carbon input', &
+               ptr_col=this%cflx_input_litr_cel_vr_col, default='inactive')
+
+          this%cflx_input_litr_lig_vr_col(begc:endc,:)=spval
+          call hist_addfld2d (fname='CFLX_INPUT_LITR_LIG_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='vertically resolved lignin carbon input', &
+               ptr_col=this%cflx_input_litr_lig_vr_col, default='inactive')
+
+          this%cflx_input_litr_cwd_vr_col(begc:endc,:)=spval
+          call hist_addfld2d (fname='CFLX_INPUT_LITR_CWD_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='vertically resolved cwd carbon input', &
+               ptr_col=this%cflx_input_litr_cwd_vr_col, default='inactive')
+
        endif
 
        this%hr_col(begc:endc) = spval

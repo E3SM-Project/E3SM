@@ -331,6 +331,11 @@ module PhosphorusFluxType
      real(r8), pointer :: sminp_runoff_col                          (:)   => null()  !col inorganic P runoff loss, gP/m2/time step
      real(r8), pointer :: som_p_runoff_col                          (:)   => null()
 
+     real(r8), pointer :: pflx_input_litr_met_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_cel_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_lig_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_cwd_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_minp_input_po4_vr_col                (:,:) => null()
    contains
 
      procedure , public  :: Init   
@@ -696,6 +701,12 @@ contains
     allocate(this%pflx_plant_to_soilbgc_col   (begc:endc                   )) ; this%pflx_plant_to_soilbgc_col   (:)   = nan
     allocate(this%sminp_runoff_col      (begc:endc              ))      ;this%sminp_runoff_col         (:)    = nan
     allocate(this%som_p_runoff_col      (begc:endc              ))      ;this%som_p_runoff_col         (:)    = nan
+
+    allocate(this%pflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_met_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_cel_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_lig_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_cwd_vr_col(:,:)=nan
+    allocate(this%pflx_minp_input_po4_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_minp_input_po4_vr_col(:,:)=nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1344,6 +1355,32 @@ contains
        call hist_addfld_decomp (fname='LABILEP_TO_SECONDP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
             avgflag='A', long_name='LABILE P TO SECONDARY MINERAL P', &
             ptr_col=this%labilep_to_secondp_vr_col, default='inactive')
+
+       this%pflx_input_litr_met_vr_col (begc:endc,:)=spval
+       call hist_addfld_decomp (fname='PFLX_INPUT_LITR_MET'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved metabolic P input to soil', &
+            ptr_col=this%pflx_input_litr_met_vr_col, default='inactive')      
+
+       this%pflx_input_litr_cel_vr_col (begc:endc,:)=spval
+       call hist_addfld_decomp (fname='PFLX_INPUT_LITR_CEL'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved cellulose P input to soil', &
+            ptr_col=this%pflx_input_litr_cel_vr_col, default='inactive')
+
+       this%pflx_input_litr_lig_vr_col (begc:endc,:)=spval
+       call hist_addfld_decomp (fname='PFLX_INPUT_LITR_LIG'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved lignin P input to soil', &
+            ptr_col=this%pflx_input_litr_lig_vr_col, default='inactive')
+
+       this%pflx_input_litr_cwd_vr_col (begc:endc,:)=spval
+       call hist_addfld_decomp (fname='PFLX_INPUT_LITR_CWD'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved cwd P input to soil', &
+            ptr_col=this%pflx_input_litr_cwd_vr_col, default='inactive')
+
+       this%pflx_minp_input_po4_vr_col (begc:endc,:)=spval
+       call hist_addfld_decomp (fname='PFLX_MINP_INPUT_PO4'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='vertically resolved inorganic P input to soil', &
+            ptr_col=this%pflx_minp_input_po4_vr_col, default='inactive')
+
     endif
 
 
