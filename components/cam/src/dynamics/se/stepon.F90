@@ -267,9 +267,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2:  apply forcing to Q,ps.  Return dynamics tendencies
+      ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if ( (ftype==2) .or. (ftype==3) ) then
+      if ( (ftype==2) .or. (ftype==3) .or. (ftype==4) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -310,16 +310,30 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                do i=1,np
                   ! make Q consistent now that we have updated ps_v above
                   ! recompute dp, since ps_v was changed above
+!this recomputes dp over and over
                   dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                        ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
                   dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
                        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-
                end do
             end do
           end do
          end do
-      endif
+
+         if (ftype == 3) then ! ftype == 3, scale tendencies with new dp
+           do k=1,nlev
+             do j=1,np
+               do i=1,np
+                  dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
+                       ( hybi(k+1) - hybi(k))*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+                  dyn_in%elem(ie)%derived%FT(i,j,k) = dyn_in%elem(ie)%derived%FT(i,j,k)*dp_tmp
+                  dyn_in%elem(ie)%derived%FM(i,j,1:2,k) = dyn_in%elem(ie)%derived%FM(i,j,1:2,k)*dp_tmp
+               end do
+             end do
+           end do
+         endif !ftype 3
+
+      endif ! if ftype == 2 or == 3 or == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment

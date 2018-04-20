@@ -672,7 +672,7 @@ contains
 
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_q,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -680,7 +680,7 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_q
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
@@ -692,7 +692,9 @@ contains
   end subroutine applyCAMforcing_dynamics
 
 
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,np1_q,dt,dp_forcing,nets,nete)
+! this one is for ftype3, tendencies are scaled by dp_forcing (at the beg. of
+! homme timestep) and now need to be scaled back to the current dp3d
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -700,21 +702,20 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_q
-  real (kind=real_kind),  intent(in)    :: dp_forcing(np,np,nlev,nets:nete)
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
 
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
-                                    dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)*dp_forcing(:,:,:,ie)
+                                    dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)
 !vel indices are np,np,2,k,time
      do k=1,nlev
        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)*dp_forcing(:,:,k,ie)
+                                       dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)
        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,2,k)/elem(ie)%state%dp3d(:,:,k,np1)*dp_forcing(:,:,k,ie)
+                                       dt*elem(ie)%derived%FM(:,:,2,k)/elem(ie)%state%dp3d(:,:,k,np1)
      enddo
   enddo
   end subroutine applyCAMforcing_dynamics_dp
