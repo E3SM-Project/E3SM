@@ -17,15 +17,14 @@ module co2_cycle
 
 use shr_kind_mod,   only: r8 => shr_kind_r8
 use spmd_utils,     only: masterproc
-use ppgrid,         only: pver
+use ppgrid,         only: begchunk, endchunk, pcols
 use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
 use physconst,      only: mwdry, mwco2, gravit, cpair
 use constituents,   only: cnst_add, cnst_get_ind, cnst_name, cnst_longname, sflxnam
 use chem_surfvals,  only: chem_surfvals_get
-use co2_data_flux
-use cam_abortutils,     only: endrun
-use physics_types,  only: physics_state
-use physics_buffer, only: physics_buffer_desc
+use co2_data_flux,  only: read_data_flux, interp_time_flux
+use cam_abortutils, only: endrun
+use tracer_data,    only: trfld, trfile
 
 implicit none
 private
@@ -45,14 +44,18 @@ public co2_time_interp_fuel          ! time interpolate co2 flux
  
 public data_flux_ocn                 ! data read in for co2 flux from ocn
 public data_flux_fuel                ! data read in for co2 flux from fuel
- 
-TYPE(read_interp) :: data_flux_ocn                  
-TYPE(read_interp) :: data_flux_fuel
                          
 public c_i                           ! global index for new constituents
 public co2_readFlux_ocn              ! read co2 flux from data file 
 public co2_readFlux_fuel             ! read co2 flux from data file 
 
+
+
+type(trfld), pointer :: fields_ocn(:), fields_fuel(:)
+type(trfile)         :: file_ocn, file_fuel
+
+real(r8), allocatable :: data_flux_ocn(:,:)                  
+real(r8), allocatable :: data_flux_fuel(:,:)
 
 ! Namelist variables
 logical :: co2_flag            = .false.      ! true => turn on co2 code, namelist variable
@@ -200,12 +203,15 @@ subroutine co2_init (state, pbuf2d )
 !-----------------------------------------------------------------------
 
     use cam_history,    only: addfld, horiz_only, add_default
+    use physics_types,  only: physics_state
+    use physics_buffer, only: physics_buffer_desc
+    use error_messages, only: alloc_err
 
     type(physics_state), pointer       :: state(:)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
 
-    integer :: m, mm
+    integer :: m, mm, istat
       
     if (.not. co2_flag) return
  
@@ -227,11 +233,15 @@ subroutine co2_init (state, pbuf2d )
  
     ! Read flux data
     if (co2_readFlux_ocn) then
-       call read_data_flux ( co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
+       allocate(data_flux_ocn(pcols,begchunk:endchunk), stat=istat )
+       call alloc_err( istat, 'co2_init', 'data_flux_ocn', pcols*(endchunk-begchunk+1) )
+       call read_data_flux ( fields_ocn, file_ocn, co2flux_ocn_file,  state, pbuf2d )
     end if
- 
+    
     if (co2_readFlux_fuel) then
-       call read_data_flux ( co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
+       allocate(data_flux_fuel(pcols,begchunk:endchunk), stat=istat )
+       call alloc_err( istat, 'co2_init', 'data_flux_fuel', pcols*(endchunk-begchunk+1) )
+       call read_data_flux ( fields_fuel, file_fuel, co2flux_fuel_file, state, pbuf2d )
     end if
  
   end subroutine co2_init
@@ -247,16 +257,10 @@ subroutine co2_init (state, pbuf2d )
 !
 !-----------------------------------------------------------------------
 
-   use time_manager,   only: is_first_step
-
    if (.not. co2_flag) return
  
    if (co2_readFlux_ocn)  then
-      if (is_first_step()) then
-         call interp_time_flux ( data_flux_ocn,  prev_timestep=.true.  )
-      else
-         call interp_time_flux ( data_flux_ocn,  prev_timestep=.false. )
-      end if
+      call interp_time_flux ( fields_ocn, file_ocn, data_flux_ocn)
    endif
  
   end subroutine co2_time_interp_ocn
@@ -272,16 +276,10 @@ subroutine co2_init (state, pbuf2d )
 !
 !-----------------------------------------------------------------------
 
-   use time_manager,   only: is_first_step
-
    if (.not. co2_flag) return
  
    if (co2_readFlux_fuel) then
-      if (is_first_step()) then
-         call interp_time_flux ( data_flux_fuel, prev_timestep=.true.  )
-      else
-         call interp_time_flux ( data_flux_fuel, prev_timestep=.false. )
-      endif
+      call interp_time_flux ( fields_fuel, file_fuel, data_flux_fuel)
    endif
  
   end subroutine co2_time_interp_fuel
