@@ -851,7 +851,7 @@ contains
     use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
-    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
+!    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -872,7 +872,7 @@ contains
     type (TimeLevel_t),   intent(inout) :: tl
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
-    real(kind=real_kind) :: dp, dt_q, dt_remap
+    real(kind=real_kind) :: dp, dt_q , dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
     real(kind=real_kind) :: dp_forcing(np,np,nlev,nets:nete) !store dp at time when forcing was received
     integer :: ie,i,j,k,n,q,t
@@ -915,6 +915,9 @@ contains
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
+
+!moving all this code to prim step
+#if 0
     ! Apply CAM Physics forcing
 
     !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
@@ -948,6 +951,12 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
+#endif ! code to prim_step
+
+
+! the idea about dp3d vs ps_v is that dp3d is only valid in prim_step and lower
+! overall, only ps_v is a current variable, and dp3d is not updated and should
+! not be used.
 
     !initialize dp3d from ps
     do ie=nets,nete
@@ -955,7 +964,6 @@ contains
         elem(ie)%state%dp3d(:,:,k,tl%n0)=&
              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-        dp_forcing(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,tl%n0) ! temp var, it should be moved to elem(:)
       enddo
     enddo
 
@@ -971,16 +979,19 @@ contains
 
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+    call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, compute_diagnostics, 1)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
       !put this i-fstatement above? branching
-      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp, dt, dp_forcing, nets, nete)
+      !scaled version
+!      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
+      !not scaled version
+!      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
 
       call TimeLevel_update(tl,"leapfrog")
       call t_startf("prim_step_rX")
-      call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
+      call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, .false., r)
       call t_stopf("prim_step_rX")
     enddo
 
@@ -1058,7 +1069,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, dt_remap, n0_qdp, tl, hvcoord, compute_diagnostics,rstep)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1084,6 +1095,8 @@ contains
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
+    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
+    use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
     type(hybrid_t),       intent(in)    :: hybrid   ! distributed parallel structure (shared)
@@ -1091,6 +1104,8 @@ contains
     integer,              intent(in)    :: nets     ! starting thread element number (private)
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
+    real(kind=real_kind), intent(in)    :: dt_remap ! remap timestep, to know how much of forcing to apply for ftype 0, 2
+    integer,              intent(in)    :: n0_qdp   ! tracers time index, used only with ftype=0 and rstep=1
     type(TimeLevel_t),    intent(inout) :: tl
     integer,              intent(in)    :: rstep    ! vertical remap subcycling step
 
@@ -1099,6 +1114,39 @@ contains
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
+
+
+    ! Apply CAM Physics forcing
+
+    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+    !   ftype= 1: forcing was applied time-split in CAM coupling layer
+    !   ftype= 0: apply all forcing here
+    !   ftype=-1: do not apply forcing
+
+    if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this sub withing prim_run_subcycle
+      call t_startf("ApplyCAMForcing")
+      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing")
+
+    elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
+      call t_startf("ApplyCAMForcing_dynamics")
+      if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt_remap, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
+      call t_stopf("ApplyCAMForcing_dynamics")
+    endif
+
+    if (compute_diagnostics) then
+    ! E(1) Energy after CAM forcing
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    ! qmass and variance, using Q(n0),Qdp(n0)
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+    endif
+
 
     dt_q = dt*qsplit
  
