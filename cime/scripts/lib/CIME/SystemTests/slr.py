@@ -15,7 +15,7 @@ will be created for those different methods
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case_setup import case_setup
+from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 #import CIME.utils
 #from CIME.check_lockedfiles import *
@@ -43,12 +43,12 @@ class SLR(SystemTestsCommon):
         #1. Default
         #2. With Positive Perturbation
         #3. With Negative Perturb
-        
+
         #ninst = n_inic_cond * 3
         ninst =  3
 
-        #BSINGH: For debugging only - Building the model can take 
-        #significant amount of time. Setting fake_bld to True can save 
+        #BSINGH: For debugging only - Building the model can take
+        #significant amount of time. Setting fake_bld to True can save
         #that time
         fake_bld = False
 
@@ -74,34 +74,34 @@ class SLR(SystemTestsCommon):
         #BSINGH: Faking a bld can save the time code spend in building the model components
         if fake_bld:
             if (not sharedlib_only):
-                post_build(self._case, [])    
+                post_build(self._case, [])
         else:
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
 
         #=================================================================
         # Run-time settings.
-        # Do this already in build_phase so that we can check the xml and 
-        # namelist files before job starts running. 
+        # Do this already in build_phase so that we can check the xml and
+        # namelist files before job starts running.
         #=================================================================
 
         #=================================================================
         #Settings common to all instances
         #=================================================================
-            
+
         #Coupler settings which are applicable to ALL the instances (as there is only one coupler for all instances)
         #self._case.set_value("STOP_N",     "1")
         #self._case.set_value("STOP_OPTION","nsteps")
 
         #Prepare paths for namelist file
-        
+
         # generate paths/file names to get files to set initial conditons
         #csmdata_root = self._case.get_value("DIN_LOC_ROOT")
         #csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
-        #csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"  
+        #csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"
         #file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
         #file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
-        
+
         #file_suf_atm = "-01-00000.nc"
         #file_suf_lnd = "-01-00000.nc"
 
@@ -130,7 +130,7 @@ class SLR(SystemTestsCommon):
         #          atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
         #          atmnlfile.write("pergro_mods  = .true. \n")
         #          atmnlfile.write("pergro_test_active = .true. \n")
-                 
+
         #          if(prt <> 0):
         #              atmnlfile.write(" pertlim = "+str(prt)+" \n")
 
@@ -143,4 +143,4 @@ class SLR(SystemTestsCommon):
     #=================================================================
     def run_phase(self):
 
-        self.run_indv()        
+        self.run_indv()
