@@ -261,11 +261,11 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
+      <command name="load">craype/2.5.12.3</command>
       <command name="load">pmi/5.0.12</command>
 
       <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
+      <command name="load">cray-mpich/7.6.2</command>
     </modules>
 
     <modules compiler="intel">
@@ -284,8 +284,8 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">gcc/7.1.0</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
@@ -297,19 +297,19 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.0.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.7.0</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
 
     <modules>
-      <command name="load">git/2.9.1</command>
-      <command name="load">cmake/3.3.2</command>
+      <command name="load">git/2.15.1</command>
+      <command name="load">cmake/3.8.2</command>
       <command name="load">zlib/1.2.8</command>
     </modules>
   </module_system>
@@ -427,18 +427,18 @@
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.0.128</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">gcc/7.1.0</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
-      <command name="swap">craype craype/2.5.12</command>
+      <command name="swap">craype craype/2.5.12.3</command>
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
       <command name="rm">craype-haswell</command>
@@ -449,18 +449,18 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.0.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.7.0</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
     <modules>
-      <command name="load">git/2.9.1</command>
-      <command name="load">cmake/3.3.2</command>
+      <command name="load">git/2.15.1</command>
+      <command name="load">cmake/3.8.2</command>
       <command name="load">zlib/1.2.8</command>
     </modules>
 
@@ -1459,15 +1459,15 @@
          <DESC>LLNL Linux Cluster, Linux (pgi), 36 pes/node, batch system is Slurm</DESC>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-         <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
+         <RUNDIR>/p/lscratchh/$USER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratchh/$USER/ACME/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/p/lscratchh/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines</BASELINE_ROOT>
+         <BASELINE_ROOT>/p/lscratchh/$USER/ccsm_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>

@@ -263,7 +263,8 @@ subroutine pcond (lchnk   ,ncol    , &
                   meltheat,precip  ,snowab  ,deltat  ,fwaut   , &
                   fsaut   ,fracw   ,fsacw   ,fsaci   ,lctend  , &
                   rhdfda  ,rhu00   ,seaicef, zi      ,ice2pr, liq2pr, &
-                  liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio)
+                  liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio, &
+                  fmin, icwat, ql_incld_opt)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -292,6 +293,7 @@ subroutine pcond (lchnk   ,ncol    , &
 !
    integer, intent(in) :: lchnk                 ! chunk identifier
    integer, intent(in) :: ncol                  ! number of atmospheric columns
+   integer, intent(in) :: ql_incld_opt          ! options for in-cloud liquid water calculation 
 
    real(r8), intent(in) :: fice(pcols,pver)     ! fraction of cwat that is ice
    real(r8), intent(in) :: fsnow(pcols,pver)    ! fraction of rain that freezes to snow
@@ -310,7 +312,10 @@ subroutine pcond (lchnk   ,ncol    , &
    real(r8), intent(in) :: rhu00 (pcols,pver)   ! Rhlim for cloud                 ====wlin
    real(r8), intent(in) :: seaicef(pcols)       ! sea ice fraction  (fraction)
    real(r8), intent(in) :: zi(pcols,pverp)      ! layer interfaces (m)
-    real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
+   real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
+   real(r8), intent(in) :: fmin                 ! safe guard value for cloud fraction to aviod devided by zer0
+   real(r8), intent(in) :: icwat(pcols,pver)    ! In-cloud cloud water (kg/kg) from previous step
+
 !
 ! Output Arguments
 !
@@ -411,10 +416,10 @@ subroutine pcond (lchnk   ,ncol    , &
 !
    clrh2o = latvap/rh2o   ! Ratio of latvap to water vapor gas const
 #ifdef PERGRO
-   mincld = 1.e-4_r8
+   mincld =fmin !1.e-4_r8
    iter = 1   ! number of times to iterate the precipitation calculation
 #else
-   mincld = 1.e-4_r8
+   mincld =fmin !1.e-4_r8
    iter = 2
 #endif
 !   omsm = 0.99999
@@ -749,6 +754,12 @@ subroutine pcond (lchnk   ,ncol    , &
             else
                icwc(i) = 0.0_r8
             endif
+! replace the icwc by the values from previous step (after condensation)
+! this is only triggered by the ql_incld_opt >= 1 in the namelist
+            if( ql_incld_opt >= 1 ) then
+               icwc(i) = icwat(i,k)
+            end if
+
 !PJR the above logic give zero icwc with nonzero cwat, dont like it!
 !PJR generates problems with csigma
 !PJR set the icwc to a very small number, so we can start from zero cloud cover and make some clouds

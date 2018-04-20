@@ -30,6 +30,7 @@ public :: stratiform_tend
 integer  ::  qcwat_idx          = 0 
 integer  ::  lcwat_idx          = 0 
 integer  ::  tcwat_idx          = 0 
+integer  ::  icwat_idx          = 0
 
 integer  ::  cld_idx            = 0 
 integer  ::  ast_idx            = 0 
@@ -100,6 +101,7 @@ subroutine stratiform_register
    call pbuf_add_field('QCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qcwat_idx)
    call pbuf_add_field('LCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), lcwat_idx)
    call pbuf_add_field('TCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tcwat_idx)
+   call pbuf_add_field('ICWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), icwat_idx)
 
    call pbuf_add_field('CLD',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), cld_idx)
    call pbuf_add_field('AST',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ast_idx)
@@ -348,7 +350,7 @@ subroutine stratiform_tend( &
    state, ptend_all, pbuf, dtime, icefrac, &
    landfrac, ocnfrac, landm, snowh, dlf,   &
    dlf2, rliq, cmfmc, cmfmc2, ts,          &
-   sst, zdu)
+   sst, zdu, fmin, ql_incld_opt)
 
    !-------------------------------------------------------- !  
    !                                                         ! 
@@ -390,6 +392,8 @@ subroutine stratiform_tend( &
    real(r8), intent(in)  :: ts(pcols)                ! Surface temperature
    real(r8), intent(in)  :: sst(pcols)               ! Sea surface temperature
    real(r8), intent(in)  :: zdu(pcols,pver)          ! Detrainment rate from deep convection
+   real(r8), intent(in)  :: fmin                     ! safe guard value for cloud fraction to aviod devided by zero
+   integer,  intent(in)  :: ql_incld_opt             ! options for in-cloud liquid water calculation
 
   ! Local variables
 
@@ -412,6 +416,7 @@ subroutine stratiform_tend( &
    real(r8), pointer, dimension(:,:) :: qcwat        ! Cloud water old q
    real(r8), pointer, dimension(:,:) :: tcwat        ! Cloud water old temperature
    real(r8), pointer, dimension(:,:) :: lcwat        ! Cloud liquid water old q
+   real(r8), pointer, dimension(:,:) :: icwat        ! In-cloud liquid + ice water old q
    real(r8), pointer, dimension(:,:) :: cld          ! Total cloud fraction
    real(r8), pointer, dimension(:,:) :: fice         ! Cloud ice/water partitioning ratio.
    real(r8), pointer, dimension(:,:) :: ast          ! Relative humidity cloud fraction
@@ -511,6 +516,7 @@ subroutine stratiform_tend( &
    call pbuf_get_field(pbuf, qcwat_idx,   qcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
    call pbuf_get_field(pbuf, tcwat_idx,   tcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
    call pbuf_get_field(pbuf, lcwat_idx,   lcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, icwat_idx,   icwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
@@ -754,7 +760,8 @@ subroutine stratiform_tend( &
                meltheat, prec_pcw, snow_pcw, dtime, fwaut,                 &
                fsaut, fracw, fsacw, fsaci, ltend,                          &
                rhdfda, rhu00, icefrac, state1%zi, ice2pr, liq2pr,          &
-               liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio )
+               liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio,&
+               fmin, icwat, ql_incld_opt)
    call t_stopf('pcond')
 
    lq(:)        = .FALSE.
@@ -902,6 +909,7 @@ subroutine stratiform_tend( &
       qcwat(:ncol,k) = state1%q(:ncol,k,1)
       tcwat(:ncol,k) = state1%t(:ncol,k)
       lcwat(:ncol,k) = state1%q(:ncol,k,ixcldice) + state1%q(:ncol,k,ixcldliq)
+      icwat(:ncol,k) = lcwat(:ncol,k)/max(fmin,cld(:ncol,k))
    end do
   
    ! Cloud water and ice particle sizes, saved in physics buffer for radiation
