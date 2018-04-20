@@ -854,7 +854,7 @@ contains
     use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
-!    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
+    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -920,7 +920,7 @@ contains
 
 
 !moving all this code to prim step
-#if 0
+#if 1
     ! Apply CAM Physics forcing
 
     !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
@@ -933,14 +933,11 @@ contains
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
 
-    elseif ( ( ftype==2 ) .or. (ftype == 3)) then
+    elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
       call t_startf("ApplyCAMForcing_dynamics")
-      if (ftype == 3) then
-        !no need to adjust dp here, it is the same
-        call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt, nets, nete)
-      else 
-        call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt_remap, nets, nete)
-      endif
+      if (ftype == 2) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt_remap, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt,       nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt,       nets, nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
 
@@ -988,9 +985,11 @@ contains
     do r=2,rsplit
       !put this i-fstatement above? branching
       !scaled version
-!      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
+#if 1
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, dt, nets, nete)
       !not scaled version
-!      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp, dt, nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, dt, nets, nete)
+#endif
 
       call TimeLevel_update(tl,"leapfrog")
       call t_startf("prim_step_rX")
@@ -1119,6 +1118,7 @@ contains
     logical :: compute_diagnostics
 
 
+#if 0
     ! Apply CAM Physics forcing
 
     !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
@@ -1134,8 +1134,8 @@ contains
     elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
       call t_startf("ApplyCAMForcing_dynamics")
       if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt_remap, nets, nete)
-      if (ftype == 3) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
-      if (ftype == 4) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
 
@@ -1149,7 +1149,7 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
-
+#endif
 
     dt_q = dt*qsplit
  
