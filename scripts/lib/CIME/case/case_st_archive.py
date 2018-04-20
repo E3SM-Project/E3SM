@@ -392,10 +392,10 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             print ("HERE pfile {} restfiles {}".format(pfile, restfiles))
         else:
-            pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
+            pattern = r"^{}\.{}[\d_]*\.".format(casename, compname)
             pfile = re.compile(pattern)
             files = [f for f in os.listdir(rundir) if pfile.search(f)]
-            pattern =  r'_?' + r'\d*'  +  r'\.' + suffix + r'\.' + datename_str
+            pattern =  r'_?' + r'\d*' + r'\.' + suffix + r'\.' + r'[^\.]*' + r'\.?' + datename_str
             pfile = re.compile(pattern)
             restfiles = [f for f in files if pfile.search(f)]
             logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
