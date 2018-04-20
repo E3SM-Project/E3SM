@@ -435,6 +435,14 @@ contains
                     forc_rain_c(c)  /= forc_rain_g(g) .or. &
                     forc_snow_c(c)  /= forc_snow_g(g) .or. &
                     forc_lwrad_c(c) /= forc_lwrad_g(g)) then
+                  write(iulog,*)'t',forc_t_c(c),forc_t_g(g)
+                  write(iulog,*)'th',forc_th_c(c),forc_th_g(g)
+                  write(iulog,*)'q',forc_q_c(c),forc_q_g(g) 
+                  write(iulog,*)'pbot',forc_pbot_c(c),forc_pbot_g(g)
+                  write(iulog,*)'rho',forc_rho_c(c),forc_rho_g(g)
+                  write(iulog,*)'rain',forc_rain_c(c),forc_rain_g(g)
+                  write(iulog,*)'snow',forc_snow_c(c), forc_snow_g(g)
+                  write(iulog,*)'lwrad',forc_lwrad_c(c),forc_lwrad_g(g)
                   write(iulog,*) subname//' ERROR: column-level forcing differs from gridcell-level forcing for urban point'
                   write(iulog,*) 'c, g = ', c, g
                   call endrun(msg=errMsg(__FILE__, __LINE__))
