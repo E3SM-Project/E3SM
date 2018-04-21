@@ -102,7 +102,8 @@
       @
       </value>
       <value COMP_OCN="socn">
-  	  @atm_cpl_dt
+      @ocn_cpl_dt   #ocean coupling step
+  	  @atm_cpl_dt  # atmosphere coupling step
             MED med_phases_prep_ice
             MED med_connectors_prep_med2ice
             MED -> ICE :remapMethod=redist
@@ -141,9 +142,11 @@
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
 	  @
+       @
       </value>
       <value COMP_ATM="cam" COMP_OCN="docn" COMP_WAV="swav">
-  	  @atm_cpl_dt
+      @ocn_cpl_dt   #ocean coupling step
+  	  @atm_cpl_dt # atmosphere coupling step
             MED med_phases_accum_fast
 	    MED med_phases_prep_ocn
             MED med_connectors_prep_med2ocn
@@ -173,6 +176,7 @@
 	    ATM -> MED :remapMethod=redist
 	    MED med_connectors_post_atm2med
 	  @
+       @
       </value>
     </values>
   </entry>
