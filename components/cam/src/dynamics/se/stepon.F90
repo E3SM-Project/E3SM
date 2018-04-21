@@ -310,7 +310,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                do i=1,np
                   ! make Q consistent now that we have updated ps_v above
                   ! recompute dp, since ps_v was changed above
-!this recomputes dp over and over
                   dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                        ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
                   dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
@@ -320,6 +319,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
           end do
          end do
 
+#if 0
          if (ftype == 3) then ! ftype == 3, scale tendencies with new dp
            do k=1,nlev
              do j=1,np
@@ -332,6 +332,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
              end do
            end do
          endif !ftype 3
+#endif
 
       endif ! if ftype == 2 or == 3 or == 4
 

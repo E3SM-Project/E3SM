@@ -877,7 +877,7 @@ contains
 
     real(kind=real_kind) :: dp, dt_q , dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
-    real(kind=real_kind) :: dp_forcing(np,np,nlev,nets:nete) !store dp at time when forcing was received
+!    real(kind=real_kind) :: dp_forcing(np,np,nlev,nets:nete) !store dp at time when forcing was received
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
@@ -935,9 +935,9 @@ contains
 
     elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
       call t_startf("ApplyCAMForcing_dynamics")
-      if (ftype == 2) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt_remap, nets, nete)
-      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt,       nets, nete)
-      if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt,       nets, nete)
+      if (ftype == 2) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, n0_qdp,dt_remap, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, n0_qdp,dt,       nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, n0_qdp,dt,       nets, nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
 
@@ -986,9 +986,9 @@ contains
       !put this i-fstatement above? branching
       !scaled version
 #if 1
-      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, dt, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp,dt, nets, nete)
       !not scaled version
-      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, dt, nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp,dt, nets, nete)
 #endif
 
       call TimeLevel_update(tl,"leapfrog")
@@ -997,7 +997,7 @@ contains
       call t_stopf("prim_step_rX")
     enddo
 
-    ! defer fi3nal timelevel update until after remap and diagnostics
+    ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
