@@ -3,8 +3,6 @@
 // 10-20%.
 #ifndef NDEBUG
 # define NDEBUG
-#else
-# pragma message "This file has a lot of assertions; for performance, need -DNDEBUG."
 #endif
 
 #define BUILD_CISL
@@ -3612,12 +3610,9 @@ struct CslMpi {
   FixedCapList<ElemData> ed; // this rank's owned cells, indexed by LID
 
   // IDs.
-  FixedCapList<Int> ranks;
-  FixedCapList<Int> nx_in_rank;
-  ListOfLists<Int>  nx_in_lid;
+  FixedCapList<Int> ranks, nx_in_rank, mylid_with_comm, mylid_with_comm_tid_ptr;
+  ListOfLists <Int> nx_in_lid, lid_on_rank;
   BufferLayoutArray bla;
-  ListOfLists<Int> lid_on_rank;
-  FixedCapList<Int> mylid_with_comm, mylid_with_comm_tid_ptr;
 
   // MPI comm data.
   ListOfLists<Real> sendbuf, recvbuf;
@@ -3725,10 +3720,11 @@ void comm_lid_on_rank (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   }
 
   // Send my (gid, lid) lists.
-  Int sn = 0;
+  Int sn = 0, i = 0;
   for (const auto& e: rank2owngids)
     sn += e.second.size();
   std::vector<Int> send(sn);
+  std::vector<MPI_Request> sendreqs(rank2owngids.size());
   sn = 0;
   for (const auto& e: rank2owngids) {
     // Iteration through a set gives increasing GID, which means the LID list is
@@ -3741,7 +3737,7 @@ void comm_lid_on_rank (CslMpi& cm, const Rank2Gids& rank2rmtgids,
     }
     const Int ne = e.second.size();
     const Int rank = e.first;
-    mpi::isend(*cm.p, send.data() + sn, ne, rank, 42);
+    mpi::isend(*cm.p, send.data() + sn, ne, rank, 42, &sendreqs[i++]);
     sn += ne;
   }
 
@@ -3785,9 +3781,11 @@ void comm_lid_on_rank (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   cm.mylid_with_comm.reset_capacity(mylid_with_comm.size(), true);
   for (Int i = 0; i < cm.mylid_with_comm.n(); ++i)
     cm.mylid_with_comm(i) = mylid_with_comm[i];
+
+  mpi::waitall(sendreqs.size(), sendreqs.data());
 }
 
-// Useful maps between a linear index space 0:K to a set of K unique
+// Useful maps between a linear index space 1:K to a set of K unique
 // integers. These obviate sorts and use of hash or binary maps during time
 // stepping.
 void set_idx2_maps (CslMpi& cm, const Rank2Gids& rank2rmtgids,
@@ -3869,33 +3867,6 @@ void alloc_mpi_buffers (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   const auto bytes2real = [&] (const Int& bytes) {
     return (bytes + sor - 1)/sor;
   };
-
-  // Some interesting size data.
-  if (true) {
-    // Send/recv buffers.
-    Int xs = 0, xr = 0, qs = 0, qr = 0;
-    // Local meta data.
-    Int rankcnt = 0, ranklidcnt = 0, xcnt = 0, qcnt = 0;
-    // For comparison.
-    Int origbuf = 0;
-    for (const auto& rank: cm.ranks) {
-      if (rank == myrank) continue;
-      const auto& rmtgids = rank2rmtgids.at(rank);
-      const auto& owngids = rank2owngids.at(rank);
-      xs += xbufcnt(rmtgids, owngids);
-      qr += qbufcnt(rmtgids, owngids);
-      xr += xbufcnt(owngids, rmtgids);
-      qs += qbufcnt(owngids, rmtgids);
-    }
-    origbuf = 8*cm.ed.size()*cm.nlev*cm.np2*cm.qsize*sor;
-
-    rankcnt = (cm.ranks.size() - 1)*soi;
-    for (const auto& e: rank2rmtgids) {
-      ranklidcnt += e.second.size()*soi;
-      xcnt += cm.nlev*e.second.size()*soi;
-    }
-    qcnt = xcnt;
-  }
 
   slmm_assert(cm.ranks.back() == myrank);
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
@@ -4238,6 +4209,7 @@ void pack_dep_points_sendbuf_pass2 (CslMpi& cm, const FA4<const Real>& dep_point
   }
 }
 
+template <Int np>
 void calc_q_extrema (CslMpi& cm, const Int& nets, const Int& nete) {
   for (Int tci = nets; tci <= nete; ++tci) {
     auto& ed = cm.ed(tci);
@@ -4252,7 +4224,7 @@ void calc_q_extrema (CslMpi& cm, const Int& nets, const Int& nete) {
         Real q_min_s, q_max_s;
         q0[0] = qdp0[0] / dp0[0];
         q_min_s = q_max_s = q0[0];
-        for (Int k = 1; k < cm.np2; ++k) {
+        for (Int k = 1; k < np*np; ++k) {
           q0[k] = qdp0[k] / dp0[k];
           q_min_s = std::min(q_min_s, q0[k]);
           q_max_s = std::max(q_max_s, q0[k]);
@@ -4298,6 +4270,7 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
   if (use_q) {
     // We can use q from calc_q_extrema.
     const Real* const qs0 = ed.q + levos;
+#   pragma ivdep
     for (Int iq = 0; iq < cm.qsize; ++iq) {
       const Real* const qs = qs0 + iq*np2nlev;
       q_tgt[iq] =
@@ -4310,6 +4283,7 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
     // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
     const Real* const dp = ed.dp + levos;
     const Real* const qdp0 = ed.qdp + levos;
+#   pragma ivdep
     for (Int iq = 0; iq < cm.qsize; ++iq) {
       const Real* const qdp = qdp0 + iq*np2nlev;
       q_tgt[iq] = (ry[0]*(rx[0]*(qdp[ 0]/dp[ 0]) + rx[1]*(qdp[ 1]/dp[ 1])  +
@@ -4324,6 +4298,7 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
   }
 }
 
+template <Int np>
 void calc_rmt_q (CslMpi& cm) {
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
 #ifdef HORIZ_OPENMP
@@ -4349,7 +4324,7 @@ void calc_rmt_q (CslMpi& cm) {
             qs(qos + 2*iq + i) = ed.q_extrema(iq, lev, i);
         qos += 2*cm.qsize;
         for (Int ix = 0; ix < nx; ++ix) {
-          calc_q<4>(cm, lid, lev, &xs(xos), &qs(qos), true);
+          calc_q<np>(cm, lid, lev, &xs(xos), &qs(qos), true);
           xos += 3;
           qos += cm.qsize;
         }
@@ -4365,6 +4340,7 @@ void calc_rmt_q (CslMpi& cm) {
   }
 }
 
+template <Int np>
 void calc_own_q (CslMpi& cm, const Int& nets, const Int& nete,
                  const FA4<const Real>& dep_points,
                  const FA4<Real>& q_min, const FA4<Real>& q_max) {
@@ -4380,7 +4356,7 @@ void calc_own_q (CslMpi& cm, const Int& nets, const Int& nete,
         q_max(e.k, e.lev, iq, ie0) = sed.q_extrema(iq, e.lev, 1);
       }
       Real qtmp[QSIZE_D];
-      calc_q<4>(cm, slid, e.lev, &dep_points(0, e.k, e.lev, tci), qtmp, false);
+      calc_q<np>(cm, slid, e.lev, &dep_points(0, e.k, e.lev, tci), qtmp, false);
       for (Int iq = 0; iq < cm.qsize; ++iq)
         q_tgt(e.k, e.lev, iq) = qtmp[iq];
     }
@@ -4445,12 +4421,12 @@ void step (
   // Send requests.
   isend(cm);
   // While waiting, compute q extrema in each of my elements.
-  calc_q_extrema(cm, nets, nete);
+  calc_q_extrema<np>(cm, nets, nete);
   // Wait for the departure point requests. Since this requires a thread
   // barrier, at the same time make sure the send buffer is free for use.
   recv_and_wait_on_send(cm);
   // Compute the requested q for departure points from remotes.
-  calc_rmt_q(cm);
+  calc_rmt_q<np>(cm);
   // Send q data.
   isend(cm);
   // Set up to receive q for each of my departure point requests sent to
@@ -4459,7 +4435,7 @@ void step (
   setup_irecv(cm);
   // While waiting to get my data from remotes, compute q for departure points
   // that have remained in my elements.
-  calc_own_q(cm, nets, nete, dep_points, q_min, q_max);
+  calc_own_q<np>(cm, nets, nete, dep_points, q_min, q_max);
   // Receive remote q data and use this to fill in the rest of my fields.
   recv(cm);
   copy_q(cm, nets, q_min, q_max);
