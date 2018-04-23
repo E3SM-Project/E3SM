@@ -6,30 +6,25 @@ module med_phases_prep_lnd_mod
 
   use ESMF
   use NUOPC
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : compatm, complnd, comprof, compglc
-  use esmFlds                 , only : ncomps, compname 
-  use esmFlds                 , only : flds_scalar_name
+  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS, CX=>SHR_KIND_CX
+  use esmFlds                 , only : complnd, ncomps, compname 
   use esmFlds                 , only : fldListFr, fldListTo
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
-  use med_merge_mod           , only : med_merge_auto
+  use med_merge_new_mod       , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_internalstate_mod   , only : InternalState
 
   implicit none
   private
 
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer                       :: dbrc
-  logical                       :: mastertask
+  integer      , parameter :: dbug_flag = med_constants_dbug_flag
+  integer                  :: dbrc
+  logical                  :: mastertask
+  character(*) , parameter :: u_FILE_u = &
+       __FILE__
 
   public  :: med_phases_prep_lnd
 
@@ -44,14 +39,13 @@ module med_phases_prep_lnd_mod
     ! Prepares the LND import Fields.
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: time
-    character(len=64)           :: timestr
-    type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
-    integer                     :: i,j,n,n1,ncnt
-    logical,save                :: first_call = .true.
-    character(len=*),parameter  :: subname='(med_phases_prep_lnd)'
+    type(ESMF_Clock)    :: clock
+    type(ESMF_Time)     :: time
+    character(len=64)   :: timestr
+    type(InternalState) :: is_local
+    integer             :: i,j,n,n1,nf,compsrc
+    integer             :: ncnt
+    character(len=*),parameter :: subname='(med_phases_prep_lnd)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -107,7 +101,7 @@ module med_phases_prep_lnd_mod
     end if
 
     !---------------------------------------
-    !--- map to create FBimp(:,complnd)
+    !--- Map import fields to the complnd grid
     !---------------------------------------
 
     do n1 = 1,ncomps
@@ -125,17 +119,11 @@ module med_phases_prep_lnd_mod
     enddo
 
     !---------------------------------------
-    !--- auto merges
+    !--- Merge all required import fields on the complnd grid to create FBExp
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExp(complnd), value=czero, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call med_merge_auto(is_local%wrap%FBExp(complnd), &
-         FB1=is_local%wrap%FBImp(compatm,complnd), FB1w=is_local%wrap%FBfrac(complnd), fldw1='afrac', &
-         FB2=is_local%wrap%FBImp(compglc,complnd), &
-         FB3=is_local%wrap%FBImp(comprof,complnd), &
-         document=first_call, string=subname, rc=rc)
+    call med_merge_auto(is_local%wrap%FBExp(complnd), is_local%wrap%FBFrac(complnd), &
+         is_local%wrap%FBImp(:,complnd), fldListTo(complnd), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
@@ -151,8 +139,6 @@ module med_phases_prep_lnd_mod
     !---------------------------------------
     !--- clean up
     !---------------------------------------
-
-    first_call = .false.
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)

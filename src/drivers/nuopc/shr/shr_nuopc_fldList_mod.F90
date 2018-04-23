@@ -55,20 +55,37 @@ module shr_nuopc_fldList_mod
      character(CS) :: stdname
      character(CS) :: shortname
      logical       :: active = .true.
+     ! Mapping fldsFr data
      integer       :: mapindex(ncomps_max) = mapunset
      character(CS) :: mapnorm(ncomps_max) = 'unset'
      character(CX) :: mapfile(ncomps_max) = 'unset'
-     logical       :: merge_with_weights = .false.
+     ! Merging fldsTo data
+     character(CX) :: merge_fields(ncomps_max)    = 'unset'
+     character(CS) :: merge_types(ncomps_max)     = 'copy'
+     character(CS) :: merge_fracnames(ncomps_max) = 'unset'
   end type shr_nuopc_fldList_entry_type
   public :: shr_nuopc_fldList_entry_type
+
+  ! The above would be the field name to merge from
+  ! e.g. for Sa_z in lnd 
+  !    merge_field(compatm) = 'Sa_z'
+  !    merge_type(comptm) = 'copy'  (could also have 'copy_with_weighting')
 
   type shr_nuopc_fldList_type
      type (shr_nuopc_fldList_entry_type), pointer :: flds(:)
   end type shr_nuopc_fldList_type
   public :: shr_nuopc_fldList_type
 
+  interface shr_nuopc_fldList_GetFldInfo ; module procedure &
+       shr_nuopc_fldList_GetFldInfo_general, &
+       shr_nuopc_fldList_GetFldInfo_stdname, &
+       shr_nuopc_fldList_GetFldInfo_merging
+  end interface
+
   integer           :: dbrc
   character(len=CL) :: infostr
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
@@ -176,7 +193,12 @@ contains
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_AddFld(flds, stdname, shortname, fldindex, merge_with_weights)
+  subroutine shr_nuopc_fldList_AddFld(flds, stdname, shortname, fldindex, &
+       merge_from1, merge_field1, merge_type1, merge_fracname1, &
+       merge_from2, merge_field2, merge_type2, merge_fracname2, &
+       merge_from3, merge_field3, merge_type3, merge_fracname3, &
+       merge_from4, merge_field4, merge_type4, merge_fracname4)
+
     ! ----------------------------------------------
     ! Add an entry to to the flds array
     ! Use pointers to create an extensible allocatable array.
@@ -193,7 +215,22 @@ contains
     character(len=*)                   , intent(in)             :: stdname
     character(len=*)                   , intent(in)  , optional :: shortname
     integer                            , intent(out) , optional :: fldindex
-    logical                            , intent(in)  , optional :: merge_with_weights
+    integer                            , intent(in)  , optional :: merge_from1
+    character(len=*)                   , intent(in)  , optional :: merge_field1
+    character(len=*)                   , intent(in)  , optional :: merge_type1
+    character(len=*)                   , intent(in)  , optional :: merge_fracname1
+    integer                            , intent(in)  , optional :: merge_from2
+    character(len=*)                   , intent(in)  , optional :: merge_field2
+    character(len=*)                   , intent(in)  , optional :: merge_type2
+    character(len=*)                   , intent(in)  , optional :: merge_fracname2
+    integer                            , intent(in)  , optional :: merge_from3
+    character(len=*)                   , intent(in)  , optional :: merge_field3
+    character(len=*)                   , intent(in)  , optional :: merge_type3
+    character(len=*)                   , intent(in)  , optional :: merge_fracname3
+    integer                            , intent(in)  , optional :: merge_from4
+    character(len=*)                   , intent(in)  , optional :: merge_field4
+    character(len=*)                   , intent(in)  , optional :: merge_type4
+    character(len=*)                   , intent(in)  , optional :: merge_fracname4
 
     ! local variables
     integer :: n,oldsize,id
@@ -213,12 +250,15 @@ contains
 
     ! 2) copy flds into first N-1 elements of newflds
     do n = 1,oldsize
-       newflds(n)%stdname   = flds(n)%stdname
-       newflds(n)%shortname = flds(n)%shortname
-       newflds(n)%mapindex  = flds(n)%mapindex
-       newflds(n)%mapnorm   = flds(n)%mapnorm
-       newflds(n)%mapfile   = flds(n)%mapfile
-       newflds(n)%merge_with_weights = flds(n)%merge_with_weights
+       newflds(n)%stdname            = flds(n)%stdname
+       newflds(n)%shortname          = flds(n)%shortname
+       newflds(n)%active             = flds(n)%active
+       newflds(n)%mapindex(:)        = flds(n)%mapindex(:)
+       newflds(n)%mapnorm(:)         = flds(n)%mapnorm(:)
+       newflds(n)%mapfile(:)         = flds(n)%mapfile(:)
+       newflds(n)%merge_fields(:)    = flds(n)%merge_fields(:)
+       newflds(n)%merge_types(:)     = flds(n)%merge_types(:)
+       newflds(n)%merge_fracnames(:) = flds(n)%merge_fracnames(:)
     end do
 
     ! 3) deallocate / nullify flds
@@ -240,10 +280,38 @@ contains
     if (present(fldindex)) then
        fldindex = id
     end if
-    if (present(merge_with_weights)) then
-       flds(id)%merge_with_weights = merge_with_weights
+    if (present(merge_from1) .and. present(merge_field1) .and. present(merge_type1)) then
+       n = merge_from1
+       flds(id)%merge_fields(n) = merge_field1
+       flds(id)%merge_types(n) = merge_type1
+       if (present(merge_fracname1)) then
+          flds(id)%merge_fracnames(n) = merge_fracname1
+       end if
     end if
-
+    if (present(merge_from2) .and. present(merge_field2) .and. present(merge_type2)) then
+       n = merge_from2
+       flds(id)%merge_fields(n) = merge_field2
+       flds(id)%merge_types(n) = merge_type2
+       if (present(merge_fracname2)) then
+          flds(id)%merge_fracnames(n) = merge_fracname2
+       end if
+    end if
+    if (present(merge_from3) .and. present(merge_field3) .and. present(merge_type3)) then
+       n = merge_from3
+       flds(id)%merge_fields(n) = merge_field3
+       flds(id)%merge_types(n) = merge_type3
+       if (present(merge_fracname3)) then
+          flds(id)%merge_fracnames(n) = merge_fracname3
+       end if
+    end if
+    if (present(merge_from4) .and. present(merge_field4) .and. present(merge_type4)) then
+       n = merge_from4
+       flds(id)%merge_fields(n) = merge_field4
+       flds(id)%merge_types(n) = merge_type4
+       if (present(merge_fracname4)) then
+          flds(id)%merge_fracnames(n) = merge_fracname4
+       end if
+    end if
   end subroutine shr_nuopc_fldList_AddFld
 
   !================================================================================
@@ -493,7 +561,7 @@ contains
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_GetFldInfo(fldList, fldindex, active, stdname, shortname)
+  subroutine shr_nuopc_fldList_GetFldInfo_general(fldList, fldindex, active, stdname, shortname)
     ! ----------------------------------------------
     ! Get field info
     ! ----------------------------------------------
@@ -504,14 +572,48 @@ contains
     character(len=*)             , intent(out) :: shortname
     
     ! local variables
-    character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo)'
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_general)'
     ! ----------------------------------------------
 
     active    = fldList%flds(fldindex)%active
     stdname   = fldList%flds(fldindex)%stdname
     shortname = fldList%flds(fldindex)%shortname
+  end subroutine shr_nuopc_fldList_GetFldInfo_general
 
-  end subroutine shr_nuopc_fldList_GetFldInfo
+  subroutine shr_nuopc_fldList_GetFldInfo_stdname(fldList, fldindex, stdname)
+    ! ----------------------------------------------
+    ! Get field info
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type) , intent(in)  :: fldList
+    integer                      , intent(in)  :: fldindex
+    character(len=*)             , intent(out) :: stdname
+    
+    ! local variables
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_stdname)'
+    ! ----------------------------------------------
+
+    stdname   = fldList%flds(fldindex)%stdname
+  end subroutine shr_nuopc_fldList_GetFldInfo_stdname
+
+  subroutine shr_nuopc_fldList_GetFldInfo_merging(fldList, fldindex, compsrc, merge_field, merge_type, merge_fracname)
+    ! ----------------------------------------------
+    ! Get field merge info
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type) , intent(in)  :: fldList
+    integer                      , intent(in)  :: fldindex
+    integer                      , intent(in)  :: compsrc
+    character(len=*)             , intent(out) :: merge_field
+    character(len=*)             , intent(out) :: merge_type
+    character(len=*)             , intent(out) :: merge_fracname
+    
+    ! local variables
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_merging)'
+    ! ----------------------------------------------
+
+    merge_field    = fldList%flds(fldindex)%merge_fields(compsrc)
+    merge_type     = fldList%flds(fldindex)%merge_types(compsrc)
+    merge_fracname = fldList%flds(fldindex)%merge_fracnames(compsrc)
+  end subroutine shr_nuopc_fldList_GetFldInfo_merging
 
   !================================================================================
 
@@ -533,5 +635,6 @@ contains
        fldnames(n) = trim(flds(n)%shortname)
     end do
   end subroutine shr_nuopc_fldList_GetFldNames
+
 
 end module shr_nuopc_fldList_mod
