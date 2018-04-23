@@ -55,6 +55,12 @@ module clm_driver
   use CNAnnualUpdateMod      , only : CNAnnualUpdate
   use CNBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use CNBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
+  use CNBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
+  use CNBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
+  use CNBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
+  use CNBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
+  use CNBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
+  use CNBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNFireMod              , only : CNFireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
@@ -309,6 +315,22 @@ contains
           call nitrogenstate_vars%ZeroDWT(bounds_clump)
           call phosphorusstate_vars%ZeroDWT(bounds_clump)
 
+          call carbonstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call nitrogenstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call phosphorusstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, carbonstate_vars)
+          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
+          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
+
           call t_stopf('cnpinit')
        end if
 
@@ -331,6 +353,53 @@ contains
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     call t_stopf('dyn_subgrid')
+
+    if (.not. use_ed)then
+       if (use_cn) then
+          nstep = get_nstep()
+
+          if (nstep < 2 )then
+             if (masterproc) then
+                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+             end if
+          else
+             call t_startf('cnbalchk_at_grid')
+
+             !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+             do nc = 1,nclumps
+                call get_clump_bounds(nc, bounds_clump)
+
+                call carbonstate_vars%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     filter(nc)%num_soilp, filter(nc)%soilp)
+
+                call nitrogenstate_vars%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     filter(nc)%num_soilp, filter(nc)%soilp)
+
+                call phosphorusstate_vars%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     filter(nc)%num_soilp, filter(nc)%soilp)
+
+                call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     carbonstate_vars, carbonflux_vars)
+
+                call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     nitrogenstate_vars, nitrogenflux_vars)
+
+                call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     phosphorusstate_vars, phosphorusflux_vars)
+
+             end do
+             !$OMP END PARALLEL DO
+             call t_stopf('cnbalchk_at_grid')
+
+          end if
+       end if
+    end if
 
     ! ============================================================================
     ! Initialize the mass balance checks for water.
