@@ -54,10 +54,6 @@ public co2_readFlux_fuel             ! read co2 flux from data file
 
 
 
-type(trfld), pointer :: fields_ocn(:), fields_fuel(:)
-type(trfile)         :: file_ocn, file_fuel
-
-
 ! Namelist variables
 logical :: co2_flag            = .false.      ! true => turn on co2 code, namelist variable
 logical :: co2_readFlux_ocn    = .false.      ! true => read co2 flux from ocn,  namelist variable
@@ -234,11 +230,11 @@ subroutine co2_init (state, pbuf2d )
  
     ! Read flux data
     if (co2_readFlux_ocn) then
-       call read_data_flux ( fields_ocn, file_ocn, co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
+       call read_data_flux ( co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
     end if
     
     if (co2_readFlux_fuel) then
-       call read_data_flux ( fields_fuel, file_fuel, co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
+       call read_data_flux ( co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
     end if
  
   end subroutine co2_init
@@ -257,7 +253,7 @@ subroutine co2_init (state, pbuf2d )
    if (.not. co2_flag) return
  
    if (co2_readFlux_ocn)  then
-      call interp_time_flux ( fields_ocn, file_ocn, data_flux_ocn)
+      call interp_time_flux ( data_flux_ocn)
    endif
  
   end subroutine co2_time_interp_ocn
@@ -276,7 +272,7 @@ subroutine co2_init (state, pbuf2d )
    if (.not. co2_flag) return
  
    if (co2_readFlux_fuel) then
-      call interp_time_flux ( fields_fuel, file_fuel, data_flux_fuel)
+      call interp_time_flux ( data_flux_fuel)
    endif
  
   end subroutine co2_time_interp_fuel
