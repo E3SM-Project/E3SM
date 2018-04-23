@@ -477,8 +477,8 @@ contains
 
        nf%dwt_seedn_to_deadstem_patch(p) = dwt_deadstemn_seed(p)/dt
        nf%dwt_seedn_to_deadstem_grc(g)   = &
-            cf%dwt_seedc_to_deadstem_grc(g) + &
-            cf%dwt_seedc_to_deadstem_patch(p)
+            nf%dwt_seedn_to_deadstem_grc(g) + &
+            nf%dwt_seedn_to_deadstem_patch(p)
 
 
        nf%dwt_seedn_to_npool_patch(p) = dwt_npool_seed(p)/dt
@@ -687,6 +687,7 @@ contains
        do c = bounds%begc,bounds%endc
           if (pi <= col_pp%npfts(c)) then
              p = col_pp%pfti(c) + pi - 1
+             g = veg_pp%gridcell(p)
              
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates
@@ -694,11 +695,24 @@ contains
              cf%dwt_prod10c_gain_col(c) = cf%dwt_prod10c_gain_col(c) - prod10_cflux(p)/dt
              cf%dwt_prod100c_gain_col(c) = cf%dwt_prod100c_gain_col(c) - prod100_cflux(p)/dt
 
+             cf%dwt_prod10c_gain_patch(p) = - prod10_cflux(p)/dt
+             cf%dwt_prod10c_gain_grc(g)   = cf%dwt_prod10c_gain_grc(g) + cf%dwt_prod10c_gain_patch(p)
+
+             cf%dwt_prod100c_gain_patch(p) = - prod100_cflux(p)/dt
+             cf%dwt_prod100c_gain_grc(g)   = cf%dwt_prod100c_gain_grc(g) + cf%dwt_prod100c_gain_patch(p)
+
              if ( use_c13 ) then
                 ! C13 column-level flux updates
                 c13_cf%dwt_conv_cflux_col(c) = c13_cf%dwt_conv_cflux_col(c) - conv_c13flux(p)/dt
                 c13_cf%dwt_prod10c_gain_col(c) = c13_cf%dwt_prod10c_gain_col(c) - prod10_c13flux(p)/dt
                 c13_cf%dwt_prod100c_gain_col(c) = c13_cf%dwt_prod100c_gain_col(c) - prod100_c13flux(p)/dt
+
+                c13_cf%dwt_prod10c_gain_patch(p) = - prod10_c13flux(p)/dt
+                c13_cf%dwt_prod10c_gain_grc(g)   = c13_cf%dwt_prod10c_gain_grc(g) + c13_cf%dwt_prod10c_gain_patch(p)
+
+                c13_cf%dwt_prod100c_gain_patch(p) = - prod100_c13flux(p)/dt
+                c13_cf%dwt_prod100c_gain_grc(g)   = c13_cf%dwt_prod100c_gain_grc(g) + c13_cf%dwt_prod100c_gain_patch(p)
+
              endif
              
              if ( use_c14 ) then
@@ -706,6 +720,13 @@ contains
                 c14_cf%dwt_conv_cflux_col(c) = c14_cf%dwt_conv_cflux_col(c) - conv_c14flux(p)/dt
                 c14_cf%dwt_prod10c_gain_col(c) = c14_cf%dwt_prod10c_gain_col(c) - prod10_c14flux(p)/dt
                 c14_cf%dwt_prod100c_gain_col(c) = c14_cf%dwt_prod100c_gain_col(c) - prod100_c14flux(p)/dt
+
+                c14_cf%dwt_prod10c_gain_patch(p) = - prod10_c14flux(p)/dt
+                c14_cf%dwt_prod10c_gain_grc(g)   = c14_cf%dwt_prod10c_gain_grc(g) + c14_cf%dwt_prod10c_gain_patch(p)
+
+                c14_cf%dwt_prod100c_gain_patch(p) = - prod100_c14flux(p)/dt
+                c14_cf%dwt_prod100c_gain_grc(g)   = c14_cf%dwt_prod100c_gain_grc(g) + c14_cf%dwt_prod100c_gain_patch(p)
+
              endif
              
              ! column-level N flux updates
@@ -713,11 +734,23 @@ contains
              nf%dwt_prod10n_gain_col(c) = nf%dwt_prod10n_gain_col(c) - prod10_nflux(p)/dt
              nf%dwt_prod100n_gain_col(c) = nf%dwt_prod100n_gain_col(c) - prod100_nflux(p)/dt
              
+             nf%dwt_prod10n_gain_patch(p) = -prod10_nflux(p)/dt
+             nf%dwt_prod10n_gain_grc(g)   = nf%dwt_prod10n_gain_grc(g) + nf%dwt_prod10n_gain_patch(p)
+
+             nf%dwt_prod100n_gain_patch(p)= -prod100_nflux(p)/dt
+             nf%dwt_prod100n_gain_grc(g)  = nf%dwt_prod100n_gain_grc(g) + nf%dwt_prod100n_gain_patch(p)
+
              ! column-level P flux updates
 
              pf%dwt_conv_pflux_col(c) = pf%dwt_conv_pflux_col(c) - conv_pflux(p)/dt
              pf%dwt_prod10p_gain_col(c) = pf%dwt_prod10p_gain_col(c) - prod10_pflux(p)/dt
              pf%dwt_prod100p_gain_col(c) = pf%dwt_prod100p_gain_col(c) - prod100_pflux(p)/dt
+
+             pf%dwt_prod10p_gain_patch(p) = -prod10_pflux(p)/dt
+             pf%dwt_prod10p_gain_grc(g)   = pf%dwt_prod10p_gain_grc(g) + pf%dwt_prod10p_gain_patch(p)
+
+             pf%dwt_prod100p_gain_patch(p)= -prod100_pflux(p)/dt
+             pf%dwt_prod100p_gain_grc(g)  = pf%dwt_prod100p_gain_grc(g) + pf%dwt_prod100p_gain_patch(p)
 
           end if
        end do

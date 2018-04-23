@@ -334,6 +334,8 @@ module CNNitrogenFluxType
 
      real(r8), pointer :: dwt_seedn_to_npool_patch                  (:)     ! col (gN/m2/s) seed source to PFT level
      real(r8), pointer :: dwt_seedn_to_npool_grc                    (:)     ! col (gN/m2/s) seed source to PFT level
+     real(r8), pointer :: dwt_prod10n_gain_grc                      (:)     ! col (gN/m2/s) addition to 10-yr wood product pool
+     real(r8), pointer :: dwt_prod100n_gain_grc                     (:)     ! col (gN/m2/s) addition to 100-yr wood product pool
 
      ! wood product pool loss fluxes
      real(r8), pointer :: prod1n_loss_col                           (:)     ! col (gN/m2/s) decomposition loss from 1-yr crop product pool
@@ -661,6 +663,9 @@ contains
 
     allocate(this%dwt_seedn_to_npool_grc     (begg:endg))                   ; this%dwt_seedn_to_npool_grc     (:)   = nan
     allocate(this%dwt_seedn_to_npool_patch   (begp:endp))                   ; this%dwt_seedn_to_npool_patch   (:)   = nan
+
+    allocate(this%dwt_prod10n_gain_grc      (begg:endg))                   ; this%dwt_prod10n_gain_grc       (:)   = nan
+    allocate(this%dwt_prod100n_gain_grc     (begg:endg))                   ; this%dwt_prod100n_gain_grc      (:)   = nan
 
     allocate(this%dwt_frootn_to_litr_met_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n_col     (:,:) = nan
     allocate(this%dwt_frootn_to_litr_cel_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n_col     (:,:) = nan
@@ -1944,12 +1949,22 @@ contains
     this%dwt_seedn_to_npool_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level npool', &
-         ptr_gcell=this%dwt_seedn_to_npool_patch, default='inactive')
+         ptr_gcell=this%dwt_seedn_to_npool_grc, default='inactive')
 
     this%dwt_seedn_to_npool_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_PATCH', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level npool', &
          ptr_patch=this%dwt_seedn_to_npool_patch, default='inactive')
+
+    this%dwt_prod10n_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD10N_GAIN_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod10n_gain_grc, default='inactive')
+
+    this%dwt_prod100n_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD100N_GAIN_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+         ptr_gcell=this%dwt_prod100n_gain_grc, default='inactive')
 
     this%dwt_conv_nflux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
@@ -2153,7 +2168,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
-    integer :: p,c,l
+    integer :: p,c,l, g
     integer :: fp, fc                                    ! filter indices
     integer :: num_special_col                           ! number of good values in special_col filter
     integer :: num_special_patch                         ! number of good values in special_patch filter
@@ -2186,6 +2201,10 @@ contains
     !-----------------------------------------------
     ! initialize nitrogen flux variables
     !-----------------------------------------------
+    do g = bounds%begg, bounds%endg
+       this%dwt_prod10n_gain_grc(g)          = 0._r8
+       this%dwt_prod100n_gain_grc(g)         = 0._r8
+    end do
 
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
@@ -2845,6 +2864,8 @@ contains
        this%dwt_seedn_to_deadstem_grc(g) = 0._r8
        this%dwt_conv_nflux_grc(g)        = 0._r8
        this%dwt_seedn_to_npool_grc(g)    = 0._r8
+       this%dwt_prod10n_gain_grc(g)      = 0._r8
+       this%dwt_prod100n_gain_grc(g)     = 0._r8
     end do
 
     do c = bounds%begc,bounds%endc

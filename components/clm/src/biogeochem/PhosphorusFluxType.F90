@@ -279,6 +279,8 @@ module PhosphorusFluxType
      real(r8), pointer :: dwt_livecrootp_to_cwdp_col                (:,:)   ! col (gP/m3/s) live coarse root to CWD due to landcover change
      real(r8), pointer :: dwt_deadcrootp_to_cwdp_col                (:,:)   ! col (gP/m3/s) dead coarse root to CWD due to landcover change
      real(r8), pointer :: dwt_ploss_col                             (:)     ! col (gP/m2/s) total phosphorus loss from product pools and conversion
+     real(r8), pointer :: dwt_prod10p_gain_grc                      (:)     ! col (gP/m2/s) addition to 10-yr wood product pool
+     real(r8), pointer :: dwt_prod100p_gain_grc                     (:)     ! col (gP/m2/s) addition to 100-yr wood product pool
 
      ! wood product pool loss fluxes
      real(r8), pointer :: prod1p_loss_col                           (:)     ! col (gP/m2/s) decomposition loss from 1-yr crop product pool
@@ -590,6 +592,9 @@ contains
     allocate(this%dwt_prod100p_gain_col      (begc:endc))                   ; this%dwt_prod100p_gain_col      (:)   = nan
     allocate(this%dwt_ploss_col              (begc:endc))                   ; this%dwt_ploss_col              (:)   = nan
     allocate(this%wood_harvestp_col          (begc:endc))                   ; this%wood_harvestp_col          (:)   = nan
+
+    allocate(this%dwt_prod10p_gain_grc       (begg:endg))                   ; this%dwt_prod10p_gain_grc       (:)   = nan
+    allocate(this%dwt_prod100p_gain_grc      (begg:endg))                   ; this%dwt_prod100p_gain_grc      (:)   = nan
 
     allocate(this%dwt_frootp_to_litr_met_p_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_met_p_col     (:,:) = nan
     allocate(this%dwt_frootp_to_litr_cel_p_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_cel_p_col     (:,:) = nan
@@ -1486,63 +1491,63 @@ contains
          avgflag='A', long_name='fire P loss of decomposable pools', &
          ptr_col=this%fire_decomp_ploss_col, default='inactive')
 
-       this%crop_seedp_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='CROP_SEEDP_TO_LEAF', units='gP/m^2/s', &
-            avgflag='A', long_name='crop seed source to leaf', &
-            ptr_patch=this%crop_seedp_to_leaf_patch, default='inactive')
+    this%crop_seedp_to_leaf_patch(begp:endp) = spval
+    call hist_addfld1d (fname='CROP_SEEDP_TO_LEAF', units='gP/m^2/s', &
+         avgflag='A', long_name='crop seed source to leaf', &
+         ptr_patch=this%crop_seedp_to_leaf_patch, default='inactive')
 
-       this%dwt_seedp_to_leaf_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_GRC', units='gP/m^2/s', &
-            avgflag='A', long_name='seed source to patch-level leaf', &
-            ptr_gcell=this%dwt_seedp_to_leaf_grc, default='inactive')
+    this%dwt_seedp_to_leaf_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level leaf', &
+         ptr_gcell=this%dwt_seedp_to_leaf_grc, default='inactive')
 
-       this%dwt_seedp_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_PATCH', units='gP/m^2/s', &
-            avgflag='A', &
-            long_name='patch-level seed source to patch-level leaf ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedp_to_leaf_patch, default='inactive')
+    this%dwt_seedp_to_leaf_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level seed source to patch-level leaf ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_seedp_to_leaf_patch, default='inactive')
 
-       this%dwt_seedp_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_GRC', units='gP/m^2/s', &
-            avgflag='A', long_name='seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedp_to_deadstem_grc, default='inactive')
+    this%dwt_seedp_to_deadstem_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level deadstem', &
+         ptr_gcell=this%dwt_seedp_to_deadstem_grc, default='inactive')
 
-       this%dwt_seedp_to_deadstem_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_PATCH', units='gP/m^2/s', &
-            avgflag='A', &
-            long_name='patch-level seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedp_to_deadstem_patch, default='inactive')
+    this%dwt_seedp_to_deadstem_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level seed source to patch-level deadstem ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_seedp_to_deadstem_patch, default='inactive')
 
-       this%dwt_conv_pflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_CONV_PFLUX_GRC', units='gP/m^2/s', &
-            avgflag='A', &
-            long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_pflux_grc)
+    this%dwt_conv_pflux_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_CONV_PFLUX_GRC', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+         ptr_gcell=this%dwt_conv_pflux_grc)
 
-       this%dwt_conv_pflux_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DWT_CONV_PFLUX_PATCH', units='gP/m^2/s', &
-            avgflag='A', &
-            long_name='patch-level conversion C flux (immediate loss to atm) ' // &
-            '(0 at all times except first timestep of year) ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_conv_pflux_patch, default='inactive')
+    this%dwt_conv_pflux_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_CONV_PFLUX_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level conversion C flux (immediate loss to atm) ' // &
+         '(0 at all times except first timestep of year) ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_conv_pflux_patch, default='inactive')
 
-       this%dwt_prod10p_gain_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DWT_PROD10P_GAIN_PATCH', units='gP/m^2/s', &
-            avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-            ptr_col=this%dwt_prod10p_gain_patch, default='inactive')
+    this%dwt_prod10p_gain_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_PROD10P_GAIN_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+         ptr_col=this%dwt_prod10p_gain_patch, default='inactive')
 
-       this%dwt_prod100p_gain_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DWT_PROD100P_GAIN_PATCH', units='gP/m^2/s', &
-            avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-            ptr_col=this%dwt_prod100p_gain_patch, default='inactive')
+    this%dwt_prod100p_gain_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_PROD100P_GAIN_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+         ptr_col=this%dwt_prod100p_gain_patch, default='inactive')
 
-       this%dwt_slash_pflux_col(begc:endc) = spval
-       call hist_addfld1d (fname='DWT_SLASH_PFLUX', units='gP/m^2/s', &
-            avgflag='A', long_name='slash P flux to litter and CWD due to land use', &
-             ptr_col=this%dwt_slash_pflux_col)
+    this%dwt_slash_pflux_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_SLASH_PFLUX', units='gP/m^2/s', &
+         avgflag='A', long_name='slash P flux to litter and CWD due to land use', &
+         ptr_col=this%dwt_slash_pflux_col)
 
     this%dwt_seedp_to_ppool_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_GRC', units='gP/m^2/s', &
@@ -1558,6 +1563,16 @@ contains
     call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
          avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
          ptr_col=this%dwt_conv_pflux_col, default='inactive')
+
+    this%dwt_prod10p_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD10P_GAIN_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod10p_gain_grc, default='inactive')
+
+    this%dwt_prod100p_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD100P_GAIN_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod100p_gain_grc, default='inactive')
 
     this%dwt_prod10p_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
@@ -1675,7 +1690,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
-    integer :: p,c,l
+    integer :: p,c,l,g
     integer :: fp, fc                                    ! filter indices
     integer :: num_special_col                           ! number of good values in special_col filter
     integer :: num_special_patch                         ! number of good values in special_patch filter
@@ -1708,6 +1723,11 @@ contains
     !-----------------------------------------------
     ! initialize phosphorus flux variables
     !-----------------------------------------------
+
+    do g = bounds%begg, bounds%endg
+       this%dwt_prod10p_gain_grc(g)          = 0._r8
+       this%dwt_prod100p_gain_grc(g)         = 0._r8
+    end do
 
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
@@ -2261,6 +2281,8 @@ contains
        this%dwt_seedp_to_deadstem_grc(g) = 0._r8
        this%dwt_conv_pflux_grc(g)        = 0._r8
        this%dwt_seedp_to_ppool_grc(g)    = 0._r8
+       this%dwt_prod10p_gain_grc(g)      = 0._r8
+       this%dwt_prod100p_gain_grc(g)     = 0._r8
     end do
 
     do c = bounds%begc,bounds%endc

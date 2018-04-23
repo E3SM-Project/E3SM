@@ -43,6 +43,7 @@ module CNBalanceCheckMod
   implicit none
   save
   private
+  real(r8), parameter :: balance_check_tolerance = 1e-8_r8
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BeginColCBalance
@@ -51,9 +52,12 @@ module CNBalanceCheckMod
   public :: ColCBalanceCheck
   public :: ColNBalanceCheck
   public :: ColPBalanceCheck
-  public :: BeginGridCBalance
-  public :: BeginGridNBalance
-  public :: BeginGridPBalance
+  public :: BeginGridCBalanceBeforeDynSubgridDriver
+  public :: BeginGridNBalanceBeforeDynSubgridDriver
+  public :: BeginGridPBalanceBeforeDynSubgridDriver
+  public :: EndGridCBalanceAfterDynSubgridDriver
+  public :: EndGridNBalanceAfterDynSubgridDriver
+  public :: EndGridPBalanceAfterDynSubgridDriver
   !-----------------------------------------------------------------------
 
 contains
@@ -642,7 +646,7 @@ contains
   end subroutine ColPBalanceCheck
 
   !-----------------------------------------------------------------------
-  subroutine BeginGridCBalance(bounds, carbonstate_vars)
+  subroutine BeginGridCBalanceBeforeDynSubgridDriver(bounds, carbonstate_vars)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning carbon balance for mass conservation checks
@@ -654,9 +658,9 @@ contains
     !
     !-----------------------------------------------------------------------
 
-    associate(                                        &
-         totcolc   =>  carbonstate_vars%totcolc_col , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         begcb_grc =>  carbonstate_vars%begcb_grc     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+    associate(                                                              &
+         totcolc               =>  carbonstate_vars%totcolc_col           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         begcb_grc             =>  carbonstate_vars%begcb_grc               & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
 
       call c2g( bounds = bounds, &
@@ -667,10 +671,10 @@ contains
 
     end associate
 
-  end subroutine BeginGridCBalance
+  end subroutine BeginGridCBalanceBeforeDynSubgridDriver
  
   !-----------------------------------------------------------------------
-  subroutine BeginGridNBalance(bounds, nitrogenstate_vars)
+  subroutine BeginGridNBalanceBeforeDynSubgridDriver(bounds, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning nitrogen balance for mass conservation checks
@@ -694,10 +698,10 @@ contains
 
     end associate
 
-  end subroutine BeginGridNBalance
+  end subroutine BeginGridNBalanceBeforeDynSubgridDriver
 
   !-----------------------------------------------------------------------
-  subroutine BeginGridPBalance(bounds, phosphorusstate_vars)
+  subroutine BeginGridPBalanceBeforeDynSubgridDriver(bounds, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning phosphorus balance for mass conservation checks
@@ -723,6 +727,303 @@ contains
 
     end associate
 
-  end subroutine BeginGridPBalance
+  end subroutine BeginGridPBalanceBeforeDynSubgridDriver
+
+  !-----------------------------------------------------------------------
+  subroutine EndGridCBalanceAfterDynSubgridDriver(bounds, &
+       num_soilc, filter_soilc, &
+       carbonstate_vars, carbonflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform carbon mass conservation check
+    ! at grid level after dynamic subgrid driver has been called
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g,err_index    ! indices
+    logical  :: err_found      ! error flag
+    real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_cinputs
+    real(r8) :: grc_coutputs
+    real(r8) :: dwt_slash_cflux_grc(bounds%begg:bounds%endg)
+    !-----------------------------------------------------------------------
+
+    associate(                                                                       &
+         totcolc                   =>    carbonstate_vars%totcolc_col              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10c_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100c_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_slash_cflux_col       =>    carbonflux_vars%dwt_slash_cflux_col       , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_leaf_grc     =>    carbonflux_vars%dwt_seedc_to_leaf_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_deadstem_grc =>    carbonflux_vars%dwt_seedc_to_deadstem_grc , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         begcb_grc                 =>    carbonstate_vars%begcb_grc                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         endcb_grc                 =>    carbonstate_vars%endcb_grc                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         errcb_grc                 =>    carbonstate_vars%errcb_grc                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+      err_found = .false.
+
+      call c2g( bounds = bounds, &
+           carr = totcolc(bounds%begc:bounds%endc), &
+           garr = endcb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      call c2g( bounds = bounds, &
+           carr = dwt_slash_cflux_col(bounds%begc:bounds%endc), &
+           garr = dwt_slash_cflux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      do g = bounds%begg, bounds%endg
+         endcb_grc(g) = endcb_grc(g)
+
+         grc_cinputs = &
+              dwt_seedc_to_leaf_grc(g)     + &
+              dwt_seedc_to_deadstem_grc(g)
+
+         grc_coutputs = &
+              dwt_slash_cflux_grc(g)       + &
+              dwt_conv_cflux_grc(g)        + &
+              dwt_prod10c_gain_grc(g)      + &
+              dwt_prod100c_gain_grc(g)
+              
+
+         errcb_grc(g) = (grc_cinputs - grc_coutputs)*dt - (endcb_grc(g) - begcb_grc(g))
+
+         ! check for significant errors
+         if (abs(errcb_grc(g)) > balance_check_tolerance) then
+            err_found = .true.
+            err_index = g
+         end if
+
+      end do
+
+      if (err_found) then
+         g = err_index
+         write(iulog,*)'Grid cbalance error   = ',errcb_grc(g), g
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         write(iulog,*)'input                 = ',grc_cinputs*dt
+         write(iulog,*)'output                = ',grc_coutputs*dt
+         write(iulog,*)'error                 = ',errcb_grc(g)*dt
+         write(iulog,*)'begcb                 = ',begcb_grc(g)
+         write(iulog,*)'endcb                 = ',endcb_grc(g)
+         write(iulog,*)'delta store           = ',endcb_grc(g)-begcb_grc(g)
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+
+    end associate
+
+  end subroutine EndGridCBalanceAfterDynSubgridDriver
+
+  !-----------------------------------------------------------------------
+  subroutine EndGridNBalanceAfterDynSubgridDriver(bounds, &
+       num_soilc, filter_soilc, &
+       nitrogenstate_vars, nitrogenflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform nitrogen mass conservation check
+    ! at grid level after dynamic subgrid driver has been called
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g,err_index    ! indices
+    logical  :: err_found      ! error flag
+    real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_ninputs
+    real(r8) :: grc_noutputs
+    real(r8) :: dwt_slash_nflux_grc(bounds%begg:bounds%endg)
+    !-----------------------------------------------------------------------
+
+    associate(                                                                       &
+         totcoln                   =>    nitrogenstate_vars%totcoln_col              , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
+         dwt_prod10n_gain_grc      =>    nitrogenflux_vars%dwt_prod10n_gain_grc      , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_prod100n_gain_grc     =>    nitrogenflux_vars%dwt_prod100n_gain_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_conv_nflux_grc        =>    nitrogenflux_vars%dwt_conv_nflux_grc        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_slash_nflux_col       =>    nitrogenflux_vars%dwt_slash_nflux_col       , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_seedn_to_leaf_grc     =>    nitrogenflux_vars%dwt_seedn_to_leaf_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_seedn_to_deadstem_grc =>    nitrogenflux_vars%dwt_seedn_to_deadstem_grc , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         begnb_grc                 =>    nitrogenstate_vars%begnb_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         endnb_grc                 =>    nitrogenstate_vars%endnb_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
+         errnb_grc                 =>    nitrogenstate_vars%errnb_grc                  & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+      err_found = .false.
+
+      call c2g( bounds = bounds, &
+           carr = totcoln(bounds%begc:bounds%endc), &
+           garr = endnb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      call c2g( bounds = bounds, &
+           carr = dwt_slash_nflux_col(bounds%begc:bounds%endc), &
+           garr = dwt_slash_nflux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      do g = bounds%begg, bounds%endg
+         endnb_grc(g) = endnb_grc(g)
+
+         grc_ninputs = &
+              dwt_seedn_to_leaf_grc(g)     + &
+              dwt_seedn_to_deadstem_grc(g)
+
+         grc_noutputs = &
+              dwt_slash_nflux_grc(g)       + &
+              dwt_conv_nflux_grc(g)        + &
+              dwt_prod10n_gain_grc(g)      + &
+              dwt_prod100n_gain_grc(g)
+              
+
+         errnb_grc(g) = (grc_ninputs - grc_noutputs)*dt - (endnb_grc(g) - begnb_grc(g))
+
+         ! check for significant errors
+         if (abs(errnb_grc(g)) > balance_check_tolerance) then
+            err_found = .true.
+            err_index = g
+         end if
+
+      end do
+
+      if (err_found) then
+         g = err_index
+         write(iulog,*)'Grid nbalance error   = ',errnb_grc(g), g
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         write(iulog,*)'input                 = ',grc_ninputs*dt
+         write(iulog,*)'output                = ',grc_noutputs*dt
+         write(iulog,*)'error                 = ',errnb_grc(g)*dt
+         write(iulog,*)'begcb                 = ',begnb_grc(g)
+         write(iulog,*)'endcb                 = ',endnb_grc(g)
+         write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
+         write(iulog,*)''
+         write(iulog,*)'dwt_slash               ',dwt_slash_nflux_grc(g)
+         write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
+         write(iulog,*)'dwt_prod10              ',dwt_prod10n_gain_grc(g)
+         write(iulog,*)'dwt_prod100             ',dwt_prod100n_gain_grc(g)
+         write(iulog,*)''
+         write(iulog,*)'dwt_seedn_leaf          ',dwt_seedn_to_leaf_grc(g)
+         write(iulog,*)'dwt_seedn_deadstem      ',dwt_seedn_to_deadstem_grc(g)
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+
+    end associate
+
+  end subroutine EndGridNBalanceAfterDynSubgridDriver
+
+  !-----------------------------------------------------------------------
+
+  subroutine EndGridPBalanceAfterDynSubgridDriver(bounds, &
+       num_soilc, filter_soilc, &
+       phosphorusstate_vars, phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform phosphorus mass conservation check
+    ! at grid level after dynamic subgrid driver has been called
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g,err_index    ! indices
+    logical  :: err_found      ! error flag
+    real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_pinputs
+    real(r8) :: grc_poutputs
+    real(r8) :: dwt_slash_pflux_grc(bounds%begg:bounds%endg)
+    !-----------------------------------------------------------------------
+
+    associate(                                                                       &
+         totcolp                   =>    phosphorusstate_vars%totcolp_col              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
+         dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10p_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100p_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_pflux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_slash_pflux_col       =>    phosphorusflux_vars%dwt_slash_pflux_col       , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_leaf_grc     =>    phosphorusflux_vars%dwt_seedp_to_leaf_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_deadstem_grc =>    phosphorusflux_vars%dwt_seedp_to_deadstem_grc , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         begpb_grc                 =>    phosphorusstate_vars%begpb_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         endpb_grc                 =>    phosphorusstate_vars%endpb_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
+         errpb_grc                 =>    phosphorusstate_vars%errpb_grc                  & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+      err_found = .false.
+
+      call c2g( bounds = bounds, &
+           carr = totcolp(bounds%begc:bounds%endc), &
+           garr = endpb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      call c2g( bounds = bounds, &
+           carr = dwt_slash_pflux_col(bounds%begc:bounds%endc), &
+           garr = dwt_slash_pflux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', &
+           l2g_scale_type = 'unity')
+
+      do g = bounds%begg, bounds%endg
+         endpb_grc(g) = endpb_grc(g)
+
+         grc_pinputs = &
+              dwt_seedp_to_leaf_grc(g)     + &
+              dwt_seedp_to_deadstem_grc(g)
+
+         grc_poutputs = &
+              dwt_slash_pflux_grc(g)       + &
+              dwt_conv_pflux_grc(g)        + &
+              dwt_prod10p_gain_grc(g)      + &
+              dwt_prod100p_gain_grc(g)
+              
+
+         errpb_grc(g) = (grc_pinputs - grc_poutputs)*dt - (endpb_grc(g) - begpb_grc(g))
+
+         ! check for significant errors
+         if (abs(errpb_grc(g)) > balance_check_tolerance) then
+            err_found = .true.
+            err_index = g
+         end if
+
+      end do
+
+      if (err_found) then
+         g = err_index
+         write(iulog,*)'Grid pbalance error   = ',errpb_grc(g), g
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         write(iulog,*)'input                 = ',grc_pinputs*dt
+         write(iulog,*)'output                = ',grc_poutputs*dt
+         write(iulog,*)'error                 = ',errpb_grc(g)*dt
+         write(iulog,*)'begcb                 = ',begpb_grc(g)
+         write(iulog,*)'endcb                 = ',endpb_grc(g)
+         write(iulog,*)'delta store           = ',endpb_grc(g)-begpb_grc(g)
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+
+    end associate
+
+  end subroutine EndGridPBalanceAfterDynSubgridDriver
 
 end module CNBalanceCheckMod
