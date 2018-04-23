@@ -65,9 +65,12 @@ subroutine read_data_flux (fields, file, input_file, xin, state, pbuf2d)
 
   allocate (file%in_pbuf(1))
   file%in_pbuf(1) = .false.
-  specifier(1) = 'CO2_flux'
-  call trcdata_init( specifier ,input_file , '', '', fields, file, &
-       .false., 0, 0, 0, 'SERIAL' )
+  specifier(1)    = 'CO2_flux' !name of variable to read from file
+
+! Open file and initialize "fields" and "file" derived types
+! Some of the arguments passed here are hardwired which can be replaced with variables
+! if need be.
+  call trcdata_init(specifier, input_file , '', '', fields, file, .false., 0, 0, 0, 'SERIAL')
 
   return
 end subroutine read_data_flux
