@@ -176,7 +176,9 @@ contains
                 smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
                 ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
                 temp_solutionp(c,j) = ( ps%solutionp_vr_col(c,j) + ps%labilep_vr_col(c,j) + &
-                            (flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + &
+                            (flux_mineralization(c,j) - &
+                            pf%biochem_pmin_vr_col(c,j)*dt + pf%biochem_pmin_to_ecosysp_vr_col(c,j)*dt + &
+                            pf%primp_to_labilep_vr_col(c,j)*dt + &
                             pf%secondp_to_labilep_vr_col(c,j)*dt + pf%supplement_to_sminp_vr_col(c,j)*dt - &
                             pf%sminp_to_plant_vr_col(c,j)*dt - pf%labilep_to_secondp_vr_col(c,j)*dt - &
                             pf%sminp_leached_vr_col(c,j)*dt ))
