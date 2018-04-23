@@ -74,6 +74,7 @@ module clm_interface_pflotranMod
                                                         !      or inactive column in (1:bounds%endc-bounds%endc+1)
 #endif
   !
+  character(len=256), private:: pflotran_inputdir = ''
   character(len=256), private:: pflotran_prefix = ''
   character(len=32), private :: restart_stamp = ''
 
@@ -163,7 +164,7 @@ contains
     character(len=32) :: subname = 'clm_pf_readnl'  ! subroutine name
   !EOP
   !-----------------------------------------------------------------------
-    namelist / clm_pflotran_inparm / pflotran_prefix
+    namelist / clm_pflotran_inparm / pflotran_prefix, pflotran_inputdir
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard namelist file.
@@ -188,6 +189,7 @@ contains
     end if
 
     ! Broadcast namelist variables read in
+    call shr_mpi_bcast(pflotran_inputdir, mpicom)
     call shr_mpi_bcast(pflotran_prefix, mpicom)
 
   end subroutine clm_pf_readnl
@@ -857,7 +859,7 @@ contains
     ! -----------------------------------------------------------------
 
     ! (4) Create PFLOTRAN model
-    call pflotranModelCreate(mpicom, pflotran_prefix, pflotran_m)
+    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
 
     call pflotranModelSetupMappingFiles(pflotran_m)
 
