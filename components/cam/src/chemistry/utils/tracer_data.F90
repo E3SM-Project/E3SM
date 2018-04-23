@@ -608,8 +608,8 @@ contains
 ! 2. veritcal interpolation (getting zi and pmid for each grid cell)
 ! 3. Single column model 
 !
-! For interpolating surface flux fields, state is not required. 
-! get_ncols_p is now used to get ncol values. 
+! "get_ncols_p" can be used to get ncol values. For interpolating surface 
+! flux fields (i.e. vertical interpolation not needed), state is not required.
 !
 ! This change is made to accomodate CO2 flux interpolation where 
 ! interpolation routines (e.g. co2_time_interp_fuel) are called from a 
