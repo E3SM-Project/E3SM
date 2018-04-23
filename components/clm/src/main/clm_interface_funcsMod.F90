@@ -223,6 +223,7 @@ contains
     !
     ! !USES:
     use CNDecompCascadeConType, only : decomp_cascade_con
+    use clm_varctl            , only : spinup_state
     !
     ! !ARGUMENTS:
 
