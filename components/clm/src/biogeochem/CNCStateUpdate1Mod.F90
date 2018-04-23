@@ -71,7 +71,7 @@ contains
       if (.not.use_ed) then
 
          do g = bounds%begg, bounds%endg
-            cs%seedc_grc(c) = cs%seedc_grc(g) &
+            cs%seedc_grc(g) = cs%seedc_grc(g) &
                  - cf%dwt_seedc_to_leaf_grc(g)     * dt &
                  - cf%dwt_seedc_to_deadstem_grc(g) * dt
          end do
