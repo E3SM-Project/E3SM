@@ -92,20 +92,17 @@ def main():
     args = parser.view_args()
 
     if args.parameters and not args.other_parameters:  # -p only
-        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
+        cmdline_parameter = parser.get_cmdline_parameters()
         # If just a -p with no command line parameters, check the py for errors
-        if not cmdline_parameter:
-            original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
         # Otherwise don't check for errors, the command line args might have some missing ones
-        else:
-            original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False, check_values=False)
+        check_values = True if not cmdline_parameter else False
+        original_parameter = parser.get_orig_parameters(check_values)
 
         if not hasattr(original_parameter, 'sets'):
             original_parameter.sets = SET_NAMES
 
-        # load the default jsons
+        # load the default cfg files
         default_diags_paths = []
-
         for set_num in original_parameter.sets:
             run_type = 'model_vs_obs'
             dataset = ''
@@ -114,26 +111,25 @@ def main():
             if hasattr(original_parameter, 'run_type'):
                 run_type = original_parameter.run_type
             default_diags_paths.append(_get_default_diags(set_num, dataset, run_type))
-        other_parameters = parser.get_other_parameters(
-            files_to_open=default_diags_paths, check_values=False, cmd_default_vars=False)
+
+        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths)
+
         # Don't put the sets from the Python parameters to each of the parameters.
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
         # default jsons like lat_lon_ACME_default.json
         vars_to_ignore = ['sets']
         parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
-            orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
+            orig_parameters=original_parameter, other_parameters=other_parameters,
+            vars_to_ignore=vars_to_ignore, cmd_default_vars=False)
 
     elif not args.parameters and args.other_parameters:  # -d only
-        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
-        other_parameters = parser.get_other_parameters(check_values=True, cmd_default_vars=False)
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, other_parameters=other_parameters)
+        cmdline_parameter = parser.get_cmdline_parameters()
+        other_parameters = parser.get_other_parameters()
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
+            other_parameters=other_parameters, cmd_default_vars=False)
 
     elif args.parameters and args.other_parameters:  # -p and -d
-        cmdline_parameter = parser.get_cmdline_parameters(default_vars=False, cmd_default_vars=False)
-        original_parameter = parser.get_orig_parameters(default_vars=False, cmd_default_vars=False)
-        other_parameters = parser.get_other_parameters(check_values=False, cmd_default_vars=False)
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
-            orig_parameters=original_parameter, other_parameters=other_parameters)
+        parameters = parser.get_parameters(cmd_default_vars=False)
 
     else:  # command line args without -p or -d
         parameters = parser.get_parameters(cmd_default_vars=False)
