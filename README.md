@@ -12,12 +12,12 @@
 3. [Current State](#current-state)
 
 ## Documentation <a name="doc"></a>
-* [Documentation Website](https://acme-climate.github.io/acme_diags)
+* [Documentation Website](https://e3sm-project.github.io/acme_diags)
 * Examples:
-  * [Quick Start Guide for AIMS4/ACME1](https://acme-climate.github.io/acme_diags/docs/html/quick-guide-aims4.html)
-  * [Model vs Model Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
-  * [Observation vs Observation Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
-  * [Model vs Observation](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
+  * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/acme_diags/docs/html/quick-guide-aims4.html)
+  * [Model vs Model Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
+  * [Observation vs Observation Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
+  * [Model vs Observation](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
