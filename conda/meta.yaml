@@ -13,11 +13,11 @@ build:
 
 requirements:
   build:
-    - python 2
+    - python {{ python }}
     - setuptools
 
   run:
-    - python 2
+    - python {{ python }}
     - cdp 1.3.2
     - vcs 8.0
     - vtk-cdat 8.0.1.8.0
