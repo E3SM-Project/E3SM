@@ -319,7 +319,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
           end do
          end do
 
-#if 1
+!#if 1
          if (ftype == 3) then ! ftype == 3, scale tendencies with new dp
            do k=1,nlev
              do j=1,np
@@ -332,7 +332,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
              end do
            end do
          endif !ftype 3
-#endif
+!#endif
 
       endif ! if ftype == 2 or == 3 or == 4
 
