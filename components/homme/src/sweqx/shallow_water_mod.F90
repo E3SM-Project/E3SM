@@ -185,7 +185,7 @@ module shallow_water_mod
   public  :: tc1_errors
 
   public  :: tc2_init_state  ! Initialize test case 2: Global steady state nonlinear geostrophic flow
-  public  :: tc2_init_state2 !balu
+  public  :: tc2_init_state2, nonrot_init_state !balu
 
   public  :: tc2_init_pmean
   public  :: tc2_geopotential
@@ -670,6 +670,90 @@ contains
     end do
 
   end function tc1_velocity
+
+  function prtrb_geopotential(sphere) result(p)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind)                :: p(np,np)
+
+    ! Local variables
+
+    real (kind=real_kind) :: cslon
+    real (kind=real_kind) :: snlat
+    real (kind=real_kind) :: cslat
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    real (kind=real_kind) :: coef
+
+    integer i,j
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+
+    do j=1,np
+       do i=1,np
+          snlat = SIN(sphere(i,j)%lat-0.9)
+          cslat = COS(sphere(i,j)%lat)
+          cslon = COS(sphere(i,j)%lon)
+          p(i,j)= -coef*( -cslon*cslat*snalpha + snlat*csalpha )**20
+       end do
+    end do
+
+  end function prtrb_geopotential
+
+  function prtrb_velocity(sphere,D) result(v)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
+    real (kind=real_kind)                :: v(np,np,2)
+
+    ! Local variables
+
+    real (kind=real_kind) :: snlon(np,np)
+    real (kind=real_kind) :: cslon(np,np)
+    real (kind=real_kind) :: snlat(np,np)
+    real (kind=real_kind) :: cslat(np,np)
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    real (kind=real_kind) :: V1,V2
+
+    integer i,j,k
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    do j=1,np
+       do i=1,np
+          snlat(i,j) = SIN(sphere(i,j)%lat)
+          cslat(i,j) = COS(sphere(i,j)%lat)
+          snlon(i,j) = SIN(sphere(i,j)%lon)
+          cslon(i,j) = COS(sphere(i,j)%lon)
+       end do
+    end do
+
+
+
+    do k=1,nlev
+       do j=1,np
+          do i=1,np
+
+             V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V2 =  -u0*(snlon(i,j)*snalpha) + 0.1*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-20*dd_pi/180)/0.1)**2)
+
+             ! =====================================================
+             ! map sphere velocities onto the contravariant cube velocities
+             ! using the D^-T mapping matrix (see Loft notes for details)
+             ! =====================================================
+
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
+          end do
+       end do
+    end do
+
+  end function prtrb_velocity
 
 
 
@@ -1249,6 +1333,55 @@ contains
 
   end subroutine tc2_init_state
 
+  ! ===========================================
+  !
+  ! nonrot_init_state:
+  !
+  ! Initialize like in test case 2: But IC is not a solution
+  !
+  ! ===========================================
+
+  subroutine nonrot_init_state(elem,nets,nete,pmean)
+    type(element_t), intent(inout) :: elem(:)
+
+    integer, intent(in) :: nets
+    integer, intent(in) :: nete
+    real (kind=real_kind) :: pmean
+    real (kind=real_kind) :: coef
+
+    ! Local variables
+
+    integer :: ie,k
+    integer :: nm1 
+    integer :: n0 
+    integer :: np1
+
+    nm1= 1
+    n0 = 2
+    np1= 3
+
+
+    pmean = tc2_init_pmean() !9.8 ! h0=1m in Peixoto, 2017
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+    !omega = 0 !nonrotating
+
+    do ie=nets,nete
+       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       elem(ie)%state%ps(:,:)= 0.0
+       do k=1,nlev
+          elem(ie)%state%p(:,:,k,n0)=  tc2_init_pmean() + prtrb_geopotential(elem(ie)%spherep(:,:))
+          elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
+          elem(ie)%state%p(:,:,k,np1)=0.0D0
+
+          elem(ie)%state%v(:,:,:,k,n0)=0!prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
+          elem(ie)%state%v(:,:,:,k,np1)=0.0D0
+       end do
+    end do
+
+    pmean = 0
+  end subroutine nonrot_init_state
+
   !balu Peixoto, Thuburn, 2017 variation of Williamson, 1992 tc2
   subroutine tc2_init_state2(elem,nets,nete,pmean)
     type(element_t), intent(inout) :: elem(:)
@@ -1331,6 +1464,7 @@ contains
     end do
 
   end function tc2_geopotential
+
 
   ! ===========================================
 

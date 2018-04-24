@@ -19,7 +19,7 @@ set MACH = /users/balu/acme-balu/grizzly.cmake
 set input = $HOMME/test/sw_conservative
 
 set builddir = $wdir/build
-set rundir = $wdir/swtc2-peixoto
+set rundir = $wdir/swtc2-peixoto/NE80-t144-smooth.00
 mkdir -p $rundir
 mkdir -p $builddir
 
@@ -77,18 +77,18 @@ set LFTfreq = 0
 set hypervis_subcycle =  1
 set integration = explicit
 
-set NE = 80
+set NE = 90
 #set nu = 5.1e15
 
 
 ### leapfrog
-set smooth = 0.05 ; set LFTfreq = 0
-set tstep = 144
+# balu set smooth = 0.05 ; set LFTfreq = 0
+# balu set tstep = 144
 
 
 ### leapfrog-trapazoidal 
-#set smooth = 0 ; set LFTfreq = 1
-#set tstep = 200
+set smooth = 0 ; set LFTfreq = 1
+set tstep = 144
 
 ### RK2-M (what's used in 3D code)
 #set smooth = 0 ; set LFTfreq = 4

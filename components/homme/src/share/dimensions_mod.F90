@@ -13,7 +13,7 @@ module dimensions_mod
 #ifdef CAM
 #else
 #ifdef QSIZE_D
-  integer, parameter         :: qsize_d=QSIZE_D
+  integer, parameter         :: qsize_d=5 !balu QSIZE_D
 #else
   integer, parameter         :: qsize_d=4
 #endif

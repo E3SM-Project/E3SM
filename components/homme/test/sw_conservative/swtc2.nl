@@ -9,7 +9,7 @@ partmethod    = 4
 topology      = "cube"
 test_case     = "swtc2"
 ne=48
-ndays         = 12
+ndays         = 200
 statefreq     = 1440
 tasknum       = 0
 restartfreq   = -1
@@ -60,14 +60,14 @@ kcut_fm       = 2
 !  output_varnames1-5					!
 !=======================================================!
 output_start_time= 0
-output_end_time  = 12
+output_end_time  = 1200
 output_timeunits = 1
 output_frequency = 1
 output_varnames1 = 'geop','u','v','hypervis'
 io_stride = 8
 output_type = 'netcdf'
-interp_nlat=64
-interp_nlon=128
+interp_nlat=256
+interp_nlon=512
 /
 &dg_nl
 riemanntype= 0
