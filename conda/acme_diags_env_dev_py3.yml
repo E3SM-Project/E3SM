@@ -1,8 +1,8 @@
 name: acme_diags_env_dev_py3
 channels:
+  - anaconda
   - conda-forge
   - cdat
-  - anaconda
   - defaults
 dependencies:
   - asn1crypto=0.24.0=py36_0
