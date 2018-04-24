@@ -18,7 +18,6 @@ module med_phases_prep_ocn_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
-  use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_internalstate_mod   , only : InternalState
 
@@ -134,46 +133,8 @@ module med_phases_prep_ocn_mod
     !--- copy to FBExp(compocn)
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), &
-         is_local%wrap%FBExpAccum(compocn), rc=rc)
+    call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), is_local%wrap%FBExpAccum(compocn), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- custom calculations
-    !---------------------------------------
-
-    ! TODO: document custom merges below
-    ! TODO: need to obtain flux_epbalfact
-
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_rainc', dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_rainl', dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
-#if (1 == 0)
-    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
-#endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_snowc', dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_snowl', dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
-#if (1 == 0)
-    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
-#endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_prec' , dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
 
     !---------------------------------------
     !--- zero accumulator

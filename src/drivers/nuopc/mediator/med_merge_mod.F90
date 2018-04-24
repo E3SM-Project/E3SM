@@ -1,380 +1,162 @@
 module med_merge_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Component.
-  ! This mediator operates on two timescales and keeps two internal Clocks to
-  ! do so.
+  ! Performs merges from source field bundles to destination field bundle
   !-----------------------------------------------------------------------------
 
   use ESMF
-  use shr_nuopc_methods_mod
-  use med_internalstate_mod
+  use shr_kind_mod  
+  use esmFlds               , only : compmed, compname
+  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
+  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
+  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use med_internalstate_mod , only : logunit
   use med_constants_mod
 
-  implicit none
-
+  implicit none 
   private
 
-  integer            :: dbrc
+  integer                       :: dbrc
   integer           , parameter :: dbug_flag   = med_constants_dbug_flag
-  logical           , parameter :: statewrite_flag = med_constants_statewrite_flag
   real(ESMF_KIND_R8), parameter :: spval_init  = med_constants_spval_init
   real(ESMF_KIND_R8), parameter :: spval       = med_constants_spval
   real(ESMF_KIND_R8), parameter :: czero       = med_constants_czero
-  character(len=ESMF_MAXSTR) :: tmpstr
   character(*),parameter :: u_FILE_u = &
-    __FILE__
+       __FILE__
 
-  public med_merge_auto
+  public  :: med_merge_auto
+  private :: med_merge
 
-  !-----------------------------------------------------------------------------
-  contains
-  !-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+contains
+!-----------------------------------------------------------------------------
 
-    subroutine med_merge_auto(FBout, &
-                              FB1, FB1w, fldw1, &
-                              FB2, FB2w, fldw2, &
-                              FB3, FB3w, fldw3, &
-                              FB4, FB4w, fldw4, &
-                              FB5, FB5w, fldw5, &
-                              FB6, FB6w, fldw6, &
-                              document, string, rc)
-
-    type(ESMF_FieldBundle),intent(inout)       :: FBout
-    type(ESMF_FieldBundle),intent(in),optional :: FB1  , FB2  , FB3  , FB4  , FB5  , FB6
-    type(ESMF_FieldBundle),intent(in),optional :: FB1w , FB2w , FB3w , FB4w , FB5w , FB6w
-    character(len=*)      ,intent(in),optional :: fldw1, fldw2, fldw3, fldw4, fldw5, fldw6
-    logical               ,intent(in),optional :: document
-    character(len=*)      ,intent(in),optional :: string
-    integer               ,intent(out)         :: rc
-
-    ! This subroutine initializes the fractions
+  subroutine med_merge_auto(FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, document, string, mastertask, rc)
+    type(ESMF_FieldBundle)       , intent(inout)         :: FBOut        ! Merged output field bundle
+    type(ESMF_FieldBundle)       , intent(in)            :: FBfrac       ! Fraction data for FBOut
+    type(ESMF_FieldBundle)       , intent(in)            :: FBImp(:)     ! Array of field bundles each mapping to the FBOut mesh
+    type(shr_nuopc_fldList_type) , intent(in)            :: fldListTo    ! Information for merging
+    type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed1       ! mediator field bundle
+    type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed2       ! mediator field bundle
+    logical                      , intent(in)            :: document
+    character(len=*)             , intent(in)            :: string          
+    logical                      , intent(in)            :: mastertask
+    integer                      , intent(out)           :: rc
 
     ! local variables
-    integer                     :: cnt, n
-    logical                     :: ldocument
-    character(len=128)          :: lstring
+    integer                :: cnt
+    integer                :: n,nf,compsrc
+    character(SHR_KIND_CX) :: fldname, stdname
+    character(SHR_KIND_CX) :: merge_field
+    character(SHR_KIND_CS) :: merge_type
+    character(SHR_KIND_CS) :: merge_fracname
+    character(SHR_KIND_CL) :: mrgstr   ! temporary string
+    logical                :: init_mrgstr
     character(len=*),parameter  :: subname='(med_merge_auto)'
+    !---------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    ! if (dbug_flag > 5) then
+    !    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    ! endif
     rc = ESMF_SUCCESS
 
-    !---------------------------------------
-    !---------------------------------------
-
-    ldocument = .false.
-    if (present(document)) ldocument=document
-
-    lstring = ""
-    if (present(string)) lstring=trim(string)
-
-    call ESMF_FieldBundleGet(FBout, fieldCount=cnt, rc=rc)
+    call shr_nuopc_methods_FB_reset(FBOut, value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! Want to loop over all of the fields in FBout here - and find the corresponding index in fldListTo(complnd)
+    ! for that field name - then call the corresponding merge routine below appropriately
+
+    call ESMF_FieldBundleGet(FBOut, fieldCount=cnt, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Loop over all fields in field bundle FBOut
     do n = 1,cnt
 
-       if (present(FB1)) then
-       if (ESMF_FieldBundleIsCreated(FB1,rc=rc)) then
-         if (present(FB1w) .and. present(fldw1)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB1w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB1w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB1, FB1w, fldw1, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB1w) .and. .not.present(fldw1)) .or. &
-                 (.not.present(FB1w) .and. present(fldw1))) then
-            call ESMF_LogWrite(trim(subname)//": error FB1w and fldw1 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB1, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+       ! Get the nth field name in FBexp
+       call shr_nuopc_methods_FB_getNameN(FBOut, n, fldname, rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (present(FB2)) then
-       if (ESMF_FieldBundleIsCreated(FB2,rc=rc)) then
-         if (present(FB2w) .and. present(fldw2)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB2w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB2w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB2, FB2w, fldw2, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB2w) .and. .not.present(fldw2)) .or. &
-                 (.not.present(FB2w) .and. present(fldw2))) then
-            call ESMF_LogWrite(trim(subname)//": error FB2w and fldw2 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB2, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+       init_mrgstr = .true.
 
-       if (present(FB3)) then
-       if (ESMF_FieldBundleIsCreated(FB3,rc=rc)) then
-         if (present(FB3w) .and. present(fldw3)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB3w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB3w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB3, FB3w, fldw3, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB3w) .and. .not.present(fldw3)) .or. &
-                 (.not.present(FB3w) .and. present(fldw3))) then
-            call ESMF_LogWrite(trim(subname)//": error FB3w and fldw3 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB3, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+       ! Loop over the field in fldListTo
+       do nf = 1,shr_nuopc_fldList_GetNumFlds(fldListTo)
 
-       if (present(FB4)) then
-       if (ESMF_FieldBundleIsCreated(FB4,rc=rc)) then
-         if (present(FB4w) .and. present(fldw4)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB4w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB4w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB4, FB4w, fldw4, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB4w) .and. .not.present(fldw4)) .or. &
-                 (.not.present(FB4w) .and. present(fldw4))) then
-            call ESMF_LogWrite(trim(subname)//": error FB4w and fldw4 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB4, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+          ! Determine if if there is a match of the fldList field name with the FBOut field name
+          call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, stdname)
 
-       if (present(FB5)) then
-       if (ESMF_FieldBundleIsCreated(FB5,rc=rc)) then
-         if (present(FB5w) .and. present(fldw5)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB5w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB5w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB5, FB5w, fldw5, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB5w) .and. .not.present(fldw5)) .or. &
-                 (.not.present(FB5w) .and. present(fldw5))) then
-            call ESMF_LogWrite(trim(subname)//": error FB5w and fldw5 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB5, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+          if (trim(stdname) == trim(fldname)) then
 
-       if (present(FB6)) then
-       if (ESMF_FieldBundleIsCreated(FB6,rc=rc)) then
-         if (present(FB6w) .and. present(fldw6)) then
-           if (.not.ESMF_FieldBundleIsCreated(FB6w,rc=rc)) then
-              call ESMF_LogWrite(trim(subname)//": error FB6w not created", &
-                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-           else
-             call med_merge_fbx(FBout, n, FB6, FB6w, fldw6, document=ldocument, string=trim(lstring), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           endif
-         elseif ((present(FB6w) .and. .not.present(fldw6)) .or. &
-                 (.not.present(FB6w) .and. present(fldw6))) then
-            call ESMF_LogWrite(trim(subname)//": error FB6w and fldw6 both required", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-           rc = ESMF_FAILURE
-           return
-         else
-           call med_merge_fbx(FBout, n, FB6, document=ldocument, string=trim(lstring), rc=rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-       endif
-       endif
+             ! Loop over all possible source components in the merging arrays returned from the above call
+             ! If the merge field name from the source components is not set, then simply go to the next component
+             do compsrc = 1,size(FBImp)
 
-    enddo
+                ! Determine the merge information for the import field
+                call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, compsrc, merge_field, merge_type, merge_fracname)
+                if (merge_type /= 'unset' .and. merge_field /= 'unset') then
 
-    !---------------------------------------
-    !--- clean up
-    !---------------------------------------
+                   ! Document merging if appropriate
+                   if (document) then
+                      if (merge_type == 'merge' .or. merge_type == 'accumulate') then
+                         if (init_mrgstr) then 
+                            mrgstr = trim(string)//": "// trim(fldname) //' += ' &
+                                 // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                            init_mrgstr = .false.
+                         else
+                            mrgstr = trim(mrgstr) //' + &
+                                 '// trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                         end if
+                      else
+                         if (merge_type == 'copy') then
+                            mrgstr = trim(string)//": " // trim(fldname) //' = ' &
+                                 //trim(merge_field) //'('//trim(compname(compsrc))//')'
+                         else if (merge_type == 'copy_with_weights') then
+                            mrgstr = trim(string)//": "// trim(fldname) //' = ' &
+                                 //trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                         end if
+                      end if
+                      write(logunit,'(a)')trim(mrgstr)
+                   end if
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+                   ! Perform merge 
+                   if (compsrc == compmed) then 
+                      if (present(FBMed1) .and. present(FBMed2)) then
+                         if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                            call med_merge(trim(merge_type), &
+                                 FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                         else if (shr_nuopc_methods_FB_FldChk(FBMed2, trim(merge_field), rc=rc)) then
+                            call med_merge(trim(merge_type), &
+                                 FBOut, fldname, FB=FBMed2, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                         end if
+                         ! TODO: add in error condition if field was not found
+                      elseif (present(FBMed1)) then
+                         if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                            call med_merge(trim(merge_type), &
+                                 FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                         end if
+                      end if
 
-  end subroutine med_merge_auto
+                   else if (ESMF_FieldBundleIsCreated(FBImp(compsrc), rc=rc)) then
+                      if (shr_nuopc_methods_FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
+                         call med_merge(trim(merge_type), &
+                              FBOut, fldname, FB=FBImp(compsrc), FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                      end if
+                   end if ! end of merge
 
-  !-----------------------------------------------------------------------------
+                end if ! end of merge_type and merge_field not unset
 
-  subroutine med_merge_fbx(FBout, n, FB, FBw, fldw, document, string, rc)
-    type(ESMF_FieldBundle),intent(inout) :: FBout
-    integer               ,intent(in)    :: n
-    type(ESMF_FieldBundle),intent(in)    :: FB
-    type(ESMF_FieldBundle),intent(in),optional :: FBw
-    character(len=*)      ,intent(in),optional :: fldw
-    logical               ,intent(in),optional :: document
-    character(len=*)      ,intent(in),optional :: string
-    integer               ,intent(out)         :: rc
-
-    ! This subroutine merges fields from FB into the nth field of FBout.
-    ! If FBw and fldw are present, the the FB field is weighted (multiplied) by that field.
-    ! document and string are optional arguments related to diagnostics.
-
-    ! A field is expected to have a naming convention like "char1"_"char2"
-    ! where the char1 before the underscore is the prefix indicative of State or Flux
-    ! and the component associated with the field and char2 is the field name.
-    ! Some examples are So_t, Sx_t, Fioi_taux, Faxx_taux.
-    ! S is a state, F is a flux.  An x in the prefix indicates it should be merged.
-    ! If there is no x in the prefix, then it's a field that is filled via copy.
-
-    ! Here are the merging rules
-    ! - The field is copied with no weighting if
-    !   - the full fieldname (char1_char2) in FB exactly matches FBout
-    ! - The field is merged with weighting (if it exists) if
-    !   - there is an "x" in the FBout prefix
-    !   - the fieldname (char2) in FB matches the fieldname in FBout
-    !   - if the FBout prefix has an F, then either FBpre has an x in it or there is
-    !     another character, not x, that matches between the FBout prefix and the FB prefix.
-
-    ! Some examples
-    !  FBout = So_t, FB=So_t, copied
-    !  FBout = Sx_t, FB=So_t, merged
-    !  FBout = So_t, FB=Si_t, skipped
-    !  FBout = Fioi_salt, FB=Fioi_salt, copied (identical)
-    !  FBout = Foxx_salt, FB=Foxx_salt, copied (identical)
-    !  FBout = Foxx_salt, FB=Faxa_salt, merged ("x" in Faxa allows merge)
-    !  FBout = Foxx_salt, FB=Fioi_salt, merged ("o" matches in Foxx, Fioi)
-    !  FBout = Fioi_salt, FB=Faii_salt, skipped (no "x" in Fioi)
-    !  FBout = Foxx_salt, FB=Faii_salt, skipped ("o" in Foxx is not present in Faii)
-
-    ! local variables
-    real(ESMF_KIND_R8), pointer :: dp1 (:), dp2(:,:)
-    real(ESMF_KIND_R8), pointer :: dpf1(:), dpf2(:,:)
-    real(ESMF_KIND_R8), pointer :: dpw1(:), dpw2(:,:)
-    integer                     :: nf, n1, n2
-    integer                     :: cnt, cntf
-    character(ESMF_MAXSTR)      :: FBoutfld, FBoutpre, FBoutname, FBfld, FBname, FBpre
-    integer                     :: lrank
-    logical                     :: ldocument, match
-    character(len=128)          :: lstring
-    character(len=*),parameter  :: subname='(med_merge_fbx)'
-
-    !    if (dbug_flag > 5) then
-    !      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    !    endif
-    rc = ESMF_SUCCESS
-
-    ldocument = .false.
-    if (present(document)) ldocument=document
-
-    lstring = ""
-    if (present(string)) lstring=string
-
-    call shr_nuopc_methods_FB_getNameN(FBout, n, FBoutfld, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    n2 = scan(FBoutfld,'_')-1
-    FBoutpre  = trim(FBoutfld(1:n2))
-    FBoutname = trim(FBoutfld(scan(FBoutfld,'_'):))
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(FBoutfld), fldptr1=dp1, fldptr2=dp2, rank=lrank, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !    write(tmpstr,*) subname,'tcx FBoutfld=',n,trim(FBoutfld)
-    !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    if (present(FBw) .and. present(fldw)) then
-      call shr_nuopc_methods_FB_GetFldPtr(FBw, trim(fldw), fldptr1=dpw1, fldptr2=dpw2, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    call ESMF_FieldBundleGet(FB, fieldCount=cntf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    !    write(tmpstr,*) subname,'tcx cntf=',cntf
-    !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    do nf = 1,cntf
-      call shr_nuopc_methods_FB_getNameN(FB, nf, FBfld, rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      n2 = scan(FBfld,'_')-1
-      FBpre  = trim(FBfld(1:n2))
-      FBname = trim(FBfld(scan(FBfld,'_'):))
-
-      if (trim(FBfld) == trim(FBoutfld)) then
-        ! this is just a copy of identical full field names
-
-        call shr_nuopc_methods_FB_GetFldPtr(FB, trim(FBfld), dpf1, dpf2, rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (document) call ESMF_LogWrite(trim(subname)//":"//trim(lstring)//":"//trim(FBoutfld)//" ="//trim(FBfld), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (lrank == 1) then
-          dp1(:) = dpf1(:)
-        else
-          dp2(:,:) = dpf2(:,:)
-        endif
-
-      elseif (index(FBoutpre,'x') > 0 .and. trim(FBname) == trim(FBoutname)) then
-        ! this is a merge, FBoutpre must have an x in it.
-
-        ! this checks whether a character in FBoutpre matches a character in FBpre that is NOT F or x.
-        ! if so, then this term should be merged.  For instance, if FBoutpre=Faxx and FBpre is Faii then the
-        ! "a" matches and a merge is fine.  If FBoutpre=Faxx and FBpre is Fioi then there is not match and
-        ! that term should not be merged.  This only happens for "F" merges.  If FBpre has an x in it, then
-        ! it can always be merged.
-        match = .true.
-        if (index(FBoutpre,'F') > 0) match = .false.
-        if (index(FBpre,'x') > 0) match = .true.
-        n1 = 0
-        do while (n1 < len_trim(FBoutpre) .and. .not.match)
-          n1 = n1 + 1
-          if (scan(FBoutpre(n1:n1),'Fx') == 0 .and. scan(FBpre,FBoutpre(n1:n1)) > 0) match = .true.
-        enddo
-
-        if (match) then
-          call shr_nuopc_methods_FB_GetFldPtr(FB, trim(FBfld), dpf1, dpf2, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (present(FBw) .and. present(fldw)) then
-            if (document) call ESMF_LogWrite(trim(subname)//":"//trim(lstring)//":"//trim(FBoutfld)//"+="//trim(FBfld)//"*"//trim(fldw), ESMF_LOGMSG_INFO, rc=dbrc)
-            if (lrank == 1) then
-              dp1(:) = dp1(:) + dpf1(:)*dpw1(:)
-            else
-              dp2 = dp2 + dpf2*dpw2
-            endif
-          else
-            if (document) call ESMF_LogWrite(trim(subname)//":"//trim(lstring)//":"//trim(FBoutfld)//"+="//trim(FBfld), ESMF_LOGMSG_INFO, rc=dbrc)
-            if (lrank == 1) then
-              dp1 = dp1 + dpf1
-            else
-              dp2 = dp2 + dpf2
-            endif
-          endif
-        endif
-      endif
-    enddo
+             end do ! end of compsrc loop
+          end if ! end of match of stdname and fldname
+       end do ! end of loop over fields in fldListTo
+    end do  ! end of loop over fields in FBOut
 
     !---------------------------------------
     !--- clean up
@@ -384,9 +166,116 @@ module med_merge_mod
     !    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     ! endif
 
-  end subroutine med_merge_fbx
+  end subroutine med_merge_auto
 
   !-----------------------------------------------------------------------------
-  !-----------------------------------------------------------------------------
+
+  subroutine med_merge(merge_type, FBout, FBoutfld, FB, FBfld, FBw, fldw, rc)
+
+    character(len=*)      ,intent(in)          :: merge_type
+    type(ESMF_FieldBundle),intent(inout)       :: FBout
+    character(len=*)      ,intent(in)          :: FBoutfld
+    type(ESMF_FieldBundle),intent(in)          :: FB
+    character(len=*)      ,intent(in)          :: FBfld  
+    type(ESMF_FieldBundle),intent(in)          :: FBw
+    character(len=*)      ,intent(in)          :: fldw
+    integer               ,intent(out)         :: rc
+
+    ! local variables
+    real(ESMF_KIND_R8), pointer :: dp1 (:), dp2(:,:)
+    real(ESMF_KIND_R8), pointer :: dpf1(:), dpf2(:,:)
+    real(ESMF_KIND_R8), pointer :: dpw1(:), dpw2(:,:)
+    integer                     :: lrank
+    character(len=*),parameter  :: subname='(med_merge)'
+    !---------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    !-------------------------
+    ! Error checks
+    !-------------------------
+
+    if (merge_type == 'copy_with_weights' .or. merge_type == 'merge') then
+       if (trim(fldw) == 'unset') then
+          call ESMF_LogWrite(trim(subname)//": error required merge_fracname is not set", &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       end if
+       if (.not. shr_nuopc_methods_FB_FldChk(FBw, trim(fldw), rc=rc)) then
+          call ESMF_LogWrite(trim(subname)//": error "//trim(fldw)//"is not in FBw", &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       end if
+    end if
+
+    !-------------------------
+    ! Get appropriate field pointers
+    !-------------------------
+
+    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(FBoutfld), fldptr1=dp1, fldptr2=dp2, rank=lrank, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (merge_type == 'copy_with_weights' .or. merge_type == 'merge') then
+       if (lrank == 1) then
+          call shr_nuopc_methods_FB_GetFldPtr(FBw, trim(fldw), fldptr1=dpw1, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       else if (lrank == 2) then
+          call shr_nuopc_methods_FB_GetFldPtr(FBw, trim(fldw), fldptr2=dpw2, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+    endif
+
+    !-------------------------
+    ! Loop over all output fields and do the merge
+    !-------------------------
+
+    ! Get field pointer to input field used in the merge
+    if (lrank == 1) then
+       call shr_nuopc_methods_FB_GetFldPtr(FB, trim(FBfld), fldptr1=dpf1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else if (lrank == 2) then
+       call shr_nuopc_methods_FB_GetFldPtr(FB, trim(FBfld), fldptr2=dpf2, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    ! Do one of two types of merges (copy or merge)
+    if (trim(merge_type)  == 'copy') then
+       if (lrank == 1) then
+          dp1(:) = dpf1(:)
+       else
+          dp2(:,:) = dpf2(:,:)
+       endif
+    else if (trim(merge_type)  == 'copy_with_weights') then
+       if (lrank == 1) then
+          dp1(:) = dpf1(:)*dpw1(:)
+       else
+          dp2(:,:) = dpf2(:,:)*dpw2(:,:)
+       endif
+    else if (trim(merge_type)  == 'merge') then
+       if (lrank == 1) then
+          dp1(:) = dp1(:) + dpf1(:)*dpw1(:)
+       else
+          dp2(:,:) = dp2(:,:) + dpf2(:,:)*dpw2(:,:)
+       endif
+    else if (trim(merge_type) == 'accumulate') then
+       if (lrank == 1) then
+          dp1(:) = dp1(:) + dpf1(:)
+       else
+          dp2(:,:) = dp2(:,:) + dpf2(:,:)
+       endif
+    else
+       call ESMF_LogWrite(trim(subname)//": merge type "//trim(merge_type)//" not supported", &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       rc = ESMF_FAILURE
+       return
+    end if
+
+    !---------------------------------------
+    !--- clean up
+    !---------------------------------------
+
+  end subroutine med_merge
 
 end module med_merge_mod

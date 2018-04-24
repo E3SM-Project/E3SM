@@ -55,11 +55,11 @@ module shr_nuopc_fldList_mod
      character(CS) :: stdname
      character(CS) :: shortname
      logical       :: active = .true.
-     ! Mapping fldsFr data
+     ! Mapping fldsFr data - for mediator import fields
      integer       :: mapindex(ncomps_max) = mapunset
      character(CS) :: mapnorm(ncomps_max) = 'unset'
      character(CX) :: mapfile(ncomps_max) = 'unset'
-     ! Merging fldsTo data
+     ! Merging fldsTo data - for mediator export fields
      character(CX) :: merge_fields(ncomps_max)    = 'unset'
      character(CS) :: merge_types(ncomps_max)     = 'copy'
      character(CS) :: merge_fracnames(ncomps_max) = 'unset'

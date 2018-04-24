@@ -1,23 +1,20 @@
 module med_phases_accum_fast_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Phases
+  ! Carry out fast accumulation for the ocean
   !-----------------------------------------------------------------------------
 
   use ESMF
   use NUOPC
   use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : compatm, complnd, compocn, compice, comprof, compglc
-  use esmFlds                 , only : ncomps, compname 
+  use esmFlds                 , only : compatm, compocn, compice, ncomps, compname 
   use esmFlds                 , only : fldListFr, fldListTo
-  use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
+  use esmFlds                 , only : fldListMed_aoflux_o
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
   use med_constants_mod       , only : med_constants_dbug_flag
-  use med_constants_mod       , only : med_constants_czero
   use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_internalstate_mod   , only : InternalState
@@ -26,7 +23,6 @@ module med_phases_accum_fast_mod
   private
 
   integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
   character(*)      , parameter :: u_FILE_u  = __FILE__
   integer                       :: dbrc
   logical                       :: mastertask
@@ -50,6 +46,7 @@ module med_phases_accum_fast_mod
     type(InternalState)         :: is_local
     integer                     :: i,j,n,n1,ncnt
     logical,save                :: first_call = .true.
+    real(ESMF_KIND_R8), pointer :: dataPtr1(:), dataPtr2(:), dataPtr3(:), afrac(:)
     character(len=*), parameter :: ice_fraction_name = 'Si_ifrac'
     character(len=*), parameter :: subname='(med_phases_accum_fast)'
     !---------------------------------------
@@ -129,21 +126,63 @@ module med_phases_accum_fast_mod
     !--- auto merges to ocn
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExp(compocn), value=czero, rc=rc)
+    call med_merge_auto(is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
+         is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
+         FBMed1=is_local%wrap%FBMed_aoflux_o, &
+         document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call med_merge_auto(is_local%wrap%FBExp(compocn), &
-         FB1=is_local%wrap%FBImp(compatm,compocn)   , FB1w=is_local%wrap%FBfrac(compocn), fldw1='afrac', &
-         FB2=is_local%wrap%FBMed_aoflux_o           , FB2w=is_local%wrap%FBfrac(compocn), fldw2='afrac', &
-         FB3=is_local%wrap%FBImp(compice,compocn)   , FB3w=is_local%wrap%FBfrac(compocn), fldw3='ifrac', &
-         FB4=is_local%wrap%FBImp(comprof,compocn)   , &
-         FB5=is_local%wrap%FBImp(compglc,compocn)   , &
-         document=first_call, string=subname, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (dbug_flag > 1) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
     !---------------------------------------
-    !--- custom calculations to ocn
+    !--- custom calculations
     !---------------------------------------
+
+    ! TODO: need to obtain flux_epbalfact
+
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'afrac', fldptr1=afrac, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_rainc', dataPtr1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_rainl', dataPtr2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataPtr3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
+    dataPtr3(:) = afrac(:) * dataPtr3(:)
+#if (1 == 0)
+    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
+#endif
+    if (first_call) then
+       call ESMF_LogWrite('(merge_to_ocn): Foxx_rain = afrac*(Faxa_rainc + Faxa_rainl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
+
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_snowc', dataPtr1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_snowl', dataPtr2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataPtr3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
+    dataPtr3(:) = afrac(:) * dataPtr3(:)
+#if (1 == 0)
+    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
+#endif
+    if (first_call) then
+       call ESMF_LogWrite('(merge_to_ocn): Foxx_snow = afrac*(Faxa_snowc + Faxa_snowl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
+
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataPtr1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataPtr2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_prec' , dataPtr3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
 
 #if (1 == 0)
     ! atm and ice fraction

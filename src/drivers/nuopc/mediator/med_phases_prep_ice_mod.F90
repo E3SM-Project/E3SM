@@ -7,13 +7,12 @@ module med_phases_prep_ice_mod
   use ESMF
   use NUOPC
   use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : compatm, compocn, compice, comprof, compglc 
-  use esmFlds                 , only : ncomps, compname 
-  use esmFlds                 , only : flds_scalar_name
+  use esmFlds                 , only : compatm, compice, comprof, compglc, ncomps, compname  
   use esmFlds                 , only : fldListFr, fldListTo
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
   use med_merge_mod           , only : med_merge_auto
@@ -129,22 +128,20 @@ module med_phases_prep_ice_mod
     !--- auto merges
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExp(compice), value=czero, rc=rc)
+    call med_merge_auto(is_local%wrap%FBExp(compice), is_local%wrap%FBFrac(compice), &
+         is_local%wrap%FBImp(:,compice), fldListTo(compice), &
+         document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call med_merge_auto(is_local%wrap%FBExp(compice), &
-         FB1=is_local%wrap%FBImp(compocn,compice), FB1w=is_local%wrap%FBfrac(compice), fldw1='ofrac', &
-         FB2=is_local%wrap%FBImp(compatm,compice), FB2w=is_local%wrap%FBfrac(compice), fldw2='afrac', &
-         FB3=is_local%wrap%FBImp(compglc,compice), &
-         FB4=is_local%wrap%FBImp(comprof,compice), &
-         document=first_call, string=subname, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (dbug_flag > 1) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compatm) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
 
-    ! TODO: document custom merges below
     ! TODO: need to obtain flux_epbalfact
 
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_rainc', dataPtr1, rc=rc)
@@ -157,6 +154,9 @@ module med_phases_prep_ice_mod
 #if (1 == 0)
     dataPtr3(:) = dataPtr3(:) * flux_epbalfact
 #endif
+    if (first_call) then
+       call ESMF_LogWrite('(merge_to_ice): Faxa_rain = (Faxa_rainc + Faxa_rainl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_snowc', dataPtr1, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -168,6 +168,9 @@ module med_phases_prep_ice_mod
 #if (1 == 0)
     dataPtr3(:) = dataPtr3(:) * flux_epbalfact
 #endif
+    if (first_call) then
+       call ESMF_LogWrite('(merge_to_ice): Faxa_snow = (Faxa_snowc + Faxa_snowl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
 #if (1 == 0)
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compglc,compice), 'Figg_rofi', dataPtr1, rc=rc)

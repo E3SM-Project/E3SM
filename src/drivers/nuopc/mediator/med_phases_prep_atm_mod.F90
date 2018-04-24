@@ -6,8 +6,7 @@ module med_phases_prep_atm_mod
 
   use ESMF
   use NUOPC
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : compatm, complnd, compocn, compice, ncomps, compname 
+  use esmFlds                 , only : compatm, compocn, compice, ncomps, compname 
   use esmFlds                 , only : fldListFr, fldListTo
   use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
@@ -17,7 +16,6 @@ module med_phases_prep_atm_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
   use med_constants_mod       , only : med_constants_dbug_flag
-  use med_constants_mod       , only : med_constants_czero
   use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_phases_ocnalb_mod   , only : med_phases_ocnalb_mapo2a
@@ -27,7 +25,6 @@ module med_phases_prep_atm_mod
   private
 
   integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
   character(*)      , parameter :: u_FILE_u  = __FILE__
   integer                       :: dbrc
   logical                       :: mastertask
@@ -50,15 +47,11 @@ module med_phases_prep_atm_mod
     type(ESMF_Time)             :: time
     character(len=64)           :: timestr
     type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
-    real(ESMF_KIND_R8), pointer :: ifrac_i(:)   ! ice fraction on ice grid
-    real(ESMF_KIND_R8), pointer :: ifrac_a(:)   ! ice fraction on atm grid
-    real(ESMF_KIND_R8), pointer :: ifrac_ar(:)  ! 1./ifrac_a
-    real(ESMF_KIND_R8), pointer :: ocnwgt(:),icewgt(:),customwgt(:)
+    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:)
+    real(ESMF_KIND_R8), pointer :: ocnwgt(:),icewgt(:)
     integer                     :: mapindex
-    integer                     :: i, j, n, n1, ncnt, lsize, is, ie
-    type(ESMF_FieldBundle)      :: FBtmp1
-    logical                     :: first_call = .true.
+    integer                     :: i, j, n, n1, ncnt, lsize
+    logical,save                :: first_call = .true.
     character(len=*),parameter  :: subname='(med_phases_prep_atm)'
     !---------------------------------------
 
@@ -161,16 +154,10 @@ module med_phases_prep_atm_mod
     !--- merge all fields to atm
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExp(compatm), value=czero, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call med_merge_auto(is_local%wrap%FBExp(compatm), &
-         FB1=is_local%wrap%FBImp(compocn,compatm), FB1w=is_local%wrap%FBfrac(compatm), fldw1='ofrac', &
-         FB2=is_local%wrap%FBMed_ocnalb_a        , FB2w=is_local%wrap%FBfrac(compatm), fldw2='ofrac', &
-         FB3=is_local%wrap%FBMed_aoflux_a        , FB3w=is_local%wrap%FBfrac(compatm), fldw3='ofrac', &
-         FB4=is_local%wrap%FBImp(compice,compatm), FB4w=is_local%wrap%FBfrac(compatm), fldw4='ifrac', &
-         FB5=is_local%wrap%FBImp(complnd,compatm), FB5w=is_local%wrap%FBfrac(compatm), fldw5='lfrac', &
-         document=first_call, string=subname, rc=rc)
+    call med_merge_auto(is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+         is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+         FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
+         document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 1) then
@@ -179,16 +166,17 @@ module med_phases_prep_atm_mod
     endif
 
     !---------------------------------------
-    !--- set fractions to send back to atm
+    !--- custom calculations
     !---------------------------------------
+
+    ! set fractions to send back to atm
 
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compatm), 'So_ofrac', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'So_ofrac', dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ofrac', dataptr2, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       lsize = size(dataptr1)
-       do n = 1,lsize
+       do n = 1,size(dataptr1)
           dataptr1(n) = dataptr2(n)
        end do
     end if
@@ -197,8 +185,7 @@ module med_phases_prep_atm_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ifrac', dataptr2, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       lsize = size(dataptr1)
-       do n = 1,lsize
+       do n = 1,size(dataptr1)
           dataptr1(n) = dataptr2(n)
        end do
     end if
@@ -207,15 +194,11 @@ module med_phases_prep_atm_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'lfrac', dataptr2, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       lsize = size(dataptr1)
-       do n = 1,lsize
+       do n = 1,size(dataptr1)
           dataptr1(n) = dataptr2(n)
        end do
     end if
 
-    !---------------------------------------
-    !--- custom calculations
-    !---------------------------------------
 #if (1 == 0)
     !---  ocn and ice fraction for merges
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compatm), 'Si_ifrac', icewgt, rc=rc)
@@ -228,13 +211,11 @@ module med_phases_prep_atm_mod
           ocnwgt(i,j) = 1.0_ESMF_KIND_R8 - icewgt(i,j)
        enddo
     enddo
-
     !--- merges
     call shr_nuopc_methods_FB_FieldMerge(is_local%wrap%FBExp(compatm)  ,'surface_temperature' ,         &
          FBinA=is_local%wrap%FBImp(compocn,compatm) ,fnameA='sea_surface_temperature', wgtA=ocnwgt,     &
          FBinB=is_local%wrap%FBImp(compice,compatm) ,fnameB='sea_ice_temperature'    , wgtB=icewgt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     deallocate(ocnwgt)
 #endif
 

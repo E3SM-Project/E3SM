@@ -11,9 +11,10 @@ module med_phases_prep_lnd_mod
   use esmFlds                 , only : fldListFr, fldListTo
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
-  use med_merge_new_mod       , only : med_merge_auto
+  use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_internalstate_mod   , only : InternalState
 
@@ -45,6 +46,7 @@ module med_phases_prep_lnd_mod
     type(InternalState) :: is_local
     integer             :: i,j,n,n1,nf,compsrc
     integer             :: ncnt
+    logical,save        :: first_call = .true.
     character(len=*),parameter :: subname='(med_phases_prep_lnd)'
     !---------------------------------------
 
@@ -123,8 +125,14 @@ module med_phases_prep_lnd_mod
     !---------------------------------------
 
     call med_merge_auto(is_local%wrap%FBExp(complnd), is_local%wrap%FBFrac(complnd), &
-         is_local%wrap%FBImp(:,complnd), fldListTo(complnd), rc=rc)
+         is_local%wrap%FBImp(:,complnd), fldListTo(complnd), &
+         document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 1) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(complnd), string=trim(subname)//' FBexp(complnd) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
     !---------------------------------------
     !--- custom calculations
@@ -139,6 +147,8 @@ module med_phases_prep_lnd_mod
     !---------------------------------------
     !--- clean up
     !---------------------------------------
+
+    first_call = .false.
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
