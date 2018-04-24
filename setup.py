@@ -64,7 +64,7 @@ data_files = [
 
 setup(
     name="acme_diags",
-    version="1.3.1",
+    version="1.3.2",
     author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
     author_email="zhang40@llnl.gov, shaheen2@llnl.gov",
     description="ACME Diagnostics.",
