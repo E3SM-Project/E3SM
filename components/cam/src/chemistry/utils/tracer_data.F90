@@ -601,27 +601,6 @@ contains
 
 !-----------------------------------------------------------------------
 ! Reads more data if needed and interpolates data to current model time 
-
-! Update (04/19/2018): state and pbuf2d are now optional variables. state 
-! variable was used for the following purposes:
-! 1. obtaining ncol value for each chunk 
-! 2. veritcal interpolation (getting zi and pmid for each grid cell)
-! 3. Single column model 
-!
-! "get_ncols_p" can be used to get ncol values. For interpolating surface 
-! flux fields (i.e. vertical interpolation not needed), state is not required.
-!
-! This change is made to accomodate CO2 flux interpolation where 
-! interpolation routines (e.g. co2_time_interp_fuel) are called from a 
-! point in the code (atm_import_export.F90) where state and pbuf2d are 
-! not readily accessible
-!
-! pbuf2d is used for getting pbuf index for a pbuf field, which again is 
-! not always the case. 
-!
-! In case somebody inadvertently accesses state and pbuf2d when they are 
-! not passed as an argument, ENDRUN calls are added to stop the model and
-! display an error message.
 !-----------------------------------------------------------------------
   subroutine advance_trcdata( flds, file, state, pbuf2d )
     use physics_types,only : physics_state
