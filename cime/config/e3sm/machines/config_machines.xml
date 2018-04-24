@@ -620,7 +620,9 @@
 
 <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
-    <NODENAME_REGEX></NODENAME_REGEX>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <module_system type="none"></module_system>
     <OS>LINUX</OS>
     <TESTS>e3sm_developer</TESTS>
     <COMPILERS>gnu</COMPILERS>
