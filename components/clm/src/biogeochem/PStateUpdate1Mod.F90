@@ -85,13 +85,13 @@ contains
                c = filter_soilc_with_inactive(fc)
 
                ps%decomp_ppools_vr_col(c,j,i_met_lit) = ps%decomp_ppools_vr_col(c,j,i_met_lit) + &
-                    pf%dwt_frootp_to_litr_met_p_col(c,j) * dt /dzsoi_decomp(j)
+                    pf%dwt_frootp_to_litr_met_p_col(c,j) * dt
                ps%decomp_ppools_vr_col(c,j,i_cel_lit) = ps%decomp_ppools_vr_col(c,j,i_cel_lit) + &
-                    pf%dwt_frootp_to_litr_cel_p_col(c,j) * dt /dzsoi_decomp(j)
+                    pf%dwt_frootp_to_litr_cel_p_col(c,j) * dt
                ps%decomp_ppools_vr_col(c,j,i_lig_lit) = ps%decomp_ppools_vr_col(c,j,i_lig_lit) + &
-                    pf%dwt_frootp_to_litr_lig_p_col(c,j) * dt /dzsoi_decomp(j)
+                    pf%dwt_frootp_to_litr_lig_p_col(c,j) * dt
                ps%decomp_ppools_vr_col(c,j,i_cwd) = ps%decomp_ppools_vr_col(c,j,i_cwd) + &
-                    ( pf%dwt_livecrootp_to_cwdp_col(c,j) + pf%dwt_deadcrootp_to_cwdp_col(c,j) ) * dt/dzsoi_decomp(j)
+                    ( pf%dwt_livecrootp_to_cwdp_col(c,j) + pf%dwt_deadcrootp_to_cwdp_col(c,j) ) * dt
 
             end do
          end do
