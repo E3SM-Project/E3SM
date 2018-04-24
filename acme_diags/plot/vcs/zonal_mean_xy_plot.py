@@ -3,8 +3,9 @@ from __future__ import print_function
 import os
 import sys
 import vcs
-from acme_diags.driver.utils import get_output_dir, _chown
+import acme_diags
 import acme_diags.plot.vcs as utils
+from acme_diags.driver.utils import get_output_dir, _chown
 
 textcombined_objs = {}
 
@@ -48,8 +49,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_plot_markersize = 1
     diff_plot_markercolor = 1
 
-    file_path = os.path.join(
-        sys.prefix, 'share', 'acme_diags', 'zonal_mean_xy')
+    file_path = os.path.join(acme_diags.INSTALL_PATH, 'zonal_mean_xy')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_3.json'))
 
     utils.set_units(test, parameters.test_units)

@@ -13,6 +13,7 @@ import importlib
 import traceback
 import subprocess
 import cdp.cdp_run
+import acme_diags
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name, SET_NAMES
@@ -28,7 +29,7 @@ def _get_default_diags(set_num, dataset, run_type):
         fnm = '{}_{}.cfg'.format(set_num, run_type)
 
     folder = '{}'.format(set_num)
-    pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
+    pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
     print('Using {} for {}'.format(pth, set_num))
     if not os.path.exists(pth):
         raise RuntimeError(
@@ -74,7 +75,7 @@ def run_diag(parameters):
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
         try:
             module = importlib.import_module(mod_str)
-            print('Starting to run ACME Diagnostics.')
+            print('Starting to run E3SM Diagnostics.')
             single_result = module.run_diag(parameters)
             print('')
             results.append(single_result)

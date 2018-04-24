@@ -4,8 +4,9 @@ import os
 import sys
 import numpy
 import vcs
-from acme_diags.driver.utils import get_output_dir, _chown
+import acme_diags
 import acme_diags.plot.vcs as utils
+from acme_diags.driver.utils import get_output_dir, _chown
 
 textcombined_objs = {}
 
@@ -41,8 +42,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test = rotate_180(test)
     diff = rotate_180(diff)
 
-    file_path = os.path.join(
-        sys.prefix, 'share', 'acme_diags', 'zonal_mean_2d')
+    file_path = os.path.join(acme_diags.INSTALL_PATH, 'zonal_mean_2d')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4_new.json'))
 

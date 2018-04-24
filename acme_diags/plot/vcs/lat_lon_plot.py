@@ -3,8 +3,9 @@ from __future__ import print_function
 import os
 import sys
 import vcs
-from acme_diags.driver.utils import get_output_dir, _chown
+import acme_diags
 import acme_diags.plot.vcs as utils
+from acme_diags.driver.utils import get_output_dir, _chown
 
 textcombined_objs = {}
 
@@ -14,7 +15,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         parameter.canvas_size_w, parameter.canvas_size_h))
     parameter.case_id
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'lat_lon')
+    file_path = os.path.join(acme_diags.INSTALL_PATH, 'lat_lon')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
 

@@ -9,6 +9,7 @@ import traceback
 import numpy
 from matplotlib.colors import LinearSegmentedColormap
 from vcs.colors import matplotlib2vcs
+import acme_diags
 from acme_diags.driver.utils import get_set_name
 
 
@@ -56,8 +57,7 @@ def get_colormap(colormap, parameters):
     if not colormap.endswith('.rgb'):  # predefined vcs/mpl colormap
         return colormap
 
-    installed_colormap = os.path.join(
-        sys.prefix, 'share', 'acme_diags', 'colormaps', colormap)
+    installed_colormap = os.path.join(acme_diags.INSTALL_PATH, 'colormaps', colormap)
 
     if os.path.exists(colormap):
         # colormap is an .rgb in the current directory
@@ -66,7 +66,7 @@ def get_colormap(colormap, parameters):
         # use the colormap from /plot/colormaps
         colormap = installed_colormap
     elif not os.path.exists(colormap) and not os.path.exists(installed_colormap):
-        pth = os.path.join(sys.prefix, 'share', 'acme_diags', 'colormaps')
+        pth = os.path.join(acme_diags.INSTALL_PATH, 'colormaps')
         msg = "File {} isn't in the current working directory or installed in {}"
         raise IOError(msg.format(colormap, pth))
 

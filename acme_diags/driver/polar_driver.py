@@ -1,13 +1,15 @@
 from __future__ import print_function
 
+import os
+import sys
 import cdms2
 import MV2
+import acme_diags
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
-import os
-import sys
+
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -80,8 +82,7 @@ def run_diag(parameter):
             land_frac = f_mod('LANDFRAC')
             ocean_frac = f_mod('OCNFRAC')
         except BaseException:
-            mask_path = os.path.join(
-                sys.prefix, 'share', 'acme_diags', 'acme_ne30_ocean_land_mask.nc')
+            mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
             f0 = cdms2.open(mask_path)
             land_frac = f0('LANDFRAC')
             ocean_frac = f0('OCNFRAC')

@@ -36,7 +36,7 @@ LAT_LON_TABLE_INFO = collections.OrderedDict()
 
 def _copy_acme_logo(root_dir):
     """Copy over ACME_Logo.png to root_dir/viewer"""
-    src_pth = os.path.join(sys.prefix, "share", "acme_diags", "ACME_Logo.png")
+    src_pth = os.path.join(acme_diags.INSTALL_PATH, "e3sm_logo.png")
     dst_path = os.path.join(root_dir, "viewer")
     shutil.copy(src_pth, dst_path)
 
@@ -214,8 +214,8 @@ def _create_csv_from_dict(output_dir, season, test_name, run_type):
 def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, ref_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it.
     Since the Taylor Diagram uses the same seasons as LAT_LON_TABLE_INFO, we can use that."""
-    taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
-    control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
+    taylor_diag_path = os.path.join(output_dir, '{}_metrics_taylor_diag.csv'.format(season))
+    control_runs_path =  os.path.join(acme_diags.INSTALL_PATH, 'control_runs', '{}_metrics_taylor_diag_B1850_v0.csv'.format(season))
 
     col_names = ['Variables', 'Test_STD', 'Ref._STD', 'Correlation']
 
