@@ -109,7 +109,7 @@ dependencies:
   - zlib=1.2.11=ha838bed_2
   - cdp=1.3.3=py36_0
   - dv3d=8.0=py36_0
-  - output_viewer=1.2.4
+  - output_viewer=1.2.5
   - vcs=8.0=py36_0
   - vcsaddons=8.0=py36_0
   - vtk-cdat=8.0.1.8.0=py36_mesalib_1
