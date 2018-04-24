@@ -82,7 +82,7 @@ def get_colormap(colormap, parameters):
         cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr, N=n_levels)
         vcs_cmap = matplotlib2vcs(cmap, vcs_name=colormap)
 
-        return vcs_cmap, range(n_levels)
+        return vcs_cmap, list(range(n_levels))
 
     else:
         raise RuntimeError('Invalid backend: {}'.format(parameters.backend))

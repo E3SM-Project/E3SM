@@ -19,7 +19,7 @@ SET_NAME_MAPPING = {
     ('13', 'cosp_histogram'): 'cosp_histogram',
 }
 
-SET_NAMES = SET_NAME_MAPPING.values()
+SET_NAMES = list(SET_NAME_MAPPING.values())
 
 def get_set_name(set_name):
     """Get the correct set name from the argument.

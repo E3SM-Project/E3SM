@@ -21,7 +21,7 @@ def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
 
 def _add_user_derived_vars(derived_vars_dict, parameter):
     """Append parameter.derived_variables to the correct part of derived_vars_dict"""
-    for key, user_derived_vars in parameter.derived_variables.iteritems():
+    for key, user_derived_vars in list(parameter.derived_variables.items()):
         # append the user-defined vars to the already defined ones
         # add to an existing entry, otherwise create a new one
         if key in derived_vars_dict:
@@ -44,7 +44,7 @@ def _compute_derived_var(var_key, derived_vars_dict, nc_file):
     derived_var_inputs = []
 
     # get the first function and inputs from the derived_vars_dict dict
-    for inputs, func in derived_vars.iteritems():
+    for inputs, func in list(derived_vars.items()):
         derived_var_inputs.append(inputs)
         # tuples with a single string [ex: ('pr')] become just a string ['pr']
         # are all of the variables (inputs) in the nc_file?
