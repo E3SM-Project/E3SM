@@ -151,7 +151,7 @@ def _add_pages_and_top_row(viewer, parameters):
                     set_to_seasons[set_num] = []
                 set_to_seasons[set_num].append(ssn)
 
-    for set_num, seasons in set_to_seasons.iteritems():
+    for set_num, seasons in list(set_to_seasons.items()):
         ROW_INFO[set_num] = collections.OrderedDict()
         col_labels = ['Description']
         for s in ['ANN', 'DJF', 'MAM', 'JJA', 'SON']:
@@ -202,7 +202,7 @@ def _create_csv_from_dict(output_dir, season, test_name, run_type):
     with open(table_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
-        for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
+        for key, metrics_dic in list(LAT_LON_TABLE_INFO[season].items()):
             metrics = metrics_dic['metrics']
             if run_type == 'model_vs_model':
                 key = key.split()[0] + ' ' +key.split()[1]
@@ -223,7 +223,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
 
-        for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
+        for key, metrics_dic in list(LAT_LON_TABLE_INFO[season].items()):
             # only include variables in a a certain list for taylor diagram
             if run_type == 'model_vs_obs':
                 if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF', 'TREFHT'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres', 'TREFHT_CRU']:
@@ -266,13 +266,12 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
         # Add samples to taylor diagram
         for irow in range(1,row_count):
             std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
-            print std_norm, correlation
             taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = 'None', markeredgecolor = color[0], linestyle = 'None')
-        # Add a figure legend
 
+        # Add a figure legend
         fig.legend(taylordiag.samplePoints,
-                   [ p.get_label() for p in taylordiag.samplePoints],
-                   numpoints=1,  loc='center right', bbox_to_anchor=(1.0, .5), prop={'size':10})
+                   [p.get_label() for p in taylordiag.samplePoints],
+                   numpoints=1, loc='center right', bbox_to_anchor=(1.0, .5), prop={'size':10})
 
 
         # Add samples for baseline simulation:
@@ -280,9 +279,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
             for irow in range(1,row_count):
                 if data[irow][0] in keys_control_runs:
                     control_irow = keys_control_runs.index(data[irow][0])
-                    #print control_irow
                     std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
-                    #print std_norm, correlation
                     taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
     
                 baseline_text = 'E3SMv0_B1850'
@@ -493,7 +490,7 @@ def create_metadata(parameter):
     parser = ACMEParser()
 
     args = parser.view_args()
-    supported_cmd_args = args.__dict__.keys()
+    supported_cmd_args = list(args.__dict__.keys())
     
     if 'other_parameters' in supported_cmd_args:
         supported_cmd_args.remove('other_parameters')
@@ -577,7 +574,7 @@ def create_viewer(root_dir, parameters, ext):
                             if os.path.exists(metrics_path + '.json'):
                                 _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
                             else:
-                                print('JSON does not exist: {}'.format(metrics_path + '.json'))
+                                print(('JSON does not exist: {}'.format(metrics_path + '.json')))
                                 continue
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:

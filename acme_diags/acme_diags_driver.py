@@ -58,9 +58,9 @@ def provenance(results_dir):
     output, err = p.communicate()
     fnm = os.path.join(results_dir, 'env_prov.txt')
 
-    with file(fnm, 'w') as f:
-        f.write(output)
-        f.write(err)
+    with open(fnm, 'w') as f:
+        f.write(output.decode('utf-8'))
+        f.write(err.decode('utf-8'))
     print('Saving provenance data in: {}'.format(fnm))
 
 

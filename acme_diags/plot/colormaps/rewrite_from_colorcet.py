@@ -1,7 +1,7 @@
 try:
     import colorcet
 except BaseException:
-    print "Cannot convert from colorcet w/o colorcet"
+    print("Cannot convert from colorcet w/o colorcet")
     import sys
     sys.exit()
 
@@ -21,8 +21,8 @@ def dump_cmap(name, mpl_cmap):
             a = float(i) / float(mpl_cmap.N - 1)
             r, g, b, a = [int(x * 255) for x in mpl_cmap(a)]
             f.write(" %3s %3s %3s\n" % (r, g, b))
-    print "Wrote %s" % nm
+    print("Wrote %s" % nm)
 
 
-for cmap in all_cms.keys():
+for cmap in list(all_cms.keys()):
     dump_cmap(cmap, all_cms[cmap])

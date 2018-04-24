@@ -105,9 +105,9 @@ def get_color_range(gm):
                        'white_to_magenta',
                        'white_to_red',
                        'white_to_yellow']:
-        return range(16, 240)
+        return list(range(16, 240))
     else:
-        return range(256)
+        return list(range(256))
 
 
 def set_colormap_of_graphics_method(

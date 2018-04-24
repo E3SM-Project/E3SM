@@ -43,7 +43,7 @@ class TaylorDiagram(object):
         gl2_ticks = [(x, str(x)) for x in gl2_num]
         gl2_ticks[-1] = [gl2_num[-1], '']
         gl2_ticks[0] = [gl2_num[0], '0']
-        tf1 = GF.DictFormatter(dict(zip(tlocs, map(str,rlocs))))
+        tf1 = GF.DictFormatter(dict(list(zip(tlocs, list(map(str,rlocs))))))
         tf2 = GF.DictFormatter(dict(gl2_ticks))
 
         # Standard deviation axis extent
