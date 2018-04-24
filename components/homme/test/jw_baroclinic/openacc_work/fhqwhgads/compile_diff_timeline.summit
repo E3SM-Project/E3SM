@@ -1,6 +1,0 @@
-#!/bin/bash
-
-source $MODULESHOME/init/bash
-module add pgi/18.3 netcdf netcdf-fortran
-
-pgf90 -I$OLCF_NETCDF_FORTRAN_ROOT/include -o diff_timeline diff_timeline.F90 -L$OLCF_NETCDF_ROOT/lib -L$OLCF_NETCDF_FORTRAN_ROOT/lib -lnetcdff -lnetcdf

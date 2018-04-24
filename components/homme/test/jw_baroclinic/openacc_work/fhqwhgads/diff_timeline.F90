@@ -21,7 +21,10 @@ program diff
   if (command_argument_count().ge.3) call get_command_argument(3,g_fname)
   if (command_argument_count().ge.4) call get_command_argument(4,opref)
 
-  if     (trim(grid) == 'ne8'  ) then
+  if     (trim(grid) == 'ne4'  ) then
+    nlon = 96
+    nlat = 48
+  elseif (trim(grid) == 'ne8'  ) then
     nlon = 128
     nlat = 64
   elseif (trim(grid) == 'ne15' ) then

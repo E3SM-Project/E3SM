@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./diff_timeline ne8  /gpfs/alpinetds/stf006/proj-shared/imn/HOMME_ACME/preqx.cpu/jw-ne8-nlev72-qsize40-thread1-nodes1-tasks84/movies/asp_baroclinic2.nc \
-                     /gpfs/alpinetds/stf006/proj-shared/imn/HOMME_ACME/preqx.openacc/jw-ne8-nlev72-qsize40-thread1-nodes1-tasks42/movies/asp_baroclinic2.nc diff
+./diff_timeline ne4  /proj/imn/homme/preqx.cpu/jw-ne4-nlev72-qsize40-thread1-nodes1-tasks4/movies/asp_baroclinic2.nc \
+                     /proj/imn/homme/preqx.openacc/jw-ne4-nlev72-qsize40-thread1-nodes1-tasks4/movies/asp_baroclinic2.nc diff
 
 cat diff_*.dat
