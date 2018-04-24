@@ -751,7 +751,6 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: grc_cinputs
     real(r8) :: grc_coutputs
-    real(r8) :: dwt_slash_cflux_grc(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
@@ -759,7 +758,6 @@ contains
          dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10c_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100c_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_slash_cflux_col       =>    carbonflux_vars%dwt_slash_cflux_col       , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_leaf_grc     =>    carbonflux_vars%dwt_seedc_to_leaf_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    carbonflux_vars%dwt_seedc_to_deadstem_grc , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          begcb_grc                 =>    carbonstate_vars%begcb_grc                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
@@ -778,12 +776,6 @@ contains
            c2l_scale_type = 'unity', &
            l2g_scale_type = 'unity')
 
-      call c2g( bounds = bounds, &
-           carr = dwt_slash_cflux_col(bounds%begc:bounds%endc), &
-           garr = dwt_slash_cflux_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
-
       do g = bounds%begg, bounds%endg
          endcb_grc(g) = endcb_grc(g)
 
@@ -792,7 +784,6 @@ contains
               dwt_seedc_to_deadstem_grc(g)
 
          grc_coutputs = &
-              dwt_slash_cflux_grc(g)       + &
               dwt_conv_cflux_grc(g)        + &
               dwt_prod10c_gain_grc(g)      + &
               dwt_prod100c_gain_grc(g)
@@ -847,7 +838,6 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: grc_ninputs
     real(r8) :: grc_noutputs
-    real(r8) :: dwt_slash_nflux_grc(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
@@ -855,7 +845,6 @@ contains
          dwt_prod10n_gain_grc      =>    nitrogenflux_vars%dwt_prod10n_gain_grc      , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_prod100n_gain_grc     =>    nitrogenflux_vars%dwt_prod100n_gain_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_conv_nflux_grc        =>    nitrogenflux_vars%dwt_conv_nflux_grc        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         dwt_slash_nflux_col       =>    nitrogenflux_vars%dwt_slash_nflux_col       , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_leaf_grc     =>    nitrogenflux_vars%dwt_seedn_to_leaf_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    nitrogenflux_vars%dwt_seedn_to_deadstem_grc , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          begnb_grc                 =>    nitrogenstate_vars%begnb_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
@@ -874,12 +863,6 @@ contains
            c2l_scale_type = 'unity', &
            l2g_scale_type = 'unity')
 
-      call c2g( bounds = bounds, &
-           carr = dwt_slash_nflux_col(bounds%begc:bounds%endc), &
-           garr = dwt_slash_nflux_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
-
       do g = bounds%begg, bounds%endg
          endnb_grc(g) = endnb_grc(g)
 
@@ -888,7 +871,6 @@ contains
               dwt_seedn_to_deadstem_grc(g)
 
          grc_noutputs = &
-              dwt_slash_nflux_grc(g)       + &
               dwt_conv_nflux_grc(g)        + &
               dwt_prod10n_gain_grc(g)      + &
               dwt_prod100n_gain_grc(g)
@@ -915,7 +897,6 @@ contains
          write(iulog,*)'endcb                 = ',endnb_grc(g)
          write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
          write(iulog,*)''
-         write(iulog,*)'dwt_slash               ',dwt_slash_nflux_grc(g)
          write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
          write(iulog,*)'dwt_prod10              ',dwt_prod10n_gain_grc(g)
          write(iulog,*)'dwt_prod100             ',dwt_prod100n_gain_grc(g)
@@ -952,7 +933,6 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: grc_pinputs
     real(r8) :: grc_poutputs
-    real(r8) :: dwt_slash_pflux_grc(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
@@ -960,7 +940,6 @@ contains
          dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10p_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100p_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_pflux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_slash_pflux_col       =>    phosphorusflux_vars%dwt_slash_pflux_col       , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_leaf_grc     =>    phosphorusflux_vars%dwt_seedp_to_leaf_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    phosphorusflux_vars%dwt_seedp_to_deadstem_grc , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          begpb_grc                 =>    phosphorusstate_vars%begpb_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
@@ -979,12 +958,6 @@ contains
            c2l_scale_type = 'unity', &
            l2g_scale_type = 'unity')
 
-      call c2g( bounds = bounds, &
-           carr = dwt_slash_pflux_col(bounds%begc:bounds%endc), &
-           garr = dwt_slash_pflux_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
-
       do g = bounds%begg, bounds%endg
          endpb_grc(g) = endpb_grc(g)
 
@@ -993,7 +966,6 @@ contains
               dwt_seedp_to_deadstem_grc(g)
 
          grc_poutputs = &
-              dwt_slash_pflux_grc(g)       + &
               dwt_conv_pflux_grc(g)        + &
               dwt_prod10p_gain_grc(g)      + &
               dwt_prod100p_gain_grc(g)
