@@ -163,6 +163,11 @@ contains
           if (present(pool_seed_param)) then
              pool_seed_patch(p) = my_pool_seed
           end if
+       else
+          seed_leaf_patch(p)         = 0._r8
+          seed_leaf_storage_patch(p) = 0._r8
+          seed_leaf_xfer_patch(p)    = 0._r8
+          seed_deadstem_patch(p)     = 0._r8
        end if
 
     end do
