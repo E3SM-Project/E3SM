@@ -365,8 +365,7 @@ contains
          ! uptake from soil mineral N pool
          ns%npool_patch(p) = &
               ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
-         if (nu_com .ne. 'RD') ns%npool_patch(p) = ns%npool_patch(p) + nf%supplement_to_plantn(p)*dt + &
-                                                   nf%nfix_to_plantn_patch(p)*dt
+         if (nu_com .ne. 'RD') ns%npool_patch(p) = ns%npool_patch(p) + nf%supplement_to_plantn(p)*dt
 
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt
