@@ -200,7 +200,7 @@
       <directive> -A {{ project }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="01:00:00" nodemin="1" nodemax="270" default="true">pbatch</queue>
+      <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
     </queues>
   </batch_system>
   <!-- for lawrence livermore computing -->
@@ -263,8 +263,8 @@
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
       <queues>
-	<queue walltimemax="01:00:00" nodemin="1" nodemax="4" strict="true">shared</queue>
-	<queue walltimemax="03:00:00" nodemin="1" nodemax="256" default="true">batch</queue>
+	<queue walltimemax="01:00:00" nodemax="4" strict="true">shared</queue>
+	<queue walltimemax="03:00:00" default="true">batch</queue>
       </queues>
     </batch_system>
 
@@ -275,15 +275,15 @@
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
       <queues>
-	<queue walltimemax="01:00:00" nodemin="1" nodemax="120" default="true">acme</queue>
+	<queue walltimemax="01:00:00" default="true">acme</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="bebop" type="slurm" >
       <queues>
-	<queue walltimemax="00:30:00" nodemin="1" nodemax="64" strict="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="608" default="true">bdw</queue>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="512">knl</queue>
+	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
+        <queue walltimemax="01:00:00" nodemax="608" default="true">bdw</queue>
+        <queue walltimemax="01:00:00" nodemax="512">knl</queue>
       </queues>
     </batch_system>
 
@@ -294,14 +294,14 @@
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="312" default="true">batch</queue>
+      <queue walltimemax="00:30:00" default="true">batch</queue>
     </queues>
    </batch_system>
 
   <batch_system MACH="edison" type="nersc_slurm" >
     <queues>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:30:00" nodemin="1" nodemax="5519" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
+      <queue walltimemax="01:30:00" default="true">regular</queue>
     </queues>
   </batch_system>
 
@@ -310,8 +310,8 @@
        <directive> --constraint=haswell</directive>
      </directives>
      <queues>
-       <queue walltimemax="00:30:00" nodemin="1" nodemax="64" strict="true">debug</queue>
-       <queue walltimemax="01:00:00" nodemin="1" nodemax="1776" default="true">regular</queue>
+       <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
+       <queue walltimemax="01:00:00" default="true">regular</queue>
      </queues>
   </batch_system>
 
@@ -320,8 +320,8 @@
       <directive> --constraint=knl,quad,cache</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:15:00" nodemin="1" nodemax="12896" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
+      <queue walltimemax="01:15:00" default="true">regular</queue>
     </queues>
   </batch_system>
 
@@ -330,27 +330,27 @@
       <directive>-n {{ total_tasks }}</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="4" strict="true">skx-dev</queue>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="868" strict="true">skx-large</queue>
-      <queue walltimemax="01:00:00" nodemin="1" nodemax="128" default="true">skx-normal</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">skx-dev</queue>
+      <queue walltimemax="00:30:00" nodemax="868" strict="true">skx-large</queue>
+      <queue walltimemax="01:00:00" nodemax="128" default="true">skx-normal</queue>
     </queues>
   </batch_system>
 
     <batch_system MACH="mira" type="cobalt">
       <queues>
-        <queue walltimemax="03:00:00" nodemin="1" nodemax="12288" default="true">default</queue>
+        <queue walltimemax="03:00:00" default="true">default</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="cetus" type="cobalt">
       <queues>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="1024" default="true">default</queue>
+        <queue walltimemax="01:00:00" default="true">default</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>
+        <queue walltimemax="01:00:00" nodemax="8" strict="true">debug-cache-quad</queue>
         <queue walltimemin="00:30:00" walltimemax="02:00:00" nodemin="8" nodemax="15" strict="true">default</queue>
         <queue walltimemin="00:30:00" walltimemax="04:00:00" nodemin="16" nodemax="127" strict="true">default</queue>
         <queue walltimemin="00:30:00" walltimemax="06:00:00" nodemin="128" nodemax="383" strict="true">default</queue>
@@ -364,7 +364,7 @@
 	<directive>--mail-user=email@pnnl.gov</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:30:00" nodemin="1" nodemax="624" default="true">small</queue>
+	<queue walltimemax="00:30:00" default="true">small</queue>
       </queues>
     </batch_system>
 
@@ -374,7 +374,7 @@
       <directive>--error=slurm.err</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:59:00" nodemin="1" nodemax="416" default="true">slurm</queue>
+      <queue walltimemax="00:59:00" default="true">slurm</queue>
     </queues>
    </batch_system>
 
@@ -385,21 +385,21 @@
        <directive>--error=slurm.err</directive>
      </directives>
      <queues>
-       <queue walltimemax="00:59:00" nodemin="1" nodemax="1249" default="true">slurm</queue>
+       <queue walltimemax="00:59:00" default="true">slurm</queue>
      </queues>
    </batch_system>
 
   <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
-      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
-      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="ghost" type="slurm" >
     <queues>
-      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
-      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
@@ -483,8 +483,8 @@
        <directive>-env "all"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00:00" nodemin="0" nodemax="18688" default="true">batch</queue>
-       <queue walltimemax="01:00:00" nodemin="0" nodemax="18688" strict="true">debug</queue>
+       <queue walltimemax="02:00:00" default="true">batch</queue>
+       <queue walltimemax="01:00:00" nodemax="18688" strict="true">debug</queue>
      </queues>
    </batch_system>
 
@@ -495,7 +495,7 @@
        <directive>-alloc_flags smt2</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" nodemin="0" nodemax="64" default="true">batch</queue>
+       <queue walltimemax="02:00" default="true">batch</queue>
      </queues>
    </batch_system>
 
@@ -507,7 +507,7 @@
      </directives>
 
      <queues>
-       <queue walltimemax="01:00" nodemin="0" nodemax="54" default="true">batch</queue>
+       <queue walltimemax="01:00" default="true">batch</queue>
 	   <!--
 	   Nodes	Max Walltime
 	   <=4		4 hours
@@ -523,7 +523,7 @@
        <directive>--qos=condo_esd2 </directive>
      </directives>
     <queues>
-      <queue walltimemax="01:00:00" nodemin="0" nodemax="6" default="true">lr3</queue>
+      <queue walltimemax="01:00:00" default="true">lr3</queue>
     </queues>
    </batch_system>
 
@@ -533,7 +533,7 @@
        <directive>--qos=condo_esd2 </directive>
      </directives>
     <queues>
-      <queue walltimemax="01:00:00" nodemin="0" nodemax="4" default="true">lr3</queue>
+      <queue walltimemax="01:00:00" default="true">lr3</queue>
     </queues>
    </batch_system>
 
