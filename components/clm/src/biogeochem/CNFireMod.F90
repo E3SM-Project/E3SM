@@ -130,6 +130,7 @@ contains
     use dynSubgridControlMod , only: run_has_transient_landcover
     use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
     use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds 
@@ -149,6 +150,8 @@ contains
     real(r8), parameter  :: lfuel=75._r8    ! lower threshold of fuel mass (gC/m2) for ignition, Li et al.(2014)
     real(r8), parameter  :: ufuel=1050._r8  ! upper threshold of fuel mass(gC/m2) for ignition 
     real(r8), parameter  :: g0=0.05_r8      ! g(W) when W=0 m/s
+!L.Xu@03/2018
+    real(r8), parameter  :: g0corr=1.0977_r8      ! g(W) correction factor to ensure that g(W) varies between 0 and 1 which is not the case in Li et al.(2012).the corrected g0=g0/g0corr
     !
     ! a1 parameter for cropland fire in (Li et. al., 2014), but changed from
     ! /timestep to /hr
@@ -185,6 +188,11 @@ contains
     real(r8), target  :: prec10_col_target(bounds%begc:bounds%endc)
     real(r8), pointer :: prec60_col(:)
     real(r8), pointer :: prec10_col(:)
+!L.Xu@03/2018
+    real(r8) :: Ia_alfa_local, RH_lo_local, RH_up_local, Beta_lo_local
+!    real(r8) :: fsr_factor_local, fire_du_local
+!    integer  :: gg
+        
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -256,7 +264,20 @@ contains
          leafc_col          =>    carbonstate_vars%leafc_col                , & ! Output: [real(r8) (:)     ]  leaf carbon at column level                       
          deadstemc_col      =>    carbonstate_vars%deadstemc_col            , & ! Output: [real(r8) (:)     ] dead stem carbon at column level
          fuelc              =>    carbonstate_vars%fuelc_col                , & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.C                 
-         fuelc_crop         =>    carbonstate_vars%fuelc_crop_col             & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
+         fuelc_crop         =>    carbonstate_vars%fuelc_crop_col           , & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
+!L.Xu@03/2018
+         Ia_alfa                 => cnstate_vars%Ia_alfa_col                , &
+         Ia_alfa_grid_present    => cnstate_vars%Ia_alfa_grid_present       , &
+         RH_lo                   => cnstate_vars%RH_lo_col                  , &
+         RH_lo_grid_present      => cnstate_vars%RH_lo_grid_present         , &
+         RH_up                   => cnstate_vars%RH_up_col                  , &
+         RH_up_grid_present      => cnstate_vars%RH_up_grid_present         , &
+         Beta_lo                 => cnstate_vars%Beta_lo_col                , &
+         Beta_lo_grid_present    => cnstate_vars%Beta_lo_grid_present       , &
+         fsr_factor              => cnstate_vars%fsr_factor_col             , &
+         fsr_factor_grid_present => cnstate_vars%fsr_factor_grid_present    , &
+         fire_du                 => cnstate_vars%fire_du_col                , &
+         fire_du_grid_present    => cnstate_vars%fire_du_grid_present         &
          )
  
       transient_landcover = run_has_transient_landcover()
@@ -405,7 +426,14 @@ contains
                       livecrootc(p)+livecrootc_storage(p) +           &
                       livecrootc_xfer(p))*veg_pp%wtcol(p)
 
-                 fsr_col(c) = fsr_col(c) + fsr_pft(veg_pp%itype(p))*veg_pp%wtcol(p)/(1.0_r8-cropf_col(c))
+!L.Xu@03/2018====
+!org                 fsr_col(c) = fsr_col(c) + fsr_pft(veg_pp%itype(p))*veg_pp%wtcol(p)/(1.0_r8-cropf_col(c))
+                 if (.not.fsr_factor_grid_present) then
+                     fsr_col(c) = fsr_col(c) + fsr_pft(veg_pp%itype(p))*veg_pp%wtcol(p)/(1.0_r8-cropf_col(c)) 
+                 else
+                     fsr_col(c) = fsr_col(c) + fsr_pft(veg_pp%itype(p))*veg_pp%wtcol(p)/(1.0_r8-cropf_col(c)) * fsr_factor(c)
+                 endif
+!L.Xu@03/2018====
 
                  if( lfwt(c)  /=  0.0_r8 )then    
                     hdmlf=forc_hdm(g)
@@ -454,7 +482,15 @@ contains
                     end if
                  end if
 
-                 fd_col(c) = fd_col(c) + fd_pft(veg_pp%itype(p)) * veg_pp%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
+!L.Xu@03/2018====
+!org                 fd_col(c) = fd_col(c) + fd_pft(veg_pp%itype(p)) * veg_pp%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
+                 if (.not.fire_du_grid_present) then
+                     fd_col(c) = fd_col(c) + fd_pft(veg_pp%itype(p)) * veg_pp%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
+                 else
+                     fd_col(c) = fd_col(c) + fire_du(c)              * veg_pp%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
+                 endif
+
+!L.Xu@03/2018====
               end if
            end if
         end do
@@ -586,22 +622,78 @@ contains
               fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
                    min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))*  &
                    min(1._r8,exp(SHR_CONST_PI*(forc_t(c)-SHR_CONST_TKFRZ)/10._r8))
-              lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
+
+!L.Xu@03/2018====
+                 if (.not.Ia_alfa_grid_present) then
+                     Ia_alfa_local = 0.0035_r8
+                 else
+                     Ia_alfa_local = Ia_alfa(c)
+                 endif
+
+                 if (.not.RH_lo_grid_present) then
+                     RH_lo_local = 30._r8
+                 else
+                     RH_lo_local = RH_lo(c)
+                 endif
+
+                 if (.not.RH_up_grid_present) then
+                     RH_up_local = 80._r8
+                 else
+                     RH_up_local = RH_up(c)
+                 endif
+
+                 if (.not.Beta_lo_grid_present) then
+                     Beta_lo_local = 0.3_r8
+                 else
+                     Beta_lo_local = Beta_lo(c)
+                 endif
+
+!org              lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
+              lh       = Ia_alfa_local*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
               Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(g)))
               if ( wtlf(c) > 0.0_r8 )then
-                 spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-0.3_r8)/ &
-                      (0.7_r8-0.3_r8))))*(1.0_r8-max(0._r8, &
-                      min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))
+!org                 spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-0.3_r8)/ &
+!                      (0.7_r8-0.3_r8))))*(1.0_r8-max(0._r8, &
+!                      min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))
+                 spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-Beta_lo_local)/ &
+                      (0.7_r8-Beta_lo_local))))*(1.0_r8-max(0._r8, &
+                      min(1._r8,(forc_rh(g)-RH_lo_local)/(RH_up_local-RH_lo_local))))
               else
                  spread_m = 0.0_r8
               end if
-              farea_burned(c) = min(1._r8,(g0*spread_m*fsr_col(c)* &
+!org              farea_burned(c) = min(1._r8,(g0*spread_m*fsr_col(c)* &
+              farea_burned(c) = min(1._r8,(g0/g0corr*spread_m*fsr_col(c)* &
                    fd_col(c)/1000._r8)**2*lgdp1_col(c)* &
                    lpop_col(c)*nfire(c)*SHR_CONST_PI*Lb_lf+ &
                    baf_crop(c)+baf_peatf(c))  ! fraction (0-1) per sec
+		   
+		   
+                if (masterproc) then
+                    write(iulog,*) 'col = ',c,' grid = ',g, &
+                                   'grid_flag = ', Ia_alfa_grid_present, &
+				   'Ia_alfa_local = ', Ia_alfa_local, Ia_alfa(c), &
+				   'RH_lo_local = ', RH_lo_local, RH_lo(c),&
+				   'RH_up_local = ', RH_up_local, RH_up(c), &
+				   'Beta_lo_local = ', Beta_lo_local, Beta_lo(c), &
+				   'hdmlf = ', hdmlf, &
+				   'lh = ', lh, &
+				   'fs = ', fs, &
+				   'ig = ', ig, &
+				   'fuelc = ', fuelc(c), &
+				   'fb = ', fb, &
+				   'fire_m = ', fire_m, &
+				   'lgdp_col = ', lgdp_col(c), &
+				   'nfire = ', nfire(c), &
+				   'Lb_lf = ', Lb_lf, &
+				   'spread_m = ', spread_m, &
+				   'fsr_col = ', fsr_col(c), &
+				   'fd_col = ', fd_col(c), &
+				   'farea_burned = ', farea_burned(c)
+				   
+                end if
            end if
            !
            ! if landuse change data is used, calculate deforestation fires and 

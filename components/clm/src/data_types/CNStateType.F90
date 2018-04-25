@@ -171,6 +171,19 @@ module CNStateType
      !!! annual mortality rate dynamically calcaulted at patch
      real(r8), pointer :: r_mort_cal_patch                 (:)     ! patch annual mortality rate  
 
+!L.Xu@04/2018
+     real(r8) , pointer :: Ia_alfa_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: RH_lo_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: RH_up_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: Beta_lo_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: fsr_factor_col                  (:)     ! col global real gdp data (k US$/capita)
+     real(r8) , pointer :: fire_du_col                  (:)     ! col global real gdp data (k US$/capita)
+     logical            :: Ia_alfa_grid_present          ! surface dataset has p pools info
+     logical            :: RH_lo_grid_present          ! surface dataset has p pools info
+     logical            :: RH_up_grid_present          ! surface dataset has p pools info
+     logical            :: Beta_lo_grid_present          ! surface dataset has p pools info
+     logical            :: fsr_factor_grid_present          ! surface dataset has p pools info
+     logical            :: fire_du_grid_present          ! surface dataset has p pools info
    contains
 
      procedure, public  :: Init         
@@ -355,6 +368,14 @@ contains
     allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
     allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = nan
 
+!L.Xu@04/2018
+    allocate(this%Ia_alfa_col          (begc:endc))                   ;
+    allocate(this%RH_lo_col          (begc:endc))                   ;
+    allocate(this%RH_up_col          (begc:endc))                   ;
+    allocate(this%Beta_lo_col          (begc:endc))                   ;
+    allocate(this%fsr_factor_col          (begc:endc))                   ;
+    allocate(this%fire_du_col          (begc:endc))                   ;
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -463,6 +484,27 @@ contains
     call hist_addfld_decomp (fname='FPI_P'//trim(vr_suffix), units='proportion', type2d='levdcmp', & 
          avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
          ptr_col=this%fpi_p_vr_col)
+
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,1)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_1', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_2', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,2)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_2', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_2', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,3)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_3', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_3', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,9)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_9', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_9', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,10)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_10', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_10', &
+         ptr_col=data2dptr)
 
     this%fpg_col(begc:endc) = spval
     call hist_addfld1d (fname='FPG', units='proportion', &
@@ -712,6 +754,17 @@ contains
     real(r8) ,pointer  :: prip_g (:)                       ! read in - APATITE_P
     integer     ,pointer     :: fert_start_rdin (:)
     integer     ,pointer     :: fert_end_rdin (:)
+
+!L. Xu added for tuning fire model parameters @ 03/2018
+  type(var_desc_t) :: var_desc! variable descriptor for name
+  integer :: varid
+  real(r8), pointer     :: Ia_alfa_grid(:)         ! vcmax~np relationship coefficient
+  real(r8), pointer     :: RH_lo_grid(:)         ! vcmax~np relationship coefficient
+  real(r8), pointer     :: RH_up_grid(:)         ! vcmax~np relationship coefficient
+  real(r8), pointer     :: Beta_lo_grid(:)         ! vcmax~np relationship coefficient
+  real(r8), pointer     :: fsr_factor_grid(:)         ! vcmax~np relationship coefficient
+  real(r8), pointer     :: fire_du_grid(:)         ! vcmax~np relationship coefficient
+
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -738,6 +791,100 @@ contains
        ! read in layers, interpolate to high resolution grid later
     end if
 
+    ! --------------------------------------------------------------------
+    ! Read in sparse grid data  -- L.Xu@04/2018
+    ! --------------------------------------------------------------------
+
+!L.Xu@03/2018======
+    ! 1) Ia_alfa
+    this%Ia_alfa_grid_present = .true.
+    allocate(Ia_alfa_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='Ia_alfa', flag='read', data=Ia_alfa_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%Ia_alfa_grid_present = .false.
+       call endrun(msg=' ERROR: Ia_alfa NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%Ia_alfa_col(c) = Ia_alfa_grid(g)
+       if (masterproc) then
+           write(iulog,*) 'col = ',c,' grid = ',g, ' Ia_alfa_col = ',this%Ia_alfa_col(c), &
+	              ' Ia_alfa_grid = ',Ia_alfa_grid(g), &
+                      'present_flag = ', this%Ia_alfa_grid_present
+       end if
+       end do
+    end if
+    deallocate(Ia_alfa_grid)
+
+    ! 2) RH_lo
+    this%RH_lo_grid_present = .true.
+    allocate(RH_lo_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='RH_lo', flag='read', data=RH_lo_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%RH_lo_grid_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%RH_lo_col(c) = RH_lo_grid(g)
+       end do
+    end if
+    deallocate(RH_lo_grid)
+
+    ! 3) RH_up
+    this%RH_up_grid_present = .true.
+    allocate(RH_up_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='RH_up', flag='read', data=RH_up_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%RH_up_grid_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%RH_up_col(c) = RH_up_grid(g)
+       end do
+    end if
+    deallocate(RH_up_grid)
+
+    ! 4) Beta_lo
+    this%Beta_lo_grid_present = .true.
+    allocate(Beta_lo_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='Beta_lo', flag='read', data=Beta_lo_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%Beta_lo_grid_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%Beta_lo_col(c) = Beta_lo_grid(g)
+       end do
+    end if
+    deallocate(Beta_lo_grid)
+
+    ! 5) fsr_factor
+    this%fsr_factor_grid_present = .true.
+    allocate(fsr_factor_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='fsr_factor', flag='read', data=fsr_factor_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%fsr_factor_grid_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%fsr_factor_col(c) = fsr_factor_grid(g)
+       end do
+    end if
+    deallocate(fsr_factor_grid)
+
+    ! 6) fire_du
+    this%fire_du_grid_present = .true.
+    allocate(fire_du_grid(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='fire_du', flag='read', data=fire_du_grid, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       this%fire_du_grid_present = .false.
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%fire_du_col(c) = fire_du_grid(g)
+       end do
+    end if
+    deallocate(fire_du_grid)
 
     ! --------------------------------------------------------------------
     ! Read in GDP data 
