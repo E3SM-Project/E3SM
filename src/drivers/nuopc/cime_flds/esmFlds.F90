@@ -642,11 +642,10 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwdn', fldindex=n2)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwdn')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
 
     longname = 'Direct near-infrared incident solar radiation'
     stdname  = 'surface_downward_direct_shortwave_flux_due_to_near_infrared_radiation'
@@ -656,11 +655,10 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swndr', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swndr')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swndr')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndr', fldindex=n2)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndr')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
 
     longname = 'Direct visible incident solar radiation'
     stdname  = 'surface_downward_direct_shortwave_flux_due_to_visible_radiation'
@@ -670,11 +668,10 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swvdr', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swvdr')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swvdr')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swvdr', fldindex=n2)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swvdr')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
 
     longname = 'Diffuse near-infrared incident solar radiation'
     stdname  = 'surface_downward_diffuse_shortwave_flux_due_to_near_infrared_radiation'
@@ -684,11 +681,10 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swndf', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swndf')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swndf')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndf', fldindex=n2)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndf')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
 
     longname = 'Diffuse visible incident solar radiation'
     stdname  = 'surface_downward_diffuse_shortwave_flux_due_to_visible_radiation'
@@ -702,8 +698,6 @@ contains
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
 
     longname = 'Net shortwave radiation'
     stdname  = 'surface_net_shortwave_flux'
