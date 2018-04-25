@@ -671,12 +671,14 @@ class EnvBatch(EnvBase):
 
     def get_default_queue(self):
         bs_nodes = self.get_children("batch_system")
+        node = None
         for bsnode in bs_nodes:
             qnodes = self.get_children("queues", root=bsnode)
             for qnode in qnodes:
                 node = self.get_optional_child("queue", attributes={"default" : "true"}, root=qnode)
                 if node is None:
                     node = self.get_optional_child("queue", root=qnode)
+
         expect(node is not None, "No queues found")
         return node
 
