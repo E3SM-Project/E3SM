@@ -90,7 +90,7 @@ REQUIRED OPTIONS
                               "-sim_year list" to list valid simulation years
                               (default 2000)
 OPTIONS
-     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | ed ]
+     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | fates ]
                               (default is sp).
                                 CLM Biogeochemistry mode
                                 sp    = Satellite Phenology (SP)
@@ -101,11 +101,11 @@ OPTIONS
                                         (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
                                          use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true,
                                          use_dynroot)
-                                         This toggles on the namelist variables:
-                                          use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
-                                          use_dynroot
-			       fates    = (fates) functionaly assembled terrestrial ecosystem simulator
-			                  with native below ground bgc
+                                        This toggles on the namelist variables:
+                                         use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
+                                         use_dynroot
+                                fates    = functionaly assembled terrestrial ecosystem simulator
+                                          with native below ground bgc
                                           This toggles on the namelist variables:
                                           use_fates, use_vertsoilc, use_century_decomp
 

@@ -1719,10 +1719,10 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <fates_inventory_ctrl_filename use_fates=".true."> " " </fates_inventory_ctrl_filename>
-<use_vertsoilc       bgc_mode="ed"  >.true.</use_vertsoilc>
-<use_century_decomp  bgc_mode="ed"  >.true.</use_century_decomp>
-<use_lch4            bgc_mode="ed"  >.false.</use_lch4>
-<use_nitrif_denitrif bgc_mode="ed"  >.false.</use_nitrif_denitrif>
+<use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
+<use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
+<use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
+<use_nitrif_denitrif           bgc_mode="fates"  >.false.</use_nitrif_denitrif>
 
 
 </namelist_defaults>
