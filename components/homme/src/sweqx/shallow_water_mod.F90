@@ -12,7 +12,7 @@ module shallow_water_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, vorticity_sphere,  &
                              divergence, vorticity, laplace_sphere_wk, &
-                             vlaplace_sphere_wk, divergence_sphere
+                             vlaplace_sphere_wk, divergence_sphere, derivinit, gradient_sphere !JRUB +derivinit+gradient_sphere
   ! ------------------------
   use edge_mod, only : edgeVpack, edgeVunpack
   use edgetype_mod, only : EdgeBuffer_t
@@ -703,12 +703,14 @@ contains
 
   end function prtrb_geopotential
 
-  function prtrb_velocity(sphere,D) result(v)
+  function prtrb_velocity(sphere,D,pp,deriv) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
     real (kind=real_kind),    intent(in) :: D(np,np,2,2)
+    real (kind=real_kind),    intent(in) :: pp(np,np)          !pressure JRUB
+    !real (kind=real_kind),    intent(in) :: Dinv(np,np,2,2)  !JRUB
     real (kind=real_kind)                :: v(np,np,2)
-
+    type (derivative_t)      :: deriv 
     ! Local variables
 
     real (kind=real_kind) :: snlon(np,np)
@@ -718,7 +720,7 @@ contains
     real (kind=real_kind) :: csalpha
     real (kind=real_kind) :: snalpha
     real (kind=real_kind) :: V1,V2
-
+    real (kind=real_kind) :: gradp(np,np,2)   ! pressure meridional gradient  JRUB
     integer i,j,k
 
     csalpha = COS(alpha)
@@ -726,21 +728,21 @@ contains
 
     do j=1,np
        do i=1,np
-          snlat(i,j) = SIN(sphere(i,j)%lat)
-          cslat(i,j) = COS(sphere(i,j)%lat)
-          snlon(i,j) = SIN(sphere(i,j)%lon)
+          snlat(i,j) = SIN(sphere(i,j)%lat - 0.9)
+          cslat(i,j) = COS(sphere(i,j)%lat - 0.9)
+          snlon(i,j) = SIN(sphere(i,j)%lon - 1.0)
           cslon(i,j) = COS(sphere(i,j)%lon)
        end do
     end do
 
-
+    gradp = gradient_sphere(pp,deriv,D) !JRUB how do i get deriv, and Dinv
 
     do k=1,nlev
        do j=1,np
           do i=1,np
 
-             V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
-             V2 =  -u0*(snlon(i,j)*snalpha) + 0.1*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-20*dd_pi/180)/0.1)**2)
+             V1 =   gradp(i,j,2) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V2 =  -u0*(snlon(i,j)*snalpha) + 0.4*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-20*dd_pi/180)/0.1)**2)
 
              ! =====================================================
              ! map sphere velocities onto the contravariant cube velocities
@@ -1343,6 +1345,8 @@ contains
 
   subroutine nonrot_init_state(elem,nets,nete,pmean)
     type(element_t), intent(inout) :: elem(:)
+    type (derivative_t)         :: deriv           ! derivative struct JRUB
+
 
     integer, intent(in) :: nets
     integer, intent(in) :: nete
@@ -1365,6 +1369,8 @@ contains
     coef = rearth*omega*u0 + (u0**2)/2.0D0
     !omega = 0 !nonrotating
 
+    call derivinit(deriv)  
+
     do ie=nets,nete
        elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)= 0.0
@@ -1373,7 +1379,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=0!prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv) !0 JRUB added 3rd argument (p), and 4th deriv
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
