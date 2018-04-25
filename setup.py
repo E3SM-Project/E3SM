@@ -33,46 +33,48 @@ cosp_histogram_files += get_all_files_in_dir('acme_diags/driver/default_diags/le
 rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
 control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
 
+INSTALL_PATH = os.path.join(sys.prefix, 'share/e3sm_diags/')
 
 data_files = [
-    (sys.prefix + '/share/acme_diags/zonal_mean_xy',
+    (os.path.join(INSTALL_PATH, 'zonal_mean_xy'),
      zonal_mean_xy_files
      ),
-    (sys.prefix + '/share/acme_diags/zonal_mean_2d',
+    (os.path.join(INSTALL_PATH, 'zonal_mean_2d'),
      zonal_mean_2d_files
      ),
-    (sys.prefix + '/share/acme_diags/lat_lon',
+    (os.path.join(INSTALL_PATH, 'lat_lon'),
      lat_lon_files
      ),
-    (sys.prefix + '/share/acme_diags/polar',
+    (os.path.join(INSTALL_PATH, 'polar'),
      polar_files
      ),
-    (sys.prefix + '/share/acme_diags/cosp_histogram',
+    (os.path.join(INSTALL_PATH, 'cosp_histogram'),
      cosp_histogram_files
      ),
-    (sys.prefix + '/share/acme_diags',
+    (INSTALL_PATH,
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
-      'misc/ACME_Logo.png'
+      'misc/e3sm_logo.png'
       ]),
-    (sys.prefix + '/share/acme_diags/colormaps',
+    (os.path.join(INSTALL_PATH, 'colormaps'),
      rgb_files
      ),
-    (sys.prefix + '/share/acme_diags/control_runs', 
+    (os.path.join(INSTALL_PATH, 'control_runs'),
      control_runs_files
      )
 ]
 
 setup(
-    name="acme_diags",
+    name="e3sm_diags",
     version="1.3.2",
     author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
     author_email="zhang40@llnl.gov, shaheen2@llnl.gov",
-    description="ACME Diagnostics.",
+    description="E3SM Diagnostics",
     scripts=["acme_diags/acme_diags_driver.py"],
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
     data_files=data_files,
     entry_points={
         'console_scripts': [
+            'e3sm_diags=acme_diags.acme_diags_driver:main',
             'acme_diags=acme_diags.acme_diags_driver:main'
     ]}
 
