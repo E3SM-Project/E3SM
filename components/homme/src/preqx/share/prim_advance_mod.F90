@@ -672,7 +672,7 @@ contains
 
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_q,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -680,7 +680,7 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_q
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
@@ -694,7 +694,7 @@ contains
 
 ! this one is for ftype3, tendencies are scaled by dp_forcing (at the beg. of
 ! homme timestep) and now need to be scaled back to the current dp3d
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,np1_q,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -702,7 +702,7 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_q
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp

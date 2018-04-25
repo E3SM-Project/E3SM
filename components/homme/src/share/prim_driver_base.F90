@@ -1129,9 +1129,9 @@ contains
 
     elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
       call t_startf("ApplyCAMForcing_dynamics")
-      if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt_remap, nets, nete)
-      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, n0_qdp, dt, nets, nete)
-      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, n0_qdp, dt, nets, nete)
+      if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt_remap, nets, nete)
+      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
+      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
 
