@@ -495,6 +495,9 @@ def create_metadata(parameter):
     if 'other_parameters' in supported_cmd_args:
         supported_cmd_args.remove('other_parameters')
     
+    if 'parameters' in supported_cmd_args:
+        supported_cmd_args.remove('parameters')
+
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
         # we don't want to include blank values

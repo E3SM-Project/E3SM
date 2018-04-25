@@ -99,7 +99,10 @@ def main():
         check_values = True if not cmdline_parameter else False
         original_parameter = parser.get_orig_parameters(check_values)
 
-        if not hasattr(original_parameter, 'sets'):
+        # Special case, until selector parameter is added.
+        if hasattr(cmdline_parameter, 'sets'):
+            original_parameter.sets = cmdline_parameter.sets
+        elif not hasattr(original_parameter, 'sets'):
             original_parameter.sets = SET_NAMES
 
         # load the default cfg files
