@@ -42,7 +42,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.setup_standard_logging_options(parser)
 
     default_baseline = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline = default_baseline.replace(".", "_") # Can't have dots
+    default_baseline = default_baseline.replace(".", "_").replace("/", "_") # Dots or slashes will mess things up
 
     parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
