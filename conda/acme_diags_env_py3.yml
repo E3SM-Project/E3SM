@@ -1,4 +1,4 @@
-name: acme_diags_env_py3
+name: e3sm_diags_env_py3
 channels:
   - e3sm
   - anaconda
@@ -6,7 +6,7 @@ channels:
   - cdat
   - defaults
 dependencies:
-  - acme_diags=1.3.2=py36_0
+  - e3sm_diags=1.3.2=py36_0
   - asn1crypto=0.24.0=py36_0
   - beautifulsoup4=4.6.0=py36h49b8c8c_1
   - bokeh=0.12.15=py36_0
@@ -140,5 +140,5 @@ dependencies:
   - pip:
     - mv2==3.0.0
     - regrid2==3.0.0
-prefix: /export/shaheen2/anaconda2/envs/acme_diags_env_py3
+prefix: /export/shaheen2/anaconda2/envs/e3sm_diags_env_py3
 

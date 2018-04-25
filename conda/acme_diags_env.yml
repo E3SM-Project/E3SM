@@ -1,4 +1,4 @@
-name: acme_diags_env
+name: e3sm_diags_env
 channels:
   - e3sm
   - anaconda
@@ -6,7 +6,7 @@ channels:
   - cdat
   - defaults
 dependencies:
-  - acme_diags=1.3.2
+  - e3sm_diags=1.3.2
   - asn1crypto=0.24.0
   - backports=1.0
   - backports.functools_lru_cache=1.5
@@ -159,5 +159,5 @@ dependencies:
   - pip:
     - mv2==3.0.0
     - regrid2==3.0.0
-prefix: /export/shaheen2/anaconda2/envs/acme_diags_env
+prefix: /export/shaheen2/anaconda2/envs/e3sm_diags_env
 
