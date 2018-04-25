@@ -142,7 +142,7 @@ def main():
         p.user = getpass.getuser()
 
         if not hasattr(p, 'results_dir'):
-            p.results_dir = '{}-{}'.format('acme_diags_results', dt)
+            p.results_dir = '{}-{}'.format('e3sm_diags_results', dt)
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)

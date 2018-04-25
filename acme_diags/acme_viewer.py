@@ -35,7 +35,7 @@ ROW_INFO = collections.OrderedDict()
 LAT_LON_TABLE_INFO = collections.OrderedDict()
 
 def _copy_acme_logo(root_dir):
-    """Copy over ACME_Logo.png to root_dir/viewer"""
+    """Copy over e3sm_logo.png to root_dir/viewer"""
     src_pth = os.path.join(acme_diags.INSTALL_PATH, "e3sm_logo.png")
     dst_path = os.path.join(root_dir, "viewer")
     shutil.copy(src_pth, dst_path)
@@ -43,8 +43,8 @@ def _copy_acme_logo(root_dir):
 
 def _get_acme_logo_path(root_dir, html_path):
     """Based of the root dir of the viewer and the current
-    dir of the html, get the relative path of the ACME logo"""
-    # when current_dir = myresults-07-11/viewer/index.html, the image is in myresults-07-11/viewer/viewer/ACME_Logo.png
+    dir of the html, get the relative path of the E3SM logo"""
+    # when current_dir = myresults-07-11/viewer/index.html, the image is in myresults-07-11/viewer/viewer/e3sm_logo.png
     # so there's no need to move some number of directories up.
     # That's why we have - 3
     relative_dir = html_path.replace(root_dir + '/', '')
@@ -52,7 +52,7 @@ def _get_acme_logo_path(root_dir, html_path):
     pth = os.path.join('.')
     for _ in range(0, dirs_to_go_up):
         pth = os.path.join(pth, '..')
-    pth = os.path.join(pth, 'viewer', 'ACME_Logo.png')
+    pth = os.path.join(pth, 'viewer', 'e3sm_logo.png')
     return pth
 
 
@@ -60,15 +60,15 @@ def _add_header(path, version, model_name, time, logo_path):
     """Add the header to the html located at path"""
 
     # We're inserting the following in the body under navbar navbar-default
-    # <div id="acme-header" style="background-color:#dbe6c5; float:left; width:45%">
+    # <div id="e3sm-header" style="background-color:#dbe6c5; float:left; width:45%">
     # 	<p style="margin-left:5em">
-    # 		<b>ACME Diagnostics Package [VERSION]</b><br>
+    # 		<b>E3SM Diagnostics Package [VERSION]</b><br>
     # 		Test model name: [SOMETHING]<br>
     # 		Date created: [DATE]<br>
     # 	</p>
     # </div>
-    # <div id="acme-header2" style="background-color:#dbe6c5; float:right; width:55%">
-    # 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
+    # <div id="e3sm-header2" style="background-color:#dbe6c5; float:right; width:55%">
+    # 	<img src="e3sm_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
     # </div>
 
     soup = BeautifulSoup(open(path), "lxml")
@@ -77,11 +77,11 @@ def _add_header(path, version, model_name, time, logo_path):
         old_header[0].decompose()
 
     header_div = soup.new_tag(
-        "div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
+        "div", id="e3sm-header", style="background-color:#dbe6c5; float:left; width:45%")
     p = soup.new_tag("p", style="margin-left:5em")
 
     bolded_title = soup.new_tag("b")
-    bolded_title.append("ACME Diagnostics Package {}".format(version))
+    bolded_title.append("E3SM Diagnostics Package {}".format(version))
     bolded_title.append(soup.new_tag("br"))
     p.append(bolded_title)
 
@@ -93,7 +93,7 @@ def _add_header(path, version, model_name, time, logo_path):
     header_div.append(p)
     soup.body.insert(0, header_div)
 
-    img_div = soup.new_tag("div", id="acme-header2",
+    img_div = soup.new_tag("div", id="e3sm-header2",
                            style="background-color:#dbe6c5; float:right; width:55%")
     img = soup.new_tag("img", src=logo_path, alt="logo",
                        style="width:161px; height:71px; background-color:#dbe6c5")
@@ -123,12 +123,12 @@ def _extras(root_dir, parameters):
     _copy_acme_logo(root_dir)
 
     index_files = []
-    for root, dirnames, filenames in os.walk(root_dir):
+    for root, _, filenames in os.walk(root_dir):
         for filename in fnmatch.filter(filenames, 'index.html'):
             pth = os.path.join(root, filename)
             index_files.append(pth)
     dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    os.path.join('viewer', 'ACME_Logo.png')
+    os.path.join('viewer', 'e3sm_logo.png')
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
@@ -484,7 +484,7 @@ def create_metadata(parameter):
     """
     metadata = collections.OrderedDict()
     metadata['Command to run'] = ''
-    cmd = 'acme_diags --no_viewer '
+    cmd = 'e3sm_diags --no_viewer '
 
     from acme_diags.acme_parser import ACMEParser
     parser = ACMEParser()
@@ -530,7 +530,7 @@ def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
     extension ext and create the viewer in root_dir."""
 
-    viewer = OutputViewer(path=root_dir, index_name='ACME Diagnostics')
+    viewer = OutputViewer(path=root_dir, index_name='E3SM Diagnostics')
     _add_pages_and_top_row(viewer, parameters)
 
     for parameter in parameters:
