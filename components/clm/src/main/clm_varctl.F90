@@ -187,7 +187,7 @@ module clm_varctl
   !  FATES switches
   !----------------------------------------------------------
 
-  logical, public            :: use_ed = .false.              ! true => use  ED
+  logical, public            :: use_fates = .false.              ! true => use  ED
   logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro

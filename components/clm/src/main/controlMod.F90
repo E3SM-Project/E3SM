@@ -220,7 +220,7 @@ contains
 
     namelist /clm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm/ fates_paramfile, use_ed,      &
+    namelist /clm_inparm/ fates_paramfile, use_fates,      &
           use_fates_spitfire, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_ed_prescribed_phys,                 &
@@ -351,22 +351,22 @@ contains
        end if
 
        ! Check compatibility with the FATES model 
-       if ( use_ed ) then
+       if ( use_fates ) then
 
           use_voc = .false.
 
           if ( use_cn) then
-             call endrun(msg=' ERROR: use_cn and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_cn and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
           
           if ( use_crop ) then
-             call endrun(msg=' ERROR: use_crop and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_crop and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
           
           if( use_lch4 ) then
-             call endrun(msg=' ERROR: use_lch4 (methane) and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
 
@@ -632,7 +632,7 @@ contains
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_c14, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_spitfire, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -977,8 +977,8 @@ contains
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
 
     ! FATES
-    write(iulog, *) '    use_ed = ', use_ed
-    if (use_ed) then
+    write(iulog, *) '    use_fates = ', use_fates
+    if (use_fates) then
        write(iulog, *) '    use_fates_spitfire = ', use_fates_spitfire
        write(iulog, *) '    use_fates_logging = ', use_fates_logging
        write(iulog, *) '    fates_paramfile = ', fates_paramfile

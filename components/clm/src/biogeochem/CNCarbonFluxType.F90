@@ -8,7 +8,7 @@ module CNCarbonFluxType
   use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
-  use clm_varctl             , only : use_cndv, use_c13, use_ed 
+  use clm_varctl             , only : use_cndv, use_c13, use_fates 
   use ch4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -461,7 +461,7 @@ contains
      begp = bounds%begp; endp = bounds%endp
      begc = bounds%begc; endc = bounds%endc
 
-     if (.not.use_ed) then
+     if (.not.use_fates) then
         allocate(this%m_leafc_to_litter_patch                  (begp:endp)) ; this%m_leafc_to_litter_patch                (:) = nan
         allocate(this%m_frootc_to_litter_patch                 (begp:endp)) ; this%m_frootc_to_litter_patch               (:) = nan
         allocate(this%m_leafc_storage_to_litter_patch          (begp:endp)) ; this%m_leafc_storage_to_litter_patch        (:) = nan
@@ -680,7 +680,7 @@ contains
         allocate(this%agwdnpp_patch                             (begp:endp)) ; this%agwdnpp_patch                          (:) = nan
 
 
-     end if ! if(.not.use_ed)
+     end if ! if(.not.use_fates)
 
      allocate(this%t_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%t_scalar_col (:,:)=spval
      allocate(this%w_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%w_scalar_col (:,:)=spval
@@ -878,7 +878,7 @@ contains
     ! History Diagnostics with FATES turned on is a very limited set, and only
     ! operates on C12 right now.
     ! ------------------------------------------------------------------------------------
-    if (use_ed) then
+    if (use_fates) then
        if (carbon_type == 'c12') then
           this%som_c_leached_col(begc:endc) = spval
           call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
@@ -3643,7 +3643,7 @@ contains
 
     endif
 
-    if (carbon_type == 'c13' .and. .not.use_ed ) then
+    if (carbon_type == 'c13' .and. .not.use_fates ) then
        this%xsmrpool_c13ratio_patch(begp:endp) = spval
        call hist_addfld1d (fname='XSMRPOOL_C13RATIO', units='proportion', &
             avgflag='A', long_name='C13/C(12+13) ratio for xsmrpool', &
@@ -3691,7 +3691,7 @@ contains
        end if
     end do
 
-    if (.not.use_ed) then
+    if (.not.use_fates) then
        
        do p = bounds%begp,bounds%endp
           l = veg_pp%landunit(p)
@@ -3732,7 +3732,7 @@ contains
           end if
        end do
 
-    end if !(.not.use_ed)
+    end if !(.not.use_fates)
 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
@@ -3830,7 +3830,7 @@ contains
     ! -------------------------------------------
     ! None of these restarts are needed for FATES
     ! -------------------------------------------
-    if (use_ed) return
+    if (use_fates) return
 
     !-------------------------------
     ! Prognostic crop variables
@@ -4036,7 +4036,7 @@ contains
     integer :: j,k,l    ! indices
     !------------------------------------------------------------------------
 
-    if(.not.use_ed) then
+    if(.not.use_fates) then
        do fi = 1,num_patch
           i = filter_patch(fi)
 
@@ -4229,7 +4229,7 @@ contains
           this%woodc_loss_patch(i)                          = value_patch
           this%xsmrpool_turnover_patch(i)                   = value_patch
        end do
-    end if !(.not.use_ed)
+    end if !(.not.use_fates)
 
     if ( crop_prog )then
        do fi = 1,num_patch
@@ -4473,9 +4473,9 @@ contains
 
       ! Note that some of these variables and summary statistics are relevant to fates
       ! yet the great majority are not, and instead of riddling this subroutine
-      ! with .not.use_ed filters, a wrapper will be created that selects the variables that should
+      ! with .not.use_fates filters, a wrapper will be created that selects the variables that should
       ! be used.
-      if (use_ed) return
+      if (use_fates) return
 
 
     ! patch loop

@@ -10,7 +10,7 @@ module CNBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_ed
+  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
@@ -247,7 +247,7 @@ contains
       end do ! end of columns loop
       
       ! Consider adapting this check to be fates compliant (rgk 04-2017)
-      if (.not. use_ed) then
+      if (.not. use_fates) then
          if (err_found) then
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
@@ -270,7 +270,7 @@ contains
 
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
-      end if !use_ed
+      end if !use_fates
 
     end associate
 

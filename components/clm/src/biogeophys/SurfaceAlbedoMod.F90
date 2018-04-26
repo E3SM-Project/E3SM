@@ -18,7 +18,7 @@ module SurfaceAlbedoMod
 #endif
   use clm_varcon        , only : grlnd, namep
   use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_ed  
+  use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates  
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
@@ -201,7 +201,7 @@ contains
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
     use abortutils         , only : endrun
-    use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_ed
+    use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates
     use CLMFatesInterfaceMod, only : hlm_fates_interface_type
 
     !
@@ -922,7 +922,7 @@ contains
     ! Calculate surface albedos and fluxes
     ! Only perform on vegetated pfts where coszen > 0
 
-    if(use_ed)then
+    if(use_fates)then
        call alm_fates%wrap_canopy_radiation(bounds, &
             num_vegsol, filter_vegsol, &
             coszen_patch(bounds%begp:bounds%endp), surfalb_vars)
