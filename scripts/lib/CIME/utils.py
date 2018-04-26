@@ -126,9 +126,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     >>> check_name("/some/file/path/case.name", fullpath=True)
     True
+    >>> check_name("mycase+mods")
+    False
+    >>> check_name("mycase?mods")
+    False
+    >>> check_name("mycase*mods")
+    False
     """
 
-    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -718,7 +724,47 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_dir, tgt_dir, file_map):
+def safe_copy(src_path, tgt_path):
+    """
+    A flexbile and safe copy routine. Will try to copy file and metadata, but this
+    can fail if the current user doesn't own the tgt file. A fallback data-only copy is
+    attempted in this case. Works even if overwriting a read-only file.
+
+    tgt_path can be a directory, src_path must be a file
+
+    most of the complexity here is handling the case where the tgt_path file already
+    exists. This problem does not exist for the tree operations so we don't need to wrap those.
+    """
+
+    tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
+
+    # Handle pre-existing file
+    if os.path.isfile(tgt_path):
+        st = os.stat(tgt_path)
+        owner_uid = st.st_uid
+
+        # Handle read-only files if possible
+        if not os.access(tgt_path, os.W_OK):
+            if owner_uid == os.getuid():
+                # I am the owner, make writeable
+                os.chmod(st.st_mode | statlib.S_IWRITE)
+            else:
+                # I won't be able to copy this file
+                raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
+
+        if owner_uid == os.getuid():
+            # I am the owner, copy file contents, permissions, and metadata
+            shutil.copy2(src_path, tgt_path)
+        else:
+            # I am not the owner, just copy file contents
+            shutil.copyfile(src_path, tgt_path)
+
+    else:
+        # We are making a new file, copy file contents, permissions, and metadata.
+        # This can fail if the underlying directory is not writable by current user.
+        shutil.copy2(src_path, tgt_path)
+
+def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
     Copies a set of files from one dir to another. Works even if overwriting a
     read-only file. Files can be relative paths and the relative path will be
@@ -728,9 +774,7 @@ def safe_copy(src_dir, tgt_dir, file_map):
         full_tgt = os.path.join(tgt_dir, tgt_file)
         full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
         expect(os.path.isfile(full_src), "Source dir '{}' missing file '{}'".format(src_dir, src_file))
-        if (os.path.isfile(full_tgt)):
-            os.remove(full_tgt)
-        shutil.copy2(full_src, full_tgt)
+        safe_copy(full_src, full_tgt)
 
 def symlink_force(target, link_name):
     """
@@ -1435,8 +1479,8 @@ def ls_sorted_by_mtime(path):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    logdir = case.get_value("LOGDIR")
-    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(logdir, model)))
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(rundir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
@@ -1509,7 +1553,7 @@ def copy_umask(src, dst):
     Preserves all file metadata except making sure new file obeys umask
     """
     curr_umask = get_umask()
-    shutil.copy2(src, dst)
+    safe_copy(src, dst)
     octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
     dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
     os.chmod(dst, octal_base - curr_umask)
@@ -1568,7 +1612,7 @@ def resolve_mail_type_args(args):
 def copyifnewer(src, dest):
     """ if dest does not exist or is older than src copy src to dest """
     if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
-        shutil.copy2(src, dest)
+        safe_copy(src, dest)
 
 class SharedArea(object):
     """

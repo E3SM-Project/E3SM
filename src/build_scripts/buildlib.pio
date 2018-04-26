@@ -50,7 +50,7 @@ def buildlib(bldroot, installpath, caseroot):
         pio_model = "pio{}".format(pio_version)
         pio_dir = os.path.join(bldroot, pio_model)
         compiler = case.get_value("COMPILER")
-        build_threaded = case.get_value("BUILD_THREADED")
+        build_threaded = case.get_build_threaded()
         if not os.path.isdir(pio_dir):
             os.makedirs(pio_dir)
         casetools = case.get_value("CASETOOLS")

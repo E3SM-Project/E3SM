@@ -2,10 +2,10 @@
 CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
-import glob, os, shutil
+import glob, os
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.restart_tests import RestartTest
-from CIME.utils import ls_sorted_by_mtime
+from CIME.utils import ls_sorted_by_mtime, safe_copy
 
 logger = logging.getLogger(__name__)
 
@@ -46,4 +46,4 @@ class ERR(RestartTest):
                                                  "*.nc.{}".format(self._run_one_suffix))):
             orig_file = case_file[:-(1+len(self._run_one_suffix))]
             if not os.path.isfile(orig_file):
-                shutil.copyfile(case_file, orig_file)
+                safe_copy(case_file, orig_file)

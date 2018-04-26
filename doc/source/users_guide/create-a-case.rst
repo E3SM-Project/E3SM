@@ -24,6 +24,9 @@ The only required arguments to **create_newcase** are shown here::
 
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms* (machines).
 
+The [CASE] argument must be a string and may not contain any of the following special characters
+  > + * ? < > / { } [ ] ~ ` @ :
+
 ======================================
 Results of calling **create_newcase**
 ======================================
