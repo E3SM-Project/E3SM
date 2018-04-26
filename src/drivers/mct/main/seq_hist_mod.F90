@@ -1142,8 +1142,8 @@ contains
              call seq_infodata_GetData( infodata,  case_name=case_name)
              call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
 
-             ! Adjust yyyy in file name by yr_offset,  if present
-             ! For example,  for a field written once a year,  this will make it so the file
+             ! Adjust yyyy in file name by yr_offset, if present
+             ! For example, for a field written once a year,  this will make it so the file
              ! with fields from year 1 has time stamp 0001-01-01 rather than 0002-01-01,
              ! which can simplify later reading by a data model
              if (present(yr_offset)) then
