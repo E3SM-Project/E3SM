@@ -744,7 +744,7 @@ contains
 
              V1 =   -0.05 * gradp(i,j,2) / fcor(i,j) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
              !V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
-             V2 =  -u0*(snlon(i,j)*snalpha) + 0.4*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-50*dd_pi/180)/0.1)**2)
+             V2 =  -u0*(snlon(i,j)*snalpha) + 0.2*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-40*dd_pi/180)/0.05)**2)
 
              ! =====================================================
              ! map sphere velocities onto the contravariant cube velocities
