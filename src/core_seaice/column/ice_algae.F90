@@ -2036,7 +2036,8 @@
           enddo    
         endif
         endif !Docin(1) > c0
-      elseif (tr_bgc_Fe) then
+      endif
+      if (tr_bgc_Fe) then
         do n = 1,n_fed
            Fed_r(n) = Fed_r(n) + rFed(n)*Fed_tot_r          ! scavenging + uptake
         enddo 
