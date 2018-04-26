@@ -374,8 +374,8 @@ subroutine nucleati(  &
       na500    = ( soot_num + organic_num ) * 0.0256_r8 + na500_1  ! scaled for D>0.5 um using Clarke et al., 1997; 2004; 2007: rg=0.1um, sig=1.6
 
       na500stp = na500 * 101325._r8 * tair/( 273.15_r8 * pmid ) ! at STP      
-      ad       = 1.968e-5_r8
-      bd       = -0.0167_r8 * tc + 0.2877_r8
+      ad  = 1.25
+      bd  = -0.46*tc-11.6
 
    !--iceMP   
    endif
@@ -388,7 +388,7 @@ subroutine nucleati(  &
    if(tc.lt.0._r8 .and. tc.gt.-37._r8 .and. qc.gt.1.e-12_r8) then
       if (use_dem_nucleate) then          ! use DeMott et al.         
          !++iceMP
-         nimeystp=1.e-3_r8 *ad* ((tc*(-1.0_r8))**3.6434_r8) * (na500stp)**bd   ! cm^-3
+         nimeystp = 1.e-3_r8 * 3.0_r8 * (na500stp**ad) * exp(bd)               ! cm^-3 
          nimey=nimeystp*273.15_r8*pmid/(101325_r8*tair)
       else if (use_nie_nucleate) then
          ns_dust_imm = exp(an)          ! m^-2
