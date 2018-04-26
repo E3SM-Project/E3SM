@@ -39,8 +39,14 @@ OR
                         help="Do not submit jobs to batch system, run locally.")
 
     parser.add_argument("--prereq",
-                        help="Specify a prerequiset job id, this job will not start until the "
+                        help="Specify a prerequisite job id, this job will not start until the "
                         "job with this id is completed (batch mode only)")
+
+    parser.add_argument("--prereq-allow-failure", action="store_true",
+                        help="Allows starting the run even if the prerequisite fails."
+                        "This also allows resubmits to run if the original failed and the "
+                        "resubmit was submitted to the queue with the orginal as a dependency, "
+                        "as in the case of --resubmit-immediate")
 
     parser.add_argument("--resubmit", action="store_true",
                         help="Used with tests only, to continue rather than restart a test. ")
@@ -57,14 +63,14 @@ OR
 
     CIME.utils.resolve_mail_type_args(args)
 
-    return args.caseroot, args.job, args.no_batch, args.prereq, \
+    return args.caseroot, args.job, args.no_batch, args.prereq, args.prereq_allow_failure, \
         args.resubmit, args.skip_preview_namelist, args.mail_user, args.mail_type, \
         args.batch_args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, job, no_batch, prereq, resubmit, skip_pnl, \
+    caseroot, job, no_batch, prereq, allow_fail, resubmit, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
 
     # save these options to a hidden file for use during resubmit
@@ -86,9 +92,9 @@ def _main_func(description):
         os.remove(config_file)
 
     with Case(caseroot, read_only=False) as case:
-        case.submit(job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,
-               skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
-               batch_args=batch_args)
+        case.submit(job=job, no_batch=no_batch, prereq=prereq, allow_fail=allow_fail,
+                    resubmit=resubmit, skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
+                    batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)

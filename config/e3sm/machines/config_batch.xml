@@ -238,6 +238,7 @@
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
     <depend_separator>:</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>--mail-user</batch_mail_flag>

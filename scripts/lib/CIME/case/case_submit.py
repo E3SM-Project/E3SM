@@ -15,7 +15,7 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
+def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
             skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
         job = case.get_primary_job()
@@ -86,7 +86,7 @@ manual edits to these file will be lost!
 
     logger.warning("submit_jobs {}".format(job))
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
-                               prereq=prereq, mail_user=mail_user,
+                               prereq=prereq, allow_fail=allow_fail, mail_user=mail_user,
                                mail_type=mail_type, batch_args=batch_args)
 
     xml_jobids = []
@@ -101,7 +101,7 @@ manual edits to these file will be lost!
 
     return xml_jobid_text
 
-def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
+def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if self.get_value("TEST"):
         caseroot = self.get_value("CASEROOT")
@@ -134,7 +134,7 @@ def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
 
     try:
         functor = lambda: _submit(self, job=job, no_batch=no_batch, prereq=prereq,
-                                  resubmit=resubmit, skip_pnl=skip_pnl,
+                                  allow_fail=allow_fail, resubmit=resubmit, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
                                   batch_args=batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=caseroot,

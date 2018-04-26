@@ -414,8 +414,8 @@ class EnvBatch(EnvBase):
         return submitargs
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None,
-                    skip_pnl=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False):
+                    allow_fail=False, skip_pnl=False, mail_user=None,
+                    mail_type=None, batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -462,6 +462,7 @@ class EnvBatch(EnvBase):
             logger.info("job {} depends on {}".format(job, dep_jobs))
             result = self._submit_single_job(case, job,
                                              dep_jobs=dep_jobs,
+                                             allow_fail=allow_fail,
                                              no_batch=no_batch,
                                              skip_pnl=skip_pnl,
                                              mail_user=mail_user,
@@ -479,9 +480,9 @@ class EnvBatch(EnvBase):
         else:
             return depid
 
-    def _submit_single_job(self, case, job, dep_jobs=None, no_batch=False,
-                           skip_pnl=False, mail_user=None, mail_type=None,
-                           batch_args=None, dry_run=False):
+    def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
+                           no_batch=False, skip_pnl=False, mail_user=None,
+                           mail_type=None, batch_args=None, dry_run=False):
         if not dry_run:
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -503,9 +504,19 @@ class EnvBatch(EnvBase):
 
         if dep_jobs is not None and len(dep_jobs) > 0:
             logger.info("dependencies: {}".format(dep_jobs))
-            dep_string = self.get_value("depend_string", subgroup=None)
+            if allow_fail:
+                dep_string = self.get_value("depend_allow_string", subgroup=None)
+                if dep_string is None:
+                    logger.warn("'depend_allow_string' is not defined for this batch system, " +
+                                "falling back to the 'depend_string'")
+                    dep_string = self.get_value("depend_string", subgroup=None)
+            else:
+                dep_string = self.get_value("depend_string", subgroup=None)
+            expect(dep_string is not None, "'depend_string' is not defined for this batch system")
+
             separator_string = self.get_value("depend_separator", subgroup=None)
             expect(separator_string is not None,"depend_separator string not defined")
+
             expect("jobid" in dep_string, "depend_string is missing jobid for prerequisite jobs")
             dep_ids_str = str(dep_jobs[0])
             for dep_id in dep_jobs[1:]:
