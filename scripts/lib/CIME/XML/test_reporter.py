@@ -55,7 +55,7 @@ class TestReporter(GenericXML):
         #
         # Post test result XML to CESM test database
         #
-        xmlstr = self.to_string(self.root,method="xml",encoding="UTF-8")
+        xmlstr = self.get_raw_record()
         username=six.moves.input("Username:")
         os.system("stty -echo")
         password=six.moves.input("Password:")
