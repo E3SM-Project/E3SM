@@ -46,7 +46,6 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
     else:
         success = self.check_input_data(protocal=protocal, address=address, download=False,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
-        print ("HERE download {} success {}".format(download, success))
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
