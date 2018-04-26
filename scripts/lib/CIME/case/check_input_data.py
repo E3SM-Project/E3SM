@@ -83,21 +83,6 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         rundir       = self.get_value("RUNDIR")
 
         refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
-        expect(os.path.isdir(refdir),
-"""
-*****************************************************************
-prestage ERROR: $refdir is not on local disk
-obtain this data from the input data repository and either place it
-in the local $DIN_LOC_ROOT as follows
-> mkdir -p {}
-> cd {}
-> cd ..
-> (download data)
-or set GET_REFCASE to FALSE in env_run.xml
-and place the restart data directly in the $RUNDIR
-*****************************************************************
-""".format(refdir, refdir, refdir))
-
         if not os.path.isdir(refdir):
             logger.warning("Refcase not found in {}, will attempt to download from inputdata".format(refdir))
             with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
