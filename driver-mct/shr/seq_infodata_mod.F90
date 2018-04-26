@@ -244,6 +244,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
      !--- set by driver and may be time varying
      logical                 :: glc_valid_input  ! is valid accumulated data being sent to prognostic glc
+     character(SHR_KIND_CL)  :: model_doi_url
   end type seq_infodata_type
 
   ! --- public interfaces --------------------------------------------------------
@@ -414,7 +415,8 @@ CONTAINS
     ! if reprosum_diffmax is exceeded
     logical                :: mct_usealltoall    ! flag for mct alltoall
     logical                :: mct_usevector      ! flag for mct vector
-    real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
+    real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
+    character(SHR_KIND_CL) :: model_doi_url
 
     namelist /seq_infodata_inparm/  &
          cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
@@ -448,7 +450,7 @@ CONTAINS
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute, &
-         mct_usealltoall, mct_usevector, max_cplstep_time
+         mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url
 
     !-------------------------------------------------------------------------------
 
@@ -559,6 +561,7 @@ CONTAINS
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
+       model_doi_url        = 'unset'
 
        !---------------------------------------------------------------------------
        ! Read in namelist
@@ -750,6 +753,7 @@ CONTAINS
        nullify(infodata%pause_resume)
 
        infodata%max_cplstep_time = max_cplstep_time
+       infodata%model_doi_url = model_doi_url
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------
@@ -971,7 +975,8 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
        atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
        glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-       mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
+       mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
+       glc_valid_input)
 
 
     implicit none
@@ -1137,6 +1142,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
     logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
     real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
+    character(SHR_KIND_CL), optional, intent(OUT) :: model_doi_url
     logical,                optional, intent(OUT) :: glc_valid_input
     character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
     character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
@@ -1379,6 +1385,8 @@ CONTAINS
        end if
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
+    if ( present(model_doi_url) ) model_doi_url = infodata%model_doi_url
+
     if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
 
   END SUBROUTINE seq_infodata_GetData_explicit
@@ -2301,6 +2309,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
+    call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
 
     call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
