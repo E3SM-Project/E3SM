@@ -119,6 +119,13 @@
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./mali$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.glc</tfile>
+      <tfile disposition="copy">mali.rst.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">mali.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mali.hist.am.globalStats.1976-01-01.nc</tfile>
+      <tfile disposition="move">mali.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compclass="esp" compname="dart">
