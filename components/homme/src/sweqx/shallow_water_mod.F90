@@ -694,23 +694,24 @@ contains
 
     do j=1,np
        do i=1,np
-          snlat = SIN(sphere(i,j)%lat-0.9)
+          snlat = SIN(sphere(i,j)%lat-2.5)
           cslat = COS(sphere(i,j)%lat)
           cslon = COS(sphere(i,j)%lon)
-          p(i,j)= -coef*( -cslon*cslat*snalpha + snlat*csalpha )**20
+          p(i,j)= -coef*( -cslon*cslat*snalpha + snlat*csalpha )**40
        end do
     end do
 
   end function prtrb_geopotential
 
-  function prtrb_velocity(sphere,D,pp,deriv) result(v)
+  function prtrb_velocity(sphere,D,pp,deriv,fcor) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
     real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind),    intent(in) :: pp(np,np)          !pressure JRUB
     !real (kind=real_kind),    intent(in) :: Dinv(np,np,2,2)  !JRUB
+    real (kind=real_kind) :: fcor(np,np)     !JRUB
     real (kind=real_kind)                :: v(np,np,2)
-    type (derivative_t)      :: deriv 
+    type (derivative_t)      :: deriv !JRUB
     ! Local variables
 
     real (kind=real_kind) :: snlon(np,np)
@@ -728,9 +729,9 @@ contains
 
     do j=1,np
        do i=1,np
-          snlat(i,j) = SIN(sphere(i,j)%lat - 0.9)
-          cslat(i,j) = COS(sphere(i,j)%lat - 0.9)
-          snlon(i,j) = SIN(sphere(i,j)%lon - 1.0)
+          snlat(i,j) = SIN(sphere(i,j)%lat - 2.5)
+          cslat(i,j) = COS(sphere(i,j)%lat - 2.5)
+          snlon(i,j) = SIN(sphere(i,j)%lon - 0)
           cslon(i,j) = COS(sphere(i,j)%lon)
        end do
     end do
@@ -741,8 +742,9 @@ contains
        do j=1,np
           do i=1,np
 
-             V1 =   gradp(i,j,2) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
-             V2 =  -u0*(snlon(i,j)*snalpha) + 0.4*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-20*dd_pi/180)/0.1)**2)
+             V1 =   -0.05 * gradp(i,j,2) / fcor(i,j) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             !V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V2 =  -u0*(snlon(i,j)*snalpha) + 0.4*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-50*dd_pi/180)/0.1)**2)
 
              ! =====================================================
              ! map sphere velocities onto the contravariant cube velocities
@@ -1379,7 +1381,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv) !0 JRUB added 3rd argument (p), and 4th deriv
+          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv,elem(ie)%fcor) !0 JRUB added 3rd argument (p), and 4th deriv
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1537,6 +1539,15 @@ contains
           cslon = COS(sphere(i,j)%lon)
 
           fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + snlat*csalpha)
+          !JRUB
+          if ((sphere(i,j)%lat .GT. -0.26).AND.(sphere(i,j)%lat .LE. 0)) then
+             fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + SIN(-0.26)*csalpha)
+          endif
+
+          if ((sphere(i,j)%lat .LT. 0.26).AND.(sphere(i,j)%lat .GT. 0)) then
+             fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + SIN(0.26)*csalpha)
+          endif
+          !JRUB
        end do
     end do
 
