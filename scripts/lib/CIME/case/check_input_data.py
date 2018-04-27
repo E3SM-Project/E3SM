@@ -94,6 +94,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
             success = _downloadfromserver(self, input_data_root=input_data_root, data_list_dir=data_list_dir)
             expect(success, "Could not download refcase from any server")
 
+
         logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
 
         # prestage the reference case's files.

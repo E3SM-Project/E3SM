@@ -2365,11 +2365,11 @@ contains
 
           if (do_budgets) then
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
              xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
              call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                   do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2863,11 +2863,11 @@ contains
 
           if (do_budgets) then
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
              xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
              call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                   do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -3220,11 +3220,11 @@ contains
 
           if (do_budgets) then
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
              xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
              call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
                   do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -3879,7 +3879,7 @@ contains
           call t_stopf("CPL:sync1_tprof")
 
           write(timing_file,'(a,i8.8,a1,i5.5)') &
-               trim(tchkpt_dir)//"/cesm_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+               trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
 
           call t_set_prefixf("CPL:")
           if (output_perf) then
