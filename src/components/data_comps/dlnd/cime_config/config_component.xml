@@ -64,8 +64,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <!-- FIXME: need new directory here, with match on compset and res -->
-      <value>FIXME</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%10x15">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/i.e20.I1850Clm50Sp.f10_f10_musgs.003_c180427</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -76,8 +75,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <!-- FIXME: need new case name here, with match on compset and res -->
-      <value>FIXME</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%10x15">i.e20.I1850Clm50Sp.f10_f10_musgs.003</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -88,8 +86,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <!-- FIXME: use value of 1 for the given compset and res -->
-      <value>-999</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%10x15">1</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -112,8 +109,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <!-- FIXME: use value of 1 for the given compset and res -->
-      <value>-999</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%10x15">1</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -124,8 +120,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <!-- FIXME: use correct value of for the given compset and res -->
-      <value>-999</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%10x15">3</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>

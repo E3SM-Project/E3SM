@@ -125,7 +125,7 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value  stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hs2x.%y-01-01.nc</value>
+      <value  stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
     </values>
   </entry>
 
@@ -136,9 +136,9 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value     stream="sno.cplhist">
-        s2x_Ss_tsrf%glc     tsrf%glc
-        s2x_Ss_topo%glc     topo%glc
-        s2x_Fgss_qice%glc   qice%glc
+        l2x1yr_glc_Sl_tsrf%glc     tsrf%glc
+        l2x1yr_glc_Sl_topo%glc     topo%glc
+        l2x1yr_glc_Flgl_qice%glc   qice%glc
       </value>
     </values>
   </entry>
