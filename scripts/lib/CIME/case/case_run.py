@@ -93,7 +93,10 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 
     rundir = case.get_value("RUNDIR")
     loop = True
-
+    machine = case.get_value("MACH")
+    # special case of using the NODE_FAIL_REGEX code on cheyenne to avoid an mpt timeout issue on startup
+    if machine == "cheyenne":
+        case.spare_nodes = 2
     while loop:
         loop = False
 
@@ -115,8 +118,9 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                         logger.warning("Detected model run failed due to node failure, restarting")
 
                         # Archive the last consistent set of restart files and restore them
-                        case.case_st_archive(no_resubmit=True)
-                        case.restore_from_archive()
+                        if not machine == "cheyenne":
+                            case.case_st_archive(no_resubmit=True)
+                            case.restore_from_archive()
 
                         case.set_value("CONTINUE_RUN",
                                        case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
