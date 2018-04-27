@@ -1014,6 +1014,7 @@ contains
     logical                  :: first_call
     integer(IN)              :: found = -10
     logical                  :: useavg
+    logical                  :: use_double ! if true, use double-precision
     logical                  :: lwrite_now
     logical                  :: whead, wdata  ! for writing restart/history cdf files
     real(r8)                 :: tbnds(2)
@@ -1047,16 +1048,6 @@ contains
          mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
     call seq_comm_getdata(CPLID, &
          mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
-
-    call seq_infodata_getData(infodata, &
-         drv_threading=drv_threading,   &
-         atm_present=atm_present,       &
-         lnd_present=lnd_present,       &
-         rof_present=rof_present,       &
-         ice_present=ice_present,       &
-         ocn_present=ocn_present,       &
-         glc_present=glc_present,       &
-         wav_present=wav_present)
 
     lwrite_now = .true.
     useavg = .false.
@@ -1129,6 +1120,10 @@ contains
        endif
 
        if (lwrite_now) then
+
+          call seq_infodata_getData(infodata, &
+               drv_threading=drv_threading, &
+               histaux_double_precision = use_double)
 
           ncnt(found) = ncnt(found) + 1
           if (ncnt(found) < 1 .or. ncnt(found) > samples_per_file) ncnt(found) = 1
@@ -1207,21 +1202,23 @@ contains
                    call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
                    call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
                         nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true., use_float=.true., file_ind=found)
+                        pre=trim(aname), tavg=.true., use_float=(.not. use_double), &
+                        file_ind=found)
                 else
                    call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
                         nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true.,  use_float=.true., file_ind=found)
+                        pre=trim(aname), tavg=.true.,  use_float=(.not. use_double), &
+                        file_ind=found)
                 end if
              else if (present(flds)) then
                 call mct_aVect_copy(aVin=av,  aVout=avflds)
                 call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
                      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=.true., file_ind=found)
+                     use_float=(.not. use_double), file_ind=found)
              else
                 call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
                      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=.true., file_ind=found)
+                     use_float=(.not. use_double), file_ind=found)
              endif
 
              if (present(flds)) then
@@ -1311,14 +1308,7 @@ contains
     call seq_comm_getdata(CPLID, mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
 
     call seq_infodata_getData(infodata, &
-         drv_threading=drv_threading,   &
-         atm_present=atm_present,       &
-         lnd_present=lnd_present,       &
-         rof_present=rof_present,       &
-         ice_present=ice_present,       &
-         ocn_present=ocn_present,       &
-         glc_present=glc_present,       &
-         wav_present=wav_present)
+         drv_threading=drv_threading)
 
     lwrite_now = .true.
     useavg = .false.
