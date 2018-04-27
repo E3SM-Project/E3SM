@@ -11,6 +11,7 @@ chdir "${CASEROOT}";
 my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
+my $CASE		= `./xmlquery  CASE		-value`;
 my $SRCROOT		= `./xmlquery  SRCROOT		-value`;
 my $OBJROOT		= `./xmlquery  OBJROOT		-value`;
 my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
@@ -69,7 +70,7 @@ chdir "$CASEBUILD/maliconf";
 
 my $input_file = "$DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc";
 if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
-    $input_file = "$RUNDIR/mali.rst.${RUN_REFDATE}_${RUN_REFTOD}.nc";
+    $input_file = "$RUNDIR/${RUN_REFCASE}.mali.rst.${RUN_REFDATE}-${RUN_REFTOD}.nc";
     if (! -e "$input_file") {
         die " ERROR mali buildnml: missing specified restart file for branch or hybrid run: $input_file ";
     }
@@ -194,7 +195,7 @@ if ( -e "$CASEROOT/SourceMods/src.mali/$STREAM_NAME" ) {
 	print $stream_file "	-->\n";
 	print $stream_file "	<immutable_stream name=" . '"restart"' . "\n";
 	print $stream_file "					  type=" . '"input;output"' . "\n";
-	print $stream_file "					  filename_template=" . '"mali.rst.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file "					  filename_template=" . '"' . "$CASE.mali.rst." . '$Y-$M-$D-$S.nc"' . "\n";
 	print $stream_file "					  filename_interval=" . '"output_interval"' . "\n";
 	print $stream_file "					  clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "					  input_interval=" . '"initial_only"' . "\n";
@@ -207,7 +208,7 @@ if ( -e "$CASEROOT/SourceMods/src.mali/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "	<stream name=" . '"output"' . "\n";
 	print $stream_file "			type=" . '"output"' . "\n";
-	print $stream_file "			filename_template=" . '"mali.hist.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file "			filename_template=" . '"' . "$CASE.mali.hist." . '$Y-$M-$D-$S.nc"' . "\n";
 	print $stream_file "			filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
 	print $stream_file "			clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "			output_interval=" . '"0001-00-00_00:00:00"' . ">\n";
@@ -249,7 +250,7 @@ if ( -e "$CASEROOT/SourceMods/src.mali/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "<stream name=" . '"globalStatsOutput"' . "\n";
 	print $stream_file "        type=" . '"output"' . "\n";
-	print $stream_file "        filename_template=" . '"mali.hist.am.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file "        filename_template=" . '"' . "$CASE.mali.hist.am." . '$Y-$M-$D-$S.nc"' . "\n";
 	print $stream_file "        filename_interval=" . '"0001-00-00_00:00:00"' . "\n";
 	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "        packages=" . '"globalStatsAMPKG"' . "\n";
