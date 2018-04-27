@@ -156,6 +156,7 @@
 
     <comp_archive_spec compclass="esp" compname="dart">
       <rest_file_extension>r</rest_file_extension>
+      <rest_file_extension>rh\d?</rest_file_extension>
       <hist_file_extension>[ei]</hist_file_extension>
       <rest_history_varname>restart_hist</rest_history_varname>
       <rpointer>
@@ -163,7 +164,14 @@
         <rpointer_content>unset</rpointer_content>
       </rpointer>
       <test_file_names>
-      <tfile disposition="move">casename.dart.e.pop_preassim_priorinf_mean.1976-01-01-00000.nc</tfile>
+        <!-- Copy the little restart file and the files it references -->
+        <tfile disposition="copy">casename.dart.r.1976-01-01-00000.nc</tfile>
+        <tfile disposition="copy">casename.dart.rh.pop_preassim_priorinf_mean.1976-01-01-00000.nc</tfile>
+        <tfile disposition="copy">casename.dart.rh.cam_preassim_priorinf_mean.1976-01-01-00000.nc</tfile>
+        <!-- Move all the rest -->
+        <tfile disposition="move">casename.dart.e.cam_postassim_mean.1976-01-01-00000.nc</tfile>
+        <tfile disposition="move">casename.dart.i.cam_output_mean.1976-01-01-00000.nc</tfile>
+        <tfile disposition="move">casename.dart.e.cam_obs_seq_final.1976-01-01-00000.nc</tfile>
       </test_file_names>
     </comp_archive_spec>
   </components>
