@@ -178,7 +178,7 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                         # rel_path, and so cannot download the file. If it already exists, we can
                         # proceed
                         if not os.path.exists(full_path):
-                            logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
+                            logging.warning("Model {} missing file {} = '{}'".format(model, description, full_path))
                             if download:
                                 logging.warning("    Cannot download file since it lives outside of the input_data_root '{}'".format(input_data_root))
                             no_files_missing = False
@@ -194,12 +194,11 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                         # value and ignore it (perhaps with a warning)
                         if ("/" in rel_path and not os.path.exists(full_path)):
                             logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
+                            no_files_missing = False
 
                             if (download):
-                                success = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
+                                no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
                                                                isdirectory=rel_path.endswith(os.sep))
-                                if not success:
-                                    no_files_missing = False
                         else:
                             logging.debug("  Already had input file: '{}'".format(full_path))
 
