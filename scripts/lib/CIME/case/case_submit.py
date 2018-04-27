@@ -20,9 +20,10 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
         job = case.get_primary_job()
 
     rundir = case.get_value("RUNDIR")
-    continue_run = case.get_value("CONTINUE_RUN")
-    expect(os.path.isdir(rundir) or not continue_run,
-           " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
+    if job != "case.test":
+        continue_run = case.get_value("CONTINUE_RUN")
+        expect(os.path.isdir(rundir) or not continue_run,
+               " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
