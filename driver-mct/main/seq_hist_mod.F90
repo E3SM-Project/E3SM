@@ -971,7 +971,7 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
-       nx, ny, nt, write_now, flds, yr_offset, av_to_write)
+       nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write)
 
     implicit none
 
@@ -987,7 +987,26 @@ contains
     integer(IN)              , intent(in)           :: nt        ! number of time samples per file
     logical                  , optional, intent(in) :: write_now ! write a sample now, if not used, write every call
     character(*)             , optional, intent(in) :: flds      ! list of fields to write
-    integer                  , optional, intent(in) :: yr_offset ! offset to apply to current year when generating file name
+
+    ! Offset for starting time bound, in fractional days. This should be negative. If
+    ! tbnds1_offset is provided, then: When it's time to write the file, create the lower
+    ! time bound as curr_time + tbnds1_offset.
+    !
+    ! If tbnds1_offset is not provided, then the lower bound is either (a) the time from
+    ! the previous write, or (b) for the first write after restarting the model, the
+    ! model's prev_time from the first call to seq_hist_writeaux for this file. To achieve
+    ! accurate time bounds, it is important to provide this argument for (1) files for
+    ! which we do not call this every time step, but rather only call this when it's time
+    ! to write (which causes problems for (a)), and/or (2) files that are written
+    ! infrequently, for which there might be a model restart in the middle of an interval
+    ! (which causes problems for (b)).
+    real(r8)                 , optional, intent(in) :: tbnds1_offset
+
+    ! Offset to apply to current year when generating file name.
+    ! For example, for a field written once a year, yr_offset=-1 will make it so the file
+    ! with fields from year 1 has time stamp 0001-01-01 rather than 0002-01-01, which can
+    ! simplify later reading by a data model.
+    integer                  , optional, intent(in) :: yr_offset
 
     ! If av_to_write is provided, then write fields from this attribute vector.
     ! Otherwise, get the attribute vector from 'comp', based on 'flow'.
@@ -1137,10 +1156,6 @@ contains
              call seq_infodata_GetData( infodata,  case_name=case_name)
              call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
 
-             ! Adjust yyyy in file name by yr_offset, if present
-             ! For example, for a field written once a year,  this will make it so the file
-             ! with fields from year 1 has time stamp 0001-01-01 rather than 0002-01-01,
-             ! which can simplify later reading by a data model
              if (present(yr_offset)) then
                 yy = yy + yr_offset
              end if
@@ -1158,8 +1173,16 @@ contains
 
           ! loop twice,  first time write header,  second time write data for perf
 
-          tbnds(1) = tbnds1(found)
           tbnds(2) = tbnds2(found)
+          if (present(tbnds1_offset)) then
+             if (tbnds1_offset >= 0) then
+                call shr_sys_abort('seq_hist_writeaux: Expect negative tbnds1_offset for '// &
+                     trim(aname))
+             end if
+             tbnds(1) = tbnds(2) + tbnds1_offset
+          else
+             tbnds(1) = tbnds1(found)
+          end if
 
           do fk = fk1, 2
              if (fk == 1) then

@@ -33,6 +33,7 @@ module cime_comp_mod
   use shr_mpi_mod,       only: shr_mpi_bcast, shr_mpi_commrank, shr_mpi_commsize
   use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
+  use shr_cal_mod,       only: shr_cal_ymds2rday_offset
   use shr_orb_mod,       only: shr_orb_params
   use shr_frz_mod,       only: shr_frz_freezetemp_init
   use shr_reprosum_mod,  only: shr_reprosum_setopts
@@ -2094,6 +2095,8 @@ contains
     logical            :: drv_pause  ! Driver writes pause restart file
     character(len=CL)  :: drv_resume ! Driver resets state from restart file
 
+    type(ESMF_Time)    :: etime_curr            ! Current model time
+    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
     logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
@@ -2149,7 +2152,8 @@ contains
        !----------------------------------------------------------
 
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
-       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
+       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, &
+            ECurrTime = etime_curr)
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
@@ -3754,13 +3758,17 @@ contains
              end if
 
              if (t1yr_alarm) then
+                call shr_cal_ymds2rday_offset(etime=etime_curr, &
+                     rdays_offset = tbnds1_offset, &
+                     years_offset = -1)
                 do eli = 1,num_inst_lnd
                    suffix = component_get_suffix(lnd(eli))
                    ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
                    ! 0001-01-01 rather than 0002-01-01, etc.
                    call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
                         aname='l2x1yr_glc'//trim(suffix), dname='doml', &
-                        nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., yr_offset=-1, &
+                        nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
+                        tbnds1_offset = tbnds1_offset, yr_offset=-1, &
                         av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
                 enddo
              endif
