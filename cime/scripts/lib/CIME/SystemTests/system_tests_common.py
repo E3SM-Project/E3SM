@@ -3,14 +3,14 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog, get_model
+from CIME.utils import append_testlog, get_model, safe_copy
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
-import shutil, glob, gzip, time, traceback, six
+import glob, gzip, time, traceback, six
 
 logger = logging.getLogger(__name__)
 
@@ -453,8 +453,8 @@ class SystemTestsCommon(object):
                 m = re.search(r"/(cpl.*.log).*.gz",cpllog)
                 if m is not None:
                     baselog = os.path.join(basegen_dir, m.group(1))+".gz"
-                    shutil.copyfile(cpllog,
-                                    os.path.join(basegen_dir,baselog))
+                    safe_copy(cpllog,
+                              os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """

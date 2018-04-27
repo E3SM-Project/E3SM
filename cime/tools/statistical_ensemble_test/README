@@ -8,8 +8,8 @@ UF-CAM-ECT - detects issues in CAM and CLM (9 time step runs)
 POP-ECT - detects issues in POP and CICE (12 month runs)
 
 (1) The ECT process involves comparing several runs (3) generated with
-the new scenario to an ensemble built on a trusted machine (currently
-yellowstone). The python ECT tools are located in the pyCECT
+the new scenario to an ensemble built on a trusted machine (currently 
+cheyenne). The python ECT tools are located in the pyCECT
 subdirectory or https://github.com/NCAR/PyCECT/releases.
 
 Before the test can be run, a summary file is needed of the ensemble
@@ -33,11 +33,11 @@ soon).
 
 For example, for CAM-ECT:
 
-./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/ensemble/ensemble.cesm_tag.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --ensemble 151
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/ensemble/ensemble.cesm_tag.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel --ensemble 151
 
 For example, for UF-CAM-ECT:
 
-./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/uf_ensemble/ensemble.cesm_tag.uf.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --ensemble 350 --uf
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/uf_ensemble/ensemble.cesm_tag.uf.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel --ensemble 350 --uf
 
 Notes: -case name must end in ".000"
        -ensemble size must be specified, suggested defaults are 151 
@@ -60,11 +60,11 @@ attributes give this information.
 	   	
 For example, for CAM-ECT:
 
-./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel 
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel 
 
 For example, for UF-CAM-ECT:
 
-./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.uf.000 --mach yellowstone --compset F2000_DEV --res f19_f19 --compiler intel --uf
+./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/case.cesm_tag.uf.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel --uf
 
 Once all three simulations have run successfully, copy the cam.h0
 history file from each run directory into a separate directory. Next

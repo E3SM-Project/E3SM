@@ -7,7 +7,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.compare_namelists import is_namelist_file, compare_namelist_files
 from CIME.simple_compare import compare_files
-from CIME.utils import append_status
+from CIME.utils import append_status, safe_copy
 from CIME.test_status import *
 
 import os, shutil, traceback, stat, glob
@@ -29,8 +29,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
                             if "README" not in os.path.basename(item)\
                             and not item.endswith("doc")\
                             and not item.endswith("prescribed")\
-                            and not os.path.basename(item).startswith(".")] + \
-                            glob.glob("{}/*user_nl*".format(test_dir))
+                            and not os.path.basename(item).startswith(".")]
 
     comments = "NLCOMP\n"
     for item in all_items_to_compare:
@@ -79,7 +78,7 @@ def _do_full_nl_gen(case, test, generate_name, baseline_root=None):
         if (os.path.exists(preexisting_baseline)):
             os.remove(preexisting_baseline)
 
-        shutil.copy2(item, baseline_dir)
+        safe_copy(item, baseline_dir)
         os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
 def case_cmpgen_namelists(self, compare=False, generate=False, compare_name=None, generate_name=None, baseline_root=None, logfile_name="TestStatus.log"):

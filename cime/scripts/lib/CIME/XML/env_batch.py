@@ -329,8 +329,8 @@ class EnvBatch(EnvBase):
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:
                     nodes = self.get_children("directive", root=dnode)
-                    for node in nodes:
-                        if self._match_attribs(self.attrib(node), case, queue):
+                    if self._match_attribs(self.attrib(dnode), case, queue):
+                        for node in nodes:
                             directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
                             default = self.get(node, "default")
                             if default is None:
@@ -671,12 +671,14 @@ class EnvBatch(EnvBase):
 
     def get_default_queue(self):
         bs_nodes = self.get_children("batch_system")
+        node = None
         for bsnode in bs_nodes:
             qnodes = self.get_children("queues", root=bsnode)
             for qnode in qnodes:
                 node = self.get_optional_child("queue", attributes={"default" : "true"}, root=qnode)
                 if node is None:
                     node = self.get_optional_child("queue", root=qnode)
+
         expect(node is not None, "No queues found")
         return node
 

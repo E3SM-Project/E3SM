@@ -3,7 +3,7 @@ case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils                     import run_sub_or_cmd, append_status
+from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -28,7 +28,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
-        shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
+        safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
     case.check_lockedfiles()
@@ -182,19 +182,11 @@ def _post_run_check(case, lid):
 ###############################################################################
 def _save_logs(case, lid):
 ###############################################################################
-    logdir = case.get_value("LOGDIR")
-    if logdir is not None and len(logdir) > 0:
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-
-        caseroot = case.get_value("CASEROOT")
-        rundir = case.get_value("RUNDIR")
-        logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
-        for logfile in logfiles:
-            if os.path.isfile(logfile):
-                logfile_gz = gzip_existing_file(logfile)
-                shutil.copy(logfile_gz,
-                            os.path.join(caseroot, logdir, os.path.basename(logfile_gz)))
+    rundir = case.get_value("RUNDIR")
+    logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
+    for logfile in logfiles:
+        if os.path.isfile(logfile):
+            gzip_existing_file(logfile)
 
 ###############################################################################
 def _resubmit_check(case):
@@ -291,8 +283,7 @@ def case_run(self, skip_pnl=False):
         _do_external(postrun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="postrun")
         self.read_xml()
-
-    _save_logs(self, lid)       # Copy log files back to caseroot
+        _save_logs(self, lid)
 
     logger.warning("check for resubmit")
     _resubmit_check(self)
