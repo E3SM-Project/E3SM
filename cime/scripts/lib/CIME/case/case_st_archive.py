@@ -390,21 +390,16 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            if compname.find("mpas") == 0:
-                pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
-                pfile = re.compile(pattern)
-                restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
+            pfile = re.compile(pattern)
+            files = [f for f in os.listdir(rundir) if pfile.search(f)]
+            if ninst_strings:
+                pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
             else:
-                pattern = r"{}.{}[\d_]*\..*".format(casename, compname)
-                pfile = re.compile(pattern)
-                files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                if ninst_strings:
-                    pattern =  ninst_strings[i] + r'\.' + suffix + r'\.' + datename_str
-                else:
-                    pattern =                     r'\.' + suffix + r'\.' + datename_str
-                pfile = re.compile(pattern)
-                restfiles = [f for f in files if pfile.search(f)]
-                logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
+                pattern =                     r'\.' + suffix + r'\.' + datename_str
+            pfile = re.compile(pattern)
+            restfiles = [f for f in files if pfile.search(f)]
+            logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
