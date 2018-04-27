@@ -434,7 +434,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
 	print $stream_file '	<var name="iceAreaCellCategory1"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
-	erint $stream_file '<stream name="regionalStatisticsOutput"' . "\n";
+	print $stream_file '<stream name="regionalStatisticsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="' . "$CASE.mpassi.hist.am.regionalStatistics." . '$Y-$M.nc"' . "\n";
