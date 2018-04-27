@@ -36,7 +36,7 @@ contains
     ! they get too small.
     !
     ! !USES:
-    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_ed
+    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
     use clm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
@@ -199,7 +199,7 @@ contains
       pcrit = 1.e-8_r8
 
       ! patch loop
-      if (.not.use_ed) then
+      if (.not.use_fates) then
          do fp = 1,num_soilp
             p = filter_soilp(fp)
 
@@ -674,7 +674,7 @@ contains
             endif
 
          end do ! end of pft loop
-      end if ! end of if(not.use_ed)
+      end if ! end of if(not.use_fates)
 
       if (.not. is_active_betr_bgc) then
 
@@ -700,7 +700,7 @@ contains
                   if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
                      cc = cc + cs%decomp_cpools_vr_col(c,j,k)
                      cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                     if (.not.use_ed) then
+                     if (.not.use_fates) then
                         cn = cn + ns%decomp_npools_vr_col(c,j,k)
                         ns%decomp_npools_vr_col(c,j,k) = 0._r8
                      endif
@@ -720,7 +720,7 @@ contains
                ! be getting the N truncation flux anyway.
 
                cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
-               if (.not.use_ed) then
+               if (.not.use_fates) then
                   ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
                endif
                if ( use_c13 ) then
@@ -765,7 +765,7 @@ contains
             !      cp_eca = 0.0_r8
             !      do l = 1,ndecomp_pools
             !         if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
-            !            if (.not.use_ed) then
+            !            if (.not.use_fates) then
             !               cp_eca = cp_eca + ps%decomp_ppools_vr_col(c,j,k)
             !               ps%decomp_ppools_vr_col(c,j,k) = 0._r8
             !            endif

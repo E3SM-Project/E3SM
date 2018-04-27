@@ -11,7 +11,7 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
+  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_fates, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -244,7 +244,7 @@ contains
     ! The PFT file, specifically, will dictate how many pfts are used
     ! in fates, and this will influence the amount of memory we
     ! request from the model, which is relevant in set_fates_global_elements()
-    if (use_ed) then
+    if (use_fates) then
        call FatesReadPFTs()
     end if
 
@@ -264,7 +264,7 @@ contains
     ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
     ! to allocate space)
     ! ------------------------------------------------------------------------
-    call set_fates_global_elements(use_ed)
+    call set_fates_global_elements(use_fates)
     
 
     ! ------------------------------------------------------------------------
@@ -386,7 +386,7 @@ contains
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_ed
+    use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
     use clm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep 
@@ -575,13 +575,13 @@ contains
     ! Read in private parameters files, this should be preferred for mulitphysics
     ! implementation, jinyun Tang, Feb. 11, 2015
     ! ------------------------------------------------------------------------
-    if(use_cn .or. use_ed) then
+    if(use_cn .or. use_fates) then
        call init_decomp_cascade_constants()
     endif
     !read bgc implementation specific parameters when needed
     call readPrivateParameters()
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        if (.not. is_active_betr_bgc)then
           if (use_century_decomp) then
            ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
@@ -891,7 +891,7 @@ contains
     ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
    
-    if ( use_ed .and. .not.is_restart() .and. finidat == ' ') then
+    if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
        call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
                                      soilstate_vars, frictionvel_vars)
     end if
