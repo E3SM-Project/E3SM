@@ -399,11 +399,7 @@ contains
 
           if (do_capsnow(c)) then
              dz_snowf = 0._r8
-#ifdef APPLY_POST_DECK_BUGFIXES
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
-#else
-             newsnow(c) = (1._r8 - frac_h2osfc(c)) * qflx_snow_grnd_col(c) * dtime
-#endif
              frac_sno(c)=1._r8
              int_snow(c) = 5.e2_r8
           else
@@ -415,13 +411,8 @@ contains
                 bifall=50._r8
              end if
 
-#ifdef APPLY_POST_DECK_BUGFIXES
              ! all snow falls on ground, no snow on h2osfc
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
-#else
-             ! newsnow is all snow that doesn't fall on h2osfc
-             newsnow(c) = (1._r8 - frac_h2osfc(c)) * qflx_snow_grnd_col(c) * dtime
-#endif
 
              ! update int_snow
              int_snow(c) = max(int_snow(c),h2osno(c)) !h2osno could be larger due to frost
@@ -516,13 +507,8 @@ contains
                 endif
              endif ! end of h2osno > 0
 
-#ifdef APPLY_POST_DECK_BUGFIXES
              ! no snow on surface water
              qflx_snow_h2osfc(c) = 0._r8
-#else
-             ! snow directly falling on surface water melts, increases h2osfc
-             qflx_snow_h2osfc(c) = frac_h2osfc(c)*qflx_snow_grnd_col(c)
-#endif
 
              ! update h2osno for new snow
              h2osno(c) = h2osno(c) + newsnow(c) 
