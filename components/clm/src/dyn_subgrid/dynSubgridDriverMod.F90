@@ -171,7 +171,7 @@ contains
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
-    use dynConsBiogeochemMod , only : dyn_cnbal_patch
+    use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp
     use dynCNDVMod           , only : dynCNDV_interp
@@ -323,6 +323,10 @@ contains
           call PStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                phosphorusflux_vars, phosphorusstate_vars)
+
+          call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
+               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+               nitrogenstate_vars, phosphorusstate_vars )
        end if
 
     end do

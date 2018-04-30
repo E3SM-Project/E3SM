@@ -77,6 +77,7 @@ module PhosphorusStateType
      real(r8), pointer :: prod10p_col                  (:)     ! col (gP/m2) wood product P pool, 10-year lifespan
      real(r8), pointer :: prod100p_col                 (:)     ! col (gP/m2) wood product P pool, 100-year lifespan
      real(r8), pointer :: totprodp_col                 (:)     ! col (gP/m2) total wood product P
+     real(r8), pointer :: dyn_pbal_adjustments_col     (:)     ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
 
      ! summary (diagnostic) state variables, not involved in mass balance
      real(r8), pointer :: dispvegp_patch               (:)     ! patch (gP/m2) displayed veg phosphorus, excluding storage
@@ -151,6 +152,7 @@ module PhosphorusStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
      procedure , public  :: DynamicPatchAdjustments
+     procedure , public  :: DynamicColumnAdjustments
      procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold
@@ -256,6 +258,7 @@ contains
     allocate(this%prod10p_col              (begc:endc))                   ; this%prod10p_col              (:)   = nan
     allocate(this%prod100p_col             (begc:endc))                   ; this%prod100p_col             (:)   = nan
     allocate(this%totprodp_col             (begc:endc))                   ; this%totprodp_col             (:)   = nan
+    allocate(this%dyn_pbal_adjustments_col (begc:endc))                   ; this%dyn_pbal_adjustments_col (:)   = nan
     allocate(this%totlitp_col              (begc:endc))                   ; this%totlitp_col              (:)   = nan
     allocate(this%totsomp_col              (begc:endc))                   ; this%totsomp_col              (:)   = nan
     allocate(this%totlitp_1m_col           (begc:endc))                   ; this%totlitp_1m_col           (:)   = nan
@@ -2204,5 +2207,96 @@ contains
     end do
 
   end subroutine DynamicPatchAdjustments
+
+  !-----------------------------------------------------------------------
+  subroutine DynamicColumnAdjustments( this, &
+       bounds, clump_index, column_state_updater)
+    !
+    ! !DESCRIPTION:
+    ! Adjust state variables and compute associated fluxes when patch areas change due to
+    ! dynamic landuse
+    !
+    ! !USES:
+    use dynPriorWeightsMod       , only : prior_weights_type
+    use landunit_varcon          , only : istsoil, istcrop
+    use dynColumnStateUpdaterMod , only : column_state_updater_type
+    !
+    ! !ARGUMENTS:
+    class(phosphorusstate_type)     , intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                         , intent(in)    :: clump_index
+    type(column_state_updater_type) , intent(in)    :: column_state_updater
+    !
+    ! !LOCAL VARIABLES:
+    integer                     :: l, j
+    integer                     :: begc, endc
+    real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+
+    character(len=*), parameter :: subname = 'NStateDynamicColumnAdjustments'
+    !-----------------------------------------------------------------------
+
+    begc = bounds%begc
+    endc = bounds%endc
+
+    !this%dyn_pbal_adjustments_col(begc:endc) = 0._r8
+
+    do l = 1, ndecomp_pools
+       do j = 1, nlevdecomp
+          call column_state_updater%update_column_state_no_special_handling( &
+               bounds      = bounds,                                         &
+               clump_index = clump_index,                                    &
+               var         = this%decomp_ppools_vr_col(begc:endc, j, l),     &
+               adjustment  = adjustment_one_level(begc:endc))
+
+          this%dyn_pbal_adjustments_col(begc:endc) =      &
+               this%dyn_pbal_adjustments_col(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       end do
+    end do
+
+    do j = 1, nlevdecomp
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%ptrunc_vr_col(begc:endc,j),                &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%solutionp_vr_col(begc:endc,j),             &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%labilep_vr_col(begc:endc,j),               &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%secondp_vr_col(begc:endc,j),               &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+    end do
+
+  end subroutine DynamicColumnAdjustments
 
 end module PhosphorusStateType
