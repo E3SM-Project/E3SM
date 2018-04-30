@@ -36,6 +36,7 @@ module dynConsBiogeochemMod
   save
   
   public :: dyn_cnbal_patch
+  public :: dyn_cnbal_column
   !-----------------------------------------------------------------------
 
 contains
@@ -1113,4 +1114,64 @@ contains
 
  end subroutine PhosphorusFluxVarsInit
 
-end module dynConsBiogeochemMod
+ !-----------------------------------------------------------------------
+ subroutine dyn_cnbal_column( bounds, clump_index, column_state_updater, &
+       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+       nitrogenstate_vars, phosphorusstate_vars)
+   !
+   ! !DESCRIPTION:
+   ! Modify column-level state variables to maintain carbon, nitrogen
+   ! and phosphorus balance with dynamic column weights.
+   !
+   ! !USES:
+   use dynColumnStateUpdaterMod, only : column_state_updater_type
+   use dynPriorWeightsMod      , only : prior_weights_type
+   use clm_varctl              , only : use_lch4
+   !
+   ! !ARGUMENTS:
+   type(bounds_type)               , intent(in)    :: bounds
+   integer                         , intent(in)    :: clump_index
+   type(column_state_updater_type) , intent(in)    :: column_state_updater
+   type(carbonstate_type)          , intent(inout) :: carbonstate_vars
+   type(carbonstate_type)          , intent(inout) :: c13_carbonstate_vars
+   type(carbonstate_type)          , intent(inout) :: c14_carbonstate_vars
+   type(nitrogenstate_type)        , intent(inout) :: nitrogenstate_vars
+   type(phosphorusstate_type)      , intent(inout) :: phosphorusstate_vars
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'dyn_cnbal_col'
+   !-----------------------------------------------------------------------
+
+   associate(&
+         cs     => carbonstate_vars,     &
+         c13_cs => c13_carbonstate_vars, &
+         c14_cs => c14_carbonstate_vars, &
+         ns     => nitrogenstate_vars  , &
+         ps     => phosphorusstate_vars  &
+         )
+
+    call cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   if (use_c13) then
+      call c13_cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+   end if
+
+   if (use_c14) then
+      call c14_cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+   end if
+
+   call ns%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   call ps%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   if (use_lch4) then
+      call endrun(msg=' ERROR: use_lch4 = .true. not supported with dynamic landunits'//&
+           errMsg(__FILE__, __LINE__))
+   end if
+
+ end associate
+
+end subroutine dyn_cnbal_column
+
+ end module dynConsBiogeochemMod

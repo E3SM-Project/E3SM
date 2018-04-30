@@ -77,6 +77,7 @@ module CNNitrogenStateType
      real(r8), pointer :: prod10n_col                  (:)     ! col (gN/m2) wood product N pool, 10-year lifespan
      real(r8), pointer :: prod100n_col                 (:)     ! col (gN/m2) wood product N pool, 100-year lifespan
      real(r8), pointer :: totprodn_col                 (:)     ! col (gN/m2) total wood product N
+     real(r8), pointer :: dyn_nbal_adjustments_col     (:)     ! (gN/m2) adjustments to each column made in this timestep via dynamic column area adjustments
 
      ! summary (diagnostic) state variables, not involved in mass balance
      real(r8), pointer :: dispvegn_patch               (:)     ! patch (gN/m2) displayed veg nitrogen, excluding storage
@@ -196,6 +197,7 @@ module CNNitrogenStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
      procedure , public  :: DynamicPatchAdjustments
+     procedure , public  :: DynamicColumnAdjustments
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -293,6 +295,7 @@ contains
     allocate(this%prod10n_col              (begc:endc))                   ; this%prod10n_col              (:)   = nan
     allocate(this%prod100n_col             (begc:endc))                   ; this%prod100n_col             (:)   = nan
     allocate(this%totprodn_col             (begc:endc))                   ; this%totprodn_col             (:)   = nan
+    allocate(this%dyn_nbal_adjustments_col (begc:endc))                   ; this%dyn_nbal_adjustments_col (:)   = nan
     allocate(this%totlitn_col              (begc:endc))                   ; this%totlitn_col              (:)   = nan
     allocate(this%totsomn_col              (begc:endc))                   ; this%totsomn_col              (:)   = nan
     allocate(this%totlitn_1m_col           (begc:endc))                   ; this%totlitn_1m_col           (:)   = nan
@@ -2195,5 +2198,76 @@ contains
     end do
 
   end subroutine DynamicPatchAdjustments 
+
+  !-----------------------------------------------------------------------
+  subroutine DynamicColumnAdjustments( this, &
+       bounds, clump_index, column_state_updater)
+    !
+    ! !DESCRIPTION:
+    ! Adjust state variables and compute associated fluxes when patch areas change due to
+    ! dynamic landuse
+    !
+    ! !USES:
+    use dynPriorWeightsMod       , only : prior_weights_type
+    use landunit_varcon          , only : istsoil, istcrop
+    use dynColumnStateUpdaterMod , only : column_state_updater_type
+    !
+    ! !ARGUMENTS:
+    class(nitrogenstate_type)       , intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                         , intent(in)    :: clump_index
+    type(column_state_updater_type) , intent(in)    :: column_state_updater
+    !
+    ! !LOCAL VARIABLES:
+    integer                     :: l, j
+    integer                     :: begc, endc
+    real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+
+    character(len=*), parameter :: subname = 'NStateDynamicColumnAdjustments'
+    !-----------------------------------------------------------------------
+
+    begc = bounds%begc
+    endc = bounds%endc
+
+    !this%dyn_nbal_adjustments_col(begc:endc) = 0._r8
+
+    do l = 1, ndecomp_pools
+       do j = 1, nlevdecomp
+          call column_state_updater%update_column_state_no_special_handling( &
+               bounds      = bounds,                                         &
+               clump_index = clump_index,                                    &
+               var         = this%decomp_npools_vr_col(begc:endc, j, l),     &
+               adjustment  = adjustment_one_level(begc:endc))
+
+          this%dyn_nbal_adjustments_col(begc:endc) = &
+               this%dyn_nbal_adjustments_col(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       end do
+    end do
+
+    do j = 1, nlevdecomp
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%ntrunc_vr_col(begc:endc,j),     &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_nbal_adjustments_col(begc:endc) = &
+            this%dyn_nbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+           bounds      = bounds                          , &
+           clump_index = clump_index                     , &
+           var         = this%sminn_vr_col(begc:endc, j) , &
+           adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_nbal_adjustments_col(begc:endc) = &
+           this%dyn_nbal_adjustments_col(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+    end do
+
+  end subroutine DynamicColumnAdjustments
 
 end module CNNitrogenStateType

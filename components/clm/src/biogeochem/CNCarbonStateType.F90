@@ -76,6 +76,7 @@ module CNCarbonStateType
      ! all c pools involved in decomposition
      real(r8), pointer :: decomp_cpools_vr_col    (:,:,:)  ! col (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
      real(r8), pointer :: ctrunc_vr_col           (:,:)    ! col (gC/m3) vertically-resolved column-level sink for C truncation
+     
 
      ! pools for dynamic landcover
      real(r8), pointer :: cropseedc_deficit_patch  (:) ! (gC/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
@@ -85,6 +86,7 @@ module CNCarbonStateType
      real(r8), pointer :: prod10c_col              (:)     ! col (gC/m2) wood product C pool, 10-year lifespan
      real(r8), pointer :: prod100c_col             (:)     ! col (gC/m2) wood product C pool, 100-year lifespan
      real(r8), pointer :: totprodc_col             (:)     ! col (gC/m2) total wood product C
+     real(r8), pointer :: dyn_cbal_adjustments_col (:)     ! (gC/m2) adjustments to each column made in this timestep via dynamic column area adjustments
      ! pools for crop harvest
      real(r8), pointer :: prod1c_col               (:)     ! col (gC/m2) crop product C pool, 1-year lifespan
 
@@ -144,6 +146,7 @@ module CNCarbonStateType
      procedure , public  :: Restart
      procedure , public  :: Summary
      procedure , public  :: DynamicPatchAdjustments
+     procedure , public  :: DynamicColumnAdjustments
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -235,6 +238,7 @@ contains
     allocate(this%prod100c_col             (begc :endc))                   ;     this%prod100c_col             (:)   = nan
     allocate(this%prod1c_col               (begc :endc))                   ;     this%prod1c_col               (:)   = nan
     allocate(this%totprodc_col             (begc :endc))                   ;     this%totprodc_col             (:)   = nan
+    allocate(this%dyn_cbal_adjustments_col (begc :endc))                   ;     this%dyn_cbal_adjustments_col (:)   = nan
     allocate(this%totlitc_col              (begc :endc))                   ;     this%totlitc_col              (:)   = nan
     allocate(this%totsomc_col              (begc :endc))                   ;     this%totsomc_col              (:)   = nan
     allocate(this%totlitc_1m_col           (begc :endc))                   ;     this%totlitc_1m_col           (:)   = nan
@@ -3668,8 +3672,68 @@ contains
        dwt_deadcrootc_to_litter(p) = -1._r8 * dwt_deadcrootc_to_litter(p)
     end do
 
-
-
   end subroutine DynamicPatchAdjustments
   
+  !-----------------------------------------------------------------------
+  subroutine DynamicColumnAdjustments( this, &
+       bounds, clump_index, column_state_updater)
+    !
+    ! !DESCRIPTION:
+    ! Adjust state variables and compute associated fluxes when patch areas change due to
+    ! dynamic landuse
+    !
+    ! !USES:
+    use dynPriorWeightsMod , only : prior_weights_type
+    use landunit_varcon    , only : istsoil, istcrop
+    use dynColumnStateUpdaterMod, only : column_state_updater_type
+    !
+    ! !ARGUMENTS:
+    class(carbonstate_type)         , intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                         , intent(in)    :: clump_index
+    type(column_state_updater_type) , intent(in)    :: column_state_updater
+    !
+    ! !LOCAL VARIABLES:
+    integer                     :: l, j
+    integer                     :: begc, endc
+    real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+
+    character(len=*), parameter :: subname = 'CStateDynamicColumnAdjustments'
+    !-----------------------------------------------------------------------
+
+    begc = bounds%begc
+    endc = bounds%endc
+
+    this%dyn_cbal_adjustments_col(begc:endc) = 0._r8
+
+    do l = 1, ndecomp_pools
+       do j = 1, nlevdecomp
+          call column_state_updater%update_column_state_no_special_handling( &
+               bounds      = bounds,                                         &
+               clump_index = clump_index,                                    &
+               var         = this%decomp_cpools_vr_col(begc:endc, j, l),     &
+               adjustment  = adjustment_one_level(begc:endc))
+
+          this%dyn_cbal_adjustments_col(begc:endc) = &
+               this%dyn_cbal_adjustments_col(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       end do
+    end do
+
+    do j = 1, nlevdecomp
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%ctrunc_vr_col(begc:endc,j),     &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_cbal_adjustments_col(begc:endc) = &
+            this%dyn_cbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+    end do
+
+  end subroutine DynamicColumnAdjustments
+
 end module CNCarbonStateType
