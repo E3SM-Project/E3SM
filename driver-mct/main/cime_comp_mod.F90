@@ -2152,8 +2152,7 @@ contains
        !----------------------------------------------------------
 
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
-       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, &
-            ECurrTime = etime_curr)
+       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
@@ -3758,6 +3757,7 @@ contains
              end if
 
              if (t1yr_alarm) then
+                call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
                 call shr_cal_ymds2rday_offset(etime=etime_curr, &
                      rdays_offset = tbnds1_offset, &
                      years_offset = -1)
