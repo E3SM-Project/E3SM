@@ -51,6 +51,11 @@ OR
     parser.add_argument("--resubmit", action="store_true",
                         help="Used with tests only, to continue rather than restart a test. ")
 
+    parser.add_argument("--resubmit-immediate", action="store_true",
+                        help="This queues all of the resubmissions immediately after "
+                        "the first job is queued. These rely on the queue system to "
+                        "handle dependencies.")
+
     parser.add_argument("--skip-preview-namelist", action="store_true",
                         help="Skip calling preview-namelist during case.run")
 
@@ -63,14 +68,14 @@ OR
 
     CIME.utils.resolve_mail_type_args(args)
 
-    return args.caseroot, args.job, args.no_batch, args.prereq, args.prereq_allow_failure, \
-        args.resubmit, args.skip_preview_namelist, args.mail_user, args.mail_type, \
-        args.batch_args
+    return (args.caseroot, args.job, args.no_batch, args.prereq, args.prereq_allow_failure,
+            args.resubmit, args.resubmit_immediate, args.skip_preview_namelist, args.mail_user,
+            args.mail_type, args.batch_args)
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, job, no_batch, prereq, allow_fail, resubmit, skip_pnl, \
+    caseroot, job, no_batch, prereq, allow_fail, resubmit, resubmit_immediate, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
 
     # save these options to a hidden file for use during resubmit
@@ -93,8 +98,8 @@ def _main_func(description):
 
     with Case(caseroot, read_only=False) as case:
         case.submit(job=job, no_batch=no_batch, prereq=prereq, allow_fail=allow_fail,
-                    resubmit=resubmit, skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
-                    batch_args=batch_args)
+                    resubmit=resubmit, resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
+                    mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)

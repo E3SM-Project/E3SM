@@ -507,8 +507,8 @@ class EnvBatch(EnvBase):
             if allow_fail:
                 dep_string = self.get_value("depend_allow_string", subgroup=None)
                 if dep_string is None:
-                    logger.warn("'depend_allow_string' is not defined for this batch system, " +
-                                "falling back to the 'depend_string'")
+                    logger.warning("'depend_allow_string' is not defined for this batch system, " +
+                                   "falling back to the 'depend_string'")
                     dep_string = self.get_value("depend_string", subgroup=None)
             else:
                 dep_string = self.get_value("depend_string", subgroup=None)
