@@ -88,6 +88,11 @@
     <alias>FC5AV1C</alias>
     <lname>2000_CAM5%AV1C_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+    
+  <compset>
+    <alias>FC5AV1C-AQUAP</alias>
+    <lname>2000_CAM5%AV1C_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <compset>
     <alias>FC5AV1C-00</alias>
