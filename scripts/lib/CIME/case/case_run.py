@@ -106,37 +106,35 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         save_prerun_provenance(case)
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
-
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
-        if stat != 0:
-            if node_fail_re:
-                node_fail_regex = re.compile(node_fail_re)
-                model_logfile = os.path.join(rundir, model + ".log." + lid)
-                if os.path.exists(model_logfile):
-                    num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
-                    if num_fails > 0 and case.spare_nodes >= num_fails:
+        if node_fail_re:
+            node_fail_regex = re.compile(node_fail_re)
+            model_logfile = os.path.join(rundir, model + ".log." + lid)
+            if os.path.exists(model_logfile):
+                num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                if num_fails > 0 and case.spare_nodes >= num_fails:
                         # We failed due to node failure!
-                        logger.warning("Detected model run failed due to node failure, restarting")
+                    logger.warning("Detected model run failed due to node failure, restarting")
 
-                        # Archive the last consistent set of restart files and restore them
-                        if case.get_value("ALLOCATE_SPARE_NODES"):
-                            case.case_st_archive(no_resubmit=True)
-                            case.restore_from_archive()
+                    # Archive the last consistent set of restart files and restore them
+                    if case.get_value("ALLOCATE_SPARE_NODES"):
+                        case.case_st_archive(no_resubmit=True)
+                        case.restore_from_archive()
 
-                        case.set_value("CONTINUE_RUN",
-                                       case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                    case.set_value("CONTINUE_RUN",
+                                   case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-                        lid = new_lid()
-                        loop = True
+                    lid = new_lid()
+                    loop = True
 
-                        case.create_namelists()
+                    case.create_namelists()
 
-                        case.spare_nodes -= num_fails
+                    case.spare_nodes -= num_fails
 
-            if not loop:
-                # We failed and we're not restarting
-                expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
+                if stat != 0 and not loop:
+                    # We failed and we're not restarting
+                    expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
     logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 

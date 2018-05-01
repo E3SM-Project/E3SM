@@ -253,7 +253,7 @@
   <machine MACH="cheyenne">
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
-    <NODE_FAIL_REGEX>MPT ERROR: could not launch executable</NODE_FAIL_REGEX>
+    <NODE_FAIL_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</NODE_FAIL_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
