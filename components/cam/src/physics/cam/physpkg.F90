@@ -2608,21 +2608,28 @@ if (l_tracer_aero) then
 
        call t_startf('bc_aerosols')
        if (clim_modal_aero .and. .not. prog_modal_aero) then
+          call t_startf("DD1")
           call modal_aero_calcsize_diag(state, pbuf)
+          call t_stopf("DD1")
+          call t_startf("DD2")
           call modal_aero_wateruptake_dr(state, pbuf)
+          call t_stopf("DD2")
        endif
 
        if (do_clubb_sgs) then
           sh_e_ed_ratio = 0.0_r8
        endif
 
+       call t_startf("DD3")
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
-       
+       call t_stopf("DD3")
+       call t_startf("DD4")
        call physics_update(state, ptend, ztodt, tend)
+       call t_stopf("DD4")
 
 
        if (carma_do_wetdep) then
@@ -2642,10 +2649,14 @@ if (l_tracer_aero) then
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
 
+       call t_startf("DD5")
        call physics_update(state, ptend, ztodt, tend)
+       call t_stopf("DD5")
 
        ! check tracer integrals
+       call t_startf("DD6")
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
+       call t_stopf("DD6")
 
        call t_stopf('bc_aerosols')
 
