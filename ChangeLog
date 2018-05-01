@@ -1,5 +1,32 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 5-01-2018
+Tag: cime5.6.2
+Answer Changes: None
+Tests: load_balancing_test.py
+       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17 
+Dependencies:
+
+Brief Summary:
+    - Refine distinction of E vs Q compset.
+    - Update load balance tool.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b2a19cd Merge pull request #2525 from jedwards4b/better_distinguish_compset_Q_from_E
+28b8634 Merge pull request #2520 from ESMCI/sarich/update-loadbalancingtool
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case/case.py
+M       tools/load_balancing_tool/load_balancing_submit.py
+M       tools/load_balancing_tool/tests/load_balancing_test.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 5-01-2018
 Tag: cime5.6.1
