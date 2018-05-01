@@ -6,7 +6,7 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 
 from standard_script_setup import *
 from CIME.case        import Case
-from ConfigParser import SafeConfigParser
+from six.moves import configparser
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -70,7 +70,7 @@ def _main_func(description):
     # save these options to a hidden file for use during resubmit
     config_file = os.path.join(caseroot,".submit_options")
     if skip_pnl or mail_user or mail_type or batch_args:
-        config = SafeConfigParser()
+        config = configparser.SafeConfigParser()
         config.add_section("SubmitOptions")
         if skip_pnl:
             config.set("SubmitOptions", "skip_pnl", skip_pnl)
