@@ -24,11 +24,25 @@ def _build_prereq_str(case, prev_job_ids):
 
 def _check_and_resubmit(case, prev_job_ids, num_resubmit, submit_args):
     if num_resubmit > 0:
-        submit_args["resubmit"] = True
         while num_resubmit > 0:
             submit_args["prereq"] = _build_prereq_str(case, prev_job_ids)
             prev_job_ids = case.submit_jobs(**submit_args)
             num_resubmit -= 1
+
+def _run_args(case, job=None, skip_pnl=False, resubmit_immediate=False):
+    args = {}
+    # A little hacky, but this is potentially used in two different ways:
+    # 1) If no batch system is defined, then these are passed as arguments to
+    #    case_run or case_test. In that case, they expect bools for both parameters.
+    #    This, however passes non-empty strings, which when used in logical statements,
+    #    are equivalent to True.
+    # 2) If a batch system is defined, the value strings are used as arguments to the script
+    # TODO: Assign the command line arguments to constants and use those everywhere
+    if job in ["case.run", "case.test"] and skip_pnl:
+        args["skip_pnl"] = "--skip-preview-namelist"
+    if job == "case.run" and resubmit_immediate and case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
+        args["set_continue_run"] = "--completion-sets-continue-run"
+    return args
 
 def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
             resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
@@ -107,12 +121,13 @@ manual edits to these file will be lost!
     logger.warning("submit_jobs {}".format(job))
     submit_args = {"no_batch": no_batch,
                    "job": job,
-                   "skip_pnl": skip_pnl,
                    "prereq": prereq,
                    "allow_fail": allow_fail,
                    "mail_user": mail_user,
                    "mail_type": mail_type,
-                   "batch_args": batch_args
+                   "batch_args": batch_args,
+                   "run_args": _run_args(case, job=job, skip_pnl=skip_pnl,
+                                         resubmit_immediate=resubmit_immediate)
     }
     job_ids = case.submit_jobs(**submit_args)
 
@@ -194,4 +209,5 @@ def check_DA_settings(self):
     script = self.get_value("DATA_ASSIMILATION_SCRIPT")
     cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     if len(script) > 0 and os.path.isfile(script) and cycles > 0:
-        logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
+        logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,
+                                                                                        cycles))

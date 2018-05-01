@@ -414,8 +414,8 @@ class EnvBatch(EnvBase):
         return submitargs
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None,
-                    allow_fail=False, skip_pnl=False, mail_user=None,
-                    mail_type=None, batch_args=None, dry_run=False):
+                    allow_fail=False, mail_user=None, mail_type=None, batch_args=None,
+                    dry_run=False, run_args={}):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -464,11 +464,11 @@ class EnvBatch(EnvBase):
                                              dep_jobs=dep_jobs,
                                              allow_fail=allow_fail,
                                              no_batch=no_batch,
-                                             skip_pnl=skip_pnl,
                                              mail_user=mail_user,
                                              mail_type=mail_type,
                                              batch_args=batch_args,
-                                             dry_run=dry_run)
+                                             dry_run=dry_run,
+                                             run_args=run_args)
             batch_job_id = str(alljobs.index(job)) if dry_run else result
             depid[job] = batch_job_id
             jobcmds.append( (job, result) )
@@ -480,9 +480,17 @@ class EnvBatch(EnvBase):
         else:
             return depid
 
+    def _build_run_args_str(self, run_args):
+        batch_env_flag = self.get_value("batch_env", subgroup=None)
+        run_args_str = " ".join(run_args.values())
+        if not batch_env_flag:
+            return run_args_str
+        else:
+            return " {} ARGS_FOR_SCRIPT='{}' ".format(batch_env_flag, run_args_str)
+
     def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
-                           no_batch=False, skip_pnl=False, mail_user=None,
-                           mail_type=None, batch_args=None, dry_run=False):
+                           no_batch=False, mail_user=None, mail_type=None,
+                           batch_args=None, dry_run=False, run_args=None):
         if not dry_run:
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -490,11 +498,7 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
             if not dry_run:
-                if "archive" not in function_name:
-                    getattr(case,function_name)(skip_pnl=skip_pnl)
-                else:
-                    getattr(case,function_name)()
-
+                getattr(case,function_name)(**run_args)
             return
 
         submitargs = self.get_submit_args(case, job)
@@ -568,20 +572,14 @@ class EnvBatch(EnvBase):
         submitcmd = ''
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if batch_env_flag:
-            sequence = (batchsubmit, submitargs, "skip_pnl", batchredirect, get_batch_script_for_job(job))
+            sequence = (batchsubmit, submitargs, self._build_run_args_str(run_args),
+                        batchredirect, get_batch_script_for_job(job))
         else:
-            sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), "skip_pnl")
+            sequence = (batchsubmit, submitargs, batchredirect,
+                        get_batch_script_for_job(job), self._build_run_args_str(run_args))
 
         for string in sequence:
-            if string == "skip_pnl":
-                if job in ['case.run', 'case.test'] and skip_pnl:
-                    batch_env_flag = self.get_value("batch_env", subgroup=None)
-                    if not batch_env_flag:
-                        submitcmd += " --skip-preview-namelist "
-                    else:
-                        submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist' ".format(batch_env_flag)
-
-            elif string is not None:
+            if string is not None:
                 submitcmd += string + " "
 
         if dry_run:

@@ -254,7 +254,7 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
 
 ###############################################################################
-def case_run(self, skip_pnl=False):
+def case_run(self, skip_pnl=False, set_continue_run=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
@@ -300,6 +300,9 @@ def case_run(self, skip_pnl=False):
                     lid, prefix="postrun")
         self.read_xml()
         _save_logs(self, lid)
+
+    if set_continue_run:
+        self.set_value("CONTINUE_RUN", True)
 
     logger.warning("check for resubmit")
     _resubmit_check(self)
