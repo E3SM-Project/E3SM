@@ -525,4 +525,17 @@
     </values>
   </entry>
 
+  <entry id="domain_fracname">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>
+      Name of the fraction field on the first stream file (i.e., the
+      file from which domain information is read.)
+    </desc>
+    <values>
+      <value>doml_frac</value>
+    </values>
+  </entry>
+
 </entry_id>
