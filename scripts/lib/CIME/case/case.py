@@ -499,7 +499,7 @@ class Case(object):
             # this is a "J" compset
             primary_component = "allactive"
         elif progcomps["ATM"]:
-            if "DOCN%SOM" in self._compsetname:
+            if "DOCN%SOM" in self._compsetname and progcomps["LND"]:
                 # This is an "E" compset
                 primary_component = "allactive"
             else:
@@ -538,7 +538,6 @@ class Case(object):
                                             {"component":component}, resolved=False)
 
         self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
-
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
