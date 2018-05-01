@@ -115,7 +115,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
             model_logfile = os.path.join(rundir, model + ".log." + lid)
             if os.path.exists(model_logfile):
                 num_fails = len(retry_run_regex.findall(open(model_logfile, 'r').read()))
-                print ("HERE num_fails {} spare_nodes {}".format(num_fails, case.spare_nodes))
+                logger.debug ("RETRY: num_fails {} spare_nodes {}".
+                              format(num_fails, case.spare_nodes))
                 if num_fails > 0 and case.spare_nodes >= num_fails:
                         # We failed due to node failure!
                     logger.warning("Detected model run failed due to node failure, restarting")
