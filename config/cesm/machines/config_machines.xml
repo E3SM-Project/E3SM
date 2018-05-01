@@ -255,7 +255,7 @@
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
     <!-- MPT sometimes timesout at model start time, the next two lines cause
     case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
-    <RETRY_MPIRUN_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</RETRY_MPIRUN_REGEX>
+    <MPIRUN_RETRY_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</MPIRUN_RETRY_REGEX>
     <MPIRUN_RETRY_COUNT>2</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>

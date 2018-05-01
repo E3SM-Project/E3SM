@@ -2070,7 +2070,7 @@
 <machine MACH="titan">
 <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>titan</NODENAME_REGEX>
-    <RETRY_MPIRUN_REGEX>Received node event ec_node</RETRY_MPIRUN_REGEX>
+    <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
     <TESTS>e3sm_developer</TESTS>
     <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
     <MPILIBS>mpich</MPILIBS>

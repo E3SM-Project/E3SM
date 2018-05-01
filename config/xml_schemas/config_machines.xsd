@@ -22,7 +22,8 @@
   </xs:simpleType>
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
-  <xs:element name="RETRY_MPIRUN_REGEX" type="xs:string"/>
+  <xs:element name="NODE_FAIL_REGEX" type="xs:string"/>
+  <xs:element name="MPIRUN_RETRY_REGEX" type="xs:string"/>
   <xs:element name="MPIRUN_RETRY_COUNT" type="xs:integer"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
@@ -83,9 +84,12 @@
 	  it must work on compute nodes as well as login nodes, use machine option
 	  to create_test or create_newcase if this flag is not available -->
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- regex to look for in log files that will triger retry of mpirun
+	     command on extra allocated nodes -->
+        <xs:element ref="NODE_FAIL_REGEX" minOccurs="0" maxOccurs="1"/>
 	<!-- regex to look for in log files that will triger retry of mpirun command -->
-        <xs:element ref="RETRY_MPIRUN_REGEX" minOccurs="0" maxOccurs="1"/>
-	<!-- Number of retry attempts to make if RETRY_MPIRUN_REGEX matches   -->
+        <xs:element ref="MPIRUN_RETRY_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- Number of retry attempts to make if MPIRUN_RETRY_REGEX matches   -->
         <xs:element ref="MPIRUN_RETRY_COUNT" minOccurs="0" maxOccurs="1"/>
 	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
