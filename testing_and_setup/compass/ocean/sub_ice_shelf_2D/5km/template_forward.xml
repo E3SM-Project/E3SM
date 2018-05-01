@@ -1,0 +1,50 @@
+<template>
+	<namelist>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'00:05:00'</option>
+		<option name="config_btr_dt">'00:00:15'</option>
+		<option name="config_run_duration">'0000_00:10:00'</option>
+		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_use_mom_del2">.true.</option>
+		<option name="config_mom_del2">10.0</option>
+		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_eos_type">'jm'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_check_ssh_consistency">.false.</option>
+	</namelist>
+
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="tracers" type="var_struct"/>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="landIceDraft" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceMask" type="var"/>
+				<member name="landIceFreshwaterFlux" type="var"/>
+				<member name="landIceHeatFlux" type="var"/>
+				<member name="landIceFrictionVelocity" type="var"/>
+				<member name="landIceInterfaceTracers" type="var_array"/>
+				<member name="landIceBoundaryLayerTracers" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

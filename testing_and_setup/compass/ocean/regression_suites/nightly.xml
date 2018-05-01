@@ -1,0 +1,44 @@
+<regression_suite name="nightly_ocean_test_suite">
+	<test name="Global Ocean 240km - Performance Test" core="ocean" configuration="global_ocean" resolution="QU240" test="performance_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Global Ocean 240km - Restart Test" core="ocean" configuration="global_ocean" resolution="QU240" test="restart_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Global Ocean 240km - SE Blocks Test" core="ocean" configuration="global_ocean" resolution="QU240" test="se_blocks_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Global Ocean 240km - RK4 Blocks Test" core="ocean" configuration="global_ocean" resolution="QU240" test="rk4_blocks_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Global Ocean 240km - Analysis Test" core="ocean" configuration="global_ocean" resolution="QU240" test="analysis_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ZISO 20km - Smoke Test" core="ocean" configuration="ziso" resolution="20km" test="default">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ZISO 20km - Smoke Test with frazil" core="ocean" configuration="ziso" resolution="20km" test="with_frazil">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Thread Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="threads_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Decomp Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="decomp_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Restart Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="restart_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Global Ocean 240km - Smoke Test with land ice" core="ocean" configuration="global_ocean" resolution="QU240" test="with_land_ice">
+		<script name="run_test.py"/>
+	</test>
+	<test name="sub-ice-shelf 2D - restart test" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="restart_test">
+		<script name="run_test.py"/>
+	</test>
+    <test name="Periodic Planar 20km - LIGHT particle region reset test" core="ocean" configuration="periodic_planar" resolution="20km" test="region_reset_light_test">
+        <script name="run_test.py"/>
+    </test>
+    <test name="Periodic Planar 20km - LIGHT particle time reset test" core="ocean" configuration="periodic_planar" resolution="20km" test="time_reset_light_test">
+        <script name="run_test.py"/>
+    </test>
+</regression_suite>

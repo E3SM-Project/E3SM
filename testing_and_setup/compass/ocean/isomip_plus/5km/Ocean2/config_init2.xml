@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config case="init_step2">
+	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
+	<add_link source="../init_step1/input_geometry_processed.nc" dest="input_geometry_processed.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+		<option name="config_write_cull_cell_mask">.false.</option>
+		<option name="config_isomip_plus_init_bot_temp">1.0</option>
+		<option name="config_isomip_plus_init_bot_sal">34.7</option>
+		<option name="config_isomip_plus_restore_bot_temp">-1.9</option>
+		<option name="config_isomip_plus_restore_bot_sal">34.55</option>
+		<option name="config_isomip_plus_restore_evap_rate">20.0</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+
+</config>

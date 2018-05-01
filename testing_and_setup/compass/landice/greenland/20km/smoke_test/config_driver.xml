@@ -1,0 +1,6 @@
+<driver_script name="setup_and_run_gis_testcase.py">
+        <case name="run_model">
+                <step executable="./run_model.py" quiet="false" pre_message=" * Running run_model step" post_message="     Complete"/>
+        </case>
+</driver_script>
+

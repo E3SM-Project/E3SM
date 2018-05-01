@@ -1,0 +1,90 @@
+<template>
+	<namelist>
+		<option name="config_AM_eliassenPalm_enable">.true.</option>
+		<option name="config_AM_eliassenPalm_compute_interval">'output_interval'</option>
+		<option name="config_AM_eliassenPalm_output_stream">'eliassenPalmOutput'</option>
+		<option name="config_AM_eliassenPalm_restart_stream">'eliassenPalmRestart'</option>
+		<option name="config_AM_eliassenPalm_compute_on_startup">.true.</option>
+		<option name="config_AM_eliassenPalm_write_on_startup">.true.</option>
+		<option name="config_AM_eliassenPalm_debug">.false.</option>
+		<option name="config_AM_eliassenPalm_nBuoyancyLayers">45</option>
+		<option name="config_AM_eliassenPalm_rhomin_buoycoor">900</option>
+		<option name="config_AM_eliassenPalm_rhomax_buoycoor">1080</option>
+	</namelist>
+
+	<streams>
+		<stream name="eliassenPalmOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">eliassenPalmOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/eliassenPalm.$Y-$M-$D.nc</attribute>
+			<attribute name="packages">eliassenPalmAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="potentialDensityMidRef" type="var"/>
+				<member name="potentialDensityTopRef" type="var"/>
+				<member name="nSamplesEA" type="var"/>
+				<member name="buoyancyMaskEA" type="var"/>
+				<member name="sigmaEA" type="var"/>
+				<member name="heightMidBuoyCoorEA" type="var"/>
+				<member name="heightMidBuoyCoorSqEA" type="var"/>
+				<member name="montgPotBuoyCoorEA" type="var"/>
+				<member name="montgPotGradZonalEA" type="var"/>
+				<member name="montgPotGradMeridEA" type="var"/>
+				<member name="heightMGradZonalEA" type="var"/>
+				<member name="heightMGradMeridEA" type="var"/>
+				<member name="uusigmaEA" type="var"/>
+				<member name="vvsigmaEA" type="var"/>
+				<member name="uvsigmaEA" type="var"/>
+				<member name="uvarpisigmaEA" type="var"/>
+				<member name="vvarpisigmaEA" type="var"/>
+				<member name="uTWA" type="var"/>
+				<member name="vTWA" type="var"/>
+				<member name="varpiTWA" type="var"/>
+				<member name="EPFT" type="var"/>
+				<member name="divEPFT" type="var"/>
+				<member name="ErtelPVFlux" type="var"/>
+				<member name="ErtelPVTendency" type="var"/>
+				<member name="ErtelPV" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<streams>
+		<stream name="eliassenPalmRestart">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">eliassenPalmRestart</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+			<attribute name="filename_template">restarts/eliassenPalm_restart.$Y-$M-$D.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">eliassenPalmAMPKG</attribute>
+			<attribute name="type">input;output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="nSamplesEA" type="var"/>
+				<member name="buoyancyMaskEA" type="var"/>
+				<member name="sigmaEA" type="var"/>
+				<member name="heightMidBuoyCoorEA" type="var"/>
+				<member name="heightMidBuoyCoorSqEA" type="var"/>
+				<member name="montgPotBuoyCoorEA" type="var"/>
+				<member name="montgPotGradZonalEA" type="var"/>
+				<member name="montgPotGradMeridEA" type="var"/>
+				<member name="heightMGradZonalEA" type="var"/>
+				<member name="heightMGradMeridEA" type="var"/>
+				<member name="usigmaEA" type="var"/>
+				<member name="vsigmaEA" type="var"/>
+				<member name="varpisigmaEA" type="var"/>
+				<member name="uusigmaEA" type="var"/>
+				<member name="vvsigmaEA" type="var"/>
+				<member name="uvsigmaEA" type="var"/>
+				<member name="uvarpisigmaEA" type="var"/>
+				<member name="vvarpisigmaEA" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

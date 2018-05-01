@@ -308,9 +308,11 @@ module mpas_io
             MPAS_io_open % preexisting_file = .true.
          else
             pio_ierr = PIO_createfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
+#ifdef MPAS_DEBUG
             if (exists) then
                call mpas_log_write('MPAS I/O: Truncating existing data in output file '//trim(filename), MPAS_LOG_WARN)
             end if
+#endif
          end if
       else
          inquire(file=trim(filename), exist=exists)

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<config case="adjust_ssh">
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<option name="config_run_duration">'0000_01:00:00'</option>
+		<option name="config_land_ice_flux_mode">'pressure_only'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_adjust_ssh.xml" path_base="script_resolution_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<step executable="./iterate_init.py">
+			<argument flag="">--iteration_count=2</argument>
+			<argument flag="">--variable_to_modify=landIcePressure</argument>
+		</step>
+	</run_script>
+	<run_script name="run_model.py">
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

@@ -62,59 +62,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_zonal_mean
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_zonal_mean(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: zonalMeanAMActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'zonalMeanAMActive', zonalMeanAMActive)
-
-      ! turn on package for this analysis member
-      zonalMeanAMActive = .true.
-
-   end subroutine ocn_setup_packages_zonal_mean!}}}
-
-!***********************************************************************
-!
 !  routine ocn_init_zonal_mean
 !
 !> \brief   Initialize MPAS-Ocean analysis member
@@ -211,7 +158,7 @@ contains
       call mpas_dmpar_min_real_array(dminfo, 1, minBin, minBinDomain)
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
-      ! Set up bins. 
+      ! Set up bins.
       binBoundaryZonalMean = -1.0e34_RKIND
       binCenterZonalMean = -1.0e34_RKIND
 
@@ -294,16 +241,17 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       integer :: iTracer, k, iCell, kMax
       integer :: iBin, iField, nZonalMeanVariables
-      integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins
+      integer, pointer :: num_activeTracers, nCellsSolve, nVertLevels, nZonalMeanBins
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonalZonalMean, velocityMeridionalZonalMean
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
 
@@ -316,8 +264,10 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
-      call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-      nZonalMeanVariables = num_tracers + 3
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+      call mpas_pool_get_dimension(tracersPool, 'num_activeTracers', num_activeTracers)
+      nZonalMeanVariables = num_activeTracers + 3
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
@@ -336,6 +286,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
 
          !state => block % state % time_levs(timeLevel) % state
@@ -343,7 +294,7 @@ contains
          !scratch => block % scratch
          !diagnostics => block % diagnostics
 
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
+         call mpas_pool_get_dimension(tracersPool, 'num_activeTracers', num_activeTracers)
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
@@ -351,7 +302,7 @@ contains
 
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
@@ -376,11 +327,12 @@ contains
                      ! Field 1 is the total area in this bin, which can vary by level due to land.
                      sumZonalMean(1,k,iBin) = sumZonalMean(1,k,iBin) + areaCell(iCell)
 
-                     do iField = 1,num_tracers
-                        sumZonalMean(iField+1,k,iBin) = sumZonalMean(iField+1,k,iBin) + tracers(iField,k,iCell)*areaCell(iCell)
+                     do iField = 1,num_activeTracers
+                        sumZonalMean(iField+1,k,iBin) = sumZonalMean(iField+1,k,iBin) + activeTracers(iField,k,iCell) &
+                                                      * areaCell(iCell)
                      enddo
 
-                     iField = num_tracers+2
+                     iField = num_activeTracers+2
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*areaCell(iCell)
                      iField = iField+1
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*areaCell(iCell)
@@ -424,8 +376,9 @@ contains
 
          call mpas_pool_get_subpool(block % structs, 'zonalMeanAM', zonalMeanAMPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
+         call mpas_pool_get_dimension(tracersPool, 'num_activeTracers', num_activeTracers)
 
          call mpas_pool_get_array(zonalMeanAMPool, 'tracersZonalMean', tracersZonalMean)
          call mpas_pool_get_array(zonalMeanAMPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
@@ -434,11 +387,11 @@ contains
          do iBin = 1, nZonalMeanBins
             do k = 1, nVertLevels
 
-               do iField = 1, num_tracers
+               do iField = 1, num_activeTracers
                   tracersZonalMean(iField,k,iBin) = normZonalMean(iField+1,k,iBin)
                enddo
 
-               iField = num_tracers + 2
+               iField = num_activeTracers + 2
                velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
                velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)

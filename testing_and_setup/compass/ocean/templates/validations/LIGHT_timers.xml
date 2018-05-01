@@ -1,0 +1,11 @@
+<template>
+	<validation>
+		<compare_timers rundir1="forward">
+			<timer name="init_lagrPartTrack"/>
+			<timer name="compute_lagrPartTrack"/>
+			<timer name="write_lagrPartTrack"/>
+			<timer name="restart_lagrPartTrack"/>
+			<timer name="finalize_lagrPartTrack"/>
+		</compare_timers>
+	</validation>
+</template>

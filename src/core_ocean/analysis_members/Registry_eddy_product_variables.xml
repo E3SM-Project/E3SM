@@ -1,0 +1,60 @@
+	<nml_record name="AM_eddyProductVariables" mode="forward;analysis">
+		<nml_option name="config_AM_eddyProductVariables_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member eddyProductVariables is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_eddyProductVariables_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_eddyProductVariables_output_stream" type="character" default_value="eddyProductVariablesOutput" units="unitless"
+			description="Name of the stream that the eddyProductVariables analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_eddyProductVariables_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_eddyProductVariables_write_on_startup" type="logical" default_value=".false." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="eddyProductVariablesAMPKG" description="This package includes variables required for the eddyProductVariables analysis member."/>
+	</packages>
+	<var_struct name="eddyProductVariablesAM" time_levs="1" packages="eddyProductVariablesAMPKG">
+		<var name="SSHSquared" type="real" dimensions="nCells Time" units="m^2"
+			description="cell-wise square of sea surface height"
+		/>
+		<var name="velocityZonalSquared" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+			description="cell-wise square of component of horizontal velocity in the eastward direction"
+		/>
+		<var name="velocityMeridionalSquared" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+			description="cell-wise square of component of horizontal velocity in the northward direction"
+		/>
+		<var name="velocityZonalTimesTemperature" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
+			description="cell-wise product of component of horizontal velocity in the eastward direction and temperature"
+		/>
+		<var name="velocityMeridionalTimesTemperature" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
+			description="cell-wise product of component of horizontal velocity in the northward direction and temperature"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="eddyProductVariablesOutput" type="output"
+				mode="forward;analysis"
+				filename_template="analysis_members/eddyProductVariables.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="99-00-00_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="eddyProductVariablesAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="SSHSquared"/>
+			<var name="velocityZonalSquared"/>
+			<var name="velocityMeridionalSquared"/>
+			<var name="velocityZonalTimesTemperature"/>
+			<var name="velocityMeridionalTimesTemperature"/>
+		</stream>
+	</streams>

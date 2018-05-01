@@ -8,7 +8,7 @@
 !> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for compounding
-!>  the Redi vertical mixing coefficients.  
+!>  the Redi vertical mixing coefficients.
 !>
 !
 !-----------------------------------------------------------------------
@@ -64,7 +64,7 @@ contains
 !> \author  Doug Jacobsen
 !> \date    19 September 2011
 !> \version SVN:$Id$
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
 !
@@ -115,7 +115,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -141,7 +141,7 @@ contains
 !> \author  Doug Jacobsen
 !> \date    19 September 2011
 !> \version SVN:$Id$
-!> \details 
+!> \details
 !>  This routine computes the rediant vertical mixing coefficients for tracers
 !
 !-----------------------------------------------------------------------
@@ -173,6 +173,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in)    :: vertRediDiff !< Output: Vertical diffusion
 
+      integer :: iCell, nCells
+      integer, pointer :: nCellsSolve
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -185,7 +188,19 @@ contains
 
       if(.not.rediDiffOn) return
 
-      vertDiffTopOfCell = vertDiffTopOfCell + vertRediDiff
+      call mpas_timer_start('tracer redi coef')
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      nCells = nCellsSolve
+
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + vertRediDiff(:, iCell)
+      end do
+      !$omp end do
+
+      call mpas_timer_stop('tracer redi coef')
 
    !--------------------------------------------------------------------
 
@@ -200,11 +215,11 @@ contains
 !> \author  Doug Jacobsen
 !> \date    19 September 2011
 !> \version SVN:$Id$
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  vertical velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  vertical velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

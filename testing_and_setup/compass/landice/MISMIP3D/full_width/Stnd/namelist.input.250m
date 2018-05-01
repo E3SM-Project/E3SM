@@ -1,0 +1,10 @@
+&periodic_grid
+   dc = 250.,
+! Domain is 800 km wide, standard hex mesh has dx=dc. so nx=3200     Double to get both halves.  +2 for stripping off periodicity.  Add a few more to be sure we go past 800 km.
+   nx = 6420,
+! Half domain is 50 km tall but we are not dealing with reflective boundaries, so our domain is 100 km tall. standard hex mesh has dy=0.866*dc.  So ny=461.89.  But need this number to be odd, and one cell (two half cells) is effectively outside of the domain.  So use 463 + 2 for stripping off periodicity +1 for culling to get symmetric mesh. To give effective domain width of 100023m.
+   ny = 466,
+   nVertLevels = 1,
+! The mesh will need culling to remove periodicity, so no need to build decomps now.
+   nproc = 1
+/
