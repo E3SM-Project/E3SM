@@ -129,9 +129,9 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 
                     case.spare_nodes -= num_fails
 
-                if stat != 0 and not loop:
-                    # We failed and we're not restarting
-                    expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
+        if stat != 0 and not loop:
+            # We failed and we're not restarting
+            expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
     logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
