@@ -2615,6 +2615,22 @@ Do radiative transfer and heating/cooling calculation.
 Default: TRUE
 </entry>
 
+<entry id="reset_init_ql" type="logical"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Reset initial qliq in inidat.f90 in se dynamical core
+qliq =0 at t=0 when this flag is .true.
+used in simple condensation model
+Default: FALSE
+</entry>
+
+<entry id="reset_init_qi" type="logical"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Reset initial qice in inidat.f90 in se dynamical core
+qice =0 at t=0 when this flag is .true.
+used in simple condensation model
+Default: FALSE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"

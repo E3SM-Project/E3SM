@@ -18,7 +18,7 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random, reset_init_ql, reset_init_qi
   use random_xgc, only: init_ranx, ranx
   implicit none
   private
@@ -233,6 +233,18 @@ contains
           call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
                1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
        end if
+
+       !!!SZhang and HWan!!!!!!
+       !!!!!!! Let the liquide water be zero in initial conditions.
+       !!!!!!! This is used in the convergence test for CLUBB!!!!
+
+       if ( reset_init_ql .and. (trim(cnst_name(m_cnst)).eq."CLDLIQ") ) tmp = 0.0_r8
+       if ( reset_init_ql .and. (trim(cnst_name(m_cnst)).eq."NUMLIQ") ) tmp = 0.0_r8
+       if ( reset_init_qi .and. (trim(cnst_name(m_cnst)).eq."CLDICE") ) tmp = 0.0_r8
+       if ( reset_init_qi .and. (trim(cnst_name(m_cnst)).eq."NUMICE") ) tmp = 0.0_r8
+
+       !!!! m_cnst==2 is liquid water  
+
        if(.not. found) then
 
           if(par%masterproc  ) write(iulog,*) 'Field ',cnst_name(m_cnst),' not found on initial dataset'

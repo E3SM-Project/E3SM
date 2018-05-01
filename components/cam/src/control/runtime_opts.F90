@@ -307,6 +307,8 @@ contains
                     dtime, &
                     nlvdry,  &
                     pertlim ,&
+                    reset_init_ql, &
+                    reset_init_qi, &
                     new_random ,&
                     seed_custom ,&
                     seed_clock ,&
@@ -650,6 +652,8 @@ subroutine distnl
 
    call mpibcast (print_step_cost,1,mpilog,0,mpicom)
    call mpibcast (pertlim     ,1, mpir8 , 0, mpicom )
+   call mpibcast (reset_init_ql,1,mpilog, 0, mpicom )
+   call mpibcast (reset_init_qi,1,mpilog, 0, mpicom )
    call mpibcast (new_random  ,1, mpilog, 0, mpicom )
    call mpibcast (seed_custom ,1, mpiint, 0, mpicom )
    call mpibcast (seed_clock  ,1, mpilog, 0, mpicom )

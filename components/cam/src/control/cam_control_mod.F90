@@ -32,6 +32,11 @@ module cam_control_mod
 !
 !------------------------------------------------------------
 
+!SZhang and HWan:add namelist variables for convergence test
+! add to flag variables for CLUBB convergence test 
+  logical :: reset_init_ql = .false.    ! Reset initial ql to zero
+  logical :: reset_init_qi = .false.    ! Reset initial ql to zero
+
 ! from perturb.h
       real(r8) :: pertlim     = 0.0_r8
       logical  :: new_random  = .false.
