@@ -1793,7 +1793,7 @@
     </desc>
   </entry>
 
-  <entry id="RETRY_MPIRUN_REGEX">
+  <entry id="MPIRUN_RETRY_REGEX">
     <type>char</type>
     <group>run_din</group>
     <file>env_run.xml</file>
@@ -1810,7 +1810,7 @@
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>The number of times to reattempt the mpirun command if
-    RETRY_MPIRUN_REGEX is matched but ALLOCATE_SPARE_NODES is False
+    MPIRUN_RETRY_REGEX is matched but ALLOCATE_SPARE_NODES is False
     </desc>
   </entry>
 
