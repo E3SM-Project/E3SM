@@ -190,6 +190,7 @@ module shallow_water_mod
   public  :: tc2_init_pmean
   public  :: tc2_geopotential
   private :: tc2_coreolis_init
+  private :: tc2_coreolis_init_prtrbvel
   public  :: tc2_errors
   public  :: tc2_phi
 
@@ -697,7 +698,7 @@ contains
           snlat = SIN(sphere(i,j)%lat-2.5)
           cslat = COS(sphere(i,j)%lat)
           cslon = COS(sphere(i,j)%lon)
-          p(i,j)= -coef*( -cslon*cslat*snalpha + snlat*csalpha )**40
+          p(i,j)= -coef* 0.6 *( -cslon*cslat*snalpha + snlat*csalpha )**40
        end do
     end do
 
@@ -742,9 +743,10 @@ contains
        do j=1,np
           do i=1,np
 
-             V1 =   -0.05 * gradp(i,j,2) / fcor(i,j) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             !V1 =   -0.05 * gradp(i,j,2) / fcor(i,j) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V1 =  -gradp(i,j,2)  / fcor(i,j)  !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
              !V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
-             V2 =  -u0*(snlon(i,j)*snalpha) + 0.2*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-40*dd_pi/180)/0.05)**2)
+             V2 =  0 !-u0*(snlon(i,j)*snalpha) + 1.5*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-40*dd_pi/180)/0.1)**2)
 
              ! =====================================================
              ! map sphere velocities onto the contravariant cube velocities
@@ -1354,7 +1356,7 @@ contains
     integer, intent(in) :: nete
     real (kind=real_kind) :: pmean
     real (kind=real_kind) :: coef
-
+    real (kind=real_kind) :: fcor_prtrbvel(np,np)     !JRUB
     ! Local variables
 
     integer :: ie,k
@@ -1369,19 +1371,21 @@ contains
 
     pmean = tc2_init_pmean() !9.8 ! h0=1m in Peixoto, 2017
     coef = rearth*omega*u0 + (u0**2)/2.0D0
+
     !omega = 0 !nonrotating
 
     call derivinit(deriv)  
 
     do ie=nets,nete
        elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       fcor_prtrbvel=tc2_coreolis_init_prtrbvel(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)= 0.0
        do k=1,nlev
           elem(ie)%state%p(:,:,k,n0)=  tc2_init_pmean() + prtrb_geopotential(elem(ie)%spherep(:,:))
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv,elem(ie)%fcor) !0 JRUB added 3rd argument (p), and 4th deriv
+          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv,fcor_prtrbvel) !0 JRUB added 3rd argument (p), and 4th deriv
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1539,6 +1543,42 @@ contains
           cslon = COS(sphere(i,j)%lon)
 
           fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + snlat*csalpha)
+
+       end do
+    end do
+
+  end function tc2_coreolis_init
+  ! ========================================
+  ! tc2_coreolis_init:
+  !
+  ! Initialize coreolis term for test case 2
+  ! for initializing initial velocity field, avoiding division by 0 (f) at equator
+  ! ========================================
+
+  function tc2_coreolis_init_prtrbvel(sphere) result(fcor)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind) :: fcor(np,np)
+
+    ! Local variables
+
+    real (kind=real_kind) :: cslon
+    real (kind=real_kind) :: snlat
+    real (kind=real_kind) :: cslat
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    integer                  :: i,j
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    do j=1,np
+       do i=1,np
+          snlat = SIN(sphere(i,j)%lat)
+          cslat = COS(sphere(i,j)%lat)
+          cslon = COS(sphere(i,j)%lon)
+
+          fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + snlat*csalpha)
           !JRUB
           if ((sphere(i,j)%lat .GT. -0.26).AND.(sphere(i,j)%lat .LE. 0)) then
              fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + SIN(-0.26)*csalpha)
@@ -1551,7 +1591,7 @@ contains
        end do
     end do
 
-  end function tc2_coreolis_init
+  end function tc2_coreolis_init_prtrbvel
 
 
   ! ===========================================
