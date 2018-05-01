@@ -33,10 +33,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Resume split after fixing conflicts")
 
     parser.add_argument("-a", "--abort", action="store_true",
-                        help="Resume split after fixing conflicts")
+                        help="Abort split")
 
     parser.add_argument("--squash", action="store_true",
-                        help="Do the split as squahy as possible")
+                        help="Do the split as squashy as possible")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 

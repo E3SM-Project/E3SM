@@ -255,6 +255,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         rundir2 = self._case2.get_value("RUNDIR")
         self._case1.archive_last_restarts(archive_restdir = rundir2,
+                                          rundir=self._case1.get_value("RUNDIR"),
                                           link_to_restart_files = True)
 
     # ========================================================================

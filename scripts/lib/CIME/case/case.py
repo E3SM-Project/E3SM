@@ -12,7 +12,7 @@ from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit
+from CIME.utils                     import get_current_commit, safe_copy
 from CIME.locked_files         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -71,7 +71,7 @@ class Case(object):
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
-        archive_last_restarts
+        archive_last_restarts, test_st_archive
     from CIME.case.case_run import case_run
     from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
     from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
@@ -363,12 +363,12 @@ class Case(object):
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                item = env_file.get_resolved_value(item, 
+                item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item, recurse=recurse+1, 
+                item = self.get_resolved_value(item, recurse=recurse+1,
                                                allow_unresolved_envvars=allow_unresolved_envvars)
 
         return item
@@ -499,7 +499,7 @@ class Case(object):
             # this is a "J" compset
             primary_component = "allactive"
         elif progcomps["ATM"]:
-            if "DOCN%SOM" in self._compsetname:
+            if "DOCN%SOM" in self._compsetname and progcomps["LND"]:
                 # This is an "E" compset
                 primary_component = "allactive"
             else:
@@ -538,7 +538,6 @@ class Case(object):
                                             {"component":component}, resolved=False)
 
         self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
-
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
@@ -1057,9 +1056,9 @@ class Case(object):
 
         if get_model() == "e3sm":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
-                shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
-                shutil.copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -1306,7 +1305,7 @@ directory, NOT in this subdirectory."""
         """
         Returns True if current settings require a threaded build/run.
         """
-        force_threaded = self.get_value("BUILD_THREADED")
+        force_threaded = self.get_value("FORCE_BUILD_SMP")
         smp_present = bool(force_threaded) or self.thread_count > 1
         return smp_present
 

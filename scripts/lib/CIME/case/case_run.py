@@ -3,7 +3,7 @@ case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils                     import run_sub_or_cmd, append_status
+from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -28,7 +28,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
-        shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
+        safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
     case.check_lockedfiles()
@@ -94,43 +94,44 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     rundir = case.get_value("RUNDIR")
     loop = True
 
+    # special case of using the NODE_FAIL_REGEX code on cheyenne to avoid an mpt timeout issue on startup
+    # in this case no spare nodes are required, we simply try again on the same nodes.  We will make 2
+    # attempts to retry.
+    node_fail_re = case.get_value("NODE_FAIL_REGEX")
     while loop:
         loop = False
 
         save_prerun_provenance(case)
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
-
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
-        if stat != 0:
-            node_fail_re = case.get_value("NODE_FAIL_REGEX")
-            if node_fail_re:
-                node_fail_regex = re.compile(node_fail_re)
-                model_logfile = os.path.join(rundir, model + ".log." + lid)
-                if os.path.exists(model_logfile):
-                    num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
-                    if num_fails > 0 and case.spare_nodes >= num_fails:
+        if node_fail_re:
+            node_fail_regex = re.compile(node_fail_re)
+            model_logfile = os.path.join(rundir, model + ".log." + lid)
+            if os.path.exists(model_logfile):
+                num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                if num_fails > 0 and case.spare_nodes >= num_fails:
                         # We failed due to node failure!
-                        logger.warning("Detected model run failed due to node failure, restarting")
+                    logger.warning("Detected model run failed due to node failure, restarting")
 
-                        # Archive the last consistent set of restart files and restore them
-                        case.case_st_archive(no_resubmit=True)
-                        case.restore_from_archive()
+                    # Archive the last consistent set of restart files and restore them
+                    case.case_st_archive(no_resubmit=True)
+                    case.restore_from_archive()
 
-                        case.set_value("CONTINUE_RUN",
-                                       case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                    case.set_value("CONTINUE_RUN",
+                                   case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-                        lid = new_lid()
-                        loop = True
+                    lid = new_lid()
+                    loop = True
 
-                        case.create_namelists()
+                    case.create_namelists()
 
-                        case.spare_nodes -= num_fails
+                    case.spare_nodes -= num_fails
 
-            if not loop:
-                # We failed and we're not restarting
-                expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
+        if stat != 0 and not loop:
+            # We failed and we're not restarting
+            expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
     logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
@@ -182,21 +183,13 @@ def _post_run_check(case, lid):
 ###############################################################################
 def _save_logs(case, lid):
 ###############################################################################
-    logdir = case.get_value("LOGDIR")
-    if logdir is not None and len(logdir) > 0:
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
+    rundir = case.get_value("RUNDIR")
+    logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
+    for logfile in logfiles:
+        if os.path.isfile(logfile):
+            gzip_existing_file(logfile)
 
-        caseroot = case.get_value("CASEROOT")
-        rundir = case.get_value("RUNDIR")
-        logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
-        for logfile in logfiles:
-            if os.path.isfile(logfile):
-                logfile_gz = gzip_existing_file(logfile)
-                shutil.copy(logfile_gz,
-                            os.path.join(caseroot, logdir, os.path.basename(logfile_gz)))
-
-###############################################################################
+######################################################################################
 def _resubmit_check(case):
 ###############################################################################
 
@@ -281,9 +274,7 @@ def case_run(self, skip_pnl=False):
             _do_data_assimilation(data_assimilation_script, self.get_value("CASEROOT"), cycle, lid,
                                  self.get_value("RUNDIR"))
             self.read_xml()
-
-        _save_logs(self, lid)       # Copy log files back to caseroot
-
+        _save_logs(self, lid)
         save_postrun_provenance(self)
 
     if postrun_script:
@@ -291,8 +282,7 @@ def case_run(self, skip_pnl=False):
         _do_external(postrun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="postrun")
         self.read_xml()
-
-    _save_logs(self, lid)       # Copy log files back to caseroot
+        _save_logs(self, lid)
 
     logger.warning("check for resubmit")
     _resubmit_check(self)

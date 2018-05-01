@@ -4,8 +4,8 @@ create_dirs and create_namelists are members of Class case from file case.py
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import run_sub_or_cmd
-import glob, shutil
+from CIME.utils import run_sub_or_cmd, safe_copy
+import glob
 logger = logging.getLogger(__name__)
 
 def create_dirs(self):
@@ -102,9 +102,9 @@ def create_namelists(self, component=None):
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
             logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
-            shutil.copy2(file_to_copy, docdir)
+            safe_copy(file_to_copy, docdir)
 
     # Copy over chemistry mechanism docs if they exist
     if (os.path.isdir(os.path.join(casebuild, "camconf"))):
         for file_to_copy in glob.glob(os.path.join(casebuild, "camconf", "*chem_mech*")):
-            shutil.copy2(file_to_copy, docdir)
+            safe_copy(file_to_copy, docdir)

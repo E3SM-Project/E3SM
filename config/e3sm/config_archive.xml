@@ -4,41 +4,48 @@
     <rest_file_extension>[ri]</rest_file_extension>
     <rest_file_extension>rh\d*</rest_file_extension>
     <rest_file_extension>rs</rest_file_extension>
-    <hist_file_extension>[eh]</hist_file_extension>
+    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
+    <hist_file_extension>e</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
     </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="datm" compclass="atm">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
-      <rpointer_content >$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.atm</tfile>
+      <tfile disposition="copy">rpointer.atm_9999</tfile>
+      <tfile disposition="copy">casename.cam.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.cam.rh4.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cam.h0.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">casename.cam.h0.1976-01-01-00000.nc.base</tfile>
+      <tfile disposition="move">casename.cam_0002.e.postassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cam_0002.e.preassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.cam.i.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">anothercasename.cam.i.1976-01-01-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="clm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
-    <hist_file_extension>h\d*</hist_file_extension>
+    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
+    <hist_file_extension>e</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="dlnd" compclass="lnd">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
-      <rpointer_content >$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.lnd</tfile>
+      <tfile disposition="copy">rpointer.lnd_9999</tfile>
+      <tfile disposition="copy">casename.clm2.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.clm2.rh4.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.clm2.h0.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">casename.clm2.h0.1976-01-01-00000.nc.base</tfile>
+      <tfile disposition="move">casename.clm2_0002.e.postassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.clm2_0002.e.preassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">anothercasename.clm2.i.1976-01-01-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="mosart" compclass="rof">
@@ -52,15 +59,6 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="drof" compclass="rof">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="cice" compclass="ice">
     <rest_file_extension>[ri]</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
@@ -69,98 +67,65 @@
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.ice</tfile>
+      <tfile disposition="copy">casename.cice.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cice.h.1976-01-01-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpascice" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
       <rpointer_content>$MPAS_DATENAME</rpointer_content>
     </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="dice" compclass="ice">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="pop" compclass="ocn">
-    <rest_file_extension>r</rest_file_extension>
-    <hist_file_extension>h\d*|d[dovt]</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING.restart</rpointer_file>
-      <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</rpointer_content>
-    </rpointer>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
-      <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
-    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.ice</tfile>
+      <tfile disposition="copy">mpascice.rst.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">mpascice.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mpascice.hist.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mpascice.hist.am.regionalStatistics.0001.01.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpaso" compclass="ocn">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
       <rpointer_content>$MPAS_DATENAME</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.ocn</tfile>
+      <tfile disposition="copy">mpaso.rst.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">mpaso.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mpaso.hist.am.globalStats.1976-01-01.nc</tfile>
+      <tfile disposition="move">mpaso.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="docn" compclass="ocn">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="cism" compclass="glc">
-    <rest_file_extension>[ri]</rest_file_extension>
-    <hist_file_extension>h\d*</hist_file_extension>
-    <hist_file_extension>initial_hist</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
-      <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="mpasli" compclass="glc">
+  <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
-      <rpointer_content>./mpasli$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
+      <rpointer_content>./mali$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>\..*</rest_file_extension>
-    <hist_file_extension>hi</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
-      <rpointer_content>unset</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="dwav" compclass="wav">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
-      <rpointer_content >$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.glc</tfile>
+      <tfile disposition="copy">mali.rst.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">mali.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mali.hist.am.globalStats.1976-01-01.nc</tfile>
+      <tfile disposition="move">mali.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compclass="esp" compname="dart">
@@ -171,6 +136,9 @@
       <rpointer_file>rpointer.unset</rpointer_file>
       <rpointer_content>unset</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <tfile disposition="move">casename.dart.e.pop_preassim_priorinf_mean.1976-01-01-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
 </components>

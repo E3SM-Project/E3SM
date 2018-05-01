@@ -278,10 +278,6 @@ baselines for 'master'::
 
   ./compare_test_results -r /home/jenkins/e3sm/scratch/jenkins/ -t mytest -b master
 
-===================
-manage_testlists
-===================
-
 =============
 Adding tests
 =============

@@ -164,6 +164,7 @@ contains
     character(len=18) :: date_str
     type(mct_gsMap), pointer :: gsmap
     type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
+    character(CL) :: model_doi_url 
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -200,7 +201,8 @@ contains
          glc_nx=glc_nx, glc_ny=glc_ny,        &
          wav_nx=wav_nx, wav_ny=wav_ny,        &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
-         case_name=case_name)
+         case_name=case_name,                 &
+         model_doi_url=model_doi_url)
 
     !--- Get current date from clock needed to label the history pointer file ---
 
@@ -218,7 +220,7 @@ contains
     if (iamin_CPLID) then
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-       call seq_io_wopen(hist_file,clobber=.true.)
+       call seq_io_wopen(hist_file,clobber=.true., model_doi_url=model_doi_url)
 
        ! loop twice, first time write header, second time write data for perf
 
@@ -446,6 +448,7 @@ contains
     type(mct_gGrid),  pointer :: dom    ! component domain on cpl pes
     type(mct_avect),  pointer :: c2x    ! component->coupler avs on cpl pes
     type(mct_avect),  pointer :: x2c    ! coupler->component avs on cpl pes
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -489,7 +492,8 @@ contains
          histavg_rof=histavg_rof,             &
          histavg_glc=histavg_glc,             &
          histavg_wav=histavg_wav,             &
-         histavg_xao=histavg_xao)
+         histavg_xao=histavg_xao,             &
+         model_doi_url=model_doi_url)
 
     ! Get current date from clock needed to label the histavg pointer file
 
@@ -778,7 +782,7 @@ contains
        if (iamin_CPLID) then
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          call seq_io_wopen(hist_file, clobber=.true.)
+          call seq_io_wopen(hist_file, clobber=.true., model_doi_url=model_doi_url)
 
           ! loop twice,  first time write header,  second time write data for perf
 
@@ -1053,7 +1057,7 @@ contains
     type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8), parameter :: c0 = 0.0_r8 ! zero
-
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1168,7 +1172,7 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
           if (fk1 == 1) then
-             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found)
+             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found, model_doi_url=model_doi_url)
           endif
 
           ! loop twice,  first time write header,  second time write data for perf
@@ -1317,7 +1321,7 @@ contains
     type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8),parameter :: c0 = 0.0_r8 ! zero
-
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1331,7 +1335,8 @@ contains
     call seq_comm_getdata(CPLID, mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
 
     call seq_infodata_getData(infodata, &
-         drv_threading=drv_threading)
+         drv_threading=drv_threading, &
+         model_doi_url=model_doi_url)
 
     lwrite_now = .true.
     useavg = .false.
@@ -1400,9 +1405,9 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
           if (fk1 == 1) then
-             call seq_io_wopen(hist_file(found), clobber=.true.)
+             call seq_io_wopen(hist_file(found), clobber=.true. , model_doi_url=model_doi_url)
           else
-             call seq_io_wopen(hist_file(found), clobber=.false.)
+             call seq_io_wopen(hist_file(found), clobber=.false., model_doi_url=model_doi_url)
           endif
 
           ! loop twice,  first time write header,  second time write data for perf
