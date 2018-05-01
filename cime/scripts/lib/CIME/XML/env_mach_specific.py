@@ -49,6 +49,7 @@ class EnvMachSpecific(EnvBase):
             else:
                 for node in nodes:
                     self.add_child(node)
+
     def _get_modules_for_case(self, case, job=None):
         module_nodes = self.get_children("modules", root=self.get_child("module_system"))
         modules_to_load = None
@@ -81,7 +82,6 @@ class EnvMachSpecific(EnvBase):
             self._load_envs(envs_to_set, verbose=verbose)
 
         self._get_resources_for_case(case)
-
 
     def _get_resources_for_case(self, case):
         resource_nodes = self.get_children("resource_limits")
@@ -144,8 +144,9 @@ class EnvMachSpecific(EnvBase):
         module_system = self.get_module_system_type()
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
-
-        lines = ["source {}".format(sh_init_cmd)]
+        lines = []
+        if sh_init_cmd:
+            lines = ["source {}".format(sh_init_cmd)]
 
         if "SOFTENV_ALIASES" in os.environ:
             lines.append("source $SOFTENV_ALIASES")
@@ -244,12 +245,12 @@ class EnvMachSpecific(EnvBase):
 
     def _match(self, my_value, xml_value):
         if xml_value.startswith("!"):
-            result = re.match(xml_value[1:],str(my_value)) is None
+            result = re.match(xml_value[1:] + "$",str(my_value)) is None
         elif isinstance(my_value, bool):
             if my_value: result = xml_value == "TRUE"
             else: result = xml_value == "FALSE"
         else:
-            result = re.match(xml_value,str(my_value)) is not None
+            result = re.match(xml_value + "$",str(my_value)) is not None
 
         logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
         return result

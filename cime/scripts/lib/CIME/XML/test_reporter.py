@@ -19,7 +19,7 @@ class TestReporter(GenericXML):
         expect(get_model() == 'cesm', "testreport is only meant to populate the CESM test database." )
         self.root = None
 
-        GenericXML.__init__(self, root_name_override="testrecord")
+        GenericXML.__init__(self, root_name_override="testrecord", read_only=False, infile="TestRecord.xml")
 
     def setup_header(self, tagname,machine,compiler,mpilib,testroot,testtype,baseline):
         #
@@ -55,7 +55,7 @@ class TestReporter(GenericXML):
         #
         # Post test result XML to CESM test database
         #
-        xmlstr = self.to_string(self.root,method="xml",encoding="UTF-8")
+        xmlstr = self.get_raw_record()
         username=six.moves.input("Username:")
         os.system("stty -echo")
         password=six.moves.input("Password:")
