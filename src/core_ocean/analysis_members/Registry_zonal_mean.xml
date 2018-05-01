@@ -15,7 +15,7 @@
 			description="Interval that determines frequency of computation for the zonal mean analysis member."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_zonalMean_stream_name" type="character" default_value="zonalMeanOutput" units="unitless"
+		<nml_option name="config_AM_zonalMean_output_stream" type="character" default_value="zonalMeanOutput" units="unitless"
 			description="Name of stream the zonal mean analysis member should be tied to."
 			possible_values="Any existing stream or 'none'."
 		/>
@@ -57,7 +57,7 @@
 			 description="Zonal mean of component of horizontal velocity in the northward direction"
 		/>
 		<var_array name="tracersZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time">
-			<var name="temperatureZonalMean" array_group="dynamics" units="degrees Celsius" 
+			<var name="temperatureZonalMean" array_group="dynamics" units="degrees Celsius"
 			 description="Zonal mean of potential temperature"
 			/>
 			<var name="salinityZonalMean" array_group="dynamics" units="grams salt per kilogram seawater"

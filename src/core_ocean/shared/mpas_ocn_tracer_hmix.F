@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  horizontal mixing tendencies.  
+!>  This module contains the main driver routine for computing
+!>  horizontal mixing tendencies.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
@@ -22,12 +22,13 @@
 
 module ocn_tracer_hmix
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use ocn_constants
    use ocn_tracer_hmix_del2
    use ocn_tracer_hmix_del4
+   use ocn_tracer_hmix_redi
 
    implicit none
    private
@@ -67,7 +68,7 @@ contains
 !> \brief   Computes tendency term for horizontal tracer mixing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for tracer
 !>  based on current state and user choices of mixing parameterization.
 !>  Multiple parameterizations may be chosen and added together.  These
@@ -77,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+   subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                    relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err)!{{{
 
 
@@ -90,7 +91,6 @@ contains
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickness,     &!< Input: thickness at cell centers
          layerThicknessEdge, &!< Input: thickness at edge
          zMid                 !< Input: Z coordinate at the center of a cell
 
@@ -130,22 +130,22 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
 
       if(.not.tracerHmixOn) return
 
-      call mpas_timer_start("del2")
-      call ocn_tracer_hmix_del2_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+      call mpas_timer_start("tracer hmix")
+
+      call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
+      call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
+      call ocn_tracer_hmix_redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                      relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err1)
-      call mpas_timer_stop("del2")
-      call mpas_timer_start("del4")
-      call ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err2)
-      call mpas_timer_stop("del4")
 
       err = ior(err1, err2)
+      call mpas_timer_stop("tracer hmix")
 
    !--------------------------------------------------------------------
 
@@ -158,11 +158,11 @@ contains
 !> \brief   Initializes ocean tracer horizontal mixing quantities
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

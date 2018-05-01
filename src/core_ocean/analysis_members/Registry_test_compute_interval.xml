@@ -15,7 +15,7 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_testComputeInterval_stream_name" type="character" default_value="testComputeIntervalOutput" units="unitless"
+		<nml_option name="config_AM_testComputeInterval_output_stream" type="character" default_value="testComputeIntervalOutput" units="unitless"
 			description="Name of the stream that should be tied to the test_compute_interval analysis member"
 			possible_values="Any existing stream name or 'none'"
 		/>
@@ -37,8 +37,8 @@
 				packages="testComputeIntervalAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="testComputeIntervalCounter"/> 
+			<var name="xtime"/>
+			<var name="testComputeIntervalCounter"/>
 		</stream>
 	</streams>
 

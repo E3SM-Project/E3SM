@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_gwdo
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -267,6 +267,8 @@
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables:
+ character(len=StrKIND),pointer:: gwdo_scheme
+
  integer:: i,iCell,iEdge
  real(kind=RKIND),dimension(:),allocatable:: dx_max
 
@@ -274,12 +276,15 @@
 !call mpas_log_write('')
 !call mpas_log_write('--- enter subroutine driver_gwdo:')
 
+ call mpas_pool_get_config(configs,'config_gwdo_scheme',gwdo_scheme)
+
 !copy MPAS arrays to local arrays:
  call gwdo_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
  gwdo_select: select case (trim(gwdo_scheme))
 
     case("bl_ysu_gwdo")
+       call mpas_timer_start('GWDO_YSU')
        call gwdo ( &
                   p3d       = pres_hydd_p , p3di      = pres2_hydd_p , pi3d    = pi_p      , &
                   u3d       = u_p         , v3d       = v_p          , t3d     = t_p       , & 
@@ -297,6 +302,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,    &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
                  )
+       call mpas_timer_stop('GWDO_YSU')
 
      case default
 

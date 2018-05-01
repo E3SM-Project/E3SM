@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/init.nc" dest="init.nc"/>
+	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<get_file dest_path="initial_condition_database" file_name="particle_resets_region.151113.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="particle_regions.151113.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="mesh_database" file_name="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+	</get_file>
+
+	<add_link source_path="initial_condition_database" source="particle_regions.151113.nc" dest="particle_regions.nc"/>
+	<add_link source_path="initial_condition_database" source="particle_resets_region.151113.nc" dest="particle_resets.nc"/>
+	<add_link source_path="mesh_database" source="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113" dest="graph.info.part.6"/>
+
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'002:46:40'</option>
+		<option name="config_btr_dt">'000:08:20'</option>
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_run_duration">'0001_13:46:39'</option>
+		<option name="config_prescribe_velocity">.true.</option>
+		<option name="config_prescribe_thickness">.true.</option>
+		<option name="config_disable_thick_all_tend">.true.</option>
+		<option name="config_disable_vel_all_tend">.true.</option>
+		<option name="config_disable_tr_all_tend">.true.</option>
+		<option name="config_use_active_tracers">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'region'</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'lagrPartTrackRegions'</option>
+		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_if_inside_region">.true.</option>
+		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
+		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="mesh">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="divergence" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="lagrPartTrackOutput">
+			<attribute name="output_interval">0000_02:46:40</attribute>
+		</stream>
+		<stream name="lagrPartTrackInput">
+			<attribute name="filename_template">particle_resets.nc</attribute>
+		</stream>
+		<stream name="lagrPartTrackRegions">
+			<attribute name="type">input</attribute>
+			<add_contents>
+				<member name="resetOutsideRegionMaskValue1" type="var"/>
+				<member name="resetInsideRegionMaskValue1" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<!--  Currently, this will only run with 6 processors because
+	      the particle file is decomposed with 6 processors and we
+	      currently do not have an online way of redecomposing particles.
+	      Therefore, a graph file is also used because different versions
+	      of metis produce different graph files and the particle file is
+	      tied to a particular version of the graph file.
+	-->
+	<run_script name="run.py">
+		<model_run procs="6" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

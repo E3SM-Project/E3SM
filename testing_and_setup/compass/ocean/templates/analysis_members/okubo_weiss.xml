@@ -1,0 +1,36 @@
+<template>
+	<namelist>
+		<option name="config_AM_okuboWeiss_enable">.true.</option>
+		<option name="config_AM_okuboWeiss_compute_on_startup">.true.</option>
+		<option name="config_AM_okuboWeiss_write_on_startup">.true.</option>
+		<option name="config_AM_okuboWeiss_compute_interval">'output_interval'</option>
+		<option name="config_AM_okuboWeiss_output_stream">'okuboWeissOutput'</option>
+		<option name="config_AM_okuboWeiss_directory">'analysis_members'</option>
+		<option name="config_AM_okuboWeiss_threshold_value">-0.2</option>
+		<option name="config_AM_okuboWeiss_normalization">1e-10</option>
+		<option name="config_AM_okuboWeiss_lambda2_normalization">1e-10</option>
+		<option name="config_AM_okuboWeiss_use_lat_lon_coords">.true.</option>
+		<option name="config_AM_okuboWeiss_compute_eddy_census">.true.</option>
+		<option name="config_AM_okuboWeiss_eddy_min_cells">20</option>
+	</namelist>
+
+	<streams>
+		<stream name="okuboWeissOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">okuboWeissOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/okuboWeiss.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">okuboWeissAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="okuboWeiss" type="var"/>
+				<member name="vorticity" type="var"/>
+				<member name="eddyID" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

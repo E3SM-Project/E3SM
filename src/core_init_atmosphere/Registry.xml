@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="5.2">
+<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="6.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -79,7 +79,7 @@
 
         <nml_record name="dimensions" in_defaults="true">
 
-                <nml_option name="config_nvertlevels"           type="integer"       default_value="41"
+                <nml_option name="config_nvertlevels"           type="integer"       default_value="55"
                      units="-"
                      description="The number of vertical levels to be used in the model"
                      possible_values="Positive integer values"/>
@@ -132,6 +132,11 @@
                      units="-"
                      description="The land use classification to use (case 7 only)"
                      possible_values="`USGS' or `MODIFIED\_IGBP\_MODIS\_NOAH'"/>
+
+                <nml_option name="config_topo_data"             type="character"     default_value="GTOPO30"
+                     units="-"
+                     description="The topography dataset to use for the model terrain and for GWDO static fields (case 7 only)"
+                     possible_values="`GTOPO30' or `GMTED2010'"/>
 
                 <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
                      units="-"
@@ -332,7 +337,6 @@
                         <var name="ivgtyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="mminlu" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="isltyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="soilcat_bot" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="snoalb" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="soiltemp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="greenfrac" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -379,6 +383,7 @@
                         packages="initial_conds"
                         immutable="true">
 
+                        <var name="initial_time" packages="met_stage_out"/>
                         <var name="xtime"/>
                         <var name="latCell"/>
                         <var name="lonCell"/>
@@ -426,7 +431,6 @@
                         <var name="ivgtyp"/>
                         <var name="mminlu"/>
                         <var name="isltyp"/>
-                        <var name="soilcat_bot"/>
                         <var name="snoalb"/>
                         <var name="soiltemp"/>
                         <var name="greenfrac"/>
@@ -470,26 +474,12 @@
                         <var_array name="scalars" packages="met_stage_out"/>
                         <var name="u" packages="met_stage_out"/>
                         <var name="w" packages="met_stage_out"/>
-                        <var name="rho_zz" packages="met_stage_out"/>
-                        <var name="theta_m" packages="met_stage_out"/>
-                        <var name="t_fg" packages="met_stage_out"/>
-                        <var name="p_fg" packages="met_stage_out"/>
-                        <var name="z_fg" packages="met_stage_out"/>
-                        <var name="rh_fg" packages="met_stage_out"/>
-                        <var name="sh_fg" packages="met_stage_out"/>
-                        <var name="soilz_fg" packages="met_stage_out"/>
-                        <var name="dz_fg" packages="met_stage_out"/>
-                        <var name="dzs_fg" packages="met_stage_out"/>
-                        <var name="zs_fg" packages="met_stage_out"/>
-                        <var name="st_fg" packages="met_stage_out"/>
-                        <var name="sm_fg" packages="met_stage_out"/>
                         <var name="dz" packages="met_stage_out"/>
                         <var name="dzs" packages="met_stage_out"/>
                         <var name="zs" packages="met_stage_out"/>
                         <var name="sh2o" packages="met_stage_out"/>
                         <var name="smois" packages="met_stage_out"/>
                         <var name="tslb" packages="met_stage_out"/>
-                        <var name="smcrel" packages="met_stage_out"/>
                         <var name="tmn" packages="met_stage_out"/>
                         <var name="skintemp" packages="met_stage_out"/>
                         <var name="sst" packages="met_stage_out"/>
@@ -503,16 +493,7 @@
                         <var name="xland" packages="met_stage_out"/>
                         <var name="rho" packages="met_stage_out"/>
                         <var name="theta" packages="met_stage_out"/>
-                        <var name="v" packages="met_stage_out"/>
                         <var name="relhum" packages="met_stage_out"/>
-                        <var name="spechum" packages="met_stage_out"/>
-                        <var name="uReconstructX" packages="met_stage_out"/>
-                        <var name="uReconstructY" packages="met_stage_out"/>
-                        <var name="uReconstructZ" packages="met_stage_out"/>
-                        <var name="uReconstructZonal" packages="met_stage_out"/>
-                        <var name="uReconstructMeridional" packages="met_stage_out"/>
-                        <var name="exner_base" packages="met_stage_out"/>
-                        <var name="pressure_base" packages="met_stage_out"/>
                         <var name="rho_base" packages="met_stage_out"/>
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
@@ -599,7 +580,6 @@
                 <var name="ivgtyp"   name_in_code="lu_index"     type="integer"  dimensions="nCells"/>
                 <var name="mminlu"                               type="text"     dimensions=""/>
                 <var name="isltyp"   name_in_code="soilcat_top"  type="integer"  dimensions="nCells"/>
-                <var name="soilcat_bot"                          type="integer"  dimensions="nCells"/>
                 <var name="snoalb"                               type="real"     dimensions="nCells"/>
                 <var name="soiltemp"                             type="real"     dimensions="nCells"/>
                 <var name="greenfrac"                            type="real"     dimensions="nMonths nCells"/>
@@ -653,6 +633,8 @@
         </var_struct>
 
         <var_struct name="state" time_levs="1">
+                <var name="initial_time" type="text" dimensions="" units="YYYY-MM-DD_hh:mm:ss"
+                     description="Model initialization time"/>
                 <var name="xtime"                      type="text"     dimensions="Time"/>
                 <var name="u"                          type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="w"                          type="real"     dimensions="nVertLevelsP1 nCells Time"/>

@@ -1,0 +1,22 @@
+<template>
+	<streams>
+		<stream name="frazil">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">frazil.nc</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="accumulatedFrazilIceMass" type="var"/>
+				<member name="accumulatedFrazilIceSalinity" type="var"/>
+				<member name="accumulatedLandIceFrazilMass" type="var"/>
+				<member name="seaIceEnergy" type="var"/>
+				<member name="frazilLayerThicknessTendency" type="var"/>
+				<member name="frazilTemperatureTendency" type="var"/>
+				<member name="frazilSalinityTendency" type="var"/>
+				<member name="frazilSurfacePressure" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
