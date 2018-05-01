@@ -16,7 +16,7 @@ class NODEFAIL(ERS):
         ERS.__init__(self, case)
 
         self._fail_sentinel = os.path.join(case.get_value("RUNDIR"), "FAIL_SENTINEL")
-        self._fail_str      = case.get_value("NODE_FAIL_REGEX")
+        self._fail_str      = case.get_value("RETRY_MPIRUN_REGEX")
 
     def _restart_fake_phase(self):
         # Swap out model.exe for one that emits node failures

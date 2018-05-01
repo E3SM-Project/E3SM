@@ -94,10 +94,14 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     rundir = case.get_value("RUNDIR")
     loop = True
 
-    # special case of using the NODE_FAIL_REGEX code on cheyenne to avoid an mpt timeout issue on startup
-    # in this case no spare nodes are required, we simply try again on the same nodes.  We will make 2
-    # attempts to retry.
-    node_fail_re = case.get_value("NODE_FAIL_REGEX")
+    # RETRY_MPIRUN_REGEX allows the mpi command to be reattempted if the
+    # failure described by that regular expression is matched in the model log
+    # case.spare_nodes is overloaded and may also represent the number of
+    # retries to attempt if ALLOCATE_SPARE_NODES is False
+    retry_run_re = re.escape(case.get_value("RETRY_MPIRUN_REGEX"))
+    if retry_run_re and case.spare_nodes == 0:
+        case.spare_nodes = case.get_value("MPIRUN_RETRY_COUNT")
+
     while loop:
         loop = False
 
@@ -106,11 +110,12 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
-        if node_fail_re:
-            node_fail_regex = re.compile(node_fail_re)
+        if retry_run_re:
+            retry_run_regex = re.compile(retry_run_re)
             model_logfile = os.path.join(rundir, model + ".log." + lid)
             if os.path.exists(model_logfile):
-                num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                num_fails = len(retry_run_regex.findall(open(model_logfile, 'r').read()))
+                print ("HERE num_fails {} spare_nodes {}".format(num_fails, case.spare_nodes))
                 if num_fails > 0 and case.spare_nodes >= num_fails:
                         # We failed due to node failure!
                     logger.warning("Detected model run failed due to node failure, restarting")
