@@ -98,8 +98,6 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     # in this case no spare nodes are required, we simply try again on the same nodes.  We will make 2
     # attempts to retry.
     node_fail_re = case.get_value("NODE_FAIL_REGEX")
-    if node_fail_re and not case.get_value('ALLOCATE_SPARE_NODES'):
-        case.spare_nodes = 2
     while loop:
         loop = False
 
@@ -118,9 +116,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                     logger.warning("Detected model run failed due to node failure, restarting")
 
                     # Archive the last consistent set of restart files and restore them
-                    if case.get_value("ALLOCATE_SPARE_NODES"):
-                        case.case_st_archive(no_resubmit=True)
-                        case.restore_from_archive()
+                    case.case_st_archive(no_resubmit=True)
+                    case.restore_from_archive()
 
                     case.set_value("CONTINUE_RUN",
                                    case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
