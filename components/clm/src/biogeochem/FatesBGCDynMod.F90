@@ -33,7 +33,7 @@ contains
          phosphorusstate_vars, phosphorusflux_vars, &
          alm_fates, crop_vars)
       
-      use clm_varctl             , only : use_c13, use_c14, use_ed
+      use clm_varctl             , only : use_c13, use_c14, use_fates
       use decompMod              , only : bounds_type
       use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
       use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
@@ -161,7 +161,7 @@ contains
     !--------------------------------------------
     if (use_century_decomp) then
        call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
     else
        call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
              canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
@@ -267,7 +267,7 @@ contains
     
     ! Set controls on very low values in critical state variables 
     ! Added some new logical filters to prevent
-    ! above ground precision control calculations with use_ed, as well
+    ! above ground precision control calculations with use_fates, as well
     ! bypass on nitrogen calculations
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &

@@ -9,7 +9,7 @@ module CNEcosystemDynBetrMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use clm_varctl                , only : use_c13, use_c14, use_ed, use_dynroot
+  use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -134,7 +134,7 @@ module CNEcosystemDynBetrMod
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
 
-    if(.not. use_ed)then
+    if(.not. use_fates)then
        ! --------------------------------------------------
        ! zero the column-level C and N fluxes
        ! --------------------------------------------------

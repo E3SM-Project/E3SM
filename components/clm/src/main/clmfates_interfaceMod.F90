@@ -2245,7 +2245,7 @@ contains
 !   integer :: s
 !   integer :: c 
 !   
-!   if (.not. (use_ed .and. use_fates_planthydro) ) return
+!   if (.not. (use_fates .and. use_fates_planthydro) ) return
 !   
 !   do s = 1, this%fates(nc)%nsites
 !      c = this%f2hmap(nc)%fcolumn(s)

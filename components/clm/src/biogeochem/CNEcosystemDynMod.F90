@@ -7,7 +7,7 @@ module CNEcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : use_c13, use_c14, use_ed, use_dynroot
+  use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -144,7 +144,7 @@ contains
     !-----------------------------------------------------------------------
   
     ! only do if ed is off
-    if( .not. use_ed) then
+    if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
@@ -227,7 +227,7 @@ contains
 
        call t_stopf('CNPsum')
 
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynLeaching
 
@@ -329,7 +329,7 @@ contains
     ! Call the main CN routines
 
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
 
        ! --------------------------------------------------
        ! zero the column-level C and N fluxes
@@ -434,7 +434,7 @@ contains
        ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
        if (use_century_decomp) then
           call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
        else
           call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
                canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
@@ -459,7 +459,7 @@ contains
 
        call t_stopf('CNAllocation - phase-1')
 
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynNoLeaching1
 
@@ -556,7 +556,7 @@ contains
 
     ! Call the main CN routines
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
@@ -851,7 +851,7 @@ contains
        if( use_c14 ) then
           call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        endif    
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynNoLeaching2
 

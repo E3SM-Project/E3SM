@@ -696,7 +696,7 @@ contains
     logical               :: readvar 
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(cellorg_col) == (/bounds%endc, nlevsoi/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(cellorg_col) == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
 
     !----------------------------------------
     ! Initialize time constant variables

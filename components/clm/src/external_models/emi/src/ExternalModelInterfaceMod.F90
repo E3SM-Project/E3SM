@@ -70,7 +70,7 @@ contains
     ! Determine which EMs are active
     !
     ! !USES:
-    use clm_varctl, only : use_ed
+    use clm_varctl, only : use_fates
 #ifndef FATES_VIA_EMI
     use clm_varctl, only : use_betr
     use clm_varctl, only : use_pflotran
@@ -93,7 +93,7 @@ contains
     nclumps = get_proc_clumps()
 
     ! Is FATES active?
-    if (use_ed) then
+    if (use_fates) then
        num_em            = num_em + 1
        index_em_fates    = num_em
        allocate(em_fates)

@@ -267,6 +267,7 @@ contains
 !-----------------------------------------------------------------------
       use comspe, only: numm
       use spmd_utils
+      use scamMod, only: single_column
 #if (defined MODCM_DP_TRANSPOSE)
       use parutilitiesmodule, only : parinit
 #endif
@@ -363,8 +364,10 @@ contains
 !
       call factor (plat, m2, m3, m5)
 
-      if (m2 < 1) then
-         call endrun ('SPMDINIT_DYN: Problem size is not divisible by 2')
+      if (.not. single_column) then
+        if (m2 < 1) then
+          call endrun ('SPMDINIT_DYN: Problem size is not divisible by 2')
+        end if
       end if
 
       if (masterproc) then
@@ -383,11 +386,13 @@ contains
          dyn_npes_stride = 1
       endif
 
-      if ((dyn_equi_by_col) .and. (mod(tot_cols,2) /= 0)) then
-         write(iulog,*)'SPMDINIT_DYN: Total number of columns(', &
+      if (.not. single_column) then
+        if ((dyn_equi_by_col) .and. (mod(tot_cols,2) /= 0)) then
+          write(iulog,*)'SPMDINIT_DYN: Total number of columns(', &
                    tot_cols,') must be a multiple of 2'
-         call endrun
-      end if
+          call endrun
+        end if
+      endif
 !
 !  Initialization for inactive processes
 !

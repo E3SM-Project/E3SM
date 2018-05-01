@@ -44,7 +44,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
-<suplnitro use_ed=".true." >NONE</suplnitro>
+<suplnitro use_fates=".true." >NONE</suplnitro>
 
 <!-- Nutrient competition pathway -->
 <nu_com>RD</nu_com>
@@ -96,14 +96,14 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c170919.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180403.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180312.nc</paramfile>
 
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_2troppftclones.c171010.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_2trop.c180413.nc</fates_paramfile>
 
 
 <!-- soil order related parameters (relative to {csmdata}) -->
@@ -420,7 +420,7 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="1.9x2.5"  glc_grid="gland10" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland10km.nc</fglcmask>
 <fglcmask hgrid="1.9x2.5"  glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
 <fglcmask hgrid="1.9x2.5"  glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<!-- MPASLI grids that could be used if the glc_grid logic was working. -->
+<!-- MALI grids that could be used if the glc_grid logic was working. -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
 
@@ -1692,9 +1692,9 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 
 <fin_use_fsat use_cn=".true.">.true.</fin_use_fsat>
-<fin_use_fsat use_ed=".true.">.false.</fin_use_fsat>
+<fin_use_fsat use_fates=".true.">.false.</fin_use_fsat>
 
-<use_aereoxid_prog use_ed=".true.">.true.</use_aereoxid_prog>
+<use_aereoxid_prog use_fates=".true.">.true.</use_aereoxid_prog>
 <use_aereoxid_prog use_cn=".true.">.true.</use_aereoxid_prog>
 
 <!-- =========================================  -->
@@ -1712,17 +1712,17 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
-<use_fates_spitfire            use_ed=".true.">.false.</use_fates_spitfire>
-<use_fates_planthydro          use_ed=".true.">.false.</use_fates_planthydro>
-<use_fates_ed_st3              use_ed=".true.">.false.</use_fates_ed_st3>
-<use_fates_ed_prescribed_phys  use_ed=".true.">.false.</use_fates_ed_prescribed_phys>
-<use_fates_logging             use_ed=".true.">.false.</use_fates_logging>
-<use_fates_inventory_init      use_ed=".true.">.false.</use_fates_inventory_init>
-<fates_inventory_ctrl_filename use_ed=".true."> " " </fates_inventory_ctrl_filename>
-<use_vertsoilc       bgc_mode="ed"  >.true.</use_vertsoilc>
-<use_century_decomp  bgc_mode="ed"  >.true.</use_century_decomp>
-<use_lch4            bgc_mode="ed"  >.false.</use_lch4>
-<use_nitrif_denitrif bgc_mode="ed"  >.false.</use_nitrif_denitrif>
+<use_fates_spitfire            use_fates=".true.">.false.</use_fates_spitfire>
+<use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
+<use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
+<use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
+<use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
+<use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
+<fates_inventory_ctrl_filename use_fates=".true."> " " </fates_inventory_ctrl_filename>
+<use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
+<use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
+<use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
+<use_nitrif_denitrif           bgc_mode="fates"  >.false.</use_nitrif_denitrif>
 
 
 </namelist_defaults>

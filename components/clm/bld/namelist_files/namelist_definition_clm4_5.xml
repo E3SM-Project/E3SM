@@ -236,9 +236,9 @@ Toggle to turn on the BeTR
 (BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed" type="logical" category="physics"
+<entry id="use_fates" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the ED (fates)
+Toggle to turn on the FATES
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
