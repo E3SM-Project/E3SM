@@ -123,6 +123,8 @@ def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
     if resubmit and os.path.exists(submit_options):
         config = configparser.SafeConfigParser()
         config.read(submit_options)
+        if not skip_pnl and config.has_option('SubmitOptions','skip_pnl'):
+            skip_pnl = config.getboolean('SubmitOptions', 'skip_pnl')
         if mail_user is None and config.has_option('SubmitOptions', 'mail_user'):
             mail_user = config.get('SubmitOptions', 'mail_user')
         if mail_type is None and config.has_option('SubmitOptions', 'mail_type'):
