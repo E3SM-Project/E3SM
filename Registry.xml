@@ -1111,11 +1111,11 @@ is the value of that variable from the *previous* time level!
 	       persistence="scratch"
                />
 	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
-	       descriptiom="x-component of slope on cell centers"
+	       description="x-component of slope on cell centers"
 	       persistence="scratch"
 	       />
 	  <var name="slopeCellY" type="real" dimensions="nCells" units="none"
-	       descriptiom="y-component of slope on cell centers"
+	       description="y-component of slope on cell centers"
 	       persistence="scratch"
 	       />
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
