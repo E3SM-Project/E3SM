@@ -480,7 +480,7 @@
     <type>char</type>
     <category>dlnd</category>
     <group>dlnd_nml</group>
-    <valid_values>1d,root"</valid_values>
+    <valid_values>1d,root</valid_values>
     <desc>
       DLND Decomposition strategy
       1d   = Vector decomposition
