@@ -76,7 +76,7 @@ def contourMPAS(field, contour_levs=None):
   if contour_levs == None:
      im = plt.contour(xi, yi, zi)
   else:
-     im = plt.contour(xi, yi, zi, contour_levs)
+     im = plt.contour(xi, yi, zi, contour_levs, cmap=plt.cm.jet)
 
   #plt.scatter(xCell, yCell, c=temperature[timelev,:,-1], s=100, vmin=zi.min(), vmax=zi.max())  # to see the raw data on top
   plt.colorbar(im)
@@ -149,11 +149,15 @@ fig.suptitle('Payne et al. Fig. 1, 3, 6, 9, or 11', fontsize=12, fontweight='bol
 #markershape='h'
 
 # print ice locations with gray hexagons
-iceIndices = np.where(thickness[timelev,:]>0.0)[0]
+iceIndices = np.where(thickness[timelev,:]>10.0)[0]
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
 # add contours of ice temperature over the top
-contourMPAS(basalTemperature[timelev,:], np.linspace(240.0, 275.0, 8))
+basalTemp = basalTemperature[timelev,:]
+# fill places below dynamic limit with non-ice value of 273.15
+basalTemp[np.where(thickness[timelev,:]<10.0)] = 273.15
+#plt.scatter(xCell, yCell, markersize, basalTemp[:], marker=markershape, edgecolors='none') # print ice locations with gray hexagons; plt.plot()
+contourMPAS(basalTemp, np.linspace(240.0, 275.0, 8))
 
 plt.axis('equal')
 plt.title('Modeled basal temperature (K) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() )
