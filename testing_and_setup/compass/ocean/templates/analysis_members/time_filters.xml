@@ -1,0 +1,52 @@
+<template>
+	<namelist>
+		<option name="config_AM_timeFilters_enable">.true.</option>
+		<option name="config_AM_timeFilters_compute_interval">'dt'</option>
+		<option name="config_AM_timeFilters_output_stream">'timeFiltersOutput'</option>
+		<option name="config_AM_timeFilters_restart_stream">'timeFiltersRestart'</option>
+		<option name="config_AM_timeFilters_compute_on_startup">.true.</option>
+		<option name="config_AM_timeFilters_write_on_startup">.true.</option>
+		<option name="config_AM_timeFilters_initialize_filters">.true.</option>
+		<option name="config_AM_timeFilters_tau">'90_00:00:00'</option>
+	</namelist>
+
+	<streams>
+		<stream name="timeFiltersOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">timeFiltersOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/timeFilters.$Y-$M-$D_$h.nc</attribute>
+			<attribute name="packages">timeFiltersAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="normalVelocityLowPass" type="var"/>
+				<member name="normalVelocityHighPass" type="var"/>
+				<member name="normalVelocityFilterTest" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<streams>
+		<stream name="timeFiltersRestart">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">timeFiltersRestart</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="filename_template">restarts/timeFiltersRestart.$Y-$M-$D_$h.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">timeFiltersAMPKG</attribute>
+			<attribute name="type">input;output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="normalVelocityLowPass" type="var"/>
+				<member name="normalVelocityHighPass" type="var"/>
+				<member name="normalVelocityFilterTest" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

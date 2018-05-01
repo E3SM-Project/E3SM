@@ -1,0 +1,26 @@
+<template>
+	<streams>
+		<stream name="forcing_data">
+			<attribute name="filename_template">forcing_data.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="name">forcing_data</attribute>
+			<add_contents>
+				<member name="tracersSurfaceRestoringFields" type="var_struct"/>
+				<member name="tracersInteriorRestoringFields" type="var_struct"/>
+				<member name="tracersExponentialDecayFields" type="var_struct"/>
+				<member name="tracersIdealAgeFields" type="var_struct"/>
+				<member name="tracersTTDFields" type="var_struct"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+				<member name="latentHeatFlux" type="var"/>
+				<member name="sensibleHeatFlux" type="var"/>
+				<member name="shortWaveHeatFlux" type="var"/>
+				<member name="evaporationFlux" type="var"/>
+				<member name="rainFlux" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
+
+	<add_link source="make_graph_file.py" source_path="utility_scripts" dest="make_graph_file.py"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<option name="config_dt">'0000_00:02:00'</option>
+		<option name="config_btr_dt">'0000_00:00:06'</option>
+		<option name="config_run_duration">'0000_00:12:00'</option>
+		<option name="config_use_const_visc">.true.</option>
+		<option name="config_implicit_bottom_drag_coeff">0.0</option>
+		<option name="config_use_mom_del2">.true.</option>
+		<option name="config_mom_del2">10.0</option>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000-00-00_00:03:00</attribute>
+			<add_contents>
+				<member type="stream" name="mesh"/>
+				<member type="var_struct" name="tracers"/>
+				<member type="var" name="layerThickness"/>
+				<member type="var" name="ssh"/>
+				<member type="var" name="normalVelocity"/>
+				<member type="var" name="xtime"/>
+			</add_contents>
+		</stream>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./make_graph_file.py">
+			<argument flag="-f">init.nc</argument>
+		</step>
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

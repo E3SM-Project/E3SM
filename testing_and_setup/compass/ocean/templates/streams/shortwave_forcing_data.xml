@@ -1,0 +1,16 @@
+<template>
+	<streams>
+		<stream name="shortwave_forcing_data">
+			<attribute name="filename_template">shortwaveData.nc</attribute>
+			<attribute name="input_interval">none</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="name">shortwave_forcing_data</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="chlorophyllData" type="var"/>
+				<member name="zenithAngle" type="var"/>
+				<member name="clearSkyRadiation" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

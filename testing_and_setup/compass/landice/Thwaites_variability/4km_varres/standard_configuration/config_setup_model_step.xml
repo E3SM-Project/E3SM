@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<config case="setup_model">
+
+        <!-- download file with IC on it -->
+        <get_file dest_path="work_case_dir" file_name="thwaites.4km.nc">
+                <mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_landice/test_cases/"/>
+        </get_file>
+
+        <!-- add needed files/executables -->
+        <add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
+        <add_executable source="metis" dest="metis"/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_many_runs.sh" dest="../setup_many_runs.sh"/>
+        <add_link source_path="script_configuration_dir" source="compare_variability_runs.py" dest="../compare_variability_runs.py"/>
+        <add_executable source="model" dest="landice_model"/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="thwaites_template.xml" path_base="script_configuration_dir"/>
+        </streams>
+
+        <run_script name="setup_model.py">
+
+                <!-- Set up needed graph file -->
+                <step executable="./make_graph_file.py">
+                        <argument flag="-f">thwaites.4km.nc</argument>
+                </step>
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">16</argument>
+                </step>
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">32</argument>
+                </step>
+
+        </run_script>
+</config>
+

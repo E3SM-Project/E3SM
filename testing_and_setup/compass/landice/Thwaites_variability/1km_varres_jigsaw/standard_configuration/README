@@ -1,0 +1,11 @@
+This directory creates a 1-8 km variable resolution mesh for the Thwaites glacier.
+The variable resolution mesh is generated using JIGSAW-GEO:
+https://github.com/dengwirda/jigsaw-geo-matlab
+JIGSAW-GEO needs to be run manually from Matlab before running the rest of this case.
+(It may be possible to include that step in the set up process, but it seems like
+more trouble than it is worth for now.)
+
+To create the mesh, run the .m script in the subdirectory 'jigsaw',
+and then copy or link the resulting file into this directory.
+
+After this is complete, set up and run the test case as normal.

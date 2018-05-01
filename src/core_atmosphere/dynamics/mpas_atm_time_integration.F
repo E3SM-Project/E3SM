@@ -394,7 +394,7 @@ module atm_time_integration
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
 #ifdef DO_PHYSICS
-      call mpas_timer_start('physics_addtend')
+      call mpas_timer_start('physics_get_tend')
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -418,7 +418,7 @@ module atm_time_integration
                      tend_rho_physics )
          block => block % next
       end do
-      call mpas_timer_stop('physics_addtend')
+      call mpas_timer_stop('physics_get_tend')
 #endif
 
       !
@@ -593,29 +593,6 @@ module atm_time_integration
                block => block % next
             end do
             call mpas_timer_stop('atm_compute_dyn_tend')
-
-#ifdef DO_PHYSICS
-!            call mpas_timer_start('physics_addtend')
-!            block => domain % blocklist
-!            do while (associated(block))
-!               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-!               call mpas_pool_get_subpool(block % structs, 'state', state)
-!               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-!               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-!               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-!               call physics_addtend( block, &
-!                                      mesh, &
-!                                     state, &     
-!                                      diag, &
-!                                      tend, &
-!                              tend_physics, &
-!                           block % configs, &
-!                                   rk_step, &
-!                          dynamics_substep  )
-!               block => block % next
-!            end do
-!            call mpas_timer_stop('physics_addtend')
-#endif
 
 
             !***********************************
@@ -5508,6 +5485,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: u
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: pressure_p
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_base
       real (kind=RKIND), dimension(:,:), pointer :: exner
       real (kind=RKIND), dimension(:,:), pointer :: exner_base
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
@@ -5540,6 +5518,7 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'u', u, time_lev)
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_base)
       call mpas_pool_get_array(diag, 'exner', exner)
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
@@ -5620,6 +5599,7 @@ module atm_time_integration
       do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             exner(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_p(k,iCell) + rtheta_base(k,iCell)))**rcv
+            exner_base(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_base(k,iCell)))**rcv  ! WCS addition 20180403
          end do
       end do
 
@@ -5629,6 +5609,7 @@ module atm_time_integration
                                                * (  exner(k,iCell) * rtheta_p(k,iCell) &
                                                   + rtheta_base(k,iCell) * (exner(k,iCell) - exner_base(k,iCell)) &
                                                  )
+            pressure_base(k,iCell) = zz(k,iCell) * rgas * exner_base(k,iCell) * rtheta_base(k,iCell)      ! WCS addition 20180403
          end do
       end do
 

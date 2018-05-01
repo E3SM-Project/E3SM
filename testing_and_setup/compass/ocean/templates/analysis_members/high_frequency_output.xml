@@ -1,0 +1,30 @@
+<template>
+	<namelist>
+		<option name="config_AM_highFrequencyOutput_enable">.true.</option>
+		<option name="config_AM_highFrequencyOutput_compute_interval">'output_interval'</option>
+		<option name="config_AM_highFrequencyOutput_output_stream">'highFrequencyOutput'</option>
+		<option name="config_AM_highFrequencyOutput_compute_on_startup">.true.</option>
+		<option name="config_AM_highFrequencyOutput_write_on_startup">.true.</option>
+	</namelist>
+
+	<streams>
+		<stream name="highFrequencyOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">highFrequencyOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/highFrequencyOutput.$Y-$M-$D.nc</attribute>
+			<attribute name="packages">highFrequencyOutputAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="kineticEnergyAt250m" type="var"/>
+				<member name="kineticEnergyAtSurface" type="var"/>
+				<member name="relativeVorticityAt250m" type="var"/>
+				<member name="activeTracersAt250m" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

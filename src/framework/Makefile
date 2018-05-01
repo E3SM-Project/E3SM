@@ -94,7 +94,7 @@ mpas_bootstrapping.o: mpas_derived_types.o mpas_dmpar.o mpas_block_decomp.o mpas
 
 mpas_io_units.o: mpas_kind_types.o
 
-mpas_threading.o: mpas_kind_types.o mpas_log.o
+mpas_threading.o: mpas_kind_types.o
 
 mpas_stream_list.o: mpas_derived_types.o mpas_kind_types.o mpas_io_streams.o mpas_timekeeping.o regex_matching.o mpas_log.o
 
