@@ -23,6 +23,7 @@
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
   <xs:element name="NODE_FAIL_REGEX" type="xs:string"/>
+  <xs:element name="FORCE_SPARE_NODES" type="xs:integer"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
@@ -83,6 +84,8 @@
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
 	<!-- regex to look for in log files that will triger retry of mpirun command -->
         <xs:element ref="NODE_FAIL_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- Number of retry attempts to make if NODE_FAIL_REGEX matches   -->
+        <xs:element ref="FORCE_SPARE_NODES" minOccurs="0" maxOccurs="1"/>
 	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
 	<!-- PROXY: optional http proxy for access to the internet-->
