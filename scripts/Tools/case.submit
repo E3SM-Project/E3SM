@@ -6,6 +6,7 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 
 from standard_script_setup import *
 from CIME.case        import Case
+from ConfigParser import SafeConfigParser
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -65,6 +66,24 @@ def _main_func(description):
 ###############################################################################
     caseroot, job, no_batch, prereq, resubmit, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
+
+    # save these options to a hidden file for use during resubmit
+    config_file = os.path.join(caseroot,".submit_options")
+    if skip_pnl or mail_user or mail_type or batch_args:
+        config = SafeConfigParser()
+        config.add_section("SubmitOptions")
+        if skip_pnl:
+            config.set("SubmitOptions", "skip_pnl", skip_pnl)
+        if mail_user:
+            config.set("SubmitOptions", "mail_user", mail_user)
+        if mail_type:
+            config.set("SubmitOptions", "mail_type", ",".join(mail_type))
+        if batch_args:
+            config.set("SubmitOptions", "batch_args", batch_args)
+        with open(config_file, "wb") as fd:
+            config.write(fd)
+    elif os.path.exists(config_file):
+        os.remove(config_file)
 
     with Case(caseroot, read_only=False) as case:
         case.submit(job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,

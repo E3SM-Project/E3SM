@@ -7,6 +7,7 @@ jobs.
 submit, check_case and check_da_settings are members of class Case in file case.py
 """
 import socket
+from ConfigParser                   import SafeConfigParser
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
 from CIME.locked_files              import unlock_file, lock_file
@@ -115,12 +116,28 @@ def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
             if phase_status != TEST_PASS_STATUS:
                 ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
+    # If this is a resubmit check the hidden file .submit_options for
+    # any submit options used on the original submit and use them again
+    caseroot = self.get_value("CASEROOT")
+    submit_options = os.path.join(caseroot, ".submit_options")
+    if resubmit and os.path.exists(submit_options):
+        config = SafeConfigParser()
+        config.read(submit_options)
+        if not skip_pnl and config.has_option('SubmitOptions','skip_pnl'):
+            skip_pnl = config.getboolean('SubmitOptions', 'skip_pnl')
+        if mail_user is None and config.has_option('SubmitOptions', 'mail_user'):
+            mail_user = config.get('SubmitOptions', 'mail_user')
+        if mail_type is None and config.has_option('SubmitOptions', 'mail_type'):
+            mail_type = config.get('SubmitOptions', 'mail_type').split(',')
+        if batch_args is None and config.has_option('SubmitOptions', 'batch_args'):
+            batch_args = config.get('SubmitOptions', 'batch_args')
+
     try:
         functor = lambda: _submit(self, job=job, no_batch=no_batch, prereq=prereq,
                                   resubmit=resubmit, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
                                   batch_args=batch_args)
-        run_and_log_case_status(functor, "case.submit", caseroot=self.get_value("CASEROOT"),
+        run_and_log_case_status(functor, "case.submit", caseroot=caseroot,
                                 custom_success_msg_functor=verbatim_success_msg)
     except:
         # If something failed in the batch system, make sure to mark
