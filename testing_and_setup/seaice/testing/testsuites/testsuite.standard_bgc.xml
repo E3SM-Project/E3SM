@@ -4,7 +4,7 @@
 		<domain name="domain_QU240km">
 			<test name="regression"/>
 			<test name="parallelism"/>
-			<test name="restartability"/>
+			<test name="restartability_bgc"/>
 		</domain>
 	</configuration>
 </testsuite>

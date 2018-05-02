@@ -10,6 +10,7 @@ import imp
 # tests defined
 tests = [{"name":"regression"     , "needsBase":True,  "description":"Tests whether development and base MPAS models are bit reproducible."},
          {"name":"restartability" , "needsBase":False, "description":"Tests if restarting the model is bit reproducible."},
+         {"name":"restartability_bgc" , "needsBase":False, "description":"Tests if restarting the model with BGC active is bit reproducible."},
          {"name":"parallelism"    , "needsBase":False, "description":"Tests whether different processor numbers is bit reproducible."}]
 
 colour_init()
