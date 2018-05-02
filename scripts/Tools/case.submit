@@ -73,7 +73,7 @@ def _main_func(description):
         config = configparser.SafeConfigParser()
         config.add_section("SubmitOptions")
         if skip_pnl:
-            config.set("SubmitOptions", "skip_pnl", "True")
+            config.set("SubmitOptions", "skip_pnl", b"True")
         if mail_user:
             config.set("SubmitOptions", "mail_user", mail_user)
         if mail_type:
