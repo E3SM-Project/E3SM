@@ -385,7 +385,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    case.check_lockedfiles()
+    case.check_lockedfiles(skip="env_batch")
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
