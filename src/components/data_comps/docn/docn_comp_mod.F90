@@ -50,6 +50,7 @@ module docn_comp_mod
   logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
+  integer(IN)   :: dbug = 2              ! debug level (higher is more)
 
   real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -139,6 +140,7 @@ CONTAINS
     character(*), parameter :: F03   = "('(docn_comp_init) ',a,i8,a)"
     character(*), parameter :: F04   = "('(docn_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(docn_comp_init) ',a,2f10.4)"
+    character(*), parameter :: F06   = "('(docn_comp_init) ',a,f10.4)"
     character(*), parameter :: F90   = "('(docn_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(docn_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(docn_comp_init) "
@@ -241,32 +243,9 @@ CONTAINS
     ksen   = mct_aVect_indexRA(x2o,'Foxx_sen')
     klat   = mct_aVect_indexRA(x2o,'Foxx_lat')
     krofi  = mct_aVect_indexRA(x2o,'Foxx_rofi')
-
-    ! The following is in place to support either the nuopc or mct interface
-    ! klwdn is required
-    klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn', perrwith='quiet')
-    if (klwdn == 0) then
-       klwdn  = mct_aVect_indexRA(x2o,'Foxx_lwdn', perrwith='quiet')
-    end if
-    if (klwdn == 0) then
-       call shr_sys_abort(subname // 'ERROR: either Faxa_lwdn or Foxx_lwdn must be provided')
-    end if
-
-    kmelth = mct_aVect_indexRA(x2o,'Fioi_melth', perrwith='quiet')
-    if (kmelth == 0) then
-       kmelth = mct_aVect_indexRA(x2o,'Foxx_melth', perrwith='quiet')
-    end if
-    if (kmelth == 0) then
-       call shr_sys_abort(subname // 'ERROR: either Fioi_melth or Foxx_melth must be provided')
-    end if
-
-    ksnow = mct_aVect_indexRA(x2o,'Faxa_snow', perrwith='quiet')
-    if (ksnow == 0) then
-       ksnow  = mct_aVect_indexRA(x2o,'Foxx_snow', perrwith='quiet')
-    end if
-    if (ksnow == 0) then
-       call shr_sys_abort(subname // 'ERROR: either Faxa_snow or Foxx_snow must be provided')
-    end if
+    klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
+    ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
+    kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
@@ -364,6 +343,12 @@ CONTAINS
 
     call t_adj_detailf(-2)
 
+    if (dbug > 1 .and. my_task == master_task) then
+       do n = 1,lsize
+          write(logunit,F06)'n,ofrac = ',mct_aVect_indexRA(ggrid%data,'frac')
+       end do
+    end if
+
     call t_stopf('DOCN_INIT')
 
   end subroutine docn_comp_init
@@ -413,6 +398,7 @@ CONTAINS
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
+    character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(docn_comp_run) "
     !-------------------------------------------------------------------------------
@@ -604,6 +590,31 @@ CONTAINS
     end select
 
     call t_stopf('docn_datamode')
+
+    !----------------------------------------------------------
+    ! Debug output
+    !----------------------------------------------------------
+
+    if (dbug > 1 .and. my_task == master_task) then
+       do n = 1,lsize
+          write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', currentYMD, currentTOD, n, x2o%rattr(kswnet,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lwup  = ', currentYMD, currentTOD, n, x2o%rattr(klwup,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lwdn  = ', currentYMD, currentTOD, n, x2o%rattr(klwdn,n)    
+          write(logunit,F01)'import: ymd,tod,n,Fioi_melth = ', currentYMD, currentTOD, n, x2o%rattr(kmelth,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_sen   = ', currentYMD, currentTOD, n, x2o%rattr(ksen,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lat   = ', currentYMD, currentTOD, n, x2o%rattr(klat,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_rofi  = ', currentYMD, currentTOD, n, x2o%rattr(krofi,n)    
+
+          write(logunit,F01)'export: ymd,tod,n,So_t       = ', currentYMD, currentTOD, n, o2x%rattr(kt,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_s       = ', currentYMD, currentTOD, n, o2x%rattr(ks,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_u       = ', currentYMD, currentTOD, n, o2x%rattr(ku,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_v       = ', currentYMD, currentTOD, n, o2x%rattr(kv,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', currentYMD, currentTOD, n, o2x%rattr(kdhdx,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', currentYMD, currentTOD, n, o2x%rattr(kdhdy,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_fswpen  = ', currentYMD, currentTOD, n, o2x%rattr(kswp,n)    
+          write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', currentYMD, currentTOD, n, o2x%rattr(kq,n)    
+       end do
+    end if
 
     !--------------------
     ! Write restart

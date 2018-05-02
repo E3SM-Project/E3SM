@@ -373,6 +373,10 @@ module med_fraction_mod
                is_local%wrap%FBfrac(compocn), 'afrac', &
                is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          !DEBUG
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(compocn), string=trim(subname)//' DEBUG: FBfrac(compocn) ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          !DEBUG
        endif
     endif
 

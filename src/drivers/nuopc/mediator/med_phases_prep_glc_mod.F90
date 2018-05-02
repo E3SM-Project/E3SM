@@ -119,7 +119,8 @@ contains
     !--- auto merges
     !---------------------------------------
 
-    call med_merge_auto(is_local%wrap%FBExp(compglc), is_local%wrap%FBFrac(compglc), &
+    call med_merge_auto(trim(compname(compglc)), &
+         is_local%wrap%FBExp(compglc), is_local%wrap%FBFrac(compglc), &
          is_local%wrap%FBImp(:,compglc), fldListTo(compglc), &
          document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

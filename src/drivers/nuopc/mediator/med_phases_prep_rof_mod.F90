@@ -119,7 +119,8 @@ module med_phases_prep_rof_mod
     !--- auto merges
     !---------------------------------------
 
-    call med_merge_auto(is_local%wrap%FBExp(comprof), is_local%wrap%FBFrac(comprof), &
+    call med_merge_auto(trim(compname(comprof)), &
+         is_local%wrap%FBExp(comprof), is_local%wrap%FBFrac(comprof), &
          is_local%wrap%FBImp(:,comprof), fldListTo(comprof), &
          document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

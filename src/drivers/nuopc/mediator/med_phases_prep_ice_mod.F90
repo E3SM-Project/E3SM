@@ -13,11 +13,12 @@ module med_phases_prep_ice_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
   use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_internalstate_mod   , only : InternalState
+  use med_internalstate_mod   , only : InternalState, logunit
 
   implicit none
   private
@@ -27,6 +28,9 @@ module med_phases_prep_ice_mod
   character(*)      , parameter :: u_FILE_u  = __FILE__
   integer                       :: dbrc
   logical                       :: mastertask
+
+  ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
+  real(ESMF_KIND_R8)            :: flux_epbalfact = 1._ESMF_KIND_R8 
 
   public  :: med_phases_prep_ice
 
@@ -128,13 +132,14 @@ module med_phases_prep_ice_mod
     !--- auto merges
     !---------------------------------------
 
-    call med_merge_auto(is_local%wrap%FBExp(compice), is_local%wrap%FBFrac(compice), &
+    call med_merge_auto(trim(compname(compice)), &
+         is_local%wrap%FBExp(compice), is_local%wrap%FBFrac(compice), &
          is_local%wrap%FBImp(:,compice), fldListTo(compice), &
          document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compatm) ', rc=rc)
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -142,46 +147,30 @@ module med_phases_prep_ice_mod
     !--- custom calculations
     !---------------------------------------
 
-    ! TODO: need to obtain flux_epbalfact
-
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_rainc', dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_rainl', dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
-#if (1 == 0)
-    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
-#endif
-    if (first_call) then
-       call ESMF_LogWrite('(merge_to_ice): Faxa_rain = (Faxa_rainc + Faxa_rainl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_rain', rc=rc)) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       if (first_call) then
+          write(logunit,'(a)')'(merge_to_ice): Scaling Faxa_rain by flux_epbalfact '
+       end if
     end if
-
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_snowc', dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Faxa_snowl', dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_snow' , dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
-#if (1 == 0)
-    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
-#endif
-    if (first_call) then
-       call ESMF_LogWrite('(merge_to_ice): Faxa_snow = (Faxa_snowc + Faxa_snowl)*flux_epbalfact',ESMF_LOGMSG_INFO, rc=dbrc)
+    if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_snow', rc=rc)) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_snow' , dataptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       if (first_call) then
+          write(logunit,'(a)')'(merge_to_ice): Scaling Faxa_snow by flux_epbalfact '
+       end if
     end if
-
-#if (1 == 0)
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compglc,compice), 'Figg_rofi', dataPtr1, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(comprof,compice), 'Firr_rofi', dataPtr2, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Fixx_rofi', dataPtr3, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dataPtr3(:) = dataPtr1(:) + dataPtr2(:)
-    dataPtr3(:) = dataPtr3(:) * flux_epbalfact
-#endif
+    if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Fixx_rofi', rc=rc)) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Fixx_rofi' , dataptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       if (first_call) then
+          write(logunit,'(a)')'(merge_to_ice): Scaling Fixx_rofi by flux_epbalfact '
+       end if
+    end if
 
     !---------------------------------------
     !--- update local scalar data

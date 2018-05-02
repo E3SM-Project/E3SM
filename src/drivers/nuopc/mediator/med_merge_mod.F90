@@ -6,6 +6,8 @@ module med_merge_mod
 
   use ESMF
   use shr_kind_mod  
+  use shr_string_mod        , only : shr_string_listGetNum
+  use shr_string_mod        , only : shr_string_listGetName
   use esmFlds               , only : compmed, compname
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
@@ -36,9 +38,11 @@ module med_merge_mod
 contains
 !-----------------------------------------------------------------------------
 
-  subroutine med_merge_auto(FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, document, string, mastertask, rc)
+  subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, &
+       document, string, mastertask, rc)
+    character(len=*)             , intent(in)            :: compout_name ! component name for FBOut
     type(ESMF_FieldBundle)       , intent(inout)         :: FBOut        ! Merged output field bundle
-    type(ESMF_FieldBundle)       , intent(in)            :: FBfrac       ! Fraction data for FBOut
+    type(ESMF_FieldBundle)       , intent(inout)         :: FBfrac       ! Fraction data for FBOut 
     type(ESMF_FieldBundle)       , intent(in)            :: FBImp(:)     ! Array of field bundles each mapping to the FBOut mesh
     type(shr_nuopc_fldList_type) , intent(in)            :: fldListTo    ! Information for merging
     type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed1       ! mediator field bundle
@@ -50,8 +54,9 @@ contains
 
     ! local variables
     integer                :: cnt
-    integer                :: n,nf,compsrc
+    integer                :: n,nf,nm,compsrc
     character(SHR_KIND_CX) :: fldname, stdname
+    character(SHR_KIND_CX) :: merge_fields
     character(SHR_KIND_CX) :: merge_field
     character(SHR_KIND_CS) :: merge_type
     character(SHR_KIND_CS) :: merge_fracname
@@ -96,67 +101,82 @@ contains
              do compsrc = 1,size(FBImp)
 
                 ! Determine the merge information for the import field
-                call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, compsrc, merge_field, merge_type, merge_fracname)
-                if (merge_type /= 'unset' .and. merge_field /= 'unset') then
+                call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, compsrc, merge_fields, merge_type, merge_fracname)
 
-                   ! Document merging if appropriate
-                   if (document) then
-                      if (merge_type == 'merge' .or. merge_type == 'accumulate') then
-                         if (init_mrgstr) then 
-                            mrgstr = trim(string)//": "// trim(fldname) //' += ' &
-                                 // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                            init_mrgstr = .false.
+                do nm = 1,shr_string_listGetNum(merge_fields)
+                   call shr_string_listGetName(merge_fields, nm, merge_field)
+                   if (merge_type /= 'unset' .and. merge_field /= 'unset') then
+
+                      ! Document merging if appropriate
+                      if (document) then
+                         if (merge_type == 'merge' .or. merge_type == 'accumulate') then
+                            if (init_mrgstr) then 
+                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
+                                    // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                               init_mrgstr = .false.
+                            else
+                               mrgstr = trim(mrgstr) //' + &
+                                    '// trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                            end if
                          else
-                            mrgstr = trim(mrgstr) //' + &
-                                 '// trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                         end if
-                      else
-                         if (merge_type == 'copy') then
-                            mrgstr = trim(string)//": " // trim(fldname) //' = ' &
-                                 //trim(merge_field) //'('//trim(compname(compsrc))//')'
-                         else if (merge_type == 'copy_with_weights') then
-                            mrgstr = trim(string)//": "// trim(fldname) //' = ' &
-                                 //trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                         end if
-                      end if
-                      write(logunit,'(a)')trim(mrgstr)
-                   end if
-
-                   ! Perform merge 
-                   if (compsrc == compmed) then 
-                      if (present(FBMed1) .and. present(FBMed2)) then
-                         if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
-                            call med_merge(trim(merge_type), &
-                                 FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
-                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                         else if (shr_nuopc_methods_FB_FldChk(FBMed2, trim(merge_field), rc=rc)) then
-                            call med_merge(trim(merge_type), &
-                                 FBOut, fldname, FB=FBMed2, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
-                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                         end if
-                         ! TODO: add in error condition if field was not found
-                      elseif (present(FBMed1)) then
-                         if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
-                            call med_merge(trim(merge_type), &
-                                 FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
-                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            if (merge_type == 'copy') then
+                               mrgstr = trim(string)//": " // trim(fldname) //'('//trim(compout_name)//')'//' = ' &
+                                    //trim(merge_field) //'('//trim(compname(compsrc))//')'
+                            else if (merge_type == 'copy_with_weights') then
+                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
+                                    //trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                            end if
                          end if
                       end if
 
-                   else if (ESMF_FieldBundleIsCreated(FBImp(compsrc), rc=rc)) then
-                      if (shr_nuopc_methods_FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
-                         call med_merge(trim(merge_type), &
-                              FBOut, fldname, FB=FBImp(compsrc), FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
-                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                      end if
-                   end if ! end of merge
+                      ! Perform merge 
+                      if (compsrc == compmed) then 
 
-                end if ! end of merge_type and merge_field not unset
+                         if (present(FBMed1) .and. present(FBMed2)) then
+                            if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                               call med_merge(trim(merge_type), &
+                                    FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            else if (shr_nuopc_methods_FB_FldChk(FBMed2, trim(merge_field), rc=rc)) then
+                               call med_merge(trim(merge_type), &
+                                    FBOut, fldname, FB=FBMed2, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            else
+                               call ESMF_LogWrite(trim(subname)//": ERROR merge_field = "//trim(merge_field)//"not found", &
+                                    ESMF_LOGMSG_INFO, rc=rc)
+                               rc = ESMF_FAILURE
+                               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            end if
+                         elseif (present(FBMed1)) then
+                            if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                               call med_merge(trim(merge_type), &
+                                    FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            else
+                               call ESMF_LogWrite(trim(subname)//": ERROR merge_field = "//trim(merge_field)//"not found", &
+                                    ESMF_LOGMSG_INFO, rc=rc)
+                               rc = ESMF_FAILURE
+                               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                            end if
+                         end if
+                         
+                      else if (ESMF_FieldBundleIsCreated(FBImp(compsrc), rc=rc)) then
 
-             end do ! end of compsrc loop
-          end if ! end of match of stdname and fldname
-       end do ! end of loop over fields in fldListTo
-    end do  ! end of loop over fields in FBOut
+                         if (shr_nuopc_methods_FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
+                            call med_merge(trim(merge_type), &
+                                 FBOut, fldname, FB=FBImp(compsrc), FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
+                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                         end if
+                      end if ! end of single merge
+                   end if ! end of check of merge_type and merge_field not unset
+                end do ! end of nmerges loop
+             end do  ! end of compsrc loop
+             if (document) then
+                write(logunit,'(a)')trim(mrgstr)
+             end if
+          end if ! end of check if stdname and fldname are the same
+       end do ! end of loop over fldsListTo
+    end do ! end of loop over fields in FBOut
 
     !---------------------------------------
     !--- clean up
@@ -177,7 +197,7 @@ contains
     character(len=*)      ,intent(in)          :: FBoutfld
     type(ESMF_FieldBundle),intent(in)          :: FB
     character(len=*)      ,intent(in)          :: FBfld  
-    type(ESMF_FieldBundle),intent(in)          :: FBw
+    type(ESMF_FieldBundle),intent(inout)          :: FBw !DEBUG - change back to in
     character(len=*)      ,intent(in)          :: fldw
     integer               ,intent(out)         :: rc
 

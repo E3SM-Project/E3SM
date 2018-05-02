@@ -61,7 +61,7 @@ module shr_nuopc_fldList_mod
      character(CX) :: mapfile(ncomps_max) = 'unset'
      ! Merging fldsTo data - for mediator export fields
      character(CX) :: merge_fields(ncomps_max)    = 'unset'
-     character(CS) :: merge_types(ncomps_max)     = 'copy'
+     character(CS) :: merge_types(ncomps_max)     = 'unset'
      character(CS) :: merge_fracnames(ncomps_max) = 'unset'
   end type shr_nuopc_fldList_entry_type
   public :: shr_nuopc_fldList_entry_type

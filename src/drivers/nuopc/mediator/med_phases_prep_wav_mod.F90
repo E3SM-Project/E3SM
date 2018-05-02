@@ -119,7 +119,8 @@ module med_phases_prep_wav_mod
     !--- auto merges
     !---------------------------------------
 
-    call med_merge_auto(is_local%wrap%FBExp(compwav), is_local%wrap%FBFrac(compwav), &
+    call med_merge_auto(trim(compname(compwav)), &
+         is_local%wrap%FBExp(compwav), is_local%wrap%FBFrac(compwav), &
          is_local%wrap%FBImp(:,compwav), fldListTo(compwav), &
          document=first_call, string='(merge_to_wav)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

@@ -461,8 +461,10 @@ contains
     units    = '1'
     call shr_nuopc_fldList_AddMetadata(fldname="Si_ifrac", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Si_ifrac', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Si_ifrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compwav)%flds, 'Si_ifrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Si_ifrac', &
+         merge_from1=compice, merge_field1='Si_ifrac', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compwav)%flds, 'Si_ifrac', &
+         merge_from1=compice, merge_field1='Si_ifrac', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     !----------------------------------------------------------
@@ -577,7 +579,7 @@ contains
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_pbot', &
          merge_from1=compatm, merge_field1='Sa_pbot', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Sa_pbot', &
-         merge_from1=compatm, merge_field1='Sa_shum', merge_type1='copy')
+         merge_from1=compatm, merge_field1='Sa_pbot', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapbilnr, 'one', atm2ice_smapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
@@ -605,15 +607,16 @@ contains
     stdname  = 'rainfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname='Faxa_rain', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_rain', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_rainc', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_rainl', fldindex=n2)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_rainc', &
          merge_from1=compatm, merge_field1='Faxa_rainc', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_rainl', &
          merge_from1=compatm, merge_field1='Faxa_rainl', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain') ! CUSTOM
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rain') ! CUSTOM
+    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain', &
+         merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='accumulate')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_rain', & 
+         merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='accumulate', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
@@ -633,15 +636,16 @@ contains
     stdname  = 'surface_snow_melt_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname='Faxa_snow', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_snow', longname=longname, stdname=stdname, units=units) 
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_snowc', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_snowl', fldindex=n2)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_snowc', &
          merge_from1=compatm, merge_field1='Faxa_snowc', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_snowl', &
          merge_from1=compatm, merge_field1='Faxa_snowl', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow') ! CUSTOM
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_snow') ! CUSTOM
+    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow', &
+         merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='accumulate')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow', & 
+         merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='accumulate', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n2), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
@@ -653,21 +657,22 @@ contains
     longname = 'Water flux (rain+snow)'
     stdname  = 'precipitation_flux'
     units    = 'kg m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_prec', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_prec')
+    call shr_nuopc_fldList_AddMetadata(fldname='Faxa_prec', longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec', &
+         merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_snowc:Faxa_rainl:Faxa_snowl', &
+         merge_type1='accumulate', merge_fracname1='ofrac')
 
     longname = 'Downward longwave heat flux'
     stdname  = 'downwelling_longwave_flux'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname='Faxa_lwdn', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_lwdn', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn', &
          merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn', &
          merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -676,14 +681,13 @@ contains
     stdname  = 'surface_downward_direct_shortwave_flux_due_to_near_infrared_radiation'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_swndr", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_swndr", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swndr', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swndr', &
          merge_from1=compatm, merge_field1='Faxa_swndr', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swndr', &
          merge_from1=compatm, merge_field1='Faxa_swndr', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndr', &
-         merge_from1=compatm, merge_field1='Faxa_swndr', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_swndr', &
+         merge_from1=compatm, merge_field1='Faxa_swndr', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -692,14 +696,13 @@ contains
     stdname  = 'surface_downward_direct_shortwave_flux_due_to_visible_radiation'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_swvdr", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_swvdr", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swvdr', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swvdr', &
          merge_from1=compatm, merge_field1='Faxa_swvdr', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swvdr', &
          merge_from1=compatm, merge_field1='Faxa_swvdr', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swvdr', &
-         merge_from1=compatm, merge_field1='Faxa_swvdr', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_swvdr', &
+         merge_from1=compatm, merge_field1='Faxa_swvdr', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -708,14 +711,13 @@ contains
     stdname  = 'surface_downward_diffuse_shortwave_flux_due_to_near_infrared_radiation'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_swndf", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_swndf", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swndf', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swndf', &
          merge_from1=compatm, merge_field1='Faxa_swndf', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swndf', &
          merge_from1=compatm, merge_field1='Faxa_swndf', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swndf', &
-         merge_from1=compatm, merge_field1='Faxa_swndf', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_swndf', &
+         merge_from1=compatm, merge_field1='Faxa_swndf', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -724,14 +726,13 @@ contains
     stdname  = 'surface_downward_diffuse_shortwave_flux_due_to_visible_radiation'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname='Faxa_swvdf', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_swvdf", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swvdf', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_swvdf', &
          merge_from1=compatm, merge_field1='Faxa_swvdf', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_swvdf', &
          merge_from1=compatm, merge_field1='Faxa_swvdf', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swvdf', &
-         merge_from1=compatm, merge_field1='Faxa_swvdf', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_swvdf', &
+         merge_from1=compatm, merge_field1='Faxa_swvdf', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -746,7 +747,7 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swnet', fldindex=n1)  ! only diagnostic
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_swnet')              
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_swnet', fldindex=n2)  ! only diagnostic
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet') ! CUSTOM: derived using albedos, Faxa_sw[v,n][dr,df] and swpen
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet') ! CUSTOM
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one'  , atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2), compice, compocn, mapfcopy, 'unset', 'unset')
@@ -762,14 +763,13 @@ contains
     stdname  = 'dry_deposition_flux_of_hydrophylic_black_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname='Faxa_bcphidry', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_bcphidry', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_bcphidry', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_bcphidry', &
          merge_from1=compatm, merge_field1='Faxa_bcphidry', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_bcphidry', &
          merge_from1=compatm, merge_field1='Faxa_bcphidry', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_bcphidry', &
-         merge_from1=compatm, merge_field1='Faxa_bcphidry', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_bcphidry', &
+         merge_from1=compatm, merge_field1='Faxa_bcphidry', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -778,14 +778,13 @@ contains
     stdname  = 'dry_deposition_flux_of_hydrophobic_black_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_bcphodry", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_bcphodry", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_bcphodry', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_bcphodry', &
          merge_from1=compatm, merge_field1='Faxa_bcphodry', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_bcphodry', &
          merge_from1=compatm, merge_field1='Faxa_bcphodry', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_bcphodry', &
-         merge_from1=compatm, merge_field1='Faxa_bcphodry', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_bcphodry', &
+         merge_from1=compatm, merge_field1='Faxa_bcphodry', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -794,14 +793,13 @@ contains
     stdname  = 'wet_deposition_flux_of_hydrophylic_black_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_bcphiwet", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_bcphiwet", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_bcphiwet', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_bcphiwet', &
          merge_from1=compatm, merge_field1='Faxa_bcphiwet', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_bcphiwet', &
          merge_from1=compatm, merge_field1='Faxa_bcphiwet', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_bcphiwet', &
-         merge_from1=compatm, merge_field1='Faxa_bcphiwet', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_bcphiwet', &
+         merge_from1=compatm, merge_field1='Faxa_bcphiwet', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -810,14 +808,13 @@ contains
     stdname  = 'dry_deposition_flux_of_hydrophylic_organic_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_ocphidry", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_ocphidry", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_ocphidry', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_ocphidry', &
          merge_from1=compatm, merge_field1='Faxa_ocphidry', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_ocphidry', &
          merge_from1=compatm, merge_field1='Faxa_ocphidry', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_ocphidry', &
-         merge_from1=compatm, merge_field1='Faxa_ocphidry', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_ocphidry', &
+         merge_from1=compatm, merge_field1='Faxa_ocphidry', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -826,14 +823,13 @@ contains
     stdname  = 'dry_deposition_flux_of_hydrophobic_organic_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_ocphodry", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_ocphodry", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_ocphodry', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_ocphodry', &
          merge_from1=compatm, merge_field1='Faxa_ocphodry', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_ocphodry', &
          merge_from1=compatm, merge_field1='Faxa_ocphodry', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_ocphodry', &
-         merge_from1=compatm, merge_field1='Faxa_ocphodry', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_ocphodry', &
+         merge_from1=compatm, merge_field1='Faxa_ocphodry', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -842,14 +838,13 @@ contains
     stdname  = 'wet_deposition_flux_of_hydrophylic_organic_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_ocphiwet", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_ocphiwet", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_ocphiwet', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_ocphiwet', &
          merge_from1=compatm, merge_field1='Faxa_ocphiwet', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_ocphiwet', &
          merge_from1=compatm, merge_field1='Faxa_ocphiwet', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_ocphiwet', &
-         merge_from1=compatm, merge_field1='Faxa_ocphiwet', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_ocphiwet', &
+         merge_from1=compatm, merge_field1='Faxa_ocphiwet', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -858,14 +853,13 @@ contains
     stdname  = 'wet_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstwet1", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstwet1", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstwet1', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstwet1', &
          merge_from1=compatm, merge_field1='Faxa_dstwet1', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstwet1', &
          merge_from1=compatm, merge_field1='Faxa_dstwet1', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstwet1', &
-         merge_from1=compatm, merge_field1='Faxa_dstwet1', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstwet1', &
+         merge_from1=compatm, merge_field1='Faxa_dstwet1', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -874,14 +868,13 @@ contains
     stdname  = 'wet_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstwet2", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstwet2", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstwet2', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstwet2', &
          merge_from1=compatm, merge_field1='Faxa_dstwet2', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstwet2', &
          merge_from1=compatm, merge_field1='Faxa_dstwet2', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstwet2', &
-         merge_from1=compatm, merge_field1='Faxa_dstwet2', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstwet2', &
+         merge_from1=compatm, merge_field1='Faxa_dstwet2', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -890,14 +883,13 @@ contains
     stdname  = 'wet_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstwet3", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstwet3", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstwet3', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstwet3', &
          merge_from1=compatm, merge_field1='Faxa_dstwet3', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstwet3', &
          merge_from1=compatm, merge_field1='Faxa_dstwet3', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstwet3', &
-         merge_from1=compatm, merge_field1='Faxa_dstwet3', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstwet3', &
+         merge_from1=compatm, merge_field1='Faxa_dstwet3', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -906,14 +898,13 @@ contains
     stdname  = 'wet_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstwet4", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstwet4", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstwet4', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstwet4', &
          merge_from1=compatm, merge_field1='Faxa_dstwet4', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstwet4', &
          merge_from1=compatm, merge_field1='Faxa_dstwet4', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstwet4', &
-         merge_from1=compatm, merge_field1='Faxa_dstwet4', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstwet4', &
+         merge_from1=compatm, merge_field1='Faxa_dstwet4', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -922,14 +913,13 @@ contains
     stdname  = 'dry_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstdry1", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstdry1", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstdry1', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstdry1', &
          merge_from1=compatm, merge_field1='Faxa_dstdry1', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstdry1', &
          merge_from1=compatm, merge_field1='Faxa_dstdry1', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstdry1', &
-         merge_from1=compatm, merge_field1='Foxx_dstdry1', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstdry1', &
+         merge_from1=compatm, merge_field1='Faxa_dstdry1', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -938,14 +928,13 @@ contains
     stdname  = 'dry_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstdry2", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstdry2", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstdry2', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstdry2', &
          merge_from1=compatm, merge_field1='Faxa_dstdry2', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstdry2', &
          merge_from1=compatm, merge_field1='Faxa_dstdry2', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstdry2', &
-         merge_from1=compatm, merge_field1='Faxa_dstdry2', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstdry2', &
+         merge_from1=compatm, merge_field1='Faxa_dstdry2', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -954,14 +943,13 @@ contains
     stdname  = 'dry_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstdry3", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstdry3", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstdry3', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstdry3', &
          merge_from1=compatm, merge_field1='Faxa_dstdry3', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstdry3', &
          merge_from1=compatm, merge_field1='Faxa_dstdry3', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstdry3', &
-         merge_from1=compatm, merge_field1='Faxa_dstdry3', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstdry3', &
+         merge_from1=compatm, merge_field1='Faxa_dstdry3', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -970,14 +958,13 @@ contains
     stdname  = 'dry_deposition_flux_of_dust'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Faxa_dstdry4", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_dstdry4", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_dstdry4', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_dstdry4', &
          merge_from1=compatm, merge_field1='Faxa_dstdry4', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_dstdry4', &
          merge_from1=compatm, merge_field1='Faxa_dstdry4', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_dstdry4', &
-         merge_from1=compatm, merge_field1='Faxa_dstdry4', merge_type1='copy_with_weights', merge_fracname1='afrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_dstdry4', &
+         merge_from1=compatm, merge_field1='Faxa_dstdry4', merge_type1='copy_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
@@ -1220,7 +1207,9 @@ contains
          merge_from1=complnd, merge_field1='Fall_taux', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_taux', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_taux', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_taux')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_taux', &
+         merge_from1=compmed, merge_field1='Faox_taux', merge_type1='merge', merge_fracname1='ofrac', &
+         merge_from2=compice, merge_field2='Fioi_taux', merge_type2='merge', merge_fracname2='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n4), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1245,7 +1234,9 @@ contains
          merge_from1=complnd, merge_field1='Fall_tauy', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_tauy', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_tauy', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_tauy') ! CUSTOM
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_tauy', &
+         merge_from1=compmed, merge_field1='Faox_tauy', merge_type1='merge', merge_fracname1='ofrac', &
+         merge_from2=compice, merge_field2='Fioi_tauy', merge_type2='merge', merge_fracname2='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n4), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1268,7 +1259,8 @@ contains
          merge_from1=complnd, merge_field1='Fall_lat', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_lat', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_lat', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lat')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lat', &
+         merge_from1=compmed, merge_field1='Faox_lat', merge_type1='merge', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n3), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1290,7 +1282,8 @@ contains
          merge_from1=complnd, merge_field1='Fall_sen', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_sen', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_sen', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_sen')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_sen', &
+         merge_from1=compmed, merge_field1='Faox_sen', merge_type1='merge', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n3), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1312,7 +1305,8 @@ contains
          merge_from1=complnd, merge_field1='Fall_lwup', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_lwup', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_lwup', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup', &
+         merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='merge', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n3), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1334,7 +1328,8 @@ contains
          merge_from1=complnd, merge_field1='Fall_evap', merge_type1='merge', merge_fracname1='lfrac', & 
          merge_from2=compice, merge_field2='Faii_evap', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_evap', merge_type3='merge', merge_fracname3='ofrac')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_evap')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_evap', &
+         merge_from1=compmed, merge_field1='Faox_evap', merge_type1='merge', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n2) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n3), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
@@ -1344,9 +1339,8 @@ contains
     stdname  = 'dust_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fall_flxdst1", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Faxx_flxdst1", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_flxdst1', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_flxdst1', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_flxdst1', &
          merge_from1=complnd, merge_field1='Fall_flxdst1', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
 
@@ -1354,9 +1348,8 @@ contains
     stdname  = 'dust_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fall_flxdst2", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Faxx_flxdst2", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_flxdst2', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_flxdst2', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_flxdst2', &
          merge_from1=complnd, merge_field1='Fall_flxdst2', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
 
@@ -1364,9 +1357,8 @@ contains
     stdname  = 'dust_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fall_flxdst3", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Faxx_flxdst3", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_flxdst3', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_flxdst3', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_flxdst3', &
          merge_from1=complnd, merge_field1='Fall_flxdst3', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
 
@@ -1374,9 +1366,8 @@ contains
     stdname  = 'dust_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fall_flxdst4", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Faxx_flxdst4", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_flxdst4', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_flxdst4', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_flxdst4', &
          merge_from1=complnd, merge_field1='Fall_flxdst4', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
 
@@ -1389,7 +1380,8 @@ contains
     units    = 'Pa'
     call shr_nuopc_fldList_AddMetadata(fldname="Sa_pslv", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_pslv', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_pslv')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_pslv', &
+         merge_from1=compatm, merge_field1='Sa_pslv', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapbilnr, 'one', atm2ocn_smapname)
 
@@ -1399,7 +1391,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname="So_duu10n", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_a%flds, 'So_duu10n', fldindex=n1)
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'So_duu10n')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'So_duu10n')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'So_duu10n', &
+         merge_from1=compmed, merge_field1='So_duu10n', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_a%flds(n1), compatm, compocn, mapbilnr, 'one'  , atm2ocn_fmapname) ! map atm->ocn
 
@@ -1422,54 +1415,54 @@ contains
     stdname  = 'surface_snow_melt_heat_flux'
     units    = 'W m-2'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_melth", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_melth", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_melth', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_melth')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_melth', &
+         merge_from1=compice, merge_field1='Fioi_melth', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     longname = 'Water flux due to melting'
     stdname  = 'surface_snow_melt_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_meltw", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_meltw", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_meltw', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_meltw')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_meltw', &
+         merge_from1=compice, merge_field1='Fioi_meltw', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     longname = 'Salt flux'
     stdname  = 'virtual_salt_flux_into_sea_water'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_salt", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_salt", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_salt', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_salt')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_salt', &
+         merge_from1=compice, merge_field1='Fioi_salt', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     longname = 'Hydrophylic black carbon deposition flux'
     stdname  = 'deposition_flux_of_hydrophylic_black_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_bcphi", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_bcphi", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_bcphi', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_bcphi')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_bcphi', &
+         merge_from1=compice, merge_field1='Fioi_bcphi', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     longname = 'Hydrophobic black carbon deposition flux'
     stdname  = 'deposition_flux_of_hydrophobic_black_carbon'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_bcpho", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_bcpho", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_bcpho', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_bcpho')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_bcpho', &
+         merge_from1=compice, merge_field1='Fioi_bcpho', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     longname = 'Dust flux'
     stdname  = 'dust_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Fioi_flxdst", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_flxdst", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_flxdst', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_flxdst')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_flxdst', &
+         merge_from1=compice, merge_field1='Fioi_flxdst', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
     !-----------------------------
@@ -1562,46 +1555,45 @@ contains
     stdname  = 'water_flux_into_runoff_surface'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_rofsur", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_rofsur", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_rofsur', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_rofsur', &
-         merge_from1=compocn, merge_field1='Flrl_rofi', merge_type1='copy_with_weights', merge_fracname1='lfrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_rofsur', &
+         merge_from1=complnd, merge_field1='Flrl_rofsur', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
     stdname  = 'water_flux_into_runoff_from_gwl'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_rofgwl", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_rofgwl", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_rofgwl', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_rofgwl')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_rofgwl', &
+         merge_from1=complnd, merge_field1='Flrl_rofgwl', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     longname = 'Water flux from land (liquid subsurface)'
     stdname  = 'water_flux_into_runoff_subsurface'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_rofsub", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_rofsub", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_rofsub', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_rofsub')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_rofsub', &
+         merge_from1=complnd, merge_field1='Flrl_rofsub', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     longname = 'Water flux from land direct to ocean'
     stdname  = 'water_flux_direct_to_ocean'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_rofdto", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_rofdto", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_rofdto', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_rofdto')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_rofdto', &
+         merge_from1=complnd, merge_field1='Flrl_rofdto', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     longname = 'Water flux from land (frozen)'
     stdname  = 'frozen_water_flux_into_runoff'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_rofi", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_rofi", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_rofi')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_rofi', &
+         merge_from1=complnd, merge_field1='Flrl_rofi', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     ! Irrigation flux (land/rof only)
@@ -1609,9 +1601,9 @@ contains
     stdname  = 'irrigation'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Flrl_irrig", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Frxx_irrig", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Flrl_irrig', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Frxx_irrig')
+    call shr_nuopc_fldList_AddFld(fldListTo(comprof)%flds, 'Flrl_irrig', &
+         merge_from1=complnd, merge_field1='Flrl_irrig', merge_type1='copy_with_weights', merge_fracname1='lfrac')
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, comprof, mapconsf, 'lfrin', lnd2rof_fmapname)
 
     !-----------------------------
@@ -1626,7 +1618,7 @@ contains
     call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Flrr_flood', &
          merge_from1=comprof, merge_field1='Flrr_flood', merge_type1='copy')
     ! TODO: who should this be handled in terms of feeding back to the ocean
-    !call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Flrr_flood')
+    !call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Flrr_flood') ! CUSTOM
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, complnd, mapconsf, 'one', rof2lnd_fmapname)
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compocn, mapconsf, 'one', rof2ocn_fmapname)
 
@@ -1649,39 +1641,78 @@ contains
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, complnd, mapconsf, 'one', rof2lnd_fmapname)
 
     !-----------------------------
-    ! rof->ocn (liquid and frozen)
+    ! rof->ocn (liquid and frozen) and glc->ocn
     !-----------------------------
+
+    longname = 'glc liquid runoff flux to ocean'
+    stdname  = 'glacier_liquid_runoff_flux_to_ocean'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname='Fogg_rofl', longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Fogg_rofl', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_liq_rmapname)
 
     longname = 'Water flux into sea water due to runoff (liquid)'
     stdname  = 'water_flux_into_sea_water'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Forr_rofl", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_rofl", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(comprof)%flds, 'Forr_rofl', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofl')
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compocn, mapfiler, 'none', rof2ocn_liq_rmapname)
+
+    longname = 'Total Water flux into sea water due to runoff (liquid)'
+    stdname  = 'total_water_flux_into_sea_water'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_rofl", longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofl', &
+         merge_from1=comprof, merge_field1='Forr_rofl:Flrr_flood', merge_type1='accumulate', &
+         merge_from2=compglc, merge_field2='Fogg_rofl'           , merge_type2='accumulate') 
+
+    longname = 'glc frozen runoff flux to ocean'
+    stdname  = 'glacier_frozen_runoff_flux_to_ocean'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname='Fogg_rofi', longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Fogg_rofi', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_ice_rmapname)
 
     longname = 'Water flux into sea water due to runoff (frozen)'
     stdname  = 'frozen_water_flux_into_sea_water'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Forr_rofi", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_rofi", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(comprof)%flds, 'Forr_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofi')
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compocn, mapfiler, 'none', rof2ocn_ice_rmapname)
 
+    longname = 'Total Water flux into sea water due to runoff (frozen)'
+    stdname  = 'total_frozen_water_flux_into_sea_water'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname="Foxx_rofi", longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofi', &
+         merge_from1=comprof, merge_field1='Forr_rofi', merge_type1='accumulate', &
+         merge_from2=compglc, merge_field2='Fogg_rofi', merge_type2='accumulate') 
+
     !-----------------------------
-    ! rof->ice (frozen)
+    ! rof(frozen)->ice and glc->ice
     !-----------------------------
 
     longname = 'Water flux into sea ice due to runoff (frozen)'
     stdname  = 'frozen_water_flux_into_sea_ice'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata(fldname="Firr_rofi", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddMetadata(fldname="Fixx_rofi", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(comprof)%flds, 'Firr_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Fixx_rofi') ! custom
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compice, mapfiler, 'none', rof2ocn_ice_rmapname)
+
+    longname = 'glc frozen runoff_iceberg flux to ice'
+    stdname  = 'glacier_frozen_runoff_flux_to_seaice'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname='Figg_rofi', longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Figg_rofi', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compice,  mapfiler, 'one', glc2ice_rmapname)
+
+    longname = 'Total frozen water flux into sea ice '
+    stdname  = 'total_frozen_water_flux_into_sea_ice'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata(fldname="Fixx_rofi", longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Fixx_rofi', &
+         merge_from1=comprof, merge_field1='Firr_rofi', merge_type1='accumulate', &
+         merge_from2=compglc, merge_field2='Figg_rofi', merge_type2='accumulate') 
 
     !-----------------------------
     ! wav->ocn
@@ -1692,7 +1723,8 @@ contains
     units    = '1'
     call shr_nuopc_fldList_AddMetadata(fldname='Sw_lamult', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compwav)%flds, 'Sw_lamult', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_lamult')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_lamult', &
+         merge_from1=compwav, merge_field1='Sw_lamult', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compwav)%flds(n1), compwav, compocn,  mapbilnr, 'one', wav2ocn_smapname)
 
     longname = 'Stokes drift u component'
@@ -1700,7 +1732,8 @@ contains
     units    = 'm/s'
     call shr_nuopc_fldList_AddMetadata(fldname='Sw_ustokes', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compwav)%flds, 'Sw_ustokes', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_ustokes')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_ustokes', &
+         merge_from1=compwav, merge_field1='Sw_ustokes', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compwav)%flds(n1), compwav, compocn,  mapbilnr, 'one', wav2ocn_smapname)
 
     longname = 'Stokes drift v component'
@@ -1708,7 +1741,8 @@ contains
     units    = 'm/s'
     call shr_nuopc_fldList_AddMetadata(fldname='Sw_vstokes', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compwav)%flds, 'Sw_vstokes', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_vstokes')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_vstokes', &
+         merge_from1=compwav, merge_field1='Sw_vstokes', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compwav)%flds(n1), compwav, compocn, mapbilnr, 'one', wav2ocn_smapname)
 
     longname = 'Stokes drift depth'
@@ -1716,7 +1750,8 @@ contains
     units    = 'm'
     call shr_nuopc_fldList_AddMetadata(fldname='Sw_hstokes', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compwav)%flds, 'Sw_hstokes', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_hstokes')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sw_hstokes', &
+         merge_from1=compwav, merge_field1='Sw_hstokes', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compwav)%flds(n1), compwav, compocn, mapbilnr, 'one', wav2ocn_smapname)
 
     longname = 'Downward solar radiation'
@@ -1857,31 +1892,6 @@ contains
     ! glc -> ocn
     !-----------------------------
 
-    longname = 'glc liquid runoff flux to ocean'
-    stdname  = 'glacier_liquid_runoff_flux_to_ocean'
-    units    = 'kg m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Flgg_rofl', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Flgg_rofl', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_liq_rmapname)
-
-    longname = 'glc frozen runoff flux to ocean'
-    stdname  = 'glacier_frozen_runoff_flux_to_ocean'
-    units    = 'kg m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Fogg_rofi', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Fogg_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compocn,  mapfiler, 'one', glc2ocn_ice_rmapname)
-
-    !-----------------------------
-    ! glc -> ice
-    !-----------------------------
-
-    longname = 'glc frozen runoff_iceberg flux to ice'
-    stdname  = 'glacier_frozen_runoff_flux_to_seaice'
-    units    = 'kg m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Figg_rofi', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Figg_rofi', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compglc)%flds(n1), compglc, compice,  mapfiler, 'one', glc2ice_rmapname)
-
     !-----------------------------
     ! glc -> lnd
     !-----------------------------
@@ -1994,6 +2004,7 @@ contains
     end if
     call shr_nuopc_fldList_AddMetadata(fldname= 'Flgl_qice', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListTo(compglc)%flds, 'Flgl_qice')
+    ! TODO: enter merging info
     call shr_nuopc_fldList_AddMap(FldListFr(complnd)%flds(n1), complnd, compglc, mapconsf, 'none', lnd2glc_fmapname)
 
     name = 'Sl_tsrf'
@@ -2011,6 +2022,7 @@ contains
     end if
     call shr_nuopc_fldList_AddMetadata(fldname= 'Sl_tsrf', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListTo(compglc)%flds, 'Sl_tsrf')
+    ! TODO: enter merging info
     call shr_nuopc_fldList_AddMap(FldListFr(complnd)%flds(n1), complnd, compglc, mapconsf, 'none', lnd2glc_fmapname)
 
     ! Sl_topo is sent from lnd -> med, but is NOT sent to glc (it is only used for the
@@ -2045,7 +2057,8 @@ contains
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
        call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
             merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
@@ -2055,8 +2068,9 @@ contains
        call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2diag', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
        call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
-            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag')
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
@@ -2084,9 +2098,8 @@ contains
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
        call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddMetadata(fldname='Faxx_fco2_lnd', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_fco2_lnd', fldindex=n1)
-       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_fco2_lnd', &
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_fco2_lnd', &
             merge_from1=complnd, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_smapname)
 
@@ -2099,7 +2112,8 @@ contains
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
        call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
             merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
@@ -2110,7 +2124,8 @@ contains
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
        call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
             merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
@@ -2118,20 +2133,17 @@ contains
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
        call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddMetadata(fldname='Faxx_fco2_lnd', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_fco2_lnd', fldindex=n1)
-       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_fco2_lnd', &
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_fco2_lnd', &
             merge_from1=complnd, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_smapname)
 
        longname = 'Surface flux of CO2 from ocean'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_open_sea'
        units    = 'moles m-2 s-1'
-       call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddMetadata(fldname='Faxx_fco2_lnd', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddMetadata(fldname='Faoo_fco2_ocn', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Faoo_fco2_ocn', fldindex=n1)
-       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faxx_fco2_ocn') !TODO: fix the following:
-            !merge_from1=compocn, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faoo_fco2_ocn') !CUSTOM
        call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compatm, mapconsf, 'one', ocn2atm_smapname)
     endif
 
@@ -2520,7 +2532,8 @@ contains
           units    = '1'
           call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name))
+          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
+               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
           call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
           ! Net shortwave radiation
@@ -2530,7 +2543,8 @@ contains
           units    = 'W m-2'
           call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name))
+          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
+               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
           call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
        end do
 
@@ -2539,14 +2553,14 @@ contains
        units    = '1'
        call shr_nuopc_fldList_AddMetadata(fldname='Sf_afrac', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afrac')
-       ! TODO: add mapping
+       ! TODO: add mapping and merging
 
        longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
        stdname  = 'atmosphere_area_fraction'
        units    = '1'
        call shr_nuopc_fldList_AddMetadata(fldname='Sf_afracr', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afracr')
-       ! TODO: add mapping
+       ! TODO: add mapping and merging
 
        name = 'Foxx_swnet_afracr'
        longname = 'net shortwave radiation times atmosphere fraction'
@@ -2554,7 +2568,7 @@ contains
        units = 'W m-2'
        call shr_nuopc_fldList_AddMetadata(fldname='Foxx_swnet_afracr', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
-       ! TODO: add mapping
+       ! TODO: add mapping and merging
 
     endif
 
@@ -2650,7 +2664,8 @@ contains
           call shr_string_listGetName(drydep_fields, n, fldname)
           call shr_nuopc_fldList_AddMetadata(fldname=fldname, longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, trim(fldname), fldindex=n1)
-          call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, trim(fldname))
+          call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, trim(fldname), &
+               merge_from1=complnd, merge_field1=trim(fldname), merge_type1='copy')
           call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', lnd2atm_smapname)
        enddo
     endif
@@ -2673,8 +2688,9 @@ contains
           call shr_nuopc_fldList_AddMetadata(fldname=trim(fldname), longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, trim(fldname), fldindex=n1)
           call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, trim(fldname), &
-               merge_from1=compatm, merge_field1=trim(fldname), merge_type1='copy')
-          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name))
+               merge_from1=compatm, merge_field1=trim(fldname), merge_type1='copy_with_weights', merge_fracname1='ofrac')
+          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(fldname), &
+               merge_from1=compatm, merge_field1=trim(fldname), merge_type1='copy_with_weights', merge_fracname1='ofrac')
           call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
           call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
        enddo

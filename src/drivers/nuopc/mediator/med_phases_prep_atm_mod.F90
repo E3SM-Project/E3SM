@@ -154,7 +154,8 @@ module med_phases_prep_atm_mod
     !--- merge all fields to atm
     !---------------------------------------
 
-    call med_merge_auto(is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+    call med_merge_auto(trim(compname(compatm)), &
+         is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
          is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
          FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
          document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
