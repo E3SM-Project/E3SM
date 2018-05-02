@@ -98,14 +98,14 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     # failure described by that regular expression is matched in the model log
     # case.spare_nodes is overloaded and may also represent the number of
     # retries to attempt if ALLOCATE_SPARE_NODES is False
-    retry_run_re = re.escape(case.get_value("MPIRUN_RETRY_REGEX"))
-    node_fail_re = re.escape(case.get_value("NODE_FAIL_REGEX"))
+    retry_run_re = case.get_value("MPIRUN_RETRY_REGEX")
+    node_fail_re = case.get_value("NODE_FAIL_REGEX")
     retry_count = 0
     if retry_run_re:
-        retry_run_regex = re.compile(retry_run_re)
+        retry_run_regex = re.compile(re.escape(retry_run_re))
         retry_count = case.get_value("MPIRUN_RETRY_COUNT")
     if node_fail_re:
-        node_fail_regex = re.compile(node_fail_re)
+        node_fail_regex = re.compile(re.escape(node_fail_re))
 
     while loop:
         loop = False
@@ -118,6 +118,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         if retry_run_re or node_fail_re:
             model_logfile = os.path.join(rundir, model + ".log." + lid)
             if os.path.exists(model_logfile):
+                num_node_fails=0
+                num_retry_fails=0
                 if node_fail_re:
                     num_node_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
                 if retry_run_re:
