@@ -245,10 +245,16 @@ subroutine co2_init (state, pbuf2d )
 !
 !-----------------------------------------------------------------------
 
+   use time_manager,   only: is_first_step
+
    if (.not. co2_flag) return
  
    if (co2_readFlux_ocn)  then
-      call interp_time_flux ( data_flux_ocn)
+      if (is_first_step()) then
+         call interp_time_flux ( data_flux_ocn,  prev_timestep=.true.  )
+      else
+         call interp_time_flux ( data_flux_ocn,  prev_timestep=.false. )
+      end if
    endif
  
   end subroutine co2_time_interp_ocn
@@ -264,10 +270,16 @@ subroutine co2_init (state, pbuf2d )
 !
 !-----------------------------------------------------------------------
 
+   use time_manager,   only: is_first_step
+
    if (.not. co2_flag) return
  
    if (co2_readFlux_fuel) then
-      call interp_time_flux ( data_flux_fuel)
+      if (is_first_step()) then
+         call interp_time_flux ( data_flux_fuel, prev_timestep=.true.  )
+      else
+         call interp_time_flux ( data_flux_fuel, prev_timestep=.false. )
+      endif
    endif
  
   end subroutine co2_time_interp_fuel
