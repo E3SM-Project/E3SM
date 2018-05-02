@@ -33,7 +33,7 @@
     <group>run_metadata</group>
     <file>env_case.xml</file>
     <desc>run DOI</desc>
-  </entry> 
+  </entry>
 
   <entry id="DRV_THREADING">
     <type>logical</type>
@@ -291,7 +291,7 @@
 
   <entry id="GLC_NCPL">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
     </values>
@@ -323,7 +323,7 @@
 
   <entry id="ROF_NCPL">
     <type>integer</type>
-    <default_value>8</default_value>
+    <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
