@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 5-02-2018
+Tag: cime5.6.3
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Fix config write of logical.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+974839b fix config write of logical
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/case.submit
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-01-2018
 Tag: cime5.6.2
 Answer Changes: None
