@@ -328,6 +328,7 @@ contains
 
     real(r8),allocatable :: ds(:)     ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)     ! for reshaping diag data for restart file
+    character(CL) :: model_doi_url
     character(len=*),parameter :: subname = "(seq_rest_write) "
 
     !-------------------------------------------------------------------------------
@@ -364,7 +365,8 @@ contains
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
          esp_prognostic=esp_prognostic,      &
-         case_name=case_name)
+         case_name=case_name,                &
+         model_doi_url=model_doi_url)
 
     ! Write out infodata and time manager data to restart file
 
@@ -408,7 +410,7 @@ contains
        endif
 
        call shr_mpi_bcast(rest_file,mpicom_CPLID)
-       call seq_io_wopen(rest_file,clobber=.true.)
+       call seq_io_wopen(rest_file,clobber=.true., model_doi_url=model_doi_url)
 
        ! loop twice (for perf), first time write header, second time write data
        do fk = 1,2
