@@ -157,7 +157,7 @@
 			description="Number of dissolved organic carbon groups in use"
 		/>
 		<dim name="nDIC"
-			definition="0"
+			definition="1"
 			description="Number of dissolved inorganic carbon groups in use"
 		/>
 		<dim name="nDON"
