@@ -137,11 +137,11 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                     loop = True
                 if loop:
                     # Archive the last consistent set of restart files and restore them
-                    if not case.get_value("TEST"):
+                    if case.get_value("DOUT_S"):
                         case.case_st_archive(no_resubmit=True)
                         case.restore_from_archive()
-                        case.set_value("CONTINUE_RUN",
-                                       case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                    case.set_value("CONTINUE_RUN",
+                                   case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
                     lid = new_lid()
                     case.create_namelists()
 

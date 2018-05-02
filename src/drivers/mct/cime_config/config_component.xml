@@ -1793,14 +1793,24 @@
     </desc>
   </entry>
 
+  <entry id="NODE_FAIL_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+       was caused by a node failure and should therefore be re-attempted.
+    </desc>
+  </entry>
+
   <entry id="MPIRUN_RETRY_REGEX">
     <type>char</type>
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      A regular expression to search for an indication that a run failure was caused by
-      a known event such as node failure or timeout
-      and should therefore be re-attempted.
+      A regular expression to search for an indication that a run failure
+      was caused by a known event such as a timeout and should therefore
+      be re-attempted.
     </desc>
   </entry>
 
