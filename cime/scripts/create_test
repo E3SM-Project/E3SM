@@ -33,8 +33,8 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run all tests in the xml prealpha category and yellowstone machine \033[0m
-    > {0} --xml-machine yellowstone --xml-category prealpha
+    \033[1;32m# Run all tests in the xml prealpha category and cheyenne machine \033[0m
+    > {0} --xml-machine cheyenne --xml-category prealpha
 """.format(os.path.basename(args[0]))
 
     else:

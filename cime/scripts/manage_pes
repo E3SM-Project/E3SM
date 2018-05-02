@@ -60,7 +60,7 @@ grid name="entry"    : entry can have the value of "any" OR
             	        <grid name="%%1.9x2.5.+oi%%gx1v6">
 mach name="entry"    : entry can have the value of "any" OR
                        a valid machine name e.g.
-       		       <mach name="yellowstone">
+       		       <mach name="cheyenne">
 pesize name="entry"  : entry can have the value of "any" OR
                        the currently supported values of pesize
                        ("S", "M", "L", "X"), e.g. pesize="S"

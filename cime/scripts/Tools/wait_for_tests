@@ -55,6 +55,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--ignore-memleak", action="store_true",
                         help="Do not fail a test if the only problem is a memleak")
 
+    parser.add_argument("--force-log-upload", action="store_true",
+                        help="Always upload logs to cdash, even if test passed")
+
     parser.add_argument("-b", "--cdash-build-name",
                         help="Build name, implies you want results send to Cdash")
 
@@ -69,12 +72,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.ignore_memleak, args.cdash_build_name, args.cdash_project, args.cdash_build_group, args.timeout
+    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.ignore_memleak, args.cdash_build_name, args.cdash_project, args.cdash_build_group, args.timeout, args.force_log_upload
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, ignore_memleak, cdash_build_name, cdash_project, cdash_build_group, timeout = \
+    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, ignore_memleak, cdash_build_name, cdash_project, cdash_build_group, timeout, force_log_upload = \
         parse_command_line(sys.argv, description)
 
     sys.exit(0 if CIME.wait_for_tests.wait_for_tests(test_paths,
@@ -86,7 +89,8 @@ def _main_func(description):
                                                      cdash_build_name=cdash_build_name,
                                                      cdash_project=cdash_project,
                                                      cdash_build_group=cdash_build_group,
-                                                     timeout=timeout)
+                                                     timeout=timeout,
+                                                     force_log_upload=force_log_upload)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

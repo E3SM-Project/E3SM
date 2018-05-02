@@ -2,12 +2,12 @@
 Interface to the env_archive.xml file.  This class inherits from EnvBase
 """
 from CIME.XML.standard_module_setup import *
-
+from CIME.XML.archive_base import ArchiveBase
 from CIME.XML.env_base import EnvBase
 
 logger = logging.getLogger(__name__)
-
-class EnvArchive(EnvBase):
+# pylint: disable=super-init-not-called
+class EnvArchive(ArchiveBase,EnvBase):
 
     def __init__(self, case_root=None, infile="env_archive.xml"):
         """
@@ -19,34 +19,10 @@ class EnvArchive(EnvBase):
     def get_entries(self):
         return self.get_children('comp_archive_spec')
 
-    def get_entry(self, compname):
-        components = self.get_optional_child('components')
-        return None if components is None else self.get_optional_child('comp_archive_spec', attributes={"compname":compname}, root=components)
-
     def get_entry_info(self, archive_entry):
         compname = self.get(archive_entry, 'compname')
         compclass = self.get(archive_entry, 'compclass')
         return compname,compclass
-
-    def get_entry_value(self, name, archive_entry):
-        node = self.get_optional_child(name, root=archive_entry)
-        if node is not None:
-            return self.text(node)
-        return None
-
-    def get_rest_file_extensions(self, archive_entry):
-        file_extensions = []
-        nodes = self.get_children('rest_file_extension', root=archive_entry)
-        for node in nodes:
-            file_extensions.append(self.text(node))
-        return file_extensions
-
-    def get_hist_file_extensions(self, archive_entry):
-        file_extensions = []
-        nodes = self.get_children('hist_file_extension', root=archive_entry)
-        for node in nodes:
-            file_extensions.append(self.text(node))
-        return file_extensions
 
     def get_rpointer_contents(self, archive_entry):
         rpointer_items = []
