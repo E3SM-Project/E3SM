@@ -120,7 +120,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
             if os.path.exists(model_logfile):
                 if node_fail_re:
                     num_node_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
-                if retry_re:
+                if retry_run_re:
                     num_retry_fails = len(retry_run_regex.findall(open(model_logfile, 'r').read()))
                 logger.debug ("RETRY: num_retry_fails {} spare_nodes {} retry_count {}".
                               format(num_retry_fails, case.spare_nodes, retry_count))
