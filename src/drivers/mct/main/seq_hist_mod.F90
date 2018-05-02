@@ -1142,7 +1142,7 @@ contains
                 yy = yy + yr_offset
              end if
              call shr_cal_ymdtod2string(date_str, yy, mm, dd)
-             write(hist_file(found), "(a6)") &
+             write(hist_file(found), "(6a)") &
                   trim(case_name),'.cpl.h',trim(aname),'.',trim(date_str), '.nc'
           else
              fk1 = 2
