@@ -291,6 +291,7 @@ contains
     type(ESMF_Time)             :: OffsetTime         ! local computed time
     type(ESMF_Time)             :: StopTime1          ! Stop time
     type(ESMF_Time)             :: StopTime2          ! Stop time
+    type(ESMF_Time)             :: StopTime, minStopTime ! Stop time
     type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
@@ -653,6 +654,9 @@ contains
                rof_cpl_dt, wav_cpl_dt, esp_cpl_dt
           call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
        end if
+       if ( atm_cpl_dt > rof_cpl_dt .or. atm_cpl_dt > ocn_cpl_dt ) then
+          call shr_sys_abort( subname//' ERROR: atm_cpl_dt must be <= rof_cpl_dt and ocn_cpl_dt')
+       endif
 
        ! --- Coupling offsets --------------------------------------------------
        if ( abs(atm_cpl_offset) > atm_cpl_dt .or. &
@@ -941,11 +945,18 @@ contains
 
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_stop), RingTime=StopTime1, rc=rc )
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_datestop), RingTime=StopTime2, rc=rc )
+
        if (StopTime2 < StopTime1) then
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime2)
+          StopTime = StopTime2
        else
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime1)
+          StopTime = StopTime1
        endif
+       if (n == 1) then
+          minStopTIme = StopTime
+       elseif (StopTime < minStopTime) then
+          minStopTime = StopTime
+       endif
+       call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime)
 
        ! Set the pause option if pause/resume is active
        if (pause_active(n)) then
@@ -999,6 +1010,11 @@ contains
        if (mod(offset(n),dtime(seq_timemgr_nclock_drv)) /= 0) then
           write(logunit,*) subname,' ERROR: offset not multiple',n,dtime(seq_timemgr_nclock_drv),offset(n)
           call shr_sys_abort()
+       endif
+
+       call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
+       if(CurrTime + TimeStep > minStopTime ) then
+          call shr_sys_abort(subname//"ERROR: Stop time too short, increase STOP_N")
        endif
     enddo
 
