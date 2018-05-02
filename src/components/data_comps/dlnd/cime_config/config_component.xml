@@ -64,7 +64,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <value compset="1850.*_DLND%SCPL" grid="l%10x15">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/i.e20.I1850Clm50Sp.f10_f10_musgs.003_c180427</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/i.e20.I1850Clm50Sp.f09_g17.001_c180502</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -75,7 +75,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <value compset="1850.*_DLND%SCPL" grid="l%10x15">i.e20.I1850Clm50Sp.f10_f10_musgs.003</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">i.e20.I1850Clm50Sp.f09_g17.001</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -86,7 +86,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850.*_DLND%SCPL" grid="l%10x15">1</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -109,7 +109,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850.*_DLND%SCPL" grid="l%10x15">1</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -120,7 +120,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850.*_DLND%SCPL" grid="l%10x15">3</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">30</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
