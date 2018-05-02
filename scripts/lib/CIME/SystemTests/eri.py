@@ -2,6 +2,7 @@
 CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 import shutil, glob, os
 
@@ -17,7 +18,7 @@ def _helper(dout_sr, refdate, refsec, rundir):
         os.symlink(item, dst)
 
     for item in glob.glob("{}/*rpointer*".format(rest_path)):
-        shutil.copy(item, rundir)
+        safe_copy(item, rundir)
 
 class ERI(SystemTestsCommon):
 

@@ -32,7 +32,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Resume merge after fixing conflicts")
 
     parser.add_argument("-a", "--abort", action="store_true",
-                        help="Resume split after fixing conflicts")
+                        help="Abort merge")
+
+    parser.add_argument("--squash", action="store_true",
+                        help="Do the merge as squashy as possible")
 
     parser.add_argument("--squash", action="store_true",
                         help="Do the merge as squahy as possible")

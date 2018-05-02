@@ -1,9 +1,9 @@
 """
 functions for building CIME models
 """
-import glob, shutil, time, threading, gzip, subprocess
+import glob, shutil, time, threading, subprocess
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
 from CIME.provenance            import save_build_provenance
 from CIME.locked_files          import lock_file, unlock_file
 
@@ -94,7 +94,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build))
 
         # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
-        shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
+        safe_copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
 
         logs.append(file_build)
 
@@ -301,7 +301,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
-        shutil.copy(mod_file, incroot)
+        safe_copy(mod_file, incroot)
 
     t2 = time.time()
     logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
@@ -542,23 +542,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 ###############################################################################
 def post_build(case, logs, build_complete=False):
 ###############################################################################
-
-    logdir = case.get_value("LOGDIR")
-
-    #zip build logs to CASEROOT/logs
-    if logdir:
-        bldlogdir = os.path.join(logdir, "bld")
-        if not os.path.exists(bldlogdir):
-            os.makedirs(bldlogdir)
-
     for log in logs:
-        logger.info("Copying build log {} to {}".format(log, bldlogdir))
-        with open(log, 'rb') as f_in:
-            with gzip.open("{}.gz".format(log), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        if "sharedlibroot" not in log:
-            shutil.copy("{}.gz".format(log), os.path.join(bldlogdir, "{}.gz".format(os.path.basename(log))))
-        os.remove(log)
+        gzip_existing_file(log)
 
     if build_complete:
 

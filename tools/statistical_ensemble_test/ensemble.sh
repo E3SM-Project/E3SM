@@ -95,104 +95,6 @@ get_pertlim_uf ()
   echo $ptlim
 }
 
-create_cases ()
-{
-  # single_run.sh needs to be in same directory as ensemble.sh
-  ThisDir=$(cd `dirname $0`; pwd -P )
-  SingleRun="$ThisDir/single_run.sh"
-  if [ ! -e $SingleRun ]; then
-    echo "ERROR: can not find script to produce single run in $ThisDir"
-    exit 1
-  fi
-
-  # If we're doing validation, we have to give the first run a random pertlim
-  # and set the arguments appropriately, otherwise, no pertlim value needed for
-  # the first case
-  if [ $runtype = 'validation' ]; then
-    firstpertlim=$( get_pertlim_uf ${rand_ints[0]} )
-    . $SingleRun "$@" --pertlim $firstpertlim
-    Status=$?
-  else
-    . $SingleRun "$@"
-    Status=$?
-  fi
-
-  if [ "$Status" != "0" ]; then
-    echo "Exit: $Status"
-    exit $Status
-  fi
-
-  ######### END OF BUILDING ROOT CASE, NOW CLONING
-
-  CASE_ROOT=$(dirname $CASE)
-  CASE_PFX=$(basename $CASE .000) # It was checked above that the CASENAME suffix is "000"
-  for i in `seq 1 $CLONECOUNT`; do
-    iens=`/usr/bin/printf "%3.3d" $i`
-    # If we're doing validations, set the pertlim based on
-    # the random numbers previously generated, otherwise
-    # just get a pertlim value in sequence.
-    if [ $runtype = 'validation' ]; then
-      PERTLIM=$(get_pertlim_uf ${rand_ints[$i]}  )
-    else
-      PERTLIM=$(get_pertlim_uf $i )
-    fi
-
-    CASE1_NAME=$CASE_PFX.$iens
-    CASE1=$CASE_ROOT/$CASE1_NAME
-
-    # Create clone
-    cd $SCRIPTS_ROOT
-    echo "=== SCRIPTS_ROOT ==="
-    echo $SCRIPTS_ROOT
-    #./create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
-    $SCRIPTS_ROOT/create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
-
-    # Get value for EXEROOT from $CASE
-    # Note return string is "EXEROOT = $EXEROOT"
-    if [ $test_suite = 'TRUE' ]; then
-      cd $SCRIPTS_ROOT/$CASE
-    else
-      cd $CASE
-    fi
-    EXE=`./xmlquery EXEROOT -value`
-    EXEROOT="$(echo -e "$EXE" | sed -e 's/[[:space:]]*$//')"
-
-    # Edit env_build in cloned case
-    if [ $test_suite = 'TRUE' ]; then
-      cd $SCRIPTS_ROOT/$CASE1
-    else
-      cd $CASE1
-    fi
-	#echo "running ./xmlchange EXEROOT=\"$EXEROOT\""
-    #./xmlchange EXEROOT="$EXEROOT"
-    #echo "running ./xmlchange BUILD_COMPLETE=\"TRUE\""
-    #./xmlchange BUILD_COMPLETE="TRUE"
-    echo "running case.setup"
-    ./case.setup
-
-    # For validations, subsequent cloned cases will have the pertlim from the
-    # parent case. We neet to remove the original case's pertlim before we set
-    # the new value
-    if [ $runtype = 'validation' ]; then
-      sed  -i '/pertlim/d' user_nl_cam
-    fi
-
-    echo "mfilt = 2">>user_nl_cam
-    # Change pertlim in clone
-    echo "pertlim = $PERTLIM" >> user_nl_cam
-    ./preview_namelists
-
-    # Adjust walltime, account number and ptile in clone
-    #fix_run_script $CASE1_NAME
-    fix_run_script case
-
-    # Only submit the cloned case if --nosubmit is off
-    if [ $nosubmit != 'on' ]; then
-      ./case.submit
-    fi
-
-  done
-}
 
 #==============================================================================
 # Main Program
@@ -203,26 +105,20 @@ if [[ -z $SCRIPTS_ROOT ]]; then
   SCRIPTS_ROOT=`pwd`
 fi
 
-# The default runtype is 'validation', if the -ensemble option is set,
+# The default runtype is 'verification', if the -ensemble option is set,
 # we change this to 'ensemble'. We make two clones (to have three runs).
-runtype="validation"
+runtype="verification"
 CLONECOUNT=2
 UF=0
-
-# Default assumes running from command line, if the -test_suite option is set
-# then a couple of directories change
-test_suite="FALSE"
 
 # globals to disable building and submitting, this will be needed if and when
 # this script gets used in the test suite.
 nobuild="off"
 nosubmit="off"
 
-# Default ensemble count is 151, 0-150. This is changed to 2 when runtype is
-# 'validation'
-
 # Process input arguments
 Args=("$@")
+#echo "ARGS = " ${Args[@]}
 i=0
 while [ $i -le ${#Args[@]} ]; do
   case ${Args[$i]} in
@@ -234,14 +130,9 @@ while [ $i -le ${#Args[@]} ]; do
         exit 2
       fi
     ;;
-    --test_suite )
-      # Set test_suite to TRUE
-      test_suite="TRUE"
-    ;;
     --ensemble )
       i=$((i+1))
       # Set CLONECOUNT and runtype
-      #CLONECOUNT=${Args[$i]}-1
       CLONECOUNT=$((${Args[$i]}-1))
       if [ $CLONECOUNT -gt 999 ]; then
         echo "ERROR: the number of ensemble member cannot be set to more than 999!"
@@ -259,26 +150,115 @@ while [ $i -le ${#Args[@]} ]; do
     --uf )
       UF=1
     ;;
+    #other flags to pass through for create_clone	  
+    --verbose )
+       CloneCaseFlags="$CloneCaseFlags ${Args[$i]}"
+    ;;
+    --project )
+      i=$((i+1))
+      PROJNAME=${Args[$i]}
+      CloneCaseFlags="$CloneCaseFlags --project $PROJNAME"
+    ;;
   esac
   i=$((i+1))
 done
 
-# If runtype is 'validation', print the three choices of pertlim to screen
-if [ $runtype = 'validation' ]; then
-    # Create empty array; this will be populated with 3 random integers
-    # between 0 and 150, inclusive
+# If runtype is 'verification', print the three choices of pertlim to screen
+if [ $runtype = 'verification' ]; then
+    # Create empty array
     rand_ints=()
-
+    #populated with 3 random integers 
     gen_random_numbers $UF
 fi
 
 # Create all the cases
-create_cases "$@"
 
-if [ $runtype = 'validation' ]; then
-  echo "---"
+# single_run.sh needs to be in same directory as ensemble.sh
+ThisDir=$(cd `dirname $0`; pwd -P )
+SingleRun="$ThisDir/single_run.sh"
+if [ ! -e $SingleRun ]; then
+  echo "ERROR: can not find script to produce single run in $ThisDir"
+  exit 1
+fi
+
+# If we're doing verification, we have to give the first run a random pertlim
+# and set the arguments appropriately, otherwise, no pertlim value needed for
+# the first case
+if [ $runtype = 'verification' ]; then
+  firstpertlim=$( get_pertlim_uf ${rand_ints[0]} )
+  . $SingleRun "$@" --pertlim $firstpertlim
+  Status=$?
+else
+  . $SingleRun "$@"
+  Status=$?
+fi
+
+if [ "$Status" != "0" ]; then
+   echo "Exit: $Status"
+   exit $Status
+fi
+
+# now cloning
+echo 'STATUS: now cloning additional cases ...'
+
+CASE_ROOT=$(dirname $CASE)
+CASE_PFX=$(basename $CASE .000) # It was checked above that the CASENAME suffix is "000"
+for i in `seq 1 $CLONECOUNT`; do
+  iens=`/usr/bin/printf "%3.3d" $i`
+  # If we're doing verifications, set the pertlim based on
+  # the random numbers previously generated, otherwise
+  # just get a pertlim value in sequence.
+  if [ $runtype = 'verification' ]; then
+    PERTLIM=$(get_pertlim_uf ${rand_ints[$i]}  )
+  else
+    PERTLIM=$(get_pertlim_uf $i )
+  fi
+
+  CASE1_NAME=$CASE_PFX.$iens
+  CASE1=$CASE_ROOT/$CASE1_NAME
+
+  # Create clone
+  cd $SCRIPTS_ROOT
+  echo "STATUS: === SCRIPTS_ROOT ==="
+  echo $SCRIPTS_ROOT
+  echo "STATUS: Creating clone " $CASE1  " with extra flags " $CloneCaseFlags
+#Clone $CASE to $CASE1
+  $SCRIPTS_ROOT/create_clone --keepexe --case $CASE1 --clone $CASE $CloneCaseFlags 
+
+  cd $CASE1
+  echo "STATUS: running case.setup for clone"
+  ./case.setup
+
+  # For verifications, subsequent cloned cases will have the pertlim from the
+  # parent case. We neet to remove the original case's pertlim before we set
+  # the new value
+  if [ $runtype = 'verification' ]; then
+    sed  -i '/pertlim/d' user_nl_cam
+  fi
+
+  #AB - don't think this is needed - it's not in the root case and that output is fine
+  #allow 2 time samples in the history file
+  #echo "mfilt = 2">>user_nl_cam
+
+  # Change pertlim in clone
+  echo "pertlim = $PERTLIM" >> user_nl_cam
+  ./preview_namelists
+
+  # Only submit the cloned case if --nosubmit is off
+  if [ $nosubmit != 'on' ]; then
+    echo "STATUS: submitting job to queue for clone"
+    ./case.submit
+  fi
+
+done
+
+#Final output
+if [ $runtype = 'verification' ]; then
+  echo "STATUS: ---VERIFICATION CASES COMPLETE---"
   echo "Set up three cases using the following pertlim values:"            \
      "$( get_pertlim_uf ${rand_ints[0]} ) $( get_pertlim_uf ${rand_ints[1]} )"  \
      "$( get_pertlim_uf ${rand_ints[2]} )"
+else
+  echo "STATUS: --ENSEMBLE CASES COMPLETE---"
 fi
 

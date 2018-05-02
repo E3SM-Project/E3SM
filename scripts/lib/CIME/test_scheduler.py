@@ -475,6 +475,14 @@ class TestScheduler(object):
 
         if self._queue is not None:
             create_newcase_cmd += " --queue={}".format(self._queue)
+        else:
+            # We need to hard code the queue for this test on cheyenne
+            # otherwise it runs in share and fails intermittently
+            test_case = CIME.utils.parse_test_name(test)[0]
+            if test_case == "NODEFAIL":
+                machine = machine if machine is not None else self._machobj.get_machine_name()
+                if machine == "cheyenne":
+                    create_newcase_cmd += " --queue=regular"
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime {}".format(self._walltime)
@@ -679,16 +687,7 @@ class TestScheduler(object):
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
             total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
-            threads = eval(run_cmd_no_fail("./xmlquery NTHRDS --value", from_dir=test_dir))
-            max_threads = 0
-            for item in threads:
-                _, comp_threads = item.split(":")
-                comp_threads = int(comp_threads)
-                if comp_threads > max_threads:
-                    max_threads = comp_threads
-
-            max_cores = total_pes * max_threads
-            return max_cores
+            return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
             if self._cime_model == "cesm":

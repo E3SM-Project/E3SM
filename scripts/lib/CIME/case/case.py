@@ -12,7 +12,7 @@ from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit
+from CIME.utils                     import get_current_commit, safe_copy
 from CIME.locked_files         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -71,7 +71,7 @@ class Case(object):
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
-        archive_last_restarts
+        archive_last_restarts, test_st_archive
     from CIME.case.case_run import case_run
     from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
     from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
@@ -363,12 +363,12 @@ class Case(object):
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                item = env_file.get_resolved_value(item, 
+                item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item, recurse=recurse+1, 
+                item = self.get_resolved_value(item, recurse=recurse+1,
                                                allow_unresolved_envvars=allow_unresolved_envvars)
 
         return item
@@ -1057,40 +1057,52 @@ class Case(object):
 
         if get_model() == "e3sm":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
-                shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
-                shutil.copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
+        components.extend(['share', 'drv'])
+        readme_message = """Put source mods for the {component} library in this directory.
+
+WARNING: SourceMods are not kept under version control, and can easily
+become out of date if changes are made to the source code on which they
+are based. We only recommend using SourceMods for small, short-term
+changes that just apply to one or two cases. For larger or longer-term
+changes, including gradual, incremental changes towards a final
+solution, we highly recommend making changes in the main source tree,
+leveraging version control (git or svn).
+"""
+
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
             if not os.path.exists(directory):
                 os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot, "SourceMods", "src.share")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot,"SourceMods","src.drv")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+                # Besides giving some information on SourceMods, this
+                # README file serves one other important purpose: By
+                # putting a file inside each SourceMods subdirectory, we
+                # prevent aggressive scrubbers from scrubbing these
+                # directories due to being empty (which can cause builds
+                # to fail).
+                readme_file = os.path.join(directory, "README")
+                with open(readme_file, "w") as fd:
+                    fd.write(readme_message.format(component=component))
 
         if get_model() == "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
             if "cism" in components:
-                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "glimmer-cism")
+                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "source_cism")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                readme_file = os.path.join(directory, "README")
+                    readme_file = os.path.join(directory, "README")
+                    str_to_write = """Put source mods for the source_cism library in this subdirectory.
+This includes any files from $COMP_ROOT_DIR_GLC/source_cism. Anything
+else (e.g., mods to source_glc or drivers) goes in the src.cism
+directory, NOT in this subdirectory."""
 
-                str_to_write = """
-                Put source mods for the glimmer-cism library in the glimmer-cism subdirectory
-                This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism
-                Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/"""
-
-                with open(readme_file, "w") as fd:
-                    fd.write(str_to_write)
+                    with open(readme_file, "w") as fd:
+                        fd.write(str_to_write)
 
     def create_caseroot(self, clone=False):
         if not os.path.exists(self._caseroot):
@@ -1294,7 +1306,7 @@ class Case(object):
         """
         Returns True if current settings require a threaded build/run.
         """
-        force_threaded = self.get_value("BUILD_THREADED")
+        force_threaded = self.get_value("FORCE_BUILD_SMP")
         smp_present = bool(force_threaded) or self.thread_count > 1
         return smp_present
 

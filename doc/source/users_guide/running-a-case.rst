@@ -50,8 +50,6 @@ Upon successful completion of the run, **case.run** will:
 - Put timing information in **$CASEROOT/timing**.
   See :ref:`model timing data<model-timing-data>` for details.
 
-- Copy log files back to ``$LOGDIR``.
-
 - Submit the short-term archiver script **case.st_archive**
   to the batch queue if ``$DOUT_S`` is TRUE.
 
@@ -308,9 +306,7 @@ in a  *log file*. Each time the model is run, a single coordinated datestamp
 is incorporated into the filename of each output log file.
 The run script generates the datestamp in the form YYMMDD-hhmmss, indicating
 the year, month, day, hour, minute and second that the run began
-(ocn.log.040526-082714, for example). Log files are copied to a user-specified
-directory using the variable ``$LOGDIR`` in **env_run.xml**. The default is a "logs"
-subdirectory in the **$CASEROOT** directory.
+(ocn.log.040526-082714, for example).
 
 By default, each component also periodically writes history files
 (usually monthly) in netCDF format and also writes netCDF or binary
@@ -399,11 +395,6 @@ have the same date.
 ============================
 Archiving model output data
 ============================
-
-When a job has run successfully, the component log files are copied
-to the directory specified by the **env_run.xml** variable ``$LOGDIR``,
-which is set to **$CASEROOT/logs** by default. If the job aborts, log
-files are NOT be copied out of the ``$RUNDIR`` directory.
 
 The output data flow from a successful run depends on whether or not
 short-term archiving is enabled, as it is by default.
