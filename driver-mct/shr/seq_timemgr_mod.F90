@@ -312,7 +312,8 @@ contains
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
-
+    integer(shr_kind_in)    :: restinterval          ! restart interval seconds
+    integer(shr_kind_in)    :: minrestinterval          ! restart interval seconds
     logical :: pause_active_atm
     logical :: pause_active_cpl
     logical :: pause_active_ocn
@@ -911,6 +912,11 @@ contains
             RefTime = CurrTime,            &
             alarmname = trim(seq_timemgr_alarm_restart))
 
+       call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
+       if(n==1 .or. RestInterval < minRestInterval) then
+          minRestInterval = RestInterval
+       endif
+
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_history),  &
             option  = history_option,      &
@@ -1015,6 +1021,17 @@ contains
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
        if(CurrTime + TimeStep > minStopTime ) then
           call shr_sys_abort(subname//"ERROR: Stop time too short, increase STOP_N")
+       endif
+       if (trim(restart_option) .ne. trim(seq_timemgr_optNone) .and. &
+            trim(restart_option) .ne. trim(seq_timemgr_optNever)) then
+             write(logunit,*) subname, 'RestInterval=',minRestInterval,&
+                  ' Dtime=',dtime(n)
+
+          if (mod(minRestInterval, dtime(n)) .ne. 0) then
+             write(logunit,*) subname, 'RestInterval=',minRestInterval,&
+                  ' Dtime=',dtime(n)
+             call shr_sys_abort("Restart interval not compatible with dtime")
+          endif
        endif
     enddo
 
