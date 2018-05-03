@@ -19,7 +19,7 @@ class HOMME(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
         case.load_env()
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         if not sharedlib_only:
             # Build HOMME
             srcroot  = self._case.get_value("SRCROOT")
@@ -39,7 +39,8 @@ class HOMME(SystemTestsCommon):
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
-            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
+            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True,
+                       save_build_provenance=save_build_provenance)
 
     def run_phase(self):
 

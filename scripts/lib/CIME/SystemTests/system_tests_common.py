@@ -65,7 +65,7 @@ class SystemTestsCommon(object):
 
             self._case.case_setup(reset=True, test_mode=True)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         """
         Do NOT override this method, this method is the framework that
         controls the build phase. build_phase is the extension point
@@ -82,7 +82,8 @@ class SystemTestsCommon(object):
                 start_time = time.time()
                 try:
                     self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
-                                     model_only=(phase_name==MODEL_BUILD_PHASE))
+                                     model_only=(phase_name==MODEL_BUILD_PHASE),
+                                     save_build_provenance=save_build_provenance)
                 except BaseException as e:
                     success = False
                     msg = e.__str__()
@@ -105,7 +106,7 @@ class SystemTestsCommon(object):
 
         return success
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         """
         This is the default build phase implementation, it just does an individual build.
         This is the subclass' extension point if they need to define a custom build
@@ -113,14 +114,15 @@ class SystemTestsCommon(object):
 
         PLEASE THROW EXCEPTION ON FAIL
         """
-        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-
-    def build_indv(self, sharedlib_only=False, model_only=False):
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only,
+                        save_build_provenance=save_build_provenance)
+    def build_indv(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         """
         Perform an individual build
         """
         build.case_build(self._caseroot, case=self._case,
-                         sharedlib_only=sharedlib_only, model_only=model_only)
+                         sharedlib_only=sharedlib_only, model_only=model_only,
+                         save_build_provenance=save_build_provenance)
 
     def clean_build(self, comps=None):
         if comps is None:
@@ -467,7 +469,7 @@ class FakeTest(SystemTestsCommon):
     def _set_script(self, script):
         self._script = script # pylint: disable=attribute-defined-outside-init
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         if (not sharedlib_only):
             exeroot = self._case.get_value("EXEROOT")
             cime_model = self._case.get_value("MODEL")
@@ -490,7 +492,7 @@ class FakeTest(SystemTestsCommon):
 
 class TESTRUNPASS(FakeTest):
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -502,7 +504,8 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                             sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only,
+                             save_build_provenance=save_build_provenance)
 
 class TESTRUNDIFF(FakeTest):
     """
@@ -512,7 +515,7 @@ class TESTRUNDIFF(FakeTest):
     3) Re-run the same test from step 1 but do a baseline comparison instead of generation
       3.a) This should give you a DIFF
     """
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -528,11 +531,12 @@ fi
 """.format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                       sharedlib_only=sharedlib_only, model_only=model_only)
+                       sharedlib_only=sharedlib_only, model_only=model_only,
+                             save_build_provenance=save_build_provenance)
 
 class TESTTESTDIFF(FakeTest):
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -545,7 +549,8 @@ cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
 """.format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
-                                              model_only=model_only)
+                                              model_only=model_only,
+                                              save_build_provenance=save_build_provenance)
 
     def run_phase(self):
         super(TESTTESTDIFF, self).run_phase()
@@ -553,7 +558,7 @@ cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
 
 class TESTRUNFAIL(FakeTest):
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -571,7 +576,8 @@ fi
 """.format(rundir, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                             sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only
+                             save_build_provenance=save_build_provenance)
 
 class TESTRUNFAILEXC(TESTRUNPASS):
 
@@ -580,9 +586,10 @@ class TESTRUNFAILEXC(TESTRUNPASS):
 
 class TESTBUILDFAIL(TESTRUNPASS):
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         if "TESTBUILDFAIL_PASS" in os.environ:
-            TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
+            TESTRUNPASS.build_phase(self, sharedlib_only, model_only,
+                                    save_build_provenance=save_build_provenance)
         else:
             if (not sharedlib_only):
                 expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
@@ -595,7 +602,7 @@ class TESTBUILDFAILEXC(FakeTest):
 
 class TESTRUNSLOWPASS(FakeTest):
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -608,10 +615,11 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only,
+                             save_build_provenance=save_build_provenance)
 
 class TESTMEMLEAKFAIL(FakeTest):
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -624,10 +632,11 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only,
+                             save_build_provenance=save_build_provenance)
 
 class TESTMEMLEAKPASS(FakeTest):
-    def build_phase(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
@@ -640,4 +649,5 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only,
+                             save_build_provenance=save_build_provenance)
