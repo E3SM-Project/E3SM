@@ -414,6 +414,9 @@ contains
             ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_retransn_patch(p)*dt
             ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%livestemn_to_retransn_patch(p)*dt
             ns%grainn_patch(p)     = ns%grainn_patch(p)     - nf%grainn_to_food_patch(p)*dt
+
+            ns%cropseedn_deficit_patch(p) = ns%cropseedn_deficit_patch(p) &
+                 - nf%crop_seedn_to_leaf_patch(p) * dt
          end if
 
          ! uptake from soil mineral N pool

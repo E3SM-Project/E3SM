@@ -200,6 +200,7 @@ contains
          gpp                       =>    carbonflux_vars%gpp_col                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
          er                        =>    carbonflux_vars%er_col                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          col_fire_closs            =>    carbonflux_vars%fire_closs_col                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
+         col_prod1c_loss           =>    carbonflux_vars%prod1c_loss_col               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
          col_hrv_xsmrpool_to_atm   =>    carbonflux_vars%hrv_xsmrpool_to_atm_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    carbonflux_vars%som_c_leached_col             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
          col_decompc_delta         =>    carbonflux_vars%externalc_to_decomp_delta_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
@@ -233,6 +234,8 @@ contains
          ! these balance checks
          col_coutputs = col_coutputs + &
               hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
+
+         col_coutputs = col_coutputs + col_prod1c_loss(c)
 
          ! subtract leaching flux
          col_coutputs = col_coutputs - som_c_leached(c)
@@ -326,6 +329,7 @@ contains
          smin_no3_leached          =>    nitrogenflux_vars%smin_no3_leached_col          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    nitrogenflux_vars%smin_no3_runoff_col           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    nitrogenflux_vars%f_n2o_nit_col                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
+         col_prod1n_loss           =>    nitrogenflux_vars%prod1n_loss_col               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) crop leafc harvested
          col_fire_nloss            =>    nitrogenflux_vars%fire_nloss_col                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          hrv_deadstemn_to_prod10n  =>    nitrogenflux_vars%hrv_deadstemn_to_prod10n_col  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemn_to_prod100n =>    nitrogenflux_vars%hrv_deadstemn_to_prod100n_col , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
@@ -408,6 +412,8 @@ contains
            end if
          endif
 
+         col_noutputs(c) = col_noutputs(c) + col_prod1n_loss(c)
+         
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
          ! calculate the total column-level nitrogen balance error for this time step
@@ -507,7 +513,7 @@ contains
          secondp_to_occlp          => phosphorusflux_vars%secondp_to_occlp_col          , &
          fert_p_to_sminp           => phosphorusflux_vars%fert_p_to_sminp_col           , &
          supplement_to_plantp      => phosphorusflux_vars%supplement_to_plantp          , &
- 
+         col_prod1p_loss           => phosphorusflux_vars%prod1p_loss_col               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
          col_pinputs               => phosphorusflux_vars%pinputs_col                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs              => phosphorusflux_vars%poutputs_col                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
          col_begpb                 => phosphorusstate_vars%begpb_col                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
@@ -617,6 +623,8 @@ contains
             end do 
          end if
 
+         col_poutputs(c) = col_poutputs(c) + col_prod1p_loss(c)
+         
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))

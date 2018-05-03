@@ -2082,6 +2082,7 @@ contains
           this%ppool_to_grainp_storage_patch(i)          = value_patch
           this%grainp_storage_to_xfer_patch(i)           = value_patch
           this%frootp_to_retransp_patch(i)               = value_patch
+          this%crop_seedp_to_leaf_patch(i)               = value_patch
        end do
     end if
 

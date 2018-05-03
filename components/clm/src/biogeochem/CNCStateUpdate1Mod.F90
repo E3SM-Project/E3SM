@@ -317,6 +317,9 @@ contains
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             cs%livestemc_patch(p)  = cs%livestemc_patch(p)  - cf%livestemc_to_litter_patch(p)*dt
             cs%grainc_patch(p)     = cs%grainc_patch(p)     - cf%grainc_to_food_patch(p)*dt
+
+            cs%cropseedc_deficit_patch(p) = cs%cropseedc_deficit_patch(p) &
+                 - cf%crop_seedc_to_leaf_patch(p) * dt
          end if
 
          ! maintenance respiration fluxes from cpool

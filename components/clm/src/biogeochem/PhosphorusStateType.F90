@@ -20,7 +20,7 @@ module PhosphorusStateType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  use clm_varctl             , only : nu_com
+  use clm_varctl             , only : nu_com, use_crop
   ! soil phosphorus initialization Qing Z. 2017
   use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon       , only : smax, ks_sorption
@@ -71,6 +71,7 @@ module PhosphorusStateType
      real(r8), pointer :: ptrunc_vr_col                (:,:)       ! col (gP/m3) vertically-resolved column-level sink for P truncation
 
      ! wood product pools, for dynamic landcover
+     real(r8), pointer :: cropseedp_deficit_patch      (:)     ! (gP/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
      real(r8), pointer :: seedp_grc                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
      real(r8), pointer :: seedp_col                    (:)     ! col (gP/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod1p_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
@@ -252,6 +253,8 @@ contains
     allocate(this%cwdp_col                 (begc:endc))                   ; this%cwdp_col                 (:)   = nan
     allocate(this%sminp_col                (begc:endc))                   ; this%sminp_col                (:)   = nan
     allocate(this%ptrunc_col               (begc:endc))                   ; this%ptrunc_col               (:)   = nan
+
+    allocate(this%cropseedp_deficit_patch  (begp:endp))                   ; this%cropseedp_deficit_patch  (:)   = nan
     allocate(this%seedp_grc                (begg:endg))                   ; this%seedp_grc                (:)   = nan
     allocate(this%seedp_col                (begc:endc))                   ; this%seedp_col                (:)   = nan
     allocate(this%prod1p_col               (begc:endc))                   ; this%prod1p_col               (:)   = nan
@@ -356,6 +359,11 @@ contains
        call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
             avgflag='A', long_name='grain P', &
             ptr_patch=this%grainp_patch, default='inactive')
+
+       this%cropseedp_deficit_patch(begp:endp) = spval
+       call hist_addfld1d (fname='CROPSEEDP_DEFICIT', units='gP/m^2', &
+            avgflag='A', long_name='P used for crop seed that needs to be repaid', &
+            ptr_patch=this%cropseedp_deficit_patch)
     end if
 
     this%leafp_patch(begp:endp) = spval
@@ -747,9 +755,10 @@ contains
 
           this%leafp_xfer_patch(p)        = 0._r8
           if ( crop_prog )then
-             this%grainp_patch(p)         = 0._r8
-             this%grainp_storage_patch(p) = 0._r8
-             this%grainp_xfer_patch(p)    = 0._r8
+             this%grainp_patch(p)            = 0._r8
+             this%grainp_storage_patch(p)    = 0._r8
+             this%grainp_xfer_patch(p)       = 0._r8
+             this%cropseedp_deficit_patch(p) = 0._r8
           end if
           this%frootp_patch(p)            = 0._r8
           this%frootp_storage_patch(p)    = 0._r8
@@ -1461,9 +1470,10 @@ contains
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%grainp_patch(i)          = value_patch
-          this%grainp_storage_patch(i)  = value_patch
-          this%grainp_xfer_patch(i)     = value_patch   
+          this%grainp_patch(i)            = value_patch
+          this%grainp_storage_patch(i)    = value_patch
+          this%grainp_xfer_patch(i)       = value_patch
+          this%cropseedp_deficit_patch(i) = value_patch
        end do
     end if
 
@@ -1609,6 +1619,10 @@ contains
       this%totvegp_patch(p) = &
            this%dispvegp_patch(p) + &
            this%storvegp_patch(p)
+
+      if (use_crop) then
+         this%totvegp_patch(p) = this%totvegp_patch(p) + this%cropseedp_deficit_patch(p)
+      end if
 
       ! total pft-level carbon (add pft_ntrunc)
       this%totpftp_patch(p) = &
@@ -1854,6 +1868,7 @@ contains
            this%cwdp_col(c) + &
            this%totlitp_col(c) + &
            this%totsomp_col(c) + &
+           this%prod1p_col(c) + &
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
@@ -2197,6 +2212,17 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%totpftp_patch(begp:endp))
+
+    if (use_crop) then
+       ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
+       ! of the atmosphere.
+       call patch_state_updater%update_patch_state(         &
+            bounds                                        , &
+            num_filterp_with_inactive                     , &
+            filterp_with_inactive                         , &
+            var = this%cropseedp_deficit_patch(begp:endp) , &
+            flux_out_grc_area = conv_pflux(begp:endp))
+    end if
 
     ! These fluxes are computed as negative quantities, but are expected to be positive,
     ! so flip the signs

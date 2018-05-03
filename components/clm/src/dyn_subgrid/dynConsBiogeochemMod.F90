@@ -1167,7 +1167,7 @@ contains
 
    if (use_lch4) then
       call endrun(msg=' ERROR: use_lch4 = .true. not supported with dynamic landunits'//&
-           errMsg(__FILE__, __LINE__))
+          errMsg(__FILE__, __LINE__))
    end if
 
  end associate

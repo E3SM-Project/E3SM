@@ -285,6 +285,9 @@ contains
             ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_retransp_patch(p)*dt
             ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%livestemp_to_retransp_patch(p)*dt
             ps%grainp_patch(p)     = ps%grainp_patch(p)     - pf%grainp_to_food_patch(p)*dt
+
+            ps%cropseedp_deficit_patch(p) = ps%cropseedp_deficit_patch(p) &
+                 - pf%crop_seedp_to_leaf_patch(p) * dt
          end if
 
          ! uptake from soil mineral N pool
