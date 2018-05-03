@@ -75,7 +75,7 @@ def _main_func(description):
             print("    ENV:")
             case.load_env(job=job_id, reset=True, verbose=True)
             print("    SUBMIT CMD:")
-            print("      {}".format(job_id, case.get_resolved_value(cmd)))
+            print("      {}".format(case.get_resolved_value(cmd)))
             print("")
 
         if job == case.get_primary_job():
