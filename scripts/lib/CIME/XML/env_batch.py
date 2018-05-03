@@ -484,11 +484,12 @@ class EnvBatch(EnvBase):
                                                  batch_args=batch_args,
                                                  dry_run=dry_run)
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
-                prev_job = batch_job_id
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
                 if self._batchtype == "cobalt":
                     break
+            prev_job = batch_job_id
+
 
         if dry_run:
             return jobcmds
