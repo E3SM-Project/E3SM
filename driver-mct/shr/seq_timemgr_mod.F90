@@ -291,6 +291,7 @@ contains
     type(ESMF_Time)             :: OffsetTime         ! local computed time
     type(ESMF_Time)             :: StopTime1          ! Stop time
     type(ESMF_Time)             :: StopTime2          ! Stop time
+    type(ESMF_Time)             :: StopTime, minStopTime ! Stop time
     type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
@@ -311,7 +312,8 @@ contains
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
-
+    integer(shr_kind_in)    :: restinterval          ! restart interval seconds
+    integer(shr_kind_in)    :: minrestinterval          ! restart interval seconds
     logical :: pause_active_atm
     logical :: pause_active_cpl
     logical :: pause_active_ocn
@@ -653,6 +655,9 @@ contains
                rof_cpl_dt, wav_cpl_dt, esp_cpl_dt
           call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
        end if
+       if ( atm_cpl_dt > rof_cpl_dt .or. atm_cpl_dt > ocn_cpl_dt ) then
+          call shr_sys_abort( subname//' ERROR: atm_cpl_dt must be <= rof_cpl_dt and ocn_cpl_dt')
+       endif
 
        ! --- Coupling offsets --------------------------------------------------
        if ( abs(atm_cpl_offset) > atm_cpl_dt .or. &
@@ -852,7 +857,7 @@ contains
           write(logunit,*) trim(subname),' ERROR: dtime inconsistent = ',dtime
           call shr_sys_abort( subname//' :coupling intervals not compatible' )
        endif
-       if (pause_active(n) .and. (dtime(n) < min_dt)) then
+       if (pause_active(n) .and. (dtime(n) <= min_dt)) then
           min_dt = dtime(n)
           seq_timemgr_pause_sig_index = n
        end if
@@ -907,6 +912,13 @@ contains
             RefTime = CurrTime,            &
             alarmname = trim(seq_timemgr_alarm_restart))
 
+       call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
+       if(n==1) then
+          minRestInterval = RestInterval
+       else
+          minRestInterval = min(RestInterval, minRestInterval)
+       endif
+
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_history),  &
             option  = history_option,      &
@@ -941,11 +953,18 @@ contains
 
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_stop), RingTime=StopTime1, rc=rc )
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_datestop), RingTime=StopTime2, rc=rc )
+
        if (StopTime2 < StopTime1) then
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime2)
+          StopTime = StopTime2
        else
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime1)
+          StopTime = StopTime1
        endif
+       if (n == 1) then
+          minStopTIme = StopTime
+       elseif (StopTime < minStopTime) then
+          minStopTime = StopTime
+       endif
+       call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime)
 
        ! Set the pause option if pause/resume is active
        if (pause_active(n)) then
@@ -999,6 +1018,28 @@ contains
        if (mod(offset(n),dtime(seq_timemgr_nclock_drv)) /= 0) then
           write(logunit,*) subname,' ERROR: offset not multiple',n,dtime(seq_timemgr_nclock_drv),offset(n)
           call shr_sys_abort()
+       endif
+
+       call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
+       if(CurrTime + TimeStep > minStopTime ) then
+          write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced and restarts won't be written"
+       endif
+       if (n /= seq_timemgr_nclock_esp .and. trim(restart_option) .ne. &
+            trim(seq_timemgr_optNone) .and. &
+            trim(restart_option) .ne. trim(seq_timemgr_optNever)) then
+             write(logunit,*) subname, 'RestInterval=',minRestInterval,&
+                  ' Dtime=',dtime(n)
+             call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
+             if (RestInterval .ne. minRestInterval) then
+                write(logunit,*) subname, 'RestInterval=',RestInterval,&
+                     ' minRestInterval=',minRestInterval
+                call shr_sys_abort("Component RestInterval inconsistant with driver")
+             endif
+             if (mod(minRestInterval, dtime(n)) .ne. 0) then
+                write(logunit,*) subname, 'RestInterval=',minRestInterval,&
+                     ' Dtime=',dtime(n)
+                call shr_sys_abort("Restart interval not compatible with dtime")
+             endif
        endif
     enddo
 
