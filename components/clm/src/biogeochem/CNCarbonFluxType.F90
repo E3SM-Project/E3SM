@@ -4554,6 +4554,7 @@ contains
           this%cpool_grain_storage_gr_patch(i)  = value_patch
           this%transfer_grain_gr_patch(i)       = value_patch
           this%grainc_storage_to_xfer_patch(i)  = value_patch
+          this%crop_seedc_to_leaf_patch(i)      = value_patch
        end do
     end if
 
