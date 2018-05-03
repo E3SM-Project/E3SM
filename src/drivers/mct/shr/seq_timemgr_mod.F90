@@ -913,8 +913,10 @@ contains
             alarmname = trim(seq_timemgr_alarm_restart))
 
        call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
-       if(n==1 .or. RestInterval < minRestInterval) then
+       if(n==1) then
           minRestInterval = RestInterval
+       else
+          minRestInterval = min(RestInterval, minRestInterval)
        endif
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -1020,18 +1022,23 @@ contains
 
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
        if(CurrTime + TimeStep > minStopTime ) then
-          call shr_sys_abort(subname//"ERROR: Stop time too short, increase STOP_N")
+          write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced and restarts won't be written"
        endif
        if (trim(restart_option) .ne. trim(seq_timemgr_optNone) .and. &
             trim(restart_option) .ne. trim(seq_timemgr_optNever)) then
              write(logunit,*) subname, 'RestInterval=',minRestInterval,&
                   ' Dtime=',dtime(n)
-
-          if (mod(minRestInterval, dtime(n)) .ne. 0) then
-             write(logunit,*) subname, 'RestInterval=',minRestInterval,&
-                  ' Dtime=',dtime(n)
-             call shr_sys_abort("Restart interval not compatible with dtime")
-          endif
+             call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
+             if (RestInterval .ne. minRestInterval) then
+                write(logunit,*) subname, 'RestInterval=',RestInterval,&
+                     ' minRestInterval=',minRestInterval
+                call shr_sys_abort("Component RestInterval inconsistant with driver")
+             endif
+             if (mod(minRestInterval, dtime(n)) .ne. 0) then
+                write(logunit,*) subname, 'RestInterval=',minRestInterval,&
+                     ' Dtime=',dtime(n)
+                call shr_sys_abort("Restart interval not compatible with dtime")
+             endif
        endif
     enddo
 
