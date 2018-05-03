@@ -1165,10 +1165,7 @@ contains
 
    call ps%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
 
-   if (use_lch4) then
-      call endrun(msg=' ERROR: use_lch4 = .true. not supported with dynamic landunits'//&
-          errMsg(__FILE__, __LINE__))
-   end if
+   ! DynamicColumnAdjustments for CH4 needs to be implemented
 
  end associate
 
