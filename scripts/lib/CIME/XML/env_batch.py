@@ -415,7 +415,7 @@ class EnvBatch(EnvBase):
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False, run_args=None):
+                    batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -457,12 +457,12 @@ class EnvBatch(EnvBase):
 
         prev_job = None
 
-        for i in range(num_submit):
+        for _ in range(num_submit):
             for job, dependency in jobs:
                 if dependency is not None:
                     deps = dependency.split()
                 else:
-                        deps = []
+                    deps = []
                 dep_jobs = []
                 if user_prereq is not None:
                     dep_jobs.append(user_prereq)
@@ -504,7 +504,7 @@ class EnvBatch(EnvBase):
         >>> EnvBatch._get_supported_args("")
         {}
         >>> EnvBatch._get_supported_args("case.test")
-        {"skip_pnl": "--skip-preview-namelist"}
+        {'skip_pnl': '--skip-preview-namelist'}
         """
         supported = {}
         if job in ["case.run", "case.test"]:
@@ -520,7 +520,7 @@ class EnvBatch(EnvBase):
         as well as the values passed and the equivalent arguments for calling the script
 
         >>> EnvBatch._build_run_args("case.run", skip_pnl=True, cthulu="f'taghn")
-        {"skip_pnl": (True, "--skip-preview-namelist")}
+        {'skip_pnl': (True, '--skip-preview-namelist')}
         >>> EnvBatch._build_run_args("case.run", skip_pnl=False, cthulu="f'taghn")
         {}
         """
@@ -557,7 +557,7 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
             if not dry_run:
-                args = _build_run_args(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate)
+                args = self._build_run_args(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate)
                 getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
             return
 
