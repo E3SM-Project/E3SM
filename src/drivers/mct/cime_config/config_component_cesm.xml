@@ -278,6 +278,8 @@
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_XOCN">$ATM_NCPL</value>
+      <value compset="_SOCN">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -288,9 +290,11 @@
 
   <entry id="GLC_NCPL">
     <type>integer</type>
-    <default_value>$ATM_NCPL</default_value>
+    <default_value>1</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_SGLC">$ATM_NCPL</value>
+      <value compset="_XGLC">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -320,7 +324,7 @@
 
   <entry id="ROF_NCPL">
     <type>integer</type>
-    <default_value>$ATM_NCPL</default_value>
+    <default_value>8</default_value>
     <values match="last">
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
@@ -328,6 +332,8 @@
       <value compset="_DATM%CPLHIST.+POP\d">8</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_SROF">$ATM_NCPL</value>
+      <value compset="_XROF">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
