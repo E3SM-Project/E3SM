@@ -205,6 +205,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
 
+        logger.info("You can now run './preview_run' to get more info on how your case will be run")
+
 ###############################################################################
 def case_setup(self, clean=False, test_mode=False, reset=False):
 ###############################################################################
