@@ -302,7 +302,8 @@ def case_run(self, skip_pnl=False, set_continue_run=False):
         _save_logs(self, lid)
 
     if set_continue_run:
-        self.set_value("CONTINUE_RUN", True)
+        self.set_value("CONTINUE_RUN",
+                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
     logger.warning("check for resubmit")
     _resubmit_check(self)
