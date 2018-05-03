@@ -60,7 +60,7 @@ OR
     if args.skip_preview_namelist is None:
         args.skip_preview_namelist = False
 
-    return args.caseroot, args.skip_preview_namelist, args.set_continue_run
+    return args.caseroot, args.skip_preview_namelist, args.completion_sets_continue_run
 
 ###############################################################################
 def _main_func(description):
