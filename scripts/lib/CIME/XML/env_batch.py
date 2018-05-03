@@ -637,8 +637,6 @@ class EnvBatch(EnvBase):
         else:
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
-        logger.info("sequence: {}".format(sequence))
-
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
 
         if dry_run:
