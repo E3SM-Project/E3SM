@@ -22,28 +22,6 @@ def _build_prereq_str(case, prev_job_ids):
         prereq_str += str(job_id) + delimiter
     return prereq_str[:-1]
 
-def _check_and_resubmit(case, prev_job_ids, num_resubmit, submit_args):
-    if num_resubmit > 0:
-        while num_resubmit > 0:
-            submit_args["prereq"] = _build_prereq_str(case, prev_job_ids)
-            prev_job_ids = case.submit_jobs(**submit_args)
-            num_resubmit -= 1
-
-def _run_args(case, job=None, skip_pnl=False, resubmit_immediate=False):
-    args = {}
-    # A little hacky, but this is potentially used in two different ways:
-    # 1) If no batch system is defined, then these are passed as arguments to
-    #    case_run or case_test. In that case, they expect bools for both parameters.
-    #    This, however passes non-empty strings, which when used in logical statements,
-    #    are equivalent to True.
-    # 2) If a batch system is defined, the value strings are used as arguments to the script
-    # TODO: Assign the command line arguments to constants and use those everywhere
-    if job in ["case.run", "case.test"] and skip_pnl:
-        args["skip_pnl"] = "--skip-preview-namelist"
-    if job == "case.run" and resubmit_immediate and case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
-        args["set_continue_run"] = "--completion-sets-continue-run"
-    return args
-
 def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
             resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
             batch_args=None):
@@ -114,25 +92,11 @@ manual edits to these file will be lost!
 
     case.flush()
 
-    if resubmit_immediate:
-        num_resubmit = case.get_value("RESUBMIT")
-        case.set_value("RESUBMIT", 0)
-
     logger.warning("submit_jobs {}".format(job))
-    submit_args = {"no_batch": no_batch,
-                   "job": job,
-                   "prereq": prereq,
-                   "allow_fail": allow_fail,
-                   "mail_user": mail_user,
-                   "mail_type": mail_type,
-                   "batch_args": batch_args,
-                   "run_args": _run_args(case, job=job, skip_pnl=skip_pnl,
-                                         resubmit_immediate=resubmit_immediate)
-    }
-    job_ids = case.submit_jobs(**submit_args)
-
-    if resubmit_immediate:
-        _check_and_resubmit(case, job_ids, num_resubmit, submit_args)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, prereq=prereq,
+                               skip_pnl=skip_pnl, resubmit_immediate=resubmit_immediate,
+                               allow_fail=allow_fail, mail_user=mail_user,
+                               mail_type=mail_type, batch_args=batch_args)
 
     xml_jobids = []
     for jobname, jobid in job_ids.items():

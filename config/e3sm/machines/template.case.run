@@ -51,7 +51,7 @@ OR
 
     parser.add_argument("--completion-sets-continue-run", action="store_true",
                         help="This is used to ensure CONTINUE_RUN is cleared for an initial run, "
-                        "but set for subsequent runs."
+                        "but set for subsequent runs.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
