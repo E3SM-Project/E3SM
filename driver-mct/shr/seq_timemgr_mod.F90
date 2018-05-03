@@ -857,7 +857,7 @@ contains
           write(logunit,*) trim(subname),' ERROR: dtime inconsistent = ',dtime
           call shr_sys_abort( subname//' :coupling intervals not compatible' )
        endif
-       if (pause_active(n) .and. (dtime(n) < min_dt)) then
+       if (pause_active(n) .and. (dtime(n) <= min_dt)) then
           min_dt = dtime(n)
           seq_timemgr_pause_sig_index = n
        end if
@@ -1024,7 +1024,8 @@ contains
        if(CurrTime + TimeStep > minStopTime ) then
           write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced and restarts won't be written"
        endif
-       if (trim(restart_option) .ne. trim(seq_timemgr_optNone) .and. &
+       if (n /= seq_timemgr_nclock_esp .and. trim(restart_option) .ne. &
+            trim(seq_timemgr_optNone) .and. &
             trim(restart_option) .ne. trim(seq_timemgr_optNever)) then
              write(logunit,*) subname, 'RestInterval=',minRestInterval,&
                   ' Dtime=',dtime(n)
