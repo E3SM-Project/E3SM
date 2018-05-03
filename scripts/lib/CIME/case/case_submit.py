@@ -113,6 +113,10 @@ manual edits to these file will be lost!
 def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
            resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
            batch_args=None):
+    if resubmit_immediate and self.get_value("MACH") in ['mira', 'cetus']:
+        logger.warning("resubmit_immediate does not work on Mira/Cetus, submitting normally")
+        resubmit_immediate = False
+
     if self.get_value("TEST"):
         caseroot = self.get_value("CASEROOT")
         casebaseid = self.get_value("CASEBASEID")
