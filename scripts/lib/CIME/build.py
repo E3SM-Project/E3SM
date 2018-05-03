@@ -4,7 +4,7 @@ functions for building CIME models
 import glob, shutil, time, threading, subprocess
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
-from CIME.provenance            import save_build_provenance
+from CIME.provenance            import save_build_provenance as save_build_provenance_sub
 from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
@@ -364,7 +364,8 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
     case.flush()
 
 ###############################################################################
-def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist, save_build_provenance=True):
+def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
+                     save_build_provenance):
 ###############################################################################
 
     t1 = time.time()
@@ -528,7 +529,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist, save
             case.read_xml()
             # Note, doing buildlists will never result in the system thinking the build is complete
 
-    post_build(case, logs, build_complete=not (buildlist or sharedlib_only), save_build_provenance=save_build_provenance)
+    post_build(case, logs, build_complete=not (buildlist or sharedlib_only),
+               save_build_provenance=save_build_provenance)
 
     t3 = time.time()
 
@@ -549,7 +551,7 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         # must ensure there's an lid
         lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
         if save_build_provenance:
-            save_build_provenance(case, lid=lid)
+            save_build_provenance_sub(case, lid=lid)
         # Set XML to indicate build complete
         case.set_value("BUILD_COMPLETE", True)
         case.set_value("BUILD_STATUS", 0)
@@ -564,7 +566,7 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                                       save_build_provenance=save_build_provenance)
+                                       save_build_provenance)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################

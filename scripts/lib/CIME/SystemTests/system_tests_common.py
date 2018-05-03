@@ -576,7 +576,7 @@ fi
 """.format(rundir, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                             sharedlib_only=sharedlib_only, model_only=model_only
+                             sharedlib_only=sharedlib_only, model_only=model_only,
                              save_build_provenance=save_build_provenance)
 
 class TESTRUNFAILEXC(TESTRUNPASS):
