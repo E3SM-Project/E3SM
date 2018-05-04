@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit, run_cmd, run_cmd_no_fail
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -83,7 +83,9 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     manic = os.path.join(srcroot, "manage_externals","checkout_externals")
     out = None
     if os.path.exists(manic):
-        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
+        stat, out, err = run_cmd(manic + " --status --verbose --no-logging", from_dir=srcroot)
+        expect(stat==0,"Error gathering provenance information from manage_externals. Either find and fix the problem (try running manage_externals/checkout_externals -S from $SRCROOT), or, if you don't need provenance information, rebuild with --skip-provenance-check.\n{}".format(err))
+
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
         if version is not None and version != "unknown":
