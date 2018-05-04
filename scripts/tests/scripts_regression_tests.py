@@ -299,11 +299,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
         with Case(testdir, read_only=False) as case:
             case.set_value("CHARGE_ACCOUNT", "fred")
-        # this should fail with a locked file issue
-        run_cmd_assert_result(self, "./case.build",
-                              from_dir=testdir, expected_stat=1)
-        run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
-        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+        # this should not fail with a locked file issue
+        run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
 
         run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
 
