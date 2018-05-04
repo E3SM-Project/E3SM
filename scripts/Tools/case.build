@@ -103,8 +103,7 @@ def _main_func(description):
                 raise
 
             expect(buildlist is None, "Build lists don't work with tests")
-            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only,
-                                 save_build_provenance=save_build_provenance)
+            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
                                        model_only=model_only, buildlist=buildlist,
