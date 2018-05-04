@@ -1562,6 +1562,7 @@ contains
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     integer  :: nlev
+    real(r8) :: cropseedn_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1609,11 +1610,7 @@ contains
            this%dispvegn_patch(p) + &
            this%storvegn_patch(p)
 
-       if (use_crop) then
-          this%totvegn_patch(p) = this%totvegn_patch(p) + this%cropseedn_deficit_patch(p)
-       end if
-
-       ! total pft-level carbon (add pft_ntrunc)
+      ! total pft-level carbon (add pft_ntrunc)
       this%totpftn_patch(p) = &
            this%totvegn_patch(p) + &
            this%ntrunc_patch(p)
@@ -1631,6 +1628,10 @@ contains
    call p2c(bounds, num_soilc, filter_soilc, &
         this%totpftn_patch(bounds%begp:bounds%endp), &
         this%totpftn_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%cropseedn_deficit_patch(bounds%begp:bounds%endp), &
+        cropseedn_deficit_col(bounds%begc:bounds%endc))
 
    ! vertically integrate NO3 NH4 N2O pools
    nlev = nlevdecomp
@@ -1849,7 +1850,8 @@ contains
            this%sminn_col(c) + &
            this%prod1n_col(c) + &
            this%ntrunc_col(c)+ &
-           this%plant_n_buffer_col(c)
+           this%plant_n_buffer_col(c) + &
+           cropseedn_deficit_col(c)
            
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &
