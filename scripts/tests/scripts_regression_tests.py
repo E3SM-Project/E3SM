@@ -1637,7 +1637,6 @@ class K_TestCimeCase(TestCreateTestCommon):
                 self.skipTest("Skipping resubmit_immediate test, depend_string was not provided for this batch system")
             depend_string = depend_string.replace("jobid", "")
             job_name = "case.run"
-            prereq_name = "resubmit_immediate_test"
             num_submissions = 6
             case.set_value("RESUBMIT", num_submissions - 1)
             batch_commands = case.submit_jobs(job=job_name, skip_pnl=True, dry_run=True, resubmit_immediate=True)
