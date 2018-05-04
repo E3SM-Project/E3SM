@@ -175,11 +175,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     # Main public methods
     # ========================================================================
 
-    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         if self._separate_builds:
             self._activate_case1()
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only,
-                            save_build_provenance=save_build_provenance)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             self._activate_case2()
             # Although we're doing separate builds, it still makes sense
             # to share the sharedlibroot area with case1 so we can reuse
@@ -190,12 +189,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))
 
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only,
-                            save_build_provenance=save_build_provenance)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only,
-                            save_build_provenance=save_build_provenance)
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             # pio_typename may be changed during the build if the default is not a
             # valid value for this build, update case2 to reflect this change
             for comp in self._case1.get_values("COMP_CLASSES"):

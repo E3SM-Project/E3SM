@@ -12,7 +12,7 @@ class ICP(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-    def build_phase(self, sharedlib_only=False, model_only=False, save_build_provenance=True):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         self._case.set_value("CICE_AUTO_DECOMP", "false")
 
     def run_phase(self):
