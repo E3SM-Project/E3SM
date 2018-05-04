@@ -56,6 +56,25 @@ def redirect_logger(new_target, logger_name):
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
 
+class IndentFormatter(logging.Formatter):
+    def __init__(self, indent, fmt=None, datefmt=None):
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self._indent = indent
+
+    def format(self, record):
+        record.msg = "{}{}".format(self._indent, record.msg)
+        out = logging.Formatter.format(self, record)
+        return out
+
+def set_logger_indent(indent):
+    root_log = logging.getLogger()
+    root_log.handlers = []
+    formatter = IndentFormatter(indent)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_log.addHandler(handler)
+
 class EnvironmentContext(object):
     """
     Context manager for environment variables
@@ -1002,7 +1021,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
     else:
         root_logger.setLevel(logging.INFO)
     return args
-
 
 def get_logging_options():
     """
