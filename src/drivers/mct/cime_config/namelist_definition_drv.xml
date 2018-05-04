@@ -1166,12 +1166,26 @@
     </values>
   </entry>
 
-  <entry id="histaux_l2x1yr">
+  <entry id="histaux_l2x1yrg">
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on coupler history stream for annual sno to coupler fields.
+      turns on coupler history stream for annual lnd to coupler glc forcing fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="histaux_double_precision">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      if true, use double-precision rather than single-precision for
+      coupler auxiliary history files
       default: false
     </desc>
     <values>
