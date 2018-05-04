@@ -1199,8 +1199,8 @@ contains
   real (kind=real_kind) :: v(np,np,2,nets:nete)       !JRUB
   real (kind=real_kind) :: alpha,l2           !JRUB
   real (kind=real_kind), parameter :: epsilon = 1D-5  !JRUB
-  integer, parameter               :: dupdate = 25  !JRUB time step frequency to apply power method update
-  integer, parameter               :: supdate = 120000  !JRUB time step at which power method update is switched off (200 days with step of 144 sec.)
+  integer, parameter               :: dupdate = 75 !25  !JRUB time step frequency to apply power method update
+  integer, parameter               :: supdate = 480000  !JRUB time step at which power method update is switched off (200 days with step of 144 sec.)
 
   call t_startf('compute_and_apply_rhs')
 
@@ -1355,7 +1355,7 @@ contains
         l2   = l2_vnorm(elem, v(:,:,:,nets:nete),vt(:,:,:,nets:nete),hybrid,np,nets,nete)
         alpha  = epsilon / l2
 
-        if (MOD(nstep,1000)==0) print *,'nstep = ',nstep,'  alpha = ',alpha,'   JRUB'
+        if (MOD(nstep,50000)==0) print *,'nstep = ',nstep,'  alpha = ',alpha,'   JRUB'
      end do
 
      ! ====================================================                                                              

@@ -12,7 +12,7 @@ module shallow_water_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, vorticity_sphere,  &
                              divergence, vorticity, laplace_sphere_wk, &
-                             vlaplace_sphere_wk, divergence_sphere
+                             vlaplace_sphere_wk, divergence_sphere, derivinit, gradient_sphere !JRUB +derivinit+gradient_sphere
   ! ------------------------
   use edge_mod, only : edgeVpack, edgeVunpack
   use edgetype_mod, only : EdgeBuffer_t
@@ -185,11 +185,12 @@ module shallow_water_mod
   public  :: tc1_errors
 
   public  :: tc2_init_state  ! Initialize test case 2: Global steady state nonlinear geostrophic flow
-  public  :: tc2_init_state2 !balu
+  public  :: tc2_init_state2, nonrot_init_state !balu
 
   public  :: tc2_init_pmean
   public  :: tc2_geopotential
   private :: tc2_coreolis_init
+  private :: tc2_coreolis_init_prtrbvel
   public  :: tc2_errors
   public  :: tc2_phi
 
@@ -670,6 +671,97 @@ contains
     end do
 
   end function tc1_velocity
+
+  function prtrb_geopotential(sphere) result(p)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind)                :: p(np,np)
+
+    ! Local variables
+
+    real (kind=real_kind) :: cslon
+    real (kind=real_kind) :: snlat
+    real (kind=real_kind) :: cslat
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    real (kind=real_kind) :: coef
+
+    integer i,j
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+
+    do j=1,np
+       do i=1,np
+          snlat = SIN(sphere(i,j)%lat-2.5)
+          cslat = COS(sphere(i,j)%lat)
+          cslon = COS(sphere(i,j)%lon)
+          p(i,j)= -coef* 0.6 *( -cslon*cslat*snalpha + snlat*csalpha )**40  !unstable
+          !p(i,j)= -coef* 0.05 *( -cslon*cslat*snalpha + snlat*csalpha )**40  !stable
+          !p(i,j)= -coef* 0.01 *( -cslon*cslat*snalpha + snlat*csalpha )**40  !stable
+       end do
+    end do
+
+  end function prtrb_geopotential
+
+  function prtrb_velocity(sphere,D,pp,deriv,fcor) result(v)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
+    real (kind=real_kind),    intent(in) :: pp(np,np)          !pressure JRUB
+    !real (kind=real_kind),    intent(in) :: Dinv(np,np,2,2)  !JRUB
+    real (kind=real_kind) :: fcor(np,np)     !JRUB
+    real (kind=real_kind)                :: v(np,np,2)
+    type (derivative_t)      :: deriv !JRUB
+    ! Local variables
+
+    real (kind=real_kind) :: snlon(np,np)
+    real (kind=real_kind) :: cslon(np,np)
+    real (kind=real_kind) :: snlat(np,np)
+    real (kind=real_kind) :: cslat(np,np)
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    real (kind=real_kind) :: V1,V2
+    real (kind=real_kind) :: gradp(np,np,2)   ! pressure meridional gradient  JRUB
+    integer i,j,k
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    do j=1,np
+       do i=1,np
+          snlat(i,j) = SIN(sphere(i,j)%lat - 2.5)
+          cslat(i,j) = COS(sphere(i,j)%lat - 2.5)
+          snlon(i,j) = SIN(sphere(i,j)%lon - 0)
+          cslon(i,j) = COS(sphere(i,j)%lon)
+       end do
+    end do
+
+    gradp = gradient_sphere(pp,deriv,D) !JRUB how do i get deriv, and Dinv
+
+    do k=1,nlev
+       do j=1,np
+          do i=1,np
+
+             !V1 =   -0.05 * gradp(i,j,2) / fcor(i,j) !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V1 =  -gradp(i,j,2)  / fcor(i,j)  !u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             !V1 =   u0*(cslat(i,j)*csalpha + snlat(i,j)*cslon(i,j)*snalpha)
+             V2 =  0 !-u0*(snlon(i,j)*snalpha) + 1.5*u0*SIN(5*sphere(i,j)%lon)*exp(-((sphere(i,j)%lat-40*dd_pi/180)/0.1)**2)
+
+             ! =====================================================
+             ! map sphere velocities onto the contravariant cube velocities
+             ! using the D^-T mapping matrix (see Loft notes for details)
+             ! =====================================================
+
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
+          end do
+       end do
+    end do
+
+  end function prtrb_velocity
 
 
 
@@ -1249,6 +1341,61 @@ contains
 
   end subroutine tc2_init_state
 
+  ! ===========================================
+  !
+  ! nonrot_init_state:
+  !
+  ! Initialize like in test case 2: But IC is not a solution
+  !
+  ! ===========================================
+
+  subroutine nonrot_init_state(elem,nets,nete,pmean)
+    type(element_t), intent(inout) :: elem(:)
+    type (derivative_t)         :: deriv           ! derivative struct JRUB
+
+
+    integer, intent(in) :: nets
+    integer, intent(in) :: nete
+    real (kind=real_kind) :: pmean
+    real (kind=real_kind) :: coef
+    real (kind=real_kind) :: fcor_prtrbvel(np,np)     !JRUB
+    ! Local variables
+
+    integer :: ie,k
+    integer :: nm1 
+    integer :: n0 
+    integer :: np1
+
+    nm1= 1
+    n0 = 2
+    np1= 3
+
+
+    pmean = tc2_init_pmean() !9.8 ! h0=1m in Peixoto, 2017
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+
+    !omega = 0 !nonrotating
+
+    call derivinit(deriv)  
+
+    do ie=nets,nete
+       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       fcor_prtrbvel=tc2_coreolis_init_prtrbvel(elem(ie)%spherep)
+       elem(ie)%state%ps(:,:)= 0.0
+       do k=1,nlev
+          elem(ie)%state%p(:,:,k,n0)=  tc2_init_pmean() + prtrb_geopotential(elem(ie)%spherep(:,:))
+          elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
+          elem(ie)%state%p(:,:,k,np1)=0.0D0
+
+          elem(ie)%state%v(:,:,:,k,n0)=prtrb_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv,elem(ie)%state%p(:,:,k,n0),deriv,fcor_prtrbvel) !0 JRUB added 3rd argument (p), and 4th deriv
+          elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
+          elem(ie)%state%v(:,:,:,k,np1)=0.0D0
+       end do
+    end do
+
+    pmean = 0
+  end subroutine nonrot_init_state
+
   !balu Peixoto, Thuburn, 2017 variation of Williamson, 1992 tc2
   subroutine tc2_init_state2(elem,nets,nete,pmean)
     type(element_t), intent(inout) :: elem(:)
@@ -1332,6 +1479,7 @@ contains
 
   end function tc2_geopotential
 
+
   ! ===========================================
 
   function tc2_phi(sphere) result(p)
@@ -1397,10 +1545,55 @@ contains
           cslon = COS(sphere(i,j)%lon)
 
           fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + snlat*csalpha)
+
        end do
     end do
 
   end function tc2_coreolis_init
+  ! ========================================
+  ! tc2_coreolis_init:
+  !
+  ! Initialize coreolis term for test case 2
+  ! for initializing initial velocity field, avoiding division by 0 (f) at equator
+  ! ========================================
+
+  function tc2_coreolis_init_prtrbvel(sphere) result(fcor)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind) :: fcor(np,np)
+
+    ! Local variables
+
+    real (kind=real_kind) :: cslon
+    real (kind=real_kind) :: snlat
+    real (kind=real_kind) :: cslat
+    real (kind=real_kind) :: csalpha
+    real (kind=real_kind) :: snalpha
+    integer                  :: i,j
+
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+
+    do j=1,np
+       do i=1,np
+          snlat = SIN(sphere(i,j)%lat)
+          cslat = COS(sphere(i,j)%lat)
+          cslon = COS(sphere(i,j)%lon)
+
+          fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + snlat*csalpha)
+          !JRUB
+          if ((sphere(i,j)%lat .GT. -0.26).AND.(sphere(i,j)%lat .LE. 0)) then
+             fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + SIN(-0.26)*csalpha)
+          endif
+
+          if ((sphere(i,j)%lat .LT. 0.26).AND.(sphere(i,j)%lat .GT. 0)) then
+             fcor(i,j) = 2.0D0*omega*(-cslon*cslat*snalpha + SIN(0.26)*csalpha)
+          endif
+          !JRUB
+       end do
+    end do
+
+  end function tc2_coreolis_init_prtrbvel
 
 
   ! ===========================================
