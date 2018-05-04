@@ -79,8 +79,7 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist, \\
-        clean_depends, save_build_provenance = parse_command_line(sys.argv, description)
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot, read_only=False) as case:
