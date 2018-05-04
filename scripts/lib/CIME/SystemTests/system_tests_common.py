@@ -119,8 +119,10 @@ class SystemTestsCommon(object):
         """
         Perform an individual build
         """
+        model = self._case.get_value('MODEL')
         build.case_build(self._caseroot, case=self._case,
-                         sharedlib_only=sharedlib_only, model_only=model_only)
+                         sharedlib_only=sharedlib_only, model_only=model_only,
+                         save_build_provenance=not model=='cesm')
 
     def clean_build(self, comps=None):
         if comps is None:
