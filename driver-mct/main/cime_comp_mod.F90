@@ -3758,6 +3758,12 @@ contains
 
              if (t1yr_alarm) then
                 call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
+                ! We need to pass in tbnds1_offset because (unlike with most
+                ! seq_hist_writeaux calls) here we don't call seq_hist_writeaux every time
+                ! step, so the automatically determined lower time bound can be wrong. For
+                ! typical runs with a noleap calendar, we want tbnds1_offset =
+                ! -365. However, to determine this more generally, based on the calendar
+                ! we're using, we call this shr_cal routine.
                 call shr_cal_ymds2rday_offset(etime=etime_curr, &
                      rdays_offset = tbnds1_offset, &
                      years_offset = -1)
