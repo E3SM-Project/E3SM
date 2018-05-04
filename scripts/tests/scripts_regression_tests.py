@@ -1561,6 +1561,8 @@ class K_TestCimeCase(TestCreateTestCommon):
                               from_dir=SCRIPT_DIR)
 
         with Case(testdir, read_only=False) as case:
+            if case.get_value("depend_string") is None:
+                self.skipTest("Skipping prereq test, depend_string was not provided for this batch system")
             job_name = "case.run"
             prereq_name = 'prereq_test'
             batch_commands = case.submit_jobs(prereq=prereq_name, job=job_name, skip_pnl=True, dry_run=True)
@@ -1576,7 +1578,7 @@ class K_TestCimeCase(TestCreateTestCommon):
                 self.assertTrue(isinstance(batch_cmd[1], six.string_types), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
                 batch_cmd_args = batch_cmd[1]
 
-                jobid_ident = 'jobid'
+                jobid_ident = "jobid"
                 dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
                 self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
                 dep_str = dep_str_fmt[:dep_str_fmt.index(jobid_ident)]
@@ -1590,6 +1592,60 @@ class K_TestCimeCase(TestCreateTestCommon):
                         break
 
                 self.assertTrue(prereq_name in prereq_substr, "Dependencies added, but not the user specified one")
+
+    ###########################################################################
+    def test_cime_case_allow_failed_prereq(self):
+    ###########################################################################
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
+        testcase_name = 'failed_prereq_test'
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
+                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
+                              from_dir=SCRIPT_DIR)
+
+        with Case(testdir, read_only=False) as case:
+            depend_allow = case.get_value("depend_allow_string")
+            if depend_allow is None:
+                self.skipTest("Skipping allow_failed_prereq test, depend_allow_string was not provided for this batch system")
+            job_name = "case.run"
+            prereq_name = "prereq_allow_fail_test"
+            depend_allow = depend_allow.replace("jobid", prereq_name)
+            batch_commands = case.submit_jobs(prereq=prereq_name, allow_fail=True, job=job_name, skip_pnl=True, dry_run=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            self.assertTrue(len(batch_commands) == 1, "case.submit_jobs did not return any job submission strings")
+            self.assertTrue(depend_allow in batch_commands[0][1])
+
+    ###########################################################################
+    def test_cime_case_resubmit_immediate(self):
+    ###########################################################################
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
+        testcase_name = 'resubmit_immediate_test'
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
+                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
+                              from_dir=SCRIPT_DIR)
+
+        with Case(testdir, read_only=False) as case:
+            depend_string = case.get_value("depend_string")
+            if depend_string is None:
+                self.skipTest("Skipping resubmit_immediate test, depend_string was not provided for this batch system")
+            depend_string = depend_string.replace("jobid", "")
+            job_name = "case.run"
+            prereq_name = "resubmit_immediate_test"
+            num_submissions = 6
+            case.set_value("RESUBMIT", num_submissions - 1)
+            batch_commands = case.submit_jobs(job=job_name, skip_pnl=True, dry_run=True, resubmit_immediate=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return {} submitted jobs".format(num_submissions))
+            for i, cmd in enumerate(batch_commands):
+                if i > 0:
+                    self.assertTrue(depend_string in cmd[1])
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
