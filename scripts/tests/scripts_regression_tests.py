@@ -1547,19 +1547,23 @@ class K_TestCimeCase(TestCreateTestCommon):
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
 
-    ###########################################################################
-    def test_cime_case_prereq(self):
-    ###########################################################################
+    def _batch_test_fixture(self, testcase_name):
         if not MACHINE.has_batch_system() or NO_BATCH:
             self.skipTest("Skipping testing user prerequisites without batch systems")
-        testcase_name = 'prereq_test'
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
-                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
+        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+                                     "--compset X --res f19_g16 --output-root {}").format(
+                                         SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
+        return testdir
 
+    ###########################################################################
+    def test_cime_case_prereq(self):
+    ###########################################################################
+        testcase_name = 'prereq_test'
+        testdir = self._batch_test_fixture(testcase_name)
         with Case(testdir, read_only=False) as case:
             if case.get_value("depend_string") is None:
                 self.skipTest("Skipping prereq test, depend_string was not provided for this batch system")
@@ -1596,16 +1600,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_allow_failed_prereq(self):
     ###########################################################################
-        if not MACHINE.has_batch_system() or NO_BATCH:
-            self.skipTest("Skipping testing user prerequisites without batch systems")
-        testcase_name = 'failed_prereq_test'
-        testdir = os.path.join(TEST_ROOT, testcase_name)
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
-                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
-                              from_dir=SCRIPT_DIR)
-
+        testcase_name = 'allow_failed_prereq_test'
+        testdir = self._batch_test_fixture(testcase_name)
         with Case(testdir, read_only=False) as case:
             depend_allow = case.get_value("depend_allow_string")
             if depend_allow is None:
@@ -1621,16 +1617,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_resubmit_immediate(self):
     ###########################################################################
-        if not MACHINE.has_batch_system() or NO_BATCH:
-            self.skipTest("Skipping testing user prerequisites without batch systems")
         testcase_name = 'resubmit_immediate_test'
-        testdir = os.path.join(TEST_ROOT, testcase_name)
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
-                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
-                              from_dir=SCRIPT_DIR)
-
+        testdir = self._batch_test_fixture(testcase_name)
         with Case(testdir, read_only=False) as case:
             depend_string = case.get_value("depend_string")
             if depend_string is None:
