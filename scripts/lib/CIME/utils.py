@@ -1563,6 +1563,24 @@ def stringify_bool(val):
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
 
+def indent_string(the_string, indent_level):
+    """Indents the given string by a given number of spaces
+
+    Args:
+       the_string: str
+       indent_level: int
+
+    Returns a new string that is the same as the_string, except that
+    each line is indented by 'indent_level' spaces.
+
+    In python3, this can be done with textwrap.indent.
+    """
+
+    lines = the_string.splitlines(True)
+    padding = ' ' * indent_level
+    lines_indented = [padding + line for line in lines]
+    return ''.join(lines_indented)
+
 def verbatim_success_msg(return_val):
     return return_val
 
