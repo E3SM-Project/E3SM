@@ -1839,6 +1839,7 @@ contains
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
            this%sminn_col(c) + &
+           this%totprodn_col(c) + &
            this%totvegn_col(c)
 
       ! total column nitrogen, including pft (TOTCOLN)

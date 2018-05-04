@@ -3285,6 +3285,7 @@ contains
             this%cwdc_col(c)     + &
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
+            this%totprodc_col(c) + &
             this%totvegc_col(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)

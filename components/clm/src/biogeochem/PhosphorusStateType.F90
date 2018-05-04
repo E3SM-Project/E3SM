@@ -1861,6 +1861,7 @@ contains
            this%secondp_col(c) + &
            this%primp_col(c) + &
            this%occlp_col(c) + &
+           this%totprodp_col(c) + &
            this%totvegp_col(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
