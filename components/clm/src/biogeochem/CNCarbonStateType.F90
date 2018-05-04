@@ -3023,6 +3023,7 @@ contains
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
+    real(r8) :: cropseedc_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     ! calculate patch -level summary of carbon state
@@ -3075,10 +3076,6 @@ contains
             this%dispvegc_patch(p) + &
             this%storvegc_patch(p)
 
-       if (use_crop) then
-          this%totvegc_patch(p) = this%totvegc_patch(p) + this%cropseedc_deficit_patch(p)
-       end if
-
        ! total pft-level carbon, including xsmrpool, ctrunc
        this%totpftc_patch(p) = &
             this%totvegc_patch(p) + &
@@ -3119,7 +3116,9 @@ contains
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
 
-
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
+         cropseedc_deficit_col(bounds%begc:bounds%endc))
 
     ! column level summary
 
@@ -3296,7 +3295,8 @@ contains
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
             this%prod1c_col(c)   + &
-            this%ctrunc_col(c)
+            this%ctrunc_col(c)   + &
+            cropseedc_deficit_col(c)
             
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &

@@ -1573,6 +1573,7 @@ contains
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    real(r8) :: cropseedp_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1620,10 +1621,6 @@ contains
            this%dispvegp_patch(p) + &
            this%storvegp_patch(p)
 
-      if (use_crop) then
-         this%totvegp_patch(p) = this%totvegp_patch(p) + this%cropseedp_deficit_patch(p)
-      end if
-
       ! total pft-level carbon (add pft_ntrunc)
       this%totpftp_patch(p) = &
            this%totvegp_patch(p) + &
@@ -1638,6 +1635,10 @@ contains
    call p2c(bounds, num_soilc, filter_soilc, &
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%cropseedp_deficit_patch(bounds%begp:bounds%endp), &
+        cropseedp_deficit_col(bounds%begc:bounds%endc))
 
    ! vertically integrate soil mineral P pools
 
@@ -1872,7 +1873,8 @@ contains
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
-           this%ptrunc_col(c)
+           this%ptrunc_col(c) + &
+           cropseedp_deficit_col(c)
    end do
 
  end subroutine Summary
