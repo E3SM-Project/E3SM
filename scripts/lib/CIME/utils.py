@@ -61,9 +61,9 @@ class IndentFormatter(logging.Formatter):
         logging.Formatter.__init__(self, fmt, datefmt)
         self._indent = indent
 
-    def format(self, rec):
-        rec.msg = "{}{}".format(self._indent, rec.msg)
-        out = logging.Formatter.format(self, rec)
+    def format(self, record):
+        record.msg = "{}{}".format(self._indent, record.msg)
+        out = logging.Formatter.format(self, record)
         return out
 
 def set_logger_indent(indent):
