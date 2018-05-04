@@ -3,7 +3,10 @@
 #endif
 
 module edge_mod_base
-
+!
+! Revisions
+!   2018/3 Mark Taylor:  update FreeEdgeBuffer to fix memory leak
+!
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
@@ -434,6 +437,16 @@ endif
     deallocate(edge%putmap)
     deallocate(edge%getmap)
     deallocate(edge%reverse)
+
+    deallocate(edge%moveLength)
+    deallocate(edge%movePtr)
+
+    deallocate(edge%Srequest)
+    deallocate(edge%Rrequest)
+    deallocate(edge%status)
+
+
+
 #if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
