@@ -28,7 +28,7 @@ module CNNStateUpdate1Mod
   use clm_varctl             , only : NFIX_PTASE_plant
   use decompMod              , only : bounds_type
   use clm_varcon             , only : dzsoi_decomp
-  use clm_varctl             , only : use_ed
+  use clm_varctl             , only : use_fates
   !
   implicit none
   save
@@ -72,7 +72,7 @@ contains
 
       dt = real( get_step_size(), r8 )
 
-      if (.not.use_ed) then
+      if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
             ns%seedn_grc(g) = ns%seedn_grc(g) &
