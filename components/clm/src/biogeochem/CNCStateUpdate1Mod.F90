@@ -68,7 +68,7 @@ contains
 
       dt = real( get_step_size(), r8 )
 
-      if (.not.use_ed) then
+      if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
             cs%seedc_grc(g) = cs%seedc_grc(g) &

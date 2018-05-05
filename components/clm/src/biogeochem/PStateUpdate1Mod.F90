@@ -28,7 +28,7 @@ module PStateUpdate1Mod
   use clm_varctl             , only : forest_fert_exp
   use decompMod              , only : bounds_type
   use clm_varcon             , only : dzsoi_decomp
-  use clm_varctl             , only : use_ed
+  use clm_varctl             , only : use_fates
   !
   implicit none
   save
@@ -70,7 +70,7 @@ contains
 
       dt = real( get_step_size(), r8 )
 
-      if (.not.use_ed) then
+      if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
             ps%seedp_grc(g) = ps%seedp_grc(g) &

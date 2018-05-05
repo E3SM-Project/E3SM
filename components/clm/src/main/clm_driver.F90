@@ -354,7 +354,7 @@ contains
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     call t_stopf('dyn_subgrid')
 
-    if (.not. use_ed)then
+    if (.not. use_fates)then
        if (use_cn) then
           nstep = get_nstep()
 
