@@ -395,7 +395,7 @@ contains
       enddo
       call limiter2d_zero(state_Qdp,2,nt_qdp)
       call t_startf('ah_scalar_PEU')
-      call edgeVpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,qsize*nlev,1,nelemd,2,nt_qdp)
       !$omp end master
       !$omp barrier
 
@@ -405,7 +405,7 @@ contains
       
       !$omp barrier
       !$omp master
-      call edgeVunpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVunpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,qsize*nlev,1,nelemd,2,nt_qdp)
       call t_stopf('ah_scalar_PEU')
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:))
       do ie = 1 , nelemd
@@ -749,7 +749,7 @@ contains
   ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
-  call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , nlev*qsize , 1 , nelemd , 2 , np1_qdp )
   !$omp end master
   !$omp barrier
 
@@ -759,7 +759,7 @@ contains
 
   !$omp barrier
   !$omp master
-  call edgeVunpack_openacc( edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVunpack_openacc( edgeAdv , state_Qdp , nlev*qsize , 0 , nlev*qsize , 1 , nelemd , 2 , np1_qdp )
   call t_stopf('eus_PEU')
   !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:))
   do ie = 1 , nelemd
@@ -925,7 +925,7 @@ contains
     use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
-    use edge_mod              , only: edgeVpack, edgeVunpack
+    use edge_mod              , only: edgeVpack_nlyr, edgeVunpack_nlyr
     use bndry_mod             , only: bndry_exchangeV
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
@@ -957,17 +957,17 @@ contains
         elem(ie)%derived%omega_p(:,:,k)      = elem(ie)%spheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)      
         elem(ie)%derived%divdp_proj(:,:,k)   = elem(ie)%spheremp(:,:) * elem(ie)%derived%divdp_proj(:,:,k)   
       enddo
-      call edgeVpack( edgeAdv3 , elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , ie )
-      call edgeVpack( edgeAdv3 , elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , ie )
-      call edgeVpack( edgeAdv3 , elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , ie )
+      call edgeVpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , 3*nlev )
+      call edgeVpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , 3*nlev )
+      call edgeVpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , 3*nlev )
     enddo
 
     call bndry_exchangeV( hybrid , edgeAdv3   )
 
     do ie = nets , nete
-      call edgeVunpack( edgeAdv3 , elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , ie )
-      call edgeVunpack( edgeAdv3 , elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , ie )
-      call edgeVunpack( edgeAdv3 , elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , ie )
+      call edgeVunpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , 3*nlev )
+      call edgeVunpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , 3*nlev )
+      call edgeVunpack_nlyr( edgeAdv3 , elem(ie)%desc, elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , 3*nlev )
       do k = 1 , nlev
         elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%rspheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k) 
         elem(ie)%derived%omega_p(:,:,k)      = elem(ie)%rspheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)      
