@@ -1,8 +1,9 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
+!
+!  MT 2018/5 updated to use pack/unpack with variable nlyr 
+!
 module edge_mod
   use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, &
                            edgeVpack, edgeVunpack, edgeVpack_nlyr, edgeVunpack_nlyr,       &
@@ -231,10 +232,9 @@ contains
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
     call t_startf('edge_pack')
-    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
-    !nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
-    edge%nlyr=nlyr  ! total amount packed. might be less than nlyr_max
+    edge%nlyr=nlyr  ! set total amount packed for use by bndry_exchange
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
     do el = nets , nete
       desc => edge%desc(el)
@@ -299,8 +299,8 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack')
-    !nlyr = edge%nlyr_max
-    if (edge%nlyr_max < nlyr ) call haltmp('edgeVunpack_openacc: Buffer overflow: size of the vertical dimension must be increased!')
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       desc => edge%desc(el)
