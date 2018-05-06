@@ -32,8 +32,6 @@ module edge_mod
   public :: edgeSunpackMax_openacc
   public :: edgeVpack_openacc
   public :: edgeVunpack_openacc
-  public :: edgeVunpackMin_openacc
-  public :: edgeVunpackMax_openacc
 
 
 contains
@@ -215,7 +213,7 @@ contains
     call t_stopf('edge_s_unpack_max')
   end subroutine edgeSunpackMax_openacc
 
-  subroutine edgeVpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -223,19 +221,20 @@ contains
     use element_mod   , only : Element_t
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
-    integer                ,intent(in   ) :: vlyr
+    integer                ,intent(in   ) :: vlyr,nlyr
     integer                ,intent(in   ) :: kptr
-    type(element_t)        ,intent(in   ) :: elem(:)
+!    type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
     real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     ! Local variables
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk,nlyr
+    integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
     call t_startf('edge_pack')
-    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
-    nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
-    edge%nlyr=nlyr
+    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
+    !nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
+    edge%nlyr=nlyr  ! total amount packed. might be less than nlyr_max
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
     do el = nets , nete
       desc => edge%desc(el)
@@ -282,7 +281,7 @@ contains
     call t_stopf('edge_pack')
   end subroutine edgeVpack_openacc
 
-  subroutine edgeVunpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -290,17 +289,18 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    integer               , intent(in   ) :: kptr
-    type(element_t)        ,intent(in   ) :: elem(:)
+    integer               , intent(in   ) :: kptr, nlyr
+    !type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
     real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j,nlyr
+    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack')
-    nlyr = edge%nlyr_max
+    !nlyr = edge%nlyr_max
+    if (edge%nlyr_max < nlyr ) call haltmp('edgeVunpack_openacc: Buffer overflow: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       desc => edge%desc(el)
@@ -362,164 +362,6 @@ contains
     call t_stopf('edge_unpack')
   end subroutine edgeVunpack_openacc
 
-  subroutine edgeVunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    use perf_mod, only: t_startf, t_stopf
-    use element_mod   , only : Element_t
-    use edgetype_mod  , only : EdgeBuffer_t
-    type(EdgeBuffer_t)    , intent(in   ) :: edge
-    integer               , intent(in   ) :: vlyr
-    integer               , intent(in   ) :: kptr
-    type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
-    ! Local
-    type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j,nlyr
-    integer, parameter :: kchunk = 32
-    real(kind=real_kind) :: vtmp(np,np,kchunk)
-    call t_startf('edge_unpack_min')
-    nlyr=edge%nlyr_max ! amount packed. this should be made a paramter, following edgevpack_nlyr()
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
-    do el = nets , nete
-      desc => edge%desc(el)
-      do kc = 1 , vlyr/kchunk+1
-        !$acc cache(vtmp)
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do j = 1 , np
-            do i = 1 , np
-              loc_ind = ((j-1)*np+i-1)*kchunk+kk-1
-              ii = modulo(loc_ind,np)+1
-              jj = modulo(loc_ind/np,np)+1
-              k = loc_ind/np/np+1
-              glob_k = (kc-1)*kchunk+k
-              if (glob_k > vlyr) glob_k = vlyr
-              vtmp(ii,jj,k) = v(ii,jj,glob_k,tl,el)
-            enddo
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do i = 1 , np
-            k = (kc-1)*kchunk+kk
-            if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = min( vtmp(i ,1 ,kk) , edge%receive(nlyr*desc%getmapP(south)+np*(kptr+k-1)+i) )
-              vtmp(np,i ,kk) = min( vtmp(np,i ,kk) , edge%receive(nlyr*desc%getmapP(east )+np*(kptr+k-1)+i) )
-              vtmp(i ,np,kk) = min( vtmp(i ,np,kk) , edge%receive(nlyr*desc%getmapP(north)+np*(kptr+k-1)+i) )
-              vtmp(1 ,i ,kk) = min( vtmp(1 ,i ,kk) , edge%receive(nlyr*desc%getmapP(west )+np*(kptr+k-1)+i) )
-            endif
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do i = 1 , max_corner_elem
-            k = (kc-1)*kchunk+kk
-            if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(1  ,1 ,kk) = min( vtmp(1 ,1 ,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(np ,1 ,kk) = min( vtmp(np,1 ,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(1  ,np,kk) = min( vtmp(1 ,np,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(np ,np,kk) = min( vtmp(np,np,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-            endif
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do j = 1 , np
-            do i = 1 , np
-              loc_ind = ((j-1)*np+i-1)*kchunk+kk-1
-              ii = modulo(loc_ind,np)+1
-              jj = modulo(loc_ind/np,np)+1
-              k = loc_ind/np/np+1
-              glob_k = (kc-1)*kchunk+k
-              if (glob_k <= vlyr) v(ii,jj,glob_k,tl,el) = vtmp(ii,jj,k)
-            enddo
-          enddo
-        enddo
-      enddo
-    enddo
-    call t_stopf('edge_unpack_min')
-  end subroutine edgeVunpackMin_openacc
-
-  subroutine edgeVunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    use perf_mod, only: t_startf, t_stopf
-    use element_mod   , only : Element_t
-    use edgetype_mod  , only : EdgeBuffer_t
-    type(EdgeBuffer_t)    , intent(in   ) :: edge
-    integer               , intent(in   ) :: vlyr
-    integer               , intent(in   ) :: kptr
-    type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
-    ! Local
-    type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j, nlyr
-    integer, parameter :: kchunk = 32
-    real(kind=real_kind) :: vtmp(np,np,kchunk)
-    call t_startf('edge_unpack_max')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
-    do el = nets , nete
-      desc => edge%desc(el)
-      do kc = 1 , vlyr/kchunk+1
-        !$acc cache(vtmp)
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do j = 1 , np
-            do i = 1 , np
-              loc_ind = ((j-1)*np+i-1)*kchunk+kk-1
-              ii = modulo(loc_ind,np)+1
-              jj = modulo(loc_ind/np,np)+1
-              k = loc_ind/np/np+1
-              glob_k = (kc-1)*kchunk+k
-              if (glob_k > vlyr) glob_k = vlyr
-              vtmp(ii,jj,k) = v(ii,jj,glob_k,tl,el)
-            enddo
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do i = 1 , np
-            k = (kc-1)*kchunk+kk
-            if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = max( vtmp(i ,1 ,kk) , edge%receive(nlyr*desc%getmapP(south)+np*(kptr+k-1)+i) )
-              vtmp(np,i ,kk) = max( vtmp(np,i ,kk) , edge%receive(nlyr*desc%getmapP(east )+np*(kptr+k-1)+i) )
-              vtmp(i ,np,kk) = max( vtmp(i ,np,kk) , edge%receive(nlyr*desc%getmapP(north)+np*(kptr+k-1)+i) )
-              vtmp(1 ,i ,kk) = max( vtmp(1 ,i ,kk) , edge%receive(nlyr*desc%getmapP(west )+np*(kptr+k-1)+i) )
-            endif
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do i = 1 , max_corner_elem
-            k = (kc-1)*kchunk+kk
-            if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(1  ,1 ,kk) = max( vtmp(1 ,1 ,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(np ,1 ,kk) = max( vtmp(np,1 ,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(1  ,np,kk) = max( vtmp(1 ,np,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(desc%getmapP(ll) /= -1) vtmp(np ,np,kk) = max( vtmp(np,np,kk) , edge%receive(nlyr*desc%getmapP(ll)+max_corner_elem*(kptr+k-1)+i) )
-            endif
-          enddo
-        enddo
-        !$acc loop vector collapse(2)
-        do kk = 1 , kchunk
-          do j = 1 , np
-            do i = 1 , np
-              loc_ind = ((j-1)*np+i-1)*kchunk+kk-1
-              ii = modulo(loc_ind,np)+1
-              jj = modulo(loc_ind/np,np)+1
-              k = loc_ind/np/np+1
-              glob_k = (kc-1)*kchunk+k
-              if (glob_k <= vlyr) v(ii,jj,glob_k,tl,el) = vtmp(ii,jj,k)
-            enddo
-          enddo
-        enddo
-      enddo
-    enddo
-    call t_stopf('edge_unpack_max')
-  end subroutine edgeVunpackMax_openacc
 
 end module edge_mod
 

@@ -63,7 +63,7 @@ contains
     !$omp master
     call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
     call t_startf('biwksc_PEU')
-    call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,qsize*nlev,nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -73,7 +73,7 @@ contains
     
     !$omp barrier
     !$omp master
-    call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,qsize*nlev,nets,nete,1,1)
     call t_stopf('biwksc_PEU')
     !$acc parallel loop gang vector collapse(5) present(qtens,elem(:))
     do ie = nets , nete
