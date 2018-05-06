@@ -7,7 +7,6 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 from standard_script_setup import *
 from CIME.case        import Case
 from six.moves import configparser
-import six
 
 ###############################################################################
 def parse_command_line(args, description):
