@@ -3,6 +3,7 @@ module edgetype_mod
 
   use kinds, only : int_kind, log_kind, real_kind
   use coordinate_systems_mod, only : cartesian3D_t
+  use dimensions_mod, only : max_neigh_edges
 
   implicit none 
   private 
@@ -12,17 +13,17 @@ module edgetype_mod
 
   type, public :: EdgeDescriptor_t
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind), pointer  :: putmapP(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP(:) => null()
-     integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: putmapS(:) => null()
-     integer(kind=int_kind), pointer  :: getmapS(:) => null()
-     integer(kind=int_kind), pointer  :: globalID(:) => null()
-     integer(kind=int_kind), pointer  :: loc2buf(:) => null()
+     integer(kind=int_kind)  :: putmapP(max_neigh_edges)
+     integer(kind=int_kind)  :: getmapP(max_neigh_edges)
+     integer(kind=int_kind)  :: putmapP_ghost(max_neigh_edges)
+     integer(kind=int_kind)  :: getmapP_ghost(max_neigh_edges) 
+     integer(kind=int_kind)  :: putmapS(max_neigh_edges) 
+     integer(kind=int_kind)  :: getmapS(max_neigh_edges) 
+     integer(kind=int_kind)  :: globalID(max_neigh_edges)
+     integer(kind=int_kind)  :: loc2buf(max_neigh_edges)
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
-     logical(kind=log_kind), pointer  :: reverse(:) => null()
+     logical(kind=log_kind)  :: reverse(max_neigh_edges)
   end type EdgeDescriptor_t
 
   type, public :: EdgeBuffer_t
