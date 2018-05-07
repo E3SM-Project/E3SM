@@ -271,9 +271,9 @@ class EnvBatch(EnvBase):
                     queue = self.text(default_queue_node)
                     walltime = self.get_queue_specs(queue)[3]
 
+            specs = self.get_queue_specs(queue)
             if walltime is None:
                 # Figure out walltime
-                specs = self.get_queue_specs(queue)
                 if specs is None:
                     # Queue is unknown, use specs from default queue
                     walltime = self.get(self.get_default_queue(), "walltimemax")
