@@ -286,7 +286,7 @@ class GenericXML(object):
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             if outfile is sys.stdout:
-                print run_cmd_no_fail("{} --format -".format(xmllint), input_str=xmlstr)
+                print(run_cmd_no_fail("{} --format -".format(xmllint), input_str=xmlstr))
             else:
                 run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
         else:
