@@ -115,4 +115,7 @@ preqx_acc_setup()
 createTestExec(preqx_acc preqx_acc ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
+if (NETCDF_LINKER_FLAGS)
+  target_link_libraries(preqx_acc "${NETCDF_LINKER_FLAGS}")
+endif()
 

@@ -281,6 +281,9 @@ contains
     !$acc enter data pcopyin(hvcoord%dp0)
     !$acc enter data pcopyin(edgeMinMax         ,edge_g)
     !$acc enter data pcopyin(edgeMinMax%desc    ,edge_g%desc)
+    do ie = 1 , nelemd
+    !$acc enter data pcopyin(edgeMinMax%desc(ie)    ,edge_g%desc(ie))
+    enddo
     !$acc enter data pcopyin(edgeMinMax%moveLength    ,edge_g%moveLength)
     !$acc enter data pcopyin(edgeMinMax%movePtr0      ,edge_g%movePtr0)
     !$acc enter data pcopyin(edgeMinMax%srequest,edge_g%srequest)

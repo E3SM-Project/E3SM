@@ -1,0 +1,9 @@
+#!/bin/bash
+
+source /usr/share/modules/init/bash
+module purge
+module load pgi/17.10
+module load openmpi/pgi_2.1.2
+module load netcdf
+
+pgf90 -I$NETCDF_DIR/include -o diff_timeline diff_timeline.F90 `nf-config --flibs` `nc-config --libs`
