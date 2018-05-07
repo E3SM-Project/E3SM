@@ -282,7 +282,7 @@ class EnvBatch(EnvBase):
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
-            self.set_value("JOB_QUEUE", queue, subgroup=job)
+            self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
