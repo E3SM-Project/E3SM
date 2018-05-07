@@ -29,12 +29,9 @@ module dimensions_mod
   integer, parameter, public :: nlev=PLEV
   integer, parameter, public :: nlevp=nlev+1
 
-!  params for a cubed sphere mesh 
-!  integer, public, parameter :: max_elements_attached_to_node = 7
-!  integer, public, parameter :: s_nv = 2*max_elements_attached_to_node 
-! params for RRM meshes
-  integer, parameter, public  :: max_elements_attached_to_node = 4
-  integer, parameter, public  :: s_nv = 6
+!  integer, public, parameter :: max_elements_attached_to_node = 4 ! cubed sphere mesh
+  integer, parameter, public  :: max_elements_attached_to_node = 7 ! RRM meshes
+  integer, public, parameter :: s_nv = 2*max_elements_attached_to_node 
   integer, parameter, public  :: max_corner_elem               = max_elements_attached_to_node-3
   integer, parameter, public  :: max_neigh_edges               = 4 + 4*max_corner_elem
 
