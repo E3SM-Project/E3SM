@@ -516,7 +516,7 @@ module li_advection
    !--------------------------------------------------------------------
     end subroutine li_advection_thickness_tracers
 
-    
+
 !***********************************************************************
 !
 !  subroutine li_update_geometry
@@ -569,7 +569,7 @@ module li_advection
      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
 
-     ! Lower surface is based on floatation for floating ice.  
+     ! Lower surface is based on floatation for floating ice.
      ! For grounded ice (and non-ice areas) it is the bed.
      where ( li_mask_is_floating_ice(cellMask) )
         lowerSurface = config_sea_level - thickness * (config_ice_density / config_ocean_density)
@@ -586,7 +586,7 @@ module li_advection
 
      ! Upper surface is the lower surface plus the thickness
      upperSurface(:) = lowerSurface(:) + thickness(:)
-     
+
    !--------------------------------------------------------------------
    end subroutine li_update_geometry
 
@@ -1253,7 +1253,8 @@ module li_advection
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
-            call mpas_log_write('In advect_thickness_tracer, iCell (local=$i, global=$i) =', intArgs=(/iCell, indexToCellID(iCell)/))
+            call mpas_log_write('In advect_thickness_tracer, iCell (local=$i, global=$i) =', &
+               intArgs=(/iCell, indexToCellID(iCell)/))
             call mpas_log_write('k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, ' // &
                'thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:')
          endif
@@ -1295,7 +1296,8 @@ module li_advection
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
-                  call mpas_log_write("$i $i $r $r $r $r $r", intArgs=(/k, iEdgeOnCell/), realArgs=(/layerNormalVelocity(k,iEdge), &
+                  call mpas_log_write("$i $i $r $r $r $r $r", &
+                        intArgs=(/k, iEdgeOnCell/), realArgs=(/layerNormalVelocity(k,iEdge), &
                         layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency, thicknessTracerTendency(1)/) )
                endif
 
@@ -1655,7 +1657,8 @@ module li_advection
             difference = abs(finalEnergySum - initEnergySum)
             if (initEnergySum > eps11) then
                if (difference/initEnergySum > eps11) then
-                  call mpas_log_write('vertical_remap, mass*tracer conservation error, iCell = $i', MPAS_LOG_WARN, intArgs=(/iCell/))
+                  call mpas_log_write('vertical_remap, mass*tracer conservation error, iCell = $i', &
+                     MPAS_LOG_WARN, intArgs=(/iCell/))
                   call mpas_log_write('init energy, final energy, difference: $r $r $r', &
                      realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
                endif

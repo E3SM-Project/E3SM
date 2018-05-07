@@ -568,11 +568,11 @@ contains
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
                 deltat, err_albany)  ! return values
-!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
 
           if (err_tmp > 0) then
-             call mpas_log_write("Albany velocity solve encountered an error!  Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+             call mpas_log_write("Albany velocity solve encountered an error!  " // &
+                "Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
           endif
           err = ior(err,err_tmp)
 

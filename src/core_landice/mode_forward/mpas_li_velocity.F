@@ -381,7 +381,7 @@ contains
          maxThicknessOnProc = 0.0_RKIND  ! initialize to
          procDynamicVertexMaskChanged = 0
          procDirichletMaskChanged = 0
- 
+
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -439,7 +439,7 @@ contains
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
          call mpas_timer_stop("halo updates")
- 
+
          ! Determine if the vertex mask has changed on any processor and store the value for later use
          ! (need to exit the block loop to do so)
          ! TODO Update all blocks with result (if ever support multiple blocks)
@@ -815,8 +815,8 @@ contains
       if (config_beta_use_effective_pressure) then
          call mpas_pool_get_package(liPackages, 'hydroActive', hydroActive)
          if (.not. hydroActive) then
-            call mpas_log_write("config_beta_use_effective_pressure can only be used if the subglacial hydrology model is active.", &
-               MPAS_LOG_ERR)
+            call mpas_log_write("config_beta_use_effective_pressure can only be used if the subglacial hydrology model " // &
+                 "is active.", MPAS_LOG_ERR)
             err = ior(err, 1)
             return
          endif
@@ -843,7 +843,8 @@ contains
                      endif
                   enddo
                   if (nBetaValues > 0) then
-                     betaSolve(iCell) = betaAccum / real(nBetaValues, kind=RKIND)  ! take average of neighboring betas ! TODO: could do this in log space
+                     betaSolve(iCell) = betaAccum / real(nBetaValues, kind=RKIND)  ! take average of neighboring betas
+                     ! <  TODO: could do this in log space
                   endif
                endif ! if iCell is floating
             enddo ! cell loop
