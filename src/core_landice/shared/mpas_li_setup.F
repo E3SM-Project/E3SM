@@ -385,7 +385,8 @@ contains
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
 
-      meshPoolPointer => meshPool ! mpas_wachspress_coordinates expected a pointer to the mesh pool instead of just the mesh pool itself
+      meshPoolPointer => meshPool ! mpas_wachspress_coordinates expected a pointer to the mesh pool
+                                  ! instead of just the mesh pool itself
 
       allocate(vertexCoordsOnCell(3, maxEdges))
 
@@ -525,7 +526,7 @@ contains
           cellIndex = cellsOnVertex(iCell, iVertex)
           baryweight = 0.0_RKIND
           do iCell2 = 1, vertexDegree
-            if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
+            if (iCell2 /= icell) baryweight = baryweight + 0.5_RKIND * kiteAreasOnVertex(iCell2, iVertex)
           enddo
           fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
           weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for obtuse triangles!!!
