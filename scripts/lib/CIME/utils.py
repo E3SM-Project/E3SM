@@ -357,7 +357,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         if logfile:
             expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
         else:
-            expect(False, "{} FAILED, see above")
+            expect(False, "{} FAILED, see above".format(fullcmd))
 
     # refresh case xml object from file
     if case is not None:
