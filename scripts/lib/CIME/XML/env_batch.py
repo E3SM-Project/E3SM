@@ -47,6 +47,10 @@ class EnvBatch(EnvBase):
                     expect(False, "could not interpret format for wallclock time {}".format(value))
                 value = format_time(walltime_format, t_spec, value)
 
+        if item == "JOB_QUEUE":
+            expect(value in self._get_all_queue_names() or ignore_type,
+                   "Unknown Job Queue specified use --force to set")
+
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
             gnodes = self.get_children("group")
@@ -278,7 +282,7 @@ class EnvBatch(EnvBase):
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
-            self.set_value("JOB_QUEUE", queue, subgroup=job)
+            self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
@@ -321,6 +325,9 @@ class EnvBatch(EnvBase):
 
         roots = self.get_children("batch_system")
         queue = self.get_value("JOB_QUEUE", subgroup=job)
+        if not queue in self._get_all_queue_names():
+            qnode = self.get_default_queue()
+            queue = self.text(qnode)
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
@@ -627,16 +634,21 @@ class EnvBatch(EnvBase):
 
         return True
 
-    def select_best_queue(self, num_nodes, num_tasks, walltime=None, job=None):
-        # Make sure to check default queue first.
+    def _get_all_queue_names(self):
         all_queues = []
         all_queues.append( self.get_default_queue())
-        all_queues = all_queues + self.get_all_queues()
+        all_queues = self.get_all_queues()
+        queue_names = []
         for queue in all_queues:
-            if queue is not None:
-                qname = self.text(queue)
-                if self.queue_meets_spec(qname, num_nodes, num_tasks, walltime=walltime, job=job):
-                    return qname
+            queue_names.append(self.text(queue))
+        return queue_names
+
+    def select_best_queue(self, num_nodes, num_tasks, walltime=None, job=None):
+        # Make sure to check default queue first.
+        qnames = self._get_all_queue_names()
+        for qname in qnames:
+            if self.queue_meets_spec(qname, num_nodes, num_tasks, walltime=walltime, job=job):
+                return qname
 
         return None
 
