@@ -475,14 +475,16 @@ module li_time_integration_fe
       ! Check for CFL error before finishing
       if (deltat > allowableAdvecDtOnProc) then
          call mpas_log_write('Advective CFL violation on this processor.  ' // &
-          'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString), MPAS_LOG_ERR)
+            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString), &
+             MPAS_LOG_ERR)
          err = ior(err,1)
       endif
 
       ! Local diffusive CFL info
       if ( (config_adaptive_timestep_include_DCFL) .and. (deltat > allowableDiffDtOnProc) ) then
          call mpas_log_write('Diffusive CFL violation on this processor.  ' // &
-            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString), MPAS_LOG_WARN)
+            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString), &
+            MPAS_LOG_WARN)
       endif
 
       if (err > 0) then
@@ -845,7 +847,9 @@ module li_time_integration_fe
       call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
       err = ior(err,err_tmp)
       if (secondsToNextForceTime - real(floor(secondsToNextForceTime, KIND=8), RKIND) /= 0.0_RKIND) then
-         call mpas_log_write("set_timestep found secondsToNextForceTime not equal to 0.0: $r, decimal part=$r", MPAS_LOG_ERR, realArgs=(/secondsToNextForceTime, secondsToNextForceTime - real(floor(secondsToNextForceTime, KIND=8), RKIND)/))
+         call mpas_log_write("set_timestep found secondsToNextForceTime not equal to 0.0: $r, decimal part=$r", &
+            MPAS_LOG_ERR, realArgs=(/secondsToNextForceTime, secondsToNextForceTime - &
+            real(floor(secondsToNextForceTime, KIND=8), RKIND)/))
          err = ior(err, 1)
       endif
       !print *, proposedDt, secondsToNextForceTime

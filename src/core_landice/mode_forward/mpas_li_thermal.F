@@ -121,7 +121,8 @@ module li_thermal
       character(len=StrKIND), pointer :: &
            config_thermal_solver,                 & ! solver option ('temperature' or 'enthalpy')
            config_temperature_init,               & ! temperature initialization option ('linear' or 'file')
-           config_surface_air_temperature_source, & ! surface air temperature initialization option ('constant' or 'file' or 'lapse')
+           config_surface_air_temperature_source, & ! surface air temperature initialization option
+                                                    ! ('constant' or 'file' or 'lapse')
            config_basal_heat_flux_source            ! basal heat flux initialization option ('constant' or 'file')
 
       real (kind=RKIND), pointer ::  &
@@ -257,7 +258,8 @@ module li_thermal
             if (config_print_thermal_info) &
                call mpas_log_write('Initialize sfc air temp: $r', realArgs=(/config_surface_air_temperature_value/))
          elseif (trim(config_surface_air_temperature_source) == 'lapse') then
-            surfaceAirTemperature(:) = config_surface_air_temperature_value - config_surface_air_temperature_lapse_rate * upperSurface(:)
+            surfaceAirTemperature(:) = config_surface_air_temperature_value - config_surface_air_temperature_lapse_rate &
+               * upperSurface(:)
             if (config_print_thermal_info) &
                call mpas_log_write('Initialize sfc air temp to $r with lapse rate of $r', &
                   realArgs=(/config_surface_air_temperature_value, config_surface_air_temperature_lapse_rate/))
@@ -719,8 +721,8 @@ module li_thermal
            surfaceAirTemperature,    & ! surface air temperature (K)
            basalHeatFlux,            & ! basal heat flux into the ice (W m^{-2}, positive upward)
            basalFrictionFlux,        & ! basal frictional flux into the ice (W m^{-2})
-           surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive down) 
-           basalConductiveFlux,      & ! conductive heat flux at the lower surface (W m^{-2}, positive down) 
+           surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive down)
+           basalConductiveFlux,      & ! conductive heat flux at the lower surface (W m^{-2}, positive down)
            groundedBasalMassBal,     & ! basal mass balance for grounded ice
            floatingBasalMassBal,     & ! basal mass balance for floating ice
            basalWaterThickness,      & ! basal water thickness (m)
@@ -892,7 +894,8 @@ module li_thermal
 
          ! === Update surfaceTemperature if using a lapse rate ===
          if (trim(config_surface_air_temperature_source) == 'lapse') then
-            surfaceAirTemperature(:) = config_surface_air_temperature_value - config_surface_air_temperature_lapse_rate * upperSurface(:)
+            surfaceAirTemperature(:) = config_surface_air_temperature_value - config_surface_air_temperature_lapse_rate &
+               * upperSurface(:)
          endif
 
          ! ================================
@@ -1221,8 +1224,10 @@ module li_thermal
                         call mpas_log_write('config_thermal_thickness: $r', realArgs=(/config_thermal_thickness/))
                         call mpas_log_write(' ')
                         call mpas_log_write('Interior fluxes:')
-                        call mpas_log_write('sfc conductive flx (W/m^2, positive down)=$r', realArgs=(/surfaceConductiveFlux(iCell)/))
-                        call mpas_log_write('bed conductive flx (W/m^2, positive down)=$r', realArgs=(/basalConductiveFlux(iCell)/))
+                        call mpas_log_write('sfc conductive flx (W/m^2, positive down)=$r', &
+                           realArgs=(/surfaceConductiveFlux(iCell)/))
+                        call mpas_log_write('bed conductive flx (W/m^2, positive down)=$r', &
+                           realArgs=(/basalConductiveFlux(iCell)/))
                         call mpas_log_write('column heat dissipation (W/m^2) =$r', realArgs=(/columnHeatDissipation/))
                         call mpas_log_write('Net flux (W/m^2) =$r', realArgs=(/deltaEnergy/deltat/))
                         call mpas_log_write(' ')
@@ -1230,7 +1235,8 @@ module li_thermal
                         call mpas_log_write('initialEnergy (J/m^2) =$r', realArgs=(/initialEnergy/))
                         call mpas_log_write('finalEnergy (J/m^2) =$r', realArgs=(/finalEnergy/))
                         call mpas_log_write(' ')
-                        call mpas_log_write('Energy imbalance (J/m^2)=$r', realArgs=(/finalEnergy - initialEnergy - deltaEnergy/))
+                        call mpas_log_write('Energy imbalance (J/m^2)=$r', &
+                           realArgs=(/finalEnergy - initialEnergy - deltaEnergy/))
                         call mpas_log_write(' ')
                         call mpas_log_write('Basal fluxes:')
                         call mpas_log_write('frictional =$r', realArgs=(/basalFrictionFlux(iCell)/))
@@ -1306,7 +1312,8 @@ module li_thermal
                mintemp = minval(temperature(:,iCell))
 
                if (maxtemp > maxtempThreshold) then
-                  call mpas_log_write('maxtemp > maxtempThreshold: iCell=$i, maxtemp = $r', intArgs=(/iCell/), realArgs=(/maxtemp/))
+                  call mpas_log_write('maxtemp > maxtempThreshold: iCell=$i, maxtemp = $r', intArgs=(/iCell/), &
+                     realArgs=(/maxtemp/))
                   call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                   call mpas_log_write('temperature:')
                   do k = 1, nVertLevels
@@ -1316,7 +1323,8 @@ module li_thermal
                endif
 
                if (mintemp < mintempThreshold) then
-                  call mpas_log_write('mintemp < mintempThreshold: iCell=$i, mintemp = $r', intArgs=(/iCell/), realArgs=(/mintemp/))
+                  call mpas_log_write('mintemp < mintempThreshold: iCell=$i, mintemp = $r', intArgs=(/iCell/), &
+                     realArgs=(/mintemp/))
                   call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                   call mpas_log_write('temperature:')
                   do k = 1, nVertLevels
@@ -1391,7 +1399,7 @@ module li_thermal
 !> \author William Lipscomb
 !> \date   November 2015
 !> \details
-!>  This routine computes basal melting for floating ice. 
+!>  This routine computes basal melting for floating ice.
 !>  The following options are supported:
 !>  (1) Do nothing (config_basal_mass_bal_float = 'none')
 !>  (2) Read melt rate from a file (config_basal_mass_bal_float = 'file')
@@ -1410,7 +1418,7 @@ module li_thermal
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: &
-         domain          !< Input/Output: domain object 
+         domain          !< Input/Output: domain object
 
       !-----------------------------------------------------------------
       ! output variables
@@ -1423,10 +1431,10 @@ module li_thermal
 
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: meshPool 
+      type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: velocityPool   ! needed for mask subroutine
-      type (mpas_pool_type), pointer :: scratchPool 
+      type (mpas_pool_type), pointer :: scratchPool
 
       integer, pointer :: &
            nCellsSolve                 ! number of locally owned cells
@@ -1441,16 +1449,17 @@ module li_thermal
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
            config_sea_level,         & ! sea level (m) relative to z = 0
            config_bmlt_float_flux,   & ! constant heat flux (W/m^2) applied to the base of floating ice; positive upward
-           config_bmlt_float_xlimit    ! x value (m) defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit
+           config_bmlt_float_xlimit    ! x value (m) defining region where bmlt_float_flux is applied;
+                                       !   melt only where abs(x) > xlimit
 
       integer, dimension(:), pointer :: &
            cellMask                    ! bit mask describing whether ice is floating, dynamically active, etc.
-      
+
       type (field1dInteger), pointer :: thermalCellMaskField
 
       integer, dimension(:), pointer :: &
            thermalCellMask             ! mask for thermal calculations
-                                       ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
+                                       ! = 1 where thickness > config_thermal_thickness, elsewhere = 0
 
       real (kind=RKIND), dimension(:), pointer :: &
            xCell                       ! x coordinate for each cell (m)
@@ -1573,7 +1582,7 @@ module li_thermal
          !    endif
          ! enddo
          ! write(stdoutUnit,*) 'Done with basal melt for floating ice'
-         
+
          ! clean up
          call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
 
@@ -1948,7 +1957,8 @@ module li_thermal
         if (config_print_thermal_info) call mpas_log_write('Compute basal friction flux')
 
         ! Compute basal frictional heating for each cell
-        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2 * scyr  ! TODO: If beta units are changed to be SI, remove this factor
+        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2 * scyr
+          ! < TODO: If beta units are changed to be SI, remove this factor
 
         ! Optional debugging output
         if (config_print_thermal_info) then
@@ -3057,7 +3067,9 @@ module li_thermal
       elseif (trim(config_basal_mass_bal_float) == 'seroussi') then
 
          ! Melt rate parameterization from:
-         ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017), Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation, Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
+         ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017),
+         ! Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation,
+         ! Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
          ! for Thwaites Glacier.
          ! Specifically, this is a linear fit of melt with shelf draft from the Supplemental Information, Figure S1.
          ! The linear relation is modified by a:
@@ -3065,9 +3077,12 @@ module li_thermal
          !   * a maximum melt rate (Circumpolar Deep Water saturation)
          !   * a depth below which melt stops increasing (minimum sill height)
 
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', config_basal_mass_bal_seroussi_amplitude) ! meters
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', config_basal_mass_bal_seroussi_period) ! years
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', config_basal_mass_bal_seroussi_phase) ! cycles
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', &
+            config_basal_mass_bal_seroussi_amplitude) ! meters
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', &
+            config_basal_mass_bal_seroussi_period) ! years
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', &
+            config_basal_mass_bal_seroussi_phase) ! cycles
 
          slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate (melt (m/yr) per depth (m))
          interceptSer = -100.0_RKIND  ! depth (m) at which melting goes to 0 (negative meaning below sea level)
@@ -3095,7 +3110,8 @@ module li_thermal
 
                zDraft = lowerSurface(iCell) - config_sea_level
                ! Coefficients for m/yr melt rate (in units of Seroussi figure but without negative meaning melting)
-               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * (max(zDraft, sillDepth) - interceptSer)))
+               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * &
+                  (max(zDraft, sillDepth) - interceptSer)))
 
             endif   ! ice is present
          enddo   ! iCell
@@ -3105,7 +3121,8 @@ module li_thermal
 
       else
 
-         call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // trim(config_basal_mass_bal_float), MPAS_LOG_ERR)
+         call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // &
+            trim(config_basal_mass_bal_float), MPAS_LOG_ERR)
          err = ior(err, 1)
 
       endif   ! config_basal_mass_bal_float

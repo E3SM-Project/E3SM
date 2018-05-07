@@ -169,7 +169,7 @@ contains
       real (kind=RKIND), pointer ::  config_ice_density
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
-      real (kind=RKIND), dimension(:), pointer ::  dvEdge  
+      real (kind=RKIND), dimension(:), pointer ::  dvEdge
       real (kind=RKIND), dimension(:), pointer ::  thickness
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
@@ -177,9 +177,9 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
-      real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed  
+      real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity 
+      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
       real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
 
       ! config options needed
@@ -193,7 +193,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nRegions, nRegionGroups !, maxRegionsInGroup  !! maxRegionsInGroup not needed / used yet
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels
-      integer :: k, iCell, iCell1, iCell2, iEdge 
+      integer :: k, iCell, iCell1, iCell2, iEdge
       integer :: iRegion, iGroup
 
       ! scalars to be calculated here from regional sums
@@ -210,7 +210,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgGroundedBasalMelt
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgSubshelfMelt
       real (kind=RKIND), dimension(:), pointer ::  regionalSurfaceSpeedMax
-      real (kind=RKIND), dimension(:), pointer ::  regionalBasalSpeedMax 
+      real (kind=RKIND), dimension(:), pointer ::  regionalBasalSpeedMax
 
       ! storage for sums over blocks
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionIceArea, blockSumRegionIceVolume
@@ -341,7 +341,7 @@ contains
             ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) &
               * thickness(iCell) * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) )
 
-            ! regional sum of sfc mass balance (kg yr^{-1})  
+            ! regional sum of sfc mass balance (kg yr^{-1})
             blockSumRegionSfcMassBal(iRegion) = blockSumRegionSfcMassBal(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
                 * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * sfcMassBal(iCell) * scyr )
 
@@ -451,7 +451,7 @@ contains
 
         sums = 0.0_RKIND
         reductions = 0.0_RKIND
-  
+
         sums(1) = blockSumRegionIceArea(iRegion)
         sums(2) = blockSumRegionIceVolume(iRegion)
         sums(3) = blockSumRegionGroundedIceArea(iRegion)
@@ -473,7 +473,7 @@ contains
         do while (associated(block))
 
            call mpas_pool_get_subpool(block % structs, 'regionalStatsAM', regionalStatsAMPool)
-  
+
            ! get values from regional stats pool
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceArea', regionalIceArea)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceVolume', regionalIceVolume)
@@ -492,7 +492,7 @@ contains
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalAvgSubshelfMelt', regionalAvgSubshelfMelt)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumCalvingFlux', regionalSumCalvingFlux)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineFlux', regionalSumGroundingLineFlux)
-  
+
            regionalIceArea(iRegion) = reductions(1)
            regionalIceVolume(iRegion) = reductions(2)
            regionalGroundedIceArea(iRegion) = reductions(3)
@@ -556,7 +556,7 @@ contains
            regionalBasalSpeedMax(iRegion) = reductions(3)
            block => block % next
         end do
- 
+
       end do    ! loop over regions
 
       ! deallocate storage for sums over blocks

@@ -456,7 +456,8 @@ module li_core
 
                   ! write the timestamp to file
                   call mpas_new_unit(restartTimestampUnit)
-                  open(restartTimestampUnit, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=err_tmp2)
+                  open(restartTimestampUnit, file=config_restart_timestamp_name, form='formatted', &
+                       status='replace', iostat=err_tmp2)
                   if (err_tmp2 > 0) then
                      call mpas_log_write('Error opening file to write restart timestamp:' // &
                               trim(config_restart_timestamp_name), MPAS_LOG_ERR)
@@ -896,7 +897,7 @@ module li_core
       ! Init for reconstruction of velocity
       !    Note: mpas_init_reconstruct fails with the MISMIP3d periodic mesh
       !      because x_period and y_period are not set properly.
-      !      That should be fixed for that test, but a workaround is to 
+      !      That should be fixed for that test, but a workaround is to
       !      disable these two calls for those runs.
       call mpas_rbf_interp_initialize(meshPool)
       call mpas_init_reconstruct(meshPool)
@@ -1036,7 +1037,8 @@ module li_core
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             ierr = ior(ierr,err_tmp)
             if(startTime + runduration /= stopTime) then
-               call mpas_log_write('config_run_duration and config_stop_time are inconsistent: using config_run_duration.', MPAS_LOG_WARN)
+               call mpas_log_write('config_run_duration and config_stop_time are inconsistent: using config_run_duration.', &
+                  MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then

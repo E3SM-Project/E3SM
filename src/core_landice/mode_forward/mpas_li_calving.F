@@ -249,7 +249,8 @@ module li_calving
             call mpas_log_write('Global cell ID, bedTopography, calvingThickness:')
             do iCell = 1, nCells
                if (calvingThickness(iCell) > 0.0_RKIND) then
-                  call mpas_log_write("$i $r $r", intArgs=(/indexToCellID(iCell)/), realArgs=(/bedTopography(iCell), calvingThickness(iCell)/))
+                  call mpas_log_write("$i $r $r", intArgs=(/indexToCellID(iCell)/), &
+                     realArgs=(/bedTopography(iCell), calvingThickness(iCell)/))
                endif
             enddo
          endif   ! config_print_calving_info
@@ -817,7 +818,7 @@ module li_calving
 !> \brief Calve any ice that is floating
 !> \author William Lipscomb, moved to separate subroutine by Matt Hoffman Feb. 2018
 !> \date   September 2015
-!> \details 
+!> \details
 !-----------------------------------------------------------------------
    subroutine floating_calving(domain, calvingFraction, err)
 
@@ -1019,7 +1020,8 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_scalar_value', &
                config_calving_eigencalving_parameter_scalar_value)
-      call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_source', config_calving_eigencalving_parameter_source)
+      call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_source', &
+              config_calving_eigencalving_parameter_source)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
 
@@ -1078,7 +1080,8 @@ module li_calving
          requiredCalvingVolumeRate(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
          calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND) ! calculate only for floating ice - map of "potential" calving rate
+               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
+                  ! calculate only for floating ice - map of "potential" calving rate
          do iCell = 1, nCells
             if (calvingFrontMask(iCell) == 1) then
 
@@ -1089,7 +1092,8 @@ module li_calving
                cellCalvingFrontHeight = 0.0_RKIND
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if ( (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) .or. &  ! thin ice
+                  if ( (li_mask_is_floating_ice(cellMask(jCell)) .and. &
+                        .not. li_mask_is_dynamic_ice(cellMask(jCell))) .or. &  ! thin ice
                        (.not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level) ) then  ! open ocean
                        cellCalvingFrontLength = cellCalvingFrontLength + dvEdge(edgesOnCell(iNeighbor, iCell))
                   endif
@@ -1114,7 +1118,8 @@ module li_calving
 
          ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
 
-         !where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. thickness<config_calving_thickness))
+         !where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. &
+         ! thickness<config_calving_thickness))
          ! The above commented version removed thin ice anywhere on the shelf.  In theory this seemed preferable,
          ! but in practice it has the tendency to create 'holes' in relatively stagnant areas of ice shelves along
          ! the grounding line.  Once these holes developed they would grow and eventually collapse the shelf from behind.
@@ -1195,7 +1200,8 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 !      logical, pointer :: config_print_calving_info
-      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate  !< Input: the specified calving flux at calving front margin cells
+      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate
+         !< Input: the specified calving flux at calving front margin cells
       real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: areaCell
@@ -1250,9 +1256,11 @@ module li_calving
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
-                  ! this is a thin neighbor - remove as much ice from here as we can  TODO: could distribute this evenly amongst neighbors
+                  ! this is a thin neighbor - remove as much ice from here as we can
+                  ! TODO: could distribute this evenly amongst neighbors
                   removeVolumeHere = min(volumeLeft, cellVolume(jCell)) ! how much we want to remove here
-                  calvingThickness(jCell) = calvingThickness(jCell) + removeVolumeHere / areaCell(jCell) ! apply to the field that will be used, in thickness units
+                  calvingThickness(jCell) = calvingThickness(jCell) + removeVolumeHere / areaCell(jCell)
+                      ! < apply to the field that will be used, in thickness units
                   cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
                   volumeLeft = volumeLeft - removeVolumeHere ! update accounting on how much left to distribute from current iCell
                endif
@@ -1261,7 +1269,8 @@ module li_calving
             if (volumeLeft > 0.0_RKIND) then
                ! Now remove ice from iCell
                removeVolumeHere = min(volumeLeft, cellVolume(iCell))
-               calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell) ! apply to the field that will be used in thickness units
+               calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
+                  ! < apply to the field that will be used in thickness units
                cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere ! update accounting on cell volume
                volumeLeft = volumeLeft - removeVolumeHere ! update accounting on how much left to distribute from current iCell
             endif
@@ -1282,11 +1291,14 @@ module li_calving
                   jCell = cellsOnCell(iNeighbor, iCell)
                   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
                           .and. (.not. li_mask_is_dynamic_margin(jCell))) then
-                     ! this is thick neighbor that is not itself a margin - remove as much ice from here as we can  
-                     removeVolumeHere = min(volumeLeft / real(inwardNeighbors, kind=RKIND), cellVolume(jCell)) ! how much we want to remove here
-                     calvingThickness(jCell) = calvingThickness(jCell) + removeVolumeHere / areaCell(jCell) ! apply to the field that will be used in thickness units
+                     ! this is thick neighbor that is not itself a margin - remove as much ice from here as we can
+                     removeVolumeHere = min(volumeLeft / real(inwardNeighbors, kind=RKIND), cellVolume(jCell))
+                        ! < how much we want to remove here
+                     calvingThickness(jCell) = calvingThickness(jCell) + removeVolumeHere / areaCell(jCell)
+                        ! < apply to the field that will be used in thickness units
                      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
-                     volumeLeft = volumeLeft - removeVolumeHere ! update accounting on how much left to distribute from current iCell
+                     volumeLeft = volumeLeft - removeVolumeHere
+                        ! < update accounting on how much left to distribute from current iCell
                   endif
                enddo
                !TODO: need to recursively distribute across neighbors until fully depleted :(
@@ -1305,9 +1317,11 @@ module li_calving
          uncalvedTotal = sum(uncalvedVolume)
          uncalvedCount = count(uncalvedVolume > 0.0_RKIND)
 
-         call mpas_log_write("distribute_calving_flux failed to distribute all required ice - ice was left after depleting all neighbors." &
-                 // "  Search needs to be expanded to neighbors' neighbors.")
-         call mpas_log_write("   On this processor: $i cells contain uncalved ice, for a total uncalved volume of $r m^3 ($r%).", &
+         call mpas_log_write("distribute_calving_flux failed to distribute all required ice - " // &
+                    " ice was left after depleting all neighbors." // &
+                    "  Search needs to be expanded to neighbors' neighbors.")
+         call mpas_log_write("   On this processor: $i cells contain uncalved ice, " // &
+                 "for a total uncalved volume of $r m^3 ($r%).", &
                  MPAS_LOG_WARN, intArgs=(/uncalvedCount/), &
                  realArgs=(/uncalvedTotal, 100.0_RKIND * uncalvedTotal/(requiredCalvingVolumeRate(iCell) * deltat)/))
       endif
