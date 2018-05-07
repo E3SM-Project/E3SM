@@ -218,7 +218,7 @@ class EnvBatch(EnvBase):
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
 
-        if self._batchtype == 'none':
+        if self._batchtype == "none":
             return
 
         known_jobs = self.get_jobs()
@@ -325,9 +325,10 @@ class EnvBatch(EnvBase):
 
         roots = self.get_children("batch_system")
         queue = self.get_value("JOB_QUEUE", subgroup=job)
-        if not queue in self._get_all_queue_names():
+        if self._batchtype != "none" and not queue in self._get_all_queue_names():
             qnode = self.get_default_queue()
             queue = self.text(qnode)
+
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
@@ -636,11 +637,14 @@ class EnvBatch(EnvBase):
 
     def _get_all_queue_names(self):
         all_queues = []
-        all_queues.append( self.get_default_queue())
         all_queues = self.get_all_queues()
+        # Default queue needs to be first
+        all_queues.insert(0, self.get_default_queue())
+
         queue_names = []
         for queue in all_queues:
             queue_names.append(self.text(queue))
+
         return queue_names
 
     def select_best_queue(self, num_nodes, num_tasks, walltime=None, job=None):
