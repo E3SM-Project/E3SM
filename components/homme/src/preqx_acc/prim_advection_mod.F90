@@ -280,15 +280,20 @@ contains
     !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens,data_pack,data_pack2)
     !$acc enter data pcopyin(hvcoord%dp0)
     !$acc enter data pcopyin(edgeMinMax         ,edge_g)
-    !$acc enter data pcopyin(edgeMinMax%buf     ,edge_g%buf)
-    !$acc enter data pcopyin(edgeMinMax%receive ,edge_g%receive)
-! this data is in elem(ie)%
-    !$XXX enter data pcopyin(edgeMinMax%putmap  ,edge_g%putmap)
-    !$XXX enter data pcopyin(edgeMinMax%getmap  ,edge_g%getmap)
-    !$acc enter data pcopyin(edgeMinMax%reverse ,edge_g%reverse)
-    !$acc enter data pcopyin(edgeMinMax%tag     ,edge_g%tag)
+    !$acc enter data pcopyin(edgeMinMax%desc    ,edge_g%desc)
+    !$acc enter data pcopyin(edgeMinMax%moveLength    ,edge_g%moveLength)
+    !$acc enter data pcopyin(edgeMinMax%movePtr0      ,edge_g%movePtr0)
     !$acc enter data pcopyin(edgeMinMax%srequest,edge_g%srequest)
     !$acc enter data pcopyin(edgeMinMax%rrequest,edge_g%rrequest)
+    !$acc enter data pcopyin(edgeMinMax%receive ,edge_g%receive)
+    !$acc enter data pcopyin(edgeMinMax%buf     ,edge_g%buf)
+
+    !$acc enter data pcopyin(edgeMinMax%tag     ,edge_g%tag)
+
+! this data has been removed
+    !$XXX enter data pcopyin(edgeMinMax%putmap  ,edge_g%putmap)
+    !$XXX enter data pcopyin(edgeMinMax%getmap  ,edge_g%getmap)
+    !$XXX enter data pcopyin(edgeMinMax%reverse ,edge_g%reverse)
 
     !$omp end master
     !$omp barrier

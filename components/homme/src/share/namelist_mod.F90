@@ -93,7 +93,7 @@ module namelist_mod
 #endif
 
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
-  use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
+  use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d
 #ifdef CAM
   use time_mod,       only: nsplit, smooth, phys_tscale
 #else
@@ -766,7 +766,6 @@ module namelist_mod
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
-      call set_mesh_dimensions()
       call MeshOpen(mesh_file, par)
     end if
     ! set map
