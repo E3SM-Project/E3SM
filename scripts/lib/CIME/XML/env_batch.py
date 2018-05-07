@@ -512,6 +512,8 @@ class EnvBatch(EnvBase):
             supported["skip_pnl"] = "--skip-preview-namelist"
         if job == "case.run":
             supported["set_continue_run"] = "--completion-sets-continue-run"
+        if job in ["case.st_archive", "case.run"]:
+            supported["submit_resubmits"] = "--resubmit"
         return supported
 
     @staticmethod
@@ -558,7 +560,8 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
             if not dry_run:
-                args = self._build_run_args(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate)
+                args = self._build_run_args(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+                                            submit_resubmits=not resubmit_immediate)
                 getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
             return
 
@@ -631,7 +634,8 @@ class EnvBatch(EnvBase):
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         batch_env_flag = self.get_value("batch_env", subgroup=None)
-        run_args = self._build_run_args_str(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate)
+        run_args = self._build_run_args_str(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+                                            submit_resubmits=not resubmit_immediate)
         if batch_env_flag:
             sequence = (batchsubmit, submitargs, run_args, batchredirect, get_batch_script_for_job(job))
         else:
