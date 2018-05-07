@@ -335,7 +335,7 @@ module li_subglacial_hydro
              call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
              call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
              call mpas_pool_get_array(geometryPool,'groundedBasalMassBal',groundedBasalMassBal)
-             basalMeltInput = -1.0 * groundedBasalMassBal ! TODO: Ensure positive flux?
+             basalMeltInput = -1.0_RKIND * groundedBasalMassBal ! TODO: Ensure positive flux?
          elseif (trim(config_SGH_basal_melt) == 'basal_heat') then
              call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
              call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
@@ -791,7 +791,8 @@ module li_subglacial_hydro
       ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
 
       ! Calculate hydropotentialBaseVertex if needed
-      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)  ! this array could be protected by logic if desired
+      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)
+         ! < this array could be protected by logic if desired
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric')
          call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
@@ -830,7 +831,8 @@ module li_subglacial_hydro
       gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
-      ! OLD: USE REGULARIZATION:  effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) * (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! 1e-10 used for regularization
+      ! OLD: USE REGULARIZATION:  effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
+      !   (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! 1e-10 used for regularization
       ! Do not calculate the conductivity where it is tiny to avoid blowups
       where(gradMagPhiEdge < 0.01_RKIND)
          effectiveConducEdge(:) = 0.0_RKIND
@@ -992,10 +994,13 @@ module li_subglacial_hydro
 
          if (config_SGH_chnl_active) then
             ! Calculate channel advection limited time step
-            dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) + 1.0e-12_RKIND))  ! regularize
+            dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) &
+               + 1.0e-12_RKIND))
+            ! regularize
             dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
             ! Calculate channel diffusion limited time step
-            dtSGHdiffuChanBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
+            dtSGHdiffuChanBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + &
+               1.0e-12_RKIND))
             dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
          endif
 
@@ -1048,7 +1053,8 @@ module li_subglacial_hydro
       if (proposedDt >= timeLeft) then
          if (config_SGH_chnl_active) then
             call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r", &
-              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel/))
+              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, &
+                         deltatSGHdiffuChannel/))
          else
             call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r", &
               realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
@@ -1092,10 +1098,12 @@ module li_subglacial_hydro
          call mpas_log_write("deltatSGH > deltatSGHpressure  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHpressure/))
       endif
       if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHadvecChannel)) then
-         call mpas_log_write("deltatSGH > deltatSGHadvecChannel  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHadvecChannel/))
+         call mpas_log_write("deltatSGH > deltatSGHadvecChannel  $r > $r", MPAS_LOG_WARN, &
+            realArgs=(/deltatSGH, deltatSGHadvecChannel/))
       endif
       if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHdiffuChannel)) then
-         call mpas_log_write("deltatSGH > deltatSGHdiffuChannel  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHdiffuChannel/))
+         call mpas_log_write("deltatSGH > deltatSGHdiffuChannel  $r > $r", MPAS_LOG_WARN, &
+            realArgs=(/deltatSGH, deltatSGHdiffuChannel/))
       endif
 
    !--------------------------------------------------------------------
@@ -1234,7 +1242,8 @@ module li_subglacial_hydro
          elsewhere (.not. li_mask_is_ice(cellMask))
             waterPressure = 0.0_RKIND
          elsewhere
-            waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
+            waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
+               rho_water * gravity * deltatSGH / porosity + waterPressureOld
          end where
 
       case ('overburden')
@@ -1330,7 +1339,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-      effectivePressure = rhoi * gravity * thickness - waterPressure  ! this should evalute to 0 for floating ice if Pw set correctly there.
+      effectivePressure = rhoi * gravity * thickness - waterPressure
+         ! < this should evalute to 0 for floating ice if Pw set correctly there.
       where (.not. li_mask_is_ice(cellmask))
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
@@ -1465,7 +1475,8 @@ module li_subglacial_hydro
       where(gradMagPhiEdge < 0.01_RKIND)
          channelDischarge(:) = 0.0_RKIND
       elsewhere
-         channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * hydropotentialBaseSlopeNormal
+         channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
+            hydropotentialBaseSlopeNormal
       end where
 
       where (waterFluxMask == 2)
@@ -1473,7 +1484,8 @@ module li_subglacial_hydro
          channelArea = 0.0_RKIND
       end where
 
-      ! Note: an edge with only one grounded cell neighbor is called floating, so this logic retains channel vars on those edges to allow channel discharge across GL
+      ! Note: an edge with only one grounded cell neighbor is called floating, so this logic retains channel vars
+      ! on those edges to allow channel discharge across GL
       where (.not. ( (li_mask_is_grounded_ice(edgeMask)) .or. (li_mask_is_grounding_line(edgeMask)) ) )
          channelArea = 0.0_RKIND
          channelDischarge = 0.0_RKIND
@@ -1490,7 +1502,7 @@ module li_subglacial_hydro
       end where
 
       channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
-                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width)        &  ! some sheet dissipation
+                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
@@ -1599,7 +1611,8 @@ module li_subglacial_hydro
             iEdge = edgesOnCell(iEdgeOnCell, iCell)
             ! add on advective & diffusive fluxes
             divergenceChannel(iCell) = divergenceChannel(iCell) - channelDischarge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
-            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND  ! only half of channel is in this cell
+            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND
+               ! < only half of channel is in this cell
          end do ! edges
       end do ! cells
       divergenceChannel(1:nCellsSolve) = divergenceChannel(1:nCellsSolve) / areaCell(1:nCellsSolve)
@@ -1739,7 +1752,8 @@ module li_subglacial_hydro
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          temperature0 = -16.0_RKIND * cos(2.0_RKIND * pii / 365.0 * daysSinceStart) - 5.0_RKIND + DT
-         externalWaterInput(:) = (upperSurface(:) * (-0.0075_RKIND) + temperature0) * (0.01_RKIND / 86400.0_RKIND) * 1000.0_RKIND  ! the 1000 factor converts from m/s to kg/m2/s
+         externalWaterInput(:) = (upperSurface(:) * (-0.0075_RKIND) + temperature0) * (0.01_RKIND / 86400.0_RKIND) * 1000.0_RKIND
+           ! < the 1000 factor converts from m/s to kg/m2/s
          where (externalWaterInput < 0.0_RKIND)
             externalWaterInput = 0.0_RKIND
          end where

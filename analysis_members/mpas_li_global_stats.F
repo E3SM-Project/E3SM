@@ -178,7 +178,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity 
+      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
       real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
@@ -306,7 +306,7 @@ contains
                 * areaCell(iCell) * thickness(iCell)
 
             blockSumVAF = blockSumVAF + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * &
-                ( thickness(iCell) + (rhow / rhoi) * min(0.0_RKIND, (bedTopography(iCell) - config_sea_level)) ) 
+                ( thickness(iCell) + (rhow / rhoi) * min(0.0_RKIND, (bedTopography(iCell) - config_sea_level)) )
 
             blockSumGroundedIceArea = blockSumGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
                  * areaCell(iCell)
@@ -334,7 +334,7 @@ contains
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
             blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
-            blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
+            blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
@@ -369,8 +369,8 @@ contains
                ! Loop over levels
                do k = 1, nVertLevels
                   ! Flux across GL, units = kg/yr
-                  blockGLflux = blockGLflux + fluxSign * layerNormalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge) &
-                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
+                  blockGLflux = blockGLflux + fluxSign * layerNormalVelocity(k, iEdge) * dvEdge(iEdge) * &
+                      layerThicknessEdge(k, iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
                end do ! end loop over levels
             end if ! if GL
 

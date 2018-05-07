@@ -446,7 +446,7 @@ contains
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating or open ocean
                  iCellNeighbor = cellsOnCell(j,i)
                  if (li_mask_is_floating_ice(cellMask(iCellNeighbor)) .or. &
-                       ((bedTopography(iCellNeighbor) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(iCellNeighbor)))) ) then
+                   ((bedTopography(iCellNeighbor) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(iCellNeighbor)))) ) then
                     cellMask(i) = ior(cellMask(i), li_mask_ValueGroundingLine)
                  endif
                  cycle  ! no need to look at additional neighbors
