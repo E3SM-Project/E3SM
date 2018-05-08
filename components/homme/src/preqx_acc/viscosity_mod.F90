@@ -38,7 +38,7 @@ contains
     use perf_mod              , only: t_startf, t_stopf
     use derivative_mod, only: laplace_sphere_wk_openacc
     use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! compute weak biharmonic operator
@@ -64,12 +64,11 @@ contains
     call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1,asyncid)
     call t_startf('biwksc_PEU')
     call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,qsize*nlev,nets,nete,1,1,asyncid)
-    !$acc wait(asyncid)
     !$omp end master
     !$omp barrier
 
     call t_startf('biwksc_exch')
-    call bndry_exchangeV(hybrid,edgeq)
+    call bndry_exchangeV(hybrid,edgeq,asyncid)
     call t_stopf('biwksc_exch')
 
     !$omp barrier
