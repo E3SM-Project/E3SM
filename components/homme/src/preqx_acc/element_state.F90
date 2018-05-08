@@ -20,6 +20,7 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_omega_p          (:,:,:,:)        ! (np,np,nlev,nelemd)
   real (kind=real_kind), allocatable, target, public :: derived_dpdiss_ave       (:,:,:,:)        ! (np,np,nlev,nelemd)
   real (kind=real_kind), allocatable, target, public :: derived_dp               (:,:,:,:)        ! (np,np,nlev,nelemd)
+  real (kind=real_kind), allocatable, target, public :: derived_dpdiss_biharmonic(:,:,:,:)        ! (np,np,nlev,nelemd)
   real (kind=real_kind), public :: deriv_dvv(np,np)
   real (kind=real_kind), public :: hvcoord_dp0(nlev)
 
@@ -44,7 +45,7 @@ module element_state
     ! if (compute_mean_flux==1) vn0=time_avg(U*dp) else vn0=U at tracer-time t
   real (kind=real_kind), pointer :: vn0              (:,:,:,:)       ! (np,np,2,nlev)                  velocity for SE tracer advection
     real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces
-    real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
+    real (kind=real_kind), pointer :: dpdiss_biharmonic(:,:,:)            ! mean dp dissipation tendency, if nu_p>0
     real (kind=real_kind), pointer :: dpdiss_ave(:,:,:)                   ! mean dp used to compute psdiss_tens
 
     ! diagnostics for explicit timestep

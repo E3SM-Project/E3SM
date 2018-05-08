@@ -478,7 +478,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0, derived_dpdiss_ave, derived_dp
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0, derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -636,29 +636,12 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Compute velocity used to advance Qdp
 
-  if ( limiter_option == 8 .and. nu_p > 0 .and. rhs_viss /= 0 ) then
-    do ie = nets , nete
-      data_pack(:,:,:,ie) = elem(ie)%derived%dpdiss_biharmonic
-    enddo
-    !$omp barrier
-    !$omp master
-    !$acc update device(data_pack) async(asyncid)
-    !$acc parallel loop gang vector collapse(4) present(elem,data_pack) async(asyncid)
-    do ie = 1 , nelemd
-      do k = 1 , nlev
-        do j = 1 , np
-          do i = 1 , np
-            elem(ie)%derived%dpdiss_biharmonic(i,j,k) = data_pack(i,j,k,ie)
-          enddo
-        enddo
-      enddo
-    enddo
-    !$omp end master
-    !$omp barrier
-  endif
-
   !$omp barrier
   !$omp master
+  if ( limiter_option == 8 .and. nu_p > 0 .and. rhs_viss /= 0 ) then
+    !$acc update device(derived_dpdiss_biharmonic) async(asyncid)
+  endif
+
   if (limiter_option == 8) then
     !$acc update device(derived_divdp) async(asyncid)
   endif
