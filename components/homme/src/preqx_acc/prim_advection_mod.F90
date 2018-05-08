@@ -306,7 +306,7 @@ contains
     use control_mod          , only: nu_q, hypervis_order, hypervis_subcycle_q, nu_p
     use viscosity_mod, only: biharmonic_wk_scalar_openacc
     use edge_mod     , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
     implicit none
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)     , intent(in   )         :: hvcoord
@@ -387,12 +387,11 @@ contains
       call limiter2d_zero(state_Qdp,2,nt_qdp,asyncid)
       call t_startf('ah_scalar_PEU')
       call edgeVpack_openacc(edge_g,state_qdp,qsize*nlev,0,qsize*nlev,1,nelemd,2,nt_qdp,asyncid)
-      !$acc wait(asyncid)
       !$omp end master
       !$omp barrier
 
       call t_startf('ah_scalar_exch')
-      call bndry_exchangeV( hybrid , edge_g )
+      call bndry_exchangeV( hybrid , edge_g , asyncid )
       call t_stopf('ah_scalar_exch')
 
       !$omp barrier
@@ -475,7 +474,7 @@ contains
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
-  use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+  use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -711,12 +710,11 @@ contains
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
   call edgeVpack_openacc(edge_g , state_Qdp , nlev*qsize , 0 , nlev*qsize , 1 , nelemd , 2 , np1_qdp , asyncid )
-  !$acc wait(asyncid)
   !$omp end master
   !$omp barrier
 
   call t_startf('eus_exch')
-  call bndry_exchangeV( hybrid , edge_g )
+  call bndry_exchangeV( hybrid , edge_g , asyncid )
   call t_stopf('eus_exch')
 
   !$omp barrier
@@ -889,7 +887,7 @@ contains
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
     use edge_mod              , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
     use openacc_utils_mod     , only: copy_ondev_async
@@ -929,11 +927,10 @@ contains
     call edgeVpack_openacc( edge_g , derived_eta_dot_dpdn , nlevp , 0          , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
     call edgeVpack_openacc( edge_g , derived_omega_p      , nlev  , nlevp      , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
     call edgeVpack_openacc( edge_g , derived_divdp_proj   , nlev  , nlevp+nlev , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
-    !$acc wait(asyncid)
     !$omp end master
     !$omp barrier
 
-    call bndry_exchangeV( hybrid , edge_g )
+    call bndry_exchangeV( hybrid , edge_g , asyncid )
 
     !$omp barrier
     !$omp master
