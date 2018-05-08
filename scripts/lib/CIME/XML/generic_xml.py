@@ -278,17 +278,18 @@ class GenericXML(object):
         if outfile is None:
             outfile = self.filename
 
-        # logger.debug("write: " + outfile)
+        logger.debug("write: " + (outfile if isinstance(outfile, six.string_types) else str(outfile)))
 
         xmlstr = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            if outfile is sys.stdout:
-                print(run_cmd_no_fail("{} --format -".format(xmllint), input_str=xmlstr))
-            else:
+            if isinstance(outfile, six.string_types):
                 run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
+            else:
+                outfile.write(run_cmd_no_fail("{} --format -".format(xmllint), input_str=xmlstr))
+
         else:
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
