@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 !
-!  MT 2018/5 updated to use pack/unpack with variable nlyr 
+!  MT 2018/5 updated to use pack/unpack with variable nlyr
 !
 module edge_mod
   use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, &
@@ -37,7 +37,7 @@ module edge_mod
 
 contains
 
-  subroutine edgeSpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl,asyncid)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -48,7 +48,7 @@ contains
     integer                ,intent(in   ) :: vlyr
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    integer                ,intent(in   ) :: nets,nete,tdim,tl,asyncid
     real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     ! Local variables
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
@@ -59,7 +59,7 @@ contains
     nlyr=edge%nlyr_max  ! amount packed. this should be made a paramter, following edgevpack_nlyr()
     edge%nlyr=nlyr      ! set amount packed, for use by bndry_exchange
 
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector
@@ -89,7 +89,7 @@ contains
     call t_stopf('edge_s_pack')
   end subroutine edgeSpack_openacc
 
-  subroutine edgeSunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl,asyncid)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -99,7 +99,7 @@ contains
     integer               , intent(in   ) :: vlyr
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    integer                ,intent(in   ) :: nets,nete,tdim,tl,asyncid
     real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
@@ -108,7 +108,7 @@ contains
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_min')
     nlyr=edge%nlyr_max  ! this should eventually become an input argument
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -150,7 +150,7 @@ contains
     call t_stopf('edge_s_unpack_min')
   end subroutine edgeSunpackMin_openacc
 
-  subroutine edgeSunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl,asyncid)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -160,7 +160,7 @@ contains
     integer               , intent(in   ) :: vlyr
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    integer                ,intent(in   ) :: nets,nete,tdim,tl,asyncid
     real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
@@ -169,7 +169,7 @@ contains
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_max')
     nlyr=edge%nlyr_max  ! this should eventually become an input argument
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -211,7 +211,7 @@ contains
     call t_stopf('edge_s_unpack_max')
   end subroutine edgeSunpackMax_openacc
 
-  subroutine edgeVpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl)
+  subroutine edgeVpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl,asyncid)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -222,7 +222,7 @@ contains
     integer                ,intent(in   ) :: vlyr,nlyr
     integer                ,intent(in   ) :: kptr
 !    type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    integer                ,intent(in   ) :: nets,nete,tdim,tl,asyncid
     real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     ! Local variables
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
@@ -232,7 +232,7 @@ contains
     if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
     edge%nlyr=nlyr  ! set total amount packed for use by bndry_exchange
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
+    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector collapse(2)
@@ -277,7 +277,7 @@ contains
     call t_stopf('edge_pack')
   end subroutine edgeVpack_openacc
 
-  subroutine edgeVunpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl)
+  subroutine edgeVunpack_openacc(edge,v,vlyr,kptr,nlyr,nets,nete,tdim,tl,asyncid)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -287,7 +287,7 @@ contains
     integer               , intent(in   ) :: vlyr
     integer               , intent(in   ) :: kptr, nlyr
     !type(element_t)        ,intent(in   ) :: elem(:)
-    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    integer                ,intent(in   ) :: nets,nete,tdim,tl,asyncid
     real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
@@ -297,7 +297,7 @@ contains
     call t_startf('edge_unpack')
     if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -359,4 +359,3 @@ contains
 
 
 end module edge_mod
-

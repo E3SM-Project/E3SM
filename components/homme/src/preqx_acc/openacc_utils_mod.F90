@@ -92,17 +92,16 @@ contains
     !$acc update device(dat(1:len)) async(id)
   end subroutine update_device_async
 
-  subroutine copy_ondev_async(dest,src,len,id)
+  subroutine copy_ondev_async(dest,src,len,asyncid)
     implicit none
     real(kind=real_kind) :: dest(len)
     real(kind=real_kind) :: src (len)
-    integer              :: len, id
+    integer              :: len, asyncid
     integer :: i
-    !$acc parallel loop gang vector present(dest,src) async(id)
+    !$acc parallel loop gang vector present(dest,src) async(asyncid)
     do i = 1 , len
       dest(i) = src(i)
     enddo
   end subroutine copy_ondev_async
 
 end module openacc_utils_mod
-
