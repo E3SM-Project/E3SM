@@ -1634,6 +1634,22 @@ class K_TestCimeCase(TestCreateTestCommon):
                     self.assertTrue(depend_string in cmd[1])
 
     ###########################################################################
+    def test_cime_case_st_archive_resubmit(self):
+    ###########################################################################
+        testcase_name = "st_archive_resubmit_test"
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            case.case_setup(clean=False, test_mode=False, reset=True)
+            orig_resubmit = 2
+            case.set_value("RESUBMIT", orig_resubmit)
+            case.case_st_archive(no_resubmit=True)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue(orig_resubmit == new_resubmit, "st_archive resubmitted when told not to")
+            case.case_st_archive(no_resubmit=False)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue((orig_resubmit - 1) == new_resubmit, "st_archive did not resubmit when told to")
+
+    ###########################################################################
     def test_cime_case_build_threaded_1(self):
     ###########################################################################
         self._create_test(["--no-build", "TESTRUNPASS_P1x1.f19_g16_rx1.A"], test_id=self._baseline_name)
