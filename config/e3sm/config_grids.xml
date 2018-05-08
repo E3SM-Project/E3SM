@@ -27,24 +27,24 @@
   <grids>
 
     <model_grid_defaults>
-      <grid name="atm"    compset="SATM"  >null</grid>
-      <grid name="lnd"    compset="SLND"  >null</grid>
-      <grid name="ocnice" compset="SOCN"  >null</grid>
-      <grid name="rof"    compset="SROF"  >null</grid>
-      <grid name="rof"    compset="DWAV"  >rx1</grid>
-      <grid name="rof"    compset="RTM"	  >r05</grid>
+      <grid name="atm"    compset="SATM">null</grid>
+      <grid name="lnd"    compset="SLND">null</grid>
+      <grid name="ocnice" compset="SOCN">null</grid>
+      <grid name="rof"    compset="SROF">null</grid>
+      <grid name="rof"    compset="DWAV">rx1</grid>
+      <grid name="rof"    compset="RTM">r05</grid>
       <grid name="rof"    compset="MOSART">r05</grid>
-      <grid name="rof"    compset="DROF"  >rx1</grid>
+      <grid name="rof"    compset="DROF">rx1</grid>
       <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
-      <grid name="rof"    compset="XROF"  >r05</grid>
-      <grid name="glc"	  compset="SGLC"  >null</grid>
-      <grid name="glc"	  compset="CISM1" >gland5UM</grid>
-      <grid name="glc"	  compset="CISM2" >gland4</grid>
-      <grid name="glc"    compset="XGLC"  >gland4</grid>
-      <grid name="wav"	  compset="SWAV"  >null</grid>
-      <grid name="wav"	  compset="DWAV"  >ww3a</grid>
-      <grid name="wav"	  compset="WW3"	  >ww3a</grid>
-      <grid name="wav"    compset="XWAV"  >ww3a</grid>
+      <grid name="rof"    compset="XROF">r05</grid>
+      <grid name="glc"    compset="SGLC">null</grid>
+      <grid name="glc"    compset="CISM1">gland5UM</grid>
+      <grid name="glc"    compset="CISM2">gland4</grid>
+      <grid name="glc"    compset="XGLC">gland4</grid>
+      <grid name="wav"    compset="SWAV">null</grid>
+      <grid name="wav"    compset="DWAV">ww3a</grid>
+      <grid name="wav"    compset="WW3">ww3a</grid>
+      <grid name="wav"    compset="XWAV">ww3a</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -58,9 +58,9 @@
     </model_grid>
 
     <model_grid alias="CLM_USRDAT" compset="(DATM|SATM).+CLM">
-      <grid name="atm">CLMUSRDAT</grid>
-      <grid name="lnd">CLMUSRDAT</grid>
-      <grid name="ocnice">CLMUSRDAT</grid>
+      <grid name="atm">CLM_USRDAT</grid>
+      <grid name="lnd">CLM_USRDAT</grid>
+      <grid name="ocnice">CLM_USRDAT</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -68,9 +68,9 @@
     </model_grid>
 
     <model_grid alias="1x1_numaIA" compset="DATM.+CLM">
-      <grid name="atm">1x1numaIA</grid>
-      <grid name="lnd">1x1numaIA</grid>
-      <grid name="ocnice">1x1numaIA</grid>
+      <grid name="atm">1x1_numaIA</grid>
+      <grid name="lnd">1x1_numaIA</grid>
+      <grid name="ocnice">1x1_numaIA</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -78,9 +78,9 @@
     </model_grid>
 
     <model_grid alias="1x1_brazil" compset="DATM.+CLM">
-      <grid name="atm">1x1brazil</grid>
-      <grid name="lnd">1x1brazil</grid>
-      <grid name="ocnice">1x1brazil</grid>
+      <grid name="atm">1x1_brazil</grid>
+      <grid name="lnd">1x1_brazil</grid>
+      <grid name="ocnice">1x1_brazil</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -88,9 +88,9 @@
     </model_grid>
 
     <model_grid alias="1x1_smallvilleIA" compset="(DATM|SATM).+CLM">
-      <grid name="atm">1x1smallvilleIA</grid>
-      <grid name="lnd">1x1smallvilleIA</grid>
-      <grid name="ocnice">1x1smallvilleIA</grid>
+      <grid name="atm">1x1_smallvilleIA</grid>
+      <grid name="lnd">1x1_smallvilleIA</grid>
+      <grid name="ocnice">1x1_smallvilleIA</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -98,9 +98,9 @@
     </model_grid>
 
     <model_grid alias="1x1_camdenNJ" compset="DATM.+CLM">
-      <grid name="atm">1x1camdenNJ</grid>
-      <grid name="lnd">1x1camdenNJ</grid>
-      <grid name="ocnice">1x1camdenNJ</grid>
+      <grid name="atm">1x1_camdenNJ</grid>
+      <grid name="lnd">1x1_camdenNJ</grid>
+      <grid name="ocnice">1x1_camdenNJ</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -108,9 +108,9 @@
     </model_grid>
 
     <model_grid alias="1x1_mexicocityMEX" compset="DATM.+CLM">
-      <grid name="atm">1x1mexicocityMEX</grid>
-      <grid name="lnd">1x1mexicocityMEX</grid>
-      <grid name="ocnice">1x1mexicocityMEX</grid>
+      <grid name="atm">1x1_mexicocityMEX</grid>
+      <grid name="lnd">1x1_mexicocityMEX</grid>
+      <grid name="ocnice">1x1_mexicocityMEX</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -118,9 +118,9 @@
     </model_grid>
 
     <model_grid alias="1x1_vancouverCAN" compset="DATM.+CLM">
-      <grid name="atm">1x1vancouverCAN</grid>
-      <grid name="lnd">1x1vancouverCAN</grid>
-      <grid name="ocnice">1x1vancouverCAN</grid>
+      <grid name="atm">1x1_vancouverCAN</grid>
+      <grid name="lnd">1x1_vancouverCAN</grid>
+      <grid name="ocnice">1x1_vancouverCAN</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -128,9 +128,9 @@
     </model_grid>
 
     <model_grid alias="1x1_tropicAtl" compset="DATM.+CLM">
-      <grid name="atm">1x1tropicAtl</grid>
-      <grid name="lnd">1x1tropicAtl</grid>
-      <grid name="ocnice">1x1tropicAtl</grid>
+      <grid name="atm">1x1_tropicAtl</grid>
+      <grid name="lnd">1x1_tropicAtl</grid>
+      <grid name="ocnice">1x1_tropicAtl</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -138,9 +138,9 @@
     </model_grid>
 
     <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM">
-      <grid name="atm">1x1urbancalpha</grid>
-      <grid name="lnd">1x1urbancalpha</grid>
-      <grid name="ocnice">1x1urbancalpha</grid>
+      <grid name="atm">1x1_urbanc_alpha</grid>
+      <grid name="lnd">1x1_urbanc_alpha</grid>
+      <grid name="ocnice">1x1_urbanc_alpha</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -148,9 +148,9 @@
     </model_grid>
 
     <model_grid alias="5amazon" compset="DATM.+CLM">
-      <grid name="atm">5x5amazon</grid>
-      <grid name="lnd">5x5amazon</grid>
-      <grid name="ocnice">5x5amazon</grid>
+      <grid name="atm">5x5_amazon</grid>
+      <grid name="lnd">5x5_amazon</grid>
+      <grid name="ocnice">5x5_amazon</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -684,9 +684,9 @@
     </model_grid>
 
     <model_grid alias="armx8v3_armx8v3" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4armx8v3lowcon</grid>
-      <grid name="lnd">ne0np4armx8v3lowcon</grid>
-      <grid name="ocnice">ne0np4armx8v3lowcon</grid>
+      <grid name="atm">ne0np4_arm_x8v3_lowcon</grid>
+      <grid name="lnd">ne0np4_arm_x8v3_lowcon</grid>
+      <grid name="ocnice">ne0np4_arm_x8v3_lowcon</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -694,9 +694,9 @@
     </model_grid>
 
     <model_grid alias="conusx4v1_conusx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4conusx4v1lowcon</grid>
-      <grid name="lnd">ne0np4conusx4v1lowcon</grid>
-      <grid name="ocnice">ne0np4conusx4v1lowcon</grid>
+      <grid name="atm">ne0np4_conus_x4v1_lowcon</grid>
+      <grid name="lnd">ne0np4_conus_x4v1_lowcon</grid>
+      <grid name="ocnice">ne0np4_conus_x4v1_lowcon</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -704,9 +704,9 @@
     </model_grid>
 
     <model_grid alias="svalbardx8v1_svalbardx8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4svalbardx8v1lowcon</grid>
-      <grid name="lnd">ne0np4svalbardx8v1lowcon</grid>
-      <grid name="ocnice">ne0np4svalbardx8v1lowcon</grid>
+      <grid name="atm">ne0np4_svalbard_x8v1_lowcon</grid>
+      <grid name="lnd">ne0np4_svalbard_x8v1_lowcon</grid>
+      <grid name="ocnice">ne0np4_svalbard_x8v1_lowcon</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -714,9 +714,9 @@
     </model_grid>
 
     <model_grid alias="sooberingoax4x8v1_sooberingoax4x8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4sooberingoax4x8v1lowcon</grid>
-      <grid name="lnd">ne0np4sooberingoax4x8v1lowcon</grid>
-      <grid name="ocnice">ne0np4sooberingoax4x8v1lowcon</grid>
+      <grid name="atm">ne0np4_sooberingoa_x4x8v1_lowcon</grid>
+      <grid name="lnd">ne0np4_sooberingoa_x4x8v1_lowcon</grid>
+      <grid name="ocnice">ne0np4_sooberingoa_x4x8v1_lowcon</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -724,9 +724,9 @@
     </model_grid>
 
     <model_grid alias="enax4v1_enax4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4enax4v1</grid>
-      <grid name="lnd">ne0np4enax4v1</grid>
-      <grid name="ocnice">ne0np4enax4v1</grid>
+      <grid name="atm">ne0np4_enax4v1</grid>
+      <grid name="lnd">ne0np4_enax4v1</grid>
+      <grid name="ocnice">ne0np4_enax4v1</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -734,9 +734,9 @@
     </model_grid>
 
     <model_grid alias="enax4v1_ne30_enax4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4enax4v1</grid>
+      <grid name="atm">ne0np4_enax4v1</grid>
       <grid name="lnd">ne30np4</grid>
-      <grid name="ocnice">ne0np4enax4v1</grid>
+      <grid name="ocnice">ne0np4_enax4v1</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -766,7 +766,7 @@
     <model_grid alias="ne30_oEC_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
-      <grid name="ocnice">oEC60to30ICG</grid>
+      <grid name="ocnice">oEC60to30_ICG</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -776,7 +776,7 @@
     <model_grid alias="ne30_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
-      <grid name="ocnice">oEC60to30v3ICG</grid>
+      <grid name="ocnice">oEC60to30v3_ICG</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -786,7 +786,7 @@
     <model_grid alias="ne30_oECv3wLI_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
-      <grid name="ocnice">oEC60to30v3wLIICG</grid>
+      <grid name="ocnice">oEC60to30v3wLI_ICG</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -796,7 +796,7 @@
     <model_grid alias="ne120_oRRS18v3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne120np4</grid>
       <grid name="lnd">ne120np4</grid>
-      <grid name="ocnice">oRRS18to6v3ICG</grid>
+      <grid name="ocnice">oRRS18to6v3_ICG</grid>
       <grid name="rof">r0125</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -1142,9 +1142,9 @@
     </model_grid>
 
     <model_grid alias="twpx4v1_twpx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4twpx4v1</grid>
-      <grid name="lnd">ne0np4twpx4v1</grid>
-      <grid name="ocnice">ne0np4twpx4v1</grid>
+      <grid name="atm">ne0np4_twpx4v1</grid>
+      <grid name="lnd">ne0np4_twpx4v1</grid>
+      <grid name="ocnice">ne0np4_twpx4v1</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
