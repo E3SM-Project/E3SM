@@ -1196,14 +1196,15 @@ directory, NOT in this subdirectory."""
         else:
             return comp_user_mods
 
-    def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
-                    mail_user=None, mail_type=None, batch_args=None,
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
+                    resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        result =  env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
-                                     skip_pnl=skip_pnl, mail_user=mail_user,
-                                     mail_type=mail_type, batch_args=batch_args,
-                                     dry_run=dry_run)
+        result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
+                                        job=job, user_prereq=prereq, allow_fail=allow_fail,
+                                        resubmit_immediate=resubmit_immediate,
+                                        mail_user=mail_user, mail_type=mail_type,
+                                        batch_args=batch_args, dry_run=dry_run)
         return result
 
     def get_job_info(self):

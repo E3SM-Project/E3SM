@@ -15,8 +15,16 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
-            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
+def _build_prereq_str(case, prev_job_ids):
+    delimiter = case.get_value("depend_separator")
+    prereq_str = ""
+    for job_id in prev_job_ids.values():
+        prereq_str += str(job_id) + delimiter
+    return prereq_str[:-1]
+
+def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
+            resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
+            batch_args=None):
     if job is None:
         job = case.get_primary_job()
 
@@ -85,8 +93,9 @@ manual edits to these file will be lost!
     case.flush()
 
     logger.warning("submit_jobs {}".format(job))
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
-                               prereq=prereq, mail_user=mail_user,
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, prereq=prereq,
+                               skip_pnl=skip_pnl, resubmit_immediate=resubmit_immediate,
+                               allow_fail=allow_fail, mail_user=mail_user,
                                mail_type=mail_type, batch_args=batch_args)
 
     xml_jobids = []
@@ -101,8 +110,13 @@ manual edits to these file will be lost!
 
     return xml_jobid_text
 
-def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
-           skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
+def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
+           resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
+           batch_args=None):
+    if resubmit_immediate and self.get_value("MACH") in ['mira', 'cetus']:
+        logger.warning("resubmit_immediate does not work on Mira/Cetus, submitting normally")
+        resubmit_immediate = False
+
     if self.get_value("TEST"):
         caseroot = self.get_value("CASEROOT")
         casebaseid = self.get_value("CASEBASEID")
@@ -134,7 +148,8 @@ def submit(self, job=None, no_batch=False, prereq=None, resubmit=False,
 
     try:
         functor = lambda: _submit(self, job=job, no_batch=no_batch, prereq=prereq,
-                                  resubmit=resubmit, skip_pnl=skip_pnl,
+                                  allow_fail=allow_fail, resubmit=resubmit,
+                                  resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
                                   batch_args=batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=caseroot,
@@ -162,4 +177,5 @@ def check_DA_settings(self):
     script = self.get_value("DATA_ASSIMILATION_SCRIPT")
     cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     if len(script) > 0 and os.path.isfile(script) and cycles > 0:
-        logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
+        logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,
+                                                                                        cycles))
