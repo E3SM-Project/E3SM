@@ -20,7 +20,7 @@ contains
 
 
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
-    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn
+    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn, deriv_dvv
     use dimensions_mod, only: nelemd
 
     implicit none
@@ -49,6 +49,9 @@ contains
       !$acc enter data pcopyin(elem(ie)%derived%eta_dot_dpdn )
       !$acc enter data pcopyin(elem(ie)%derived%omega_p      )
     enddo
+
+    deriv_dvv = deriv%dvv
+    !$acc enter data pcopyin(deriv_dvv)
 
     !$omp end master
     !$omp barrier

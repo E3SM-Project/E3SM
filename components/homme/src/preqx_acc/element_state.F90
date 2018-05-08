@@ -18,6 +18,7 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
   real (kind=real_kind), allocatable, target, public :: derived_eta_dot_dpdn     (:,:,:,:)        ! (np,np,nlevp,nelemd
   real (kind=real_kind), allocatable, target, public :: derived_omega_p          (:,:,:,:)        ! (np,np,nlev,nelemd)
+  real (kind=real_kind), public :: deriv_dvv(np,np)
 
 
   type, public :: elem_state_t
