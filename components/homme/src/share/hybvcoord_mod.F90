@@ -11,7 +11,7 @@ use control_mod,        only: vanalytic
 implicit none
 private
 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! hvcoord_t: Hybrid level definitions: p = a*p0 + b*ps
 !            interfaces   p(k) = hyai(k)*ps0 + hybi(k)*ps
 !            midpoints    p(k) = hyam(k)*ps0 + hybm(k)*ps
@@ -140,7 +140,7 @@ contains
              read(12)hvcoord%hyam(k)
              read(12)hvcoord%hybm(k)
           end do
-          
+
           close(11)
           close(12)
        end if
@@ -243,7 +243,7 @@ end function
         write(iulog,*)'min/max hybm() coordinates: ',minval(hvcoord%hybm(1:plev)),maxval(hvcoord%hybm(1:plev))
      endif
   end if
-  
+
 9800 format( 1x, i3, 3p, 3(f10.4,10x) )
 9810 format( 1x, 3x, 3p, 3(10x,f10.4) )
 9850 format('HYCOEF: A and/or B vertical level coefficients at full',/, &
