@@ -65,7 +65,7 @@ contains
 !       !$acc update device(state_qdp(:,:,:,1,tl,ie))
 !     enddo
       !$acc update device(data_pack) async(1)
-      !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
+      !$acc parallel loop gang vector collapse(4) async(1) default(present)
       do ie = 1 , nelemd
         do k = 1 , nlev
           do j = 1 , np
@@ -94,7 +94,7 @@ contains
 #   if USE_OPENACC
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
+      !$acc parallel loop gang vector collapse(4) async(1) default(present)
       do ie = 1 , nelemd
         do k = 1 , nlev
           do j = 1 , np
@@ -337,7 +337,7 @@ contains
     do ic = 1 , hypervis_subcycle_q
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,hvcoord_dp0,qtens_biharmonic,qtens) async(asyncid)
+      !$acc parallel loop gang vector collapse(4) default(present) async(asyncid)
       do ie = 1 , nelemd
         ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
         do k = 1 , nlev
@@ -370,7 +370,7 @@ contains
       call biharmonic_wk_scalar_openacc( elem , Qtens , grads_tracer , deriv , edge_g , hybrid , 1 , nelemd , asyncid )
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:),qtens) async(asyncid)
+      !$acc parallel loop gang vector collapse(5) default(present) async(asyncid)
       do ie = 1 , nelemd
         do q = 1 , qsize
           do k = 1 , nlev
@@ -399,7 +399,7 @@ contains
       !$omp master
       call edgeVunpack_openacc(edge_g,state_qdp,qsize*nlev,0,qsize*nlev,1,nelemd,2,nt_qdp,asyncid)
       call t_stopf('ah_scalar_PEU')
-      !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:)) async(asyncid)
+      !$acc parallel loop gang vector collapse(5) default(present) async(asyncid)
       do ie = 1 , nelemd
         do q = 1 , qsize
           ! apply inverse mass matrix
@@ -430,7 +430,7 @@ contains
     integer :: ie,q,k,j,i
     !$omp barrier
     !$omp master
-    !$acc parallel loop gang vector collapse(5) present(state_qdp) async(asyncid)
+    !$acc parallel loop gang vector collapse(5) default(present) async(asyncid)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = 1 , nlev
@@ -535,7 +535,7 @@ contains
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     !$omp barrier
     !$omp master
-    !$acc parallel loop gang vector collapse(4) private(tmp) present(elem(:),derived_divdp_proj,state_qdp,qtens_biharmonic) async(asyncid)
+    !$acc parallel loop gang vector collapse(4) private(tmp) default(present) async(asyncid)
     do ie = 1 , nelemd
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
@@ -549,7 +549,7 @@ contains
         enddo
       enddo
     enddo
-    !$acc parallel loop gang vector collapse(3) private(mintmp,maxtmp) present(qmin,qmax,qtens_biharmonic) async(asyncid)
+    !$acc parallel loop gang vector collapse(3) private(mintmp,maxtmp) default(present) async(asyncid)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = 1 , nlev
@@ -583,7 +583,7 @@ contains
       if ( nu_p > 0 ) then
         !$omp barrier
         !$omp master
-        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord_dp0) async(asyncid)
+        !$acc parallel loop gang vector collapse(4) default(present) async(asyncid)
         do ie = 1 , nelemd
           do k = 1 , nlev
             do j = 1 , np
@@ -604,7 +604,7 @@ contains
       call neighbor_minmax_openacc( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax , asyncid )
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,hvcoord_dp0,elem(:)) async(asyncid)
+      !$acc parallel loop gang vector collapse(4) default(present) async(asyncid)
       do ie = 1 , nelemd
         do k = 1 , nlev    !  Loop inversion (AAM)
           do j = 1 , np
@@ -638,7 +638,7 @@ contains
   if (limiter_option == 8) then
     !$acc update device(derived_divdp) async(asyncid)
   endif
-  !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,derived_vn0,dp_star,derived_divdp,grads_tracer,state_qdp) &
+  !$acc parallel loop gang vector collapse(4) default(present) &
   !$acc& private(dp,vstar) async(asyncid)
   do ie = 1 , nelemd
     do k = 1 , nlev    !  Loop index added (AAM)
@@ -666,7 +666,7 @@ contains
     enddo
   enddo
   call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 , asyncid )
-  !$acc parallel loop gang vector collapse(5) present(qtens,state_qdp,qtens_biharmonic) async(asyncid)
+  !$acc parallel loop gang vector collapse(5) default(present) async(asyncid)
   do ie = 1 , nelemd
     ! advance Qdp
     do q = 1 , qsize
@@ -685,7 +685,7 @@ contains
   if ( limiter_option == 8 ) then
     call limiter_optim_iter_full( Qtens , elem(:) , qmin , qmax , dp_star , asyncid )   ! apply limiter to Q = Qtens / dp_star
   endif
-  !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:),qtens) async(asyncid)
+  !$acc parallel loop gang vector collapse(4) default(present) async(asyncid)
   do ie = 1 , nelemd
     ! apply mass matrix, overwrite np1 with solution:
     ! dont do this earlier, since we allow np1_qdp == n0_qdp
@@ -723,7 +723,7 @@ contains
   !$omp master
   call edgeVunpack_openacc( edge_g , state_Qdp , nlev*qsize , 0 , nlev*qsize , 1 , nelemd , 2 , np1_qdp , asyncid )
   call t_stopf('eus_PEU')
-  !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:)) async(asyncid)
+  !$acc parallel loop gang vector collapse(4) default(present) async(asyncid)
   do ie = 1 , nelemd
     do k = 1 , nlev    !  Potential loop inversion (AAM)
       do j = 1 , np
@@ -757,7 +757,7 @@ contains
     real (kind=real_kind) :: mass,mass_new
     real (kind=real_kind) :: qtmp(np,np)
     integer i,j,k,q,ie
-    !$acc parallel loop gang vector collapse(3) present(qdp) private(qtmp) async(asyncid)
+    !$acc parallel loop gang vector collapse(3) default(present) private(qtmp) async(asyncid)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = nlev , 1 , -1
@@ -816,7 +816,7 @@ contains
     integer :: maxiter = np*np-1
     real (kind=real_kind) :: tol_limiter = 5e-14
 
-    !$acc parallel loop gang vector collapse(3) present(ptens,elem(:),minp,maxp,dpmass) private(c,x,mintmp,maxtmp,addmass,weightssum,mass,sumc) vector_length(512) async(asyncid)
+    !$acc parallel loop gang vector collapse(3) default(present) private(c,x,mintmp,maxtmp,addmass,weightssum,mass,sumc) vector_length(512) async(asyncid)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = 1 , nlev
@@ -910,7 +910,7 @@ contains
     call copy_ondev_async(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)),asyncid)
     !$acc update host(derived_divdp) async(asyncid)
     call t_startf('derived PEU')
-    !$acc parallel loop gang vector collapse(4) async(asyncid)
+    !$acc parallel loop gang vector default(present) collapse(4) async(asyncid)
     do ie = 1 , nelemd
       ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
       ! all zero so we only have to DSS 1:nlev
@@ -940,7 +940,7 @@ contains
     call edgeVunpack_openacc( edge_g , derived_eta_dot_dpdn , nlevp , 0          , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
     call edgeVunpack_openacc( edge_g , derived_omega_p      , nlev  , nlevp      , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
     call edgeVunpack_openacc( edge_g , derived_divdp_proj   , nlev  , nlevp+nlev , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 , asyncid=1 )
-    !$acc parallel loop gang vector collapse(4) async(asyncid)
+    !$acc parallel loop gang vector default(present) collapse(4) async(asyncid)
     do ie = 1 , nelemd
       do k = 1 , nlevp
         do j = 1 , np
