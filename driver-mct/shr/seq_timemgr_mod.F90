@@ -1026,7 +1026,8 @@ contains
        endif
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
        if(CurrTime + TimeStep > minStopTime ) then
-          write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced and restarts won't be written"
+          write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced &
+                                    &and restarts won't be written"
        endif
        if (n /= seq_timemgr_nclock_esp .and. trim(restart_option) .ne. &
             trim(seq_timemgr_optNone) .and. &
