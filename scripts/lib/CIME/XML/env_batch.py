@@ -472,7 +472,7 @@ class EnvBatch(EnvBase):
                 if prev_job is not None:
                     dep_jobs.append(prev_job)
 
-                logger.info("job {} depends on {}".format(job, dep_jobs))
+                logger.debug("job {} depends on {}".format(job, dep_jobs))
                 result = self._submit_single_job(case, job,
                                                  skip_pnl=skip_pnl,
                                                  resubmit_immediate=resubmit_immediate,
@@ -571,7 +571,7 @@ class EnvBatch(EnvBase):
             submitargs = args_override
 
         if dep_jobs is not None and len(dep_jobs) > 0:
-            logger.info("dependencies: {}".format(dep_jobs))
+            logger.debug("dependencies: {}".format(dep_jobs))
             if allow_fail:
                 dep_string = self.get_value("depend_allow_string", subgroup=None)
                 if dep_string is None:
