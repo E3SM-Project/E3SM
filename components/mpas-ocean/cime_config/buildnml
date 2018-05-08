@@ -23,6 +23,7 @@ my $OCN_CO2_TYPE	= `./xmlquery  OCN_CO2_TYPE	-value`;
 my $ATM_CO2_CONST_VAL	= `./xmlquery  CCSM_CO2_PPMV	-value`;
 my $ICE_BGC		= `./xmlquery  MPASI_BGC	-value`;
 my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN	-value`;
+my $NTHRDS_OCN          = `./xmlquery  NTHRDS_OCN       -value`;
 my $OCN_PIO_TYPENAME	= `./xmlquery  OCN_PIO_TYPENAME	-value`;
 #my $NINST_OCN		= `./xmlquery  NINST_OCN	-value`;
 my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
@@ -42,6 +43,14 @@ my $sysmod;
 if (! -d "$CASEBUILD/mpasoconf" ) {
     $sysmod = "mkdir $CASEBUILD/mpasoconf";
     system($sysmod) == 0 or die "ERROR mpaso buildnml: $sysmod failed: $?\n";
+}
+
+#--------------------------------------------------------------------
+# MPAS-O with active BGC fails bfb restart with more than 1 thread
+# DO NOT run with ocean bgc turned on with more than 1 thread
+#--------------------------------------------------------------------
+if ($NTHRDS_OCN ne 1 and $OCN_BGC ne 'no_bgc') {
+        die " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n";
 }
 
 #--------------------------------------------------------------------
@@ -159,6 +168,16 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_prefix .= 'ocean.RRS.15-5km';
 	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-o.graph.info.';
+}
+
+#--------------------------------------------------------------------
+#  modify initial condition file if ocean BGC is turned on
+#--------------------------------------------------------------------
+if ( $OCN_GRID eq 'oEC60to30v3') {
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+        $ic_date = '180418';
+        $ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime';
+        }
 }
 
 chdir "$CASEBUILD/mpasoconf";
@@ -314,15 +333,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '                  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         }
 	print $stream_file '                  input_interval="initial_only"' . "\n";
-        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
-	print $stream_file "                  filename_template=" . '"'
-                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.161222+BGC_IC.nc"
-                                        . '"' . "\n";
-        } else {
 	print $stream_file "                  filename_template=" . '"'
                                         . "$input_file"
                                         . '"' . "\n";
-        }
 	print $stream_file '/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
@@ -378,7 +391,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="vertAleTransportTop"/>' . "\n";
 	print $stream_file '    <var name="tendSSH"/>' . "\n";
-	print $stream_file '    <var_struct name="tracers"/>' . "\n";
+	print $stream_file '    <var_array name="activeTracers"/>' . "\n";
 	print $stream_file '    <var name="layerThickness"/>' . "\n";
 	print $stream_file '    <var name="normalVelocity"/>' . "\n";
 	print $stream_file '    <var name="ssh"/>' . "\n";
@@ -687,6 +700,24 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="barotropicSpeed"/>' . "\n";
 	print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
 	print $stream_file '    <var name="pressureAdjustedSSH"/>' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                print $stream_file '    <var name="CO2_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="CO2_alt_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfacePhytoC"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceDIC"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceNO3"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceSiO3"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceNH4"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceDOCr"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceFeDissolved"/>' . "\n";
+                print $stream_file '    <var name="iceFluxPhytoC"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxSiO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNH4"/>' . "\n";
+                print $stream_file '    <var name="iceFluxFeDissolved"/>' . "\n";
+                print $stream_file '    <var name="iceFluxDOC"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_TOT_zint"/>' . "\n";
+        }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mixedLayerDepthsOutput"' . "\n";
@@ -720,7 +751,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var_array name="surfaceVelocity"/>' . "\n";
 	print $stream_file '    <var_array name="SSHGradient"/>' . "\n";
 	print $stream_file '    <var name="xtime"/>' . "\n";
-	print $stream_file '    <var name="ssh"/>' . "\n";
+	print $stream_file '    <var name="pressureAdjustedSSH"/>' . "\n";
 	print $stream_file '    <var name="normalVelocity"/>' . "\n";
 	print $stream_file '    <var name="velocityZonal"/>' . "\n";
 	print $stream_file '    <var name="velocityMeridional"/>' . "\n";
@@ -734,6 +765,24 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var_array name="activeTracerVertMixTendency"/>' . "\n";
 	print $stream_file '    <var_array name="avgValueWithinOceanLayerRegion"/>' . "\n";
 	print $stream_file '    <var_array name="avgValueWithinOceanVolumeRegion"/>' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                print $stream_file '    <var name="CO2_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="CO2_alt_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfacePhytoC"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceDIC"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceNO3"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceSiO3"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceNH4"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceDOCr"/>' . "\n";
+                print $stream_file '    <var name="avgOceanSurfaceFeDissolved"/>' . "\n";
+                print $stream_file '    <var name="iceFluxPhytoC"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxSiO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNH4"/>' . "\n";
+                print $stream_file '    <var name="iceFluxFeDissolved"/>' . "\n";
+                print $stream_file '    <var name="iceFluxDOC"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_TOT_zint"/>' . "\n";
+        }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsMonthlyOutput"' . "\n";
@@ -834,8 +883,91 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
 	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
         if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
-        	print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
-        	print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";
+                print $stream_file '    <var name="PH_PREV_ALT_CO2_3D"/>' . "\n";
+                print $stream_file '    <var name="dust_FLUX_IN"/>' . "\n";
+                print $stream_file '    <var name="IRON_FLUX_IN"/>' . "\n";
+                print $stream_file '    <var name="PAR_surface"/>' . "\n";
+                print $stream_file '    <var name="windSpeedSquared10m"/>' . "\n";
+                print $stream_file '    <var name="atmosphericCO2"/>' . "\n";
+                print $stream_file '    <var name="atmosphericCO2_ALT_CO2"/>' . "\n";
+                print $stream_file '    <var name="CO2_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="CO2_alt_gas_flux"/>' . "\n";
+                print $stream_file '    <var name="iceFluxPhytoC"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxSiO3"/>' . "\n";
+                print $stream_file '    <var name="iceFluxNH4"/>' . "\n";
+                print $stream_file '    <var name="iceFluxFeDissolved"/>' . "\n";
+                print $stream_file '    <var name="iceFluxDOC"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_TOT_zint"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_O2_ZMIN"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_Ctot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_100m_Ctot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_Ntot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_100m_Ntot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_Ptot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_100m_Ptot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_Sitot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Jint_100m_Sitot"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_zint"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_NO3_zint"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_PAR_avg"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_POC_FLUX_IN"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CaCO3_FLUX_IN"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_auto_graze_TOT"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_zoo_loss"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_TOT"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_NO3_TOT"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_NITRIF"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_DENITRIF"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_calcToSed"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pocToSed"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_SedDenitrif"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_tot_Nfix"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_O2_PRODUCTION"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_O2_CONSUMPTION"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pH_3D"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_POC_PROD"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_POC_REMIN"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_POC_ACCUM"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_N_lim"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_P_lim"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Fe_lim"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_SiO3_lim"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_light_lim"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoC_NO3"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoFe"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoNO3"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_photoNH4"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_DOP_uptake"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_PO4_uptake"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_auto_graze"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_auto_loss"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_auto_agg"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CO2star"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_dCO2star"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pCO2surface"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_dpCO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pistonVel_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Schmidt_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_xkw"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pistonVel_O2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_O2_saturation"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_Schmidt_O2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CO2star_ALT_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_dCO2star_ALT_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_pCO2surface_ALT_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_dpCO2_ALT_CO2"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_tot_bSi_form"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_DOC_prod"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_DOC_remin"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CaCO3_form_zint"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CaCO3_PROD"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_CaCO3_REMIN"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_tot_CaCO3_form"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_co3_sat_calc"/>' . "\n";
+                print $stream_file '    <var name="ecosys_diag_co3_sat_arag"/>' . "\n";
         }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
@@ -921,7 +1053,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         	print $stream_file '<stream name="ecosys_monthly_flux"' . "\n";
         	print $stream_file '        type="input"' . "\n";
         	print $stream_file "        filename_template=" . '"'
-                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.monthlySurfaceForcingBGC.170301.nc"
+                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.monthlySurfaceForcingBGC.171120.nc"
                                         . '"' . "\n";
         	print $stream_file '        input_interval="none"' . "\n";
         	print $stream_file '        packages="ecosysTracersPKG">' . "\n";
