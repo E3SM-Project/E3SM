@@ -18,7 +18,7 @@ module prim_advection_mod
         statefreq, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
   use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, edge_g
- 
+
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
@@ -149,14 +149,14 @@ contains
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   ! forward-in-time 2 level vertically lagrangian step
-  !  this code takes a lagrangian step in the horizontal 
+  !  this code takes a lagrangian step in the horizontal
   ! (complete with DSS), and then applies a vertical remap
   !
   ! This routine may use dynamics fields at timelevel np1
-  ! In addition, other fields are required, which have to be 
+  ! In addition, other fields are required, which have to be
   ! explicitly saved by the dynamics:  (in elem(ie)%derived struct)
   !
-  ! Fields required from dynamics: (in 
+  ! Fields required from dynamics: (in
   !    omega_p   it will be DSS'd here, for later use by CAM physics
   !              we DSS omega here because it can be done for "free"
   !    Consistent mass/tracer-mass advection (used if subcycling turned on)
@@ -205,9 +205,9 @@ contains
     ! use these for consistent advection (preserve Q=1)
     ! derived%vdp_ave        =  mean horiz. flux:   U*dp
     ! derived%eta_dot_dpdn    =  mean vertical velocity (used for remap)
-    ! derived%omega_p         =  advection code will DSS this for the physics, but otherwise 
-    !                            it is not needed 
-    ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd 
+    ! derived%omega_p         =  advection code will DSS this for the physics, but otherwise
+    !                            it is not needed
+    ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
     call precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
 
@@ -229,14 +229,14 @@ contains
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
     call t_stopf('euler_step_2')
 
-    !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
+    !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.
     call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if ( limiter_option == 8  ) then
-      ! dissipation was applied in RHS.  
+      ! dissipation was applied in RHS.
     else
       call advance_hypervis_scalar(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
     endif
@@ -304,7 +304,7 @@ contains
 
   subroutine advance_hypervis_scalar(  elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
     !  hyperviscsoity operator for foward-in-time scheme
-    !  take one timestep of:  
+    !  take one timestep of:
     !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
     !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
     use kinds                , only: real_kind
@@ -341,7 +341,7 @@ contains
     if ( hypervis_order /= 2 ) return
     call t_startf('advance_hypervis_scalar')
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !  hyper viscosity  
+    !  hyper viscosity
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     dt = dt2 / hypervis_subcycle_q
 
@@ -354,7 +354,7 @@ contains
         do k = 1 , nlev
           ! various options:
           !   1)  biharmonic( Qdp )
-          !   2)  dp0 * biharmonic( Qdp/dp )    
+          !   2)  dp0 * biharmonic( Qdp/dp )
           !   3)  dpave * biharmonic(Q/dp)
           ! For trace mass / mass consistenciy, we use #2 when nu_p=0
           ! and #e when nu_p>0, where dpave is the mean mass flux from the nu_p
@@ -364,7 +364,7 @@ contains
               dp = elem(ie)%derived%dp(i,j,k) - dt2 * derived_divdp_proj(i,j,k,ie)
               if (nu_p > 0) then
                 do q = 1 , qsize
-                  Qtens(i,j,k,q,ie) = elem(ie)%derived%dpdiss_ave(i,j,k)*state_Qdp(i,j,k,q,nt_qdp,ie) / dp 
+                  Qtens(i,j,k,q,ie) = elem(ie)%derived%dpdiss_ave(i,j,k)*state_Qdp(i,j,k,q,nt_qdp,ie) / dp
                 enddo
               else
                 do q = 1 , qsize
@@ -377,7 +377,7 @@ contains
       enddo
       !$omp end master
       !$omp barrier
-      ! compute biharmonic operator. Qtens = input and output 
+      ! compute biharmonic operator. Qtens = input and output
       call biharmonic_wk_scalar_openacc( elem , Qtens , grads_tracer , deriv , edge_g , hybrid , 1 , nelemd )
       !$omp barrier
       !$omp master
@@ -388,7 +388,7 @@ contains
             do j = 1 , np
               do i = 1 , np
                 ! advection Qdp.  For mass advection consistency:
-                ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )  
+                ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )
                 state_Qdp(i,j,k,q,nt_qdp,ie) = state_Qdp(i,j,k,q,nt_qdp,ie) * elem(ie)%spheremp(i,j) - dt * nu_q * Qtens(i,j,k,q,ie)
               enddo
             enddo
@@ -404,14 +404,14 @@ contains
       call t_startf('ah_scalar_exch')
       call bndry_exchangeV( hybrid , edge_g )
       call t_stopf('ah_scalar_exch')
-      
+
       !$omp barrier
       !$omp master
       call edgeVunpack_openacc(edge_g,state_qdp,qsize*nlev,0,qsize*nlev,1,nelemd,2,nt_qdp)
       call t_stopf('ah_scalar_PEU')
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:))
       do ie = 1 , nelemd
-        do q = 1 , qsize    
+        do q = 1 , qsize
           ! apply inverse mass matrix
           do k = 1 , nlev
             do j = 1 , np
@@ -454,7 +454,7 @@ contains
     !$omp end master
     !$omp barrier
     if (limiter_option == 8) call copy_qdp1_d2h( elem , np1_qdp , nets , nete )
-    
+
   end subroutine qdp_time_avg
 
   subroutine euler_step( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
@@ -464,7 +464,7 @@ contains
   !
   !           u(np1) = u(n0) + dt2*DSS[ RHS(u(n0)) ]
   !
-  ! n0 can be the same as np1.  
+  ! n0 can be the same as np1.
   !
   ! DSSopt = DSSeta or DSSomega:   also DSS eta_dot_dpdn or omega
   !
@@ -502,7 +502,7 @@ contains
 
   do ie = nets , nete
     data_pack (:,:,:,ie) = elem(ie)%derived%dpdiss_ave
-    data_pack2(:,:,:,ie) = elem(ie)%derived%dp       
+    data_pack2(:,:,:,ie) = elem(ie)%derived%dp
   enddo
   !$omp barrier
   !$omp master
@@ -541,8 +541,8 @@ contains
     !     be sure to set rhs_viss=3
     !     reuse qmin/qmax for all following stages (but update based on local qmin/qmax)
     !     cost:  1 biharmonic steps with 1 DSS
-    !     main concern:  viscosity 
-    !     
+    !     main concern:  viscosity
+    !
     ! 3)  compromise:
     !     compute biharmonic (which also computes qmin/qmax) only on last stage
     !     be sure to set rhs_viss=3
@@ -552,7 +552,7 @@ contains
     !
     !  NOTE  when nu_p=0 (no dissipation applied in dynamics to dp equation), we should
     !        apply dissipation to Q (not Qdp) to preserve Q=1
-    !        i.e.  laplace(Qdp) ~  dp0 laplace(Q)                
+    !        i.e.  laplace(Qdp) ~  dp0 laplace(Q)
     !        for nu_p=nu_q>0, we need to apply dissipation to Q * diffusion_dp
     !
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
@@ -564,7 +564,7 @@ contains
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         do j = 1 , np
           do i = 1 , np
-            tmp = elem(ie)%derived%dp(i,j,k) - rhs_multiplier*dt*derived_divdp_proj(i,j,k,ie) 
+            tmp = elem(ie)%derived%dp(i,j,k) - rhs_multiplier*dt*derived_divdp_proj(i,j,k,ie)
             do q = 1 , qsize
               Qtens_biharmonic(i,j,k,q,ie) = state_Qdp(i,j,k,q,n0_qdp,ie) / tmp
             enddo
@@ -575,7 +575,7 @@ contains
     !$acc parallel loop gang vector collapse(3) private(mintmp,maxtmp) present(qmin,qmax,qtens_biharmonic)
     do ie = 1 , nelemd
       do q = 1 , qsize
-        do k = 1 , nlev    
+        do k = 1 , nlev
           if (rhs_multiplier == 0 .or. rhs_multiplier == 2) then
             mintmp =  1.D20
             maxtmp = -1.D20
@@ -608,7 +608,7 @@ contains
         !$omp master
         !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord%dp0)
         do ie = 1 , nelemd
-          do k = 1 , nlev    
+          do k = 1 , nlev
             do j = 1 , np
               do i = 1 , np
                 tmp = elem(ie)%derived%dpdiss_ave(i,j,k) / hvcoord%dp0(k)
@@ -650,7 +650,7 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   2D Advection step
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Compute velocity used to advance Qdp 
+  ! Compute velocity used to advance Qdp
 
   if ( limiter_option == 8 .and. nu_p > 0 .and. rhs_viss /= 0 ) then
     do ie = nets , nete
@@ -691,8 +691,8 @@ contains
           Vstar(1) = derived_vn0(i,j,1,k,ie) / dp
           Vstar(2) = derived_vn0(i,j,2,k,ie) / dp
           if ( limiter_option == 8 ) then
-            ! UN-DSS'ed dp at timelevel n0+1:  
-            dp_star(i,j,k,ie) = dp - dt * derived_divdp(i,j,k,ie)  
+            ! UN-DSS'ed dp at timelevel n0+1:
+            dp_star(i,j,k,ie) = dp - dt * derived_divdp(i,j,k,ie)
             if ( nu_p > 0 .and. rhs_viss /= 0 ) then
               ! add contribution from UN-DSS'ed PS dissipation
               dp_star(i,j,k,ie) = dp_star(i,j,k,ie) - rhs_viss * dt * nu_q * elem(ie)%derived%dpdiss_biharmonic(i,j,k) / elem(ie)%spheremp(i,j)
@@ -724,19 +724,19 @@ contains
     enddo
   enddo
   if ( limiter_option == 8 ) then
-    call limiter_optim_iter_full( Qtens , elem(:) , qmin , qmax , dp_star )   ! apply limiter to Q = Qtens / dp_star 
+    call limiter_optim_iter_full( Qtens , elem(:) , qmin , qmax , dp_star )   ! apply limiter to Q = Qtens / dp_star
   endif
   !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:),qtens)
   do ie = 1 , nelemd
     ! apply mass matrix, overwrite np1 with solution:
-    ! dont do this earlier, since we allow np1_qdp == n0_qdp 
+    ! dont do this earlier, since we allow np1_qdp == n0_qdp
     ! and we dont want to overwrite n0_qdp until we are done using it
     do k = 1 , nlev
       do j = 1 , np
         do i = 1 , np
           tmp = elem(ie)%spheremp(i,j)
           do q = 1 , qsize
-            state_Qdp(i,j,k,q,np1_qdp,ie) =  tmp * Qtens(i,j,k,q,ie) 
+            state_Qdp(i,j,k,q,np1_qdp,ie) =  tmp * Qtens(i,j,k,q,ie)
           enddo
         enddo
       enddo
@@ -809,9 +809,9 @@ contains
               mass = mass + qtmp(i,j)
             enddo
           enddo
-          ! negative mass.  so reduce all postive values to zero 
+          ! negative mass.  so reduce all postive values to zero
           ! then increase negative values as much as possible
-          if ( mass < 0 ) qtmp = -qtmp 
+          if ( mass < 0 ) qtmp = -qtmp
           mass_new = 0
           do j = 1 , np
             do i = 1 , np
@@ -824,7 +824,7 @@ contains
           enddo
           ! now scale the all positive values to restore mass
           if ( mass_new > 0 ) qtmp = qtmp * abs(mass) / mass_new
-          if ( mass     < 0 ) qtmp = -qtmp 
+          if ( mass     < 0 ) qtmp = -qtmp
           Qdp(:,:,k,q,tl,ie) = qtmp
         enddo
       enddo
@@ -842,8 +842,8 @@ contains
     !to the initial field (in terms of weighted sum), but satisfies the min/max constraints.
     !So, first we find values which do not satisfy constraints and bring these values
     !to a closest constraint. This way we introduce some mass change (addmass),
-    !so, we redistribute addmass in the way that l2 error is smallest. 
-    !This redistribution might violate constraints thus, we do a few iterations. 
+    !so, we redistribute addmass in the way that l2 error is smallest.
+    !This redistribution might violate constraints thus, we do a few iterations.
     real (kind=real_kind), intent(inout) :: ptens (np*np,nlev,qsize,nelemd)
     type(element_t)      , intent(in   ) :: elem  (:)
     real (kind=real_kind), intent(inout) :: minp  (      nlev,qsize,nelemd)
@@ -924,11 +924,11 @@ contains
 
   subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
     use element_mod           , only: element_t
-    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj
+    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
-    use edge_mod              , only: edgeVpack_nlyr, edgeVunpack_nlyr
-    use bndry_mod             , only: bndry_exchangeV
+    use edge_mod              , only: edgeVpack_openacc, edgeVunpack_openacc
+    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
     use openacc_utils_mod     , only: copy_ondev
@@ -939,7 +939,7 @@ contains
     type (derivative_t)  , intent(in   ) :: deriv
     real(kind=real_kind) , intent(in   ) :: dt
     integer              , intent(in   ) :: nets , nete , n0_qdp
-    integer :: ie , k
+    integer :: ie , k, j , i
     real(kind=real_kind), pointer, dimension(:,:,:) :: DSSvar
     call copy_qdp1_h2d(elem,n0_qdp,nets,nete)
     !$omp barrier
@@ -948,37 +948,55 @@ contains
     call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1)
     call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
     !$acc update host(derived_divdp,derived_divdp_proj)
-    !$omp end master
-    !$omp barrier
     call t_startf('derived PEU')
-    do ie = nets , nete
+    !$acc update device(derived_omega_p, derived_eta_dot_dpdn, derived_divdp_proj)
+    !$acc parallel loop gang vector collapse(4)
+    do ie = 1 , nelemd
       ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
       ! all zero so we only have to DSS 1:nlev
-      do k = 1 , nlev
-        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k) 
-        elem(ie)%derived%omega_p(:,:,k)      = elem(ie)%spheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)      
-        elem(ie)%derived%divdp_proj(:,:,k)   = elem(ie)%spheremp(:,:) * elem(ie)%derived%divdp_proj(:,:,k)   
+      do k = 1 , nlevp
+        do j = 1 , np
+          do i = 1 , np
+            elem(ie)%derived%eta_dot_dpdn(i,j,k) = elem(ie)%spheremp(i,j) * elem(ie)%derived%eta_dot_dpdn(i,j,k)
+            if (k <= nlev) then
+              elem(ie)%derived%omega_p     (i,j,k) = elem(ie)%spheremp(i,j) * elem(ie)%derived%omega_p     (i,j,k)
+              elem(ie)%derived%divdp_proj  (i,j,k) = elem(ie)%spheremp(i,j) * elem(ie)%derived%divdp_proj  (i,j,k)
+            endif
+          enddo
+        enddo
       enddo
-      call edgeVpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , 3*nlev )
-      call edgeVpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , 3*nlev )
-      call edgeVpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , 3*nlev )
     enddo
+    call edgeVpack_openacc( edge_g , derived_eta_dot_dpdn , nlevp , 0          , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    call edgeVpack_openacc( edge_g , derived_omega_p      , nlev  , nlevp      , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    call edgeVpack_openacc( edge_g , derived_divdp_proj   , nlev  , nlevp+nlev , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    !$omp end master
+    !$omp barrier
 
     call bndry_exchangeV( hybrid , edge_g   )
 
-    do ie = nets , nete
-      call edgeVunpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev) , nlev , 0      , 3*nlev )
-      call edgeVunpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%omega_p(:,:,1:nlev)      , nlev , nlev   , 3*nlev )
-      call edgeVunpack_nlyr( edge_g , elem(ie)%desc, elem(ie)%derived%divdp_proj(:,:,1:nlev)   , nlev , nlev*2 , 3*nlev )
-      do k = 1 , nlev
-        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%rspheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k) 
-        elem(ie)%derived%omega_p(:,:,k)      = elem(ie)%rspheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)      
-        elem(ie)%derived%divdp_proj(:,:,k)   = elem(ie)%rspheremp(:,:) * elem(ie)%derived%divdp_proj(:,:,k)   
+    !$omp barrier
+    !$omp master
+    call edgeVunpack_openacc( edge_g , derived_eta_dot_dpdn , nlevp , 0          , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    call edgeVunpack_openacc( edge_g , derived_omega_p      , nlev  , nlevp      , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    call edgeVunpack_openacc( edge_g , derived_divdp_proj   , nlev  , nlevp+nlev , nlevp+nlev+nlev , 1 , nelemd , 1 , 1 )
+    !$acc parallel loop gang vector collapse(4)
+    do ie = 1 , nelemd
+      do k = 1 , nlevp
+        do j = 1 , np
+          do i = 1 , np
+            elem(ie)%derived%eta_dot_dpdn(i,j,k) = elem(ie)%rspheremp(i,j) * elem(ie)%derived%eta_dot_dpdn(i,j,k)
+            if (k <= nlev) then
+              elem(ie)%derived%omega_p     (i,j,k) = elem(ie)%rspheremp(i,j) * elem(ie)%derived%omega_p     (i,j,k)
+              elem(ie)%derived%divdp_proj  (i,j,k) = elem(ie)%rspheremp(i,j) * elem(ie)%derived%divdp_proj  (i,j,k)
+            endif
+          enddo
+        enddo
       enddo
     enddo
+    !$acc update host(derived_omega_p, derived_eta_dot_dpdn, derived_divdp_proj)
+    !$omp end master
+    !$omp barrier
     call t_stopf('derived PEU')
   end subroutine precompute_divdp
 
 end module prim_advection_mod
-
-

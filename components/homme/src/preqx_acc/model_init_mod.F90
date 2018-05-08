@@ -20,7 +20,7 @@ contains
 
 
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
-    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn
     use dimensions_mod, only: nelemd
 
     implicit none
@@ -36,12 +36,18 @@ contains
     !$omp barrier
     !$omp master
 
-  
-    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj)
+
+    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_eta_dot_dpdn, derived_omega_p)
     !$acc enter data pcopyin(elem(1:nelemd),deriv)
     do ie = 1 , nelemd
       !$acc enter data pcopyin(elem(ie)%desc)
       !$acc enter data pcopyin(elem(ie)%desc%putmapP,elem(ie)%desc%getmapP,elem(ie)%desc%reverse)
+      !$acc enter data pcopyin(elem(ie)%state%Qdp            )
+      !$acc enter data pcopyin(elem(ie)%derived%vn0          )
+      !$acc enter data pcopyin(elem(ie)%derived%divdp        )
+      !$acc enter data pcopyin(elem(ie)%derived%divdp_proj   )
+      !$acc enter data pcopyin(elem(ie)%derived%eta_dot_dpdn )
+      !$acc enter data pcopyin(elem(ie)%derived%omega_p      )
     enddo
 
     !$omp end master
