@@ -915,9 +915,8 @@ contains
     !$acc update device(derived_vn0)
     call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1,asyncid)
     call copy_ondev_async(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)),asyncid)
-    !$acc update host(derived_divdp,derived_divdp_proj) async(asyncid)
+    !$acc update host(derived_divdp,derived_divdp_proj,derived_omega_p, derived_eta_dot_dpdn) async(asyncid)
     call t_startf('derived PEU')
-    !$acc update device(derived_omega_p, derived_eta_dot_dpdn, derived_divdp_proj) async(asyncid)
     !$acc parallel loop gang vector collapse(4) async(asyncid)
     do ie = 1 , nelemd
       ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
