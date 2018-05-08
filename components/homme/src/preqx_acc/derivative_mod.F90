@@ -52,7 +52,7 @@ contains
     ! Local
     real(kind=real_kind) :: oldgrads(2)
     call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl,tl,asyncid)
-    !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads) async(asyncid)
+    !$acc parallel loop gang vector collapse(4) default(present) private(oldgrads) async(asyncid)
     do ie = nets , nete
       do k = 1 , len
         do j = 1 , np
@@ -99,7 +99,7 @@ contains
     integer :: i,j,l,k,ie,kc,kk
     real(kind=real_kind) :: vtemp(np,np,2,kchunk), tmp
     ! latlon- > contra
-    !$acc parallel loop gang collapse(2) present(v,elem(:),div,deriv) private(vtemp) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) private(vtemp) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(vtemp)
@@ -151,7 +151,7 @@ contains
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) :: dsdx00, dsdy00
     real(kind=real_kind) :: stmp(np,np,kchunk)
-    !$acc parallel loop gang collapse(2) present(ds,elem(:),s) private(stmp) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) private(stmp) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(stmp)
@@ -204,7 +204,7 @@ contains
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) ::  dudx00, dvdy00, gv(np,np,kchunk,2), deriv_tmp(np,np)
     ! convert to contra variant form and multiply by g
-    !$acc parallel loop gang collapse(2) private(gv) present(v,deriv,div,elem(:)) async(asyncid)
+    !$acc parallel loop gang collapse(2) private(gv) default(present) async(asyncid)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(gv)
