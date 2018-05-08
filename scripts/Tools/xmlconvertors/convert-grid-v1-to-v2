@@ -176,7 +176,7 @@ def convert_grids(v1file_obj, v2file_obj):
             if "%" in raw_piece:
                 pieces.append(raw_piece)
             else:
-                pieces[-1] += raw_piece
+                pieces[-1] += ("_" + raw_piece)
 
         ctype_map = {"a":"atm", "l":"lnd", "oi":"ocnice", "r":"rof", "m":"mask", "g":"glc", "w":"wav"}
         mask = None
