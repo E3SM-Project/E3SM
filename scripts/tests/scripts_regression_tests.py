@@ -1538,12 +1538,6 @@ class K_TestCimeCase(TestCreateTestCommon):
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
-#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
-#            if CIME.utils.get_model() == 'cesm':
-#                self.assertEqual(model_specific_val, "RASM_OPTION1")
-#            else:
-#                self.assertEqual(model_specific_val, "CESM1_MOD")
-
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
 
@@ -1611,7 +1605,10 @@ class K_TestCimeCase(TestCreateTestCommon):
             depend_allow = depend_allow.replace("jobid", prereq_name)
             batch_commands = case.submit_jobs(prereq=prereq_name, allow_fail=True, job=job_name, skip_pnl=True, dry_run=True)
             self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
-            self.assertTrue(len(batch_commands) == 1, "case.submit_jobs did not return any job submission strings")
+            num_submissions = 1
+            if case.get_value("DOUT_S"):
+                num_submissions = 2
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return any job submission strings")
             self.assertTrue(depend_allow in batch_commands[0][1])
 
     ###########################################################################
@@ -1629,6 +1626,8 @@ class K_TestCimeCase(TestCreateTestCommon):
             case.set_value("RESUBMIT", num_submissions - 1)
             batch_commands = case.submit_jobs(job=job_name, skip_pnl=True, dry_run=True, resubmit_immediate=True)
             self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            if case.get_value("DOUT_S"):
+                num_submissions = 12
             self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return {} submitted jobs".format(num_submissions))
             for i, cmd in enumerate(batch_commands):
                 if i > 0:
