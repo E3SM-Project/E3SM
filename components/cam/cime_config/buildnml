@@ -41,7 +41,7 @@ my $RUN_REFDATE	        = `./xmlquery  RUN_REFDATE		-value`;
 my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD		-value`;
 my $UTILROOT		= `./xmlquery  UTILROOT			-value`;
 my $COMPILER		= `./xmlquery  COMPILER                 -value`; # for chem preprocessor 
-my $BUILD_THREADED      = `./xmlquery  BUILD_THREADED		-value`;
+my $FORCE_BUILD_SMP     = `./xmlquery  FORCE_BUILD_SMP		-value`;
 my $OS                  = lc `./xmlquery OS                     -value`;
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
@@ -76,7 +76,7 @@ if ($BUILD_COMPLETE eq 'FALSE') {
     my $spmd = '-spmd';
     if ($MPILIB eq 'mpi-serial') {$spmd = "-nospmd";}
     my $smp = '-smp';
-    if (($NTHRDS_ATM == 1) && ($BUILD_THREADED eq 'FALSE')) {$smp = "-nosmp";}
+    if (($NTHRDS_ATM == 1) && ($FORCE_BUILD_SMP eq 'FALSE')) {$smp = "-nosmp";}
 
     # The ocean component setting is only used by CAM to do attribute matching for
     # setting default tuning parameter values.  In SOM mode we want to use the same
