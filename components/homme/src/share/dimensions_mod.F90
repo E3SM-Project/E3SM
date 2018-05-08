@@ -29,11 +29,10 @@ module dimensions_mod
   integer, parameter, public :: nlev=PLEV
   integer, parameter, public :: nlevp=nlev+1
 
-!  integer, public, parameter :: max_elements_attached_to_node = 4 ! cubed sphere mesh
-  integer, parameter, public  :: max_elements_attached_to_node = 7 ! RRM meshes
-  integer, public, parameter :: s_nv = 2*max_elements_attached_to_node 
-  integer, parameter, public  :: max_corner_elem               = max_elements_attached_to_node-3
-  integer, parameter, public  :: max_neigh_edges               = 4 + 4*max_corner_elem
+  integer, parameter, public  :: max_elements_attached_to_node = 7 ! RRM meshes 
+! defaults for cubed sphere grids:
+  integer, public  :: max_corner_elem               = 1  !  max_elements_attached_to_node-3
+  integer, public  :: max_neigh_edges               = 8  !  4 + 4*max_corner_elem
 
   public :: qsize,qsize_d
 
@@ -44,8 +43,16 @@ module dimensions_mod
   integer, public :: nnodes,npart,nmpi_per_node
   integer, public :: GlobalUniqueCols
 
+  public :: set_mesh_dimensions
 
 contains
 
+  subroutine set_mesh_dimensions()
+
+    !recalculate these for RRM meshes
+    max_corner_elem               = max_elements_attached_to_node-3
+    max_neigh_edges               = 4 + 4*max_corner_elem
+
+  end subroutine set_mesh_dimensions
 end module dimensions_mod
 
