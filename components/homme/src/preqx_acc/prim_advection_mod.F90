@@ -306,7 +306,7 @@ contains
     use control_mod          , only: nu_q, hypervis_order, hypervis_subcycle_q, nu_p
     use viscosity_mod, only: biharmonic_wk_scalar_openacc
     use edge_mod     , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
+    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)     , intent(in   )         :: hvcoord
@@ -391,7 +391,7 @@ contains
       !$omp barrier
 
       call t_startf('ah_scalar_exch')
-      call bndry_exchangeV( hybrid , edge_g , asyncid )
+      call bndry_exchangeV( hybrid , edge_g )
       call t_stopf('ah_scalar_exch')
 
       !$omp barrier
@@ -474,7 +474,7 @@ contains
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
-  use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
+  use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -714,7 +714,7 @@ contains
   !$omp barrier
 
   call t_startf('eus_exch')
-  call bndry_exchangeV( hybrid , edge_g , asyncid )
+  call bndry_exchangeV( hybrid , edge_g )
   call t_stopf('eus_exch')
 
   !$omp barrier
@@ -887,7 +887,7 @@ contains
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
     use edge_mod              , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
+    use bndry_mod             , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     use control_mod           , only: limiter_option
     use derivative_mod, only: divergence_sphere_openacc
     use openacc_utils_mod     , only: copy_ondev_async
@@ -930,7 +930,7 @@ contains
     !$omp end master
     !$omp barrier
 
-    call bndry_exchangeV( hybrid , edge_g , asyncid )
+    call bndry_exchangeV( hybrid , edge_g )
 
     !$omp barrier
     !$omp master

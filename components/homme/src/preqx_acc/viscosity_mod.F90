@@ -38,7 +38,7 @@ contains
     use perf_mod              , only: t_startf, t_stopf
     use derivative_mod, only: laplace_sphere_wk_openacc
     use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_minimize_latency
+    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! compute weak biharmonic operator
@@ -68,7 +68,7 @@ contains
     !$omp barrier
 
     call t_startf('biwksc_exch')
-    call bndry_exchangeV(hybrid,edgeq,asyncid)
+    call bndry_exchangeV(hybrid,edgeq)
     call t_stopf('biwksc_exch')
 
     !$omp barrier
@@ -99,7 +99,7 @@ contains
     use perf_mod         , only: t_startf, t_stopf
     use edgetype_mod     , only: edgeBuffer_t
     use edge_mod , only: edgeSpack_openacc, edgeSunpackMin_openacc, edgeSunpackMax_openacc
-    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_minimize_latency
+    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_simple_overlap
     implicit none
     ! compute Q min&max over the element and all its neighbors
     integer :: nets,nete,asyncid
@@ -120,7 +120,7 @@ contains
     !$omp barrier
 
     call t_startf('nmm_exch')
-    call bndry_exchangeS(hybrid,edgeMinMax,asyncid)
+    call bndry_exchangeS(hybrid,edgeMinMax)
     call t_stopf('nmm_exch')
 
     !$omp barrier
