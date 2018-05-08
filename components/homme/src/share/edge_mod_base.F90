@@ -965,7 +965,7 @@ endif
 
     threadsafe=.false.
 
-    if (max_corner_elem.ne.1 .and. ne==0) then
+    if (max_corner_elem.ne.1 .or. ne==0) then
         ! MNL: this is used to construct the dual grid on the cube,
         !      currently only supported for the uniform grid. If
         !      this is desired on a refined grid, a little bit of
