@@ -18,6 +18,8 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
   real (kind=real_kind), allocatable, target, public :: derived_eta_dot_dpdn     (:,:,:,:)        ! (np,np,nlevp,nelemd
   real (kind=real_kind), allocatable, target, public :: derived_omega_p          (:,:,:,:)        ! (np,np,nlev,nelemd)
+  real (kind=real_kind), allocatable, target, public :: derived_dpdiss_ave       (:,:,:,:)        ! (np,np,nlev,nelemd)
+  real (kind=real_kind), allocatable, target, public :: derived_dp               (:,:,:,:)        ! (np,np,nlev,nelemd)
   real (kind=real_kind), public :: deriv_dvv(np,np)
   real (kind=real_kind), public :: hvcoord_dp0(nlev)
 
@@ -43,7 +45,7 @@ module element_state
   real (kind=real_kind), pointer :: vn0              (:,:,:,:)       ! (np,np,2,nlev)                  velocity for SE tracer advection
     real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces
     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
-    real (kind=real_kind) :: dpdiss_ave(np,np,nlev)                   ! mean dp used to compute psdiss_tens
+    real (kind=real_kind), pointer :: dpdiss_ave(:,:,:)                   ! mean dp used to compute psdiss_tens
 
     ! diagnostics for explicit timestep
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
@@ -57,7 +59,7 @@ module element_state
     real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence
 
     ! tracer advection fields used for consistency and limiters
-    real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
+    real (kind=real_kind), pointer :: dp(:,:,:)                           ! for dp_tracers at physics timestep
     real (kind=real_kind), pointer :: divdp            (:,:,:)         ! (np,np,nlev)                    divergence of dp
     real (kind=real_kind), pointer :: divdp_proj       (:,:,:)         ! (np,np,nlev)                    DSSed divdp
 

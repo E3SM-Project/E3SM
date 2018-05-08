@@ -478,7 +478,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp, hvcoord_dp0, derived_dpdiss_ave, derived_dp
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -501,26 +501,9 @@ contains
   integer :: ie,q,i,j,k
   integer :: rhs_viss
 
-
-  do ie = nets , nete
-    data_pack (:,:,:,ie) = elem(ie)%derived%dpdiss_ave
-    data_pack2(:,:,:,ie) = elem(ie)%derived%dp
-  enddo
   !$omp barrier
   !$omp master
-  !$acc update device(data_pack,data_pack2) async(asyncid)
-  !$acc update device(derived_divdp_proj,derived_vn0) async(asyncid)
-  !$acc parallel loop gang vector collapse(4) present(data_pack,elem) async(asyncid)
-  do ie = 1 , nelemd
-    do k = 1 , nlev
-      do j = 1 , np
-        do i = 1 , np
-          elem(ie)%derived%dpdiss_ave(i,j,k) = data_pack (i,j,k,ie)
-          elem(ie)%derived%dp        (i,j,k) = data_pack2(i,j,k,ie)
-        enddo
-      enddo
-    enddo
-  enddo
+  !$acc update device(derived_divdp_proj,derived_vn0,derived_dpdiss_ave,derived_dp) async(asyncid)
   !$omp end master
   !$omp barrier
 

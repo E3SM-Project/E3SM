@@ -20,7 +20,8 @@ contains
 
 
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
-    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn, deriv_dvv, hvcoord_dp0
+    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn, deriv_dvv, hvcoord_dp0, &
+                             derived_dpdiss_ave, derived_dp
     use dimensions_mod, only: nelemd
 
     implicit none
@@ -37,7 +38,7 @@ contains
     !$omp master
 
 
-    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_eta_dot_dpdn, derived_omega_p)
+    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_eta_dot_dpdn, derived_omega_p, derived_dpdiss_ave, derived_dp)
     !$acc enter data pcopyin(elem(1:nelemd),deriv)
     do ie = 1 , nelemd
       !$acc enter data pcopyin(elem(ie)%desc)
@@ -48,6 +49,8 @@ contains
       !$acc enter data pcopyin(elem(ie)%derived%divdp_proj   )
       !$acc enter data pcopyin(elem(ie)%derived%eta_dot_dpdn )
       !$acc enter data pcopyin(elem(ie)%derived%omega_p      )
+      !$acc enter data pcopyin(elem(ie)%derived%dpdiss_ave   )
+      !$acc enter data pcopyin(elem(ie)%derived%dp           )
     enddo
 
     deriv_dvv = deriv%dvv
