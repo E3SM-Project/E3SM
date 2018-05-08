@@ -245,7 +245,7 @@ class Grids(GenericXML):
                         grid_match = re.search(comp_name.lower(), grid_attrib)
                         mask_match = None
                         if mask_name is not None:
-                            mask_match = re.search(mask_name, mask_attrib)
+                            mask_match = re.search(mask_name + "_", mask_attrib)
                         if grid_match is not None and mask_match is not None:
                             domain_name = self.text(file_node)
                     elif grid_attrib is not None:
@@ -253,7 +253,7 @@ class Grids(GenericXML):
                         if grid_match is not None:
                             domain_name = self.text(file_node)
                     elif mask_attrib is not None:
-                        mask_match = re.search(mask_name.lower(), mask_attrib)
+                        mask_match = re.search(mask_name.lower() + "_", mask_attrib)
                         if mask_match is not None:
                             domain_name = self.text(file_node)
                     if domain_name:
