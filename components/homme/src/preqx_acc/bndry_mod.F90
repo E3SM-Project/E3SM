@@ -333,9 +333,9 @@ contains
         print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
       endif
     enddo
-    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
-    !$acc update device(buffer%receive) async(asyncid)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    !$acc update device(buffer%receive) async(asyncid)
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     !$omp end master
     !$OMP BARRIER
   end subroutine bndry_exchangeS_minimize_latency
@@ -400,9 +400,9 @@ contains
           print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
        endif
     end do    ! icycle
-    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
-    !$acc update device(buffer%receive) async(asyncid)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    !$acc update device(buffer%receive) async(asyncid)
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     !$omp end master
     !$OMP BARRIER
   end subroutine bndry_exchangeV_minimize_latency
