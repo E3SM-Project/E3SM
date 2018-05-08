@@ -37,7 +37,7 @@ module edge_mod
 
 contains
 
-  subroutine edgeSpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSpack_openacc(edge,v,vlyr,kptr,nlyr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -45,19 +45,19 @@ contains
     use element_mod   , only : Element_t
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
-    integer                ,intent(in   ) :: vlyr
+    integer                ,intent(in   ) :: vlyr,nlyr
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
     real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     ! Local variables
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk,nlyr
+    integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
     call t_startf('edge_s_pack')
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
-    nlyr=edge%nlyr_max  ! amount packed. this should be made a paramter, following edgevpack_nlyr()
-    edge%nlyr=nlyr      ! set amount packed, for use by bndry_exchange
+    edge%nlyr=nlyr      ! set total amount packed, for use by bndry_exchange
 
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk)
     do el = nets , nete
@@ -89,25 +89,26 @@ contains
     call t_stopf('edge_s_pack')
   end subroutine edgeSpack_openacc
 
-  subroutine edgeSunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMin_openacc(edge,v,vlyr,kptr,nlyr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
     use element_mod   , only : Element_t
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
-    integer               , intent(in   ) :: vlyr
+    integer               , intent(in   ) :: vlyr,nlyr
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
     real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,nlyr
+    integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_min')
-    nlyr=edge%nlyr_max  ! this should eventually become an input argument
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeSunpackMin: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeSunpackMin: Buffer overflow: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
@@ -150,25 +151,26 @@ contains
     call t_stopf('edge_s_unpack_min')
   end subroutine edgeSunpackMin_openacc
 
-  subroutine edgeSunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMax_openacc(edge,v,vlyr,kptr,nlyr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
     use element_mod   , only : Element_t
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
-    integer               , intent(in   ) :: vlyr
+    integer               , intent(in   ) :: vlyr,nlyr
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
     real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     type (EdgeDescriptor_t),pointer            :: desc        ! =>elem(ie)%desc
-    integer :: i,k,ll,is,ie,in,iw,el,kc,kk,nlyr
+    integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_max')
-    nlyr=edge%nlyr_max  ! this should eventually become an input argument
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeSunpackMax: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < (kptr+vlyr) ) call haltmp('edgeSunpackMax: Buffer overflow: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
@@ -295,8 +297,8 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack')
-    if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
-    if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeVunpack: Buffer overflow1: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < nlyr ) call haltmp('edgeVunpack: Buffer overflow2: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1

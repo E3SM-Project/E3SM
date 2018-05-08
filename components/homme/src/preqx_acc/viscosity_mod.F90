@@ -114,8 +114,8 @@ contains
     !$omp barrier
     !$omp master
     call t_startf('nmm_PEU')
-    call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,2*nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,2*nlev*qsize,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -125,8 +125,8 @@ contains
        
     !$omp barrier
     !$omp master
-    call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSunpackMax_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,2*nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSunpackMax_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,2*nlev*qsize,elem(:),nets,nete,1,1)
     call t_stopf('nmm_PEU')
     !$omp end master
     !$omp barrier

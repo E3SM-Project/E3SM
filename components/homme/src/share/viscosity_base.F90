@@ -453,9 +453,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
    
    do ie=nets,nete
       kptr = 0
-      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
    enddo
    
    call t_startf('nmm_bexchV')
@@ -464,9 +464,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       do q=1,qsize
       do k=1,nlev
           min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
@@ -490,9 +490,9 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
    enddo
 
    call t_startf('nmm_bexchS_start')
@@ -517,9 +517,9 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       do q=1,qsize
       do k=1,nlev
           min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)

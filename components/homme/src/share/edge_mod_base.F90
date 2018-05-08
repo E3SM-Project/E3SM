@@ -634,31 +634,33 @@ endif
 
 
 
-  subroutine edgeSpack(edge,v,vlyr,kptr,ielem)
+  subroutine edgeSpack(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t)                :: edge
-    integer,              intent(in)   :: vlyr
+    integer,              intent(in)   :: vlyr,nlyr_tot
     real (kind=real_kind),intent(in)   :: v(vlyr)
     integer,              intent(in)   :: kptr
     integer,              intent(in)   :: ielem
 !    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr,nlyr_tot
+    integer :: i,k,ir,ll,llval,iptr
     type (EdgeDescriptor_t), pointer  :: desc
     integer :: is,ie,in,iw
     real (kind=real_kind) :: tmp
 
     if (edge%nlyr_max < (kptr+vlyr) ) then
-       call abortmp('edgeSpack: Buffer overflow: edge%nlyr too small')
+       call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
     endif
 
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr_max      ! this will be changing to an input paramemter
-    edge%nlyr = nlyr_tot          ! set size actually used
+    edge%nlyr = nlyr_tot          ! set size actually used for bndry_exchange()
 
     is = nlyr_tot*desc%putmapS(south)
     ie = nlyr_tot*desc%putmapS(east)
@@ -1321,12 +1323,12 @@ endif
     
   end subroutine edgeVunpackMAX
 
-  subroutine edgeSunpackMAX(edge,v,vlyr,kptr,ielem)
+  subroutine edgeSunpackMAX(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
-    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: vlyr,nlyr_tot
     real (kind=real_kind), intent(inout) :: v(vlyr)
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
@@ -1334,13 +1336,19 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
-    integer :: getmapL, nlyr_tot
+    integer :: getmapL
     type (EdgeDescriptor_t), pointer   :: desc
+
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       call abortmp('edgeSunpackMAX: Buffer overflow: edge%nlyr_max too small')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSunpackMAX: Buffer overflow: edge%nlyr_max too small')
+    endif
 
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapS(south)
     ie=nlyr_tot*desc%getmapS(east)
@@ -1403,12 +1411,12 @@ endif
     
   end subroutine edgeSunpackMAX
 
-  subroutine edgeSunpackMIN(edge,v,vlyr,kptr,ielem)
+  subroutine edgeSunpackMIN(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
-    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: vlyr,nlyr_tot
     real (kind=real_kind), intent(inout) :: v(vlyr)
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
@@ -1418,14 +1426,20 @@ endif
 
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
-    integer :: getmapL,nlyr_tot
+    integer :: getmapL
     type (EdgeDescriptor_t), pointer   :: desc
 
 !pw call t_startf('edgeSunpack')
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       call abortmp('edgeSunpackMIN: Buffer overflow: edge%nlyr_max too small')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSunpackMIN: Buffer overflow: edge%nlyr_max too small')
+    endif
+
     threadsafe=.false.
 
     desc => edge%desc(ielem)
-    nlyr_tot = edge%nlyr_max
 
     is=nlyr_tot*desc%getmapS(south)
     ie=nlyr_tot*desc%getmapS(east)
