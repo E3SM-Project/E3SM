@@ -59,7 +59,7 @@ contains
     nlyr=edge%nlyr_max  ! amount packed. this should be made a paramter, following edgevpack_nlyr()
     edge%nlyr=nlyr      ! set amount packed, for use by bndry_exchange
 
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector
@@ -108,7 +108,7 @@ contains
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_min')
     nlyr=edge%nlyr_max  ! this should eventually become an input argument
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) private(vtmp) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -169,7 +169,7 @@ contains
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_max')
     nlyr=edge%nlyr_max  ! this should eventually become an input argument
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) private(vtmp) vector_length(kchunk) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -232,7 +232,7 @@ contains
     if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
     edge%nlyr=nlyr  ! set total amount packed for use by bndry_exchange
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) vector_length(kchunk*np) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector collapse(2)
@@ -297,7 +297,7 @@ contains
     call t_startf('edge_unpack')
     if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow1: size of the vertical dimension must be increased!')
     if (edge%nlyr_max < nlyr ) call haltmp('edgeVpack: Buffer overflow2: size of the vertical dimension must be increased!')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) async(asyncid)
+    !$acc parallel loop gang collapse(2) default(present) present(v,edge) private(vtmp) async(asyncid)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
