@@ -76,7 +76,7 @@ contains
     !$omp master
     call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,qsize*nlev,nets,nete,1,1,asyncid)
     call t_stopf('biwksc_PEU')
-    !$acc parallel loop gang vector collapse(5) present(qtens,elem(:)) async(asyncid)
+    !$acc parallel loop gang vector collapse(5) default(present) async(asyncid)
     do ie = nets , nete
       ! apply inverse mass matrix, then apply laplace again
       do q = 1 , qsize
