@@ -99,7 +99,7 @@ contains
     use perf_mod         , only: t_startf, t_stopf
     use edgetype_mod     , only: edgeBuffer_t
     use edge_mod , only: edgeSpack_openacc, edgeSunpackMin_openacc, edgeSunpackMax_openacc
-    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_simple_overlap
+    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_minimize_latency
     implicit none
     ! compute Q min&max over the element and all its neighbors
     integer :: nets,nete,asyncid
@@ -116,12 +116,11 @@ contains
     call t_startf('nmm_PEU')
     call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1,asyncid)
     call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1,asyncid)
-    !$acc wait(asyncid)
     !$omp end master
     !$omp barrier
 
     call t_startf('nmm_exch')
-    call bndry_exchangeS(hybrid,edgeMinMax)
+    call bndry_exchangeS(hybrid,edgeMinMax,asyncid)
     call t_stopf('nmm_exch')
 
     !$omp barrier

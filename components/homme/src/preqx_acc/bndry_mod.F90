@@ -16,6 +16,7 @@ module bndry_mod
   public :: bndry_exchangeS_simple_overlap
   public :: bndry_exchangeV_simple_overlap
   public :: bndry_exchangeV_minimize_latency
+  public :: bndry_exchangeS_minimize_latency
 
 contains
 
@@ -272,6 +273,73 @@ contains
     !$OMP BARRIER
   end subroutine bndry_exchangeV_simple_overlap
 
+  subroutine bndry_exchangeS_minimize_latency(hybrid,buffer,asyncid)
+    use hybrid_mod       , only : hybrid_t
+    use kinds            , only : log_kind
+    use edgetype_mod     , only : Edgebuffer_t
+    use schedtype_mod    , only : schedule_t, cycle_t, schedule
+    use parallel_mod     , only : abortmp, status, mpireal_t, mpiinteger_t, mpi_success
+    use mpi              , only : MPI_REQUEST_NULL
+    use openacc_utils_mod, only : update_host_async, update_device_async, copy_ondev_async, acc_async_test_wrap
+    implicit none
+    type (hybrid_t)           :: hybrid
+    type (EdgeBuffer_t)       :: buffer
+    integer, intent(in)       :: asyncid
+    type (Schedule_t),pointer :: pSchedule
+    type (Cycle_t),pointer    :: pCycle
+    integer                   :: dest,length,tag,icycle,ierr,iptr,source,nlyr,nSendCycles,nRecvCycles,errorcode,errorlen, i, ithr
+    character*(80) errorstring
+    !$OMP BARRIER
+    !$omp master
+    !Assume latency is dominating, so reduce transactions as much as possible by transferring more data
+    !Also keep asynchronous packed together to avoid launch overheads
+    call copy_ondev_async(buffer%receive,buffer%buf,product(shape(buffer%buf)),asyncid)
+    !$acc update host(buffer%receive) async(asyncid)
+    !$acc update host(buffer%buf) async(asyncid)
+    pSchedule => Schedule(1)
+    nlyr = buffer%nlyr
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+    buffer%Srequest(:) = MPI_REQUEST_NULL
+    buffer%Rrequest(:) = MPI_REQUEST_NULL
+    !Must have the receive buffer transfer completed before the MPI receives start. Otherwise MPI data could be overwritten
+    !$acc wait(asyncid)
+    !==================================================
+    !  Post the Receives
+    !==================================================
+    do icycle=1,nRecvCycles
+      pCycle => pSchedule%RecvCycle(icycle)
+      source =  pCycle%source - 1
+      length =  nlyr * pCycle%lengthS
+      tag    =  buffer%tag
+      iptr   =  pCycle%ptrS
+      call MPI_Irecv(buffer%receive(1+nlyr*(iptr-1)),length,MPIreal_t,source,tag,hybrid%par%comm,buffer%Rrequest(icycle),ierr)
+      if(ierr .ne. MPI_SUCCESS) then
+        errorcode=ierr
+        call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+        print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+      endif
+    enddo    ! icycle
+    do icycle = 1 , nSendCycles
+      pCycle => pSchedule%SendCycle(icycle)
+      dest   =  pCycle%dest - 1
+      length =  nlyr * pCycle%lengthS
+      tag    =  buffer%tag
+      iptr   =  pCycle%ptrS
+      call MPI_Isend(buffer%buf(1+nlyr*(iptr-1)),length,MPIreal_t,dest,tag,hybrid%par%comm,buffer%Srequest(icycle),ierr)
+      if(ierr .ne. MPI_SUCCESS) then
+        errorcode=ierr
+        call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+        print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
+      endif
+    enddo
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
+    !$acc update device(buffer%receive) async(asyncid)
+    call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    !$omp end master
+    !$OMP BARRIER
+  end subroutine bndry_exchangeS_minimize_latency
+
   subroutine bndry_exchangeV_minimize_latency(hybrid,buffer,asyncid)
     use hybrid_mod       , only : hybrid_t
     use kinds            , only : log_kind
@@ -286,24 +354,21 @@ contains
     integer, intent(in) :: asyncid
     type (Schedule_t),pointer :: pSchedule
     type (Cycle_t),pointer    :: pCycle
-    integer                   :: dest,length,tag,icycle,ierr,iptr,source,nlyr,nSendCycles,nRecvCycles,errorcode,errorlen,nbuf
+    integer                   :: dest,length,tag,icycle,ierr,iptr,source,nlyr,nSendCycles,nRecvCycles,errorcode,errorlen
     character*(80) errorstring
     !$OMP BARRIER
     !$omp master
-    nbuf = buffer%nbuf
     !Assume latency is dominating, so reduce transactions as much as possible by transferring more data
     !Also keep asynchronous packed together to avoid launch overheads
     call copy_ondev_async(buffer%receive,buffer%buf,product(shape(buffer%buf)),asyncid)
     !$acc update host(buffer%receive) async(asyncid)
     !$acc update host(buffer%buf) async(asyncid)
-
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     Srequest(:) = MPI_REQUEST_NULL
     Rrequest(:) = MPI_REQUEST_NULL
-
     !Must have the receive buffer transfer completed before the MPI receives start. Otherwise MPI data could be overwritten
     !$acc wait(asyncid)
     !==================================================
