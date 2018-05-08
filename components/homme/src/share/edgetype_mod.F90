@@ -3,7 +3,7 @@ module edgetype_mod
 
   use kinds, only : int_kind, log_kind, real_kind
   use coordinate_systems_mod, only : cartesian3D_t
-  use dimensions_mod, only : max_neigh_edges
+  use dimensions_mod, only : max_elements_attached_to_node
 
   implicit none 
   private 
@@ -12,18 +12,24 @@ module edgetype_mod
   integer, public :: initedgebuffer_callid = 0
 
   type, public :: EdgeDescriptor_t
+!
+!   max_neigh_edges = 4 + 4*max_corner_elem
+!   max_corner_elem = max_elements_attached_to_node-3
+! arrays should be of size max_neigh_edges = 4*max_elements_attached_to_node-8
+!
+  integer, public  :: EdgeDescriptor_t
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind)  :: putmapP(max_neigh_edges)
-     integer(kind=int_kind)  :: getmapP(max_neigh_edges)
-     integer(kind=int_kind)  :: putmapP_ghost(max_neigh_edges)
-     integer(kind=int_kind)  :: getmapP_ghost(max_neigh_edges) 
-     integer(kind=int_kind)  :: putmapS(max_neigh_edges) 
-     integer(kind=int_kind)  :: getmapS(max_neigh_edges) 
-     integer(kind=int_kind)  :: globalID(max_neigh_edges)
-     integer(kind=int_kind)  :: loc2buf(max_neigh_edges)
+     integer(kind=int_kind)  :: putmapP(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: getmapP(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: putmapP_ghost(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: getmapP_ghost(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: putmapS(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: getmapS(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: globalID(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: loc2buf(4*max_elements_attached_to_node-8)
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
-     logical(kind=log_kind)  :: reverse(max_neigh_edges)
+     logical(kind=log_kind)  :: reverse(4*max_elements_attached_to_node-8)
   end type EdgeDescriptor_t
 
   type, public :: EdgeBuffer_t

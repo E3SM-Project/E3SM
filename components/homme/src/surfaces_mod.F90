@@ -22,7 +22,7 @@ module surfaces_mod
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
   use edgetype_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
   use bndry_mod,    only : ghost_exchangevfull
-  use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
+  use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node
   use global_norms_mod, only: wrap_repro_sum
   use reduction_mod, only : red_sum, parallelmin, parallelmax
   use physical_constants,      only : dd_pi
