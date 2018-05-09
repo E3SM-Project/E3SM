@@ -21,6 +21,9 @@ module prep_atm_mod
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+  use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
+  use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
+  use dimensions_mod, only : np     ! for atmosphere
 #endif
 
   implicit none
@@ -48,6 +51,10 @@ module prep_atm_mod
   public :: prep_atm_get_mapper_Fl2a
   public :: prep_atm_get_mapper_Si2a
   public :: prep_atm_get_mapper_Fi2a
+
+#ifdef HAVE_MOAB
+  public :: prep_atm_ocn_moab
+#endif
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -113,7 +120,6 @@ contains
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterFortranApplication, &
         iMOAB_WriteMesh
-    real(8)   radius, radius2, eps1, boxeps
     integer ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
 #endif
@@ -175,6 +181,8 @@ contains
                'mapper_So2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
           appname = "ATM_OCN_COU"//CHAR(0)
+          ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
+          idintx = atm(1)%cplcompid + 100*ocn(1)%cplcompid ! something different, to differentiate it
           ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
           ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
           wopts = CHAR(0)
@@ -248,6 +256,63 @@ contains
 
   end subroutine prep_atm_init
 
+#ifdef HAVE_MOAB
+  subroutine prep_atm_ocn_moab(infodata)
+    !---------------------------------------------------------------
+    ! Description
+    ! After intersection of atm and ocean mesh, correct the communication graph
+    !   between atm instance and atm on coupler (due to coverage)
+    !  also, compute the map; this would be equivalent to seq_map_init_rcfile on the
+    !  mapping file computed offline (this will be now online)
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    integer :: ierr
+
+    logical                          :: atm_present    ! .true.  => atm is present
+    logical                          :: ocn_present    ! .true.  => ocn is present
+    integer                  :: id_join
+    integer                  :: mpicom_join
+    integer                  :: atmid
+    character*32             :: dm1, dm2, dofnameATM, dofnameOCN
+    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
+
+    integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
+
+    call seq_infodata_getData(infodata, &
+         atm_present=atm_present,       &
+         ocn_present=ocn_present)
+
+  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
+  !  intx ocean atm are in mbintxoa ; remapper also has some info about coverage mesh
+  ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
+  ! how to get mpicomm for joint atm + coupler
+    id_join = atm(1)%cplcompid
+    atmid   = atm(1)%compid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+    ! it happens over joint communicator
+    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxoa);
+
+    dm1 = "cgll"//CHAR(0)
+    dm2 = "fv"//CHAR(0)
+    dofnameATM="GLOBAL_DOFS"//CHAR(0)
+    dofnameOCN="GLOBAL_ID"//CHAR(0)
+    orderATM = np !  it should be 4
+    orderOCN = 1  !  not much arguing
+    volumetric = 0
+    noConserve = 0
+    validate = 1
+    if (mbintxoa .ge. 0 ) then
+      ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa,  &
+                                                trim(dm1), orderATM, trim(dm2), orderOCN, &
+                                                volumetric, noConserve, validate, &
+                                                trim(dofnameATM), trim(dofnameOCN) )
+    endif
+
+  end subroutine prep_atm_ocn_moab
+#endif
   !================================================================================================
 
   subroutine prep_atm_mrg(infodata, fractions_ax, xao_ax, timer_mrg)

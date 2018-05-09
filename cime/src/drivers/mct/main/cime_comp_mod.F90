@@ -1640,7 +1640,10 @@ subroutine cime_init()
       call t_stopf('CPL:init_maps')
 
    endif
-
+#ifdef HAVE_MOAB
+   !  need to finish up the computation of the atm - ocean map (tempest)
+   if (iamin_CPLALLATMID .and. ocn_c2_atm) call prep_atm_ocn_moab(infodata)
+#endif
    !----------------------------------------------------------
    !| Update aream in domains where appropriate
    !----------------------------------------------------------

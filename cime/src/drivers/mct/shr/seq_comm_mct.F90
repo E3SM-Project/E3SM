@@ -496,6 +496,9 @@ contains
     endif
     mhid = -1
     mpoid = -1
+    mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
+    mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
 #endif
 
     deallocate(comps,comms)
