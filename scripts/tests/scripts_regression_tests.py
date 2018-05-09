@@ -1642,10 +1642,10 @@ class K_TestCimeCase(TestCreateTestCommon):
             case.case_setup(clean=False, test_mode=False, reset=True)
             orig_resubmit = 2
             case.set_value("RESUBMIT", orig_resubmit)
-            case.case_st_archive(no_resubmit=True)
+            case.case_st_archive(resubmit=False)
             new_resubmit = case.get_value("RESUBMIT")
             self.assertTrue(orig_resubmit == new_resubmit, "st_archive resubmitted when told not to")
-            case.case_st_archive(no_resubmit=False)
+            case.case_st_archive(resubmit=True)
             new_resubmit = case.get_value("RESUBMIT")
             self.assertTrue((orig_resubmit - 1) == new_resubmit, "st_archive did not resubmit when told to")
 

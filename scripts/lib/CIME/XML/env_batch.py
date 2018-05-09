@@ -497,15 +497,17 @@ class EnvBatch(EnvBase):
             return depid
 
     @staticmethod
-    def _get_supported_args(job):
+    def _get_supported_args(job, no_batch):
         """
         Returns a map of the supported parameters and their arguments to the given script
         TODO: Maybe let each script define this somewhere?
 
-        >>> EnvBatch._get_supported_args("")
+        >>> EnvBatch._get_supported_args("", False)
         {}
-        >>> EnvBatch._get_supported_args("case.test")
+        >>> EnvBatch._get_supported_args("case.test", False)
         {'skip_pnl': '--skip-preview-namelist'}
+        >>> EnvBatch._get_supported_args("case.st_archive", True)
+        {'resubmit': '--resubmit'}
         """
         supported = {}
         if job in ["case.run", "case.test"]:
@@ -513,33 +515,36 @@ class EnvBatch(EnvBase):
         if job == "case.run":
             supported["set_continue_run"] = "--completion-sets-continue-run"
         if job in ["case.st_archive", "case.run"]:
-            supported["submit_resubmits"] = "--resubmit"
+            if job == "case.st_archive" and no_batch:
+                supported["resubmit"] = "--resubmit"
+            else:
+                supported["submit_resubmits"] = "--resubmit"
         return supported
 
     @staticmethod
-    def _build_run_args(job, **run_args):
+    def _build_run_args(job, no_batch, **run_args):
         """
         Returns a map of the filtered parameters for the given script,
         as well as the values passed and the equivalent arguments for calling the script
 
-        >>> EnvBatch._build_run_args("case.run", skip_pnl=True, cthulu="f'taghn")
+        >>> EnvBatch._build_run_args("case.run", False, skip_pnl=True, cthulu="f'taghn")
         {'skip_pnl': (True, '--skip-preview-namelist')}
-        >>> EnvBatch._build_run_args("case.run", skip_pnl=False, cthulu="f'taghn")
+        >>> EnvBatch._build_run_args("case.run", False, skip_pnl=False, cthulu="f'taghn")
         {}
         """
-        supported_args = EnvBatch._get_supported_args(job)
+        supported_args = EnvBatch._get_supported_args(job, no_batch)
         args = {}
         for arg_name, arg_value in run_args.items():
             if arg_value and (arg_name in supported_args.keys()):
                 args[arg_name] = (arg_value, supported_args[arg_name])
         return args
 
-    def _build_run_args_str(self, job, **run_args):
+    def _build_run_args_str(self, job, no_batch, **run_args):
         """
         Returns a string of the filtered arguments for the given script,
         based on the arguments passed
         """
-        args = self._build_run_args(job, **run_args)
+        args = self._build_run_args(job, no_batch, **run_args)
         run_args_str = " ".join(param for _, param in args.values())
         if run_args_str is None:
             return ""
@@ -560,9 +565,10 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
             if not dry_run:
-                args = self._build_run_args(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+                args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
                 getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+
             return
 
         submitargs = self.get_submit_args(case, job)
@@ -634,7 +640,7 @@ class EnvBatch(EnvBase):
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         batch_env_flag = self.get_value("batch_env", subgroup=None)
-        run_args = self._build_run_args_str(job, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+        run_args = self._build_run_args_str(job, False, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
         if batch_env_flag:
             sequence = (batchsubmit, submitargs, run_args, batchredirect, get_batch_script_for_job(job))
