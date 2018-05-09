@@ -48,7 +48,8 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
-
+    
+    expect(not download or (download and success), "Could not find all inputdata on any server")
     self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
 
@@ -82,18 +83,20 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         run_refdir   = self.get_value("RUN_REFDIR")
         rundir       = self.get_value("RUNDIR")
 
-        refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
-        if not os.path.isdir(refdir):
-            logger.warning("Refcase not found in {}, will attempt to download from inputdata".format(refdir))
-            with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
-                fd.write("refdir = {}{}".format(refdir, os.sep))
-            if input_data_root is None:
-                input_data_root = din_loc_root
-            if data_list_dir is None:
-                data_list_dir = "Buildconf"
-            success = _downloadfromserver(self, input_data_root=input_data_root, data_list_dir=data_list_dir)
-            expect(success, "Could not download refcase from any server")
-
+        if os.path.isabs(run_refdir):
+            refdir = run_refdir
+        else:
+            refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
+            if not os.path.isdir(refdir):
+                logger.warning("Refcase not found in {}, will attempt to download from inputdata".format(refdir))
+                with open(os.path.join("Buildconf","refcase.input_data_list"),"w") as fd:
+                    fd.write("refdir = {}{}".format(refdir, os.sep))
+                if input_data_root is None:
+                    input_data_root = din_loc_root
+                if data_list_dir is None:
+                    data_list_dir = "Buildconf"
+                success = _downloadfromserver(self, input_data_root=input_data_root, data_list_dir=data_list_dir)
+                expect(success, "Could not download refcase from any server")
 
         logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
 
