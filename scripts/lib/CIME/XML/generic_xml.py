@@ -48,6 +48,7 @@ class GenericXML(object):
         self.locked = False
         self.read_only = read_only
         self.filename = infile
+        self.needsrewrite = False
         if infile is None:
             return
 
@@ -143,7 +144,9 @@ class GenericXML(object):
         expect(not self.read_only, "locked")
         if attrib_name == "id":
             expect(not self.locked, "locked")
-        return node.xml_element.set(attrib_name, value)
+        if self.get(node, attrib_name) != value:
+            self.needsrewrite = True
+            return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
         expect(not self.read_only, "locked")
@@ -157,11 +160,15 @@ class GenericXML(object):
 
     def set_name(self, node, name):
         expect(not self.read_only, "locked")
-        node.xml_element.tag = name
+        if node.xml_element.tag != name:
+            self.needsrewrite = True
+            node.xml_element.tag = name
 
     def set_text(self, node, text):
         expect(not self.read_only, "locked")
-        node.xml_element.text = text
+        if node.xml_element.text != text:
+            node.xml_element.text = text
+            self.needsrewrite = True
 
     def name(self, node):
         return node.xml_element.tag
@@ -174,6 +181,7 @@ class GenericXML(object):
         Add element node to self at root
         """
         expect(not self.locked and not self.read_only, "locked")
+        self.needsrewrite = True
         root = root if root is not None else self.root
         if position is not None:
             root.xml_element.insert(position, node.xml_element)
@@ -185,12 +193,14 @@ class GenericXML(object):
 
     def remove_child(self, node, root=None):
         expect(not self.locked and not self.read_only, "locked")
+        self.needsrewrite = True
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
         expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
+        self.needsrewrite = True
         if attributes is None:
             node = _Element(ET.SubElement(root.xml_element, name))
         else:
@@ -271,10 +281,13 @@ class GenericXML(object):
         version = 1.0 if version is None else float(version)
         return version
 
-    def write(self, outfile=None):
+    def write(self, outfile=None, force_write=False):
         """
         Write an xml file from data in self
         """
+        if not (self.needsrewrite or force_write):
+            return
+
         if outfile is None:
             outfile = self.filename
 

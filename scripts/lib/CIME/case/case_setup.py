@@ -160,7 +160,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch = case.get_env("batch")
             env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
-            case.schedule_rewrite(env_batch)
 
             # create batch files
             env_batch.make_all_batch_files(case)
