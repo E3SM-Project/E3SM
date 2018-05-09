@@ -24,9 +24,12 @@ module prim_advance_mod_base
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, set_prescribed_wind,&
+  public :: prim_advance_exp, prim_advance_init1, applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, &
             advance_hypervis_dp, compute_and_apply_rhs
+
+#ifndef CAM
+  public :: set_prescribed_wind
+#endif
 
   real (kind=real_kind), allocatable, public :: ur_weights(:)
 

@@ -18,13 +18,19 @@ module prim_advance_mod
   use time_mod,              only: timelevel_t
   use prim_advance_mod_base, only: prim_advance_exp, prim_advance_init1, &
                                    applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, set_prescribed_wind,&
-                                   advance_hypervis_dp, compute_and_apply_rhs
+                                   advance_hypervis_dp, compute_and_apply_rhs, ur_weights
+#ifndef CAM
+  use prim_advance_mod_base, only: set_prescribed_wind
+#endif
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, set_prescribed_wind,&
-            advance_hypervis_dp, compute_and_apply_rhs
+  public :: prim_advance_exp, prim_advance_init1, applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, &
+            advance_hypervis_dp, compute_and_apply_rhs, ur_weights
+
+#ifndef CAM
+  public :: set_prescribed_wind
+#endif
 
 contains
 

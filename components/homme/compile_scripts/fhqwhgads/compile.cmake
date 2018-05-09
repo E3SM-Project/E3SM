@@ -1,7 +1,7 @@
 #!/bin/bash
 
-do_cmake=1
-do_clean=1
+do_cmake=0
+do_clean=0
 do_make=1
  
 HOMME_ROOT=/home/$USER/E3SM/components/homme
