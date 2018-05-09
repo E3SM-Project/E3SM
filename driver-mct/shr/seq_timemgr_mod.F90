@@ -657,10 +657,6 @@ contains
                rof_cpl_dt, wav_cpl_dt, esp_cpl_dt
           call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
        end if
-       if ( atm_cpl_dt > rof_cpl_dt .or. atm_cpl_dt > ocn_cpl_dt ) then
-          call shr_sys_abort( subname//' ERROR: atm_cpl_dt must be <= rof_cpl_dt and ocn_cpl_dt')
-       endif
-
        ! --- Coupling offsets --------------------------------------------------
        if ( abs(atm_cpl_offset) > atm_cpl_dt .or. &
             abs(lnd_cpl_offset) > lnd_cpl_dt .or. &
