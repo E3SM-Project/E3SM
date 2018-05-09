@@ -48,7 +48,8 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
-
+    
+    expect(not download or (download and success), "Could not find all inputdata on any server")
     self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
 
