@@ -96,7 +96,7 @@ Each of the above sections is defined in the various **$CASEROOT** xml files and
 Before you submit the case using **case.submit**, make sure the batch queue variables are set correctly for your run
 In particular, make sure that you have appropriate account numbers (``PROJECT``), time limits (``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``).
 
-Also modify **$CASEROOT/env_run.xml** for your case using :ref:`xmlchange<modifying-an-xml-file>`.
+Also modify **$CASEROOT/env_run.xml** for your case using **xmlchange**.
 
 Once you have executed **case.setup** and **case.build**, run **case.submit**
 to submit the run to your machine's batch queue system.
@@ -313,7 +313,7 @@ The case initialization type is set using the ``$RUN_TYPE`` variable in
 ``hybrid``
   A hybrid run is initialized like a startup but it uses
   initialization data sets from a previous case. It is similar
-  to a branch run with relaxed restart  constraints.
+  to a branch run with relaxed restart constraints.
   A hybrid run allows users to bring together
   combinations of initial/restart files from a previous case
   (specified by ``$RUN_REFCASE``) at a given model output date
@@ -338,6 +338,30 @@ The variable ``$RUN_STARTDATE`` is the start date (in yyyy-mm-dd format)
 for either a startup run or a hybrid run. If the run is targeted to be
 a hybrid or branch run, you must specify values for ``$RUN_REFCASE`` and
 ``$RUN_REFDATE``.
+
+.. _starting_from_a_refcase:
+
+------------------------------
+Starting from a reference case
+------------------------------
+
+There are several xml variables that control how either a branch or a hybrid case can start up from another case.
+The initial/restart files needed to start up a run from another case are required to be in $EXEROOT.
+The xml variable ``$GET_REFCASE`` is a flag that if set will automatically prestaging the refcase restart data.
+
+- If ``$GET_REFCASE`` is ``TRUE``, then the the values set by ``$RUN_REFDIR``, ``$RUN_REFCASE``, ``$RUN_REFDATE`` and  ``$RUN_TOD`` are
+  used to prestage the data by symbolic links to the appropriate path.
+
+  The location of the necessary data to start up from another case is controlled by the xml variable ``$RUN_REFDIR``.
+
+  - If ``$RUN_REFDIR`` is an absolute pathname, then it is expected that initial/restart files needed to start up a model run are in ``$RUN_REFDIR``.
+
+  - If ``$RUN_REFDIR`` is a relative pathname, then it is expected that initial/restart files needed to start up a model run are in a path relative to ``$DIN_LOC_ROOT`` with the absolute pathname  ``$DIN_LOC_ROOT/$RUN_REFDIR/$RUN_REFCASE/$RUN_REFDATE``.
+
+  - If ``$RUN_REFDIR`` is a relative pathname AND is not available in ``$DIN_LOC_ROOT`` then CIME will attempt to download the data from the input data repositories.
+
+
+- If ``$GET_REFCASE`` is ``FALSE`` then the data is assumed to already exist in ``$EXEROOT``.
 
 .. _controlling-output-data:
 
