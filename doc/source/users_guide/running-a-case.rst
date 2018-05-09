@@ -10,14 +10,91 @@ Running a Case
 Calling **case.submit**
 ========================
 
-Before you submit the case using **case.submit**, make sure
-the batch queue variables are set correctly for your run
-Those variables are contained in the file **$CASEROOT/env_batch.xml**
-under the XML ``<group id="case.run">`` and ``<group id="case.st_archive">``
-elements.
+The script **case.submit** submits your run to the batch queueing system.
+If you do not have a batch queueing system, **case.submit** will start the job interactively, given that you have a proper MPI environment defined.
+Running **case.submit** is the **only** way you should start a job.
 
-Make sure that you have appropriate account numbers (``PROJECT``), time limits
-(``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``) for those groups.
+To see the options to **case.submit**, issue the command
+::
+
+   > ./case.submit --help
+
+A good way to see what **case.submit** will do, is to first run the command
+::
+
+   > ./preview_run
+
+Running this command will output the environment for the run, the batch submit and mpirun commands.
+As an example, on the NCAR machine, cheyenne, for an A compset at the f19_g17_rx1 resolution, the following is output from **preview_run**
+::
+
+   CASE INFO:
+      nodes: 1
+      total tasks: 36
+      tasks per node: 36
+      thread count: 1
+
+   BATCH INFO:
+      FOR JOB: case.run
+   ENV:
+      module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python purge
+      module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python load ncarenv/1.2 intel/17.0.1 esmf_libs mkl esmf-7.0.0-defio-mpi-O mpt/2.16 netcdf-mpi/4.5.0 pnetcdf/1.9.0 ncarcompilers/0.4.1
+      Setting Environment OMP_STACKSIZE=256M
+      Setting Environment TMPDIR=/glade/scratch/mvertens
+      Setting Environment MPI_TYPE_DEPTH=16
+   SUBMIT CMD:
+      qsub    -q regular -l walltime=12:00:00 -A P93300606 .case.run
+
+   FOR JOB: case.st_archive
+      ENV:
+         module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python purge
+         module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python load ncarenv/1.2 intel/17.0.1 esmf_libs mkl esmf-7.0.0-defio-mpi-O mpt/2.16 netcdf-mpi/4.5.0 pnetcdf/1.9.0 ncarcompilers/0.4.1
+         Setting Environment OMP_STACKSIZE=256M
+         Setting Environment TMPDIR=/glade/scratch/mvertens
+         Setting Environment MPI_TYPE_DEPTH=16
+         Setting Environment TMPDIR=/glade/scratch/mvertens
+         Setting Environment MPI_USE_ARRAY=false
+   SUBMIT CMD:
+      qsub    -q share -l walltime=0:20:00 -A P93300606  -W depend=afterok:0 case.st_archive
+
+   MPIRUN:
+      mpiexec_mpt  -np 36 -p "%g:"  omplace -tm open64  /glade/scratch/mvertens/jim/bld/cesm.exe  >> cesm.log.$LID 2>&1
+
+Each of the above sections is defined in the various **$CASEROOT** xml files and the associated variables can be modified using the **xmlchange** command (or in the case of tasks and threads, this can also be done with the **pelayout** command).
+
+- The PE layout is set by the xml variables **NTASKS**, **NTHRDS** and **ROOTPE**. To see the exact settings for each component, issue the command
+  ::
+
+     ./xmlquery NTASKS,NTHRDS,ROOTPE
+
+  To change all of the **NTASKS** settings to say 30 and all of the **NTHRDS** to 4, you can call
+  ::
+
+     ./xmlchange NTASKS=30,NTHRDS=4
+
+  To change JUST the ATM NTASKS to 8, you can call
+  ::
+
+     ./xmlchange NTASKS_ATM=8
+
+- Submit parameters are set by the xml variables in the file **env_batch.xml**. This file is special in certain xml variables can appear in more than one group.
+  NOTE: The groups are the list of jobs that are submittable for a case.
+  Normally, the minimum set of groups are  **case.run** and **case.st_archive**.
+  We will illustrate how to change an xml variable in **env_batch.xml** using the xml variable ``JOB_WALLCLOCK_TIME``.
+
+  - To change ``JOB_WALLCLOCK_TIME`` for all groups to 2 hours for cheyenne, use
+    ::
+
+       ./xmlchange JOB_WALLCLOCK_TIME=02:00:00
+
+  - To change ``JOB_WALLCLOCK_TIME`` to 20 minutes for cheyenne for just **case.run**, use
+    ::
+
+       ./xmlchange JOB_WALLCLOCK_TIME=00:20:00 --subgroup case.run
+
+
+Before you submit the case using **case.submit**, make sure the batch queue variables are set correctly for your run
+In particular, make sure that you have appropriate account numbers (``PROJECT``), time limits (``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``).
 
 Also modify **$CASEROOT/env_run.xml** for your case using :ref:`xmlchange<modifying-an-xml-file>`.
 

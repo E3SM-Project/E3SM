@@ -15,8 +15,8 @@ def parse_command_line(args, description):
 OR
 {0} --help
 
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Setup case \033[0m
+EXAMPLES:
+    # Setup case
     > {0}
 """.format(os.path.basename(args[0])),
         description=description,

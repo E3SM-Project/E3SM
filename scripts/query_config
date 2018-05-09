@@ -15,6 +15,7 @@ from CIME.XML.compsets  import Compsets
 from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
+from argparse           import RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +173,8 @@ def parse_command_line(args, description):
     """
     cime_model = CIME.utils.get_model()
 
-    parser = ArgumentParser(description=description)
+    parser = ArgumentParser(description=description,
+                            formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -182,11 +184,12 @@ def parse_command_line(args, description):
         valid_components.append(item)
 
     parser.add_argument("--compsets", nargs='?', const='all', choices=valid_components,
-                        help="Query compsets corresponding to the target component for the {} model."
-                        " If no component is given, lists compsets defined by all components".format(cime_model))
+                        help="Query compsets corresponding to the target component for the current model. "
+                        "\nIf no component is given, lists settings defined by all components. "
+                        "\nAllowed values are:\n" +', '.join(valid_components), metavar='')
 
-    files, components = get_components()
     # Loop through the elements for each component class (in config_files.xml)
+    files, components = get_components()
     valid_components = ['all']
     for comp in components:
         if cime_model == "cesm":
@@ -197,13 +200,13 @@ def parse_command_line(args, description):
         # determine all components in string
         components = files.get_components(string)
 
-
         for item in components:
             valid_components.append(item)
 
     parser.add_argument("--components", nargs='?', const='all', choices=valid_components,
-                        help="Query component settings corresponding to the target component for {} model."
-                        " If no component is given, lists settings defined by all components".format(cime_model))
+                        help="Query component settings corresponding to the target component for the current model. "
+                        "\nIf no component is given, lists settings defined by all components. "
+                        "\nAllowed values are:\n" +', '.join(valid_components), metavar='')
 
     parser.add_argument("--grids", action="store_true",
                         help="Query supported model grids for {} model.".format(cime_model))
@@ -216,9 +219,10 @@ def parse_command_line(args, description):
     machine_names.extend(machines.list_available_machines())
 
     parser.add_argument("--machines", nargs='?', const='all', choices=machine_names,
-                        help="Query supported machines for {} model."
-                        " If option is left empty then all machines are listed,"
-                        " if current is given the current machine details are listed.".format(cime_model))
+                        help="Query supported machines for the current model."
+                        "\nIf option is left empty then all machines are listed, otherwise the "
+                        "\ncurrent machine details are listed. "
+                        "\nAllowed values are:\n" +', '.join(machine_names), metavar='')
 
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
