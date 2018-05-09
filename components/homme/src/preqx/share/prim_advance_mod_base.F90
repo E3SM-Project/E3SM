@@ -149,7 +149,7 @@ contains
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
-    type (hvcoord_t)                             :: hvcoord
+    type (hvcoord_t)    ,  intent(inout)         :: hvcoord
     type (hybrid_t),       intent(in)            :: hybrid
     real (kind=real_kind), intent(in)            :: dt
     type (TimeLevel_t)   , intent(in)            :: tl

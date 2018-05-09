@@ -1,5 +1,5 @@
 ! ------------------------------------------------------------------------------------------------
-! prim_driver_mod: 
+! prim_driver_mod:
 !
 ! Revisions:
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
@@ -303,7 +303,7 @@ contains
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
     nelemd = LocalElemCount(MetaVertex(1))
-    if(par%masterproc .and. Debug) then 
+    if(par%masterproc .and. Debug) then
         call PrintMetaVertex(MetaVertex(1))
     endif
 
@@ -351,11 +351,11 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     !
-    ! At this point, we can assume: 
+    ! At this point, we can assume:
     ! nthreads was set by CAM driver, or in namelist and error checked
-    ! if CAM is running w/o threads, nthreads=0 
+    ! if CAM is running w/o threads, nthreads=0
     ! vthreads=1 or read from namelist and verified consistent with COLUMN_OPENMP
-    ! 
+    !
     ! set hthreads, and check that vthreads was not set too large
     if (vthreads > max(nthreads,1) .or. vthreads < 1) &
          call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
@@ -376,7 +376,7 @@ contains
 #ifndef HORIZ_OPENMP
     if (hthreads>1) call abortmp('Error: hthreads>1 requires -DHORIZ_OPENMP')
 #endif
-    
+
 
 
     ! =================================================================
@@ -552,7 +552,7 @@ contains
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM
-    use control_mod,          only: pertlim                     
+    use control_mod,          only: pertlim
 #endif
 
 #ifdef TRILINOS
@@ -638,8 +638,8 @@ contains
     end if
 
     ! should we assume Q(:,:,:,1) has water vapor:
-    use_moisture = ( moisture /= "dry") 
-    if (qsize<1) use_moisture = .false.  
+    use_moisture = ( moisture /= "dry")
+    if (qsize<1) use_moisture = .false.
 
 
     ! compute most restrictive dt*nu for use by variable res viscosity:
@@ -650,7 +650,7 @@ contains
        dt_dyn_vis = 2*tstep
     endif
     dt_tracer_vis=tstep*qsplit
-    
+
     ! compute most restrictive condition:
     ! note: dtnu ignores subcycling
     dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
@@ -781,10 +781,10 @@ contains
                    do j=1,np
                       dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-                      
+
                       elem(ie)%state%Qdp(i,j,k,q,1)=elem(ie)%state%Q(i,j,k,q)*dp
                       elem(ie)%state%Qdp(i,j,k,q,2)=elem(ie)%state%Q(i,j,k,q)*dp
-                      
+
                    enddo
                 enddo
              enddo
@@ -882,7 +882,7 @@ contains
 
     type (element_t) ,    intent(inout) :: elem(:)
     type (hybrid_t),      intent(in)    :: hybrid                       ! distributed parallel structure (shared)
-    type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+    type (hvcoord_t),     intent(inout) :: hvcoord                      ! hybrid vertical coordinate struct
     integer,              intent(in)    :: nets                         ! starting thread element number (private)
     integer,              intent(in)    :: nete                         ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
@@ -1045,7 +1045,7 @@ contains
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
     ! now we have:
-    !   u(nm1)   dynamics at  t+dt_remap - dt       
+    !   u(nm1)   dynamics at  t+dt_remap - dt
     !   u(n0)    dynamics at  t+dt_remap
     !   u(np1)   undefined
 
@@ -1088,7 +1088,7 @@ contains
 
     type(element_t),      intent(inout) :: elem(:)
     type(hybrid_t),       intent(in)    :: hybrid   ! distributed parallel structure (shared)
-    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
+    type(hvcoord_t),      intent(inout)    :: hvcoord  ! hybrid vertical coordinate struct
     integer,              intent(in)    :: nets     ! starting thread element number (private)
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
@@ -1102,7 +1102,7 @@ contains
     logical :: compute_diagnostics
 
     dt_q = dt*qsplit
- 
+
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
@@ -1142,14 +1142,14 @@ contains
     ! rsplit=0
     !        state%v(:,:,:,np1)      = velocity on reference levels
     ! rsplit>0
-    !        state%v(:,:,:,np1)      = velocity on lagrangian levels 
-    !        
-    ! Tracer Advection.  
+    !        state%v(:,:,:,np1)      = velocity on lagrangian levels
+    !
+    ! Tracer Advection.
     ! in addition, this routine will apply the DSS to:
     !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap below)
     !        derived%omega           =
-    ! Tracers are always vertically lagrangian.  
-    ! For rsplit=0: 
+    ! Tracers are always vertically lagrangian.
+    ! For rsplit=0:
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     call t_startf("prim_step_advec")
@@ -1220,6 +1220,3 @@ contains
     end subroutine smooth_topo_datasets
 
 end module prim_driver_base
-
-
-
