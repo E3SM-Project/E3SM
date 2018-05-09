@@ -1,0 +1,162 @@
+5/8/18
+
+* Here is my checklist and working notes as I continue the port.  I'm
+  losing track of all the new variables and mods and files I need to change
+  for each thing I add, so I need a place to scratch them down and mark
+  them off.
+
+* cesm_comp_mod.F90:
+
+@ Create iac_comp_mct:
+  iac_init_mct
+  iac_run_mct
+  iac_final_mct
+
+@ modify seq_comm_mct:
+  IACID
+  ALLIACID
+  CPLALLIACID
+  CPLIACID
+  num_inst_iac
+
+@ modify seq_timemgr_mod:
+  seq_timemgr_alarm_iacrun  
+
+? seq_diag_mct:
+  seq_diag_iac_mct, maybe more - review what diagnostics we might need
+
+@ seq_flds_mod: (Iac one digit is 'z', because the next best thing to being
+  right is to be very wrong):
+
+  seq_flds_z2x_fluxes 
+  seq_flds_x2z_fluxes
+
+  Actually, I'm not sure if we are using fluxes or scalars or whatever.
+  I'll have to figure that out.
+
+@ component_type_mod:
+
+  iac - component
+
+@ prep_iac_mod:
+
+  Whole thing, to prep the iac component.
+
+? At this point, I'm not sure if we need the prep routines as listed in
+  line 197-204.  Revisit.
+
+? Don't know what fractions_?x(:) arrays do, but I better stick one in on
+  line 223:  fractions_zx(:)
+
+@ c. Line 272: Figure out how to set and use iacrun_alarm and EClock_z
+
+? c. Line 365: iac_prognostic - "iac component expects input", which, okay,
+  but I'm not sure what this logical means.  Does it get set somewhere as
+  part of the alarm mechanism?
+
+? L418: Don't know what "iac_gnam" means.
+
+* L431: samegrid_zl - my belief is that gcam is set up to take data on the
+  land grid and convert to regions from there; hence, I'm adding a
+  samegrid_zl logcial, because there's a bunch of those around.  But I
+  don't really know when it is used or how it is set...
+
+? It appears to be used for SCM, so the question is, do we need to care
+  about IAC and SCM?
+
+? L445 et al - do we want to create history files wiht iac?  For now, say
+  no.
+
+? L536+ - I guess I'll add in mpicomp ids and "iamin" for IAC, but who
+  knows how they are really used.
+
+? L588: "component instance counters"?  Okay, ezi.
+
+* cesm_pre_init1():
+
+! L662: Finally, some coding.  I need to follow suit with these, as they
+  set up all the communication stuff.  Make sure we have defined all these
+  approporiate seq_comm_name and seq_comm_iamin arrays.
+
+* cesm_pre_init2():
+
+* L930: call to seq_infodata_GetData() to find iac_present, etc.  So I have
+  to make sure the right stuff is in the infodata structure, too.
+
+* L1128: iac_phase in seq_infodata_putData().  Hurm.
+
+? L1146: we now get to some specials about single_column modelling on a
+  non-aqua planet.  Leave them alone for now.
+
+* cesm_init():
+
+  Awesome - we have two pre-init functions before we finally init!
+
+@ L1215+
+  component_init_pre()
+  component_init_cc()
+  component_init_cx()  
+
+  ...all called with iac, but probably generically.  Check, though.
+
+@ L1342+
+  component_get_iamin_compid()
+  component_get_name()
+
+@ L1369: Review seq_infodata_exchange()
+
+  Again, lots of these are called generically and set up to allow
+  components to talk to each other.  But it's still pretty opaque.
+
+@ Coupling flags: L1508.  I'm just faking it here, and maybe I need to
+  check on prognostic...
+
+? L1691: prognostic instances, and making sure num_inst_xxx =
+  num_inst_max.  I really don't understand that, but I'll need to figure
+  out the prognostic stuff, first.
+
+* L1719: prep_iac_init() - this is obviously something I have to write.
+
+? L1765: seq_domain_check() - I suspect this won't be needed for iac, but
+  check into it nonetheless.  I'm not sure what "domains" are in this
+  section, and there are some component-based elements in the call to
+  seq_domain_check(), but they seem linked to the "samegrid_xx" variables. 
+
+? L1813: compnent_init_areacor(): some kind of area corrections that I
+  don't understand.  In this case, they do seem to call for every
+  component, so add it in and figure it out later.
+
+? L1860: component_diag(), something about "recv IC xxx", which I don't
+  understand either.  This probably means I need to develop diagnostics for
+  iac. 
+
+* L1890: more about fractions, which I still don't get.
+
+@ L1894: seq_frac_init() - modify for iac and fractions_zx.
+
+? L1980+ Okay, we are starting to get into initialization and prep for
+  model runs, with a lot of specific component related elements.   Look for
+  lnd_ and atm_ prep for coupling with other components...
+
+* L2043: this component_exch(atm, flow='x2c',...) - This is an init, so
+  we haven't looped over timesteps yet, so maybe it doesn't need to get
+  anything out of the iac output yet.  But this is the kind of thing we are
+  looking at.
+
+* seq_flds_x2a_fluxes - this is the array (I think) of fields that we need
+  to grab from the coupler into the atm model.  So I will have to modify
+  this somewhere to include feedback from iac.
+
+? L2109+ - once again, figure out what kind of thing is happening with
+  these calls to prep_lnd_calc_r2x_lx() et al.  They describe it as mapping
+  initial r2x_rx and g2x_gx to _ox, _ix, and _lx, which I guess is some
+  kind of grid mapping from the glc and rof components to ocean, ice, and
+  lnd.  I'm hoping this kind of thing doesn't matter for iac - right now we
+  expect the lnd mapping on input to gcam, and hopefully the lnd and atm
+  mapping are the same.  Otherwise, maybe see how we do land to atm
+  mapping, and make sure the gcam outputs go along with that?
+
+? seq_hist_write() - add in iac and fractions_zx.
+
+! Finally, cesm_run(), which is I think something I know a little about.
+  Let's find out how wrong I am!
