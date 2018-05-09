@@ -1,12 +1,26 @@
 #!/usr/bin/env python
 
 """
-Script to run CIME tests.
+Script to create, build and run CIME tests. This script can:
 
-Runs single tests or test suites based on either the input list or the testname or based
-on an xml testlist if the xml suboption is provided.
+1) Run a single test, or more than one test
+   ./create_test <TESTNAME>
+   ./create_test <TESTNAME1> <TESTNAME2>
+2) Run an E3SM test suite:
+  Below a suite name, <SUITE> is defined in $CIMEROOT/scripts/lib/get_tests.py
+  - Run a single suite
+   ./create_test <SUITE>
+  - Run two suites
+   ./create_test <SUITE1> <SUITE2>
+  - Run all tests in a suite except for one
+   ./create_test <SUITE> ^<TESTNAME>
+  - Run all tests in a suite except for tests that are in another suite
+   ./create_test <SUITE1> ^<SUITE2>
+3) Run a CESM test suite(s):
+   ./create_test --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
 
-If this tool is missing any feature that you need, please notify jgfouca@sandia.gov.
+If this tool is missing any feature that you need, please add an issue on
+https://github.com/ESMCI/cime
 """
 from Tools.standard_script_setup import *
 
@@ -24,49 +38,10 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
+
     model = CIME.utils.get_model()
 
-    if model == "cesm":
-        help_str = \
-"""
-{0} --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
-OR
-{0} --help
-
-EXAMPLES:
-    # Run all tests in the xml prealpha category and cheyenne machine
-    > {0} --xml-machine cheyenne --xml-category prealpha
-""".format(os.path.basename(args[0]))
-
-    else:
-        help_str = \
-"""
-{0} <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run single test \033[0m
-    > {0} <TESTNAME>
-
-    \033[1;32m# Run test suite \033[0m
-    > {0} <SUITE>
-
-    \033[1;32m# Run two tests \033[0m
-    > {0} <TESTNAME1> <TESTNAME2>
-
-    \033[1;32m# Run two suites \033[0m
-    > {0} <SUITE1> <SUITE2>
-
-    \033[1;32m# Run all tests in a suite except for one \033[0m
-    > {0} <SUITE> ^<TESTNAME>
-
-    \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
-    > {0} <SUITE1> ^<SUITE2>
-""".format(os.path.basename(args[0]))
-
-    parser = argparse.ArgumentParser(usage=help_str,
-                                     description=description,
+    parser = argparse.ArgumentParser(description=description,
                                      formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
