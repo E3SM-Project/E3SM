@@ -430,7 +430,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if '/' in test_mods:
+            if test_mods.find('/') != -1:
                 (component, modspath) = test_mods.split('/', 1)
             else:
                 error = "Missing testmod component. Testmods are specified as '${component}-${testmod}'"
