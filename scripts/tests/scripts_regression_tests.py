@@ -325,8 +325,8 @@ class J_TestCreateNewcase(unittest.TestCase):
             case.set_value("HIST_OPTION","nyears")
             # now the file should not need to be flushed
             for env_file in case._files:
-                    self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
-                                     .format(env_file.filename))
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
 
         # Check once more with a new instance
         with Case(testdir, read_only=False) as case:
