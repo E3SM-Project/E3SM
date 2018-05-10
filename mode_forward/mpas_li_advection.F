@@ -142,7 +142,8 @@ module li_advection
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
            floatingBasalMassBal,  & ! basal mass balance for floating ice
-           dynamicThickening        ! dynamic thickening rate
+           dynamicThickening,     & ! dynamic thickening rate
+           fluxAcrossGroundingLine        ! magnitude of flux across GL
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
@@ -175,7 +176,8 @@ module li_advection
            basalTracersField        ! scratch field containing values of basal tracers
 
       integer, dimension(:), pointer :: &
-           cellMask                 ! integer bitmask for cells
+           cellMask,              & ! integer bitmask for cells
+           edgeMask                 ! integer bitmask for edges
 
       character (len=StrKIND), pointer :: &
            config_thickness_advection   ! method for advecting thickness and tracers
@@ -239,10 +241,12 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'dynamicThickening', dynamicThickening)
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+      call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
 
       ! get arrays from the thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -362,8 +366,11 @@ module li_advection
               layerThicknessEdge,      &
               layerThicknessOld,       &
               advectedTracersOld,      &
+              cellMask,                &
+              edgeMask,                &
               layerThickness,          &
               advectedTracers,         &
+              fluxAcrossGroundingLine,       &
               err)
 
          if (config_print_thickness_advection_info) then
@@ -1080,8 +1087,11 @@ module li_advection
          layerThicknessEdge,     &
          layerThicknessOld,      &
          tracersOld,             &
+         cellMask,               &
+         edgeMask,               &
          layerThicknessNew,      &
          tracersNew,             &
+         fluxAcrossGroundingLine,      &
          err,                    &
          advectTracersIn)
 
@@ -1111,6 +1121,12 @@ module li_advection
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
            tracersOld            !< Input: tracer values
 
+      integer, dimension(:), intent(in) :: &
+           cellMask              !< Input: mask on cells
+
+      integer, dimension(:), intent(in) :: &
+           edgeMask              !< Input: mask on edges
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -1129,6 +1145,9 @@ module li_advection
       real (kind=RKIND), dimension(:,:,:), intent(out) :: &
            tracersNew            !< Output: tracer values
 
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           fluxAcrossGroundingLine     !< Output: ice flux at grounding lines
+
       integer, intent(out) :: &
            err                   !< Output: error flag
 
@@ -1140,7 +1159,8 @@ module li_advection
 
       integer, pointer :: &
            nCellsSolve,     & ! number of locally owned cells
-           nVertLevels        ! number of vertical layers
+           nVertLevels,     & ! number of vertical layers
+           nEdges             ! number of edges
 
       integer, dimension(:), pointer :: &
            nEdgesOnCell       ! number of edges on each cell
@@ -1186,6 +1206,7 @@ module li_advection
       ! This is ~300 million years in seconds, but it is small enough not to overflow
 
       real(kind=RKIND) :: velSign     ! = 1.0_RKIND or -1.0_RKIND depending on sign of velocity
+      real(kind=RKIND) :: GLfluxSign
 
       integer :: err_tmp
 
@@ -1215,6 +1236,7 @@ module li_advection
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       ! get mesh arrays
@@ -1243,6 +1265,7 @@ module li_advection
          enddo
 
       endif
+
 
       ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
       !       across each edge. But upwind advection is cheap, so the extra cost is minimal.
@@ -1369,6 +1392,25 @@ module li_advection
       deallocate(tracersEdge)
       deallocate(thicknessTracerTendency)
       deallocate(newThicknessTracers)
+
+      ! Calculate flux across grounding line
+      ! TODO: do this as part of loop above, but it needs to refactored.
+      fluxAcrossGroundingLine(:) = 0.0_RKIND
+      do iEdge = 1, nEdges
+         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+            iCell1 = cellsOnEdge(1,iEdge)
+            !iCell2 = cellsOnEdge(2,iEdge)
+            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
+               GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
+            else
+               GLfluxSign = -1.0_RKIND
+            endif
+            do k = 1, nVertLevels
+               thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+               fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
+            enddo
+         endif
+      enddo ! edges
 
       ! === error check
       if (err > 0) then
