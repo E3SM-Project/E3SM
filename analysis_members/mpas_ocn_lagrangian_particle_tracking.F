@@ -266,7 +266,7 @@ contains
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: zTop, vertVelocityTop, zMid, areaBArray
-      real (kind=RKIND), dimension(:), pointer :: bottomDepth
+      real (kind=RKIND), dimension(:), pointer :: bottomDepth, ssh
       type (field2DReal), pointer :: normalVelocity, uVertexVelocity, vVertexVelocity, wVertexVelocity, layerThickness
 
       real (kind=RKIND), dimension(:,:), pointer :: uVertexVelocityArray, vVertexVelocityArray, wVertexVelocityArray, &
@@ -306,6 +306,9 @@ contains
       type (MPAS_timeInterval_type) :: timeStepESMF
       logical :: resetParticle, resetParticleAny
       integer :: err_tmp
+
+      REAL (kind=RKIND), parameter :: eps=1e-12
+
 
       err = 0
 
@@ -375,6 +378,7 @@ contains
         ! now there is a time level so selection of the correct time level appears to be tricky
         ! the issue is large, nearly NAN normalVelocities with timeLevel=2
         call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel=timeLevel)
         ! potentially a costly function call, but ensures halos are ok
         !call mpas_dmpar_exch_halo_field(normalVelocity)
         call mpas_pool_get_field(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
@@ -620,7 +624,8 @@ contains
 #ifdef MPAS_DEBUG
                 call mpas_timer_start("mpas_get_vertical_idLPT")
 #endif
-                iLevel = mpas_get_vertical_id(maxLevelCell(iCell), zSubStep, zMid(:,iCell))
+                ! must have inputs into mpas_get_vertical_id be positive to get right top/bottom
+                iLevel = mpas_get_vertical_id(maxLevelCell(iCell), -zSubStep, -zMid(:,iCell))
 #ifdef MPAS_DEBUG
                 call mpas_timer_stop("mpas_get_vertical_idLPT")
 #endif
@@ -716,9 +721,9 @@ contains
             !! the particle is in a cell that does not have the proper buoyancy target because this implies
             !! that the buoyancy tracking mode has completely failed.
             !! need to make sure it is validated for buoyancy particles
-            iLevelBuoyancy = mpas_get_vertical_id(maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell))
+            iLevel = mpas_get_vertical_id(maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell))
             ! interpolate the scalars now (assumes that scalar value is constant within a particular cell)
-            call interp_cell_scalars(iLevelBuoyancy, maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell), &
+            call interp_cell_scalars(iLevel, maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell), &
               zMid(:,iCell), zLevelParticle)
             !}}}
           else
@@ -726,11 +731,42 @@ contains
 #ifdef MPAS_DEBUG
             call mpas_timer_start("mpas_get_vertical_idLPT")
 #endif
-            iLevel = mpas_get_vertical_id(maxLevelCell(iCell), zLevelParticle, zMid(:,iCell))
+            if (verticalTreatment == 3) then !('passiveFloat')
+              ! constrain vertical level to be within dz/2 of ssh or bottom depth
+              zLevelParticle = min(max(zMid(maxLevelCell(iCell),iCell), zLevelParticle), zMid(1,iCell))
+            end if
+            iLevel = mpas_get_vertical_id(maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell))
 #ifdef MPAS_DEBUG
             call mpas_timer_stop("mpas_get_vertical_idLPT")
 #endif
           end if
+
+#ifdef MPAS_DEBUG
+          call mpas_timer_start("verifyParticleDepthInDomainLPT")
+#endif
+          !verify particles are still in domain !{{{
+#ifdef MPAS_DEBUG
+          ! check and verify that free floating particle hasn't gone out of boundary
+          if (iLevel == -1) then
+            call mpas_log_write(' Warning: Particle $i location of $r is higher than zMid of $r', realArgs=(/ zLevelParticle, zMid(1, iCell) /), intArgs=(/iCell/))
+          end if
+          if (iLevel == 0) then
+            call mpas_log_write(' Warning: Particle $i location of $r is deeper than zMid at bottom $r', realArgs=(/ zLevelParticle, zMid(maxLevelCell(iCell),iCell) /), intArgs=(/iCell/))
+          end if
+#endif
+          ! verify that it is less than SSH and greater than bottomDepth
+          if (zLevelParticle + bottomDepth(iCell) < eps) then
+            call mpas_log_write(' Error: $i ($i) Particle of type $i height $r is lower than bottom depth $r', realArgs=(/ zLevelParticle, -bottomDepth(iCell) /), intArgs=(/iCell, indexToParticleID, verticalTreatment/),&
+              messageType=MPAS_LOG_ERR)
+           end if
+           if (zLevelParticle - ssh(iCell) > eps) then
+            call mpas_log_write(' Error: Particle $i height $r is higher than ssh of $r', realArgs=(/ zLevelParticle, ssh(iCell) /), intArgs=(/iCell/),&
+              messageType=MPAS_LOG_ERR)
+           end if
+           !}}}
+#ifdef MPAS_DEBUG
+          call mpas_timer_stop("verifyParticleDepthInDomainLPT")
+#endif
 
 !          ! compute necessary information for autocorrelation !{{{
 !          ! get the updated velocity
@@ -1820,7 +1856,7 @@ contains
           else
             ! make sure final zLevelParticle is ok so that it can't extent past zMid range
 
-            iLevel = mpas_get_vertical_id(maxLevelCell(iCell), zLevelParticle, zMid(:,iCell))
+            iLevel = mpas_get_vertical_id(maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell))
           end if
 
           ! store global cell ID
@@ -1954,9 +1990,11 @@ contains
 
        case (3) verticalTreatmentCase !('passiveFloat') !{{{
 
-         ! interpolate the vertical velocity
+         ! interpolate the vertical velocity (can be different than zMid...,
+         ! which is assumed input)
+         iLevelTmp = mpas_get_vertical_id(nVertLevels, -zLoc, -zTop)
          vertVelocityInterp = interp_vert_velocity_to_zlevel( &
-           iLevel, zLoc, zTop, vertVelocityTop)
+           iLevelTmp, -zLoc, -zTop, vertVelocityTop)
 
          ! interpolate the horizontal velocity based on z-levels
          call interp_nodal_vectors(ncellvertices, verticesoncell, &
@@ -2667,7 +2705,7 @@ contains
      ! check to make sure points are in range
      ! optimization point: smarter algorithm won't have to call this ever
      if(.not.((phiInterp <= phiVals(iHigh)) .and. (phiInterp >= phiVals(iLow)))) then
-       !call mpas_log_write( 'fast interpolation failed, trying general, brute force search for interpolation bounds')
+       call mpas_log_write( 'Warning: fast interpolation failed, trying general, brute force search for interpolation bounds')
        !print *,  'iLow = ', iLow, ' iHigh = ', iHigh
        !print *,  'phiInterp = ', phiInterp , ' phiLow =',  phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
        call get_bounding_indices_brute_force(nVertLevels, phiInterp, phiVals, iLow, iHigh)
@@ -2788,7 +2826,9 @@ contains
          alpha = (zSubStep - zTop(iLevel))/(zTop(iLevel+1)- zTop(iLevel))
 #ifdef MPAS_DEBUG
        else
-         call mpas_log_write( 'Error with vertical velocity interpolation!', MPAS_LOG_CRIT)
+         call mpas_log_write('Error with vertical velocity interpolation! ' // &
+           'iLevel = $i, zTop(iLevel) = $r, zTop(iLevel+1)=$r zTop(iLevel+2) = $r zSubstep=$r', &
+           realArgs =(/zTop(iLevel), zTop(iLevel+1), zTop(iLevel+2), zSubStep/), intArgs=(/iLevel/), messageType=MPAS_LOG_CRIT)
 #endif
        end if
        interp_vert_velocity_to_zlevel = alpha * vertVelocityTop(iLevel)+ (1.0_RKIND - alpha) * vertVelocityTop(iLevel+1)
