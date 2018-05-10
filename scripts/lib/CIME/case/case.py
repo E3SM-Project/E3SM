@@ -191,9 +191,6 @@ class Case(object):
         return False
 
     def read_xml(self):
-#        if any self._files.needrewrite:
-#            expect(False, "Object(s) {} seem to have newer data than the corresponding case file".format(" ".join([env_file.filename for env_file in self._files_that_need_rewrite])))
-
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")

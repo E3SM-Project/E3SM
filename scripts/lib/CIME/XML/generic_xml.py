@@ -77,6 +77,8 @@ class GenericXML(object):
         """
         if not self.DISABLE_CACHING and infile in self._FILEMAP and self.read_only:
             logger.debug("read (cached): " + infile)
+            expect(not self.needsrewrite, "Reading into object marked for rewrite, file {}"
+                   .format(self.filename))
             self.tree, self.root = self._FILEMAP[infile]
         else:
             logger.debug("read: " + infile)
@@ -92,6 +94,8 @@ class GenericXML(object):
             self._FILEMAP[infile] = (self.tree, self.root)
 
     def read_fd(self, fd):
+        expect(not self.needsrewrite, "Reading into object marked for rewrite, file {}"
+               .format(self.filename))
         if self.tree:
             addroot = _Element(ET.parse(fd).getroot())
             read_only = self.read_only
@@ -152,6 +156,7 @@ class GenericXML(object):
         expect(not self.read_only, "locked")
         if attrib_name == "id":
             expect(not self.locked, "locked")
+        self.needsrewrite = True
         return node.xml_element.attrib.pop(attrib_name)
 
     def attrib(self, node):
