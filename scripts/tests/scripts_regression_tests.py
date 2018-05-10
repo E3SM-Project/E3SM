@@ -317,8 +317,23 @@ class J_TestCreateNewcase(unittest.TestCase):
             self.assertTrue(runfile.needsrewrite, msg="Expected flush call not triggered")
             for env_file in case._files:
                 if env_file != runfile:
-                    self.assertFalse(env_file.needsrewrite, msg="Instantiating a case should not trigger a flush call")
+                    self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                     .format(env_file.filename))
+            # Flush the file
+            runfile.write()
+            # set it again to the same value
+            case.set_value("HIST_OPTION","nyears")
+            # now the file should not need to be flushed
+            for env_file in case._files:
+                    self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                     .format(env_file.filename))
 
+        # Check once more with a new instance
+        with Case(testdir, read_only=False) as case:
+            case.set_value("HIST_OPTION","nyears")
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
 
     def test_b_user_mods(self):
         cls = self.__class__

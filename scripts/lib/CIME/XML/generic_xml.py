@@ -306,6 +306,7 @@ class GenericXML(object):
         else:
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
+        self.needsrewrite = False
 
     def scan_child(self, nodename, attributes=None, root=None):
         """
