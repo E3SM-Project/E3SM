@@ -459,7 +459,7 @@ contains
     !                (1 deg: to about 0.1 W/m^2)
     if (hypervis_order == 2) then
       do ic=1,hypervis_subcycle
-        call biharmonic_wk_dp3d_openacc(elem,grads,dptens,ttens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
+        call biharmonic_wk_dp3d_openacc(elem,dptens,ttens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
         do ie=nets,nete
           ! comptue mean flux
           if (nu_p>0) then

@@ -71,8 +71,8 @@ profile_single_file		= .true.
  output_frequency=1,1
  output_start_time=0,0
  output_end_time=30000,30000
- output_varnames1='ps','zeta','dp3d'
- output_varnames2='Q','Q2','Q3','Q4','Q5'
+ output_varnames1='ps','zeta','dp3d','u','v','T','Q','Q2','Q3','Q4','Q5'
+ output_varnames2=
  io_stride=8
  output_type = 'netcdf' 
 /

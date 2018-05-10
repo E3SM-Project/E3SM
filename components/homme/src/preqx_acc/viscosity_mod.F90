@@ -6,6 +6,7 @@
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
   use viscosity_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, smooth_phis
+  use viscosity_preqx_base, only: biharmonic_wk_dp3d
   use thread_mod, only : omp_get_num_threads
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use kinds, only : real_kind, iulog
@@ -23,6 +24,7 @@ module viscosity_mod
   public :: compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
   public :: biharmonic_wk_scalar, neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, biharmonic_wk_dp3d
   public :: biharmonic_wk_scalar_openacc
+  public :: biharmonic_wk_dp3d_openacc
   public :: neighbor_minmax_openacc
   public :: smooth_phis
 
@@ -30,7 +32,7 @@ module viscosity_mod
 contains
 
 
-  subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+  subroutine biharmonic_wk_dp3d_openacc(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
     use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -51,7 +53,10 @@ contains
     real (kind=real_kind), dimension(np,np) :: tmp2
     real (kind=real_kind), dimension(np,np,2) :: v
     real (kind=real_kind) :: nu_ratio1, nu_ratio2
-    logical var_coef1
+    logical :: var_coef1
+
+    !$omp barrier
+    !$omp master
     !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
     !so tensor is only used on second call to laplace_sphere_wk
     var_coef1 = .true.
@@ -75,7 +80,7 @@ contains
         nu_ratio2=nu_div/nu
       endif
     endif
-    do ie=nets,nete
+    do ie=1,nelemd
       do k=1,nlev
         ptens (:,:  ,k,ie)= laplace_sphere_wk(elem(ie)%state%T   (:,:  ,k,nt),deriv,elem(ie),var_coef=var_coef1)
         dptens(:,:  ,k,ie)= laplace_sphere_wk(elem(ie)%state%dp3d(:,:  ,k,nt),deriv,elem(ie),var_coef=var_coef1)
@@ -85,12 +90,16 @@ contains
       kptr=nlev  ; call edgeVpack_nlyr(edge3, elem(ie)%desc, vtens (:,:,:,:,ie),2*nlev,kptr,4*nlev)
       kptr=3*nlev; call edgeVpack_nlyr(edge3, elem(ie)%desc, dptens(:,:  ,:,ie),  nlev,kptr,4*nlev)
     enddo
+    !$omp end master
+    !$omp barrier
 
     call t_startf('biwkdp3d_bexchV')
     call bndry_exchangeV(hybrid,edge3)
     call t_stopf('biwkdp3d_bexchV')
 
-    do ie=nets,nete
+    !$omp barrier
+    !$omp master
+    do ie=1,nelemd
       kptr=0     ; call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens (:,:  ,:,ie),  nlev , kptr, 4*nlev)
       kptr=nlev  ; call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens (:,:,:,:,ie), 2*nlev, kptr, 4*nlev)
       kptr=3*nlev; call edgeVunpack_nlyr(edge3, elem(ie)%desc, dptens(:,:  ,:,ie),  nlev , kptr, 4*nlev)
@@ -105,8 +114,9 @@ contains
         vtens (:,:,:,k,ie)=vlaplace_sphere_wk(v   ,deriv,elem(ie),var_coef=.true.,nu_ratio=nu_ratio2)
       enddo
     enddo
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  end subroutine
+    !$omp end master
+    !$omp barrier
+  end subroutine biharmonic_wk_dp3d_openacc
 
 
 
