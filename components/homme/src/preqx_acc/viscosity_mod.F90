@@ -6,8 +6,8 @@
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
   use viscosity_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, smooth_phis
-  use viscosity_preqx_base, only: biharmonic_wk_dp3d
   use thread_mod, only : omp_get_num_threads
+  use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use kinds, only : real_kind, iulog
   use dimensions_mod, only : np, nlev,qsize,nelemd
   use hybrid_mod, only : hybrid_t, hybrid_create
@@ -28,6 +28,87 @@ module viscosity_mod
 
 
 contains
+
+
+  subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr
+    implicit none
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! compute weak biharmonic operator
+    !    input:  h,v (stored in elem()%, in lat-lon coordinates
+    !    output: ptens,vtens  overwritten with weak biharmonic of h,v (output in lat-lon coordinates)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    type (hybrid_t)      , intent(in) :: hybrid
+    type (element_t)     , intent(inout), target :: elem(:)
+    integer              , intent(in)  :: nt,nets,nete
+    real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
+    real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
+    type (EdgeBuffer_t)  , intent(inout) :: edge3
+    type (derivative_t)  , intent(in) :: deriv
+    ! local
+    integer :: i,j,k,kptr,ie
+    real (kind=real_kind), dimension(np,np) :: tmp
+    real (kind=real_kind), dimension(np,np) :: tmp2
+    real (kind=real_kind), dimension(np,np,2) :: v
+    real (kind=real_kind) :: nu_ratio1, nu_ratio2
+    logical var_coef1
+    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
+    !so tensor is only used on second call to laplace_sphere_wk
+    var_coef1 = .true.
+    if(hypervis_scaling > 0)    var_coef1 = .false.
+
+    ! note: there is a scaling bug in the treatment of nu_div
+    ! nu_ratio is applied twice, once in each laplace operator
+    ! so in reality:   nu_div_actual = (nu_div/nu)**2 nu
+    ! We should fix this, but it requires adjusting all CAM defaults
+    nu_ratio1=1
+    nu_ratio2=1
+    if (nu_div/=nu) then
+      if(hypervis_scaling /= 0) then
+        ! we have a problem with the tensor in that we cant seperate
+        ! div and curl components.  So we do, with tensor V:
+        ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
+        nu_ratio1=(nu_div/nu)**2   ! preserve buggy scaling
+        nu_ratio2=1
+      else
+        nu_ratio1=nu_div/nu
+        nu_ratio2=nu_div/nu
+      endif
+    endif
+    do ie=nets,nete
+      do k=1,nlev
+        ptens (:,:  ,k,ie)= laplace_sphere_wk(elem(ie)%state%T   (:,:  ,k,nt),deriv,elem(ie),var_coef=var_coef1)
+        dptens(:,:  ,k,ie)= laplace_sphere_wk(elem(ie)%state%dp3d(:,:  ,k,nt),deriv,elem(ie),var_coef=var_coef1)
+        vtens (:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v   (:,:,:,k,nt),deriv,elem(ie),var_coef=var_coef1,nu_ratio=nu_ratio1)
+      enddo
+      kptr=0     ; call edgeVpack_nlyr(edge3, elem(ie)%desc, ptens (:,:  ,:,ie),  nlev,kptr,4*nlev)
+      kptr=nlev  ; call edgeVpack_nlyr(edge3, elem(ie)%desc, vtens (:,:,:,:,ie),2*nlev,kptr,4*nlev)
+      kptr=3*nlev; call edgeVpack_nlyr(edge3, elem(ie)%desc, dptens(:,:  ,:,ie),  nlev,kptr,4*nlev)
+    enddo
+
+    call t_startf('biwkdp3d_bexchV')
+    call bndry_exchangeV(hybrid,edge3)
+    call t_stopf('biwkdp3d_bexchV')
+
+    do ie=nets,nete
+      kptr=0     ; call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens (:,:  ,:,ie),  nlev , kptr, 4*nlev)
+      kptr=nlev  ; call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens (:,:,:,:,ie), 2*nlev, kptr, 4*nlev)
+      kptr=3*nlev; call edgeVunpack_nlyr(edge3, elem(ie)%desc, dptens(:,:  ,:,ie),  nlev , kptr, 4*nlev)
+      ! apply inverse mass matrix, then apply laplace again
+      do k=1,nlev
+        tmp (:,:  )=elem(ie)%rspheremp(:,:)*ptens (:,:  ,k,ie)
+        tmp2(:,:  )=elem(ie)%rspheremp(:,:)*dptens(:,:  ,k,ie)
+        v   (:,:,1)=elem(ie)%rspheremp(:,:)*vtens (:,:,1,k,ie)
+        v   (:,:,2)=elem(ie)%rspheremp(:,:)*vtens (:,:,2,k,ie)
+        ptens (:,:  ,k,ie)= laplace_sphere_wk(tmp ,deriv,elem(ie),var_coef=.true.)
+        dptens(:,:  ,k,ie)= laplace_sphere_wk(tmp2,deriv,elem(ie),var_coef=.true.)
+        vtens (:,:,:,k,ie)=vlaplace_sphere_wk(v   ,deriv,elem(ie),var_coef=.true.,nu_ratio=nu_ratio2)
+      enddo
+    enddo
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  end subroutine
+
+
 
   subroutine biharmonic_wk_scalar_openacc(elem,qtens,grads,deriv,edgeq,hybrid,nets,nete,asyncid)
     use hybrid_mod            , only: hybrid_t
