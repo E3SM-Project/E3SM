@@ -11,7 +11,7 @@
 ### BASIC INFO ABOUT RUN
 set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
-set resolution     = ne4np4_oQU240
+set resolution     = ne4_oQU240
 set machine        = default
 set walltime       = default
 setenv project       default
@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.21
+set script_ver = 3.0.22
 
 #===========================================
 # DEFINE ALIASES
