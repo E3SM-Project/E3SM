@@ -590,7 +590,7 @@ def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to
                                link_to_last_restart_files=link_to_restart_files)
 
 ###############################################################################
-def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
+def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy_only=False, resubmit=True):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -630,7 +630,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
 
     # resubmit case if appropriate
     resubmit = self.get_value("RESUBMIT")
-    if resubmit > 0 and not no_resubmit:
+    if resubmit > 0 and resubmit:
         logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit))
         if self.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")

@@ -140,7 +140,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                 if loop:
                     # Archive the last consistent set of restart files and restore them
                     if case.get_value("DOUT_S"):
-                        case.case_st_archive(no_resubmit=True)
+                        case.case_st_archive(resubmit=False)
                         case.restore_from_archive()
 
                     lid = new_lid()
