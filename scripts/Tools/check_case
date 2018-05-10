@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-check_case verifies that the case is set up correctly
+Script to verify that the case is set up correctly
 """
 
 from standard_script_setup import *
@@ -18,19 +18,8 @@ def parse_command_line(args, description):
 ###############################################################################
 
     parser = argparse.ArgumentParser(
-        usage="""\n{0} [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run \033[0m
-    > {0}
-""".format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
