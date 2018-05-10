@@ -125,6 +125,7 @@ module ocn_time_integration_split
       logical :: activeTracersOnly ! if true only compute tendencies for active tracers  
       integer :: tsIter
       integer :: edgeHaloComputeCounter, cellHaloComputeCounter
+      integer :: neededHalos
 
       ! Config options
       character (len=StrKIND), pointer :: config_time_integrator
@@ -744,12 +745,26 @@ module ocn_time_integration_split
             call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
             call mpas_allocate_scratch_field(btrvel_tempField, .false.)
 
+            cellHaloComputeCounter = 0
+            edgeHaloComputeCounter = 0
+            neededHalos = 1 + config_n_btr_cor_iter
+
             call mpas_threading_barrier()
 
             call mpas_timer_start('btr se subcycle loop')
             do j = 1, nBtrSubcycles * config_btr_subcycle_loop_factor
-               cellHaloComputeCounter = config_num_halos
-               edgeHaloComputeCounter = config_num_halos + 1
+               if(cellHaloComputeCounter < neededHalos) then
+
+                 call mpas_threading_barrier()
+                 call mpas_timer_start('se halo subcycle')
+                 call mpas_dmpar_exch_group_reuse_halo_exch(domain, subcycleGroupName, timeLevel=oldBtrSubcycleTime)
+                 call mpas_threading_barrier()
+                 call mpas_timer_stop('se halo subcycle')
+
+                 cellHaloComputeCounter = config_num_halos     - mod( config_num_halos, neededHalos )
+                 edgeHaloComputeCounter = config_num_halos + 1 - mod( config_num_halos, neededHalos )
+                 call mpas_threading_barrier()
+               end if
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: VELOCITY PREDICTOR STEP
@@ -1036,17 +1051,9 @@ module ocn_time_integration_split
                    block => block % next
                 end do  ! block
 
-                ! mrp 170503 This is the original line.  Go back to this once I
-                ! verify that halo regions are truly three cells wide.
-                ! if ( edgeHaloComputeCounter == 1 .and. BtrCorIter /= config_n_btr_cor_iter ) then
-                ! replaced with this, to force a halo update on the first iteration:
-                if ( edgeHaloComputeCounter == 1 .or. BtrCorIter == 1 ) then
-                   edgeHaloComputeCounter = config_num_halos + 1
-                   call mpas_timer_start("se halo btr vel corr")
-                   call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
-                   call mpas_timer_stop("se halo btr vel corr")
-                else
-                   edgeHaloComputeCounter = edgeHaloComputeCounter - 1
+                edgeHaloComputeCounter = edgeHaloComputeCounter - 1
+                if ( BtrCorIter >= 1 .or. config_btr_solve_SSH2 == .false.) then
+                  cellHaloComputeCounter = cellHaloComputeCounter - 1
                 end if
 
               end do !do BtrCorIter=1,config_n_btr_cor_iter
@@ -1173,24 +1180,8 @@ module ocn_time_integration_split
 
                    block => block % next
                 end do  ! block
+                edgeHaloComputeCounter = config_num_halos + 1
                endif ! config_btr_solve_SSH2
-
-               !   boundary update on SSHnew
-               call mpas_timer_start("se halo subcycle")
-               call mpas_dmpar_exch_group_create(domain, subcycleGroupName)
-               call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
-               call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'normalBarotropicVelocitySubcycle', &
-                  timeLevel=newBtrSubcycleTime)
-
-               call mpas_threading_barrier()
-               call mpas_dmpar_exch_group_full_halo_exch(domain, subcycleGroupName)
-
-               call mpas_dmpar_exch_group_destroy(domain, subcycleGroupName)
-               call mpas_timer_stop("se halo subcycle")
-
-               ! Reset the halo counters
-               edgeHaloComputeCounter = config_num_halos + 1
-               cellHaloComputeCounter = config_num_halos
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: Accumulate running sums, advance timestep pointers
