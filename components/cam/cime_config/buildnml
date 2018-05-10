@@ -35,7 +35,6 @@ def buildnml(case, caseroot, compname):
     cam_target		= case.get_value("CAM_TARGET")
     casebuild		= case.get_value("CASEBUILD")
     ccsm_co2_ppmv	= case.get_value("CCSM_CO2_PPMV")
-    ccsm_co2_ppmv       = '%.2E' % Decimal(ccsm_co2_ppmv) # for floating point notation
     srcroot		= case.get_value("SRCROOT")
     comp_interface	= case.get_value("COMP_INTERFACE")
     comp_ocn		= case.get_value("COMP_OCN")
@@ -196,7 +195,7 @@ def buildnml(case, caseroot, compname):
 
         infile_text = ""
         infile_text += " dtime = {} \n".format(dtime)
-        infile_text += " co2vmr = {}e-6\n".format(ccsm_co2_ppmv)
+        infile_text += " co2vmr = {:f}e-6\n".format(ccsm_co2_ppmv)
         infile_text += " start_ymd = {}".format(start_ymd)
         if ncdata:
             infile_text += " ncdata = {} \n".format(ncdata)
