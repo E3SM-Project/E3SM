@@ -1,5 +1,5 @@
 """
-WGET Server class.  Interact with a server using WGET protocal
+WGET Server class.  Interact with a server using WGET protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
