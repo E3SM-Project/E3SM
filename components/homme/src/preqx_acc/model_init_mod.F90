@@ -21,7 +21,7 @@ contains
 
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
     use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_omega_p, derived_eta_dot_dpdn, deriv_dvv, hvcoord_dp0, &
-                             derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic
+                             derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic, state_t, state_v, state_dp3d, state_ps_v, state_phis, state_Q
     use dimensions_mod, only: nelemd
 
     implicit none
@@ -38,12 +38,19 @@ contains
     !$omp master
 
 
-    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_eta_dot_dpdn, derived_omega_p, derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic)
+    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj,derived_eta_dot_dpdn, derived_omega_p, derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic,&
+    !$acc&                   state_t, state_v, state_dp3d, state_ps_v, state_phis, state_Q)
     !$acc enter data pcopyin(elem(1:nelemd),deriv)
     do ie = 1 , nelemd
       !$acc enter data pcopyin(elem(ie)%desc)
       !$acc enter data pcopyin(elem(ie)%desc%putmapP,elem(ie)%desc%getmapP,elem(ie)%desc%reverse)
       !$acc enter data pcopyin(elem(ie)%state%Qdp                )
+      !$acc enter data pcopyin(elem(ie)%state%v                  )
+      !$acc enter data pcopyin(elem(ie)%state%T                  )
+      !$acc enter data pcopyin(elem(ie)%state%dp3d               )
+      !$acc enter data pcopyin(elem(ie)%state%ps_v               )
+      !$acc enter data pcopyin(elem(ie)%state%phis               )
+      !$acc enter data pcopyin(elem(ie)%state%Q                  )
       !$acc enter data pcopyin(elem(ie)%derived%vn0              )
       !$acc enter data pcopyin(elem(ie)%derived%divdp            )
       !$acc enter data pcopyin(elem(ie)%derived%divdp_proj       )

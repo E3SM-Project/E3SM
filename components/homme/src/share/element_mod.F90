@@ -263,13 +263,20 @@ contains
   subroutine setup_element_pointers(elem)
     use dimensions_mod, only: nelemd, qsize
 #if USE_OPENACC
-    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_eta_dot_dpdn, derived_omega_p, derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic
+    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj, derived_eta_dot_dpdn, derived_omega_p, derived_dpdiss_ave, derived_dp, derived_dpdiss_biharmonic,&
+                              state_v,state_t,state_Q,state_phis,state_ps_v,state_dp3d, timelevels
 #endif
     implicit none
     type(element_t), intent(inout) :: elem(:)
     integer :: ie
 #if USE_OPENACC
     allocate( state_Qdp                (np,np,nlev,qsize,2,nelemd)            )
+    allocate( state_v                  (np,np,2,nlev,timelevels,nelemd)       )
+    allocate( state_T                  (np,np  ,nlev,timelevels,nelemd)       )
+    allocate( state_dp3d               (np,np  ,nlev,timelevels,nelemd)       )
+    allocate( state_ps_v               (np,np       ,timelevels,nelemd)       )
+    allocate( state_phis               (np,np                  ,nelemd)       )
+    allocate( state_Q                  (np,np  ,nlev,qsize_d   ,nelemd)       )
     allocate( derived_vn0              (np,np,2,nlev,nelemd)                  )
     allocate( derived_divdp            (np,np,nlev ,nelemd)                   )
     allocate( derived_divdp_proj       (np,np,nlev ,nelemd)                   )
@@ -280,6 +287,12 @@ contains
     allocate( derived_dpdiss_biharmonic(np,np,nlev ,nelemd)                   )
     do ie = 1 , nelemd
       elem(ie)%state%Qdp                 => state_Qdp                (:,:,:,:,:,ie)
+      elem(ie)%state%v                   => state_v                  (:,:,:,:,:,ie)
+      elem(ie)%state%T                   => state_T                  (:,:,:,:,ie)
+      elem(ie)%state%dp3d                => state_dp3d               (:,:,:,:,ie)
+      elem(ie)%state%ps_v                => state_ps_v               (:,:,:,ie)
+      elem(ie)%state%phis                => state_phis               (:,:,ie)
+      elem(ie)%state%Q                   => state_Q                  (:,:,:,:,ie)
       elem(ie)%derived%vn0               => derived_vn0              (:,:,:,:,ie)
       elem(ie)%derived%divdp             => derived_divdp            (:,:,:,ie)
       elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)
