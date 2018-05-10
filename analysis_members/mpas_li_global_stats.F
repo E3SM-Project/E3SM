@@ -178,14 +178,10 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
-      real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
+      real (kind=RKIND), dimension(:), pointer ::  fluxAcrossGroundingLine
       integer, dimension(:), pointer :: cellMask
-      integer, dimension(:), pointer :: edgeMask
-      integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCellsSolve
       integer, pointer :: nEdgesSolve
-      integer, pointer :: nVertLevels
 
       ! config options needed
       real (kind=RKIND), pointer :: config_sea_level
@@ -194,7 +190,6 @@ contains
 
       ! Local counters
       integer :: k, iCell, iEdge
-      integer :: iCell1, iCell2
 
       ! scalars to be calculated here from global reductions
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
@@ -226,7 +221,6 @@ contains
       real (kind=RKIND) ::  blockGLflux
 
       ! Local variables for calculations
-      real (kind=RKIND) :: fluxSign
 
       ! variables for processing stats
       integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
@@ -277,24 +271,20 @@ contains
          call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+         call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -355,25 +345,9 @@ contains
 
          ! Loop over edges
          do iEdge = 1, nEdgesSolve
-            if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-               ! Determine sign of this edge relative to GL
-               ! (+=grounded to floating, -=floating to grounded)
-               iCell1 = cellsOnEdge(1,iEdge)
-               iCell2 = cellsOnEdge(2,iEdge)
-               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-                  fluxSign = 1.0_RKIND
-               else
-                  fluxSign = -1.0_RKIND
-               endif
-
-               ! Loop over levels
-               do k = 1, nVertLevels
-                  ! Flux across GL, units = kg/yr
-                  blockGLflux = blockGLflux + fluxSign * layerNormalVelocity(k, iEdge) * dvEdge(iEdge) * &
-                      layerThicknessEdge(k, iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
-               end do ! end loop over levels
-            end if ! if GL
-
+            ! Flux across GL, units = kg/yr
+            blockGLflux = blockGLflux + fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) &
+                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
          end do ! end loop over edges
 
          block => block % next
