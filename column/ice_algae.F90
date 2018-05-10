@@ -1278,7 +1278,7 @@
                 call add_warning(warning)
                 write(warning,*)'Category,mm:',n_cat,mm
                 call add_warning(warning)
-                l_stop = .true.
+!                l_stop = .true.
                 stop_label = 'zbgc FCT tracer solution failed'
             endif
             if (l_stop) return
@@ -1351,7 +1351,7 @@
                 call add_warning(warning)
                 write(warning, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
                 call add_warning(warning)
-                l_stop = .true.
+!                l_stop = .true.
                 stop_label = 'very large bgc value'
             elseif (bio_tmp < c0) then
                 write(warning, *) 'negative bgc'
@@ -2036,7 +2036,8 @@
           enddo    
         endif
         endif !Docin(1) > c0
-      elseif (tr_bgc_Fe) then
+      endif
+      if (tr_bgc_Fe) then
         do n = 1,n_fed
            Fed_r(n) = Fed_r(n) + rFed(n)*Fed_tot_r          ! scavenging + uptake
         enddo 
