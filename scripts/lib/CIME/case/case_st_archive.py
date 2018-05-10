@@ -629,9 +629,9 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     logger.info("st_archive completed")
 
     # resubmit case if appropriate
-    resubmit = self.get_value("RESUBMIT")
-    if resubmit > 0 and resubmit:
-        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit))
+    resubmit_cnt = self.get_value("RESUBMIT")
+    if resubmit_cnt > 0 and resubmit:
+        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
         if self.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:
