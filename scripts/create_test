@@ -4,20 +4,22 @@
 Script to create, build and run CIME tests. This script can:
 
 1) Run a single test, or more than one test
-   ./create_test <TESTNAME>
-   ./create_test <TESTNAME1> <TESTNAME2>
-2) Run an E3SM test suite:
-  Below a suite name, <SUITE> is defined in $CIMEROOT/scripts/lib/get_tests.py
+   ./create_test TESTNAME
+   ./create_test TESTNAME1 TESTNAME2 ...
+2) Run a test suite from a text file with one test per line
+   ./create_test -f TESTFILE
+3) Run an E3SM test suite:
+  Below, a suite name, SUITE, is defined in $CIMEROOT/scripts/lib/get_tests.py
   - Run a single suite
-   ./create_test <SUITE>
+   ./create_test SUITE
   - Run two suites
-   ./create_test <SUITE1> <SUITE2>
+   ./create_test SUITE1 SUITE2
   - Run all tests in a suite except for one
-   ./create_test <SUITE> ^<TESTNAME>
+   ./create_test SUITE ^TESTNAME
   - Run all tests in a suite except for tests that are in another suite
-   ./create_test <SUITE1> ^<SUITE2>
-3) Run a CESM test suite(s):
-   ./create_test --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
+   ./create_test SUITE1 ^SUITE2
+4) Run a CESM test suite(s):
+   ./create_test --xml-category XML_CATEGORY [--xml-machine XML_MACHINE] [--xml-compiler XML_COMPILER] [ --xml-testlist XML_TESTLIST]
 
 If this tool is missing any feature that you need, please add an issue on
 https://github.com/ESMCI/cime
