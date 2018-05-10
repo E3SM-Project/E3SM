@@ -917,10 +917,6 @@ contains
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
     
-    if (single_column) then
-      go to 1000
-    endif
-    
     if (ftype==0) then
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
@@ -962,13 +958,13 @@ contains
 
     ! Loop over rsplit vertically lagrangian timesteps
     call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,single_column,1)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
        call t_startf("prim_step_rX")
-       call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
+       call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,.false.,single_column,r)
        call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
@@ -986,7 +982,7 @@ contains
     !  always for tracers
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete,single_column)
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1025,8 +1021,6 @@ contains
       call t_stopf("prim_energy_halftimes")
     endif
     
-1000 continue
-
 
     ! =================================
     ! update dynamics time level pointers
@@ -1047,7 +1041,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,single_column,rstep)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1088,6 +1082,7 @@ contains
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
+    logical :: single_column
 
     dt_q = dt*qsplit
  
@@ -1098,7 +1093,7 @@ contains
     do ie=nets,nete
       elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
-      elem(ie)%derived%omega_p=0
+      if (.not. single_column) elem(ie)%derived%omega_p=0
       if (nu_p>0) then
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
@@ -1114,10 +1109,12 @@ contains
     ! ===============
     call t_startf("prim_step_dyn")
     call prim_advance_exp(elem, deriv1, hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics)
+         hybrid, dt, tl, nets, nete, compute_diagnostics, &
+	 single_column)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
-       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
+       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.,&
+          single_column)
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")
@@ -1140,13 +1137,16 @@ contains
     ! For rsplit=0: 
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
-    call t_startf("prim_step_advec")
-    if (qsize > 0) then
-      call t_startf("PAT_remap")
-      call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
-      call t_stopf("PAT_remap")
-    end if
-    call t_stopf("prim_step_advec")
+
+    if (.not. single_column) then
+      call t_startf("prim_step_advec")
+      if (qsize > 0) then
+        call t_startf("PAT_remap")
+        call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
+        call t_stopf("PAT_remap")
+      end if
+      call t_stopf("prim_step_advec")
+    endif
 
   end subroutine prim_step
 

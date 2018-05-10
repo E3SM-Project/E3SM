@@ -257,68 +257,60 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  Eularian forecast for u,v and t
 !
 
-   do k=2,plev-1
-      fac = ztodt/(2.0_r8*pdelm1(k))
-      tfcst(k) = t3m2(k) &
+   if (dycore_is('EUL')) then 
+
+     do k=2,plev-1
+       fac = ztodt/(2.0_r8*pdelm1(k))
+       tfcst(k) = t3m2(k) &
            - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
            + wfldint(k)*(t3m1(k) - t3m1(k-1)))
-      vfcst(k) = v3m2(k) &
+       vfcst(k) = v3m2(k) &
            - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)) &
            + wfldint(k)*(v3m1(k) - v3m1(k-1)))
-      ufcst(k) = u3m2(k) &
+       ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
-      
-      if (dycore_is('SE')) then
-        do m=1,pcnst
-          qfcst(1,k,m) = q3m2(k,m) &
-            - fac*(wfldint(k+1)*(q3m1(k+1,m) - q3m1(k,m)) &
-            + wfldint(k)*(q3m1(k,m) - q3m1(k-1,m)))
-        end do
-      endif
 
-   end do
+     end do
 
 !     
 !     - top and bottom levels next -
 !     
 
-   k = 1
-   fac = ztodt/(2.0_r8*pdelm1(k))
-   tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
-   vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
-   ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
-   if (dycore_is('SE')) then
-     do m=1,pcnst
-       qfcst(1,k,m) = q3m1(k,m) - fac*(wfldint(k+1)*(q3m1(k+1,m) - q3m1(k,m)))
-     end do
-   endif
+     k = 1
+     fac = ztodt/(2.0_r8*pdelm1(k))
+     tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+     vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
+     ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
 
-   k = plev
-   fac = ztodt/(2.0_r8*pdelm1(plev))
-   tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
-   vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
-   ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
-
-   if (dycore_is('SE')) then
-     do m=1,pcnst
-       qfcst(1,k,m) = q3m1(k,m) - fac*(wfldint(k)*(q3m1(k,m) - q3m1(k-1,m)))
-     end do
-   endif
+     k = plev
+     fac = ztodt/(2.0_r8*pdelm1(plev))
+     tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+     vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
+     ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
 
 !
 !  SLT is used for constituents only
 !  so that a centered approximation is used for T, U and V, and Q
 !  check to see if we should be using a forward approximation for 
 !  constituents
-   do k=1,plev
-      tdwdp(k) = t3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      udwdp(k) = u3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      vdwdp(k) = v3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      do m=1,pcnst
-        qdwdp(k,m) = qminus(1,k,m)*(wfldint(k+1)-wfldint(k))/pdelm2(k)
-      end do
-   end do
+     do k=1,plev
+       tdwdp(k) = t3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       udwdp(k) = u3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       vdwdp(k) = v3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       do m=1,pcnst
+         qdwdp(k,m) = qminus(1,k,m)*(wfldint(k+1)-wfldint(k))/pdelm2(k)
+       end do
+     end do
+   
+   else if (dycore_is('SE')) then
+   
+     tfcst(:) = t3m2(:)
+     qfcst(1,:,:) = q3m2(:,:)
+     ufcst(:) = u3m2(:)
+     vfcst(:) = v3m2(:)
+   
+   endif
 
 if (.not.use_iop) then
 !
@@ -471,16 +463,11 @@ end if
 !
 
    do k=1,plev
-      tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+     tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + ztodt*(t2(k) + divt(k))
-      do m=1,pcnst
-        if (dycore_is('SE')) then
-          qfcst(1,k,m) = qfcst(1,k,m) + ztodt*wfld(k)*q3m1(k,m)*rair/(cpair*pmidm1(k)) &
-            + ztodt*divq(k,m)
-        else
-          qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
-        endif
-      end do
+     do m=1,pcnst
+       qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
+     end do
    enddo
 
 !     

@@ -7,7 +7,7 @@ use element_mod, only: element_t
 use scamMod
 use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
-use time_manager, only: get_nstep
+use time_manager, only: get_nstep, dtime
 
 implicit none
 
@@ -73,7 +73,7 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
-              if (have_omega) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (have_omega) elem(ie)%derived%omega_p(i,j,k) = wfldh(k)
             enddo
 
           endif
@@ -94,9 +94,9 @@ subroutine scm_setfield(elem)
   integer i, j, k, ie
 
   do ie=1,nelemd
-    if (have_ps) elem(ie)%state%ps_v(:,:,1) = psobs 
+    if (have_ps) elem(ie)%state%ps_v(:,:,:) = psobs 
     do i=1, PLEV
-      if (have_omega) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      if (have_omega) elem(ie)%derived%omega_p(:,:,i)=wfldh(i)  !     set t to tobs at first
     end do
   end do
 
@@ -104,7 +104,7 @@ end subroutine scm_setfield
 
 subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
-    use scamMod, only: single_column
+    use scamMod, only: single_column, use_3dfrc
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev, npsq
     use control_mod, only : use_cpstar, qsplit
@@ -133,22 +133,19 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: Qt,dt
     real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
     real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
-    real (kind=real_kind), dimension(nlev) :: dummy1, forecast_t, forecast_u, forecast_v
+    real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
     real (kind=real_kind) :: forecast_ps
     logical :: wet
 
-    integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
     integer:: icount
 
     nm_f = 1
     if (t_before_advance) then
        t1=tl%nm1
        t2=tl%n0
-       call TimeLevel_Qdp( tl, qsplit, t2_qdp, t1_qdp) !get n0 level into t2_qdp 
     else
        t1=tl%n0
        t2=tl%np1
-       call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
     endif
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
@@ -160,18 +157,12 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
-    do k=1,nlev
-      dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
-      dpt2(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
-    enddo
 
     do k=1,nlev
-      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t2)
+      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
     end do
 
-    dt=2.0*tstep
+    dt=dtime
 
     i=1
     j=1
@@ -180,32 +171,27 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     stateQin1(:,:) = stateQin_qfcst(:,:)
     stateQin2(:,:) = stateQin_qfcst(:,:)        
 
-    dummy1(:) = 0.0
-    forecast_ps = elem(ie)%state%ps_v(i,j,1)
+    if (.not. use_3dfrc) then
+      dummy1(:) = 0.0
+    else
+      dummy1(:) = elem(ie)%derived%fT(i,j,:)
+    endif
+    dummy2(:) = 0.0
+    forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
-    call forecast(97,elem(ie)%state%ps_v(i,j,t2),&
-           elem(ie)%state%ps_v(i,j,t2),forecast_ps,forecast_u,&
-           elem(ie)%state%v(i,j,1,:,t2),elem(ie)%state%v(i,j,1,:,t1),&
-           forecast_v,elem(ie)%state%v(i,j,2,:,t2),&
+    call forecast(97,elem(ie)%state%ps_v(i,j,t1),&
+           elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
+           elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
+           forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-           elem(ie)%state%T(i,j,:,t2),elem(ie)%state%T(i,j,:,t1),&
-           forecast_q,stateQin2,stateQin1,dt,elem(ie)%derived%fT(i,j,:),dummy1,dummy1,&
+           elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
+           forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
            stateQin_qfcst,p(i,j,:),stateQin1,1)         
 
-    do t=1,3
-      elem(ie)%state%T(i,j,:,t) = forecast_t(:)
-      elem(ie)%state%v(i,j,1,:,t) = forecast_u(:)
-      elem(ie)%state%v(i,j,2,:,t) = forecast_v(:)
-      elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
-    enddo
-
-    elem(ie)%state%ps_v(i,j,:) = forecast_ps
-
-    do t=1,2
-      do pp=1,pcnst
-        elem(ie)%state%Qdp(i,j,:,pp,t)=forecast_q(:,pp)*dpt2(i,j,:)
-      enddo
-    enddo
+    elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
+    elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
+    elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
+    elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 
     end subroutine apply_SC_forcing
 
