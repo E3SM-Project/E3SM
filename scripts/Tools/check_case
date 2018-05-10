@@ -19,7 +19,7 @@ def parse_command_line(args, description):
 
     parser = argparse.ArgumentParser(
         description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 

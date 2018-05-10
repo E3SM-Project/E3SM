@@ -4,6 +4,10 @@
 Check (and optionally download) input data files.
 
 Should be run from case.
+
+Examples:
+   ./check_input_data --download
+     Downloads required input data
 """
 from standard_script_setup import *
 from CIME.case import Case
@@ -14,31 +18,20 @@ import argparse
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n{0} [--download] [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Download input data \033[0m
-    > {0} --download
-""".format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--protocal", default=None,
-                        help="The input data protocal to download data.")
+    parser.add_argument("--protocol", default=None,
+                        help="The input data protocol to download data.")
 
     parser.add_argument("--server", default=None,
                         help="The input data repository from which to download data.")
 
 
     parser.add_argument("-i", "--input-data-root",default=None,
-                        help="The root directory where input data goes, "
+                        help="The root directory where input data goes,\n"
                         "use xmlquery DIN_LOC_ROOT to see default value.")
 
 
@@ -50,15 +43,15 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.protocal, args.server, args.input_data_root, args.data_list_dir, args.download
+    return args.protocol, args.server, args.input_data_root, args.data_list_dir, args.download
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    protocal, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
+    protocol, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
     with Case() as case:
-        sys.exit(0 if case.check_all_input_data(protocal=protocal,
+        sys.exit(0 if case.check_all_input_data(protocal=protocol,
                                                 address=address,
                                                 input_data_root=input_data_root,
                                                 data_list_dir=data_list_dir,
