@@ -372,6 +372,11 @@ module ocn_forward_mode
 
       endif
 
+      call mpas_dmpar_exch_group_create(domain, 'subcycleFields')
+      call mpas_dmpar_exch_group_add_field(domain, 'subcycleFields', 'sshSubcycle')
+      call mpas_dmpar_exch_group_add_field(domain, 'subcycleFields', 'normalBarotropicVelocitySubcycle')
+      call mpas_dmpar_exch_group_build_reusable_buffers(domain, 'subcycleFields')
+
    end function ocn_forward_mode_init!}}}
 
 !***********************************************************************
@@ -693,6 +698,8 @@ module ocn_forward_mode
       type (domain_type), intent(inout) :: domain
 
       integer :: ierr
+
+      call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
 
       call ocn_analysis_finalize(domain, ierr)
 
