@@ -1,0 +1,20 @@
+This directory creates a very coarse 200 to 40 km variable resolution mesh for Antarctica
+that can be used for rapid testing with a (semi-) realistic geometry,
+
+The variable resolution mesh is generated using JIGSAW-GEO:
+https://github.com/dengwirda/jigsaw-geo-matlab
+JIGSAW-GEO needs to be run manually from Matlab before running the rest of this case.
+(It may be possible to include that step in the set up process, but it seems like
+more trouble than it is worth for now.)
+
+To create the mesh, run the .m script in the subdirectory 'jigsaw',
+and then copy or link the resulting .msh file into this directory.
+
+Also, a source file for interpolating the initial condition must be specified.
+By default, the system looks for: antarctica_8km_2018_04_20.nc
+This file must be copied/linked into the test case setup directory, or a
+different file can be used instead if the test case is adjusted.
+Similarly, the script will look for a temperature IC file called
+ais_temp_pattyn_cism_format.5km.filled.nc.
+
+After this is complete, set up and run the test case as normal.
