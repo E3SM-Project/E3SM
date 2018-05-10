@@ -37,14 +37,14 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             return server.getfile(rel_path, full_path)
 
 ###############################################################################
-def check_all_input_data(self, protocal=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
+def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
 ###############################################################################
     success = False
-    if protocal is not None and address is not None:
-        success = self.check_input_data(protocal=protocal, address=address, download=download,
+    if protocol is not None and address is not None:
+        success = self.check_input_data(protocol=protocol, address=address, download=download,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
-        success = self.check_input_data(protocal=protocal, address=address, download=False,
+        success = self.check_input_data(protocol=protocol, address=address, download=False,
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
@@ -56,12 +56,12 @@ def check_all_input_data(self, protocal=None, address=None, input_data_root=None
 def _downloadfromserver(case, input_data_root, data_list_dir):
     # needs to be downloaded
     success = False
-    protocal = 'svn'
+    protocol = 'svn'
     inputdata = Inputdata()
-    while not success and protocal is not None:
-        protocal, address = inputdata.get_next_server()
-        logger.info("Checking server {} with protocal {}".format(address, protocal))
-        success = case.check_input_data(protocal=protocal, address=address, download=True,
+    while not success and protocol is not None:
+        protocol, address = inputdata.get_next_server()
+        logger.info("Checking server {} with protocol {}".format(address, protocol))
+        success = case.check_input_data(protocol=protocol, address=address, download=True,
                                         input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
 
@@ -126,7 +126,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
 
     return True
 
-def check_input_data(case, protocal="svn", address=None, input_data_root=None, data_list_dir="Buildconf", download=False):
+def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf", download=False):
     """
     Return True if no files missing
     """
@@ -143,20 +143,20 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
     no_files_missing = True
 
     if download:
-        if protocal not in vars(CIME.Servers):
-            logger.warning("Client protocal {} not enabled".format(protocal))
+        if protocol not in vars(CIME.Servers):
+            logger.warning("Client protocol {} not enabled".format(protocol))
             return False
 
-        if protocal == "svn":
+        if protocol == "svn":
             server = CIME.Servers.SVN(address)
-        elif protocal == "gftp":
+        elif protocol == "gftp":
             server = CIME.Servers.GridFTP(address)
-        elif protocal == "ftp":
+        elif protocol == "ftp":
             server = CIME.Servers.FTP(address)
-        elif protocal == "wget":
+        elif protocol == "wget":
             server = CIME.Servers.WGET(address)
         else:
-            expect(False, "Unsupported inputdata protocal: {}".format(protocal))
+            expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
 
 

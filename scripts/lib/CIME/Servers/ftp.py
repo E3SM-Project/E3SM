@@ -1,5 +1,5 @@
 """
-FTP Server class.  Interact with a server using FTP protocal
+FTP Server class.  Interact with a server using FTP protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
