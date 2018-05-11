@@ -61,7 +61,8 @@ def parse_command_line(args, description):
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory to build.\n"
+                        "Default is current directory.")
 
     mutex_group = parser.add_mutually_exclusive_group()
 
