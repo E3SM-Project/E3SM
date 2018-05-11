@@ -4,7 +4,7 @@
 # SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh $
 #
 # Create needed mapping files for gen_domain and coupler mapping
-# Currently supported on yellowstone, geyser, caldera, pronghorn, and jaguarpf
+# Currently supported on cheyenne, geyser, caldera, and pronghorn
 #
 #===============================================================================
 echo $0
@@ -66,12 +66,11 @@ usage() {
   echo ' --clm_name'
   echo '   Use the CLM naming convention'
   echo ' --serial'
-  echo '   For yellowstone batch jobs only! Load the serial ESMF tools rather'
-  echo '   than the parallel tools (necessary for mapping grids with a single'
-  echo '   point).'
+  echo '   Load the serial ESMF tools rather than the parallel tools'
+  echo '   (necessary for mapping grids with a single point).'
   echo ' --machine (or -mach)'
-  echo '   Name of the machine you are running on. Currently supports yellowstone,'
-  echo '   geyser, caldera, pronghorn, and jaguar. Note that this script will'
+  echo '   Name of the machine you are running on. Currently supports cheyenne,'
+  echo '   geyser, caldera, and pronghorn. Note that this script will'
   echo '   determine the machine name automatically from the hostfile command.'
   echo ' -d'
   echo '   toggle debug-only '
@@ -80,13 +79,11 @@ usage() {
   echo ''
   echo 'You can also set the following env variables:'
   echo '  ESMFBIN_PATH - Path to ESMF binaries '
-  echo '                 (Leave unset on cheyenne/yellowstone/caldera/pronghorn'
+  echo '                 (Leave unset on cheyenne/caldera/geyser/pronghorn'
   echo '                 and the tool will be loaded from modules)'
   echo '  MPIEXEC ------ Name of mpirun executable'
-  echo '                 (default is mpirun.lsf on yellowstone/caldera/pronghorn; if'
-  echo '                 you run interactively on yellowstone, mpi is not used)'
-  echo '  REGRID_PROC -- Number of MPI processors to use (jaguar only!)'
-  echo '                 (default is 8)'
+  echo '                 (ignored if --serial, which is default on cheyenne'
+  echo '                 login nodes'
   echo '**********************************************************'
 }
 
@@ -221,10 +218,6 @@ done
 if [ $MACH == "UNSET" ]; then
   hostname=`hostname`
   case $hostname in
-    ## yellowstone
-    ys* )
-      MACH="yellowstone"
-    ;;
     cheyenne* )
       MACH="cheyenne"
     ;;
@@ -237,9 +230,6 @@ if [ $MACH == "UNSET" ]; then
     pronghorn* )
       MACH="pronghorn"
     ;;
-    jaguarpf* )
-      MACH="jaguar"
-    ;;
     *)
       echo "Machine $hostname NOT recognized"
     ;;
@@ -247,16 +237,18 @@ if [ $MACH == "UNSET" ]; then
 fi
 
 # Machine specific settings:
-# 1) can not run in parallel interactively on yellowstone or cheyenne
-if [ $MACH == "yellowstone" ] && [ $interactive == "YES" ]; then
-  serial="TRUE"
-fi
+# 1) can not run in parallel interactively on cheyenne
 if [ $MACH == "cheyenne" ] && [ $interactive == "YES" ]; then
   serial="TRUE"
 fi
-# 2) jaguar requires additional environment var
-if [ $MACH == "jaguar" ] && [ -z "$REGRID_PROC" ]; then
-  REGRID_PROC=8
+# 2) FIXME: can not run in parallel on NCAR machines
+if [ $MACH == "cheyenne" ] ||      \
+   [ $MACH == "geyser" ] ||        \
+   [ $MACH == "caldera" ] ||       \
+   [ $MACH == "pronghorn" ] ; then
+  echo "Using serial implementation of ESMF because module changes"
+  echo "have made it difficult to run in parallel."
+  serial="TRUE"
 fi
 
 # check for required arguments
@@ -315,17 +307,15 @@ fi
 #-------------------------------------------------------------------------------
 
 case $MACH in
-  ## yellowstone, geyser, caldera, or pronghorn
-  "cheyenne" | "yellowstone" | "geyser" | "caldera" | "pronghorn" )
-    # From tcsh, script will not find module command
-    # So check to see if module works, otherwise source an init file
-    module list > /dev/null 2>&1 || source /etc/profile.d/modules.sh
+  ## cheyenne, geyser, caldera, or pronghorn
+  "cheyenne" |  "geyser" | "caldera" | "pronghorn" )
     module purge
-    module load intel
     module load nco
     if [  $MACH == "cheyenne" ]; then
+      module load intel
       module load esmf_libs/7.0.0
     else
+      module load intel/12.1.5
       module load esmf
     fi
 
@@ -334,25 +324,11 @@ case $MACH in
       if [ -z "$MPIEXEC" ]; then
         MPIEXEC=""
       fi
-    else
-      module load esmf-7.0.0-ncdfio-mpi-O
-      if [ -z "$MPIEXEC" ]; then
-        MPIEXEC="mpirun.lsf"
-      fi
+    # FIXME: get parallel tools working
+#    else
+#      module load esmf-7.0.0-ncdfio-mpi-O
     fi
 
-  ;;
-  ##jaguarpf
-  ## NOTE that for jaguarpf there is no batch script for now
-  "jaguar" )
-    if [ -z "$ESMFBIN_PATH" ]; then
-      module load esmf/5.2.0-p1_with-netcdf_g
-      ESMFBIN_PATH=$ESMF_BINDIR
-    fi
-
-    if [ -z "$MPIEXEC" ]; then
-      MPIEXEC="aprun -n $REGRID_PROC"
-    fi
   ;;
   *)
     echo "Machine $MACH NOT recognized"
