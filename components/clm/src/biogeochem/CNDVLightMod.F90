@@ -76,7 +76,7 @@ contains
          woody         =>    veg_vp%woody                 , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
          tree          =>    veg_vp%tree                  , & ! Input:  [integer  (:) ]  ecophys const - tree pft or not                    
          
-         deadstemc     =>    carbonstate_vars%deadstemc_patch , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
+         deadstemc     =>    carbonstate_vars%deadstem_patch , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
          leafcmax      =>    carbonstate_vars%leafcmax_patch  , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C storage                            
 
          crownarea     =>    dgvs_vars%crownarea_patch        , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     

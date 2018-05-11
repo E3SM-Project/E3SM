@@ -11,8 +11,8 @@ module CNComputeSeedMod
   use clm_varcon               , only : c3_r2, c4_r2, c14ratio
   use clm_varctl               , only : iulog
   use abortutils               , only : endrun
-  use CNSpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
-  use CNSpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use CNSpeciesMod             , only : NUTRIENT_SPECIES_C12, NUTRIENT_SPECIES_C13, NUTRIENT_SPECIES_C14
+  use CNSpeciesMod             , only : NUTRIENT_SPECIES_N, NUTRIENT_SPECIES_P
   use VegetationPropertiesType , only : veg_vp
   use VegetationType           , only : veg_pp                
   use LandunitType             , only : lun_pp                
@@ -242,21 +242,21 @@ contains
     !-----------------------------------------------------------------------
 
     select case (species)
-    case (CN_SPECIES_C12)
+    case (NUTRIENT_SPECIES_C12)
        multiplier = 1._r8
 
-    case (CN_SPECIES_C13)
+    case (NUTRIENT_SPECIES_C13)
        if (veg_vp%c3psn(pft_type) == 1._r8) then
           multiplier = c3_r2
        else
           multiplier = c4_r2
        end if
 
-    case (CN_SPECIES_C14)
+    case (NUTRIENT_SPECIES_C14)
        ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
        multiplier = c14ratio
 
-    case (CN_SPECIES_N)
+    case (NUTRIENT_SPECIES_N)
        select case (component)
        case (COMPONENT_LEAF)
           multiplier = 1._r8 / veg_vp%leafcn(pft_type)
@@ -273,7 +273,7 @@ contains
           call endrun(subname//': unknown component')
        end select
 
-    case (CN_SPECIES_P)
+    case (NUTRIENT_SPECIES_P)
        select case (component)
        case (COMPONENT_LEAF)
           multiplier = 1._r8 / veg_vp%leafcp(pft_type)
