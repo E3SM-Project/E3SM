@@ -27,6 +27,7 @@ module PhosphorusStateType
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
   use CNSpeciesMod           , only : NUTRIENT_SPECIES_P
   use NutrientStateType      , only : nutrientstate_type, NutrientStateInitAllocate
+  use NutrientStateType      , only : NutrientStateInitHistory
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
   !
   ! !PUBLIC TYPES:
@@ -195,187 +196,17 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
-    !-------------------------------
-    ! P state variables - native to PFT
-    !-------------------------------
-    
-    if (crop_prog) then
-       this%grain_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
-            avgflag='A', long_name='grain P', &
-            ptr_patch=this%grain_patch, default='inactive')
-
-       this%cropseed_deficit_patch(begp:endp) = spval
-       call hist_addfld1d (fname='CROPSEEDP_DEFICIT', units='gP/m^2', &
-            avgflag='A', long_name='P used for crop seed that needs to be repaid', &
-            ptr_patch=this%cropseed_deficit_patch)
-    end if
-
-    this%leaf_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LEAFP', units='gP/m^2', &
-         avgflag='A', long_name='leaf P', &
-         ptr_patch=this%leaf_patch)
-
-    this%leaf_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LEAFP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='leaf P storage', &
-         ptr_patch=this%leaf_storage_patch, default='inactive')
-
-    this%leaf_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LEAFP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='leaf P transfer', &
-         ptr_patch=this%leaf_xfer_patch, default='inactive')
-
-    this%froot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP', units='gP/m^2', &
-         avgflag='A', long_name='fine root P', &
-         ptr_patch=this%froot_patch)
-
-    this%froot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='fine root P storage', &
-         ptr_patch=this%froot_storage_patch, default='inactive')
-
-    this%froot_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='fine root P transfer', &
-         ptr_patch=this%froot_xfer_patch, default='inactive')
-
-    this%livestem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP', units='gP/m^2', &
-         avgflag='A', long_name='live stem P', &
-         ptr_patch=this%livestem_patch)
-
-    this%livestem_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='live stem P storage', &
-         ptr_patch=this%livestem_storage_patch, default='inactive')
-
-    this%livestem_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='live stem P transfer', &
-         ptr_patch=this%livestem_xfer_patch, default='inactive')
-
-    this%deadstem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADSTEMP', units='gP/m^2', &
-         avgflag='A', long_name='dead stem P', &
-         ptr_patch=this%deadstem_patch)
-
-    this%deadstem_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADSTEMP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='dead stem P storage', &
-         ptr_patch=this%deadstem_storage_patch, default='inactive')
-
-    this%deadstem_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADSTEMP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='dead stem P transfer', &
-         ptr_patch=this%deadstem_xfer_patch, default='inactive')
-
-    this%livecroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP', units='gP/m^2', &
-         avgflag='A', long_name='live coarse root P', &
-         ptr_patch=this%livecroot_patch)
-
-    this%livecroot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='live coarse root P storage', &
-         ptr_patch=this%livecroot_storage_patch, default='inactive')
-
-    this%livecroot_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='live coarse root P transfer', &
-         ptr_patch=this%livecroot_xfer_patch, default='inactive')
-
-    this%deadcroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADCROOTP', units='gP/m^2', &
-         avgflag='A', long_name='dead coarse root P', &
-         ptr_patch=this%deadcroot_patch)
-
-    this%deadcroot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADCROOTP_STORAGE', units='gP/m^2', &
-         avgflag='A', long_name='dead coarse root P storage', &
-         ptr_patch=this%deadcroot_storage_patch, default='inactive')
-
-    this%deadcroot_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADCROOTP_XFER', units='gP/m^2', &
-         avgflag='A', long_name='dead coarse root P transfer', &
-         ptr_patch=this%deadcroot_xfer_patch, default='inactive')
+    call NutrientStateInitAllocate(this, bounds)
 
     this%retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP', units='gP/m^2', &
          avgflag='A', long_name='plant pool of retranslocated P', &
          ptr_patch=this%retransp_patch)
 
-    this%pool_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
-         avgflag='A', long_name='temporary plant P pool', &
-         ptr_patch=this%pool_patch, default='inactive')
-
-    this%veg_trunc_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
-         avgflag='A', long_name='pft-level sink for P truncation', &
-         ptr_patch=this%veg_trunc_patch, default='inactive')
-
-    this%dispveg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DISPVEGP', units='gP/m^2', &
-         avgflag='A', long_name='displayed vegetation phosphorus', &
-         ptr_patch=this%dispveg_patch)
-
-    this%storveg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='STORVEGP', units='gP/m^2', &
-         avgflag='A', long_name='stored vegetation phosphorus', &
-         ptr_patch=this%storveg_patch)
-
-    this%totveg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TOTVEGP', units='gP/m^2', &
-         avgflag='A', long_name='total vegetation phosphorus', &
-         ptr_patch=this%totveg_patch)
-
-    this%totpft_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TOTPFTP', units='gP/m^2', &
-         avgflag='A', long_name='total PFT-level phosphorus', &
-         ptr_patch=this%totpft_patch)
-
     this%plant_p_buffer_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANTP_BUFFER', units='gP/m^2', &
             avgflag='A', long_name='plant phosphorus stored as buffer', &
             ptr_col=this%plant_p_buffer_patch,default='inactive')
-    !-------------------------------
-    ! P state variables - native to column
-    !-------------------------------
-
-    if ( nlevdecomp_full > 1 ) then
-       this%decomp_pools_vr_col(begc:endc,:,:) = spval
-       this%decomp_pools_1m_col(begc:endc,:) = spval
-    end if
-    this%decomp_pools_col(begc:endc,:) = spval
-    do l  = 1, ndecomp_pools
-       if ( nlevdecomp_full > 1 ) then
-          data2dptr => this%decomp_pools_vr_col(:,:,l)
-          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
-          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P (vertically resolved)'
-          call hist_addfld2d (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
-               avgflag='A', long_name=longname, &
-               ptr_col=data2dptr)
-       endif
-
-       data1dptr => this%decomp_pools_col(:,l)
-       fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P'
-       longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P'
-       call hist_addfld1d (fname=fieldname, units='gP/m^2', &
-            avgflag='A', long_name=longname, &
-            ptr_col=data1dptr)
-
-       if ( nlevdecomp_full > 1 ) then
-          data1dptr => this%decomp_pools_1m_col(:,l)
-          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_1m'
-          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P to 1 meter'
-          call hist_addfld1d (fname=fieldname, units='gP/m^2', &
-               avgflag='A', long_name=longname, &
-               ptr_col=data1dptr, default = 'inactive')
-       endif
-    end do
-
 
     if ( nlevdecomp_full > 1 ) then
 
@@ -384,21 +215,7 @@ contains
             avgflag='A', long_name='soil mineral P', &
             ptr_col=this%sminp_col)
 
-       this%totlit_1m_col(begc:endc) = spval
-       call hist_addfld1d (fname='TOTLITP_1m', units='gP/m^2', &
-            avgflag='A', long_name='total litter P to 1 meter', &
-            ptr_col=this%totlit_1m_col)
-
-       this%totsom_1m_col(begc:endc) = spval
-       call hist_addfld1d (fname='TOTSOMP_1m', units='gP/m^2', &
-            avgflag='A', long_name='total soil organic matter P to 1 meter', &
-            ptr_col=this%totsom_1m_col)
     endif
-
-    this%veg_trunc_col(begc:endc) = spval
-    call hist_addfld1d (fname='COL_PTRUNC', units='gP/m^2',  &
-         avgflag='A', long_name='column-level sink for P truncation', &
-         ptr_col=this%veg_trunc_col)
 
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
@@ -408,32 +225,32 @@ contains
     endif
 
     this%solutionp_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='SOLUTIONP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='SOLUTIONP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil solution P (vert. res.)', &
          ptr_col=this%solutionp_vr_col)
 
     this%labilep_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='LABILEP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='LABILEP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil labile P (vert. res.)', &
          ptr_col=this%labilep_vr_col)
 
     this%secondp_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='SECONDP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='SECONDP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil secondary P (vert. res.)', &
          ptr_col=this%secondp_vr_col)
 
     this%occlp_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='OCCLP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='OCCLP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil occluded P (vert. res.)', &
          ptr_col=this%occlp_vr_col)
 
     this%primp_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='PRIMP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='PRIMP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil primary P (vert. res.)', &
          ptr_col=this%primp_vr_col)
 
     this%sminp_vr_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='SMINP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+    call hist_addfld_decomp (fname='SMINP'//trim(vr_suffix), units='gP/m^3',  type2d='levdcmp', &
          avgflag='A', long_name='soil mineral P (vert. res.)', &
          ptr_col=this%sminp_vr_col)
 
@@ -464,56 +281,6 @@ contains
             avgflag='A', long_name='soil primary P', &
             ptr_col=this%primp_col)
     endif
-
-    this%totlit_col(begc:endc) = spval
-    call hist_addfld1d (fname='TOTLITP', units='gP/m^2', &
-         avgflag='A', long_name='total litter P', &
-         ptr_col=this%totlit_col)
-
-    this%totsom_col(begc:endc) = spval
-    call hist_addfld1d (fname='TOTSOMP', units='gP/m^2', &
-         avgflag='A', long_name='total soil organic matter P', &
-         ptr_col=this%totsom_col)
-
-    this%totecosys_col(begc:endc) = spval
-    call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
-         avgflag='A', long_name='total ecosystem P but excl product pools', &
-         ptr_col=this%totecosys_col)
-
-    this%totcol_col(begc:endc) = spval
-    call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
-         avgflag='A', long_name='total column-level P but excl product pools', &
-         ptr_col=this%totcol_col)
-
-    this%seed_grc(begg:endg) = spval
-    call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
-         avgflag='A', long_name='P pool for seeding new PFTs ', &
-         ptr_gcell=this%seed_grc, default='inactive')
-
-    this%seed_col(begc:endc) = spval
-    call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
-         avgflag='A', long_name='P pool for seeding new PFTs ', &
-         ptr_col=this%seed_col, default='inactive')
-
-    this%prod10_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD10P', units='gP/m^2', &
-         avgflag='A', long_name='10-yr wood product P', &
-         ptr_col=this%prod10_col, default='inactive')
-
-    this%prod100_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD100P', units='gP/m^2', &
-         avgflag='A', long_name='100-yr wood product P', &
-         ptr_col=this%prod100_col, default='inactive')
-
-    this%prod1_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD1P', units='gP/m^2', &
-         avgflag='A', long_name='1-yr crop product P', &
-         ptr_col=this%prod1_col, default='inactive')
-
-    this%totprod_col(begc:endc) = spval
-    call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
-         avgflag='A', long_name='total wood product P', &
-         ptr_col=this%totprod_col, default='inactive')
 
   end subroutine InitHistory
 

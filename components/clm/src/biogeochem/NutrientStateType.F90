@@ -7,7 +7,9 @@ module NutrientStateType
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use decompMod              , only : bounds_type
   use clm_varpar             , only : nlevdecomp_full, ndecomp_pools
-  use clm_varctl             , only : use_fates
+  use clm_varctl             , only : use_fates, use_crop
+  use clm_varcon             , only : spval, ispval
+  use CNDecompCascadeConType , only : decomp_cascade_con
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -96,7 +98,8 @@ module NutrientStateType
 
   end type nutrientstate_type
 
-  public :: NutrientStateInitAllocate
+  public :: NutrientStateInitAllocate, &
+            NutrientStateInitHistory
 
 contains
 
@@ -193,5 +196,286 @@ contains
     allocate(nutrient_state%totveg_abg_col          (begc:endc))                   ; nutrient_state%totveg_abg_col          (:)     = nan
 
   end subroutine NutrientStateInitAllocate
+
+  !------------------------------------------------------------------------
+  subroutine NutrientStateInitHistory(nutrient_state, bounds)
+    !
+    use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class (nutrientstate_type)    :: nutrient_state
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: l
+    integer           :: begp,endp
+    integer           :: begc,endc
+    integer           :: begg,endg
+    character(len=10) :: unit
+    character(len=3)  :: name
+    character(24)     :: fieldname
+    character(100)    :: longname
+    real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
+    real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
+    !------------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
+
+    write(unit,*) 'g' // trim(nutrient_state%name) // '/m^2'
+    unit = trim(unit)
+
+    name = nutrient_state%name
+
+    nutrient_state%deadcroot_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADCROOT', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead coarse root', &
+         ptr_patch=nutrient_state%deadcroot_patch)
+
+    nutrient_state%deadcroot_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADCROOT_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead coarse root storage', &
+         ptr_patch=nutrient_state%deadcroot_storage_patch,  default='inactive')
+
+    nutrient_state%deadcroot_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADCROOT_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead coarse root transfer', &
+         ptr_patch=nutrient_state%deadcroot_xfer_patch, default='inactive')
+
+    nutrient_state%deadstem_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADSTEM', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead stem', &
+         ptr_patch=nutrient_state%deadstem_patch)
+
+    nutrient_state%deadstem_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADSTEM_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead stem storage', &
+         ptr_patch=nutrient_state%deadstem_storage_patch, default='inactive')
+
+    nutrient_state%deadstem_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DEADSTEM_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' dead stem transfer', &
+         ptr_patch=nutrient_state%deadstem_xfer_patch, default='inactive')
+
+    nutrient_state%froot_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_FROOT', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' fine root', &
+         ptr_patch=nutrient_state%froot_patch)
+
+    nutrient_state%froot_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_FROOT_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' fine root storage', &
+         ptr_patch=nutrient_state%froot_storage_patch, default='inactive')
+
+    nutrient_state%froot_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_FROOT_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' fine root transfer', &
+         ptr_patch=nutrient_state%froot_xfer_patch, default='inactive')
+
+    if (use_crop) then
+       nutrient_state%grain_patch(begp:endp) = spval
+       call hist_addfld1d (fname=trim(name) // '_GRAIN', units=trim(unit), &
+            avgflag='A', long_name = trim(name) // ' grain', &
+            ptr_patch=nutrient_state%grain_patch, default='inactive')
+
+       nutrient_state%grain_storage_patch(begp:endp) = spval
+       call hist_addfld1d (fname=trim(name) // '_GRAIN_STORAGE', units=trim(unit), &
+            avgflag='A', long_name = trim(name) // ' grain storage', &
+            ptr_patch=nutrient_state%grain_storage_patch, default='inactive')
+
+       nutrient_state%grain_xfer_patch(begp:endp) = spval
+       call hist_addfld1d (fname=trim(name) // '_GRAIN_XFER', units=trim(unit), &
+            avgflag='A', long_name = trim(name) // ' grain transfer', &
+            ptr_patch=nutrient_state%grain_xfer_patch, default='inactive')
+    end if
+
+    nutrient_state%leaf_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LEAF', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' leaf', &
+         ptr_patch=nutrient_state%leaf_patch)
+
+    nutrient_state%leaf_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LEAF_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' leaf storage', &
+         ptr_patch=nutrient_state%leaf_storage_patch, default='inactive')
+
+    nutrient_state%leaf_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LEAF_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' leaf transfer', &
+         ptr_patch=nutrient_state%leaf_xfer_patch, default='inactive')
+
+    nutrient_state%livestem_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVESTEM', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live stem', &
+         ptr_patch=nutrient_state%livestem_patch)
+
+    nutrient_state%livestem_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVESTEM_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live stem storage', &
+         ptr_patch=nutrient_state%livestem_storage_patch, default='inactive')
+
+    nutrient_state%livestem_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVESTEMC_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live stem transfer', &
+         ptr_patch=nutrient_state%livestem_xfer_patch, default='inactive')
+
+    nutrient_state%livecroot_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVECROOT', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live coarse root', &
+         ptr_patch=nutrient_state%livecroot_patch)
+
+    nutrient_state%livecroot_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVECROOT_STORAGE', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live coarse root storage', &
+         ptr_patch=nutrient_state%livecroot_storage_patch, default='inactive')
+
+    nutrient_state%livecroot_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_LIVECROOT_XFER', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' live coarse root transfer', &
+         ptr_patch=nutrient_state%livecroot_xfer_patch, default='inactive')
+
+    nutrient_state%decomp_pools_vr_col(begc:endc,:,:) = spval
+    do l = 1, ndecomp_pools
+       if ( nlevdecomp_full > 1 ) then
+          data2dptr => nutrient_state%decomp_pools_vr_col(:,:,l)
+          fieldname = trim(name) // '_'//trim(decomp_cascade_con%decomp_pool_name_history(l))// &
+               trim(name) // '_vr'
+          longname =  trim(name) // ' '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' ' &
+               // trim(name) // ' (vertically resolved)'
+          call hist_addfld2d (fname=fieldname, units='g' // trim(name) // '/m^3',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr)
+       endif
+
+    end do
+
+    nutrient_state%veg_trunc_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_COL_CTRUN', units=trim(unit),  &
+         avgflag='A', long_name = trim(name) // ' column-level sink for truncation', &
+         ptr_col=nutrient_state%veg_trunc_col, default='inactive')
+
+    nutrient_state%veg_trunc_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_PFT_CTRUN', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' patch-level sink for truncation', &
+         ptr_patch=nutrient_state%veg_trunc_patch, default='inactive')
+
+    nutrient_state%seed_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_SEED_COL', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' pool for seeding new Patches', &
+         ptr_col=nutrient_state%seed_col, default='inactive')
+
+    nutrient_state%seed_grc(begg:endg) = spval
+    call hist_addfld1d (fname=trim(name) // '_SEED_GRC', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' pool for seeding new PFTs via dynamic landcover', &
+         ptr_gcell=nutrient_state%seed_grc)
+
+    nutrient_state%prod1_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_PROD1', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' 1-yr crop product', &
+         ptr_col=nutrient_state%prod1_col, default='inactive')
+
+    nutrient_state%prod10_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_PROD10', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' 10-yr wood product', &
+         ptr_col=nutrient_state%prod10_col, default='inactive')
+
+    nutrient_state%prod100_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_PROD100', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' 100-yr wood product', &
+         ptr_col=nutrient_state%prod100_col, default='inactive')
+
+    do l = 1, ndecomp_pools
+
+       if ( nlevdecomp_full > 1 ) then
+          data1dptr => nutrient_state%decomp_pools_1m_col(:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))// trim(name) // '_1m'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))// trim(name) // ' to 1 meter'
+          call hist_addfld1d (fname=fieldname, units=trim(unit), &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default = 'inactive')
+       endif
+
+       data1dptr => nutrient_state%decomp_pools_col(:,l)
+       fieldname = trim(name) // '_' // trim(decomp_cascade_con%decomp_pool_name_history(l)) // trim(name)
+       longname =  trim(name) // ' ' // trim(decomp_cascade_con%decomp_pool_name_history(l)) // ' ' // trim(name)
+       call hist_addfld1d (fname=fieldname, units=trim(unit), &
+            avgflag='A', long_name=longname, &
+            ptr_col=data1dptr)
+
+    end do
+
+    nutrient_state%dispveg_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_DISPVEG', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' displayed veg carbon, excluding storage and cpool', &
+         ptr_patch=nutrient_state%dispveg_patch)
+
+    nutrient_state%pool_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_POOL', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' temporary photosynthate pool', &
+         ptr_patch=nutrient_state%pool_patch)
+
+    nutrient_state%storveg_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_STORVEG', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' stored vegetation, excluding cpool', &
+         ptr_patch=nutrient_state%storveg_patch)
+
+    nutrient_state%totcol_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTCOL', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total column incl veg and pool but excl product pools', &
+         ptr_col=nutrient_state%totcol_col)
+
+    nutrient_state%totecosys_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTECOSYS', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total ecosystem, incl veg but excl cpool but excl product pools', &
+         ptr_col=nutrient_state%totecosys_col)
+
+    if ( nlevdecomp_full > 1 ) then
+       nutrient_state%totlit_1m_col(begc:endc) = spval
+       call hist_addfld1d (fname=trim(name) // '_TOTLIT_1m', units=trim(unit), &
+            avgflag='A', long_name=trim(name) // ' total litter to 1 meter depth', &
+            ptr_col=nutrient_state%totlit_1m_col)
+    end if
+
+    nutrient_state%totlit_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTLIT', units=trim(unit), &
+         avgflag='A', long_name=trim(name) // ' total litter', &
+         ptr_col=nutrient_state%totlit_col)
+
+    nutrient_state%totpft_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTPFT', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total patch-level, including pool', &
+         ptr_patch=nutrient_state%totpft_patch)
+
+    nutrient_state%totprod_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTPROD', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total wood product', &
+         ptr_col=nutrient_state%totprod_col, default='inactive')
+
+    if ( nlevdecomp_full > 1 ) then
+       nutrient_state%totsom_1m_col(begc:endc) = spval
+       call hist_addfld1d (fname=trim(name) // '_TOTSOM_1m', units=trim(unit), &
+            avgflag='A', long_name=trim(name) // ' total soil organic matter to 1 meter depth', &
+            ptr_col=nutrient_state%totsom_1m_col)
+    end if
+
+    nutrient_state%totsom_col(begc:endc) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTSOM', units=trim(unit), &
+         avgflag='A', long_name=trim(name) // ' total soil organic matter', &
+         ptr_col=nutrient_state%totsom_col)
+
+    nutrient_state%totveg_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTVEG', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total vegetation, excluding pool', &
+         ptr_patch=nutrient_state%totveg_patch)
+
+    nutrient_state%totveg_abg_patch(begp:endp) = spval
+    call hist_addfld1d (fname=trim(name) // '_TOTVEG_ABG', units=trim(unit), &
+         avgflag='A', long_name = trim(name) // ' total aboveground vegetation, excluding pool', &
+         ptr_patch=nutrient_state%totveg_abg_patch)
+
+  end subroutine NutrientStateInitHistory
 
 end module NutrientStateType
