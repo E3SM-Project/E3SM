@@ -71,7 +71,7 @@ If either **env_build.xml** or **Macros.make** has been modified, and/or if code
 ::
 
    > cd $CASEROOT
-   > ./case.build --clean
+   > ./case.build --clean-all
 
 If you have ONLY modified the PE layout in **env_mach_pes.xml**, a clean may not be required.
 ::
