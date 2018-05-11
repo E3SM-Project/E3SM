@@ -31,7 +31,8 @@ module CNSpeciesMod
   integer, parameter, public :: NUTRIENT_SPECIES_N   = 4
   integer, parameter, public :: NUTRIENT_SPECIES_P   = 5
 
-  public :: species_from_string  ! convert a string representation to one of the constants defined here
+  public :: species_from_string      ! convert a string representation to one of the constants defined here
+  public :: species_name_from_string ! convert a string representation to nutrient name
 
 contains
 
@@ -66,6 +67,38 @@ contains
     end select
 
   end function species_from_string
+
+  !-----------------------------------------------------------------------
+  function species_name_from_string(species_string) result(species_name)
+    !
+    ! !DESCRIPTION:
+    ! Convert a string representation to species name
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in) :: species_string  ! string representation of species (should be lowercase)
+    !
+    ! !LOCAL VARIABLES:
+    character(len=3)             :: species_name
+
+    character(len=*), parameter :: subname = 'species_name_from_string'
+    !-----------------------------------------------------------------------
+
+    select case (species_string)
+    case ('c12')
+       species_name = 'C'
+    case ('c13')
+       species_name = 'C13'
+    case ('c14')
+       species_name = 'C14'
+    case ('n')
+       species_name = 'N'
+    case ('p')
+       species_name = 'P'
+    end select
+
+  end function species_name_from_string
 
 
 end module CNSpeciesMod

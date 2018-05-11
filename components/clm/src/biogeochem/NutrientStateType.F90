@@ -5,7 +5,9 @@ module NutrientStateType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-
+  use decompMod              , only : bounds_type
+  use clm_varpar             , only : nlevdecomp_full, ndecomp_pools
+  use clm_varctl             , only : use_fates
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -15,6 +17,8 @@ module NutrientStateType
   type, public :: nutrientstate_type
 
      integer           :: species                         ! C12, C13, C14, N, P
+
+     character(len=3)  :: name
 
      ! Vegetation pools
      real(r8), pointer :: deadcroot_patch         (:)     ! (mass/m2) dead coarse root
@@ -91,5 +95,103 @@ module NutrientStateType
      real(r8), pointer :: totveg_abg_col          (:)     ! (mass/m2) total above ground vegetation nutrient at column-level
 
   end type nutrientstate_type
+
+  public :: NutrientStateInitAllocate
+
+contains
+
+  !------------------------------------------------------------------------
+  subroutine NutrientStateInitAllocate(nutrient_state, bounds)
+    !
+    implicit none
+    !
+    class (nutrientstate_type)    :: nutrient_state
+    type(bounds_type), intent(in) :: bounds
+    !
+    integer           :: begp,endp
+    integer           :: begc,endc
+    integer           :: begg,endg
+    !------------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
+
+    if (.not. use_fates) then
+       allocate(nutrient_state%deadcroot_patch         (begp :endp)) ;  nutrient_state%deadcroot_patch         (:)   = nan
+       allocate(nutrient_state%deadcroot_storage_patch (begp :endp)) ;  nutrient_state%deadcroot_storage_patch (:)   = nan
+       allocate(nutrient_state%deadcroot_xfer_patch    (begp :endp)) ;  nutrient_state%deadcroot_xfer_patch    (:)   = nan
+       allocate(nutrient_state%deadstem_patch          (begp :endp)) ;  nutrient_state%deadstem_patch          (:)   = nan
+       allocate(nutrient_state%deadstem_storage_patch  (begp :endp)) ;  nutrient_state%deadstem_storage_patch  (:)   = nan
+       allocate(nutrient_state%deadstem_xfer_patch     (begp :endp)) ;  nutrient_state%deadstem_xfer_patch     (:)   = nan
+       allocate(nutrient_state%froot_patch             (begp :endp)) ;  nutrient_state%froot_patch             (:)   = nan
+       allocate(nutrient_state%froot_storage_patch     (begp :endp)) ;  nutrient_state%froot_storage_patch     (:)   = nan
+
+       allocate(nutrient_state%froot_xfer_patch        (begp :endp)) ;  nutrient_state%froot_xfer_patch        (:)   = nan
+       allocate(nutrient_state%grain_patch             (begp :endp)) ;  nutrient_state%grain_patch             (:)   = nan
+       allocate(nutrient_state%grain_storage_patch     (begp :endp)) ;  nutrient_state%grain_storage_patch     (:)   = nan
+       allocate(nutrient_state%grain_xfer_patch        (begp :endp)) ;  nutrient_state%grain_xfer_patch        (:)   = nan
+       allocate(nutrient_state%leaf_patch              (begp :endp)) ;  nutrient_state%leaf_patch              (:)   = nan
+       allocate(nutrient_state%leaf_storage_patch      (begp :endp)) ;  nutrient_state%leaf_storage_patch      (:)   = nan
+       allocate(nutrient_state%leaf_xfer_patch         (begp :endp)) ;  nutrient_state%leaf_xfer_patch         (:)   = nan
+       allocate(nutrient_state%livecroot_patch         (begp :endp)) ;  nutrient_state%livecroot_patch         (:)   = nan
+       allocate(nutrient_state%livecroot_storage_patch (begp :endp)) ;  nutrient_state%livecroot_storage_patch (:)   = nan
+       allocate(nutrient_state%livecroot_xfer_patch    (begp :endp)) ;  nutrient_state%livecroot_xfer_patch    (:)   = nan
+       allocate(nutrient_state%livestem_patch          (begp :endp)) ;  nutrient_state%livestem_patch          (:)   = nan
+       allocate(nutrient_state%livestem_storage_patch  (begp :endp)) ;  nutrient_state%livestem_storage_patch  (:)   = nan
+       allocate(nutrient_state%livestem_xfer_patch     (begp :endp)) ;  nutrient_state%livestem_xfer_patch     (:)   = nan
+
+       allocate(nutrient_state%veg_trunc_patch         (begp :endp)) ;  nutrient_state%veg_trunc_patch         (:)   = nan
+
+       allocate(nutrient_state%dispveg_patch           (begp :endp)) ;  nutrient_state%dispveg_patch           (:)   = nan
+       allocate(nutrient_state%pool_patch              (begp :endp)) ;  nutrient_state%pool_patch              (:)   = nan
+       allocate(nutrient_state%storveg_patch           (begp :endp)) ;  nutrient_state%storveg_patch           (:)   = nan
+       allocate(nutrient_state%totveg_patch            (begp :endp)) ;  nutrient_state%totveg_patch            (:)   = nan
+       allocate(nutrient_state%totpft_patch            (begp :endp)) ;  nutrient_state%totpft_patch            (:)   = nan
+       allocate(nutrient_state%totveg_abg_patch        (begp :endp)) ;  nutrient_state%totveg_abg_patch        (:)   = nan
+    end if
+
+    allocate(nutrient_state%beg_bal_col             (begc:endc))                   ; nutrient_state%beg_bal_col             (:)     = nan
+    allocate(nutrient_state%beg_bal_grc             (begg:endg))                   ; nutrient_state%beg_bal_grc             (:)     = nan
+    allocate(nutrient_state%end_bal_patch           (begp:endp))                   ; nutrient_state%end_bal_patch           (:)     = nan
+    allocate(nutrient_state%end_bal_col             (begc:endc))                   ; nutrient_state%end_bal_col             (:)     = nan
+    allocate(nutrient_state%end_bal_grc             (begg:endg))                   ; nutrient_state%end_bal_grc             (:)     = nan
+    allocate(nutrient_state%err_bal_patch           (begp:endp))                   ; nutrient_state%err_bal_patch           (:)     = nan
+    allocate(nutrient_state%err_bal_col             (begc:endc))                   ; nutrient_state%err_bal_col             (:)     = nan
+    allocate(nutrient_state%err_bal_grc             (begg:endg))                   ; nutrient_state%err_bal_grc             (:)     = nan
+
+    allocate(nutrient_state%cropseed_deficit_patch  (begp:endp))                   ; nutrient_state%cropseed_deficit_patch  (:)     = nan
+    allocate(nutrient_state%seed_grc                (begg:endg))                   ; nutrient_state%seed_grc                (:)     = nan
+    allocate(nutrient_state%seed_col                (begc:endc))                   ; nutrient_state%seed_col                (:)     = nan
+    allocate(nutrient_state%prod1_col               (begc:endc))                   ; nutrient_state%prod1_col               (:)     = nan
+    allocate(nutrient_state%prod10_col              (begc:endc))                   ; nutrient_state%prod10_col              (:)     = nan
+    allocate(nutrient_state%prod100_col             (begc:endc))                   ; nutrient_state%prod100_col             (:)     = nan
+    
+    allocate(nutrient_state%decomp_pools_vr_col     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
+    nutrient_state%decomp_pools_vr_col(:,:,:) = nan
+
+    allocate(nutrient_state%veg_trunc_col           (begc:endc))                   ; nutrient_state%veg_trunc_col           (:)     = nan
+    allocate(nutrient_state%soil_trunc_vr_col       (begc:endc,1:nlevdecomp_full)) ; nutrient_state%soil_trunc_vr_col       (:,:)   = nan
+
+    allocate(nutrient_state%cwd_col                 (begc:endc))                   ; nutrient_state%cwd_col                 (:)     = nan
+    allocate(nutrient_state%decomp_pools_col        (begc:endc,1:ndecomp_pools))   ; nutrient_state%decomp_pools_col        (:,:)   = nan
+    allocate(nutrient_state%decomp_pools_1m_col     (begc:endc,1:ndecomp_pools))   ; nutrient_state%decomp_pools_1m_col     (:,:)   = nan
+    allocate(nutrient_state%dyn_bal_adjustments_col (begc:endc))                   ; nutrient_state%dyn_bal_adjustments_col (:)     = nan
+
+    allocate(nutrient_state%totabg_col              (begc:endc))                   ; nutrient_state%totabg_col              (:)     = nan
+    allocate(nutrient_state%totblg_col              (begc:endc))                   ; nutrient_state%totblg_col              (:)     = nan
+    allocate(nutrient_state%totcol_col              (begc:endc))                   ; nutrient_state%totcol_col              (:)     = nan
+    allocate(nutrient_state%totecosys_col           (begc:endc))                   ; nutrient_state%totecosys_col           (:)     = nan
+    allocate(nutrient_state%totlit_1m_col           (begc:endc))                   ; nutrient_state%totlit_1m_col           (:)     = nan
+    allocate(nutrient_state%totlit_col              (begc:endc))                   ; nutrient_state%totlit_col              (:)     = nan
+    allocate(nutrient_state%totpft_col              (begc:endc))                   ; nutrient_state%totpft_col              (:)     = nan
+    allocate(nutrient_state%totprod_col             (begc:endc))                   ; nutrient_state%totprod_col             (:)     = nan
+    allocate(nutrient_state%totsom_col              (begc:endc))                   ; nutrient_state%totsom_col              (:)     = nan
+    allocate(nutrient_state%totsom_1m_col           (begc:endc))                   ; nutrient_state%totsom_1m_col           (:)     = nan
+    allocate(nutrient_state%totveg_col              (begc:endc))                   ; nutrient_state%totveg_col              (:)     = nan
+    allocate(nutrient_state%totveg_col              (begc:endc))                   ; nutrient_state%totveg_col              (:)     = nan
+    allocate(nutrient_state%totveg_abg_col          (begc:endc))                   ; nutrient_state%totveg_abg_col          (:)     = nan
+
+  end subroutine NutrientStateInitAllocate
 
 end module NutrientStateType

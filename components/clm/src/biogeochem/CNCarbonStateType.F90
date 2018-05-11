@@ -22,9 +22,9 @@ module CNCarbonStateType
   use ColumnType             , only : col_pp                
   use clm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
-  use CNSpeciesMod           , only : species_from_string
+  use CNSpeciesMod           , only : species_from_string, species_name_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
-  use NutrientStateType      , only : nutrientstate_type
+  use NutrientStateType      , only : nutrientstate_type, NutrientStateInitAllocate
 
   ! bgc interface & pflotran
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
@@ -77,6 +77,7 @@ contains
     type(carbonstate_type) , intent(in), optional :: c12_carbonstate_vars
 
     this%species = species_from_string(carbon_type)
+    this%name    = species_name_from_string(carbon_type)
 
     call this%InitAllocate ( bounds)
     call this%InitHistory ( bounds, carbon_type)
@@ -105,88 +106,22 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
+    call NutrientStateInitAllocate(this, bounds)
+
     if ( .not. use_fates ) then
-       allocate(this%leaf_patch              (begp :endp))                   ;     this%leaf_patch              (:)   = nan
-       allocate(this%leaf_storage_patch      (begp :endp))                   ;     this%leaf_storage_patch      (:)   = nan
-       allocate(this%leaf_xfer_patch         (begp :endp))                   ;     this%leaf_xfer_patch         (:)   = nan
-       allocate(this%froot_patch             (begp :endp))                   ;     this%froot_patch             (:)   = nan
-       allocate(this%froot_storage_patch     (begp :endp))                   ;     this%froot_storage_patch     (:)   = nan
-       allocate(this%froot_xfer_patch        (begp :endp))                   ;     this%froot_xfer_patch        (:)   = nan
-       allocate(this%livestem_patch          (begp :endp))                   ;     this%livestem_patch          (:)   = nan
-       allocate(this%livestem_storage_patch  (begp :endp))                   ;     this%livestem_storage_patch  (:)   = nan
-       allocate(this%livestem_xfer_patch     (begp :endp))                   ;     this%livestem_xfer_patch     (:)   = nan
-       allocate(this%deadstem_patch          (begp :endp))                   ;     this%deadstem_patch          (:)   = nan
-       allocate(this%deadstem_storage_patch  (begp :endp))                   ;     this%deadstem_storage_patch  (:)   = nan
-       allocate(this%deadstem_xfer_patch     (begp :endp))                   ;     this%deadstem_xfer_patch     (:)   = nan
-       allocate(this%livecroot_patch         (begp :endp))                   ;     this%livecroot_patch         (:)   = nan
-       allocate(this%livecroot_storage_patch (begp :endp))                   ;     this%livecroot_storage_patch (:)   = nan
-       allocate(this%livecroot_xfer_patch    (begp :endp))                   ;     this%livecroot_xfer_patch    (:)   = nan
-       allocate(this%deadcroot_patch         (begp :endp))                   ;     this%deadcroot_patch         (:)   = nan
-       allocate(this%deadcroot_storage_patch (begp :endp))                   ;     this%deadcroot_storage_patch (:)   = nan
-       allocate(this%deadcroot_xfer_patch    (begp :endp))                   ;     this%deadcroot_xfer_patch    (:)   = nan
-       allocate(this%gresp_storage_patch      (begp :endp))                   ;     this%gresp_storage_patch      (:)   = nan
-       allocate(this%gresp_xfer_patch         (begp :endp))                   ;     this%gresp_xfer_patch         (:)   = nan
-       allocate(this%pool_patch              (begp :endp))                   ;     this%pool_patch              (:)   = nan
-       allocate(this%xsmrpool_patch           (begp :endp))                   ;     this%xsmrpool_patch           (:)   = nan
-       allocate(this%veg_trunc_patch             (begp :endp))                   ;     this%veg_trunc_patch             (:)   = nan
-       allocate(this%dispveg_patch           (begp :endp))                   ;     this%dispveg_patch           (:)   = nan
-       allocate(this%storveg_patch           (begp :endp))                   ;     this%storveg_patch           (:)   = nan
-       allocate(this%totveg_patch            (begp :endp))                   ;     this%totveg_patch            (:)   = nan
-       allocate(this%totpft_patch            (begp :endp))                   ;     this%totpft_patch            (:)   = nan
-       allocate(this%leafcmax_patch           (begp :endp))                   ;     this%leafcmax_patch           (:)   = nan
-       allocate(this%grain_patch             (begp :endp))                   ;     this%grain_patch             (:)   = nan
-       allocate(this%grain_storage_patch     (begp :endp))                   ;     this%grain_storage_patch     (:)   = nan
-       allocate(this%grain_xfer_patch        (begp :endp))                   ;     this%grain_xfer_patch        (:)   = nan
-       allocate(this%woodc_patch              (begp :endp))                   ;     this%woodc_patch              (:)   = nan     
-       allocate(this%totveg_abg_patch        (begp :endp))                   ;     this%totveg_abg_patch            (:)   = nan
-
+       allocate(this%gresp_storage_patch (begp :endp)); this%gresp_storage_patch (:)   = nan
+       allocate(this%gresp_xfer_patch    (begp :endp)); this%gresp_xfer_patch    (:)   = nan
+       allocate(this%xsmrpool_patch      (begp :endp)); this%xsmrpool_patch      (:)   = nan
+       allocate(this%leafcmax_patch      (begp :endp)); this%leafcmax_patch      (:)   = nan
+       allocate(this%woodc_patch         (begp :endp)); this%woodc_patch         (:)   = nan
     endif
-    allocate(this%cwd_col                 (begc :endc))                   ;     this%cwd_col                 (:)   = nan
-    allocate(this%veg_trunc_col               (begc :endc))                   ;     this%veg_trunc_col               (:)   = nan
-    allocate(this%soil_trunc_vr_col            (begc :endc,1:nlevdecomp_full)) ;     this%soil_trunc_vr_col            (:,:) = nan
-    allocate(this%seed_col                (begc :endc))                   ;     this%seed_col                (:)   = nan
-    allocate(this%prod10_col              (begc :endc))                   ;     this%prod10_col              (:)   = nan
-    allocate(this%prod100_col             (begc :endc))                   ;     this%prod100_col             (:)   = nan
-    allocate(this%prod1_col               (begc :endc))                   ;     this%prod1_col               (:)   = nan
-    allocate(this%totprod_col             (begc :endc))                   ;     this%totprod_col             (:)   = nan
-    allocate(this%dyn_bal_adjustments_col (begc :endc))                   ;     this%dyn_bal_adjustments_col (:)   = nan
-    allocate(this%totlit_col              (begc :endc))                   ;     this%totlit_col              (:)   = nan
-    allocate(this%totsom_col              (begc :endc))                   ;     this%totsom_col              (:)   = nan
-    allocate(this%totlit_1m_col           (begc :endc))                   ;     this%totlit_1m_col           (:)   = nan
-    allocate(this%totsom_1m_col           (begc :endc))                   ;     this%totsom_1m_col           (:)   = nan
-    allocate(this%totecosys_col           (begc :endc))                   ;     this%totecosys_col           (:)   = nan
-    allocate(this%totcol_col              (begc :endc))                   ;     this%totcol_col              (:)   = nan
-    allocate(this%rootc_col                (begc :endc))                   ;     this%rootc_col                (:)   = nan
-    allocate(this%totveg_col              (begc :endc))                   ;     this%totveg_col              (:)   = nan
-    allocate(this%leafc_col                (begc :endc))                   ;     this%leafc_col                (:)   = nan
-    allocate(this%deadstemc_col            (begc :endc))                   ;     this%deadstemc_col            (:)   = nan
-    allocate(this%fuelc_col                (begc :endc))                   ;     this%fuelc_col                (:)   = nan
-    allocate(this%fuelc_crop_col           (begc :endc))                   ;     this%fuelc_crop_col           (:)   = nan
-    allocate(this%decomp_pools_col        (begc :endc,1:ndecomp_pools))   ;     this%decomp_pools_col        (:,:) = nan
-    allocate(this%decomp_pools_1m_col     (begc :endc,1:ndecomp_pools))   ;     this%decomp_pools_1m_col     (:,:) = nan
-    allocate(this%totpft_col              (begc :endc))                   ;     this%totpft_col              (:)   = nan
-    allocate(this%totveg_col              (begc :endc))                   ;     this%totveg_col              (:)   = nan
-
-    allocate(this%totveg_abg_col          (begc :endc))                   ;     this%totveg_abg_col              (:)   = nan
-
-
-    allocate(this%totabg_col              (begc :endc))                   ;     this%totabg_col              (:)   = nan
-    allocate(this%totblg_col              (begc:endc))                    ;     this%totblg_col              (:)   = nan
-    allocate(this%decomp_pools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))  
-    this%decomp_pools_vr_col(:,:,:)= nan
+    allocate(this%rootc_col      (begc :endc)); this%rootc_col      (:)   = nan
+    allocate(this%leafc_col      (begc :endc)); this%leafc_col      (:)   = nan
+    allocate(this%deadstemc_col  (begc :endc)); this%deadstemc_col  (:)   = nan
+    allocate(this%fuelc_col      (begc :endc)); this%fuelc_col      (:)   = nan
+    allocate(this%fuelc_crop_col (begc :endc)); this%fuelc_crop_col (:)   = nan
 
     allocate(this%decomp_som2c_vr_col(begc:endc,1:nlevdecomp_full)); this%decomp_som2c_vr_col(:,:)= nan
-    allocate(this%beg_bal_col   (begc:endc));     this%beg_bal_col   (:) = nan
-    allocate(this%beg_bal_grc   (begg:endg));     this%beg_bal_grc   (:) = nan
-    allocate(this%end_bal_patch (begp:endp));     this%end_bal_patch (:) = nan
-    allocate(this%end_bal_col   (begc:endc));     this%end_bal_col   (:) = nan
-    allocate(this%end_bal_grc   (begg:endg));     this%end_bal_grc   (:) = nan
-    allocate(this%err_bal_patch (begp:endp));     this%err_bal_patch (:) = nan
-    allocate(this%err_bal_col   (begc:endc));     this%err_bal_col   (:) = nan
-    allocate(this%err_bal_grc   (begg:endg));     this%err_bal_grc   (:) = nan
-
-    allocate(this%cropseed_deficit_patch  (begp:endp)) ; this%cropseed_deficit_patch  (:) = nan
-    allocate(this%seed_grc                (begg:endg)) ; this%seed_grc                (:) = nan
 
   end subroutine InitAllocate
 
