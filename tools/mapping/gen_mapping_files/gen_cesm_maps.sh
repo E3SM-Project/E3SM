@@ -1,11 +1,7 @@
 #!/bin/bash
 #===============================================================================
-# SVN $Id: gen_cesm_maps.sh 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
-# SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/gen_cesm_maps.sh $
-#
 # Create needed mapping files for gen_domain and coupler mapping
-# Currently supported on yellowstone, geyser, caldera, and jaguarpf
-#
+# Currently supported on cheyenne, geyser, caldera, and prognhorn
 #===============================================================================
 echo $0
 date
@@ -18,10 +14,10 @@ usage() {
   echo ''
   echo '**********************************************************'
   echo 'usage:'
-  echo './gen_cesm_maps.sh  '
+  echo './gen_cesm_maps.sh'
   echo ' Create a suite of mapping files to use in CESM. Depending on the'
   echo ' grid files specified, the result will be a subset of the following'
-  echo ' mapping files: '
+  echo ' mapping files:'
   echo ' * atm -> ocn: conservative, bilinear, patch'
   echo ' * ocn -> atm: conservative, bilinear'
   echo ' * atm -> lnd: conservative, bilinear'
@@ -32,7 +28,7 @@ usage() {
   echo ' * lnd -> glc: conservative, bilinear'
   echo ' * glc -> lnd: conservative, bilinear'
   echo ''
-  echo 'gen_cesm_maps.sh '
+  echo 'gen_cesm_maps.sh'
   echo '  --fileatm|-fatm  input atm_grid_filename'
   echo '  --fileocn|-focn  input ocn_grid_filename'
   echo '  --filelnd|-flnd  input lnd_grid_filename'
@@ -49,63 +45,59 @@ usage() {
   echo '  [ --batch|-b ]'
   echo '  [ --help|-h ]'
   echo '  [ -v ]'
-  echo ' '
-  echo 'where '
-  echo ' --fileatm (or -fatm) '
+  echo ''
+  echo 'where'
+  echo ' --fileatm (or -fatm)'
   echo '   SCRIP grid format atmosphere filename (full pathname)'
-  echo ' --fileocn (or -focn) '
+  echo ' --fileocn (or -focn)'
   echo '   SCRIP grid format ocean filename (full pathname)'
-  echo ' --filelnd (or -flnd) '
+  echo ' --filelnd (or -flnd)'
   echo '   SCRIP grid format land filename (full pathname), must be global'
-  echo ' --filertm (or -frtm) '
+  echo ' --filertm (or -frtm)'
   echo '   SCRIP grid format runoff filename (full pathname)'
-  echo ' --fileglc (or -fglc) '
+  echo ' --fileglc (or -fglc)'
   echo '   SCRIP grid format glc filename (full pathname), assumed to be regional'
-  echo ' --nameatm (or -natm) '
+  echo ' --nameatm (or -natm)'
   echo '   Shortname to use for atm in mapping filename'
-  echo ' --nameocn (or -nocn) '
+  echo ' --nameocn (or -nocn)'
   echo '   Shortname to use for ocn in mapping filename'
-  echo ' --namelnd (or -nlnd) '
+  echo ' --namelnd (or -nlnd)'
   echo '   Shortname to use for lnd in mapping filename'
-  echo ' --namertm (or -nrtm) '
+  echo ' --namertm (or -nrtm)'
   echo '   Shortname to use for rtm in mapping filename'
-  echo ' --nameglc (or -nglc) '
+  echo ' --nameglc (or -nglc)'
   echo '   Shortname to use for glc in mapping filename'
-  echo ' --typeocn (or -tocn) '
+  echo ' --typeocn (or -tocn)'
   echo '   ocean grid type,  valid values are regional or global'
   echo '   default is global'
-  echo ' --typeatm (or -tatm) '
+  echo ' --typeatm (or -tatm)'
   echo '   atm grid type, valid values are regional or global'
   echo '   default is global'
   echo '   value must be global if -frtm and -nrtm are specified'
-  echo ' --nogridcheck '
+  echo ' --nogridcheck'
   echo '   By default, script will run consistency check on new'
   echo '   maps; this flag disables these checks'
-  echo ' --batch (or -b) '
+  echo ' --batch (or -b)'
   echo '   Toggles batch mode usage. If you want to run in batch mode'
   echo '   you need to have a separate batch script for a supported machine'
   echo '   that calls this script interactively - you cannot submit this'
   echo '   script directly to the batch system'
-  echo ' -rc '
+  echo ' -rc'
   echo '   Pass the "--recompile" flag to the ESMF tool'
   echo '   (Only necessary if nothing has been built in ../check_maps/)'
-  echo ' -d '
-  echo '   toggle debug-only '
-  echo ' --help or -h  '
+  echo ' -d'
+  echo '   toggle debug-only'
+  echo ' --help or -h'
   echo '   displays this help message'
   echo ''
   echo 'Note: if rtm or glc are specified and lnd is not, then this tool will'
   echo '      assume lnd and atm are on the same grid.'
   echo ''
   echo 'You can also set the following env variables:'
-  echo '  ESMFBIN_PATH - Path to ESMF binaries '
-  echo '                 (Leave unset on yellowstone and caldera and the tool'
-  echo '                 will be loaded from modules)'
+  echo '  ESMFBIN_PATH - Path to ESMF binaries'
+  echo '                 (Known machines will load tools from modules)'
   echo '  MPIEXEC ------ Name of mpirun executable'
-  echo '                 (default is mpirun.lsf on yellowstone and caldera; if'
-  echo '                 you run interactively on yellowstone, mpi is not used)'
-  echo '  REGRID_PROC -- Number of MPI processors to use'
-  echo '                 (default is 8)'
+  echo '                 (currently tools only run in serial due to module issues)'
   echo '**********************************************************'
 }
 
@@ -350,11 +342,6 @@ if [ $((atm_ocn+atm_lnd+lnd_rtm+lnd_glc+ocn_lnd)) == 0 ]; then
   echo "ERROR: can not generate any maps based on given input!"
   echo "Invoke gen_cesm_maps.sh -h for usage"
   exit 9
-fi
-
-# set some defaults
-if [ -z "$REGRID_PROC" ]; then
-   REGRID_PROC=8
 fi
 
 #-------------------------------------------------------------------------------
