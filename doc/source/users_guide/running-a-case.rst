@@ -192,8 +192,7 @@ hint.
 
 First, check **cpl.log.$datestamp**, which will often tell you
 *when* the model failed. Then check the rest of the component log
-files. See :ref:`troubleshooting run-time
-problems<troubleshooting>` for more information.
+files. See :ref:`troubleshooting run-time problems<troubleshooting>` for more information.
 
 .. _input_data:
 
@@ -270,13 +269,8 @@ Run-type initialization
 The case initialization type is set using the ``$RUN_TYPE`` variable in
 **env_run.xml**. A CIME run can be initialized in one of three ways:
 
-- startup
-
-- branch
-
-- hybrid
-
 ``startup``
+
   In a startup run (the default), all components are initialized using
   baseline states. These states are set independently by each component
   and can include the use of restart files, initial  files, external
@@ -287,6 +281,7 @@ The case initialization type is set using the ``$RUN_TYPE`` variable in
   ocean coupling step.
 
 ``branch``
+
   In a branch run, all components are initialized using a consistent
   set of restart files from a previous run (determined by the
   ``$RUN_REFCASE`` and ``$RUN_REFDATE`` variables in **env_run.xml**).
@@ -307,10 +302,10 @@ The case initialization type is set using the ``$RUN_TYPE`` variable in
   branch runs. To set up a branch run, locate the restart tar file or
   restart directory for ``$RUN_REFCASE`` and ``$RUN_REFDATE`` from a
   previous run, then place those files in the ``$RUNDIR``  directory.
-  See :ref:`setting up a branch
-  run<setting-up-a-branch-run>`.
+  See :ref:`setting up a branch run<setting-up-a-branch-run>`.
 
 ``hybrid``
+
   A hybrid run is initialized like a startup but it uses
   initialization data sets from a previous case. It is similar
   to a branch run with relaxed restart constraints.

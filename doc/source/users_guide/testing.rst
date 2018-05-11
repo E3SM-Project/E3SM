@@ -6,8 +6,8 @@ Testing with create_test
 
 
 **create_test** is the tool we use to test cime-driven models. It can be used as an easy way to
-run a single basic test or an entire suite of tests.  create_test runs a test suite in parallel 
-for improved performance.  create_test is the driver behind the automated nightly testing of 
+run a single basic test or an entire suite of tests.  create_test runs a test suite in parallel
+for improved performance.  create_test is the driver behind the automated nightly testing of
 cime-driven models.
 
 Tests come in form::
@@ -25,24 +25,24 @@ a test.
 ======================= =====================================================================================
 TESTTYPE                Description
 ======================= =====================================================================================
-   ERS                  Exact restart from startup (default 6 days + 5 days) 
-                         Do an 11 day initial test - write a restart at day 6.    (file suffix: base) 
+   ERS                  Exact restart from startup (default 6 days + 5 days)
+                         Do an 11 day initial test - write a restart at day 6.    (file suffix: base)
 
-                         Do a 5 day restart test, starting from restart at day 6. (file suffix: rest) 
+                         Do a 5 day restart test, starting from restart at day 6. (file suffix: rest)
 
                          Compare component history files '.base' and '.rest' at day 11.
    ERS2                 Exact restart from startup  (default 6 days + 5 days).
                          Do an 11 day initial test without making restarts.     (file suffix: base)
- 
+
                          Do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6. (file suffix: rest)
- 
+
                          Compare component history files ".base" and ".rest" at day 11.
    ERT                  Exact restart from startup, default 2 month + 1 month (ERS with info DBUG = 1).
    IRT                  Exact restart from startup, (default 4 days + 7 days) with restart from interim file.
    ERIO                 Exact restart from startup with different PIO methods, (default 6 days + 5 days).
    ERR                  Exact restart from startup with resubmit, (default 4 days + 3 days).
    ERRI                 Exact restart from startup with resubmit, (default 4 days + 3 days). Tests incomplete logs option for st_archive.
-   ERI                  hybrid/branch/exact restart test, default (by default STOP_N is 22 days) 
+   ERI                  hybrid/branch/exact restart test, default (by default STOP_N is 22 days)
 
                         (1) ref1case
 
@@ -56,7 +56,7 @@ TESTTYPE                Description
 
                             Do a hybrid run for default 19 days running with ref1 restarts from day 3,
 
-                            and writing restarts at day 10. 
+                            and writing restarts at day 10.
 
                             ref2case is a clone of the main case.
 
@@ -71,7 +71,7 @@ TESTTYPE                Description
                             Short term archiving is off.
 
                         (4) case (Suffix base)
-       
+
                             Do a restart run from the branch run restarts for 4 days.
 
                             Compare component history files '.base' and '.hybrid' at day 19.
@@ -288,6 +288,8 @@ change in this dict and add your testcase to the list.  Note the
 comment at the top of this file indicating that you add a test with
 this format: test>.<grid>.<compset>, and then there is a second
 argument for mods.
+
+.. _scripts_regression_tests:
 
 ========================
 Scripts regression tests
