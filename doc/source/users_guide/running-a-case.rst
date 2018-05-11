@@ -234,6 +234,10 @@ If data sets are missing, obtain them from the input data server(s) via the comm
    > cd $CASEROOT
    > ./check_input_data --download
 
+``check_input_data`` is automatically called by the case control
+system, when the case is built and submitted.  So manual usage of this
+script is optional.
+
 -----------------------------------
 Distributed Input Data Repositories
 -----------------------------------

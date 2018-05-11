@@ -1,13 +1,22 @@
 #!/usr/bin/env python
 
 """
-Check (and optionally download) input data files.
+This script determines if the required data files for your case exist on local disk in the appropriate subdirectory of
+$DIN_LOC_ROOT. It automatically downloads missing data required for your simulation.
 
-Should be run from case.
+It is recommended that users on a given system share a common $DIN_LOC_ROOT directory to avoid duplication on
+disk of large amounts of input data. You may need to talk to your system administrator in order to set this up.
 
-Usage:
+This script should be run from $CASEROOT.
+
+To verify the presence of required data use:
+   ./check_input_data
+
+To obtain missing datasets from the input data server(s) use:
    ./check_input_data --download
-      Downloads required input data
+
+This script is automatically called by the case control system, when the case is built and submitted.
+So manual usage of this script is optional.
 """
 from standard_script_setup import *
 from CIME.case import Case
