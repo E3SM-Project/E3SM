@@ -652,7 +652,7 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
-         frootc                => carbonstate_vars%frootc_patch        , &
+         frootc                => carbonstate_vars%froot_patch        , &
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &

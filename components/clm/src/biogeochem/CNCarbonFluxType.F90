@@ -305,9 +305,9 @@ module CNCarbonFluxType
      real(r8), pointer :: harvest_c_to_cwdc_col                     (:,:)   ! C fluxes associated with harvest to CWD pool (gC/m3/s)
 
      ! new variables for CN code
-     real(r8), pointer :: hrv_deadstemc_to_prod10c_col              (:)     ! dead stem C harvest mortality to 10-year product pool (gC/m2/s)        
-     real(r8), pointer :: hrv_deadstemc_to_prod100c_col             (:)     ! dead stem C harvest mortality to 100-year product pool (gC/m2/s)        
-     real(r8), pointer :: hrv_cropc_to_prod1c_col                   (:)     ! crop C harvest mortality to 1-year product pool (gC/m2/s)
+     real(r8), pointer :: hrv_deadstemc_to_prod10_col              (:)     ! dead stem C harvest mortality to 10-year product pool (gC/m2/s)        
+     real(r8), pointer :: hrv_deadstemc_to_prod100_col             (:)     ! dead stem C harvest mortality to 100-year product pool (gC/m2/s)        
+     real(r8), pointer :: hrv_cropc_to_prod1_col                   (:)     ! crop C harvest mortality to 1-year product pool (gC/m2/s)
 
      ! column-level fire fluxes
      real(r8), pointer :: m_decomp_cpools_to_fire_vr_col            (:,:,:) ! vertically-resolved decomposing C fire loss (gC/m3/s)
@@ -800,14 +800,14 @@ contains
      allocate(this%wood_harvestc_col                 (begc:endc))                  ; this%wood_harvestc_col         (:)  =nan
      allocate(this%hrv_xsmrpool_to_atm_col           (begc:endc))                  ; this%hrv_xsmrpool_to_atm_col   (:)  =nan 
 
-     allocate(this%hrv_deadstemc_to_prod10c_col(begc:endc))                                                    
-     this%hrv_deadstemc_to_prod10c_col(:)= nan
+     allocate(this%hrv_deadstemc_to_prod10_col(begc:endc))                                                    
+     this%hrv_deadstemc_to_prod10_col(:)= nan
 
-     allocate(this%hrv_deadstemc_to_prod100c_col(begc:endc))                                                   
-     this%hrv_deadstemc_to_prod100c_col(:)= nan
+     allocate(this%hrv_deadstemc_to_prod100_col(begc:endc))                                                   
+     this%hrv_deadstemc_to_prod100_col(:)= nan
 
-     allocate(this%hrv_cropc_to_prod1c_col(begc:endc))
-     this%hrv_cropc_to_prod1c_col(:) = nan
+     allocate(this%hrv_cropc_to_prod1_col(begc:endc))
+     this%hrv_cropc_to_prod1_col(:) = nan
 
      allocate(this%m_decomp_cpools_to_fire_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))                
      this%m_decomp_cpools_to_fire_vr_col(:,:,:)= nan
@@ -4627,9 +4627,9 @@ contains
     do fi = 1,num_column
        i = filter_column(fi)
 
-       this%hrv_deadstemc_to_prod10c_col(i)  = value_column        
-       this%hrv_deadstemc_to_prod100c_col(i) = value_column  
-       this%hrv_cropc_to_prod1c_col(i)       = value_column
+       this%hrv_deadstemc_to_prod10_col(i)  = value_column        
+       this%hrv_deadstemc_to_prod100_col(i) = value_column  
+       this%hrv_cropc_to_prod1_col(i)       = value_column
        this%somc_fire_col(i)                 = value_column  
        this%prod1c_loss_col(i)               = value_column
        this%prod10c_loss_col(i)              = value_column

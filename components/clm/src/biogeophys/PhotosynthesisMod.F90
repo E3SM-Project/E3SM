@@ -265,12 +265,12 @@ contains
          mbb           => photosyns_vars%mbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
          rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
          
-         leafn         => nitrogenstate_vars%leafn_patch           , &
-         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
-         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
-         leafp         => phosphorusstate_vars%leafp_patch         , &
-         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
-         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         leafn         => nitrogenstate_vars%leaf_patch           , &
+         leafn_storage => nitrogenstate_vars%leaf_storage_patch   , &
+         leafn_xfer    => nitrogenstate_vars%leaf_xfer_patch      , &
+         leafp         => phosphorusstate_vars%leaf_patch         , &
+         leafp_storage => phosphorusstate_vars%leaf_storage_patch , &
+         leafp_xfer    => phosphorusstate_vars%leaf_xfer_patch    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                            &
          )

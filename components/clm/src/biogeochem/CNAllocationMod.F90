@@ -445,9 +445,9 @@ contains
          leafout                      => crop_vars%gddtsoi_patch                               , & ! Input:  [real(r8) (:)   ]  =gdd from top soil layer temperature    
 
          xsmrpool                     => carbonstate_vars%xsmrpool_patch                       , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool  
-         leafc                        => carbonstate_vars%leafc_patch                          , & ! Input:  [real(r8) (:)   ]                                          
-         frootc                       => carbonstate_vars%frootc_patch                         , & ! Input:  [real(r8) (:)   ]                                          
-         livestemc                    => carbonstate_vars%livestemc_patch                      , & ! Input:  [real(r8) (:)   ]                                          
+         leafc                        => carbonstate_vars%leaf_patch                          , & ! Input:  [real(r8) (:)   ]                                          
+         frootc                       => carbonstate_vars%froot_patch                         , & ! Input:  [real(r8) (:)   ]                                          
+         livestemc                    => carbonstate_vars%livestem_patch                      , & ! Input:  [real(r8) (:)   ]                                          
          plant_ndemand_col            => nitrogenflux_vars%plant_ndemand_col                 , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col            => phosphorusflux_vars%plant_pdemand_col               , & ! Output:  [real(r8) (:,:) ]
          plant_ndemand_vr_col         => nitrogenflux_vars%plant_ndemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
@@ -645,13 +645,13 @@ contains
          smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
          sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
          pnup_pfrootc                 => nitrogenstate_vars%pnup_pfrootc_patch                 , &
-         leafn                        => nitrogenstate_vars%leafn_patch                          &
+         leafn                        => nitrogenstate_vars%leaf_patch                          &
          )
 
 
       sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch
       secondp_vr                   => phosphorusstate_vars%secondp_vr_col
-      leafp                        => phosphorusstate_vars%leafp_patch
+      leafp                        => phosphorusstate_vars%leaf_patch
       col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr
       col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr
       col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr
@@ -1236,15 +1236,15 @@ contains
          actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col                , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
 
-         frootc                       => carbonstate_vars%frootc_patch                         , & ! Input:  [real(r8) (:)   ]                                          
-         leafc                        => carbonstate_vars%leafc_patch                          , & ! Input:  [real(r8) (:)   ]                                          
+         frootc                       => carbonstate_vars%froot_patch                         , & ! Input:  [real(r8) (:)   ]                                          
+         leafc                        => carbonstate_vars%leaf_patch                          , & ! Input:  [real(r8) (:)   ]                                          
 
          frootcn                      => veg_vp%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
          leafcn                       => veg_vp%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
          leafcp                       => veg_vp%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
          vmax_minsurf_p_vr            => veg_vp%vmax_minsurf_p_vr                          , &
          
-         leafn                        => nitrogenstate_vars%leafn_patch                        , &
+         leafn                        => nitrogenstate_vars%leaf_patch                        , &
 
          vmax_plant_nh4               => veg_vp%vmax_plant_nh4                             , &
          vmax_plant_no3               => veg_vp%vmax_plant_no3                             , &
@@ -1253,7 +1253,7 @@ contains
          nfixation_prof               => cnstate_vars%nfixation_prof_col                       , & ! Output: [real(r8) (:,:) ]                                        
 
          primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col           , &
-         leafp                        => phosphorusstate_vars%leafp_patch                      , &
+         leafp                        => phosphorusstate_vars%leaf_patch                      , &
 
          km_decomp_nh4                => veg_vp%km_decomp_nh4                              , &
          km_decomp_no3                => veg_vp%km_decomp_no3                              , &
@@ -1295,12 +1295,12 @@ contains
          h2osoi_vol                   => waterstate_vars%h2osoi_vol_col                      , &
          pmnf_decomp_cascade          => nitrogenflux_vars%pmnf_decomp_cascade               , &
          pmpf_decomp_cascade          => phosphorusflux_vars%pmpf_decomp_cascade             , &
-         leafc_storage                => carbonstate_vars%leafc_storage_patch                , &
-         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch                   , &
-         leafn_storage                => nitrogenstate_vars%leafn_storage_patch              , &
-         leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch                 , &
-         leafp_storage                => phosphorusstate_vars%leafp_storage_patch            , &
-         leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch                 &
+         leafc_storage                => carbonstate_vars%leaf_storage_patch                , &
+         leafc_xfer                   => carbonstate_vars%leaf_xfer_patch                   , &
+         leafn_storage                => nitrogenstate_vars%leaf_storage_patch              , &
+         leafn_xfer                   => nitrogenstate_vars%leaf_xfer_patch                 , &
+         leafp_storage                => phosphorusstate_vars%leaf_storage_patch            , &
+         leafp_xfer                   => phosphorusstate_vars%leaf_xfer_patch                 &
          )
 
       ! set time steps
@@ -2955,7 +2955,7 @@ contains
          cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
          cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
 
-         npool                        => nitrogenstate_vars%npool_patch                        , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
+         npool                        => nitrogenstate_vars%pool_patch                        , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
@@ -2980,7 +2980,7 @@ contains
          sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
 
          !!! add phosphorus variables  - X. YANG 
-         ppool                        => phosphorusstate_vars%ppool_patch                      , & ! Input: [real(r8)       ] Plant non-structural P storage (gP/m2)
+         ppool                        => phosphorusstate_vars%pool_patch                      , & ! Input: [real(r8)       ] Plant non-structural P storage (gP/m2)
          plant_pdemand                => phosphorusflux_vars%plant_pdemand_patch               , & ! Output: [real(r8) (:)   ]  P flux required to support initial GPP (gP/m2/s)
          plant_palloc                 => phosphorusflux_vars%plant_palloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated P flux (gP/m2/s)
          ppool_to_grainp              => phosphorusflux_vars%ppool_to_grainp_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain P (gP/m2/s)
@@ -3017,20 +3017,20 @@ contains
 
          laisun                       => canopystate_vars%laisun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index        
          laisha                       => canopystate_vars%laisha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index        
-         leafc                        => carbonstate_vars%leafc_patch                          , &
-         leafn                        => nitrogenstate_vars%leafn_patch                        , &
-         leafp                        => phosphorusstate_vars%leafp_patch                      , &
+         leafc                        => carbonstate_vars%leaf_patch                          , &
+         leafn                        => nitrogenstate_vars%leaf_patch                        , &
+         leafp                        => phosphorusstate_vars%leaf_patch                      , &
          supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
          supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col        , &
          ! for debug
          plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux                 , &
          plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux               , &
-         leafc_storage                => carbonstate_vars%leafc_storage_patch                  , &
-         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch                     , &
-         leafn_storage                => nitrogenstate_vars%leafn_storage_patch                , &
-         leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch                   , &
-         leafp_storage                => phosphorusstate_vars%leafp_storage_patch              , &
-         leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch                 , &
+         leafc_storage                => carbonstate_vars%leaf_storage_patch                  , &
+         leafc_xfer                   => carbonstate_vars%leaf_xfer_patch                     , &
+         leafn_storage                => nitrogenstate_vars%leaf_storage_patch                , &
+         leafn_xfer                   => nitrogenstate_vars%leaf_xfer_patch                   , &
+         leafp_storage                => phosphorusstate_vars%leaf_storage_patch              , &
+         leafp_xfer                   => phosphorusstate_vars%leaf_xfer_patch                 , &
          annsum_potential_gpp         => cnstate_vars%annsum_potential_gpp_patch               , &
          annmax_retransn              => cnstate_vars%annmax_retransn_patch                    , &
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &

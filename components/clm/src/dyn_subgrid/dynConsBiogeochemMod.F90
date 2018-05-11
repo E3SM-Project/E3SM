@@ -868,33 +868,33 @@ contains
    type(carbonstate_type), intent(inout) :: cs
    integer               , intent(in)    :: p
    
-   cs%leafc_patch(p)              = 0._r8
-   cs%leafc_storage_patch(p)      = 0._r8
-   cs%leafc_xfer_patch(p)         = 0._r8
-   cs%frootc_patch(p)             = 0._r8
-   cs%frootc_storage_patch(p)     = 0._r8
-   cs%frootc_xfer_patch(p)        = 0._r8
-   cs%livestemc_patch(p)          = 0._r8
-   cs%livestemc_storage_patch(p)  = 0._r8
-   cs%livestemc_xfer_patch(p)     = 0._r8
-   cs%deadstemc_patch(p)          = 0._r8
-   cs%deadstemc_storage_patch(p)  = 0._r8
-   cs%deadstemc_xfer_patch(p)     = 0._r8
-   cs%livecrootc_patch(p)         = 0._r8
-   cs%livecrootc_storage_patch(p) = 0._r8
-   cs%livecrootc_xfer_patch(p)    = 0._r8
-   cs%deadcrootc_patch(p)         = 0._r8
-   cs%deadcrootc_storage_patch(p) = 0._r8
-   cs%deadcrootc_xfer_patch(p)    = 0._r8
+   cs%leaf_patch(p)              = 0._r8
+   cs%leaf_storage_patch(p)      = 0._r8
+   cs%leaf_xfer_patch(p)         = 0._r8
+   cs%froot_patch(p)             = 0._r8
+   cs%froot_storage_patch(p)     = 0._r8
+   cs%froot_xfer_patch(p)        = 0._r8
+   cs%livestem_patch(p)          = 0._r8
+   cs%livestem_storage_patch(p)  = 0._r8
+   cs%livestem_xfer_patch(p)     = 0._r8
+   cs%deadstem_patch(p)          = 0._r8
+   cs%deadstem_storage_patch(p)  = 0._r8
+   cs%deadstem_xfer_patch(p)     = 0._r8
+   cs%livecroot_patch(p)         = 0._r8
+   cs%livecroot_storage_patch(p) = 0._r8
+   cs%livecroot_xfer_patch(p)    = 0._r8
+   cs%deadcroot_patch(p)         = 0._r8
+   cs%deadcroot_storage_patch(p) = 0._r8
+   cs%deadcroot_xfer_patch(p)    = 0._r8
    cs%gresp_storage_patch(p)      = 0._r8
    cs%gresp_xfer_patch(p)         = 0._r8
-   cs%cpool_patch(p)              = 0._r8
+   cs%pool_patch(p)              = 0._r8
    cs%xsmrpool_patch(p)           = 0._r8
-   cs%ctrunc_patch(p)             = 0._r8
-   cs%dispvegc_patch(p)           = 0._r8
-   cs%storvegc_patch(p)           = 0._r8
-   cs%totvegc_patch(p)            = 0._r8
-   cs%totpftc_patch(p)            = 0._r8
+   cs%veg_trunc_patch(p)             = 0._r8
+   cs%dispveg_patch(p)           = 0._r8
+   cs%storveg_patch(p)           = 0._r8
+   cs%totveg_patch(p)            = 0._r8
+   cs%totpft_patch(p)            = 0._r8
 
  end subroutine CarbonStateVarsInit
 
@@ -910,31 +910,31 @@ contains
    type(nitrogenstate_type), intent(inout) :: ns
    integer                 , intent(in)    :: p
    
-   ns%leafn_patch(p)              = 0._r8
-   ns%leafn_storage_patch(p)      = 0._r8
-   ns%leafn_xfer_patch(p)         = 0._r8
-   ns%frootn_patch(p)             = 0._r8
-   ns%frootn_storage_patch(p)     = 0._r8
-   ns%frootn_xfer_patch(p)        = 0._r8
-   ns%livestemn_patch(p)          = 0._r8
-   ns%livestemn_storage_patch(p)  = 0._r8
-   ns%livestemn_xfer_patch(p)     = 0._r8
-   ns%deadstemn_patch(p)          = 0._r8
-   ns%deadstemn_storage_patch(p)  = 0._r8
-   ns%deadstemn_xfer_patch(p)     = 0._r8
-   ns%livecrootn_patch(p)         = 0._r8
-   ns%livecrootn_storage_patch(p) = 0._r8
-   ns%livecrootn_xfer_patch(p)    = 0._r8
-   ns%deadcrootn_patch(p)         = 0._r8
-   ns%deadcrootn_storage_patch(p) = 0._r8
-   ns%deadcrootn_xfer_patch(p)    = 0._r8
+   ns%leaf_patch(p)              = 0._r8
+   ns%leaf_storage_patch(p)      = 0._r8
+   ns%leaf_xfer_patch(p)         = 0._r8
+   ns%froot_patch(p)             = 0._r8
+   ns%froot_storage_patch(p)     = 0._r8
+   ns%froot_xfer_patch(p)        = 0._r8
+   ns%livestem_patch(p)          = 0._r8
+   ns%livestem_storage_patch(p)  = 0._r8
+   ns%livestem_xfer_patch(p)     = 0._r8
+   ns%deadstem_patch(p)          = 0._r8
+   ns%deadstem_storage_patch(p)  = 0._r8
+   ns%deadstem_xfer_patch(p)     = 0._r8
+   ns%livecroot_patch(p)         = 0._r8
+   ns%livecroot_storage_patch(p) = 0._r8
+   ns%livecroot_xfer_patch(p)    = 0._r8
+   ns%deadcroot_patch(p)         = 0._r8
+   ns%deadcroot_storage_patch(p) = 0._r8
+   ns%deadcroot_xfer_patch(p)    = 0._r8
    ns%retransn_patch(p)           = 0._r8
-   ns%npool_patch(p)              = 0._r8
-   ns%ntrunc_patch(p)             = 0._r8
-   ns%dispvegn_patch(p)           = 0._r8
-   ns%storvegn_patch(p)           = 0._r8
-   ns%totvegn_patch(p)            = 0._r8
-   ns%totpftn_patch (p)           = 0._r8
+   ns%pool_patch(p)              = 0._r8
+   ns%veg_trunc_patch(p)             = 0._r8
+   ns%dispveg_patch(p)           = 0._r8
+   ns%storveg_patch(p)           = 0._r8
+   ns%totveg_patch(p)            = 0._r8
+   ns%totpft_patch (p)           = 0._r8
 
  end subroutine NitrogenStateVarsInit
 
@@ -950,31 +950,31 @@ contains
    type(phosphorusstate_type), intent(inout) :: ps
    integer                   , intent(in)    :: p
 
-   ps%leafp_patch(p)              = 0._r8
-   ps%leafp_storage_patch(p)      = 0._r8
-   ps%leafp_xfer_patch(p)         = 0._r8
-   ps%frootp_patch(p)             = 0._r8
-   ps%frootp_storage_patch(p)     = 0._r8
-   ps%frootp_xfer_patch(p)        = 0._r8
-   ps%livestemp_patch(p)          = 0._r8
-   ps%livestemp_storage_patch(p)  = 0._r8
-   ps%livestemp_xfer_patch(p)     = 0._r8
-   ps%deadstemp_patch(p)          = 0._r8
-   ps%deadstemp_storage_patch(p)  = 0._r8
-   ps%deadstemp_xfer_patch(p)     = 0._r8
-   ps%livecrootp_patch(p)         = 0._r8
-   ps%livecrootp_storage_patch(p) = 0._r8
-   ps%livecrootp_xfer_patch(p)    = 0._r8
-   ps%deadcrootp_patch(p)         = 0._r8
-   ps%deadcrootp_storage_patch(p) = 0._r8
-   ps%deadcrootp_xfer_patch(p)    = 0._r8
+   ps%leaf_patch(p)              = 0._r8
+   ps%leaf_storage_patch(p)      = 0._r8
+   ps%leaf_xfer_patch(p)         = 0._r8
+   ps%froot_patch(p)             = 0._r8
+   ps%froot_storage_patch(p)     = 0._r8
+   ps%froot_xfer_patch(p)        = 0._r8
+   ps%livestem_patch(p)          = 0._r8
+   ps%livestem_storage_patch(p)  = 0._r8
+   ps%livestem_xfer_patch(p)     = 0._r8
+   ps%deadstem_patch(p)          = 0._r8
+   ps%deadstem_storage_patch(p)  = 0._r8
+   ps%deadstem_xfer_patch(p)     = 0._r8
+   ps%livecroot_patch(p)         = 0._r8
+   ps%livecroot_storage_patch(p) = 0._r8
+   ps%livecroot_xfer_patch(p)    = 0._r8
+   ps%deadcroot_patch(p)         = 0._r8
+   ps%deadcroot_storage_patch(p) = 0._r8
+   ps%deadcroot_xfer_patch(p)    = 0._r8
    ps%retransp_patch(p)           = 0._r8
-   ps%ppool_patch(p)              = 0._r8
-   ps%ptrunc_patch(p)             = 0._r8
-   ps%dispvegp_patch(p)           = 0._r8
-   ps%storvegp_patch(p)           = 0._r8
-   ps%totvegp_patch(p)            = 0._r8
-   ps%totpftp_patch (p)           = 0._r8
+   ps%pool_patch(p)              = 0._r8
+   ps%veg_trunc_patch(p)             = 0._r8
+   ps%dispveg_patch(p)           = 0._r8
+   ps%storveg_patch(p)           = 0._r8
+   ps%totveg_patch(p)            = 0._r8
+   ps%totpft_patch (p)           = 0._r8
 
  end subroutine PhosphorusStateVarsInit
 

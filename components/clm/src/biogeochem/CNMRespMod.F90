@@ -121,7 +121,7 @@ contains
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
          lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
-         cpool          =>    carbonstate_vars%cpool_patch          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
+         cpool          =>    carbonstate_vars%pool_patch          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
          leaf_mr        =>    carbonflux_vars%leaf_mr_patch         , & ! Output: [real(r8) (:)   ]                                                    
          froot_mr       =>    carbonflux_vars%froot_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
@@ -130,10 +130,10 @@ contains
          grain_mr       =>    carbonflux_vars%grain_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
          xr             =>    carbonflux_vars%xr_patch              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
-         frootn         =>    nitrogenstate_vars%frootn_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
-         livestemn      =>    nitrogenstate_vars%livestemn_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
-         livecrootn     =>    nitrogenstate_vars%livecrootn_patch   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
-         grainn         =>    nitrogenstate_vars%grainn_patch         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
+         frootn         =>    nitrogenstate_vars%froot_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
+         livestemn      =>    nitrogenstate_vars%livestem_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
+         livecrootn     =>    nitrogenstate_vars%livecroot_patch   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
+         grainn         =>    nitrogenstate_vars%grain_patch         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
          )
 
       ! base rate for maintenance respiration is from:

@@ -99,7 +99,7 @@ contains
       rf_decomp_cascade           => cnstate_vars%rf_decomp_cascade_col, & 
       ! Input:  [real(r8) (:,:,:) ]
       ! vertically-resolved decomposing (litter, cwd, soil) c pools (gC/m3)
-      decomp_cpools_vr            => carbonstate_vars%decomp_cpools_vr_col, & 
+      decomp_cpools_vr            => carbonstate_vars%decomp_pools_vr_col, & 
       ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec) 
       decomp_k                    => carbonflux_vars%decomp_k_col, &
       ! Input:  [real(r8) (:,:,:) ]  what fraction of 
@@ -422,16 +422,16 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%decomp_cpools_col(c,l) = 0._r8
+          carbonstate_vars%decomp_pools_col(c,l) = 0._r8
        end do
     end do
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_col(c,l) = &
-                  carbonstate_vars%decomp_cpools_col(c,l) + &
-                  carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
+             carbonstate_vars%decomp_pools_col(c,l) = &
+                  carbonstate_vars%decomp_pools_col(c,l) + &
+                  carbonstate_vars%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -443,7 +443,7 @@ contains
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_1m_col(c,l) = 0._r8
+             carbonstate_vars%decomp_pools_1m_col(c,l) = 0._r8
           end do
        end do
        do l = 1, ndecomp_pools
@@ -451,16 +451,16 @@ contains
              if ( zisoi(j) <= maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
+                   carbonstate_vars%decomp_pools_1m_col(c,l) = &
+                        carbonstate_vars%decomp_pools_1m_col(c,l) + &
+                        carbonstate_vars%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
                 end do
              elseif ( zisoi(j-1) < maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
+                   carbonstate_vars%decomp_pools_1m_col(c,l) = &
+                        carbonstate_vars%decomp_pools_1m_col(c,l) + &
+                        carbonstate_vars%decomp_pools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
                 end do
              endif
           end do
@@ -471,14 +471,14 @@ contains
     ! truncation carbon
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%ctrunc_col(c) = 0._r8
+       carbonstate_vars%veg_trunc_col(c) = 0._r8
     end do
     do j = 1, nlevdecomp
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%ctrunc_col(c) = &
-               carbonstate_vars%ctrunc_col(c) + &
-               carbonstate_vars%ctrunc_vr_col(c,j) * dzsoi_decomp(j)
+          carbonstate_vars%veg_trunc_col(c) = &
+               carbonstate_vars%veg_trunc_col(c) + &
+               carbonstate_vars%soil_trunc_vr_col(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -486,14 +486,14 @@ contains
     if ( nlevdecomp > 1) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%totlitc_1m_col(c) = 0._r8
+          carbonstate_vars%totlit_1m_col(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                carbonstate_vars%totlitc_1m_col(c) = carbonstate_vars%totlitc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
+                carbonstate_vars%totlit_1m_col(c) = carbonstate_vars%totlit_1m_col(c) + &
+                     carbonstate_vars%decomp_pools_1m_col(c,l)
              end do
           endif
        end do
@@ -503,14 +503,14 @@ contains
     if ( nlevdecomp > 1) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%totsomc_1m_col(c) = 0._r8
+          carbonstate_vars%totsom_1m_col(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                carbonstate_vars%totsomc_1m_col(c) = carbonstate_vars%totsomc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
+                carbonstate_vars%totsom_1m_col(c) = carbonstate_vars%totsom_1m_col(c) + &
+                     carbonstate_vars%decomp_pools_1m_col(c,l)
              end do
           end if
        end do
@@ -519,14 +519,14 @@ contains
     ! total litter carbon (TOTLITC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%totlitc_col(c) = 0._r8
+       carbonstate_vars%totlit_col(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%totlitc_col(c) = carbonstate_vars%totlitc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
+             carbonstate_vars%totlit_col(c) = carbonstate_vars%totlit_col(c) + &
+                  carbonstate_vars%decomp_pools_col(c,l)
           end do
        endif
     end do
@@ -534,14 +534,14 @@ contains
     ! total soil organic matter carbon (TOTSOMC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%totsomc_col(c) = 0._r8
+       carbonstate_vars%totsom_col(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%totsomc_col(c) = carbonstate_vars%totsomc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
+             carbonstate_vars%totsom_col(c) = carbonstate_vars%totsom_col(c) + &
+                  carbonstate_vars%decomp_pools_col(c,l)
           end do
        end if
     end do

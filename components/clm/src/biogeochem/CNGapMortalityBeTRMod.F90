@@ -172,33 +172,33 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         carbonflux_vars%m_leafc_to_litter_patch(p)               = carbonstate_vars%leafc_patch(p)               * m
-         carbonflux_vars%m_frootc_to_litter_patch(p)              = carbonstate_vars%frootc_patch(p)              * m
-         carbonflux_vars%m_livestemc_to_litter_patch(p)           = carbonstate_vars%livestemc_patch(p)           * m
-         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = carbonstate_vars%deadstemc_patch(p)           * m
-         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecrootc_patch(p)          * m
-         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcrootc_patch(p)          * m
+         carbonflux_vars%m_leafc_to_litter_patch(p)               = carbonstate_vars%leaf_patch(p)               * m
+         carbonflux_vars%m_frootc_to_litter_patch(p)              = carbonstate_vars%froot_patch(p)              * m
+         carbonflux_vars%m_livestemc_to_litter_patch(p)           = carbonstate_vars%livestem_patch(p)           * m
+         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = carbonstate_vars%deadstem_patch(p)           * m
+         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecroot_patch(p)          * m
+         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcroot_patch(p)          * m
          if (spinup_state >= 1) then
-           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)*m * spinup_mortality_factor
-           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p)*m * spinup_mortality_factor
+           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstem_patch(p)*m * spinup_mortality_factor
+           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcroot_patch(p)*m * spinup_mortality_factor
          end if
 
          ! storage pools
-         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = carbonstate_vars%leafc_storage_patch(p)       * m
-         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = carbonstate_vars%frootc_storage_patch(p)      * m
-         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = carbonstate_vars%livestemc_storage_patch(p)   * m
-         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = carbonstate_vars%deadstemc_storage_patch(p)   * m
-         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = carbonstate_vars%livecrootc_storage_patch(p)  * m
-         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = carbonstate_vars%deadcrootc_storage_patch(p)  * m
+         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = carbonstate_vars%leaf_storage_patch(p)       * m
+         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = carbonstate_vars%froot_storage_patch(p)      * m
+         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = carbonstate_vars%livestem_storage_patch(p)   * m
+         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = carbonstate_vars%deadstem_storage_patch(p)   * m
+         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = carbonstate_vars%livecroot_storage_patch(p)  * m
+         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = carbonstate_vars%deadcroot_storage_patch(p)  * m
          carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = carbonstate_vars%gresp_storage_patch(p)       * m
 
          ! transfer pools
-         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = carbonstate_vars%leafc_xfer_patch(p)          * m
-         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = carbonstate_vars%frootc_xfer_patch(p)         * m
-         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = carbonstate_vars%livestemc_xfer_patch(p)      * m
-         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = carbonstate_vars%deadstemc_xfer_patch(p)      * m
-         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = carbonstate_vars%livecrootc_xfer_patch(p)     * m
-         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = carbonstate_vars%deadcrootc_xfer_patch(p)     * m
+         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = carbonstate_vars%leaf_xfer_patch(p)          * m
+         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = carbonstate_vars%froot_xfer_patch(p)         * m
+         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = carbonstate_vars%livestem_xfer_patch(p)      * m
+         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = carbonstate_vars%deadstem_xfer_patch(p)      * m
+         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = carbonstate_vars%livecroot_xfer_patch(p)     * m
+         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = carbonstate_vars%deadcroot_xfer_patch(p)     * m
          carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = carbonstate_vars%gresp_xfer_patch(p)          * m
 
          !------------------------------------------------------
@@ -206,17 +206,17 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = nitrogenstate_vars%leafn_patch(p)               * m &
+         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = nitrogenstate_vars%leaf_patch(p)               * m &
             * gap_indicator(gid_m_leafn_to_litter)
-         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = nitrogenstate_vars%frootn_patch(p)              * m &
+         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = nitrogenstate_vars%froot_patch(p)              * m &
             * gap_indicator(gid_m_frootn_to_litter)
-         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = nitrogenstate_vars%livestemn_patch(p)           * m &
+         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = nitrogenstate_vars%livestem_patch(p)           * m &
             * gap_indicator(gid_m_livestemn_to_litter)
-         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = nitrogenstate_vars%deadstemn_patch(p)           * m &
+         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = nitrogenstate_vars%deadstem_patch(p)           * m &
             * gap_indicator(gid_m_deadstemn_to_litter)
-         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = nitrogenstate_vars%livecrootn_patch(p)          * m &
+         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = nitrogenstate_vars%livecroot_patch(p)          * m &
             * gap_indicator(gid_m_livecrootn_to_litter)
-         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = nitrogenstate_vars%deadcrootn_patch(p)          * m &
+         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = nitrogenstate_vars%deadcroot_patch(p)          * m &
             * gap_indicator(gid_m_deadcrootn_to_litter)
 
 
@@ -233,31 +233,31 @@ contains
          end if
 
          ! storage pools
-         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = nitrogenstate_vars%leafn_storage_patch(p)       * m &
+         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = nitrogenstate_vars%leaf_storage_patch(p)       * m &
            * gap_indicator(gid_m_leafn_storage_to_litter)
-         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = nitrogenstate_vars%frootn_storage_patch(p)      * m &
+         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = nitrogenstate_vars%froot_storage_patch(p)      * m &
            * gap_indicator(gid_m_frootn_storage_to_litter)
-         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = nitrogenstate_vars%livestemn_storage_patch(p)   * m &
+         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = nitrogenstate_vars%livestem_storage_patch(p)   * m &
            * gap_indicator(gid_m_livestemn_storage_to_litter)
-         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = nitrogenstate_vars%deadstemn_storage_patch(p)   * m &
+         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = nitrogenstate_vars%deadstem_storage_patch(p)   * m &
            * gap_indicator(gid_m_deadstemn_storage_to_litter)
-         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%livecrootn_storage_patch(p)  * m &
+         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%livecroot_storage_patch(p)  * m &
            * gap_indicator(gid_m_livecrootn_storage_to_litter)
-         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%deadcrootn_storage_patch(p)  * m &
+         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%deadcroot_storage_patch(p)  * m &
            * gap_indicator(gid_m_deadcrootn_storage_to_litter)
 
          ! transfer pools
-         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = nitrogenstate_vars%leafn_xfer_patch(p)          * m &
+         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = nitrogenstate_vars%leaf_xfer_patch(p)          * m &
            * gap_indicator(gid_m_leafn_xfer_to_litter)
-         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = nitrogenstate_vars%frootn_xfer_patch(p)         * m &
+         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = nitrogenstate_vars%froot_xfer_patch(p)         * m &
            * gap_indicator(gid_m_frootn_xfer_to_litter)
-         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%livestemn_xfer_patch(p)      * m &
+         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%livestem_xfer_patch(p)      * m &
            * gap_indicator(gid_m_livestemn_xfer_to_litter)
-         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%deadstemn_xfer_patch(p)      * m &
+         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%deadstem_xfer_patch(p)      * m &
            * gap_indicator(gid_m_deadstemn_xfer_to_litter)
-         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%livecrootn_xfer_patch(p)     * m &
+         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%livecroot_xfer_patch(p)     * m &
            * gap_indicator(gid_m_livecrootn_xfer_to_litter)
-         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%deadcrootn_xfer_patch(p)     * m &
+         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%deadcroot_xfer_patch(p)     * m &
            * gap_indicator(gid_m_deadcrootn_xfer_to_litter)
 
          !------------------------------------------------------
@@ -265,43 +265,43 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = phosphorusstate_vars%leafp_patch(p)               * m
-         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = phosphorusstate_vars%frootp_patch(p)              * m
-         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = phosphorusstate_vars%livestemp_patch(p)           * m
-         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = phosphorusstate_vars%deadstemp_patch(p)           * m
-         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = phosphorusstate_vars%livecrootp_patch(p)          * m
-         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = phosphorusstate_vars%deadcrootp_patch(p)          * m
+         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = phosphorusstate_vars%leaf_patch(p)               * m
+         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = phosphorusstate_vars%froot_patch(p)              * m
+         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = phosphorusstate_vars%livestem_patch(p)           * m
+         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = phosphorusstate_vars%deadstem_patch(p)           * m
+         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = phosphorusstate_vars%livecroot_patch(p)          * m
+         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = phosphorusstate_vars%deadcroot_patch(p)          * m
          if (ivt(p) < npcropmin) then
             phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
          end if
 
          if (spinup_state >= 1) then
-           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m &
+           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstem_patch(p)  * m &
                 * spinup_mortality_factor
-           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcrootp_patch(p) * m &
+           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcroot_patch(p) * m &
                 * spinup_mortality_factor
          end if
 
          ! storage pools
-         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leafp_storage_patch(p)       * m
-         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%frootp_storage_patch(p)      * m
-         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = phosphorusstate_vars%livestemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = phosphorusstate_vars%deadstemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%livecrootp_storage_patch(p)  * m
-         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%deadcrootp_storage_patch(p)  * m
+         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leaf_storage_patch(p)       * m
+         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%froot_storage_patch(p)      * m
+         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = phosphorusstate_vars%livestem_storage_patch(p)   * m
+         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = phosphorusstate_vars%deadstem_storage_patch(p)   * m
+         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%livecroot_storage_patch(p)  * m
+         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%deadcroot_storage_patch(p)  * m
 
          ! transfer pools
-         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = phosphorusstate_vars%leafp_xfer_patch(p)          * m
-         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = phosphorusstate_vars%frootp_xfer_patch(p)         * m
-         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%livestemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%deadstemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%livecrootp_xfer_patch(p)     * m
-         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%deadcrootp_xfer_patch(p)     * m
+         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = phosphorusstate_vars%leaf_xfer_patch(p)          * m
+         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = phosphorusstate_vars%froot_xfer_patch(p)         * m
+         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%livestem_xfer_patch(p)      * m
+         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%deadstem_xfer_patch(p)      * m
+         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%livecroot_xfer_patch(p)     * m
+         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%deadcroot_xfer_patch(p)     * m
 
          ! added by F. Li and S. Levis
          if (use_cndv) then
             if (woody(ivt(p)) == 1._r8)then
-               if (carbonstate_vars%livestemc_patch(p) + carbonstate_vars%deadstemc_patch(p)> 0._r8)then
+               if (carbonstate_vars%livestem_patch(p) + carbonstate_vars%deadstem_patch(p)> 0._r8)then
                   nind(p)=nind(p)*(1._r8-m)
                else
                   nind(p) = 0._r8

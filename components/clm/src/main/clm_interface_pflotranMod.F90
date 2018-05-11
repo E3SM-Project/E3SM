@@ -2914,13 +2914,13 @@ contains
       initial_cn_ratio => clm_interface_data%bgc%initial_cn_ratio        , &
       initial_cp_ratio => clm_interface_data%bgc%initial_cp_ratio        , &
 
-      decomp_cpools_vr => clm_interface_data%bgc%decomp_cpools_vr_col    , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-      decomp_npools_vr => clm_interface_data%bgc%decomp_npools_vr_col    , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+      decomp_cpools_vr => clm_interface_data%bgc%decomp_pools_vr_col    , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+      decomp_npools_vr => clm_interface_data%bgc%decomp_pools_vr_col    , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
       smin_no3_vr      => clm_interface_data%bgc%smin_no3_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NO3
       smin_nh4_vr      => clm_interface_data%bgc%smin_nh4_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NH4
       smin_nh4sorb_vr  => clm_interface_data%bgc%smin_nh4sorb_vr_col     , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
 
-      decomp_ppools_vr => clm_interface_data%bgc%decomp_ppools_vr_col    , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+      decomp_ppools_vr => clm_interface_data%bgc%decomp_pools_vr_col    , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
       solutionp_vr     => clm_interface_data%bgc%solutionp_vr_col        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
       labilep_vr       => clm_interface_data%bgc%labilep_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
       secondp_vr       => clm_interface_data%bgc%secondp_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
@@ -3078,8 +3078,8 @@ contains
     associate ( &
       cgridcell                         => col_pp%gridcell               , & ! column's gridcell
       !
-      decomp_cpools_vr                  => clm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-      decomp_npools_vr                  => clm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
+      decomp_cpools_vr                  => clm_interface_data%bgc%decomp_pools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+      decomp_npools_vr                  => clm_interface_data%bgc%decomp_pools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
       decomp_k_scalar_vr                => clm_interface_data%bgc%sitefactor_kd_vr_col            , &      ! (-) vertically-resolved decomposing rate adjusting factor relevant to location (site)
       smin_no3_vr                       => clm_interface_data%bgc%smin_no3_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NO3
       smin_nh4_vr                       => clm_interface_data%bgc%smin_nh4_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NH4
@@ -3698,8 +3698,8 @@ contains
      cgridcell                    => col_pp%gridcell                                        , & !  [integer (:)]  gridcell index of column
      !
      initial_cn_ratio             => clm_interface_data%bgc%initial_cn_ratio             , &
-     decomp_cpools_vr             => clm_interface_data%bgc%decomp_cpools_vr_col         , &
-     decomp_npools_vr             => clm_interface_data%bgc%decomp_npools_vr_col         , &
+     decomp_cpools_vr             => clm_interface_data%bgc%decomp_pools_vr_col         , &
+     decomp_npools_vr             => clm_interface_data%bgc%decomp_pools_vr_col         , &
      sminn_vr                     => clm_interface_data%bgc%sminn_vr_col                 , &
      smin_no3_vr                  => clm_interface_data%bgc%smin_no3_vr_col              , &
      smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col              , &
@@ -4480,7 +4480,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         decomp_cpools_vr       => clm_interface_data%bgc%decomp_cpools_vr_col      , &
+         decomp_cpools_vr       => clm_interface_data%bgc%decomp_pools_vr_col      , &
          soil_begcb             => clm_interface_data%bgc%soil_begcb_col              & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
     ! calculate beginning column-level soil carbon balance, for mass conservation check
@@ -4523,7 +4523,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         decomp_npools_vr       => clm_interface_data%bgc%decomp_npools_vr_col      , &
+         decomp_npools_vr       => clm_interface_data%bgc%decomp_pools_vr_col      , &
          smin_no3_vr            => clm_interface_data%bgc%smin_no3_vr_col           , &
          smin_nh4_vr            => clm_interface_data%bgc%smin_nh4_vr_col           , &
          smin_nh4sorb_vr        => clm_interface_data%bgc%smin_nh4sorb_vr_col       , &
@@ -4705,7 +4705,7 @@ contains
          externaln_to_no3_vr          => clm_interface_data%bgc%externaln_to_no3_col          , &
          externaln_to_nh4_vr          => clm_interface_data%bgc%externaln_to_nh4_col          , &
          decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_npools_sourcesink_col  , &
-         decomp_npools_vr             => clm_interface_data%bgc%decomp_npools_vr_col          , &
+         decomp_npools_vr             => clm_interface_data%bgc%decomp_pools_vr_col          , &
          smin_no3_vr                  => clm_interface_data%bgc%smin_no3_vr_col               , &
          smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col               , &
          smin_nh4sorb_vr              => clm_interface_data%bgc%smin_nh4sorb_vr_col           , &

@@ -26,7 +26,8 @@ module PhosphorusStateType
   use soilorder_varcon       , only : smax, ks_sorption
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
   use CNSpeciesMod           , only : CN_SPECIES_P
-  ! 
+  use NutrientStateType      , only : nutrientstate_type
+  !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -34,117 +35,36 @@ module PhosphorusStateType
 
   real(r8) , parameter :: ppool_seed_param     = 0.01_r8
 
-  type, public :: phosphorusstate_type
+  type, public, extends (nutrientstate_type) :: phosphorusstate_type
 
-     real(r8), pointer :: grainp_patch                 (:)     ! patch (gP/m2) grain P (crop)
-     real(r8), pointer :: grainp_storage_patch         (:)     ! patch (gP/m2) grain P storage (crop)
-     real(r8), pointer :: grainp_xfer_patch            (:)     ! patch (gP/m2) grain P transfer (crop)
-     real(r8), pointer :: leafp_patch                  (:)     ! patch (gP/m2) leaf P 
-     real(r8), pointer :: leafp_storage_patch          (:)     ! patch (gP/m2) leaf P storage
-     real(r8), pointer :: leafp_xfer_patch             (:)     ! patch (gP/m2) leaf P transfer
-     real(r8), pointer :: frootp_patch                 (:)     ! patch (gP/m2) fine root P
-     real(r8), pointer :: frootp_storage_patch         (:)     ! patch (gP/m2) fine root P storage
-     real(r8), pointer :: frootp_xfer_patch            (:)     ! patch (gP/m2) fine root P transfer
-     real(r8), pointer :: livestemp_patch              (:)     ! patch (gP/m2) live stem P
-     real(r8), pointer :: livestemp_storage_patch      (:)     ! patch (gP/m2) live stem P storage
-     real(r8), pointer :: livestemp_xfer_patch         (:)     ! patch (gP/m2) live stem P transfer
-     real(r8), pointer :: deadstemp_patch              (:)     ! patch (gP/m2) dead stem P
-     real(r8), pointer :: deadstemp_storage_patch      (:)     ! patch (gP/m2) dead stem P storage
-     real(r8), pointer :: deadstemp_xfer_patch         (:)     ! patch (gP/m2) dead stem P transfer
-     real(r8), pointer :: livecrootp_patch             (:)     ! patch (gP/m2) live coarse root P
-     real(r8), pointer :: livecrootp_storage_patch     (:)     ! patch (gP/m2) live coarse root P storage
-     real(r8), pointer :: livecrootp_xfer_patch        (:)     ! patch (gP/m2) live coarse root P transfer
-     real(r8), pointer :: deadcrootp_patch             (:)     ! patch (gP/m2) dead coarse root P
-     real(r8), pointer :: deadcrootp_storage_patch     (:)     ! patch (gP/m2) dead coarse root P storage
-     real(r8), pointer :: deadcrootp_xfer_patch        (:)     ! patch (gP/m2) dead coarse root P transfer
-     real(r8), pointer :: retransp_patch               (:)     ! patch (gP/m2) plant pool of retranslocated P
-     real(r8), pointer :: ppool_patch                  (:)     ! patch (gP/m2) temporary plant P pool
-     real(r8), pointer :: ptrunc_patch                 (:)     ! patch (gP/m2) pft-level sink for P truncation
-     real(r8), pointer :: plant_p_buffer_patch        (:)     ! patch (gP/m2) pft-level abstract p storage
-     real(r8), pointer :: decomp_ppools_vr_col         (:,:,:)     ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools 
-     real(r8), pointer :: solutionp_vr_col             (:,:)       ! col (gP/m3) vertically-resolved soil solution P
-     real(r8), pointer :: labilep_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil labile mineral P
-     real(r8), pointer :: secondp_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil secondary mineralP
-     real(r8), pointer :: occlp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil occluded mineral P
-     real(r8), pointer :: primp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil parimary mineral P
-     real(r8), pointer :: sminp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil parimary mineral P
-     real(r8), pointer :: ptrunc_vr_col                (:,:)       ! col (gP/m3) vertically-resolved column-level sink for P truncation
-
-     ! wood product pools, for dynamic landcover
-     real(r8), pointer :: cropseedp_deficit_patch      (:)     ! (gP/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
-     real(r8), pointer :: seedp_grc                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
-     real(r8), pointer :: seedp_col                    (:)     ! col (gP/m2) column-level pool for seeding new Patches
-     real(r8), pointer :: prod1p_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
-     real(r8), pointer :: prod10p_col                  (:)     ! col (gP/m2) wood product P pool, 10-year lifespan
-     real(r8), pointer :: prod100p_col                 (:)     ! col (gP/m2) wood product P pool, 100-year lifespan
-     real(r8), pointer :: totprodp_col                 (:)     ! col (gP/m2) total wood product P
-     real(r8), pointer :: dyn_pbal_adjustments_col     (:)     ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+     real(r8), pointer :: retransp_patch        (:)     ! patch (gP/m2) plant pool of retranslocated P
+     real(r8), pointer :: plant_p_buffer_patch  (:)     ! patch (gP/m2) pft-level abstract p storage
+     real(r8), pointer :: solutionp_vr_col      (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+     real(r8), pointer :: labilep_vr_col        (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+     real(r8), pointer :: secondp_vr_col        (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+     real(r8), pointer :: occlp_vr_col          (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+     real(r8), pointer :: primp_vr_col          (:,:)   ! col (gP/m3) vertically-resolved soil parimary mineral P
+     real(r8), pointer :: sminp_vr_col          (:,:)   ! col (gP/m3) vertically-resolved soil parimary mineral P
 
      ! summary (diagnostic) state variables, not involved in mass balance
-     real(r8), pointer :: dispvegp_patch               (:)     ! patch (gP/m2) displayed veg phosphorus, excluding storage
-     real(r8), pointer :: storvegp_patch               (:)     ! patch (gP/m2) stored vegetation phosphorus
-     real(r8), pointer :: totvegp_patch                (:)     ! patch (gP/m2) total vegetation phosphorus
-     real(r8), pointer :: totpftp_patch                (:)     ! patch (gP/m2) total pft-level phosphorus
-     real(r8), pointer :: decomp_ppools_col            (:,:)   ! col (gP/m2)  decomposing (litter, cwd, soil) P pools
-     real(r8), pointer :: decomp_ppools_1m_col         (:,:)   ! col (gP/m2)  diagnostic: decomposing (litter, cwd, soil) P pools to 1 meter
-     real(r8), pointer :: sminp_col                    (:)     ! col (gP/m2) soil mineral P
-     real(r8), pointer :: solutionp_col                (:)         ! col (gP/m2) soil solution P
-     real(r8), pointer :: labilep_col                  (:)         ! col (gP/m2) soil labile mineral P
-     real(r8), pointer :: secondp_col                  (:)         ! col (gP/m2) soil secondary mineralP
-     real(r8), pointer :: occlp_col                    (:)         ! col (gP/m2) soil occluded mineral P
-     real(r8), pointer :: primp_col                    (:)         ! col (gP/m2) soil parimary mineral P
-     real(r8), pointer :: ptrunc_col                   (:)     ! col (gP/m2) column-level sink for P truncation
-     real(r8), pointer :: cwdp_col                     (:)     ! col (gP/m2) Diagnostic: coarse woody debris P
-     real(r8), pointer :: totlitp_col                  (:)     ! col (gP/m2) total litter phosphorus
-     real(r8), pointer :: totsomp_col                  (:)     ! col (gP/m2) total soil organic matter phosphorus
-     real(r8), pointer :: totlitp_1m_col               (:)     ! col (gP/m2) total litter phosphorus to 1 meter
-     real(r8), pointer :: totsomp_1m_col               (:)     ! col (gP/m2) total soil organic matter phosphorus to 1 meter
-     real(r8), pointer :: totecosysp_col               (:)     ! col (gP/m2) total ecosystem phosphorus, incl veg 
-     real(r8), pointer :: totcolp_col                  (:)     ! col (gP/m2) total column phosphorus, incl veg
+     real(r8), pointer :: sminp_col             (:)     ! col (gP/m2) soil mineral P
+     real(r8), pointer :: solutionp_col         (:)     ! col (gP/m2) soil solution P
+     real(r8), pointer :: labilep_col           (:)     ! col (gP/m2) soil labile mineral P
+     real(r8), pointer :: secondp_col           (:)     ! col (gP/m2) soil secondary mineralP
+     real(r8), pointer :: occlp_col             (:)     ! col (gP/m2) soil occluded mineral P
+     real(r8), pointer :: primp_col             (:)     ! col (gP/m2) soil parimary mineral P
 
-     ! patch averaged to column variables 
-     real(r8), pointer :: totvegp_col                  (:)     ! col (gP/m2) total vegetation phosphorus (p2c)
-     real(r8), pointer :: totpftp_col                  (:)     ! col (gP/m2) total pft-level phosphorus (p2c)
+     real(r8), pointer :: solutionp_vr_col_cur  (:,:)
+     real(r8), pointer :: solutionp_vr_col_prev (:,:)
+     real(r8), pointer :: labilep_vr_col_cur    (:,:)
+     real(r8), pointer :: labilep_vr_col_prev   (:,:)
+     real(r8), pointer :: secondp_vr_col_cur    (:,:)
+     real(r8), pointer :: secondp_vr_col_prev   (:,:)
+     real(r8), pointer :: occlp_vr_col_cur      (:,:)
+     real(r8), pointer :: occlp_vr_col_prev     (:,:)
+     real(r8), pointer :: primp_vr_col_cur      (:,:)
+     real(r8), pointer :: primp_vr_col_prev     (:,:)
 
-     ! col balance checks
-     real(r8), pointer :: begpb_patch                  (:)     ! patch phosphorus mass, beginning of time step (gP/m**2)
-     real(r8), pointer :: endpb_patch                  (:)     ! patch phosphorus mass, end of time step (gP/m**2)
-     real(r8), pointer :: errpb_patch                  (:)     ! patch phosphorus balance error for the timestep (gP/m**2)
-     real(r8), pointer :: begpb_col                    (:)     ! col phosphorus mass, beginning of time step (gP/m**2)
-     real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
-     real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
-     real(r8), pointer :: begpb_grc                    (:)     ! grid cell phosphorus mass, beginning of time step (gP/m**2)
-     real(r8), pointer :: endpb_grc                    (:)     ! grid cell phosphorus mass, end of time step (gP/m**2)
-     real(r8), pointer :: errpb_grc                    (:)     ! grid cell phosphorus balance error for the timestep (gP/m**2)
-
-     real(r8), pointer :: solutionp_vr_col_cur         (:,:)
-     real(r8), pointer :: solutionp_vr_col_prev        (:,:)
-     real(r8), pointer :: labilep_vr_col_cur           (:,:)
-     real(r8), pointer :: labilep_vr_col_prev          (:,:)
-     real(r8), pointer :: secondp_vr_col_cur           (:,:)
-     real(r8), pointer :: secondp_vr_col_prev          (:,:)
-     real(r8), pointer :: occlp_vr_col_cur             (:,:)
-     real(r8), pointer :: occlp_vr_col_prev            (:,:)
-     real(r8), pointer :: primp_vr_col_cur             (:,:)
-     real(r8), pointer :: primp_vr_col_prev            (:,:)
-
-     ! debug
-     real(r8), pointer :: totpftp_beg_col              (:)
-     real(r8), pointer :: solutionp_beg_col            (:)
-     real(r8), pointer :: labilep_beg_col              (:)
-     real(r8), pointer :: secondp_beg_col              (:)
-     real(r8), pointer :: totlitp_beg_col              (:)
-     real(r8), pointer :: cwdp_beg_col                 (:)
-     real(r8), pointer :: totsomp_beg_col              (:)
-         
-     real(r8), pointer :: totlitp_end_col              (:)
-     real(r8), pointer :: totpftp_end_col              (:)
-     real(r8), pointer :: solutionp_end_col            (:)
-     real(r8), pointer :: labilep_end_col              (:)
-     real(r8), pointer :: secondp_end_col              (:)
-     real(r8), pointer :: cwdp_end_col                 (:)
-     real(r8), pointer :: totsomp_end_col              (:)
-     
    contains
 
      procedure , public  :: Init   
@@ -166,7 +86,7 @@ contains
   !------------------------------------------------------------------------
   subroutine Init(this, bounds,                           &
        leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
-       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_pools_1m_col)
 
     class(phosphorusstate_type)         :: this
     type(bounds_type) , intent(in)    :: bounds  
@@ -177,7 +97,7 @@ contains
     real(r8)          , intent(in)    :: deadstemc_patch      (bounds%begp:)
     real(r8)          , intent(in)    :: decomp_cpools_vr_col (bounds%begc:, 1:, 1:)
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
-    real(r8)          , intent(in)    :: decomp_cpools_1m_col (bounds%begc:, 1:)
+    real(r8)          , intent(in)    :: decomp_pools_1m_col (bounds%begc:, 1:)
 
     call this%InitAllocate (bounds )
 
@@ -185,7 +105,7 @@ contains
 
     call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, &
          frootc_patch, frootc_storage_patch, deadstemc_patch, &
-         decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+         decomp_cpools_vr_col, decomp_cpools_col, decomp_pools_1m_col)
 
   end subroutine Init
 
@@ -206,37 +126,37 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
-    allocate(this%grainp_patch             (begp:endp))                   ; this%grainp_patch             (:)   = nan     
-    allocate(this%grainp_storage_patch     (begp:endp))                   ; this%grainp_storage_patch     (:)   = nan
-    allocate(this%grainp_xfer_patch        (begp:endp))                   ; this%grainp_xfer_patch        (:)   = nan     
-    allocate(this%leafp_patch              (begp:endp))                   ; this%leafp_patch              (:)   = nan
-    allocate(this%leafp_storage_patch      (begp:endp))                   ; this%leafp_storage_patch      (:)   = nan     
-    allocate(this%leafp_xfer_patch         (begp:endp))                   ; this%leafp_xfer_patch         (:)   = nan     
-    allocate(this%frootp_patch             (begp:endp))                   ; this%frootp_patch             (:)   = nan
-    allocate(this%frootp_storage_patch     (begp:endp))                   ; this%frootp_storage_patch     (:)   = nan     
-    allocate(this%frootp_xfer_patch        (begp:endp))                   ; this%frootp_xfer_patch        (:)   = nan     
-    allocate(this%livestemp_patch          (begp:endp))                   ; this%livestemp_patch          (:)   = nan
-    allocate(this%livestemp_storage_patch  (begp:endp))                   ; this%livestemp_storage_patch  (:)   = nan
-    allocate(this%livestemp_xfer_patch     (begp:endp))                   ; this%livestemp_xfer_patch     (:)   = nan
-    allocate(this%deadstemp_patch          (begp:endp))                   ; this%deadstemp_patch          (:)   = nan
-    allocate(this%deadstemp_storage_patch  (begp:endp))                   ; this%deadstemp_storage_patch  (:)   = nan
-    allocate(this%deadstemp_xfer_patch     (begp:endp))                   ; this%deadstemp_xfer_patch     (:)   = nan
-    allocate(this%livecrootp_patch         (begp:endp))                   ; this%livecrootp_patch         (:)   = nan
-    allocate(this%livecrootp_storage_patch (begp:endp))                   ; this%livecrootp_storage_patch (:)   = nan
-    allocate(this%livecrootp_xfer_patch    (begp:endp))                   ; this%livecrootp_xfer_patch    (:)   = nan
-    allocate(this%deadcrootp_patch         (begp:endp))                   ; this%deadcrootp_patch         (:)   = nan
-    allocate(this%deadcrootp_storage_patch (begp:endp))                   ; this%deadcrootp_storage_patch (:)   = nan
-    allocate(this%deadcrootp_xfer_patch    (begp:endp))                   ; this%deadcrootp_xfer_patch    (:)   = nan
+    allocate(this%grain_patch             (begp:endp))                   ; this%grain_patch             (:)   = nan     
+    allocate(this%grain_storage_patch     (begp:endp))                   ; this%grain_storage_patch     (:)   = nan
+    allocate(this%grain_xfer_patch        (begp:endp))                   ; this%grain_xfer_patch        (:)   = nan     
+    allocate(this%leaf_patch              (begp:endp))                   ; this%leaf_patch              (:)   = nan
+    allocate(this%leaf_storage_patch      (begp:endp))                   ; this%leaf_storage_patch      (:)   = nan     
+    allocate(this%leaf_xfer_patch         (begp:endp))                   ; this%leaf_xfer_patch         (:)   = nan     
+    allocate(this%froot_patch             (begp:endp))                   ; this%froot_patch             (:)   = nan
+    allocate(this%froot_storage_patch     (begp:endp))                   ; this%froot_storage_patch     (:)   = nan     
+    allocate(this%froot_xfer_patch        (begp:endp))                   ; this%froot_xfer_patch        (:)   = nan     
+    allocate(this%livestem_patch          (begp:endp))                   ; this%livestem_patch          (:)   = nan
+    allocate(this%livestem_storage_patch  (begp:endp))                   ; this%livestem_storage_patch  (:)   = nan
+    allocate(this%livestem_xfer_patch     (begp:endp))                   ; this%livestem_xfer_patch     (:)   = nan
+    allocate(this%deadstem_patch          (begp:endp))                   ; this%deadstem_patch          (:)   = nan
+    allocate(this%deadstem_storage_patch  (begp:endp))                   ; this%deadstem_storage_patch  (:)   = nan
+    allocate(this%deadstem_xfer_patch     (begp:endp))                   ; this%deadstem_xfer_patch     (:)   = nan
+    allocate(this%livecroot_patch         (begp:endp))                   ; this%livecroot_patch         (:)   = nan
+    allocate(this%livecroot_storage_patch (begp:endp))                   ; this%livecroot_storage_patch (:)   = nan
+    allocate(this%livecroot_xfer_patch    (begp:endp))                   ; this%livecroot_xfer_patch    (:)   = nan
+    allocate(this%deadcroot_patch         (begp:endp))                   ; this%deadcroot_patch         (:)   = nan
+    allocate(this%deadcroot_storage_patch (begp:endp))                   ; this%deadcroot_storage_patch (:)   = nan
+    allocate(this%deadcroot_xfer_patch    (begp:endp))                   ; this%deadcroot_xfer_patch    (:)   = nan
     allocate(this%retransp_patch           (begp:endp))                   ; this%retransp_patch           (:)   = nan
-    allocate(this%ppool_patch              (begp:endp))                   ; this%ppool_patch              (:)   = nan
-    allocate(this%ptrunc_patch             (begp:endp))                   ; this%ptrunc_patch             (:)   = nan
-    allocate(this%dispvegp_patch           (begp:endp))                   ; this%dispvegp_patch           (:)   = nan
-    allocate(this%storvegp_patch           (begp:endp))                   ; this%storvegp_patch           (:)   = nan
-    allocate(this%totvegp_patch            (begp:endp))                   ; this%totvegp_patch            (:)   = nan
-    allocate(this%totpftp_patch            (begp:endp))                   ; this%totpftp_patch            (:)   = nan
+    allocate(this%pool_patch              (begp:endp))                   ; this%pool_patch              (:)   = nan
+    allocate(this%veg_trunc_patch             (begp:endp))                   ; this%veg_trunc_patch             (:)   = nan
+    allocate(this%dispveg_patch           (begp:endp))                   ; this%dispveg_patch           (:)   = nan
+    allocate(this%storveg_patch           (begp:endp))                   ; this%storveg_patch           (:)   = nan
+    allocate(this%totveg_patch            (begp:endp))                   ; this%totveg_patch            (:)   = nan
+    allocate(this%totpft_patch            (begp:endp))                   ; this%totpft_patch            (:)   = nan
     allocate(this%plant_p_buffer_patch    (begp:endp))                   ; this%plant_p_buffer_patch      (:)   = nan
 
-    allocate(this%ptrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr_col            (:,:) = nan
+    allocate(this%soil_trunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%soil_trunc_vr_col            (:,:) = nan
     
     allocate(this%solutionp_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col         (:,:) = nan  
     allocate(this%labilep_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_col           (:,:) = nan  
@@ -250,38 +170,38 @@ contains
     allocate(this%secondp_col              (begc:endc))                   ; this%secondp_col              (:)   = nan
     allocate(this%occlp_col                (begc:endc))                   ; this%occlp_col                (:)   = nan
     allocate(this%primp_col                (begc:endc))                   ; this%primp_col                (:)   = nan
-    allocate(this%cwdp_col                 (begc:endc))                   ; this%cwdp_col                 (:)   = nan
+    allocate(this%cwd_col                 (begc:endc))                   ; this%cwd_col                 (:)   = nan
     allocate(this%sminp_col                (begc:endc))                   ; this%sminp_col                (:)   = nan
-    allocate(this%ptrunc_col               (begc:endc))                   ; this%ptrunc_col               (:)   = nan
+    allocate(this%veg_trunc_col               (begc:endc))                   ; this%veg_trunc_col               (:)   = nan
 
-    allocate(this%cropseedp_deficit_patch  (begp:endp))                   ; this%cropseedp_deficit_patch  (:)   = nan
-    allocate(this%seedp_grc                (begg:endg))                   ; this%seedp_grc                (:)   = nan
-    allocate(this%seedp_col                (begc:endc))                   ; this%seedp_col                (:)   = nan
-    allocate(this%prod1p_col               (begc:endc))                   ; this%prod1p_col               (:)   = nan
-    allocate(this%prod10p_col              (begc:endc))                   ; this%prod10p_col              (:)   = nan
-    allocate(this%prod100p_col             (begc:endc))                   ; this%prod100p_col             (:)   = nan
-    allocate(this%totprodp_col             (begc:endc))                   ; this%totprodp_col             (:)   = nan
-    allocate(this%dyn_pbal_adjustments_col (begc:endc))                   ; this%dyn_pbal_adjustments_col (:)   = nan
-    allocate(this%totlitp_col              (begc:endc))                   ; this%totlitp_col              (:)   = nan
-    allocate(this%totsomp_col              (begc:endc))                   ; this%totsomp_col              (:)   = nan
-    allocate(this%totlitp_1m_col           (begc:endc))                   ; this%totlitp_1m_col           (:)   = nan
-    allocate(this%totsomp_1m_col           (begc:endc))                   ; this%totsomp_1m_col           (:)   = nan
-    allocate(this%totecosysp_col           (begc:endc))                   ; this%totecosysp_col           (:)   = nan
-    allocate(this%totcolp_col              (begc:endc))                   ; this%totcolp_col              (:)   = nan
-    allocate(this%decomp_ppools_col        (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_col        (:,:) = nan
-    allocate(this%decomp_ppools_1m_col     (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_1m_col     (:,:) = nan
-    allocate(this%totpftp_col              (begc:endc))                   ; this%totpftp_col              (:)   = nan
-    allocate(this%totvegp_col              (begc:endc))                   ; this%totvegp_col              (:)   = nan
+    allocate(this%cropseed_deficit_patch  (begp:endp))                   ; this%cropseed_deficit_patch  (:)   = nan
+    allocate(this%seed_grc                (begg:endg))                   ; this%seed_grc                (:)   = nan
+    allocate(this%seed_col                (begc:endc))                   ; this%seed_col                (:)   = nan
+    allocate(this%prod1_col               (begc:endc))                   ; this%prod1_col               (:)   = nan
+    allocate(this%prod10_col              (begc:endc))                   ; this%prod10_col              (:)   = nan
+    allocate(this%prod100_col             (begc:endc))                   ; this%prod100_col             (:)   = nan
+    allocate(this%totprod_col             (begc:endc))                   ; this%totprod_col             (:)   = nan
+    allocate(this%dyn_bal_adjustments_col (begc:endc))                   ; this%dyn_bal_adjustments_col (:)   = nan
+    allocate(this%totlit_col              (begc:endc))                   ; this%totlit_col              (:)   = nan
+    allocate(this%totsom_col              (begc:endc))                   ; this%totsom_col              (:)   = nan
+    allocate(this%totlit_1m_col           (begc:endc))                   ; this%totlit_1m_col           (:)   = nan
+    allocate(this%totsom_1m_col           (begc:endc))                   ; this%totsom_1m_col           (:)   = nan
+    allocate(this%totecosys_col           (begc:endc))                   ; this%totecosys_col           (:)   = nan
+    allocate(this%totcol_col              (begc:endc))                   ; this%totcol_col              (:)   = nan
+    allocate(this%decomp_pools_col        (begc:endc,1:ndecomp_pools))   ; this%decomp_pools_col        (:,:) = nan
+    allocate(this%decomp_pools_1m_col     (begc:endc,1:ndecomp_pools))   ; this%decomp_pools_1m_col     (:,:) = nan
+    allocate(this%totpft_col              (begc:endc))                   ; this%totpft_col              (:)   = nan
+    allocate(this%totveg_col              (begc:endc))                   ; this%totveg_col              (:)   = nan
 
-    allocate(this%decomp_ppools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
-    this%decomp_ppools_vr_col(:,:,:)= nan
+    allocate(this%decomp_pools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
+    this%decomp_pools_vr_col(:,:,:)= nan
 
-    allocate(this%begpb_patch (begp:endp));     this%begpb_patch (:) =nan
-    allocate(this%begpb_col   (begc:endc));     this%begpb_col   (:) =nan
-    allocate(this%endpb_patch (begp:endp));     this%endpb_patch (:) =nan
-    allocate(this%endpb_col   (begc:endc));     this%endpb_col   (:) =nan
-    allocate(this%errpb_patch (begp:endp));     this%errpb_patch (:) =nan
-    allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan 
+    allocate(this%beg_bal_patch (begp:endp));     this%beg_bal_patch (:) =nan
+    allocate(this%beg_bal_col   (begc:endc));     this%beg_bal_col   (:) =nan
+    allocate(this%end_bal_patch (begp:endp));     this%end_bal_patch (:) =nan
+    allocate(this%end_bal_col   (begc:endc));     this%end_bal_col   (:) =nan
+    allocate(this%err_bal_patch (begp:endp));     this%err_bal_patch (:) =nan
+    allocate(this%err_bal_col   (begc:endc));     this%err_bal_col   (:) =nan 
 
     allocate(this%solutionp_vr_col_cur   (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col_cur        (:,:) = nan
     allocate(this%solutionp_vr_col_prev  (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col_prev       (:,:) = nan
@@ -294,27 +214,10 @@ contains
     allocate(this%primp_vr_col_cur       (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_cur            (:,:) = nan
     allocate(this%primp_vr_col_prev      (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_prev           (:,:) = nan
 
-    allocate(this%begpb_grc   (begg:endg));     this%begpb_grc   (:) =nan
-    allocate(this%endpb_grc   (begg:endg));     this%endpb_grc   (:) =nan
-    allocate(this%errpb_grc   (begg:endg));     this%errpb_grc   (:) =nan
+    allocate(this%beg_bal_grc   (begg:endg));     this%beg_bal_grc   (:) =nan
+    allocate(this%end_bal_grc   (begg:endg));     this%end_bal_grc   (:) =nan
+    allocate(this%err_bal_grc   (begg:endg));     this%err_bal_grc   (:) =nan
 
-    ! debug
-    allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
-    allocate(this%solutionp_beg_col  (begc:endc)); this%solutionp_beg_col    (:) = nan
-    allocate(this%labilep_beg_col    (begc:endc)); this%labilep_beg_col      (:) = nan
-    allocate(this%secondp_beg_col    (begc:endc)); this%secondp_beg_col      (:) = nan
-    allocate(this%totlitp_beg_col    (begc:endc)); this%totlitp_beg_col      (:) = nan
-    allocate(this%cwdp_beg_col       (begc:endc)); this%cwdp_beg_col         (:) = nan
-    allocate(this%totsomp_beg_col    (begc:endc)); this%totsomp_beg_col      (:) = nan
-         
-    allocate(this%totlitp_end_col    (begc:endc)); this%totlitp_end_col      (:) = nan
-    allocate(this%totpftp_end_col    (begc:endc)); this%totpftp_end_col      (:) = nan
-    allocate(this%labilep_end_col    (begc:endc)); this%labilep_end_col      (:) = nan
-    allocate(this%secondp_end_col    (begc:endc)); this%secondp_end_col      (:) = nan
-    allocate(this%solutionp_end_col  (begc:endc)); this%solutionp_end_col    (:) = nan
-    allocate(this%cwdp_end_col       (begc:endc)); this%cwdp_end_col         (:) = nan
-    allocate(this%totsomp_end_col    (begc:endc)); this%totsomp_end_col      (:) = nan
-    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -355,141 +258,141 @@ contains
     !-------------------------------
     
     if (crop_prog) then
-       this%grainp_patch(begp:endp) = spval
+       this%grain_patch(begp:endp) = spval
        call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
             avgflag='A', long_name='grain P', &
-            ptr_patch=this%grainp_patch, default='inactive')
+            ptr_patch=this%grain_patch, default='inactive')
 
-       this%cropseedp_deficit_patch(begp:endp) = spval
+       this%cropseed_deficit_patch(begp:endp) = spval
        call hist_addfld1d (fname='CROPSEEDP_DEFICIT', units='gP/m^2', &
             avgflag='A', long_name='P used for crop seed that needs to be repaid', &
-            ptr_patch=this%cropseedp_deficit_patch)
+            ptr_patch=this%cropseed_deficit_patch)
     end if
 
-    this%leafp_patch(begp:endp) = spval
+    this%leaf_patch(begp:endp) = spval
     call hist_addfld1d (fname='LEAFP', units='gP/m^2', &
          avgflag='A', long_name='leaf P', &
-         ptr_patch=this%leafp_patch)
+         ptr_patch=this%leaf_patch)
 
-    this%leafp_storage_patch(begp:endp) = spval
+    this%leaf_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='LEAFP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='leaf P storage', &
-         ptr_patch=this%leafp_storage_patch, default='inactive')
+         ptr_patch=this%leaf_storage_patch, default='inactive')
 
-    this%leafp_xfer_patch(begp:endp) = spval
+    this%leaf_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='LEAFP_XFER', units='gP/m^2', &
          avgflag='A', long_name='leaf P transfer', &
-         ptr_patch=this%leafp_xfer_patch, default='inactive')
+         ptr_patch=this%leaf_xfer_patch, default='inactive')
 
-    this%frootp_patch(begp:endp) = spval
+    this%froot_patch(begp:endp) = spval
     call hist_addfld1d (fname='FROOTP', units='gP/m^2', &
          avgflag='A', long_name='fine root P', &
-         ptr_patch=this%frootp_patch)
+         ptr_patch=this%froot_patch)
 
-    this%frootp_storage_patch(begp:endp) = spval
+    this%froot_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='FROOTP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='fine root P storage', &
-         ptr_patch=this%frootp_storage_patch, default='inactive')
+         ptr_patch=this%froot_storage_patch, default='inactive')
 
-    this%frootp_xfer_patch(begp:endp) = spval
+    this%froot_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='FROOTP_XFER', units='gP/m^2', &
          avgflag='A', long_name='fine root P transfer', &
-         ptr_patch=this%frootp_xfer_patch, default='inactive')
+         ptr_patch=this%froot_xfer_patch, default='inactive')
 
-    this%livestemp_patch(begp:endp) = spval
+    this%livestem_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMP', units='gP/m^2', &
          avgflag='A', long_name='live stem P', &
-         ptr_patch=this%livestemp_patch)
+         ptr_patch=this%livestem_patch)
 
-    this%livestemp_storage_patch(begp:endp) = spval
+    this%livestem_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='live stem P storage', &
-         ptr_patch=this%livestemp_storage_patch, default='inactive')
+         ptr_patch=this%livestem_storage_patch, default='inactive')
 
-    this%livestemp_xfer_patch(begp:endp) = spval
+    this%livestem_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMP_XFER', units='gP/m^2', &
          avgflag='A', long_name='live stem P transfer', &
-         ptr_patch=this%livestemp_xfer_patch, default='inactive')
+         ptr_patch=this%livestem_xfer_patch, default='inactive')
 
-    this%deadstemp_patch(begp:endp) = spval
+    this%deadstem_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADSTEMP', units='gP/m^2', &
          avgflag='A', long_name='dead stem P', &
-         ptr_patch=this%deadstemp_patch)
+         ptr_patch=this%deadstem_patch)
 
-    this%deadstemp_storage_patch(begp:endp) = spval
+    this%deadstem_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADSTEMP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='dead stem P storage', &
-         ptr_patch=this%deadstemp_storage_patch, default='inactive')
+         ptr_patch=this%deadstem_storage_patch, default='inactive')
 
-    this%deadstemp_xfer_patch(begp:endp) = spval
+    this%deadstem_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADSTEMP_XFER', units='gP/m^2', &
          avgflag='A', long_name='dead stem P transfer', &
-         ptr_patch=this%deadstemp_xfer_patch, default='inactive')
+         ptr_patch=this%deadstem_xfer_patch, default='inactive')
 
-    this%livecrootp_patch(begp:endp) = spval
+    this%livecroot_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP', units='gP/m^2', &
          avgflag='A', long_name='live coarse root P', &
-         ptr_patch=this%livecrootp_patch)
+         ptr_patch=this%livecroot_patch)
 
-    this%livecrootp_storage_patch(begp:endp) = spval
+    this%livecroot_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='live coarse root P storage', &
-         ptr_patch=this%livecrootp_storage_patch, default='inactive')
+         ptr_patch=this%livecroot_storage_patch, default='inactive')
 
-    this%livecrootp_xfer_patch(begp:endp) = spval
+    this%livecroot_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP_XFER', units='gP/m^2', &
          avgflag='A', long_name='live coarse root P transfer', &
-         ptr_patch=this%livecrootp_xfer_patch, default='inactive')
+         ptr_patch=this%livecroot_xfer_patch, default='inactive')
 
-    this%deadcrootp_patch(begp:endp) = spval
+    this%deadcroot_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADCROOTP', units='gP/m^2', &
          avgflag='A', long_name='dead coarse root P', &
-         ptr_patch=this%deadcrootp_patch)
+         ptr_patch=this%deadcroot_patch)
 
-    this%deadcrootp_storage_patch(begp:endp) = spval
+    this%deadcroot_storage_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADCROOTP_STORAGE', units='gP/m^2', &
          avgflag='A', long_name='dead coarse root P storage', &
-         ptr_patch=this%deadcrootp_storage_patch, default='inactive')
+         ptr_patch=this%deadcroot_storage_patch, default='inactive')
 
-    this%deadcrootp_xfer_patch(begp:endp) = spval
+    this%deadcroot_xfer_patch(begp:endp) = spval
     call hist_addfld1d (fname='DEADCROOTP_XFER', units='gP/m^2', &
          avgflag='A', long_name='dead coarse root P transfer', &
-         ptr_patch=this%deadcrootp_xfer_patch, default='inactive')
+         ptr_patch=this%deadcroot_xfer_patch, default='inactive')
 
     this%retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP', units='gP/m^2', &
          avgflag='A', long_name='plant pool of retranslocated P', &
          ptr_patch=this%retransp_patch)
 
-    this%ppool_patch(begp:endp) = spval
+    this%pool_patch(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
          avgflag='A', long_name='temporary plant P pool', &
-         ptr_patch=this%ppool_patch, default='inactive')
+         ptr_patch=this%pool_patch, default='inactive')
 
-    this%ptrunc_patch(begp:endp) = spval
+    this%veg_trunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
          avgflag='A', long_name='pft-level sink for P truncation', &
-         ptr_patch=this%ptrunc_patch, default='inactive')
+         ptr_patch=this%veg_trunc_patch, default='inactive')
 
-    this%dispvegp_patch(begp:endp) = spval
+    this%dispveg_patch(begp:endp) = spval
     call hist_addfld1d (fname='DISPVEGP', units='gP/m^2', &
          avgflag='A', long_name='displayed vegetation phosphorus', &
-         ptr_patch=this%dispvegp_patch)
+         ptr_patch=this%dispveg_patch)
 
-    this%storvegp_patch(begp:endp) = spval
+    this%storveg_patch(begp:endp) = spval
     call hist_addfld1d (fname='STORVEGP', units='gP/m^2', &
          avgflag='A', long_name='stored vegetation phosphorus', &
-         ptr_patch=this%storvegp_patch)
+         ptr_patch=this%storveg_patch)
 
-    this%totvegp_patch(begp:endp) = spval
+    this%totveg_patch(begp:endp) = spval
     call hist_addfld1d (fname='TOTVEGP', units='gP/m^2', &
          avgflag='A', long_name='total vegetation phosphorus', &
-         ptr_patch=this%totvegp_patch)
+         ptr_patch=this%totveg_patch)
 
-    this%totpftp_patch(begp:endp) = spval
+    this%totpft_patch(begp:endp) = spval
     call hist_addfld1d (fname='TOTPFTP', units='gP/m^2', &
          avgflag='A', long_name='total PFT-level phosphorus', &
-         ptr_patch=this%totpftp_patch)
+         ptr_patch=this%totpft_patch)
 
     this%plant_p_buffer_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANTP_BUFFER', units='gP/m^2', &
@@ -500,13 +403,13 @@ contains
     !-------------------------------
 
     if ( nlevdecomp_full > 1 ) then
-       this%decomp_ppools_vr_col(begc:endc,:,:) = spval
-       this%decomp_ppools_1m_col(begc:endc,:) = spval
+       this%decomp_pools_vr_col(begc:endc,:,:) = spval
+       this%decomp_pools_1m_col(begc:endc,:) = spval
     end if
-    this%decomp_ppools_col(begc:endc,:) = spval
+    this%decomp_pools_col(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
        if ( nlevdecomp_full > 1 ) then
-          data2dptr => this%decomp_ppools_vr_col(:,:,l)
+          data2dptr => this%decomp_pools_vr_col(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P (vertically resolved)'
           call hist_addfld2d (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
@@ -514,7 +417,7 @@ contains
                ptr_col=data2dptr)
        endif
 
-       data1dptr => this%decomp_ppools_col(:,l)
+       data1dptr => this%decomp_pools_col(:,l)
        fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P'
        longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P'
        call hist_addfld1d (fname=fieldname, units='gP/m^2', &
@@ -522,7 +425,7 @@ contains
             ptr_col=data1dptr)
 
        if ( nlevdecomp_full > 1 ) then
-          data1dptr => this%decomp_ppools_1m_col(:,l)
+          data1dptr => this%decomp_pools_1m_col(:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_1m'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P to 1 meter'
           call hist_addfld1d (fname=fieldname, units='gP/m^2', &
@@ -539,21 +442,21 @@ contains
             avgflag='A', long_name='soil mineral P', &
             ptr_col=this%sminp_col)
 
-       this%totlitp_1m_col(begc:endc) = spval
+       this%totlit_1m_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTLITP_1m', units='gP/m^2', &
             avgflag='A', long_name='total litter P to 1 meter', &
-            ptr_col=this%totlitp_1m_col)
+            ptr_col=this%totlit_1m_col)
 
-       this%totsomp_1m_col(begc:endc) = spval
+       this%totsom_1m_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTSOMP_1m', units='gP/m^2', &
             avgflag='A', long_name='total soil organic matter P to 1 meter', &
-            ptr_col=this%totsomp_1m_col)
+            ptr_col=this%totsom_1m_col)
     endif
 
-    this%ptrunc_col(begc:endc) = spval
+    this%veg_trunc_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_PTRUNC', units='gP/m^2',  &
          avgflag='A', long_name='column-level sink for P truncation', &
-         ptr_col=this%ptrunc_col)
+         ptr_col=this%veg_trunc_col)
 
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
@@ -620,62 +523,62 @@ contains
             ptr_col=this%primp_col)
     endif
 
-    this%totlitp_col(begc:endc) = spval
+    this%totlit_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTLITP', units='gP/m^2', &
          avgflag='A', long_name='total litter P', &
-         ptr_col=this%totlitp_col)
+         ptr_col=this%totlit_col)
 
-    this%totsomp_col(begc:endc) = spval
+    this%totsom_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTSOMP', units='gP/m^2', &
          avgflag='A', long_name='total soil organic matter P', &
-         ptr_col=this%totsomp_col)
+         ptr_col=this%totsom_col)
 
-    this%totecosysp_col(begc:endc) = spval
+    this%totecosys_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
          avgflag='A', long_name='total ecosystem P but excl product pools', &
-         ptr_col=this%totecosysp_col)
+         ptr_col=this%totecosys_col)
 
-    this%totcolp_col(begc:endc) = spval
+    this%totcol_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
          avgflag='A', long_name='total column-level P but excl product pools', &
-         ptr_col=this%totcolp_col)
+         ptr_col=this%totcol_col)
 
-    this%seedp_grc(begg:endg) = spval
+    this%seed_grc(begg:endg) = spval
     call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
          avgflag='A', long_name='P pool for seeding new PFTs ', &
-         ptr_gcell=this%seedp_grc, default='inactive')
+         ptr_gcell=this%seed_grc, default='inactive')
 
-    this%seedp_col(begc:endc) = spval
+    this%seed_col(begc:endc) = spval
     call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
          avgflag='A', long_name='P pool for seeding new PFTs ', &
-         ptr_col=this%seedp_col, default='inactive')
+         ptr_col=this%seed_col, default='inactive')
 
-    this%prod10p_col(begc:endc) = spval
+    this%prod10_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10P', units='gP/m^2', &
          avgflag='A', long_name='10-yr wood product P', &
-         ptr_col=this%prod10p_col, default='inactive')
+         ptr_col=this%prod10_col, default='inactive')
 
-    this%prod100p_col(begc:endc) = spval
+    this%prod100_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100P', units='gP/m^2', &
          avgflag='A', long_name='100-yr wood product P', &
-         ptr_col=this%prod100p_col, default='inactive')
+         ptr_col=this%prod100_col, default='inactive')
 
-    this%prod1p_col(begc:endc) = spval
+    this%prod1_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD1P', units='gP/m^2', &
          avgflag='A', long_name='1-yr crop product P', &
-         ptr_col=this%prod1p_col, default='inactive')
+         ptr_col=this%prod1_col, default='inactive')
 
-    this%totprodp_col(begc:endc) = spval
+    this%totprod_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
          avgflag='A', long_name='total wood product P', &
-         ptr_col=this%totprodp_col, default='inactive')
+         ptr_col=this%totprod_col, default='inactive')
 
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds, &
        leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
-       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_pools_1m_col)
     !
     ! !DESCRIPTION:
     ! Initializes time varying variables used only in coupled carbon-phosphorus mode (CN):
@@ -695,7 +598,7 @@ contains
     real(r8)          , intent(in) :: deadstemc_patch(bounds%begp:)
     real(r8)          , intent(in) :: decomp_cpools_vr_col(bounds%begc:,:,:)
     real(r8)          , intent(in) :: decomp_cpools_col(bounds%begc:,:)
-    real(r8)          , intent(in) :: decomp_cpools_1m_col(bounds%begc:,:)
+    real(r8)          , intent(in) :: decomp_pools_1m_col(bounds%begc:,:)
     !
     ! !LOCAL VARIABLES:
     integer :: fc,fp,g,l,c,p,j,k                       ! indices
@@ -711,7 +614,7 @@ contains
     SHR_ASSERT_ALL((ubound(frootc_storage_patch) == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(deadstemc_patch)      == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_col)    == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(decomp_cpools_1m_col) == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(decomp_pools_1m_col) == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_vr_col) == (/bounds%endc,nlevdecomp_full,ndecomp_pools/)), errMsg(__FILE__, __LINE__))
 
     ! Set column filters
@@ -746,63 +649,63 @@ contains
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           if (veg_pp%itype(p) == noveg) then
-             this%leafp_patch(p) = 0._r8
-             this%leafp_storage_patch(p) = 0._r8
+             this%leaf_patch(p) = 0._r8
+             this%leaf_storage_patch(p) = 0._r8
           else
-             this%leafp_patch(p)         = leafc_patch(p)         / veg_vp%leafcp(veg_pp%itype(p))
-             this%leafp_storage_patch(p) = leafc_storage_patch(p) / veg_vp%leafcp(veg_pp%itype(p))
+             this%leaf_patch(p)         = leafc_patch(p)         / veg_vp%leafcp(veg_pp%itype(p))
+             this%leaf_storage_patch(p) = leafc_storage_patch(p) / veg_vp%leafcp(veg_pp%itype(p))
           end if
 
-          this%leafp_xfer_patch(p)        = 0._r8
+          this%leaf_xfer_patch(p)        = 0._r8
           if ( crop_prog )then
-             this%grainp_patch(p)            = 0._r8
-             this%grainp_storage_patch(p)    = 0._r8
-             this%grainp_xfer_patch(p)       = 0._r8
-             this%cropseedp_deficit_patch(p) = 0._r8
+             this%grain_patch(p)            = 0._r8
+             this%grain_storage_patch(p)    = 0._r8
+             this%grain_xfer_patch(p)       = 0._r8
+             this%cropseed_deficit_patch(p) = 0._r8
           end if
-          this%frootp_patch(p)            = 0._r8
-          this%frootp_storage_patch(p)    = 0._r8
-          this%frootp_xfer_patch(p)       = 0._r8
-          this%livestemp_patch(p)         = 0._r8
-          this%livestemp_storage_patch(p) = 0._r8
-          this%livestemp_xfer_patch(p)    = 0._r8
+          this%froot_patch(p)            = 0._r8
+          this%froot_storage_patch(p)    = 0._r8
+          this%froot_xfer_patch(p)       = 0._r8
+          this%livestem_patch(p)         = 0._r8
+          this%livestem_storage_patch(p) = 0._r8
+          this%livestem_xfer_patch(p)    = 0._r8
 
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
           if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
-             this%deadstemp_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcp(veg_pp%itype(p))
+             this%deadstem_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcp(veg_pp%itype(p))
           else
-             this%deadstemp_patch(p) = 0._r8
+             this%deadstem_patch(p) = 0._r8
           end if
           
           if (nu_com .ne. 'RD') then
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
               if (veg_pp%itype(p) .ne. noveg) then
-                 this%frootp_patch(p) = frootc_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
-                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
+                 this%froot_patch(p) = frootc_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
+                 this%froot_storage_patch(p) = frootc_storage_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
               end if
           end if
            
-          this%deadstemp_storage_patch(p)  = 0._r8
-          this%deadstemp_xfer_patch(p)     = 0._r8
-          this%livecrootp_patch(p)         = 0._r8
-          this%livecrootp_storage_patch(p) = 0._r8
-          this%livecrootp_xfer_patch(p)    = 0._r8
-          this%deadcrootp_patch(p)         = 0._r8
-          this%deadcrootp_storage_patch(p) = 0._r8
-          this%deadcrootp_xfer_patch(p)    = 0._r8
+          this%deadstem_storage_patch(p)  = 0._r8
+          this%deadstem_xfer_patch(p)     = 0._r8
+          this%livecroot_patch(p)         = 0._r8
+          this%livecroot_storage_patch(p) = 0._r8
+          this%livecroot_xfer_patch(p)    = 0._r8
+          this%deadcroot_patch(p)         = 0._r8
+          this%deadcroot_storage_patch(p) = 0._r8
+          this%deadcroot_xfer_patch(p)    = 0._r8
           this%retransp_patch(p)           = 0._r8
-          this%ppool_patch(p)              = 0._r8
+          this%pool_patch(p)              = 0._r8
           if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then
-              this%ppool_patch(p)          = 1.0_r8
+              this%pool_patch(p)          = 1.0_r8
           end if
-          this%ptrunc_patch(p)             = 0._r8
-          this%dispvegp_patch(p)           = 0._r8
-          this%storvegp_patch(p)           = 0._r8
-          this%totvegp_patch(p)            = 0._r8
-          this%totpftp_patch(p)            = 0._r8
+          this%veg_trunc_patch(p)             = 0._r8
+          this%dispveg_patch(p)           = 0._r8
+          this%storveg_patch(p)           = 0._r8
+          this%totveg_patch(p)            = 0._r8
+          this%totpft_patch(p)            = 0._r8
        end if
        this%plant_p_buffer_patch(p)= 1.e-4_r8 
     end do
@@ -816,27 +719,27 @@ contains
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           ! column phosphorus state variables
-          this%ptrunc_col(c) = 0._r8
+          this%veg_trunc_col(c) = 0._r8
           this%sminp_col(c) = 0._r8
           do j = 1, nlevdecomp
              do k = 1, ndecomp_pools
-                this%decomp_ppools_vr_col(c,j,k) = decomp_cpools_vr_col(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
+                this%decomp_pools_vr_col(c,j,k) = decomp_cpools_vr_col(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
              end do
              this%sminp_vr_col(c,j) = 0._r8
-             this%ptrunc_vr_col(c,j) = 0._r8
+             this%soil_trunc_vr_col(c,j) = 0._r8
           end do
           if ( nlevdecomp > 1 ) then
              do j = nlevdecomp+1, nlevdecomp_full
                 do k = 1, ndecomp_pools
-                   this%decomp_ppools_vr_col(c,j,k) = 0._r8
+                   this%decomp_pools_vr_col(c,j,k) = 0._r8
                 end do
                 this%sminp_vr_col(c,j) = 0._r8
-                this%ptrunc_vr_col(c,j) = 0._r8
+                this%soil_trunc_vr_col(c,j) = 0._r8
              end do
           end if
           do k = 1, ndecomp_pools
-             this%decomp_ppools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
-             this%decomp_ppools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cp_ratio(k)
+             this%decomp_pools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
+             this%decomp_pools_1m_col(c,k) = decomp_pools_1m_col(c,k) / decomp_cascade_con%initial_cp_ratio(k)
           end do
 
           do j = 1, nlevdecomp_full
@@ -853,20 +756,20 @@ contains
           this%occlp_col(c)     = 0._r8
           this%primp_col(c)     = 0._r8
 
-          this%totlitp_col(c)    = 0._r8
-          this%totsomp_col(c)    = 0._r8
-          this%totlitp_1m_col(c) = 0._r8
-          this%totsomp_1m_col(c) = 0._r8
-          this%totecosysp_col(c) = 0._r8
-          this%totcolp_col(c)    = 0._r8
-          this%cwdp_col(c)       = 0._r8
+          this%totlit_col(c)    = 0._r8
+          this%totsom_col(c)    = 0._r8
+          this%totlit_1m_col(c) = 0._r8
+          this%totsom_1m_col(c) = 0._r8
+          this%totecosys_col(c) = 0._r8
+          this%totcol_col(c)    = 0._r8
+          this%cwd_col(c)       = 0._r8
 
           ! dynamic landcover state variables
-          this%seedp_col(c)         = 0._r8
-          this%prod1p_col(c)        = 0._r8
-          this%prod10p_col(c)       = 0._r8
-          this%prod100p_col(c)      = 0._r8
-          this%totprodp_col(c)      = 0._r8
+          this%seed_col(c)         = 0._r8
+          this%prod1_col(c)        = 0._r8
+          this%prod10_col(c)       = 0._r8
+          this%prod100_col(c)      = 0._r8
+          this%totprod_col(c)      = 0._r8
        end if
     end do
 
@@ -876,15 +779,15 @@ contains
     do fc = 1,num_special_col
        c = special_col(fc)
 
-       this%seedp_col(c)    = 0._r8
-       this%prod1p_col(c)   = 0._r8
-       this%prod10p_col(c)  = 0._r8	  
-       this%prod100p_col(c) = 0._r8	  
-       this%totprodp_col(c) = 0._r8	  
+       this%seed_col(c)    = 0._r8
+       this%prod1_col(c)   = 0._r8
+       this%prod10_col(c)  = 0._r8	  
+       this%prod100_col(c) = 0._r8	  
+       this%totprod_col(c) = 0._r8	  
     end do
 
     do g = bounds%begg, bounds%endg
-       this%seedp_grc(g) = 0._r8
+       this%seed_grc(g) = 0._r8
     end do
 
     ! initialize fields for special filters
@@ -950,75 +853,75 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leaf_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leaf_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leaf_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%froot_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%froot_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%froot_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestem_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestem_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestem_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstem_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstem_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstem_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecroot_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecroot_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecroot_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_storage_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_xfer_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='retransp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -1026,11 +929,11 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='ppool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%ppool_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%pool_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='pft_ptrunc', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%ptrunc_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%veg_trunc_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='plant_p_buffer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -1039,15 +942,15 @@ contains
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P', units='gP/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grainp_patch)
+            interpinic_flag='interp', readvar=readvar, data=this%grain_patch)
 
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_storage', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P storage', units='gP/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grainp_storage_patch)
+            interpinic_flag='interp', readvar=readvar, data=this%grain_storage_patch)
 
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P transfer', units='gP/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer_patch)
+            interpinic_flag='interp', readvar=readvar, data=this%grain_xfer_patch)
     end if
 
     !--------------------------------
@@ -1124,13 +1027,13 @@ contains
     do k = 1, ndecomp_pools
        varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'p'
        if (use_vertsoilc) then
-          ptr2d => this%decomp_ppools_vr_col(:,:,k)
+          ptr2d => this%decomp_pools_vr_col(:,:,k)
           call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=ptr2d) 
        else
-          ptr1d => this%decomp_ppools_vr_col(:,1,k)
+          ptr1d => this%decomp_pools_vr_col(:,1,k)
           call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                dim1name='column', &
                long_name='',  units='', fill_value=spval, &
@@ -1143,13 +1046,13 @@ contains
     end do
 
     if (use_vertsoilc) then
-       ptr2d => this%ptrunc_vr_col
+       ptr2d => this%soil_trunc_vr_col
        call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc_vr", xtype=ncd_double,  &
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
-       ptr1d => this%ptrunc_vr_col(:,1)
+       ptr1d => this%soil_trunc_vr_col(:,1)
        call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc", xtype=ncd_double,  &
             dim1name='column', &
             long_name='',  units='', fill_value=spval, &
@@ -1159,33 +1062,33 @@ contains
     !!! Debug balance 
     call restartvar(ncid=ncid, flag=flag, varname='totsomp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totsomp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totsom_col) 
     call restartvar(ncid=ncid, flag=flag, varname='cwdp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%cwdp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%cwd_col) 
     call restartvar(ncid=ncid, flag=flag, varname='totlitp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totlitp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totlit_col) 
 
     call restartvar(ncid=ncid, flag=flag, varname='totcolp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totcolp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totcol_col) 
 
     call restartvar(ncid=ncid, flag=flag, varname='seedp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%seedp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%seed_col) 
 
     call restartvar(ncid=ncid, flag=flag, varname='prod10p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod10p_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%prod10_col) 
 
     call restartvar(ncid=ncid, flag=flag, varname='prod100p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod100p_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%prod100_col) 
 
     call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod1p_col)
+         interpinic_flag='interp', readvar=readvar, data=this%prod1_col)
 
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
     ! matches what the restart file was generated with.  
@@ -1295,7 +1198,7 @@ contains
                  m = 1. / decomp_cascade_con%spinup_factor(k)
 		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c,j)
                end if 
-               this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
+               this%decomp_pools_vr_col(c,j,k) = this%decomp_pools_vr_col(c,j,k) * m
              end do
           end do
        end do
@@ -1306,14 +1209,14 @@ contains
           else if (enter_spinup) then
              m_veg = 1._r8 / spinup_mortality_factor
           end if
-          this%deadstemp_patch(i)  = this%deadstemp_patch(i) * m_veg
-          this%deadcrootp_patch(i) = this%deadcrootp_patch(i) * m_veg
+          this%deadstem_patch(i)  = this%deadstem_patch(i) * m_veg
+          this%deadcroot_patch(i) = this%deadcroot_patch(i) * m_veg
           if (nu_com == 'RD' .and. exit_spinup) then
               !Initialize plant P storage pool when exiting spinup from CN only mode 
-              if (this%ppool_patch(i) .lt. this%leafp_patch(i)) then 
-                  this%ppool_patch(i) = this%leafp_patch(i)
-              else if (this%ppool_patch(i) .lt. this%leafp_storage_patch(i)) then 
-                  this%ppool_patch(i) = this%leafp_storage_patch(i)
+              if (this%pool_patch(i) .lt. this%leaf_patch(i)) then 
+                  this%pool_patch(i) = this%leaf_patch(i)
+              else if (this%pool_patch(i) .lt. this%leaf_storage_patch(i)) then 
+                  this%pool_patch(i) = this%leaf_storage_patch(i)
               end if
           end if
        end do
@@ -1440,40 +1343,40 @@ contains
     do fi = 1,num_patch
        i = filter_patch(fi)
 
-       this%leafp_patch(i)              = value_patch
-       this%leafp_storage_patch(i)      = value_patch
-       this%leafp_xfer_patch(i)         = value_patch
-       this%frootp_patch(i)             = value_patch
-       this%frootp_storage_patch(i)     = value_patch
-       this%frootp_xfer_patch(i)        = value_patch
-       this%livestemp_patch(i)          = value_patch
-       this%livestemp_storage_patch(i)  = value_patch
-       this%livestemp_xfer_patch(i)     = value_patch
-       this%deadstemp_patch(i)          = value_patch
-       this%deadstemp_storage_patch(i)  = value_patch
-       this%deadstemp_xfer_patch(i)     = value_patch
-       this%livecrootp_patch(i)         = value_patch
-       this%livecrootp_storage_patch(i) = value_patch
-       this%livecrootp_xfer_patch(i)    = value_patch
-       this%deadcrootp_patch(i)         = value_patch
-       this%deadcrootp_storage_patch(i) = value_patch
-       this%deadcrootp_xfer_patch(i)    = value_patch
+       this%leaf_patch(i)              = value_patch
+       this%leaf_storage_patch(i)      = value_patch
+       this%leaf_xfer_patch(i)         = value_patch
+       this%froot_patch(i)             = value_patch
+       this%froot_storage_patch(i)     = value_patch
+       this%froot_xfer_patch(i)        = value_patch
+       this%livestem_patch(i)          = value_patch
+       this%livestem_storage_patch(i)  = value_patch
+       this%livestem_xfer_patch(i)     = value_patch
+       this%deadstem_patch(i)          = value_patch
+       this%deadstem_storage_patch(i)  = value_patch
+       this%deadstem_xfer_patch(i)     = value_patch
+       this%livecroot_patch(i)         = value_patch
+       this%livecroot_storage_patch(i) = value_patch
+       this%livecroot_xfer_patch(i)    = value_patch
+       this%deadcroot_patch(i)         = value_patch
+       this%deadcroot_storage_patch(i) = value_patch
+       this%deadcroot_xfer_patch(i)    = value_patch
        this%retransp_patch(i)           = value_patch
-       this%ppool_patch(i)              = value_patch
-       this%ptrunc_patch(i)             = value_patch
-       this%dispvegp_patch(i)           = value_patch
-       this%storvegp_patch(i)           = value_patch
-       this%totvegp_patch(i)            = value_patch
-       this%totpftp_patch(i)            = value_patch
+       this%pool_patch(i)              = value_patch
+       this%veg_trunc_patch(i)             = value_patch
+       this%dispveg_patch(i)           = value_patch
+       this%storveg_patch(i)           = value_patch
+       this%totveg_patch(i)            = value_patch
+       this%totpft_patch(i)            = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%grainp_patch(i)            = value_patch
-          this%grainp_storage_patch(i)    = value_patch
-          this%grainp_xfer_patch(i)       = value_patch
-          this%cropseedp_deficit_patch(i) = value_patch
+          this%grain_patch(i)            = value_patch
+          this%grain_storage_patch(i)    = value_patch
+          this%grain_xfer_patch(i)       = value_patch
+          this%cropseed_deficit_patch(i) = value_patch
        end do
     end if
 
@@ -1486,14 +1389,14 @@ contains
        this%secondp_col(i)     = value_column
        this%occlp_col(i)       = value_column
        this%primp_col(i)       = value_column
-       this%ptrunc_col(i)      = value_column
-       this%cwdp_col(i)        = value_column
-       this%totlitp_col(i)     = value_column
-       this%totsomp_col(i)     = value_column
-       this%totecosysp_col(i)  = value_column
-       this%totcolp_col(i)     = value_column
-       this%totsomp_1m_col(i)  = value_column
-       this%totlitp_1m_col(i)  = value_column
+       this%veg_trunc_col(i)      = value_column
+       this%cwd_col(i)        = value_column
+       this%totlit_col(i)     = value_column
+       this%totsom_col(i)     = value_column
+       this%totecosys_col(i)  = value_column
+       this%totcol_col(i)     = value_column
+       this%totsom_1m_col(i)  = value_column
+       this%totlit_1m_col(i)  = value_column
     end do
 
     do j = 1,nlevdecomp_full
@@ -1505,7 +1408,7 @@ contains
           this%secondp_vr_col(i,j)     = value_column
           this%occlp_vr_col(i,j)       = value_column
           this%primp_vr_col(i,j)       = value_column
-          this%ptrunc_vr_col(i,j)      = value_column
+          this%soil_trunc_vr_col(i,j)      = value_column
        end do
     end do
 
@@ -1513,8 +1416,8 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_ppools_col(i,k)    = value_column
-          this%decomp_ppools_1m_col(i,k) = value_column
+          this%decomp_pools_col(i,k)    = value_column
+          this%decomp_pools_1m_col(i,k) = value_column
        end do
     end do
 
@@ -1523,7 +1426,7 @@ contains
        do k = 1, ndecomp_pools
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_ppools_vr_col(i,j,k) = value_column
+             this%decomp_pools_vr_col(i,j,k) = value_column
           end do
        end do
     end do
@@ -1545,10 +1448,10 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp,bounds%endp
-       this%dispvegp_patch(p) = 0._r8
-       this%storvegp_patch(p) = 0._r8
-       this%totvegp_patch(p)  = 0._r8
-       this%totpftp_patch(p)  = 0._r8
+       this%dispveg_patch(p) = 0._r8
+       this%storveg_patch(p) = 0._r8
+       this%totveg_patch(p)  = 0._r8
+       this%totpft_patch(p)  = 0._r8
     end do
 
   end subroutine ZeroDwt
@@ -1580,64 +1483,64 @@ contains
        p = filter_soilp(fp)
 
        ! displayed vegetation phosphorus, excluding storage (DISPVEGN)
-       this%dispvegp_patch(p) = &
-            this%leafp_patch(p)      + &
-            this%frootp_patch(p)     + &
-            this%livestemp_patch(p)  + &
-            this%deadstemp_patch(p)  + &
-            this%livecrootp_patch(p) + &
-            this%deadcrootp_patch(p)
+       this%dispveg_patch(p) = &
+            this%leaf_patch(p)      + &
+            this%froot_patch(p)     + &
+            this%livestem_patch(p)  + &
+            this%deadstem_patch(p)  + &
+            this%livecroot_patch(p) + &
+            this%deadcroot_patch(p)
        
       ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
-      this%storvegp_patch(p) = &
-           this%leafp_storage_patch(p)      + &
-           this%frootp_storage_patch(p)     + &
-           this%livestemp_storage_patch(p)  + &
-           this%deadstemp_storage_patch(p)  + &
-           this%livecrootp_storage_patch(p) + &
-           this%deadcrootp_storage_patch(p) + &
-           this%leafp_xfer_patch(p)         + &
-           this%frootp_xfer_patch(p)        + &
-           this%livestemp_xfer_patch(p)     + &
-           this%deadstemp_xfer_patch(p)     + &
-           this%livecrootp_xfer_patch(p)    + &
-           this%deadcrootp_xfer_patch(p)    + &
-           this%ppool_patch(p)              + &
+      this%storveg_patch(p) = &
+           this%leaf_storage_patch(p)      + &
+           this%froot_storage_patch(p)     + &
+           this%livestem_storage_patch(p)  + &
+           this%deadstem_storage_patch(p)  + &
+           this%livecroot_storage_patch(p) + &
+           this%deadcroot_storage_patch(p) + &
+           this%leaf_xfer_patch(p)         + &
+           this%froot_xfer_patch(p)        + &
+           this%livestem_xfer_patch(p)     + &
+           this%deadstem_xfer_patch(p)     + &
+           this%livecroot_xfer_patch(p)    + &
+           this%deadcroot_xfer_patch(p)    + &
+           this%pool_patch(p)              + &
            this%retransp_patch(p)
 
       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
-         this%dispvegp_patch(p) = &
-              this%dispvegp_patch(p) + &
-              this%grainp_patch(p)
+         this%dispveg_patch(p) = &
+              this%dispveg_patch(p) + &
+              this%grain_patch(p)
 
-         this%storvegp_patch(p) = &
-              this%storvegp_patch(p) + &
-              this%grainp_storage_patch(p)     + &
-              this%grainp_xfer_patch(p)
+         this%storveg_patch(p) = &
+              this%storveg_patch(p) + &
+              this%grain_storage_patch(p)     + &
+              this%grain_xfer_patch(p)
       end if
 
       ! total vegetation phosphorus (TOTVEGN)
-      this%totvegp_patch(p) = &
-           this%dispvegp_patch(p) + &
-           this%storvegp_patch(p)
+      this%totveg_patch(p) = &
+           this%dispveg_patch(p) + &
+           this%storveg_patch(p)
 
       ! total pft-level carbon (add pft_ntrunc)
-      this%totpftp_patch(p) = &
-           this%totvegp_patch(p) + &
-           this%ptrunc_patch(p)
+      this%totpft_patch(p) = &
+           this%totveg_patch(p) + &
+           this%veg_trunc_patch(p)
 
    end do
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totvegp_patch(bounds%begp:bounds%endp), &
-        this%totvegp_col(bounds%begc:bounds%endc))
+        this%totveg_patch(bounds%begp:bounds%endp), &
+        this%totveg_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totpftp_patch(bounds%begp:bounds%endp), &
-        this%totpftp_col(bounds%begc:bounds%endc))
+        this%totpft_patch(bounds%begp:bounds%endp), &
+        this%totpft_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseedp_deficit_patch(bounds%begp:bounds%endp), &
+        this%cropseed_deficit_patch(bounds%begp:bounds%endp), &
         cropseedp_deficit_col(bounds%begc:bounds%endc))
 
    ! vertically integrate soil mineral P pools
@@ -1678,14 +1581,14 @@ contains
    do l = 1, ndecomp_pools
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%decomp_ppools_col(c,l) = 0._r8
+         this%decomp_pools_col(c,l) = 0._r8
       end do
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%decomp_ppools_col(c,l) = &
-                 this%decomp_ppools_col(c,l) + &
-                 this%decomp_ppools_vr_col(c,j,l) * dzsoi_decomp(j)
+            this%decomp_pools_col(c,l) = &
+                 this%decomp_pools_col(c,l) + &
+                 this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
          end do
       end do
    end do
@@ -1696,7 +1599,7 @@ contains
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%decomp_ppools_1m_col(c,l) = 0._r8
+            this%decomp_pools_1m_col(c,l) = 0._r8
          end do
       end do
 
@@ -1707,16 +1610,16 @@ contains
             if ( zisoi(j) <= maxdepth ) then
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  this%decomp_ppools_1m_col(c,l) = &
-                       this%decomp_ppools_1m_col(c,l) + &
-                       this%decomp_ppools_vr_col(c,j,l) * dzsoi_decomp(j)
+                  this%decomp_pools_1m_col(c,l) = &
+                       this%decomp_pools_1m_col(c,l) + &
+                       this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
                end do
             elseif ( zisoi(j-1) < maxdepth ) then
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  this%decomp_ppools_1m_col(c,l) = &
-                       this%decomp_ppools_1m_col(c,l) + &
-                       this%decomp_ppools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
+                  this%decomp_pools_1m_col(c,l) = &
+                       this%decomp_pools_1m_col(c,l) + &
+                       this%decomp_pools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
                end do
             endif
          end do
@@ -1725,15 +1628,15 @@ contains
       ! total litter phosphorus to 1 meter (TOTLITN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%totlitp_1m_col(c) = 0._r8
+         this%totlit_1m_col(c) = 0._r8
       end do
       do l = 1, ndecomp_pools
          if ( decomp_cascade_con%is_litter(l) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               this%totlitp_1m_col(c) = &
-                    this%totlitp_1m_col(c) + &
-                    this%decomp_ppools_1m_col(c,l)
+               this%totlit_1m_col(c) = &
+                    this%totlit_1m_col(c) + &
+                    this%decomp_pools_1m_col(c,l)
             end do
          end if
       end do
@@ -1741,15 +1644,15 @@ contains
       ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%totsomp_1m_col(c) = 0._r8
+         this%totsom_1m_col(c) = 0._r8
       end do
       do l = 1, ndecomp_pools
          if ( decomp_cascade_con%is_soil(l) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               this%totsomp_1m_col(c) = &
-                    this%totsomp_1m_col(c) + &
-                    this%decomp_ppools_1m_col(c,l)
+               this%totsom_1m_col(c) = &
+                    this%totsom_1m_col(c) + &
+                    this%decomp_pools_1m_col(c,l)
             end do
          end if
       end do
@@ -1759,15 +1662,15 @@ contains
    ! total litter phosphorus (TOTLITN)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%totlitp_col(c)    = 0._r8
+      this%totlit_col(c)    = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_litter(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%totlitp_col(c) = &
-                 this%totlitp_col(c) + &
-                 this%decomp_ppools_col(c,l)
+            this%totlit_col(c) = &
+                 this%totlit_col(c) + &
+                 this%decomp_pools_col(c,l)
          end do
       end if
    end do
@@ -1775,15 +1678,15 @@ contains
    ! total soil organic matter phosphorus (TOTSOMN)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%totsomp_col(c)    = 0._r8
+      this%totsom_col(c)    = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_soil(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%totsomp_col(c) = &
-                 this%totsomp_col(c) + &
-                 this%decomp_ppools_col(c,l)
+            this%totsom_col(c) = &
+                 this%totsom_col(c) + &
+                 this%decomp_pools_col(c,l)
          end do
       end if
    end do
@@ -1791,15 +1694,15 @@ contains
    ! total cwdn
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%cwdp_col(c) = 0._r8
+      this%cwd_col(c) = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_cwd(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%cwdp_col(c) = &
-                 this%cwdp_col(c) + &
-                 this%decomp_ppools_col(c,l)
+            this%cwd_col(c) = &
+                 this%cwd_col(c) + &
+                 this%decomp_pools_col(c,l)
          end do
       end if
    end do
@@ -1831,14 +1734,14 @@ contains
    ! total col_ntrunc
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%ptrunc_col(c) = 0._r8
+      this%veg_trunc_col(c) = 0._r8
    end do
    do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%ptrunc_col(c) = &
-              this%ptrunc_col(c) + &
-              this%ptrunc_vr_col(c,j) * dzsoi_decomp(j)
+         this%veg_trunc_col(c) = &
+              this%veg_trunc_col(c) + &
+              this%soil_trunc_vr_col(c,j) * dzsoi_decomp(j)
       end do
    end do
 
@@ -1846,35 +1749,35 @@ contains
       c = filter_soilc(fc)
 
       ! total wood product phosphorus
-      this%totprodp_col(c) = &
-           this%prod1p_col(c) + &
-           this%prod10p_col(c) + &
-           this%prod100p_col(c)	 
+      this%totprod_col(c) = &
+           this%prod1_col(c) + &
+           this%prod10_col(c) + &
+           this%prod100_col(c)	 
 
       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
-      this%totecosysp_col(c) = &
-           this%cwdp_col(c) + &
-           this%totlitp_col(c) + &
-           this%totsomp_col(c) + &
+      this%totecosys_col(c) = &
+           this%cwd_col(c) + &
+           this%totlit_col(c) + &
+           this%totsom_col(c) + &
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
            this%primp_col(c) + &
            this%occlp_col(c) + &
-           this%totprodp_col(c) + &
-           this%totvegp_col(c)
+           this%totprod_col(c) + &
+           this%totveg_col(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
-      this%totcolp_col(c) = &
-           this%totpftp_col(c) + &
-           this%cwdp_col(c) + &
-           this%totlitp_col(c) + &
-           this%totsomp_col(c) + &
-           this%prod1p_col(c) + &
+      this%totcol_col(c) = &
+           this%totpft_col(c) + &
+           this%cwd_col(c) + &
+           this%totlit_col(c) + &
+           this%totsom_col(c) + &
+           this%prod1_col(c) + &
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
-           this%ptrunc_col(c) + &
+           this%veg_trunc_col(c) + &
            cropseedp_deficit_col(c)
    end do
 
@@ -1965,9 +1868,9 @@ contains
 
     call ComputeSeedAmounts(bounds                                        , &
          species                    = CN_SPECIES_P                        , &
-         leaf_patch                 = this%leafp_patch(begp:endp)           , &
-         leaf_storage_patch         = this%leafp_storage_patch(begp:endp)   , &
-         leaf_xfer_patch            = this%leafp_xfer_patch(begp:endp)      , &
+         leaf_patch                 = this%leaf_patch(begp:endp)           , &
+         leaf_storage_patch         = this%leaf_storage_patch(begp:endp)   , &
+         leaf_xfer_patch            = this%leaf_xfer_patch(begp:endp)      , &
 
          ! Calculations only needed for patches that grew:
          compute_here_patch         = patch_grew(begp:endp)               , &
@@ -1988,7 +1891,7 @@ contains
          bounds                                           , &
          num_filterp_with_inactive                        , &
          filterp_with_inactive                            , &
-         var               = this%leafp_patch   (begp:endp) , &
+         var               = this%leaf_patch   (begp:endp) , &
          flux_out_grc_area = conv_pflux       (begp:endp) , &
          seed              = seed_leafp_patch (begp:endp) , &
          seed_addition     = dwt_leafp_seed   (begp:endp))
@@ -1998,7 +1901,7 @@ contains
          bounds                                                   , &
          num_filterp_with_inactive                                , &
          filterp_with_inactive                                    , &
-         var               = this%leafp_storage_patch   (begp:endp) , &
+         var               = this%leaf_storage_patch   (begp:endp) , &
          flux_out_grc_area = conv_pflux               (begp:endp) , &
          seed              = seed_leafp_storage_patch (begp:endp) , &
          seed_addition     = dwt_leafp_seed           (begp:endp))
@@ -2008,7 +1911,7 @@ contains
          bounds                                                        , &
          num_filterp_with_inactive                                     , &
          filterp_with_inactive                                         , &
-         var               = this%leafp_xfer_patch   (begp:endp), &
+         var               = this%leaf_xfer_patch   (begp:endp), &
          flux_out_grc_area = conv_pflux            (begp:endp), &
          seed              = seed_leafp_xfer_patch (begp:endp), &
          seed_addition     = dwt_leafp_seed        (begp:endp))
@@ -2018,7 +1921,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%frootp_patch(begp:endp)             , &
+         var               = this%froot_patch(begp:endp)             , &
          flux_out_col_area = dwt_frootp_to_litter(begp:endp))
 
     ! 5) FROOTP_STORAGE_PATCH
@@ -2026,7 +1929,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%frootp_storage_patch(begp:endp)     , &
+         var               = this%froot_storage_patch(begp:endp)     , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 6) FROOTP_XFER_PATCH
@@ -2034,12 +1937,12 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%frootp_xfer_patch(begp:endp)        , &
+         var               = this%froot_xfer_patch(begp:endp)        , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 7) PROD10_PFLUX
     wood_product_pflux(begp:endp)      = 0._r8
-    deadstemp_patch_temp(begp:endp)    = this%deadstemp_patch(begp:endp)
+    deadstemp_patch_temp(begp:endp)    = this%deadstem_patch(begp:endp)
     call patch_state_updater%update_patch_state_partition_flux_by_type(     &
          bounds                                                           , &
          num_filterp_with_inactive                                        , &
@@ -2052,7 +1955,7 @@ contains
 
     ! 8) PROD100_PFLUX
     wood_product_pflux(begp:endp)      = 0._r8
-    deadstemp_patch_temp(begp:endp)    = this%deadstemp_patch(begp:endp)
+    deadstemp_patch_temp(begp:endp)    = this%deadstem_patch(begp:endp)
     call patch_state_updater%update_patch_state_partition_flux_by_type(     &
          bounds                                                           , &
          num_filterp_with_inactive                                        , &
@@ -2070,7 +1973,7 @@ contains
          num_filterp_with_inactive                                        , &
          filterp_with_inactive                                            , &
          flux1_fraction_by_pft_type = pconv                               , &
-         var                        = this%deadstemp_patch   (begp:endp)    , &
+         var                        = this%deadstem_patch   (begp:endp)    , &
          flux1_out                  = conv_pflux           (begp:endp)    , &
          flux2_out                  = wood_product_pflux   (begp:endp)    , &
          seed                       = seed_deadstemp_patch (begp:endp)    , &
@@ -2081,7 +1984,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%deadstemp_storage_patch(begp:endp)  , &
+         var               = this%deadstem_storage_patch(begp:endp)  , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 11) DEADSTEMP_XFER_PATCH
@@ -2089,7 +1992,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%deadstemp_xfer_patch(begp:endp)     , &
+         var               = this%deadstem_xfer_patch(begp:endp)     , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 12) LIVESTEMP_PATCH
@@ -2097,7 +2000,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livestemp_patch(begp:endp)          , &
+         var               = this%livestem_patch(begp:endp)          , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 13) LIVESTEMP_STORAGE_PATCH
@@ -2105,7 +2008,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livestemp_storage_patch(begp:endp)  , &
+         var               = this%livestem_storage_patch(begp:endp)  , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 14) LIVESTEMP_XFER_PATCH
@@ -2113,7 +2016,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livestemp_xfer_patch(begp:endp)     , &
+         var               = this%livestem_xfer_patch(begp:endp)     , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 15) LIVECROOTP_PATCH 
@@ -2121,7 +2024,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livecrootp_patch(begp:endp)         , &
+         var               = this%livecroot_patch(begp:endp)         , &
          flux_out_col_area = dwt_livecrootp_to_litter(begp:endp))
 
     ! 16) LIVECROOTP_STORAGE_PATCH
@@ -2129,7 +2032,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livecrootp_storage_patch(begp:endp) , &
+         var               = this%livecroot_storage_patch(begp:endp) , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 17) LIVECROOTP_XFER_PATCH
@@ -2137,7 +2040,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%livecrootp_xfer_patch(begp:endp)    , &
+         var               = this%livecroot_xfer_patch(begp:endp)    , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 18) DEADCROOTP_PATCH
@@ -2145,7 +2048,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%deadcrootp_patch(begp:endp)         , &
+         var               = this%deadcroot_patch(begp:endp)         , &
          flux_out_col_area = dwt_deadcrootp_to_litter(begp:endp))
 
     ! 19) DEADCROOTP_STORAGE_PATCH
@@ -2153,7 +2056,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%deadcrootp_storage_patch(begp:endp) , &
+         var               = this%deadcroot_storage_patch(begp:endp) , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 20) DEADCROOT_XFER_PATCH
@@ -2161,7 +2064,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%deadcrootp_xfer_patch(begp:endp)    , &
+         var               = this%deadcroot_xfer_patch(begp:endp)    , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 21) RETRANSP_PATCH
@@ -2177,7 +2080,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%ptrunc_patch(begp:endp)             , &
+         var               = this%veg_trunc_patch(begp:endp)             , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 23) PPOOL_PATCH
@@ -2185,7 +2088,7 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%ppool_patch(begp:endp)              , &
+         var               = this%pool_patch(begp:endp)              , &
          flux_out_grc_area = conv_pflux(begp:endp))
 
     ! 24) DISPVEGP_PATCH
@@ -2193,28 +2096,28 @@ contains
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%dispvegp_patch(begp:endp))
+         var               = this%dispveg_patch(begp:endp))
 
     ! 25) STORVEGP_PATCH
     call patch_state_updater%update_patch_state(                      &
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%storvegp_patch(begp:endp))
+         var               = this%storveg_patch(begp:endp))
 
     ! 26) TOTVEGP_PATCH
     call patch_state_updater%update_patch_state(                      &
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%totvegp_patch(begp:endp))
+         var               = this%totveg_patch(begp:endp))
 
     ! 27) TOTPFTP_PATCH
     call patch_state_updater%update_patch_state(                      &
          bounds                                                     , &
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
-         var               = this%totpftp_patch(begp:endp))
+         var               = this%totpft_patch(begp:endp))
 
     if (use_crop) then
        ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
@@ -2223,7 +2126,7 @@ contains
             bounds                                        , &
             num_filterp_with_inactive                     , &
             filterp_with_inactive                         , &
-            var = this%cropseedp_deficit_patch(begp:endp) , &
+            var = this%cropseed_deficit_patch(begp:endp) , &
             flux_out_grc_area = conv_pflux(begp:endp))
     end if
 
@@ -2267,18 +2170,18 @@ contains
     begc = bounds%begc
     endc = bounds%endc
 
-    !this%dyn_pbal_adjustments_col(begc:endc) = 0._r8
+    !this%dyn_bal_adjustments_col(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           call column_state_updater%update_column_state_no_special_handling( &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
-               var         = this%decomp_ppools_vr_col(begc:endc, j, l),     &
+               var         = this%decomp_pools_vr_col(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          this%dyn_pbal_adjustments_col(begc:endc) =      &
-               this%dyn_pbal_adjustments_col(begc:endc) + &
+          this%dyn_bal_adjustments_col(begc:endc) =      &
+               this%dyn_bal_adjustments_col(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
@@ -2288,11 +2191,11 @@ contains
        call column_state_updater%update_column_state_no_special_handling( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
-            var         = this%ptrunc_vr_col(begc:endc,j),                &
+            var         = this%soil_trunc_vr_col(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
-       this%dyn_pbal_adjustments_col(begc:endc) =      &
-            this%dyn_pbal_adjustments_col(begc:endc) + &
+       this%dyn_bal_adjustments_col(begc:endc) =      &
+            this%dyn_bal_adjustments_col(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call column_state_updater%update_column_state_no_special_handling( &
@@ -2301,8 +2204,8 @@ contains
             var         = this%solutionp_vr_col(begc:endc,j),             &
             adjustment  = adjustment_one_level(begc:endc))
 
-       this%dyn_pbal_adjustments_col(begc:endc) =      &
-            this%dyn_pbal_adjustments_col(begc:endc) + &
+       this%dyn_bal_adjustments_col(begc:endc) =      &
+            this%dyn_bal_adjustments_col(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call column_state_updater%update_column_state_no_special_handling( &
@@ -2311,8 +2214,8 @@ contains
             var         = this%labilep_vr_col(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       this%dyn_pbal_adjustments_col(begc:endc) =      &
-            this%dyn_pbal_adjustments_col(begc:endc) + &
+       this%dyn_bal_adjustments_col(begc:endc) =      &
+            this%dyn_bal_adjustments_col(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call column_state_updater%update_column_state_no_special_handling( &
@@ -2321,8 +2224,8 @@ contains
             var         = this%secondp_vr_col(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       this%dyn_pbal_adjustments_col(begc:endc) =      &
-            this%dyn_pbal_adjustments_col(begc:endc) + &
+       this%dyn_bal_adjustments_col(begc:endc) =      &
+            this%dyn_bal_adjustments_col(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
     end do
 

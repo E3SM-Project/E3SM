@@ -520,9 +520,9 @@ contains
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> carbonstate_vars%decomp_cpools_vr_col     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-       decomp_npools_vr=> nitrogenstate_vars%decomp_npools_vr_col   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       decomp_ppools_vr=> phosphorusstate_vars%decomp_ppools_vr_col , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+       decomp_cpools_vr=> carbonstate_vars%decomp_pools_vr_col     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_npools_vr=> nitrogenstate_vars%decomp_pools_vr_col   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+       decomp_ppools_vr=> phosphorusstate_vars%decomp_pools_vr_col , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
        smin_no3_vr     => nitrogenstate_vars%smin_no3_vr_col        , & ! (gN/m3) vertically-resolved soil mineral NO3
        smin_nh4_vr     => nitrogenstate_vars%smin_nh4_vr_col        , & ! (gN/m3) vertically-resolved soil mineral NH4
        smin_nh4sorb_vr => nitrogenstate_vars%smin_nh4sorb_vr_col    , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
@@ -896,9 +896,9 @@ contains
 !------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr             => carbonstate_vars%decomp_cpools_vr_col           , &
-       decomp_npools_vr             => nitrogenstate_vars%decomp_npools_vr_col         , &
-       decomp_ppools_vr             => phosphorusstate_vars%decomp_ppools_vr_col         &
+       decomp_cpools_vr             => carbonstate_vars%decomp_pools_vr_col           , &
+       decomp_npools_vr             => nitrogenstate_vars%decomp_pools_vr_col         , &
+       decomp_ppools_vr             => phosphorusstate_vars%decomp_pools_vr_col         &
     )
 ! ------------------------------------------------------------------------
 !
@@ -1447,9 +1447,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-        decomp_cpools_vr        => carbonstate_vars%decomp_cpools_vr_col        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-        decomp_npools_vr        => nitrogenstate_vars%decomp_npools_vr_col      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-        decomp_ppools_vr        => phosphorusstate_vars%decomp_ppools_vr_col    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+        decomp_cpools_vr        => carbonstate_vars%decomp_pools_vr_col        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+        decomp_npools_vr        => nitrogenstate_vars%decomp_pools_vr_col      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+        decomp_ppools_vr        => phosphorusstate_vars%decomp_pools_vr_col    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
         smin_no3_vr             => nitrogenstate_vars%smin_no3_vr_col           , &      ! (gN/m3) vertically-resolved soil mineral NO3
         smin_nh4_vr             => nitrogenstate_vars%smin_nh4_vr_col           , &      ! (gN/m3) vertically-resolved soil mineral NH4
