@@ -2,9 +2,8 @@
 import sys, getopt, os 
 import numpy as np 
 import Nio 
-import utility
 import time
-
+import utility
 
 #
 # Command options 
@@ -42,4 +41,125 @@ def disp_usage(callType):
    else:
        print '  --nb               Disables building (and submitting) the single case.'
        print '  --ns               Disables submitting the single case.'
+
+
+def process_args_dict(caller, caller_argv):
+
+
+   # Pull in and analyze the command line arguements
+    s='case= mach= project= compiler= compset= res= uf nb ns ensemble= verbose silent test multi-driver pecount= nist= mpilib= pesfile= gridfile= srcroot= output-root= script-root= queue= user-modes-dir= input-dir= pertlim= walltime= h'
+
+    optkeys=s.split()
+
+    try: 
+        opts, args = getopt.getopt(caller_argv,"hf:",optkeys)
+
+    except getopt.GetoptError:
+        disp_usage(caller)
+        sys.exit(2)
+
+    #check for help   
+    for opt,arg in opts:
+        if opt == '-h':
+            disp_usage(caller)
+            sys.exit()
+
+    #opts_dict and defaults    
+    opts_dict={}
+    opts_dict['res']='f19_f19'
+    opts_dict['compset']='F2000'
+    opts_dict['walltime']='04:30'
+    opts_dict['pertlim']= 0
+    opts_dict['nb'] = False
+    opts_dict['ns'] = False
+    opts_dict['uf'] = False
+    opts_dict['ensemble'] = 0
+    #for create newcase
+    opts_dict['verbose'] = False
+    opts_dict['silent'] = False
+    opts_dict['test'] = False
+    opts_dict['multi-driver'] = False
+
+
+    #opts_dict = utility.getopt_parseconfig(opts, optkeys, caller, opts_dict)
+    for opt, arg in opts:
+        if opt == '--case':
+            opts_dict['case'] = arg
+        elif opt == '--mach':
+            opts_dict['mach'] = arg
+        elif opt == '--project':
+            opts_dict['project'] = arg
+        elif opt == '--compset':
+            opts_dict['compset'] = arg
+        elif opt == '--res':
+            opts_dict['res'] = arg
+        elif opt == '--ensemble':
+            opts_dict['ensemble'] = arg
+        elif opt == '--mach':
+            opts_dict['mach'] = arg
+        elif opt == '--pertlim':
+            opts_dict['pertlim'] = arg
+            if caller == 'ensemble.py':
+                print "WARNING: pertlim ignored for ensemble.py."
+                opts_dict['pertlim'] = 0
+        elif opt == '--project':
+            opts_dict['project'] = arg
+        elif opt == '--uf':
+            opts_dict['uf'] = True
+        elif opt == '--nb':
+            opts_dict['nb'] = True
+        elif opt == '--ns':
+            opts_dict['ns'] = True
+        elif opt == '--verbose':
+            opts_dict['verbose'] = True
+        elif opt == '--silent':
+            opts_dict['silent'] = True
+        elif opt == '--test':
+            opts_dict['test'] = True
+        elif opt == '--multi-driver':
+            opts_dict['multi-driver'] = True        
+        elif opt == '--nist':
+            opts_dict['nist'] = arg
+        elif opt == '--pecount':
+            opts_dict['pecount'] = arg     
+        elif opt == '--mpilib':
+            opts_dict['mpilib'] = arg
+        elif opt == '--pesfile':
+            opts_dict['pesfile'] = arg     
+        elif opt == '--srcroot':
+            opts_dict['srcroot'] = arg
+        elif opt == '--output-root':
+            opts_dict['output-root'] = arg     
+        elif opt == '--script-root':
+            opts_dict['script-root'] = arg     
+        elif opt == '--queue':
+            opts_dict['queue'] = arg     
+        elif opt == '--input-dir':
+            opts_dict['input-dir'] = arg     
+        elif opt == '--user-modes-dir':
+            opts_dict['user-modes-dir'] = arg     
+        elif opt == '--walltime':
+            opts_dict['walltime'] = arg     
+        
+    return opts_dict
+
+def single_case(opts_dict):
+    
+    #make sure we're in directory with single_run.py and ensemble.py
+    root_dir = os.path.basename(__file__)
+
+    #change to rootdir then to scripts
+
+    os.system("cd ../../scripts")
+    os.fchdir(fd)
+
+
+
+
+def main(argv):
+
+    caller = 'single_run.py'
+
+    opts_dict = process_args_dict(caller, argv)
+
 

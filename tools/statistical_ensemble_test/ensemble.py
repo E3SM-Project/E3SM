@@ -1,7 +1,8 @@
 #!/usr/bin/python
 import os, sys, getopt
 import random
-import utility
+#import utility
+import single_run
 
 #==============================================================================
 # set up and submit 12-month (original) or 9-time step (uf) run.  then create 
@@ -35,31 +36,47 @@ def get_pertlim_uf(rand_num):
           ptlim = "-0."+ippt+"d-13"
     return ptlim 
 
-#I'm here
-def create_cases(case_path, run_type, case_name):
-    os.chdir(os.path.dirname(case_path))
-    thisdir=os.getcwd()
-    singlerun=thisdir+"/single_run.py"
-    if not os.path.exists(singlerun):
-       print "ERROR: cannot find script to produce single run in "+thisdir
-    
-    ret=1
+
+def main(argv):
+
+    caller = 'ensemble.py'
+
+    opts_dict = process_args(caller, argv)
+
+    #default is verification mode (3 runs)
+    run_type = 'verify'
+    clone_count = 2
+
+    uf = opts_dict['uf']
+
+    #check for run_type change (i.e., if doing ensemble instead of verify)
+    ens_size = opts_dict['ensemble'] 
+    if  ens_size > 0:
+        run_type = 'ensemble'
+        clone_count = ens_size - 1
+        if ens_size > 999:
+            print 'Error: cannot have an ensemble size greater than 999.'
+            sys.exit()
+
+    #generate 3 random pertlims for verify
+    if run_type == 'verify':
+        if uf:
+            end_range = 350
+        else:
+            end_range = 150
+        rand_ints = random_pick(3, end_range)
+        
+    #now create cases
+    thisdir = os.getcwd()
+   
+    #create first case - then clone
     if runtype == 'verify':
-       firstpertlim = get_pertlim_uf(30)
-       command = 'python '+singlerun+' --pertlim '+firstpertlim
-       print command
-       #ret=os.system(command)
-    else:
-       print command
-       command = 'python '+singlerun
-       #ret=os.system(command)
+        opts_dict['pertlim'] = rand_ints[0]
+    else: 
+        opts_dict['pertlim'] = 0
+    single_case(opts_dict)
 
-    if ret != 0:
-       print "Exit: "+ str(ret)
-       sys.exit(0)
-
-    ######### END OF BUILDING ROOT CASE, NOW CLONING
-
+    #now clone FIX THIS
     case_root=os.path.dirname(case_name)
     case_pfx=os.path.basename(case_name)
     for i in range(1,clonecount):
@@ -86,62 +103,3 @@ def create_cases(case_path, run_type, case_name):
            os.chdir(case)
 
 
-def main(argv):
-
-    caller = 'ensemble.py'
-
-    #default is verification mode (3 runs)
-    run_type = 'verify'
-    clone_count = 2
-
-    # Pull in and analyze the command line arguements
-    s='case= mach= project= compiler= compset= res= uf nb ns ensemble= verbose silent test multi-driver pecount= nist= mpilib= pesfile= gridfile= srcroot= output-root= script-root= queue= user-modes-dir= input-dir= pertlim= h'
-    optkeys=s.split()
-    try: 
-        opts, args = getopt.getopt(argv,"hf:",optkeys)
-    except getopt.GetoptError:
-        disp_usage(caller)
-        sys.exit(2)
-
-    for opt,arg in opts:
-        if opt == '-h':
-            disp_usage(caller)
-            sys.exit()
-
-    #opts_dict and defaults    
-    opts_dict={}
-    opts_dict['res']='f19_f19'
-    opts_dict['compset']='F2000'
-    opts_dict['walltime']='04:30'
-    opts_dict['pertlim']= 0
-    opts_dict['nb'] = False
-    opts_dict['ns'] = False
-    opts_dict['uf'] = False
-    opts_dict['ensemble'] = 0
-
-    opts_dict=utility.getopt_parseconfig(opts, optkeys, caller, opts_dict)
-
-    uf = opts_dict['uf']
-
-    #check for run_type change
-    ens_size = opts_dict['ensemble'] 
-    if  ens_size > 0:
-        run_type = 'ensemble'
-        clone_count = ens_size - 1
-        if ens_size > 999:
-            print 'Error: cannot have an ensemble size greater than 999.'
-            sys.exit()
-
-    #generate 3 random pertlims for verify
-    if run_type == 'verify':
-        if uf:
-            end_range = 350
-        else:
-            end_range = 150
-        rand_ints = random_pick(3, end_range)
-       
-        
-    #create cases
-
-    
-    
