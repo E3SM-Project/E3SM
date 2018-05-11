@@ -4,10 +4,16 @@
 Creates various files and directories needed in order to build the case,
 create namelists and run the case.
 
+Any changes to env_mach_pes.xml and env_mach_specific.xml must be made
+before running this.
+
 This must be run before running case.build.
 
-Typical usage is simply:
+To run this initially for the case, simply run:
    ./case.setup
+
+To rerun after making changes to env_mach_pes.xml or env_mach_specific.xml, run:
+   ./case.setup --reset
 """
 
 from standard_script_setup import *
@@ -37,7 +43,9 @@ def parse_command_line(args, description):
                         help="Keeps the test script when the --clean argument is used.")
 
     parser.add_argument("-r", "--reset", action="store_true",
-                        help="Does a clean followed by setup.")
+                        help="Does a clean followed by setup.\n"
+                        "This flag should be used when rerunning case.setup after it\n"
+                        "has already been run for this case.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
