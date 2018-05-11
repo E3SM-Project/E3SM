@@ -158,7 +158,7 @@ These are the recommended steps for validating a port for the CESM model:
    **$CIMEROOT/tools/statistical_ensemble_test/README**.  The CESM-ECT (CESM Ensemble Consistency Test) determines whether a new
    simulation set up (new machine, compiler, etc.) is statistically distinguishable from an accepted ensemble.  The ECT process
    involves comparing several runs (3) generated with the new scenario to an ensemble built on a trusted machine (currently cheyenne). The
-   python ECT tools are located in the pyCECT subdirectory or https://github.com/NCAR/PyCECT/releases.
+   python ECT tools are located in the pyCECT subdirectory **$CIMEROOT/tools/statistical_ensemble_test/pyCECT.
 
    The verification tools in the CESM-ECT suite are:
 
@@ -168,30 +168,32 @@ These are the recommended steps for validating a port for the CESM model:
 
    ``POP-ECT``: detects issues in POP and CICE (12 month runs)
 
-3. Verify performance and scaling analysis.
+   Follow the instructions in the **README** file to generate three ensemble runs for any of the above tests that are most relevant to your port.
+   Then please go to the `CESM2 ensemble verification website <http://www.cesm.ucar.edu/models/cesm2.0/verification>`_, where you can upload your files and subsequently obtain a quick response as to the success or failure of your verification.
 
-   a. Create one or two `load-balanced <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ configurations to check into ``Machines/config_pes.xml`` for the new machine.
+Performance tuning of a CESM port
+-------------------------------------------------
 
-   b. Verify that performance and scaling are reasonable.
+Once you have performed the verification that your port is successful,
+you will want to determine the optimal pe-layout for your target
+configurations (i.e. compset/resolution combinations).  See the file
+**$CIMEROOT/tools/load_balancing_tools/README** to understand how to
+utilize the load balancing utilty. This utility finds reasonable PE
+layouts for CIME-driven models. It will find these from timing files
+you provide or from runs done by the tool.
 
-   c. Review timing summaries in ``$CASEROOT`` for load balance and throughput.
+Once you are happy with the PE-layout for your target configuration,
+you can it to the relevant **config_pes.xml** file for the component
+that is responsible for generating the PE-layout for the target
+configuration (this is normally referred to as the "primary"
+component).
 
-   d. Review coupler "daily" timing output for timing inconsistencies.
-      As mentioned in `load balancing a case <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_, useful timing information is contained in a **cpl.log.$date** file that is produced for every run.
-      The file contains the run time for each model day during the model run.
-      This diagnostic is output as the model runs.
-      Searc for ``tStamp`` in this file to see this information.
-      The timing information is useful for tracking down temporal variability in model cost due to either inherent model variability cost (I/O, spin-up, seasonal, and so on) or hardware.
-      The model daily cost generally is pretty constant unless I/O is written intermittently, such as at the end of the month.
-
-4. Perform two, one-year runs (using the expected load-balanced configuration) as separate job submissions and verify that atmosphere history files are BFB for the last month.
-   Do this after some performance testing is complete; you can also combine this with the production test by running the first year as a single run and the second year as a multi-submission production run.
-   This will test reproducibility, exact restart over the one-year timescale, and production capability all in one test.
-
-5. Carry out a 20- to 30-year 1.9x2.5_gx1v6 resolution, B_1850_CN
-   compset simulation and compare the results with the diagnostics
-   plots for the 1.9x2.5_gx1v6 Pre-Industrial Control (see the
-   `CCSM4.0 diagnostics
-   <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_).
-
-   Model output data for these runs will be available on the `Earth System Grid (ESG) <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ as well.
+Timing summaries for every successful case run, are located in the
+case subdirectory **$CASEROOT/timing**. In addition, every
+**cpl.log.timestamp** output file contains diagnostic timing
+information. Search for ``tStamp`` in this file to see this
+information. The timing information is useful for tracking down
+temporal variability in model cost due to either inherent model
+variability cost (I/O, spin-up, seasonal, and so on) or hardware.  The
+model daily cost generally is pretty constant unless I/O is written
+intermittently, such as at the end of the month.
