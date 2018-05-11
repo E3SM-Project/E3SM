@@ -25,7 +25,7 @@ module PhosphorusStateType
   use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon       , only : smax, ks_sorption
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
-  use CNSpeciesMod           , only : CN_SPECIES_P
+  use CNSpeciesMod           , only : NUTRIENT_SPECIES_P
   use NutrientStateType      , only : nutrientstate_type
   !
   ! !PUBLIC TYPES:
@@ -1867,10 +1867,10 @@ contains
     patch_grew          = patch_state_updater%patch_grew(bounds)
 
     call ComputeSeedAmounts(bounds                                        , &
-         species                    = CN_SPECIES_P                        , &
-         leaf_patch                 = this%leaf_patch(begp:endp)           , &
-         leaf_storage_patch         = this%leaf_storage_patch(begp:endp)   , &
-         leaf_xfer_patch            = this%leaf_xfer_patch(begp:endp)      , &
+         species                    = NUTRIENT_SPECIES_P                  , &
+         leaf_patch                 = this%leaf_patch(begp:endp)          , &
+         leaf_storage_patch         = this%leaf_storage_patch(begp:endp)  , &
+         leaf_xfer_patch            = this%leaf_xfer_patch(begp:endp)     , &
 
          ! Calculations only needed for patches that grew:
          compute_here_patch         = patch_grew(begp:endp)               , &
