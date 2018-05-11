@@ -60,8 +60,6 @@ def buildnml(case, caseroot, compname):
     if not os.path.isdir(camconf_dir):
         os.mkdir(camconf_dir)
 
-    os.chdir(camconf_dir)
-
     #--------------------------------------------------------------------
     # Invoke cam configure - output will go in $CASEBUILD/camconf
     #--------------------------------------------------------------------
@@ -128,7 +126,7 @@ def buildnml(case, caseroot, compname):
             os_opt = "-target_os bgq"
 
         # TODO: cam/bld/configure needs to be converted to python
-        run_cmd_no_fail("{} -s -ccsm_seq -ice none -ocn {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".format(os.path.join(srcroot, "components/cam/bld/configure"), ocn, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt))
+        run_cmd_no_fail("{} -s -ccsm_seq -ice none -ocn {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".format(os.path.join(srcroot, "components/cam/bld/configure"), ocn, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt), from_dir=camconf_dir)
 
     else:
 
@@ -224,7 +222,7 @@ def buildnml(case, caseroot, compname):
         cam_buildnml_cmd += ' -namelist " &atmexp {} /" '.format(cam_namelist_opts)
 
         # TODO: cam/bld/build-namelist needs to be converted to python
-        run_cmd_no_fail(cam_buildnml_cmd)
+        run_cmd_no_fail(cam_buildnml_cmd, from_dir=camconf_dir)
 
         # -----------------------------------------------------
         # move atm_in to $RUNDIR
