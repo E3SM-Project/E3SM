@@ -55,106 +55,61 @@ my $grid_prefix = '';
 my $decomp_date = '';
 my $decomp_prefix = '';
 
-if ( $ICE_GRID eq 'oEC60to30' ) {
-	$grid_date .= '151020';
-	$grid_prefix .= 'cice.EC60to30km';
-	$decomp_date .= '151020';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oEC60to30_ICG' ) {
-	$grid_date .= '160827';
-	$grid_prefix .= 'cice.EC60to30km.restartFrom_eos1b';
-	$decomp_date .= '151020';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oEC60to30v3' ) {
+if ( $ICE_GRID eq 'oEC60to30v3' ) {
 	$grid_date .= '161222';
 	$grid_prefix .= 'seaice.EC60to30v3';
 	$decomp_date .= '161222';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
 	$grid_date .= '171101';
 	$grid_prefix .= 'seaice.EC60to30v3.restartFrom_anvil0926';
 	$decomp_date .= '161222';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
-	$grid_date .= '160830';
-	$grid_prefix .= 'cice.EC60to30wLI';
-	$decomp_date .= '160830';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3wLI' ) {
 	$grid_date .= '170913';
 	$grid_prefix .= 'seaice.EC60to30v3wLI';
 	$decomp_date .= '170905';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3wLI_ICG' ) {
 	$grid_date .= '171116';
-	$grid_prefix .= 'seaiceEC60to30v3wLI60lev.restart_theta_year26';
+	$grid_prefix .= 'seaice.EC60to30v3wLI60lev.restart_theta_year26';
 	$decomp_date .= '170905';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'mpas120' ) {
-	$grid_date .= '121116';
-	$grid_prefix .= 'cice120km';
-	$decomp_date .= '121116';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oQU120' ) {
 	$grid_date .= '151209';
-	$grid_prefix .= 'seaice.oQU120km';
+	$grid_prefix .= 'seaice.QU120';
 	$decomp_date .= '151209';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oQU240' ) {
 	$grid_date .= '151209';
-	$grid_prefix .= 'seaice.oQU240km';
+	$grid_prefix .= 'seaice.QU240';
 	$decomp_date .= '151209';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oQU240wLI' ) {
 	$grid_date .= '160929';
-	$grid_prefix .= 'cice.QU240wLI';
+	$grid_prefix .= 'seaice.QU240wLI';
 	$decomp_date .= '160929';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'mpasgx1' ) {
-	$grid_date .= '121116';
-	$grid_prefix .= 'grid_gx1';
-	$decomp_date .= '121116';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oRRS30to10' ) {
-	$grid_date .= '151031';
-	$grid_prefix .= 'seaice.RRS.30-10km';
-	$decomp_date .= '151031';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oRRS30to10v3' ) {
 	$grid_date .= '171128';
 	$grid_prefix .= 'seaice.RRS30to10v3';
 	$decomp_date .= '171128';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
-	$grid_date .= '160930';
-	$grid_prefix .= 'seaice.RRS30-10wLI';
-	$decomp_date .= '160930';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oRRS30to10v3wLI' ) {
 	$grid_date .= '171109';
 	$grid_prefix .= 'seaice.RRS30to10v3wLI';
 	$decomp_date .= '171109';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oRRS18to6' ) {
-	$grid_date .= '160830';
-	$grid_prefix .= 'seaice.RRS.18to6km';
-	$decomp_date .= '160830';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.legacy.';
 } elsif ( $ICE_GRID eq 'oRRS18to6v3' ) {
 	$grid_date .= '170111';
 	$grid_prefix .= 'seaice.RRS18to6v3';
 	$decomp_date .= '180214';
-	$decomp_prefix .= 'mpas-seaice.v2.';
+	$decomp_prefix .= 'mpas-seaice.graph.pv2.';
 } elsif ( $ICE_GRID eq 'oRRS18to6v3_ICG' ) {
 	$grid_date .= '171031';
 	$grid_prefix .= 'seaice.RRS18to6v3_80Layer.restartFromAnvil';
 	$decomp_date .= '180214';
-	$decomp_prefix .= 'mpas-seaice.v2.';
-} elsif ( $ICE_GRID eq 'oRRS15to5' ) {
-	$grid_date .= '151209';
-	$grid_prefix .= 'seaice.RRS.15to5km';
-	$decomp_date .= '151209';
-	$decomp_prefix .= 'mpas-cice.graph.info.';
+	$decomp_prefix .= 'mpas-seaice.graph.pv2.';
 }
 
 chdir "$CASEBUILD/mpassiconf";
@@ -164,7 +119,7 @@ chdir "$CASEBUILD/mpassiconf";
 # Note: this is not setup for multiple instances
 #--------------------------------------------------------------------
 
-my $input_file = "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc";
+my $input_file = "$DIN_LOC_ROOT/ice/mpas-seaice/$ICE_MASK/$grid_prefix.$grid_date.nc";
 if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
     $input_file = "$RUNDIR/${RUN_REFCASE}.mpassi.rst.${RUN_REFDATE}-${RUN_REFTOD}.nc";
     if (! -e "$input_file") {
@@ -676,7 +631,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
         print $stream_file "        filename_template=" . '"'
-                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                . "$DIN_LOC_ROOT/ice/mpas-seaice/$ICE_MASK/$grid_prefix.$grid_date.nc"
                                                 . '">' . "\n";
         print $stream_file '' . "\n";
         print $stream_file '       <var name="landIceMask"/>' . "\n";
