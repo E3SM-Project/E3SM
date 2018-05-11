@@ -10,6 +10,7 @@ module NutrientStateType
   use clm_varctl             , only : use_fates, use_crop
   use clm_varcon             , only : spval, ispval
   use CNDecompCascadeConType , only : decomp_cascade_con
+  use dynPatchStateUpdaterMod, only : patch_state_updater_type
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -99,7 +100,8 @@ module NutrientStateType
   end type nutrientstate_type
 
   public :: NutrientStateInitAllocate, &
-            NutrientStateInitHistory
+            NutrientStateInitHistory, &
+            NutrientStateDynamicPatchAdjustments
 
 contains
 
@@ -477,5 +479,364 @@ contains
          ptr_patch=nutrient_state%totveg_abg_patch)
 
   end subroutine NutrientStateInitHistory
+
+  !-----------------------------------------------------------------------
+  subroutine NutrientStateDynamicPatchAdjustments( &
+       this,                      &
+       bounds,                    &
+       num_filterp_with_inactive, &
+       filterp_with_inactive,     &
+       prior_weights,             &
+       patch_state_updater,       &
+       species_type,              &
+       dwt_leaf_seed,             &
+       dwt_deadstem_seed,         &
+       conv_flux,                 &
+       dwt_froot_to_litter,       &
+       dwt_livecroot_to_litter,   &
+       dwt_deadcroot_to_litter,   &
+       prod10_flux,               &
+       prod100_flux,              &
+       crop_product_flux,         &
+       dwt_pool_seed,             &
+       pool_seed_param,           &
+       pool_seed_patch            &
+       )
+    !
+    ! !DESCRIPTION:
+    ! Adjust state variables and compute associated fluxes when patch areas change due to
+    ! dynamic landuse
+    !
+    ! !USES:
+    use pftvarcon          , only : pconv, pprod10, pprod100
+    use dynPriorWeightsMod , only : prior_weights_type
+    use landunit_varcon    , only : istsoil, istcrop
+    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    !
+    ! !ARGUMENTS:
+    class(nutrientstate_type)      , intent(inout) :: this
+    type(bounds_type)              , intent(in)    :: bounds
+    integer                        , intent(in)    :: num_filterp_with_inactive
+    integer                        , intent(in)    :: filterp_with_inactive(:)
+    type(prior_weights_type)       , intent(in)    :: prior_weights
+    type(patch_state_updater_type) , intent(in)    :: patch_state_updater
+    integer                        , intent(in)    :: species_type
+    real(r8)                       , intent(inout) :: dwt_leaf_seed           (bounds%begp:)
+    real(r8)                       , intent(inout) :: dwt_deadstem_seed       (bounds%begp:)
+    real(r8)                       , intent(inout) :: conv_flux               (bounds%begp:)
+    real(r8)                       , intent(inout) :: dwt_froot_to_litter     (bounds%begp:)
+    real(r8)                       , intent(inout) :: dwt_livecroot_to_litter (bounds%begp:)
+    real(r8)                       , intent(inout) :: dwt_deadcroot_to_litter (bounds%begp:)
+    real(r8)                       , intent(inout) :: prod10_flux             (bounds%begp:)
+    real(r8)                       , intent(inout) :: prod100_flux            (bounds%begp:)
+    real(r8)                       , intent(inout) :: crop_product_flux       (bounds%begp:)
+    real(r8), optional             , intent(inout) :: dwt_pool_seed           (bounds%begp:)
+    real(r8), optional             , intent(in)    :: pool_seed_param
+    real(r8), optional             , intent(inout) :: pool_seed_patch         (bounds%begp:)
+    !
+    ! !LOCAL VARIABLES:
+    integer                     :: begp, endp
+    integer                     :: l, c, p
+    logical                     :: old_weight_was_zero      (bounds%begp:bounds%endp)
+    logical                     :: patch_grew               (bounds%begp:bounds%endp)
+
+    ! The following are only set for growing patches:
+    real(r8)                    :: seed_leaf_patch         (bounds%begp:bounds%endp)
+    real(r8)                    :: seed_leaf_storage_patch (bounds%begp:bounds%endp)
+    real(r8)                    :: seed_leaf_xfer_patch    (bounds%begp:bounds%endp)
+    real(r8)                    :: seed_deadstem_patch     (bounds%begp:bounds%endp)
+    real(r8)                    :: wood_product_flux       (bounds%begp:bounds%endp)
+    real(r8)                    :: deadstem_patch_temp     (bounds%begp:bounds%endp)
+
+    character(len=*), parameter :: subname = 'DynamicPatchAdjustments'
+    !-----------------------------------------------------------------------
+
+    begp = bounds%begp
+    endp = bounds%endp
+
+    SHR_ASSERT_ALL((ubound(dwt_leaf_seed           ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dwt_deadstem_seed       ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dwt_pool_seed           ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(conv_flux               ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dwt_froot_to_litter     ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dwt_livecroot_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dwt_deadcroot_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(prod10_flux             ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(prod100_flux            ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(crop_product_flux       ) == (/endp/)), errMsg(__FILE__, __LINE__))
+
+    if (present(pool_seed_patch)) then
+       SHR_ASSERT_ALL((ubound(pool_seed_patch       ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    endif
+   
+    old_weight_was_zero = patch_state_updater%old_weight_was_zero(bounds)
+    patch_grew          = patch_state_updater%patch_grew(bounds)
+
+    call ComputeSeedAmounts(bounds                                        , &
+         species                    = species_type                        , &
+         leaf_patch                 = this%leaf_patch(begp:endp)          , &
+         leaf_storage_patch         = this%leaf_storage_patch(begp:endp)  , &
+         leaf_xfer_patch            = this%leaf_xfer_patch(begp:endp)     , &
+
+         ! Calculations only needed for patches that grew:
+         compute_here_patch         = patch_grew(begp:endp)               , &
+
+         ! For patches that previously had zero area, ignore the current state for the
+         ! sake of computing leaf proportions:
+         ignore_current_state_patch = old_weight_was_zero(begp:endp)      , &
+
+         seed_leaf_patch            = seed_leaf_patch(begp:endp)          , &
+         seed_leaf_storage_patch    = seed_leaf_storage_patch(begp:endp)  , &
+         seed_leaf_xfer_patch       = seed_leaf_xfer_patch(begp:endp)     , &
+         seed_deadstem_patch        = seed_deadstem_patch(begp:endp)     , &
+         pool_seed_param            = pool_seed_param                     , &
+         pool_seed_patch            = pool_seed_patch(begp:endp))
+
+    ! 1) LEAF_PATCH
+    call patch_state_updater%update_patch_state(            &
+         bounds                                           , &
+         num_filterp_with_inactive                        , &
+         filterp_with_inactive                            , &
+         var               = this%leaf_patch   (begp:endp) , &
+         flux_out_grc_area = conv_flux       (begp:endp) , &
+         seed              = seed_leaf_patch (begp:endp) , &
+         seed_addition     = dwt_leaf_seed   (begp:endp))
+
+    ! 2) LEAF_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                    &
+         bounds                                                   , &
+         num_filterp_with_inactive                                , &
+         filterp_with_inactive                                    , &
+         var               = this%leaf_storage_patch   (begp:endp) , &
+         flux_out_grc_area = conv_flux               (begp:endp) , &
+         seed              = seed_leaf_storage_patch (begp:endp) , &
+         seed_addition     = dwt_leaf_seed           (begp:endp))
+
+    ! 3) LEAF_XFER_PATCH
+    call patch_state_updater%update_patch_state( &
+         bounds                                                        , &
+         num_filterp_with_inactive                                     , &
+         filterp_with_inactive                                         , &
+         var               = this%leaf_xfer_patch   (begp:endp), &
+         flux_out_grc_area = conv_flux            (begp:endp), &
+         seed              = seed_leaf_xfer_patch (begp:endp), &
+         seed_addition     = dwt_leaf_seed        (begp:endp))
+
+    ! 4) FROOTN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%froot_patch(begp:endp)             , &
+         flux_out_col_area = dwt_froot_to_litter(begp:endp))
+
+    ! 5) FROOTN_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%froot_storage_patch(begp:endp)     , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 6) FROOTN_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%froot_xfer_patch(begp:endp)        , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 7) LIVESTEMN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livestem_patch(begp:endp)          , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 8) LIVESTEMN_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livestem_storage_patch(begp:endp)  , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 9) LIVESTEMN_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livestem_xfer_patch(begp:endp)     , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 10) PROD10_FLUX
+    wood_product_flux(begp:endp)      = 0._r8
+    deadstem_patch_temp(begp:endp)    = this%deadstem_patch(begp:endp)
+    call patch_state_updater%update_patch_state_partition_flux_by_type(     &
+         bounds                                                           , &
+         num_filterp_with_inactive                                        , &
+         filterp_with_inactive                                            , &
+         flux1_fraction_by_pft_type = pprod10                             , &
+         var                        = deadstem_patch_temp    (begp:endp) , &
+         flux1_out                  = prod10_flux            (begp:endp) , &
+         flux2_out                  = wood_product_flux      (begp:endp) , &
+         seed                       = seed_deadstem_patch    (begp:endp) )
+
+    ! 11) PROD100_FLUX
+    wood_product_flux(begp:endp)      = 0._r8
+    deadstem_patch_temp(begp:endp)    = this%deadstem_patch(begp:endp)
+    call patch_state_updater%update_patch_state_partition_flux_by_type(     &
+         bounds                                                           , &
+         num_filterp_with_inactive                                        , &
+         filterp_with_inactive                                            , &
+         flux1_fraction_by_pft_type = pprod100                            , &
+         var                        = deadstem_patch_temp    (begp:endp) , &
+         flux1_out                  = prod100_flux           (begp:endp) , &
+         flux2_out                  = wood_product_flux      (begp:endp) , &
+         seed                       = seed_deadstem_patch    (begp:endp))
+
+    ! 12) DEADSTEM_PATCH
+    wood_product_flux(begp:endp)      = 0._r8
+    call patch_state_updater%update_patch_state_partition_flux_by_type(     &
+         bounds                                                           , &
+         num_filterp_with_inactive                                        , &
+         filterp_with_inactive                                            , &
+         flux1_fraction_by_pft_type = pconv                               , &
+         var                        = this%deadstem_patch   (begp:endp)    , &
+         flux1_out                  = conv_flux           (begp:endp)    , &
+         flux2_out                  = wood_product_flux   (begp:endp)    , &
+         seed                       = seed_deadstem_patch (begp:endp)    , &
+         seed_addition              = dwt_deadstem_seed   (begp:endp))
+
+    ! 13) DEADSTEM_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadstem_storage_patch(begp:endp)  , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 14) DEADSTEM_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadstem_xfer_patch(begp:endp)     , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 15) LIVECROOTN_PATCH 
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecroot_patch(begp:endp)         , &
+         flux_out_col_area = dwt_livecroot_to_litter(begp:endp))
+
+    ! 16) LIVECROOTN_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecroot_storage_patch(begp:endp) , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 17) LIVECROOTN_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%livecroot_xfer_patch(begp:endp)    , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 18) DEADCROOTN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcroot_patch(begp:endp)         , &
+         flux_out_col_area = dwt_deadcroot_to_litter(begp:endp))
+
+    ! 19) DEADCROOTN_STORAGE_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcroot_storage_patch(begp:endp) , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 20) DEADCROOT_XFER_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%deadcroot_xfer_patch(begp:endp)    , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 21) NTRUNC_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%veg_trunc_patch(begp:endp)             , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 22) CPOOL_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%pool_patch(begp:endp)              , &
+         flux_out_grc_area = conv_flux(begp:endp))
+
+    ! 23) DISPVEGN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%dispveg_patch(begp:endp))
+
+    ! 24) STORVEGN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%storveg_patch(begp:endp))
+
+    ! 25) TOTVEGN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%totveg_patch(begp:endp))
+
+    ! 26) TOTPFTN_PATCH
+    call patch_state_updater%update_patch_state(                      &
+         bounds                                                     , &
+         num_filterp_with_inactive                                  , &
+         filterp_with_inactive                                      , &
+         var               = this%totpft_patch(begp:endp))
+
+    ! 27) CROPSEED_DEFICIT
+    if (use_crop) then
+       ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
+       ! of the atmosphere.
+       call patch_state_updater%update_patch_state(         &
+            bounds                                        , &
+            num_filterp_with_inactive                     , &
+            filterp_with_inactive                         , &
+            var = this%cropseed_deficit_patch(begp:endp) , &
+            flux_out_grc_area = conv_flux(begp:endp))
+    end if
+
+    ! These fluxes are computed as negative quantities, but are expected to be positive,
+    ! so flip the signs
+    do p = begp,endp
+       dwt_froot_to_litter(p)     = -1._r8 * dwt_froot_to_litter(p)
+       dwt_livecroot_to_litter(p) = -1._r8 * dwt_livecroot_to_litter(p)
+       dwt_deadcroot_to_litter(p) = -1._r8 * dwt_deadcroot_to_litter(p)
+    end do
+
+  end subroutine NutrientStateDynamicPatchAdjustments
 
 end module NutrientStateType
