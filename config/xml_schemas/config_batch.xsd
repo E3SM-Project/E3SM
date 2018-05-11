@@ -17,6 +17,7 @@
   <xs:element name="batch_directive" type="xs:string"/>
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
+  <xs:element name="depend_allow_string" type="xs:string"/>
   <xs:element name="depend_separator" type="xs:string"/>
   <xs:element name="walltime_format" type="xs:string"/>
   <xs:element name="batch_mail_flag" type="xs:string"/>
@@ -71,6 +72,7 @@
   <!-- depend_string: How to indicate to batch system that this job should not run until
        a previous job has completed successfully -->
         <xs:element minOccurs="0" ref="depend_string"/>
+	<xs:element minOccurs="0" ref="depend_allow_string"/>
 
   <!-- depend_separator: How to separate multiple batch job dependencies -->
         <xs:element minOccurs="0" ref="depend_separator"/>

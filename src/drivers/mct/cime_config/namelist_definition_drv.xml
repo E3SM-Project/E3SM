@@ -442,6 +442,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
+      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -455,6 +456,7 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -468,6 +470,7 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
