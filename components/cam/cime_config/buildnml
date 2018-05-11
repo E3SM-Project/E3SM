@@ -133,7 +133,7 @@ def buildnml(case, caseroot, compname):
     else:
 
         # Verify that we have a config_cache file.
-        expect(os.path.exists(camconf_dir, "config_cache.xml"), "Missing cam cache file")
+        expect(os.path.exists(os.path.join(camconf_dir, "config_cache.xml")), "Missing cam cache file")
 
     #--------------------------------------------------------------------
     # Invoke cam build-namelist - output will go in $CASEBUILD/camconf
@@ -149,7 +149,7 @@ def buildnml(case, caseroot, compname):
         usecase = " "
 
     inst_string = ""
-    for inst_counter in xrange(1, ninst_atm + 1):
+    for inst_counter in range(1, ninst_atm + 1):
 
         # -----------------------------------------------------
         # determine instance string
