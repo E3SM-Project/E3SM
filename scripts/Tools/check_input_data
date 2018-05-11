@@ -5,9 +5,9 @@ Check (and optionally download) input data files.
 
 Should be run from case.
 
-Examples:
+Usage:
    ./check_input_data --download
-     Downloads required input data
+      Downloads required input data
 """
 from standard_script_setup import *
 from CIME.case import Case

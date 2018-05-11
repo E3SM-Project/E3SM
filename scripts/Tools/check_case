@@ -3,11 +3,14 @@
 """
 Script to verify that the case is ready for submission.
 
+Typical usage is simply:
+   ./check_case
+
 You can run this before running case.submit to:
-- Ensure that all of the env xml files are in sync with the locked files
-- Create namelists (thus verifying that there will be no problems with
-  namelist generation)
-- Ensure that the build is complete
+  - Ensure that all of the env xml files are in sync with the locked files
+  - Create namelists (thus verifying that there will be no problems with
+    namelist generation)
+  - Ensure that the build is complete
 
 Running this is completely optional: these checks will be done
 automatically when running case.submit. However, you can run this if you
