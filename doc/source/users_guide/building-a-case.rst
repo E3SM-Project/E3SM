@@ -138,7 +138,7 @@ The build process handles input data as follows:
 - If any of the required input data sets are not found locally, the files that are missing are listed. At this point, you must obtain the required data from the input data server with **check_input_data** as shown here:
   ::
 
-     check_input_data --export
+     check_input_data --download
 
 The **env_run.xml** variables ``$DIN_LOC_ROOT`` and ``$DIN_LOC_ROOT_CLMFORC`` determine where you should expect input data to reside on a local disk.
 

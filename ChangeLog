@@ -880,7 +880,7 @@ Brief Summary:
 User interface changes: 
     - (cesm only) create_test and query_testlist now have --supported-only flag
     - New allow_error attribute for module systems. 
-    - check_input_data replace --svn-loc with --server and --protocal
+    - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
@@ -1588,7 +1588,7 @@ Brief Summary:
 User interface changes: 
     - (cesm only) create_test and query_testlist now have --supported-only flag
     - New allow_error attribute for module systems. 
-    - check_input_data replace --svn-loc with --server and --protocal
+    - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 

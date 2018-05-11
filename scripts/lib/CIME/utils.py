@@ -357,7 +357,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         if logfile:
             expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
         else:
-            expect(False, "{} FAILED, see above")
+            expect(False, "{} FAILED, see above".format(fullcmd))
 
     # refresh case xml object from file
     if case is not None:
@@ -1627,11 +1627,11 @@ def _check_for_invalid_args(args):
                 sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
-    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+    parser.add_argument("--mail-user", help="Email to be used for batch notification.")
 
     parser.add_argument("-M", "--mail-type", action="append",
-                        help="when to send user email. Options are: never, all, begin, end, fail."
-                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+                        help="When to send user email. Options are: never, all, begin, end, fail.\n"
+                        "You can specify multiple types with either comma-separated args or multiple -M flags.")
 
 def resolve_mail_type_args(args):
     if args.mail_type is not None:
