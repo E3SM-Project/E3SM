@@ -27,6 +27,7 @@ module CNCarbonStateType
   use NutrientStateType      , only : nutrientstate_type, NutrientStateInitAllocate
   use NutrientStateType      , only : NutrientStateInitHistory
   use NutrientStateType      , only : NutrientStateDynamicPatchAdjustments
+  use NutrientStateType      , only : NutrientStateRestart
 
   ! bgc interface & pflotran
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
@@ -78,16 +79,13 @@ contains
     real(r8)               , intent(in)           :: ratio
     type(carbonstate_type) , intent(in), optional :: c12_carbonstate_vars
 
-    this%species = species_from_string(carbon_type)
-    this%name    = species_name_from_string(carbon_type)
+    this%species      = species_from_string(carbon_type)
+    this%name         = species_name_from_string(carbon_type)
+    this%restart_name = 'c'
 
     call this%InitAllocate ( bounds)
-    call this%InitHistory ( bounds, carbon_type)
-    if (present(c12_carbonstate_vars)) then
-       call this%InitCold  ( bounds, ratio, c12_carbonstate_vars)
-    else
-       call this%InitCold  ( bounds, ratio)
-    end if
+    call this%InitHistory  ( bounds, carbon_type)
+    call this%InitCold     ( bounds, ratio, c12_carbonstate_vars)
 
   end subroutine Init
 
@@ -518,161 +516,22 @@ contains
        end if
     end if
 
+    if (carbon_type == 'c12') call NutrientStateRestart(this, bounds, ncid, flag)
+
     if ( .not. use_fates ) then
-       
-       !--------------------------------
-       ! patch carbon state variables (c12)
-       !--------------------------------
-       
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='leafc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%leaf_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='leafc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%leaf_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='leafc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%leaf_xfer_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='frootc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%froot_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='frootc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%froot_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='frootc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%froot_xfer_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livestemc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livestem_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livestemc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livestem_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livestemc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livestem_xfer_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadstemc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadstem_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadstem_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadstemc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadstem_xfer_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livecrootc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livecroot_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livecrootc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livecroot_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='livecrootc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%livecroot_xfer_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadcrootc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadcroot_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_storage', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadcroot_storage_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_xfer', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%deadcroot_xfer_patch) 
-       end if
 
        if (carbon_type == 'c12') then
           call restartvar(ncid=ncid, flag=flag, varname='gresp_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_storage_patch) 
-       end if
 
-       if (carbon_type == 'c12') then
           call restartvar(ncid=ncid, flag=flag, varname='gresp_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_xfer_patch) 
-       end if
 
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='cpool', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%pool_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
           call restartvar(ncid=ncid, flag=flag, varname='xsmrpool', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%xsmrpool_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='pft_ctrunc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%veg_trunc_patch) 
-       end if
-
-       if (carbon_type == 'c12') then
-          call restartvar(ncid=ncid, flag=flag, varname='totvegc', xtype=ncd_double,  &
-               dim1name='pft', long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%totveg_patch) 
-       end if
-
-       if (carbon_type == 'c12' .and. use_cndv) then
-          call restartvar(ncid=ncid, flag=flag, varname='leafcmax', xtype=ncd_double,  &
-               dim1name='pft', &
-               long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=this%leafcmax_patch)
        end if
 
        !--------------------------------
@@ -680,9 +539,6 @@ contains
        !--------------------------------
 
        if ( carbon_type == 'c13')  then
-          if (.not. present(c12_carbonstate_vars)) then
-             call endrun(msg=' ERROR: for C13 must pass in c12_carbonstate_vars as argument' // errMsg(__FILE__, __LINE__))
-          end if
 
           if ( .not. is_restart() .and. get_nstep() == 1 ) then
              c3_del13c = -28._r8
@@ -1448,129 +1304,8 @@ contains
           end if
        endif
 
-       !--------------------------------
-       ! patch prognostic crop variables
-       !--------------------------------
-
-       if (crop_prog) then
-          if (carbon_type == 'c12') then
-             call restartvar(ncid=ncid, flag=flag,  varname='grainc', xtype=ncd_double,  &
-                  dim1name='pft', long_name='grain C', units='gC/m2', &
-                  interpinic_flag='interp', readvar=readvar, data=this%grain_patch)
-
-             call restartvar(ncid=ncid, flag=flag,  varname='grainc_storage', xtype=ncd_double,  &
-                  dim1name='pft', long_name='grain C storage', units='gC/m2', &
-                  interpinic_flag='interp', readvar=readvar, data=this%grain_storage_patch)
-
-             call restartvar(ncid=ncid, flag=flag,  varname='grainc_xfer', xtype=ncd_double,  &
-                  dim1name='pft', long_name='grain C transfer', units='gC/m2', &
-                  interpinic_flag='interp', readvar=readvar, data=this%grain_xfer_patch)
-
-             call restartvar(ncid=ncid, flag=flag, varname='cropseedc_deficit', xtype=ncd_double,  &
-                  dim1name='pft', long_name='pool for seeding new crop growth', units='gC/m2', &
-                  interpinic_flag='interp', readvar=readvar, data=this%cropseed_deficit_patch)
-          end if
-
-       end if
-
     endif  ! .not. use_fates
     
-    !--------------------------------
-    ! column carbon state variables
-    !--------------------------------
-
-    if (carbon_type == 'c12') then
-       do k = 1, ndecomp_pools
-          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c'
-          if (use_vertsoilc) then
-             ptr2d => this%decomp_pools_vr_col(:,:,k)
-             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
-                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
-                  long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
-          else
-             ptr1d => this%decomp_pools_vr_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
-             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-                  dim1name='column', long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          end if
-          if (flag=='read' .and. .not. readvar) then
-             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-                  errMsg(__FILE__, __LINE__))
-          end if
-       end do
-    end if
-    if(is_active_betr_bgc)then
-      if (carbon_type == 'c12') then
-        call restartvar(ncid=ncid, flag=flag, varname='totblgc', xtype=ncd_double,  &
-           dim1name='column', long_name='', units='', &
-           interpinic_flag='interp', readvar=readvar, data=this%totblg_col)
-
-        call restartvar(ncid=ncid, flag=flag, varname='cwdc', xtype=ncd_double,  &
-           dim1name='column', long_name='', units='', &
-           interpinic_flag='interp', readvar=readvar, data=this%cwd_col)
-      endif
-    endif
-    if (carbon_type == 'c12') then
-       if (use_vertsoilc) then
-          ptr2d => this%soil_trunc_vr_col
-          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &
-               dim1name='column', dim2name='levgrnd', switchdim=.true., &
-               long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d)
-       else
-          ptr1d => this%soil_trunc_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
-          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc', xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       end if
-       if (flag=='read' .and. .not. readvar) then
-          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='seedc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%seed_col) 
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='totlitc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlit_col) 
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='totcolc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totcol_col) 
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='prod10c', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod10_col) 
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='prod100c', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod100_col) 
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='prod1c', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod1_col)
-    end if
-
-    if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='totsomc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totsom_col) 
-    end if
 
     !--------------------------------
     ! C13 column carbon state variables

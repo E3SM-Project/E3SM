@@ -27,6 +27,7 @@ module CNNitrogenStateType
   use NutrientStateType      , only : nutrientstate_type, NutrientStateInitAllocate
   use NutrientStateType      , only : NutrientStateInitHistory
   use NutrientStateType      , only : NutrientStateDynamicPatchAdjustments
+  use NutrientStateType      , only : NutrientStateRestart
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
   ! 
   ! !PUBLIC TYPES:
@@ -140,8 +141,9 @@ contains
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
     real(r8)          , intent(in)    :: decomp_pools_1m_col (bounds%begc:, 1:)
 
-    this%species = species_from_string('n')
-    this%name    = species_name_from_string('n')
+    this%species      = species_from_string('n')
+    this%name         = species_name_from_string('n')
+    this%restart_name = 'n'
 
     call this%InitAllocate (bounds )
 
@@ -618,110 +620,20 @@ contains
     ! patch nitrogen state variables
     !--------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='leafn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leaf_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='leafn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leaf_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='leafn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leaf_xfer_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='frootn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%froot_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='frootn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%froot_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='frootn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%froot_xfer_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livestemn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestem_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livestemn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestem_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livestemn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestem_xfer_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadstemn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstem_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadstemn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstem_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadstemn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstem_xfer_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livecrootn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecroot_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livecrootn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecroot_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='livecrootn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecroot_xfer_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadcrootn', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadcrootn_storage', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_storage_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='deadcrootn_xfer', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcroot_xfer_patch) 
+    call NutrientStateRestart(this, bounds, ncid, flag)
 
     call restartvar(ncid=ncid, flag=flag, varname='retransn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%retransn_patch) 
 
-    call restartvar(ncid=ncid, flag=flag, varname='npool', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%pool_patch) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='pft_ntrunc', xtype=ncd_double,  &
-         dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%veg_trunc_patch) 
-
-    if (crop_prog) then
-       call restartvar(ncid=ncid, flag=flag,  varname='grainn', xtype=ncd_double,  &
-            dim1name='pft',    long_name='grain N', units='gN/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grain_patch)
-
-       call restartvar(ncid=ncid, flag=flag,  varname='grainn_storage', xtype=ncd_double,  &
-            dim1name='pft',    long_name='grain N storage', units='gN/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grain_storage_patch)
-
-       call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer', xtype=ncd_double,  &
-            dim1name='pft',    long_name='grain N transfer', units='gN/m2', &
-            interpinic_flag='interp', readvar=readvar, data=this%grain_xfer_patch)
-    end if
-    
     call restartvar(ncid=ncid, flag=flag,  varname='npimbalance_patch', xtype=ncd_double,  &
         dim1name='pft',    long_name='npimbalance_patch', units='-', &
         interpinic_flag='interp', readvar=readvar, data=this%npimbalance_patch)
-     call restartvar(ncid=ncid, flag=flag,  varname='pnup_pfrootc_patch', xtype=ncd_double,  &
+
+    call restartvar(ncid=ncid, flag=flag,  varname='pnup_pfrootc_patch', xtype=ncd_double,  &
         dim1name='pft',    long_name='pnup_pfrootc_patch', units='-', &
         interpinic_flag='interp', readvar=readvar, data=this%pnup_pfrootc_patch)
+
     call restartvar(ncid=ncid, flag=flag,  varname='benefit_pgpp_pleafc_patch', xtype=ncd_double,  &
         dim1name='pft',    long_name='benefit_pgpp_pleafc_patch', units='-', &
         interpinic_flag='interp', readvar=readvar, data=this%benefit_pgpp_pleafc_patch)
@@ -744,45 +656,10 @@ contains
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
+
     if (flag=='read' .and. .not. readvar) then
        call endrun(msg='ERROR::'//trim(varname)//' is required on an initialization dataset'//&
             errMsg(__FILE__, __LINE__))
-    end if
-
-    ! decomposing N pools
-    do k = 1, ndecomp_pools
-       varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'n'
-       if (use_vertsoilc) then
-          ptr2d => this%decomp_pools_vr_col(:,:,k)
-          call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
-               dim1name='column', dim2name='levgrnd', switchdim=.true., &
-               long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
-       else
-          ptr1d => this%decomp_pools_vr_col(:,1,k)
-          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-               dim1name='column', &
-               long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       end if
-       if (flag=='read' .and. .not. readvar) then
-          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end do
-
-    if (use_vertsoilc) then
-       ptr2d => this%soil_trunc_vr_col
-       call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc_vr", xtype=ncd_double,  &
-            dim1name='column', dim2name='levgrnd', switchdim=.true., &
-            long_name='',  units='', fill_value=spval, &
-            interpinic_flag='interp', readvar=readvar, data=ptr2d)
-    else
-       ptr1d => this%soil_trunc_vr_col(:,1)
-       call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc", xtype=ncd_double,  &
-            dim1name='column', &
-            long_name='',  units='', fill_value=spval, &
-            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
     if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
@@ -857,27 +734,7 @@ contains
        end do
     end do
 
-    call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totcol_col) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='seedn', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%seed_col) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='prod10n', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod10_col) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='prod100n', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod100_col) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='prod1n', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod1_col)
-
-    ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
+    ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used
     ! matches what the restart file was generated with.  
     ! add info about the SOM decomposition cascade
 
