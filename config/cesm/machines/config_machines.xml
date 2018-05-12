@@ -342,11 +342,11 @@
         <command name="load">openblas/0.2.14</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
-	<command name="load">mpt/2.15f</command>
+	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.4.1.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.15f</command>
+	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.5.0</command>
 	<command name="load">pnetcdf/1.9.0</command>
       </modules>
