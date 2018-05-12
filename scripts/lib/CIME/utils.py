@@ -1624,7 +1624,7 @@ def _check_for_invalid_args(args):
             if " " in arg or arg.startswith("--"):
                 continue
             if arg.startswith("-") and len(arg) > 2:
-                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+                sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
     parser.add_argument("--mail-user", help="Email to be used for batch notification.")
