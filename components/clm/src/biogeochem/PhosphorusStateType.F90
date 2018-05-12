@@ -30,6 +30,8 @@ module PhosphorusStateType
   use NutrientStateType      , only : NutrientStateInitHistory
   use NutrientStateType      , only : NutrientStateDynamicPatchAdjustments
   use NutrientStateType      , only : NutrientStateRestart
+  use NutrientStateType      , only : NutrientStatePatchSummary
+  use NutrientStateType      , only : NutrientStateColumnSummary
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
   !
   ! !PUBLIC TYPES:
@@ -984,307 +986,131 @@ contains
     real(r8) :: cropseedp_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
+    call NutrientStatePatchSummary( this, bounds, num_soilp, filter_soilp)
+    call NutrientStateColumnSummary(this, bounds, num_soilc, filter_soilc)
+
+    ! add phosphorus-specific pools to patch-level variables
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
-       ! displayed vegetation phosphorus, excluding storage (DISPVEGN)
-       this%dispveg_patch(p) = &
-            this%leaf_patch(p)      + &
-            this%froot_patch(p)     + &
-            this%livestem_patch(p)  + &
-            this%deadstem_patch(p)  + &
-            this%livecroot_patch(p) + &
-            this%deadcroot_patch(p)
-       
-      ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
-      this%storveg_patch(p) = &
-           this%leaf_storage_patch(p)      + &
-           this%froot_storage_patch(p)     + &
-           this%livestem_storage_patch(p)  + &
-           this%deadstem_storage_patch(p)  + &
-           this%livecroot_storage_patch(p) + &
-           this%deadcroot_storage_patch(p) + &
-           this%leaf_xfer_patch(p)         + &
-           this%froot_xfer_patch(p)        + &
-           this%livestem_xfer_patch(p)     + &
-           this%deadstem_xfer_patch(p)     + &
-           this%livecroot_xfer_patch(p)    + &
-           this%deadcroot_xfer_patch(p)    + &
-           this%pool_patch(p)              + &
-           this%retransp_patch(p)
+       ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
+       this%storveg_patch(p) = &
+            this%storveg_patch(p) + &
+            this%retransp_patch(p)
 
-      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
-         this%dispveg_patch(p) = &
-              this%dispveg_patch(p) + &
-              this%grain_patch(p)
+       ! total vegetation phosphorus (TOTVEGN)
+       this%totveg_patch(p) = &
+            this%dispveg_patch(p) + &
+            this%storveg_patch(p)
 
-         this%storveg_patch(p) = &
-              this%storveg_patch(p) + &
-              this%grain_storage_patch(p)     + &
-              this%grain_xfer_patch(p)
-      end if
+       ! total pft-level carbon (add pft_ntrunc)
+       this%totpft_patch(p) = &
+            this%totveg_patch(p) + &
+            this%veg_trunc_patch(p)
 
-      ! total vegetation phosphorus (TOTVEGN)
-      this%totveg_patch(p) = &
-           this%dispveg_patch(p) + &
-           this%storveg_patch(p)
+    end do
 
-      ! total pft-level carbon (add pft_ntrunc)
-      this%totpft_patch(p) = &
-           this%totveg_patch(p) + &
-           this%veg_trunc_patch(p)
+    ! aggregate patch-level state variables to column-level
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%totveg_patch(bounds%begp:bounds%endp), &
+         this%totveg_col(bounds%begc:bounds%endc))
 
-   end do
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%totpft_patch(bounds%begp:bounds%endp), &
+         this%totpft_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%totveg_patch(bounds%begp:bounds%endp), &
-        this%totveg_col(bounds%begc:bounds%endc))
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%cropseed_deficit_patch(bounds%begp:bounds%endp), &
+         cropseedp_deficit_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%totpft_patch(bounds%begp:bounds%endp), &
-        this%totpft_col(bounds%begc:bounds%endc))
+    ! vertically integrate soil mineral P pools
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%solutionp_col(c) = 0._r8
+       this%labilep_col(c)   = 0._r8
+       this%secondp_col(c)   = 0._r8
+       this%occlp_col(c)     = 0._r8
+       this%primp_col(c)     = 0._r8
+    end do
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseed_deficit_patch(bounds%begp:bounds%endp), &
-        cropseedp_deficit_col(bounds%begc:bounds%endc))
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%solutionp_col(c) = &
+               this%solutionp_col(c) + &
+               this%solutionp_vr_col(c,j) * dzsoi_decomp(j)
+          this%labilep_col(c) = &
+               this%labilep_col(c) + &
+               this%labilep_vr_col(c,j) * dzsoi_decomp(j)
+          this%secondp_col(c) = &
+               this%secondp_col(c) + &
+               this%secondp_vr_col(c,j) * dzsoi_decomp(j)
+          this%occlp_col(c) = &
+               this%occlp_col(c) + &
+               this%occlp_vr_col(c,j) * dzsoi_decomp(j)
+          this%primp_col(c) = &
+               this%primp_col(c) + &
+               this%primp_vr_col(c,j) * dzsoi_decomp(j)
+       end do
+    end do
 
-   ! vertically integrate soil mineral P pools
+    ! total sminp
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%sminp_col(c)      = 0._r8
+    end do
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%sminp_vr_col(c,j) = this%solutionp_vr_col(c,j)+ &
+               this%labilep_vr_col(c,j)+ &
+               this%secondp_vr_col(c,j)
+       end do
+    end do
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%sminp_col(c) =  this%sminp_col(c) + &
+               this%sminp_vr_col(c,j) * dzsoi_decomp(j)
+       end do
+    end do
 
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%solutionp_col(c) =0._r8
-      this%labilep_col(c)   =0._r8
-      this%secondp_col(c)   =0._r8
-      this%occlp_col(c)     =0._r8
-      this%primp_col(c)     =0._r8
-   end do
+    ! column-level summary
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
 
+       ! total wood product phosphorus
+       this%totprod_col(c) = &
+            this%prod1_col(c)  + &
+            this%prod10_col(c) + &
+            this%prod100_col(c)	 
 
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%solutionp_col(c) = &
-              this%solutionp_col(c) + &
-              this%solutionp_vr_col(c,j) * dzsoi_decomp(j)
-         this%labilep_col(c) = &
-              this%labilep_col(c) + &
-              this%labilep_vr_col(c,j) * dzsoi_decomp(j)
-         this%secondp_col(c) = &
-              this%secondp_col(c) + &
-              this%secondp_vr_col(c,j) * dzsoi_decomp(j)
-         this%occlp_col(c) = &
-              this%occlp_col(c) + &
-              this%occlp_vr_col(c,j) * dzsoi_decomp(j)
-         this%primp_col(c) = &
-              this%primp_col(c) + &
-              this%primp_vr_col(c,j) * dzsoi_decomp(j)
-      end do 
-   end do
+       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
+       this%totecosys_col(c) = &
+            this%cwd_col(c)       + &
+            this%totlit_col(c)    + &
+            this%totsom_col(c)    + &
+            this%solutionp_col(c) + &
+            this%labilep_col(c)   + &
+            this%secondp_col(c)   + &
+            this%primp_col(c)     + &
+            this%occlp_col(c)     + &
+            this%totprod_col(c)   + &
+            this%totveg_col(c)
 
-
-   ! vertically integrate each of the decomposing P pools
-   do l = 1, ndecomp_pools
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%decomp_pools_col(c,l) = 0._r8
-      end do
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%decomp_pools_col(c,l) = &
-                 this%decomp_pools_col(c,l) + &
-                 this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
-         end do
-      end do
-   end do
-
-   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
-   if ( nlevdecomp > 1) then
-
-      do l = 1, ndecomp_pools
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%decomp_pools_1m_col(c,l) = 0._r8
-         end do
-      end do
-
-      ! vertically integrate each of the decomposing n pools to 1 meter
-      maxdepth = 1._r8
-      do l = 1, ndecomp_pools
-         do j = 1, nlevdecomp
-            if ( zisoi(j) <= maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_pools_1m_col(c,l) = &
-                       this%decomp_pools_1m_col(c,l) + &
-                       this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
-               end do
-            elseif ( zisoi(j-1) < maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_pools_1m_col(c,l) = &
-                       this%decomp_pools_1m_col(c,l) + &
-                       this%decomp_pools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
-               end do
-            endif
-         end do
-      end do
-      
-      ! total litter phosphorus to 1 meter (TOTLITN_1m)
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%totlit_1m_col(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-         if ( decomp_cascade_con%is_litter(l) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               this%totlit_1m_col(c) = &
-                    this%totlit_1m_col(c) + &
-                    this%decomp_pools_1m_col(c,l)
-            end do
-         end if
-      end do
-      
-      ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%totsom_1m_col(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-         if ( decomp_cascade_con%is_soil(l) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               this%totsom_1m_col(c) = &
-                    this%totsom_1m_col(c) + &
-                    this%decomp_pools_1m_col(c,l)
-            end do
-         end if
-      end do
-      
-   endif
-   
-   ! total litter phosphorus (TOTLITN)
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%totlit_col(c)    = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_litter(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%totlit_col(c) = &
-                 this%totlit_col(c) + &
-                 this%decomp_pools_col(c,l)
-         end do
-      end if
-   end do
-   
-   ! total soil organic matter phosphorus (TOTSOMN)
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%totsom_col(c)    = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_soil(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%totsom_col(c) = &
-                 this%totsom_col(c) + &
-                 this%decomp_pools_col(c,l)
-         end do
-      end if
-   end do
-   
-   ! total cwdn
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%cwd_col(c) = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_cwd(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%cwd_col(c) = &
-                 this%cwd_col(c) + &
-                 this%decomp_pools_col(c,l)
-         end do
-      end if
-   end do
-
-   ! total sminp
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%sminp_col(c)      = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp_vr_col(c,j) = this%solutionp_vr_col(c,j)+ &
-                                  this%labilep_vr_col(c,j)+ &
-                                  this%secondp_vr_col(c,j)
-!                                  this%occlp_vr_col(c,j)+ &
-!                                  this%primp_vr_col(c,j)
-      end do
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp_col(c) =  this%sminp_col(c) + &
-         this%sminp_vr_col(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-
-   ! total col_ntrunc
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%veg_trunc_col(c) = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%veg_trunc_col(c) = &
-              this%veg_trunc_col(c) + &
-              this%soil_trunc_vr_col(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-
-      ! total wood product phosphorus
-      this%totprod_col(c) = &
-           this%prod1_col(c) + &
-           this%prod10_col(c) + &
-           this%prod100_col(c)	 
-
-      ! total ecosystem phosphorus, including veg (TOTECOSYSP)
-      this%totecosys_col(c) = &
-           this%cwd_col(c) + &
-           this%totlit_col(c) + &
-           this%totsom_col(c) + &
-           this%solutionp_col(c) + &
-           this%labilep_col(c) + &
-           this%secondp_col(c) + &
-           this%primp_col(c) + &
-           this%occlp_col(c) + &
-           this%totprod_col(c) + &
-           this%totveg_col(c)
-
-      ! total column phosphorus, including pft (TOTCOLP)
-      this%totcol_col(c) = &
-           this%totpft_col(c) + &
-           this%cwd_col(c) + &
-           this%totlit_col(c) + &
-           this%totsom_col(c) + &
-           this%prod1_col(c) + &
-           this%solutionp_col(c) + &
-           this%labilep_col(c) + &
-           this%secondp_col(c) + &
-           this%veg_trunc_col(c) + &
-           cropseedp_deficit_col(c)
-   end do
+       ! total column phosphorus, including pft (TOTCOLP)
+       this%totcol_col(c) = &
+            this%totpft_col(c)    + &
+            this%cwd_col(c)       + &
+            this%totlit_col(c)    + &
+            this%totsom_col(c)    + &
+            this%prod1_col(c)     + &
+            this%solutionp_col(c) + &
+            this%labilep_col(c)   + &
+            this%secondp_col(c)   + &
+            this%veg_trunc_col(c) + &
+            cropseedp_deficit_col(c)
+    end do
 
  end subroutine Summary
 

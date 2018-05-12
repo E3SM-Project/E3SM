@@ -24,10 +24,12 @@ module CNCarbonStateType
   use VegetationType         , only : veg_pp
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
-  use NutrientStateType      , only : nutrientstate_type, NutrientStateInitAllocate
-  use NutrientStateType      , only : NutrientStateInitHistory
+  use NutrientStateType      , only : nutrientstate_type
+  use NutrientStateType      , only : NutrientStateInitHistory, NutrientStateInitAllocate
   use NutrientStateType      , only : NutrientStateDynamicPatchAdjustments
   use NutrientStateType      , only : NutrientStateRestart
+  use NutrientStateType      , only : NutrientStatePatchSummary
+  use NutrientStateType      , only : NutrientStateColumnSummary
 
   ! bgc interface & pflotran
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
@@ -1805,80 +1807,39 @@ contains
 
     if (use_fates) return
 
+    call NutrientStatePatchSummary( this, bounds, num_soilp, filter_soilp)
+    call NutrientStateColumnSummary(this, bounds, num_soilc, filter_soilc)
+
+    ! add carbon-specific pools to patch-level variables
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
-       ! displayed vegetation carbon, excluding storage and cpool (DISPVEGC)
-       this%dispveg_patch(p) =        &
-            this%leaf_patch(p)      + &
-            this%froot_patch(p)     + &
-            this%livestem_patch(p)  + &
-            this%deadstem_patch(p)  + &
-            this%livecroot_patch(p) + &
-            this%deadcroot_patch(p)
-
        ! stored vegetation carbon, excluding cpool (STORVEGC)
-       this%storveg_patch(p) =                &
-            this%pool_patch(p)              + &
-            this%leaf_storage_patch(p)      + &
-            this%froot_storage_patch(p)     + &
-            this%livestem_storage_patch(p)  + &
-            this%deadstem_storage_patch(p)  + &
-            this%livecroot_storage_patch(p) + &
-            this%deadcroot_storage_patch(p) + &
-            this%leaf_xfer_patch(p)         + &
-            this%froot_xfer_patch(p)        + &
-            this%livestem_xfer_patch(p)     + &
-            this%deadstem_xfer_patch(p)     + &
-            this%livecroot_xfer_patch(p)    + &
-            this%deadcroot_xfer_patch(p)    + &
-            this%gresp_storage_patch(p)      + &
+       this%storveg_patch(p) =          &
+            this%storveg_patch(p)       + &
+            this%gresp_storage_patch(p) + &
             this%gresp_xfer_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
-          this%storveg_patch(p) =            &
-               this%storveg_patch(p)       + &
-               this%grain_storage_patch(p) + &
-               this%grain_xfer_patch(p)
-
-          this%dispveg_patch(p) =            &
-               this%dispveg_patch(p)       + &
-               this%grain_patch(p)
-       end if
-
        ! total vegetation carbon, excluding cpool (TOTVEGC)
-       this%totveg_patch(p) = &
+       this%totveg_patch(p) =       &
             this%dispveg_patch(p) + &
             this%storveg_patch(p)
 
        ! total pft-level carbon, including xsmrpool, ctrunc
-       this%totpft_patch(p) = &
-            this%totveg_patch(p) + &
+       this%totpft_patch(p) =        &
+            this%totveg_patch(p)   + &
             this%xsmrpool_patch(p) + &
             this%veg_trunc_patch(p)
 
-       ! (WOODC) - wood C
+       ! wood C
        this%woodc_patch(p) = &
             this%deadstem_patch(p)    + &
             this%livestem_patch(p)    + &
             this%deadcroot_patch(p)   + &
             this%livecroot_patch(p)
-
-       this%totveg_abg_patch(p) = &
-               this%leaf_patch(p)              + &
-               this%leaf_storage_patch(p)      + &
-               this%leaf_xfer_patch(p)         + &
-               this%livestem_patch(p)          + &
-               this%livestem_storage_patch(p)  + &
-               this%livestem_xfer_patch(p)     + &
-               this%deadstem_patch(p)          + &
-               this%deadstem_storage_patch(p)  + &
-               this%deadstem_xfer_patch(p)
-
-
     end do
 
-
+    ! aggregate patch-level state variables to column-level
     call p2c(bounds, num_soilc, filter_soilc, &
          this%totpft_patch(bounds%begp:bounds%endp), &
          this%totpft_col(bounds%begc:bounds%endc))
@@ -1896,156 +1857,6 @@ contains
          cropseedc_deficit_col(bounds%begc:bounds%endc))
 
     ! column level summary
-
-     nlev = nlevdecomp
-     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
-
-
-      ! vertically integrate each of the decomposing C pools
-      do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%decomp_pools_col(c,l) = 0._r8
-       end do
-      end do
-      do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_pools_col(c,l) = &
-                  this%decomp_pools_col(c,l) + &
-                  this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-      end do
-
-      if ( nlevdecomp > 1) then
-
-       ! vertically integrate each of the decomposing C pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_pools_1m_col(c,l) = 0._r8
-          end do
-       end do
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_pools_1m_col(c,l) = &
-                        this%decomp_pools_1m_col(c,l) + &
-                        this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_pools_1m_col(c,l) = &
-                        this%decomp_pools_1m_col(c,l) + &
-                        this%decomp_pools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
-       end do
-
-       ! total litter carbon in the top meter (TOTLITC_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%totlit_1m_col(c)         = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%totlit_1m_col(c) = &
-                     this%totlit_1m_col(c) + &
-                     this%decomp_pools_1m_col(c,l)
-             end do
-          endif
-       end do
-
-       ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%totsom_1m_col(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_soil(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%totsom_1m_col(c) = &
-                     this%totsom_1m_col(c) + &
-                     this%decomp_pools_1m_col(c,l)
-             end do
-          end if
-       end do
-
-      endif
-    
-      ! total litter carbon (TOTLITC)
-      do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%totlit_col(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_litter(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%totlit_col(c) = &
-                  this%totlit_col(c) + &
-                  this%decomp_pools_col(c,l)
-          end do
-       endif
-      end do
-
-      ! total soil organic matter carbon (TOTSOMC)
-      do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%totsom_col(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_soil(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%totsom_col(c) = &
-                  this%totsom_col(c) + &
-                  this%decomp_pools_col(c,l)
-          end do
-       end if
-      end do
-
-
-      ! coarse woody debris carbon
-      do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%cwd_col(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_cwd(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%cwd_col(c) = &
-                  this%cwd_col(c) + &
-                  this%decomp_pools_col(c,l)
-          end do
-       end if
-      end do
-
-    ! truncation carbon
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%veg_trunc_col(c) = 0._r8
-    end do
-    do j = 1, nlev
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%veg_trunc_col(c) = &
-               this%veg_trunc_col(c) + &
-               this%soil_trunc_vr_col(c,j) * dzsoi_decomp(j)
-       end do
-    end do
-
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
@@ -2073,7 +1884,7 @@ contains
             this%prod1_col(c)   + &
             this%veg_trunc_col(c)   + &
             cropseedc_deficit_col(c)
-            
+
        this%totabg_col(c) = &
             this%totpft_col(c)  + &
             this%totprod_col(c) + &

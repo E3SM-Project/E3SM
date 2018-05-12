@@ -12,6 +12,8 @@ module NutrientStateType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use abortutils             , only : endrun
+  use VegetationType         , only : veg_pp
+  use pftvarcon              , only : npcropmin
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -104,7 +106,9 @@ module NutrientStateType
   public :: NutrientStateInitAllocate, &
             NutrientStateInitHistory, &
             NutrientStateDynamicPatchAdjustments, &
-            NutrientStateRestart
+            NutrientStateRestart, &
+            NutrientStatePatchSummary, &
+            NutrientStateColumnSummary
 
 contains
 
@@ -1047,5 +1051,249 @@ contains
          interpinic_flag='interp', readvar=readvar, data=this%totsom_col)
 
   end subroutine NutrientStateRestart
+
+  !-----------------------------------------------------------------------
+  subroutine NutrientStatePatchSummary(this, bounds, num_soilp, filter_soilp)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch-level summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only: iulog
+    use clm_time_manager , only: get_step_size
+    use clm_varcon       , only: secspday
+    use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
+    !
+    ! !ARGUMENTS:
+    class(nutrientstate_type)              :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p, fp
+    !-----------------------------------------------------------------------
+
+    ! calculate patch -level summary of carbon state
+
+    if (use_fates) return
+
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+
+       ! displayed vegetation pools
+       this%dispveg_patch(p) =        &
+            this%leaf_patch(p)      + &
+            this%froot_patch(p)     + &
+            this%livestem_patch(p)  + &
+            this%deadstem_patch(p)  + &
+            this%livecroot_patch(p) + &
+            this%deadcroot_patch(p)
+
+       ! stored vegetation pools
+       this%storveg_patch(p) =                &
+            this%pool_patch(p)              + &
+            this%leaf_storage_patch(p)      + &
+            this%froot_storage_patch(p)     + &
+            this%livestem_storage_patch(p)  + &
+            this%deadstem_storage_patch(p)  + &
+            this%livecroot_storage_patch(p) + &
+            this%deadcroot_storage_patch(p) + &
+            this%leaf_xfer_patch(p)         + &
+            this%froot_xfer_patch(p)        + &
+            this%livestem_xfer_patch(p)     + &
+            this%deadstem_xfer_patch(p)     + &
+            this%livecroot_xfer_patch(p)    + &
+            this%deadcroot_xfer_patch(p)
+
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+          this%storveg_patch(p) =            &
+               this%storveg_patch(p)       + &
+               this%grain_storage_patch(p) + &
+               this%grain_xfer_patch(p)
+
+          this%dispveg_patch(p) =            &
+               this%dispveg_patch(p)       + &
+               this%grain_patch(p)
+       end if
+
+       this%totveg_abg_patch(p) = &
+               this%leaf_patch(p)              + &
+               this%leaf_storage_patch(p)      + &
+               this%leaf_xfer_patch(p)         + &
+               this%livestem_patch(p)          + &
+               this%livestem_storage_patch(p)  + &
+               this%livestem_xfer_patch(p)     + &
+               this%deadstem_patch(p)          + &
+               this%deadstem_storage_patch(p)  + &
+               this%deadstem_xfer_patch(p)
+
+    end do
+
+  end subroutine NutrientStatePatchSummary
+
+  !-----------------------------------------------------------------------
+  subroutine NutrientStateColumnSummary(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only: iulog
+    use clm_time_manager , only: get_step_size
+    use clm_varcon       , only: secspday
+    use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use clm_varcon       , only: dzsoi_decomp, zisoi, zsoi
+    use clm_varctl       , only: use_pflotran, pf_cmode
+    !
+    ! !ARGUMENTS:
+    class(nutrientstate_type)      :: this
+    type(bounds_type) , intent(in) :: bounds
+    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer                        :: c,p,j,k,l       ! indices
+    integer                        :: fp,fc           ! lake filter indices
+    real(r8)                       :: maxdepth        ! depth to integrate soil variables
+    integer                        :: nlev
+    !-----------------------------------------------------------------------
+
+    ! calculate patch -level summary of carbon state
+
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+    ! initialize
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_pools_col(c,l) = 0._r8
+       end do
+    end do
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlit_col(c)    = 0._r8
+       this%totsom_col(c)    = 0._r8
+       this%cwd_col(c)       = 0._r8
+       this%veg_trunc_col(c) = 0._r8
+    end do
+
+    ! vertically integrate each of the decomposing pools
+    do l = 1, ndecomp_pools
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_pools_col(c,l) = &
+                  this%decomp_pools_col(c,l) + &
+                  this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
+    if ( nlevdecomp > 1) then
+
+       ! vertically integrate each of the decomposing pools to 1 meter
+       maxdepth = 1._r8
+       do l = 1, ndecomp_pools
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_pools_1m_col(c,l) = 0._r8
+          end do
+       end do
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             if ( zisoi(j) <= maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_pools_1m_col(c,l) = &
+                        this%decomp_pools_1m_col(c,l) + &
+                        this%decomp_pools_vr_col(c,j,l) * dzsoi_decomp(j)
+                end do
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_pools_1m_col(c,l) = &
+                        this%decomp_pools_1m_col(c,l) + &
+                        this%decomp_pools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
+                end do
+             endif
+          end do
+       end do
+
+       ! total litter in the top 1 meter
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totlit_1m_col(c) = 0._r8
+          this%totsom_1m_col(c) = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totlit_1m_col(c) = &
+                     this%totlit_1m_col(c) + &
+                     this%decomp_pools_1m_col(c,l)
+             end do
+          endif
+       end do
+
+       ! total soil organic matter in the top 1 meter
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totsom_1m_col(c) = &
+                     this%totsom_1m_col(c) + &
+                     this%decomp_pools_1m_col(c,l)
+             end do
+          end if
+       end do
+
+    endif
+
+    do l = 1, ndecomp_pools
+       ! total litter
+       if ( decomp_cascade_con%is_litter(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totlit_col(c) = &
+                  this%totlit_col(c) + &
+                  this%decomp_pools_col(c,l)
+          end do
+       endif
+
+       ! total soil organic matter
+       if ( decomp_cascade_con%is_soil(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totsom_col(c) = &
+                  this%totsom_col(c) + &
+                  this%decomp_pools_col(c,l)
+          end do
+       end if
+
+       ! coarse woody debris
+       if ( decomp_cascade_con%is_cwd(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%cwd_col(c) = &
+                  this%cwd_col(c) + &
+                  this%decomp_pools_col(c,l)
+          end do
+       end if
+    end do
+
+    ! truncation
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%veg_trunc_col(c) = &
+               this%veg_trunc_col(c) + &
+               this%soil_trunc_vr_col(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+
+  end subroutine NutrientStateColumnSummary
 
 end module NutrientStateType
