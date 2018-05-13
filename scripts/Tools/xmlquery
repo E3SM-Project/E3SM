@@ -25,7 +25,7 @@ There are two usage modes:
         ./xmlquery NTASKS_ATM
 
      - The CIME case xml variables are grouped together in xml elements <group></group>.
-       These are done to associate together xml variables with common features.
+       This is done to associate together xml variables with common features.
        Most variables are only associated with one group. However, in env_batch.xml,
        there are also xml variables that are associated with more than one group.
        For these variables, the '--subgroup' qualifier permits querying an xml variable
