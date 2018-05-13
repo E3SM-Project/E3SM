@@ -77,22 +77,22 @@ def main(argv):
     single_case(opts_dict)
 
     #now clone FIX THIS
-    case_root=os.path.dirname(case_name)
-    case_pfx=os.path.basename(case_name)
-    for i in range(1,clonecount):
-        iens='{0:03d}'.format(i)
-        if runtype == 'validation':
-           pertlim=get_pertlim_uf(rand_ints(i))
-        else:
-           pertlim=get_pertlim_uf(i)
-        case1_name=case_pfx+"."+iens
-        case1=case_root+"/"+case1_name
+#    case_root=os.path.dirname(case_name)
+#    case_pfx=os.path.basename(case_name)
+#    for i in range(1,clonecount):
+#        iens='{0:03d}'.format(i)
+#        if runtype == 'validation':
+#           pertlim=get_pertlim_uf(rand_ints(i))
+#        else:
+#           pertlim=get_pertlim_uf(i)
+#        case1_name=case_pfx+"."+iens
+#        case1=case_root+"/"+case1_name
 
-        os.chdir(scripts_root)
-        print "=== SCRIPTS_ROOT ==="
-        print scripts_root
-        command='scripts_root/create_clone --keepexe --case case1 --clone case'
-        ret=os.system(command)
+#        os.chdir(scripts_root)
+#        print "=== SCRIPTS_ROOT ==="
+#        print scripts_root
+#        command='scripts_root/create_clone --keepexe --case case1 --clone case'
+#        ret=os.system(command)
 
 
         # Get value for EXEROOT from $CASE
@@ -103,3 +103,5 @@ def main(argv):
            os.chdir(case)
 
 
+if __name__ == "__main__":
+    main(sys.argv[1:])
