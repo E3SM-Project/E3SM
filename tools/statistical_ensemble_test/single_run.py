@@ -30,7 +30,7 @@ def disp_usage(callType):
     print 'Optional flags (+ all "--" options to create_newcase): '
     print '  --project <num>  Project number to charge in job scripts'
     if callType == 'single_run.py':
-       print '  --pertlim <num>     Run CAM with non-zero pertlim'
+       print '  --pertlim <num>     Run CAM with specified non-zero pertlim'
    print '  --walltime <hr:mn> Amount of walltime requested (default = 4:30, or 0:10 with --uf enabled)'
    print '  --compiler <name>  Compiler to use (default = same as Machine default) '
    print '  --compset <name>   Compset to use (default = F2000)'
@@ -72,7 +72,7 @@ def process_args_dict(caller, caller_argv):
     opts_dict['res']='f19_f19'
     opts_dict['compset']='F2000'
     opts_dict['walltime']='00:00'
-    opts_dict['pertlim']= 0
+    opts_dict['pertlim']= '0'
     opts_dict['nb'] = False
     opts_dict['ns'] = False
     opts_dict['uf'] = False
@@ -111,12 +111,12 @@ def process_args_dict(caller, caller_argv):
             opts_dict['compiler'] = arg
             s_case_flags += ' ' + opt + ' ' + arg
         elif opt == '--pertlim':
-            opts_dict['pertlim'] = arg
             if caller == 'ensemble.py':
                 print "WARNING: pertlim ignored for ensemble.py."
-                opts_dict['pertlim'] = 0
+                opts_dict['pertlim'] = "0"
             else:
-                s_case_flags += ' ' + opt + ' ' + arg
+                opts_dict['pertlim'] = str(arg)
+                s_case_flags += ' ' + opt + ' ' + str(arg)
         elif opt == '--project':
             opts_dict['project'] = arg
             s_case_flags += ' ' + opt + ' ' + arg
@@ -252,29 +252,87 @@ def single_case(opts_dict, case_flags):
     ret = os.system(command)
     
     print "STATUS: Adjusting user_nl_* files...."
+    #cam
     if os.path.isfile('user_nl_cam'] == True:
         if opts_dict['uf'] == True:
-#   echo "avgflag_pertape = 'I'" >> user_nl_cam
-#    echo "nhtfrq  = 9" >> user_nl_cam
+            text1 = "\navgflag_pertape = 'I'" 
+            text2 = "\nnhtfrq  = 9" 
         else
-#    echo "avgflag_pertape = 'A'" >> user_nl_cam
-#    echo "nhtfrq  = -8760" >> user_nl_cam
- 
+            text1 = "\navgflag_pertape = 'A'" 
+            text2 = "\nnhtfrq  = -8760" 
+        
+        test3 =  "inithist = 'NONE'"
+        
+        with open("user_nl_cam", "a") as f:
+            f.write(text1)
+            f.write(text2)
+            f.write(text3)
+            if opts_dict['pertlim'] != "0":         
+                text = "pertlim = " + opts_dict['pertlim']
+                f.write(text)
+
+    #clm
+    if os.path.isfile('user_nl_clm'] == True:
+        if opts_dict['uf'] == True:
+            text1 = "\navgflag_pertape = 'I'" 
+            text2 = "\nnhtfrq  = 9" 
+        else
+            text1 = "\navgflag_pertape = 'A'" 
+            text2 = "\nnhtfrq  = -8760" 
+        
+        with open("user_nl_clm", "a") as f:
+            f.write(text1)
+            f.write(text2)
+
+    #disable ice output
+    if os.path.isfile('user_nl_cice'] == True:
+        text = "\nhistfreq = 'x','x','x','x','x'" 
+        with open("user_nl_cice", "a") as f:
+            f.write(text)
+
+    #pop
+    if os.path.isfile('user_nl_pop2'] == True:
+        text = ["'\nn_tavg_streams = 1"] 
+        text.append("\nldiag_bsf = .false.")
+        text.append("\nldiag_global_tracer_budgets = .false.")
+        text.append("\nldiag_velocity = .false.")
+        text.append("\ndiag_gm_bolus = .false." )
+        text.append("\nltavg_nino_diags_requested = .false.") 
+        text.append("\nmoc_requested = .false." )
+        text.append("\nn_heat_trans_requested = .false.") 
+        text.append("\nn_salt_trans_requested = .false." )
+        test.append("\ntavg_freq_opt = 'once', 'never', 'never'") 
+        text.append("\ntavg_file_freq_opt = 'once', 'never', 'never'") 
+        text.append("\ndiag_cfl_freq_opt = 'never'" )
+        text.append("\ndiag_global_freq_opt = 'never'") 
+        text.append("\ndiag_transp_freq_opt = 'never'" )
+
+        with open("user_nl_pop2", "a") as f:
+            for i in range(len(text)):
+                  f.write(text[i])
+        #rm -rf SourceMods/src.pop2/gx1v6_tavg_contents
+        #touch  SourceMods/src.pop2/gx1v6_tavg_contents
+
+    #preview namelists
+    print("STATUS: Updating namelists....")
+    command = './preview_namelists'
+    ret = os.system(command)
+    
+    # Build executable
+    nb = opts_dict["nb"]
+    ns = opts_dict["ns"]
+    print ('STATUS: no-build = ' + str(nb))
+    print ('STATUS: no-submit = ' + str(ns))
 
 
-  echo "inithist = 'NONE'" >> user_nl_cam
-  if [ ! "$PERTLIM" == "0" ]; then
-    echo "pertlim = $PERTLIM" >> user_nl_cam
-# Only edit user_nl_clm if the file exists (otherwise not using CLM!)
-if [ -e user_nl_clm ]; then
-  # Have CLM output everything (single precision)
-  if [ $UF -eq 1 ]; then
-    echo "hist_avgflag_pertape = 'I'" >> user_nl_clm
-    echo "hist_nhtfrq  = 9" >> user_nl_clm
-  else
-    echo "hist_avgflag_pertape = 'A'" >> user_nl_clm
-    echo "hist_nhtfrq  = -8760" >> user_nl_clm
-  fi
+if [ $nobuild != 'on' ]; then
+    echo "STATUS: Building exe..."
+    ./case.build || { echo "Error building!"; exit 1; }
+fi
+
+# Submit job to queue
+if [ $nosubmit != 'on' ]; then
+    ./case.submit
 fi
 
 

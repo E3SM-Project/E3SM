@@ -41,7 +41,7 @@ def main(argv):
 
     caller = 'ensemble.py'
 
-    opts_dict = process_args(caller, argv)
+    opts_dict, case_flags  = process_args_dict(caller, argv)
 
     #default is verification mode (3 runs)
     run_type = 'verify'
@@ -71,10 +71,12 @@ def main(argv):
    
     #create first case - then clone
     if runtype == 'verify':
-        opts_dict['pertlim'] = rand_ints[0]
-    else: 
-        opts_dict['pertlim'] = 0
-    single_case(opts_dict)
+        opts_dict['pertlim'] = get_pertlim_uf(rand_ints[0])
+    else: #full ensemble
+        opts_dict['pertlim'] = "0"
+   
+    #first case
+    single_case(opts_dict, case_flags)
 
     #now clone FIX THIS
 #    case_root=os.path.dirname(case_name)
