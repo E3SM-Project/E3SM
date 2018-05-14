@@ -317,12 +317,8 @@ def _main_func():
                     variables = all_matching_vars
                 else:
                     variables = all_variables
-        if listall and xmlfile:
-            resolved = False
-        else:
-            resolved = not no_resolve
         expect(variables, "No variables found")
-        results = xmlquery_sub(case, variables, subgroup, fileonly, resolved=resolved,
+        results = xmlquery_sub(case, variables, subgroup, fileonly, resolved=not no_resolve,
                                raw=raw, description=description, get_group=get_group, full=full,
                                dtype=dtype, valid_values=valid_values, xmlfile=xmlfile)
 
