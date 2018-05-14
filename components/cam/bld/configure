@@ -2788,6 +2788,12 @@ sub write_filepath
 	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
+      elsif ($opts{'dyn_target'} eq 'preqx_cxx') {
+        print $fh "$camsrcdir/homme/src/preqx_cxx\n";
+        print $fh "$camsrcdir/homme/src/preqx_cxx/share\n";
+        print $fh "$camsrcdir/homme/src/preqx_cxx/cxx\n";
+        print $fh "$camsrcdir/homme/src/preqx_cxx/cxx/mpi\n";
+      }
     }
 
     # Parallelization utilies
