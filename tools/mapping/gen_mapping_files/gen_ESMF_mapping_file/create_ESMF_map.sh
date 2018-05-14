@@ -298,8 +298,7 @@ case $MACH in
       # run configure in same directory as this script
       CWD=`pwd -P`
       cd $SDIR
-      # --mpilib mpi-serial seems to be needed on cheyenne login node, but not on compute node
-      ../../../configure --mpilib mpi-serial --clean
+      ../../../configure --clean
       ../../../configure --mpilib mpi-serial
       . .env_mach_specific.sh
       cd $CWD
