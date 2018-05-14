@@ -108,16 +108,11 @@ where
  --nogridcheck
    By default, script will run consistency check on new
    maps; this flag disables these checks
- --batch (or -b)
-   Toggles batch mode usage. If you want to run in batch mode
-   you need to have a separate batch script for a supported machine
-   that calls this script interactively - you cannot submit this
-   script directly to the batch system
+ --serial
+   Run the ESMF tools in serial rather than parallel
  -rc
    Pass the "--recompile" flag to the ESMF tool
    (Only necessary if nothing has been built in ../check_maps/)
- -d
-   toggle debug-only
  --help or -h
    displays this help message
 
