@@ -292,7 +292,6 @@
     </values>
   </entry>
 
-<!--      CURRENTLY DOES NOT EXIST
   <entry id="model_version" modify_via_xml="CCSM_REPOTAG">
     <type>char</type>
     <category>expdef</category>
@@ -301,10 +300,9 @@
       model version documentation,
     </desc>
     <values>
-      <value>unset</value>
+      <value>$MODEL_VERSION</value>
     </values>
   </entry>
--->
 
   <entry id="model_doi_url" modify_via_xml="MODEL_DOI_URL">
     <type>char</type>
