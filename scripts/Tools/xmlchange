@@ -32,8 +32,8 @@ Examples:
    This is done to associate together xml variables with common features.
    Most variables are only associated with one group. However, in env_batch.xml,
    there are also xml variables that are associated with each potential batch job.
-   For these variables, the '--subgroup' may be used to specify a particular
-   group for which the variable value will be adjusted.
+   For these variables, the '--subgroup' option may be used to specify a particular
+   group for which the variable's value will be adjusted.
 
    As an example, in env_batch.xml, the xml variables JOB_QUEUE and JOB_WALLCLOCK_TIME
    appear in each of the batch job groups (defined in config_batch.xml):

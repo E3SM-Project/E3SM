@@ -27,11 +27,12 @@ There are two usage modes:
      - The CIME case xml variables are grouped together in xml elements <group></group>.
        This is done to associate together xml variables with common features.
        Most variables are only associated with one group. However, in env_batch.xml,
-       there are also xml variables that are associated with more than one group.
-       For these variables, the '--subgroup' qualifier permits querying an xml variable
-       that appears in more than one group.
+       there are also xml variables that are associated with each potential batch job.
+       For these variables, the '--subgroup' option may be used to query the variable's
+       value for a particular group.
 
-       As an example, in env_batch.xml, the xml variable JOB_QUEUE appears in 3 groups:
+       As an example, in env_batch.xml, the xml variable JOB_QUEUE appears in each of
+       the batch job groups (defined in config_batch.xml):
         <group id="case.run">
         <group id="case.st_archive">
         <group id="case.test">
