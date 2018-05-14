@@ -468,6 +468,7 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
       <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
