@@ -1624,14 +1624,14 @@ def _check_for_invalid_args(args):
             if " " in arg or arg.startswith("--"):
                 continue
             if arg.startswith("-") and len(arg) > 2:
-                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+                sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
-    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+    parser.add_argument("--mail-user", help="Email to be used for batch notification.")
 
     parser.add_argument("-M", "--mail-type", action="append",
-                        help="when to send user email. Options are: never, all, begin, end, fail."
-                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+                        help="When to send user email. Options are: never, all, begin, end, fail.\n"
+                        "You can specify multiple types with either comma-separated args or multiple -M flags.")
 
 def resolve_mail_type_args(args):
     if args.mail_type is not None:
