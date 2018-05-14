@@ -179,8 +179,8 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
-      real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
+      real (kind=RKIND), dimension(:), pointer ::  fluxAcrossGroundingLine
+      real (kind=RKIND), dimension(:,:), pointer ::  normalVelocity
 
       ! config options needed
       real (kind=RKIND), pointer :: config_sea_level
@@ -193,7 +193,8 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nRegions, nRegionGroups !, maxRegionsInGroup  !! maxRegionsInGroup not needed / used yet
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels
-      integer :: k, iCell, iCell1, iCell2, iEdge
+      integer :: k, iCell, iEdge
+      integer :: upwindCell
       integer :: iRegion, iGroup
 
       ! scalars to be calculated here from regional sums
@@ -275,10 +276,10 @@ contains
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+         call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
          ! get region cell masks from regionMasks.nc input file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
@@ -392,39 +393,26 @@ contains
          end do ! end loop over cells
 
 
-        do iEdge = 1,nEdgesSolve      ! loop over edges
- !         do iGroup = 1,nRegionGroups  ! loop over groups
-           do iRegion = 1,nRegions     ! loop over regions
+         do iEdge = 1,nEdgesSolve      ! loop over edges
 
             if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-               ! Determine sign of this edge relative to GL
-               ! (+=grounded to floating, -=floating to grounded)
-               iCell1 = cellsOnEdge(1,iEdge)
-               iCell2 = cellsOnEdge(2,iEdge)
-               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-                  fluxSign = 1.0_RKIND
+               ! Determine upwind cell - we are choosing to assign edge quantities to the region of the upwind cell
+               if (normalVelocity(1,iEdge) > 0.0_RKIND) then  ! using surface velo to determine upwind cell
+                  ! upwind cell is cell 1 on this edge
+                  upwindCell = cellsOnEdge(1,iEdge)
                else
-                  fluxSign = -1.0_RKIND
+                  ! upwind cell is cell 2 on this edge
+                  upwindCell = cellsOnEdge(2,iEdge)
                endif
 
-               ! first need to determine if the edge flux is being calc. on is part of the region of interest
-               ! Use cellsOnEdge indices from above to index relevant regionCellMasks values and sum
-               if(regionCellMasks(iRegion,iCell1) + regionCellMasks(iRegion,iCell2) > 0) then
-
-                 ! Loop over levels
-                 do k = 1, nVertLevels
-                   ! Flux across GL, units = kg/yr
-                   blockSumRegionGLflux(iRegion) = blockSumRegionGLflux(iRegion) + fluxSign * layerNormalVelocity(k, iEdge) * &
-                      dvEdge(iEdge) * layerThicknessEdge(k, iEdge) &
-                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
-                 end do ! end loop over levels
-
-               end if ! if edge is on cell in region of interest
-
+               do iRegion = 1,nRegions     ! find this edge's region(s)
+                  if(regionCellMasks(iRegion, upwindCell) == 1) then
+                     ! assign the GL flux from this edge to the stat
+                     blockSumRegionGLflux(iRegion) = blockSumRegionGLflux(iRegion) + &
+                        fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
+                  end if ! if edge is on cell in region of interest
+               end do ! end loop over regions
             end if ! if GL
-
-           end do ! end loop over regions
- !         end do ! end loop over groups
          end do ! end loop over edges
 
          block => block % next
