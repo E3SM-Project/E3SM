@@ -7,7 +7,10 @@ CAM-ECT - detects issues in CAM and CLM (12 month runs)
 UF-CAM-ECT - detects issues in CAM and CLM (9 time step runs)
 
 We now provide a web server where you can upload the (3) generated runs for comparison
-to our ensemble.
+to our ensemble.   Please see the webpage at https://needtofillthisin for further instructions.
+
+If none of our ensembles are suitable for your needs you may create
+your own ensemble using the following instructions:
 
 (1) The ECT process involves comparing several runs (3) generated with
 the new scenario to an ensemble built on a trusted machine (currently
