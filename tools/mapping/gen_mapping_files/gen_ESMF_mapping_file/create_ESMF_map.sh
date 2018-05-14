@@ -206,13 +206,15 @@ done
 # Determine machine to run on
 #-------------------------------------------------------------------------------
 
+shopt -s extglob
 if [ $MACH == "UNSET" ]; then
   hostname=`hostname`
   case $hostname in
     cheyenne* )
       MACH="cheyenne"
+      cheyenne_login=TRUE
     ;;
-    r[0-9]i[0-9]n[0-9] )
+    r+([0-9])i+([0-9])n+([0-9]) )
       MACH="cheyenne"
     ;;
     geyser* )
@@ -229,6 +231,12 @@ if [ $MACH == "UNSET" ]; then
       exit 1
     ;;
   esac
+fi
+
+# machine-specific restrictions
+if [ "$cheyenne_login" == "TRUE" ] && [ "$serial" != "TRUE" ]; then
+  echo "ERROR: On the cheyenne login node, run with --serial"
+  exit 1
 fi
 
 # check for required arguments
@@ -302,16 +310,35 @@ case $MACH in
       ../../../configure --mpilib mpi-serial
       . .env_mach_specific.sh
       cd $CWD
-
-      # need to load module to access ncatted
-      module load nco
     else
-      echo "ERROR: Must use serial implementation of ESMF because module"
-      echo "       changes have made it difficult to run in parallel."
-      echo "       Rerun with --serial"
-      exit 1
-      # When parallel ESMF works on CISL machines, set up MPIEXEC here
+      if [ "$MACH" == "cheyenne" ]; then
+        # MPIEXEC should be mpirun -np
+      if [ -z "$MPIEXEC" ]; then
+        if [ -z "$NCPUS" ]; then
+          NCPUS=1
+        fi
+        MPIEXEC="mpirun -np $NCPUS"
+      fi
+
+      # run configure in same directory as this script
+      CWD=`pwd -P`
+      cd $SDIR
+      ../../../configure --clean
+      ../../../configure --mpilib mpt
+      . .env_mach_specific.sh
+      module swap mpt mpt/2.15f
+      module swap esmf-7.0.0-defio-mpi-O esmf-7.0.0-ncdfio-mpi-O
+      cd $CWD
+      else # geyser and caldera still don't work
+        echo "ERROR: Must use serial implementation of ESMF because module"
+        echo "       changes have made it difficult to run in parallel."
+        echo "       Rerun with --serial"
+        exit 1
+      fi
     fi
+
+    # need to load module to access ncatted
+    module load nco
   ;;
   *)
     echo "Machine $MACH NOT recognized"
