@@ -31,8 +31,9 @@ while [ $i -le ${#Args[@]} ]; do
 done
 
 cd $caseroot
+
 if hash ncks 2>/dev/null; then
- ncks --glb compset=`./xmlquery --value COMPSET` --glb grid=`./xmlquery --value GRID` --glb testtype="uf" --glb compiler=`./xmlquery --value COMPILER` --glb machineid=`./xmlquery --value MACH`  $histfile $histfile.tmp
+ ncks --glb compset=`./xmlquery --value COMPSET` --glb grid=`./xmlquery --value GRID` --glb testtype="uf" --glb compiler=`./xmlquery --value COMPILER` --glb machineid=`./xmlquery --value MACH`  --glb model_version=`./xmlquery --value MODEL_VERSION`   $histfile $histfile.tmp
   mv $histfile.tmp $histfile
 else
   echo "This script requires the ncks tool"
