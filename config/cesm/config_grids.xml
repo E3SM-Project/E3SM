@@ -158,25 +158,11 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="T42_T42" not_compset="_POP">
-      <grid name="atm">T42</grid>
-      <grid name="lnd">T42</grid>
-      <grid name="ocnice">T42</grid>
-      <mask>usgs</mask>
-    </model_grid>
-
     <model_grid alias="T42_T42_musgs" not_compset="_POP">
       <grid name="atm">T42</grid>
       <grid name="lnd">T42</grid>
       <grid name="ocnice">T42</grid>
       <mask>usgs</mask>
-    </model_grid>
-
-    <model_grid alias="T42_T42_mg17" not_compset="_POP">
-      <grid name="atm">T42</grid>
-      <grid name="lnd">T42</grid>
-      <grid name="ocnice">T42</grid>
-      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="T42_T42_mg16" not_compset="_POP">
@@ -186,11 +172,25 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="T85_T85" not_compset="_POP">
+    <model_grid alias="T42_T42_mg17" not_compset="_POP">
+      <grid name="atm">T42</grid>
+      <grid name="lnd">T42</grid>
+      <grid name="ocnice">T42</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="T85_T85_mg16" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
       <grid name="ocnice">T85</grid>
-      <mask>usgs</mask>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="T85_T85_mg17" not_compset="_POP">
+      <grid name="atm">T85</grid>
+      <grid name="lnd">T85</grid>
+      <grid name="ocnice">T85</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="T85_T85_musgs" not_compset="_POP">
@@ -391,13 +391,6 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f09_f09" not_compset="_POP">
-      <grid name="atm">0.9x1.25</grid>
-      <grid name="lnd">0.9x1.25</grid>
-      <grid name="ocnice">0.9x1.25</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f09_f09_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -529,13 +522,6 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f19_f19" not_compset="_POP">
-      <grid name="atm">1.9x2.5</grid>
-      <grid name="lnd">1.9x2.5</grid>
-      <grid name="ocnice">1.9x2.5</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f19_f19_mg16" not_compset="_POP">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
@@ -564,13 +550,6 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="f02_f02" not_compset="_POP">
-      <grid name="atm">0.23x0.31</grid>
-      <grid name="lnd">0.23x0.31</grid>
-      <grid name="ocnice">0.23x0.31</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f02_f02_mg16" not_compset="_POP">
       <grid name="atm">0.23x0.31</grid>
       <grid name="lnd">0.23x0.31</grid>
@@ -585,13 +564,6 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f25_f25" not_compset="_POP">
-      <grid name="atm">2.5x3.33</grid>
-      <grid name="lnd">2.5x3.33</grid>
-      <grid name="ocnice">2.5x3.33</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f25_f25_mg16" not_compset="_POP">
       <grid name="atm">2.5x3.33</grid>
       <grid name="lnd">2.5x3.33</grid>
@@ -604,13 +576,6 @@
       <grid name="lnd">2.5x3.33</grid>
       <grid name="ocnice">2.5x3.33</grid>
       <mask>gx1v7</mask>
-    </model_grid>
-
-    <model_grid alias="f45_f45" not_compset="_POP">
-      <grid name="atm">4x5</grid>
-      <grid name="lnd">4x5</grid>
-      <grid name="ocnice">4x5</grid>
-      <mask>gx3v7</mask>
     </model_grid>
 
     <model_grid alias="f45_f45_mg37" not_compset="_POP">
@@ -801,6 +766,13 @@
       <grid name="lnd">ne240np4</grid>
       <grid name="ocnice">ne240np4</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne240_ne240_mg17" not_compset="_POP">
+      <grid name="atm">ne240np4</grid>
+      <grid name="lnd">ne240np4</grid>
+      <grid name="ocnice">ne240np4</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <!--  spectral element grids with 2x2 FVM physics grid -->
