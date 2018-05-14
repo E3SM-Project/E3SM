@@ -49,13 +49,26 @@
 
   <entry id="OCN_CO2_TYPE">
         <type>char</type>
-        <valid_values>none,constant,prognostic,diagnostic</valid_values>
+        <valid_values>none,constant,prognostic,diagnostic,bcrc,bcrd,bdrc,bdrd</valid_values>
         <default_value>constant</default_value>
         <values>
            <value compset="MPASO_">none</value>
-           <value compset="_MPASO%OECO">constant</value>
-           <value compset="_MPASO%OIECO">constant</value>
-           <value compset="_MPASO%TOIECO">diagnostic</value>
+           <value compset="2000_DATM.*_MPASO%OECO">constant</value>
+           <value compset="1850_DATM.*_MPASO%OECO">constant</value>
+           <value compset="20TR_DATM.*_MPASO%OECO">diagnostic</value>
+           <value compset="2000_DATM.*_MPASO%OIECO">constant</value>
+           <value compset="1850_DATM.*_MPASO%OIECO">constant</value>
+           <value compset="20TR_DATM.*_MPASO%OIECO">diagnostic</value>
+           <value compset="2000_CAM5.*_MPASO%OIECO">constant</value>
+           <value compset="1850_CAM5.*_MPASO%OIECO">constant</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
