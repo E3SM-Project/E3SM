@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_init_global_stats(domain, memberName, err)!{{{
+   subroutine li_init_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -105,7 +105,7 @@ contains
 
       err = 0
 
-   end subroutine li_init_global_stats!}}}
+   end subroutine li_init_global_stats
 
 !***********************************************************************
 !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_global_stats(domain, memberName, timeLevel, err)!{{{
+   subroutine li_compute_global_stats(domain, memberName, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -488,7 +488,7 @@ contains
 
 
 
-   end subroutine li_compute_global_stats!}}}
+   end subroutine li_compute_global_stats
 
 !***********************************************************************
 !
@@ -503,7 +503,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_restart_global_stats(domain, memberName, err)!{{{
+   subroutine li_restart_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -537,7 +537,7 @@ contains
 
       err = 0
 
-   end subroutine li_restart_global_stats!}}}
+   end subroutine li_restart_global_stats
 
 !***********************************************************************
 !
@@ -552,7 +552,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_finalize_global_stats(domain, memberName, err)!{{{
+   subroutine li_finalize_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -586,7 +586,7 @@ contains
 
       err = 0
 
-   end subroutine li_finalize_global_stats!}}}
+   end subroutine li_finalize_global_stats
 
 end module li_global_stats
 

@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_init_regional_stats(domain, memberName, err)!{{{
+   subroutine li_init_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -105,7 +105,7 @@ contains
 
       err = 0
 
-   end subroutine li_init_regional_stats!}}}
+   end subroutine li_init_regional_stats
 
 !***********************************************************************
 !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_regional_stats(domain, memberName, timeLevel, err)!{{{
+   subroutine li_compute_regional_stats(domain, memberName, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -558,7 +558,7 @@ contains
       deallocate(blockSumRegionGroundedBasalMassBal); deallocate(blockSumRegionFloatingBasalMassBal)
       deallocate(blockSumRegionCalvingFlux); deallocate(blockSumRegionGLflux)
 
-   end subroutine li_compute_regional_stats!}}}
+   end subroutine li_compute_regional_stats
 
 !***********************************************************************
 !
@@ -573,7 +573,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_restart_regional_stats(domain, memberName, err)!{{{
+   subroutine li_restart_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -607,7 +607,7 @@ contains
 
       err = 0
 
-   end subroutine li_restart_regional_stats!}}}
+   end subroutine li_restart_regional_stats
 
 !***********************************************************************
 !
@@ -622,7 +622,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_finalize_regional_stats(domain, memberName, err)!{{{
+   subroutine li_finalize_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -656,7 +656,7 @@ contains
 
       err = 0
 
-   end subroutine li_finalize_regional_stats!}}}
+   end subroutine li_finalize_regional_stats
 
 end module li_regional_stats
 
