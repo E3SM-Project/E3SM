@@ -198,6 +198,7 @@ contains
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
       real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
+      real (kind=RKIND), pointer ::  totalGroundedSfcMassBal, totalFloatingSfcMassBal
       real (kind=RKIND), pointer ::  totalGroundedBasalMassBal, totalFloatingBasalMassBal
       real (kind=RKIND), pointer ::  avgNetAccumulation
       real (kind=RKIND), pointer ::  avgGroundedBasalMelt
@@ -214,6 +215,7 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
       real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
+      real (kind=RKIND) ::  blockSumGroundedSfcMassBal, blockSumFloatingSfcMassBal
       real (kind=RKIND) ::  blockSumGroundedBasalMassBal, blockSumFloatingBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
@@ -240,6 +242,8 @@ contains
       blockSumFloatingIceArea = 0.0_RKIND
       blockSumFloatingIceVolume = 0.0_RKIND
       blockSumSfcMassBal = 0.0_RKIND
+      blockSumGroundedSfcMassBal = 0.0_RKIND
+      blockSumFloatingSfcMassBal = 0.0_RKIND
       blockSumBasalMassBal = 0.0_RKIND
       blockSumGroundedBasalMassBal = 0.0_RKIND
       blockSumFloatingBasalMassBal = 0.0_RKIND
@@ -317,12 +321,15 @@ contains
             endif
 
             ! sfc and basal mass balance (kg yr^{-1})
-            !SFP: These calculations need to be tested still
             blockSumSfcMassBal = blockSumSfcMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * sfcMassBal(iCell) * scyr
+            blockSumGroundedSfcMassBal = blockSumGroundedSfcMassBal + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * sfcMassBal(iCell) * scyr
+            blockSumFloatingSfcMassBal = blockSumFloatingSfcMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * sfcMassBal(iCell) * scyr
             blockSumBasalMassBal = blockSumBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
-            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
             blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
@@ -386,13 +393,16 @@ contains
       sums(5) = blockSumFloatingIceArea
       sums(6) = blockSumFloatingIceVolume
       sums(7) = blockSumSfcMassBal
-      sums(8) = blockSumBasalMassBal
-      sums(9) = blockSumGroundedBasalMassBal
-      sums(10) = blockSumFloatingBasalMassBal
-      sums(11) = blockSumCalvingFlux
-      sums(12) = blockSumVAF
-      sums(13) = blockGLflux
-      nVars = 13
+      sums(8) = blockSumGroundedSfcMassBal
+      sums(9) = blockSumFloatingSfcMassBal
+
+      sums(10) = blockSumBasalMassBal
+      sums(11) = blockSumGroundedBasalMassBal
+      sums(12) = blockSumFloatingBasalMassBal
+      sums(13) = blockSumCalvingFlux
+      sums(14) = blockSumVAF
+      sums(15) = blockGLflux
+      nVars = 15
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -409,6 +419,8 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
          call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedSfcMassBal', totalGroundedSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalFloatingSfcMassBal', totalFloatingSfcMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgNetAccumulation', avgNetAccumulation)
          call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedBasalMassBal', totalGroundedBasalMassBal)
@@ -425,12 +437,14 @@ contains
          floatingIceArea = reductions(5)
          floatingIceVolume = reductions(6)
          totalSfcMassBal = reductions(7)
-         totalBasalMassBal = reductions(8)
-         totalGroundedBasalMassBal = reductions(9)
-         totalFloatingBasalMassBal = reductions(10)
-         totalCalvingFlux = reductions(11)
-         volumeAboveFloatation = reductions(12)
-         groundingLineFlux = reductions(13)
+         totalGroundedSfcMassBal = reductions(8)
+         totalFloatingSfcMassBal = reductions(9)
+         totalBasalMassBal = reductions(10)
+         totalGroundedBasalMassBal = reductions(11)
+         totalFloatingBasalMassBal = reductions(12)
+         totalCalvingFlux = reductions(13)
+         volumeAboveFloatation = reductions(14)
+         groundingLineFlux = reductions(15)
 
          iceThicknessMean = totalIceVolume / totalIceArea
          avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
