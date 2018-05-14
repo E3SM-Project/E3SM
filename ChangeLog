@@ -1,6 +1,80 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 5-14-2018
+Tag: cime5.6.7
+Answer Changes: None
+Tests: scripts_regression_tests, xmlquery --listall --file env_run.xml
+Dependencies:
+
+Brief Summary:
+    - xmlquery fix.
+    - Fixes an issue when selecting mpilib on cheyenne.
+    - Fixed some print format bugs left over from the string rewrite of a year ago.
+    - Documentation updates, including major updates to --help for scripts.
+    - Need to append config files.
+    - Get model_version working.
+    - Adds T85_T85_mg17 grid.
+    - Correct spelling of protocol.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5a54b88 Merge pull request #2588 from jedwards4b/xmlquery_fix
+0b07cb5 Merge pull request #2591 from jedwards4b/configure_mpilib
+5f4c8e4 Merge pull request #2586 from gold2718/pelayout_fixes
+6ebcd23 Merge pull request #2585 from ESMCI/mvertens/documentation_updates
+940e29c need this to append config files
+72a1cf6 Merge pull request #2579 from ekluzek/clm50r1/cime5.6.3
+b86853d Merge pull request #2575 from jedwards4b/newgrid
+fcebaad Merge pull request #2571 from jedwards4b/misspelling_protocol
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_inputdata.xml
+M	config/e3sm/config_inputdata.xml
+M	config/xml_schemas/config_inputdata.xsd
+M	doc/source/conf.py
+M	doc/source/users_guide/building-a-case.rst
+M	doc/source/users_guide/cime-config.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.qstatus
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/pelayout
+M	scripts/Tools/preview_namelists
+M	scripts/Tools/preview_run
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlquery
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/gftp.py
+M	scripts/lib/CIME/Servers/svn.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/inputdata.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/utils.py
+M	scripts/query_config
+M	scripts/query_testlists
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	tools/configure
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-02-2018
 Tag: cime5.6.3
 Answer Changes: None
