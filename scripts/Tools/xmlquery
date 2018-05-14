@@ -259,7 +259,7 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
 
             if value is None:
                 if xmlfile:
-                    logger.warning(" No results found for variable {} in file {}".format(var, xmlfile))
+                    logger.debug(" No results found for variable {} in file {}".format(var, xmlfile))
                     del results[group][var]
                     continue
                 else:
