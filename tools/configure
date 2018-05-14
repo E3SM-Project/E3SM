@@ -130,7 +130,7 @@ def parse_command_line(args):
         mpilib = machobj.get_default_MPIlib(attributes={"compiler":compiler})
         os.environ["MPILIB"] = mpilib
 
-    expect(opts['machobj'].is_valid_MPIlib(mpilib),
+    expect(opts['machobj'].is_valid_MPIlib(mpilib, attributes={"compiler":compiler}),
            "Invalid MPI library name given in MPILIB environment variable: %s" %
            mpilib)
     opts['mpilib'] = mpilib
