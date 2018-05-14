@@ -17,3 +17,8 @@ import CIME.utils
 CIME.utils.check_minimum_python_version(2, 7)
 CIME.utils.stop_buffering_output()
 import logging, argparse
+
+# License string to be displayed in the epilog of each user facing script's
+# help text
+license_string = """For information on Copyright and license, see
+https://github.com/ESMCI/cime/blob/master/LICENSE.TXT"""

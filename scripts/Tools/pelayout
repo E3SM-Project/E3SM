@@ -36,11 +36,6 @@ Python dictionary-format strings are also supported. For instance,
 
 If  you encounter problems with this tool or find it is missing any
 feature that you need, please open an issue on https://github.com/ESMCI/cime
-
-    COPYRIGHT AND LICENSE
-
-        This library is free software; you can redistribute it and/or modify
-        it under the same terms as Python itself.
 """
 
 from standard_script_setup import *
@@ -57,7 +52,8 @@ def parse_command_line(args, description):
 ###############################################################################
     # Start with usage description
     parser = argparse.ArgumentParser(description=description ,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog=license_string)
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
