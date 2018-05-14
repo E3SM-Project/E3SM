@@ -30,7 +30,9 @@ module lnd2atmMod
   use TemperatureType      , only : temperature_type
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp                
+  use GridcellType         , only : grc_pp     
+
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -55,6 +57,17 @@ contains
     !
     ! !USES:
     use clm_varcon, only : sb
+    
+    ! debug PET 4/27/2018
+    use landunit_varcon      , only : max_lunit
+    use TopounitType         , only : top_pp
+    use LandunitType         , only : lun_pp
+    use ColumnType           , only : col_pp
+    use VegetationType       , only : veg_pp
+    use shr_sys_mod          , only : shr_sys_flush
+    use clm_instMod          , only : canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars, &
+                                      temperature_vars, solarabs_vars, photosyns_vars, soilstate_vars
+
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -70,6 +83,9 @@ contains
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+    
+    ! debug PET 4/27/2018
+    integer :: t, l, c, p, lun_id
     !------------------------------------------------------------------------
 
     call c2g(bounds, &
@@ -100,6 +116,32 @@ contains
          energyflux_vars%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+    
+    ! debug PET 4/27/2018
+    if (bounds%begg <= 4817 .and. bounds%endg >= 4817) then
+      write(iulog,*)'gridcell, avsdr',4817, lnd2atm_vars%albd_grc(4817,1)
+      do t=grc_pp%topi(4817), grc_pp%topf(4817)
+        write(iulog,*)'topounit, wt, gcell',t,top_pp%wtgcell(t),top_pp%gridcell(t)
+        do l=1,max_lunit
+          lun_id = top_pp%landunit_indices(l,t)
+          if (lun_id >= 0) then            
+            write(iulog,*)'  lun_id, lun_type, wt, topo',lun_id, lun_pp%itype(lun_id), &
+               lun_pp%wttopounit(lun_id),lun_pp%topounit(lun_id)
+            do c=lun_pp%coli(lun_id), lun_pp%colf(lun_id)
+              write(iulog,*)'    col, col_type, wt, landunit, liqvol1, liqvol2',c,col_pp%itype(c), &
+                col_pp%wtlunit(c),col_pp%landunit(c), waterstate_vars%h2osoi_liqvol_col(c,1), waterstate_vars%h2osoi_liqvol_col(c,2)
+              do p=col_pp%pfti(c),col_pp%pftf(c)
+                write(iulog,*)'      pft, pft_type, wt, col, leafc, btran, vcmaxcintsun',p,veg_pp%itype(p), &
+                  veg_pp%wtcol(p), veg_pp%column(p), carbonstate_vars%leafc_patch(p), energyflux_vars%btran_patch(p), &
+                  surfalb_vars%vcmaxcintsun_patch(p)
+              end do
+            end do
+          end if
+        end do
+      end do
+      call shr_sys_flush(iulog)
+    end if
+       
 
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))

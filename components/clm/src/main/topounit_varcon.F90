@@ -16,6 +16,6 @@ module topounit_varcon
   ! Initialize topounit type constants
   !------------------------------------------------------------------
   
-  integer, parameter, public :: max_topounits  = 2  ! maximum number of topounits per gridcell
+  integer, parameter, public :: max_topounits  = 1 ! maximum number of topounits per gridcell
 
 end module topounit_varcon
