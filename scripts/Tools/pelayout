@@ -52,8 +52,7 @@ def parse_command_line(args, description):
 ###############################################################################
     # Start with usage description
     parser = argparse.ArgumentParser(description=description ,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     epilog=license_string)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
