@@ -95,7 +95,7 @@ do
 	if [ -e $MAP ]; then
 		n=n+1
 		echo "${n}: ${MAP}"
-		$EXE $MAP
+		$EXE $MAP || exit $?
 		echo "-----"
 	else
 		echo "File not found: $MAP"

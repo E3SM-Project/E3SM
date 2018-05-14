@@ -58,11 +58,6 @@ usage() {
   echo '   default is global'
   echo ' --pass2esmf'
   echo '   pass options directly to the ESMF tool.'
-  echo ' --batch (or -b)'
-  echo '   Toggles batch mode usage. If you want to run in batch mode'
-  echo '   you need to have a separate batch script for a supported machine'
-  echo '   that calls this script interactively - you cannot submit this'
-  echo '   script directly to the batch system'
   echo ' --clm_name'
   echo '   Use the CLM naming convention'
   echo ' --serial'
@@ -125,7 +120,6 @@ runcmd() {
 # Process input arguments
 #-------------------------------------------------------------------------------
 
-interactive="YES"
 debug="no"
 verbose="no"
 type_src="global"
@@ -142,9 +136,6 @@ while [ $# -gt 0 ]; do
   case $1 in
     -v )
       verbose="YES"
-    ;;
-    -b|--batch )
-      interactive="NO"
     ;;
     --clm_name )
       CLMNAME="TRUE"
@@ -221,6 +212,9 @@ if [ $MACH == "UNSET" ]; then
     cheyenne* )
       MACH="cheyenne"
     ;;
+    r[0-9]i[0-9]n[0-9] )
+      MACH="cheyenne"
+    ;;
     geyser* )
       MACH="geyser"
     ;;
@@ -231,24 +225,10 @@ if [ $MACH == "UNSET" ]; then
       MACH="pronghorn"
     ;;
     *)
-      echo "Machine $hostname NOT recognized"
+      echo "Can not determine machine name from hostname '$hostname'"
+      exit 1
     ;;
   esac
-fi
-
-# Machine specific settings:
-# 1) can not run in parallel interactively on cheyenne
-if [ $MACH == "cheyenne" ] && [ $interactive == "YES" ]; then
-  serial="TRUE"
-fi
-# 2) FIXME: can not run in parallel on NCAR machines
-if [ $MACH == "cheyenne" ] ||      \
-   [ $MACH == "geyser" ] ||        \
-   [ $MACH == "caldera" ] ||       \
-   [ $MACH == "pronghorn" ] ; then
-  echo "Using serial implementation of ESMF because module changes"
-  echo "have made it difficult to run in parallel."
-  serial="TRUE"
 fi
 
 # check for required arguments
@@ -309,46 +289,40 @@ fi
 case $MACH in
   ## cheyenne, geyser, caldera, or pronghorn
   "cheyenne" |  "geyser" | "caldera" | "pronghorn" )
-    module purge
-    module load nco
-    if [  $MACH == "cheyenne" ]; then
-      module load intel
-      module load esmf_libs/7.0.0
-    else
-      module load intel/12.1.5
-      module load esmf
-    fi
-
-    if [ $serial == "TRUE" ]; then
-      module load esmf-7.0.0-ncdfio-uni-O
+    if [ "$serial" == "TRUE" ]; then
+      # No MPIEXEC
       if [ -z "$MPIEXEC" ]; then
         MPIEXEC=""
       fi
-    # FIXME: get parallel tools working
-#    else
-#      module load esmf-7.0.0-ncdfio-mpi-O
-    fi
 
+      # run configure in same directory as this script
+      CWD=`pwd -P`
+      cd $SDIR
+      # --mpilib mpi-serial seems to be needed on cheyenne login node, but not on compute node
+      ../../../configure --mpilib mpi-serial --clean
+      ../../../configure --mpilib mpi-serial
+      . .env_mach_specific.sh
+      cd $CWD
+
+      # need to load module to access ncatted
+      module load nco
+    else
+      echo "ERROR: Must use serial implementation of ESMF because module"
+      echo "       changes have made it difficult to run in parallel."
+      echo "       Rerun with --serial"
+      exit 1
+      # When parallel ESMF works on CISL machines, set up MPIEXEC here
+    fi
   ;;
   *)
     echo "Machine $MACH NOT recognized"
+    exit
   ;;
 esac
 
 #-------------------------------------------------------------------------------
 # run ESMF_RegridWeightGen
 #-------------------------------------------------------------------------------
-
-# Resolve interactive or batch mode command
-# NOTE - if you want to run in batch mode - you need to have a separate
-# batch file that calls this script interactively - you cannot submit
-# this script to the batch system
-
-if [ "$interactive" = "YES" ]; then
-  echo "Running interactively"
-else
-  echo "Running in batch mode"
-fi
 
 if [ ! -z $ESMFBIN_PATH ]; then
   ESMF_REGRID="$ESMFBIN_PATH/ESMF_RegridWeightGen"

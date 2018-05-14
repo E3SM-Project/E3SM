@@ -77,16 +77,11 @@ usage() {
   echo ' --nogridcheck'
   echo '   By default, script will run consistency check on new'
   echo '   maps; this flag disables these checks'
-  echo ' --batch (or -b)'
-  echo '   Toggles batch mode usage. If you want to run in batch mode'
-  echo '   you need to have a separate batch script for a supported machine'
-  echo '   that calls this script interactively - you cannot submit this'
-  echo '   script directly to the batch system'
+  echo ' --serial'
+  echo '   Run the ESMF tools in serial rather than parallel'
   echo ' -rc'
   echo '   Pass the "--recompile" flag to the ESMF tool'
   echo '   (Only necessary if nothing has been built in ../check_maps/)'
-  echo ' -d'
-  echo '   toggle debug-only'
   echo ' --help or -h'
   echo '   displays this help message'
   echo ''
@@ -102,6 +97,27 @@ usage() {
 }
 
 #===============================================================================
+# make_map subroutine
+#===============================================================================
+make_map() {
+  make_map_exe=$SDIR/gen_ESMF_mapping_file/create_ESMF_map.sh
+  fsrc=$1
+  nsrc=$2
+  fdst=$3
+  ndst=$4
+  tsrc=$5
+  tdst=$6
+  map=$7
+  if [ "$serial" == "TRUE" ]; then
+    run_serial="--serial"
+  else
+    run_serial=""
+  fi
+  $make_map_exe -fsrc $fsrc -nsrc $nsrc -fdst $fdst -ndst $ndst  \
+                -tsrc $tsrc -tdst $tdst -map $map $run_serial   || exit $?
+}
+
+#===============================================================================
 # runcmd subroutine
 #===============================================================================
 runcmd() {
@@ -113,16 +129,11 @@ runcmd() {
    if [ "$verbose" = "YES" ]; then
        echo "$cmd"
    fi
-   if [ "$debug" != "YES" ]; then
-       ${cmd}
-       rc=$?
-   else
-       rc=0
-   fi
+   ${cmd}
+   rc=$?
    if [ $rc != 0 ]; then
-       echo "Error status returned from gen_cesm_maps script"
-       exit 4
-undo
+       echo "Error status $rc returned from gen_cesm_maps script"
+       exit $rc
    fi
    return 0
 }
@@ -135,8 +146,6 @@ undo
 # Process input arguments
 #-------------------------------------------------------------------------------
 
-interactive="YES"
-debug="no"
 verbose="no"
 type_atm="global"
 type_ocn="global"
@@ -146,82 +155,83 @@ atm_lnd=0
 lnd_rtm=0
 ocn_lnd=0
 lnd_glc=0
+serial="FALSE"
 
 
 while [ $# -gt 0 ]; do
    case $1 in
-       -v)
-	   verbose="YES"
+     -v)
+	     verbose="YES"
 	   ;;
-       -b|--batch)
-	   interactive="NO"
+     -focn|--fileocn )
+	     focn=$2
+	     shift
 	   ;;
-       -focn|--fileocn )
-	   focn=$2
-	   shift
+     -fatm|--fileatm )
+  	   fatm=$2
+  	   shift
 	   ;;
-       -fatm|--fileatm )
-	   fatm=$2
-	   shift
+     -flnd|--filelnd )
+  	   flnd=$2
+  	   shift
 	   ;;
-       -flnd|--filelnd )
-	   flnd=$2
-	   shift
+     -frtm|--filertm )
+  	   frtm=$2
+  	   shift
 	   ;;
-       -frtm|--filertm )
-	   frtm=$2
-	   shift
+     -fglc|--fileglc )
+  	   fglc=$2
+  	   shift
 	   ;;
-       -fglc|--fileglc )
-	   fglc=$2
-	   shift
+     -nocn|--nameocn )
+  	   nocn=$2
+  	   shift
 	   ;;
-       -nocn|--nameocn )
-	   nocn=$2
-	   shift
+     -natm|--nameatm )
+  	   natm=$2
+  	   shift
 	   ;;
-       -natm|--nameatm )
-	   natm=$2
-	   shift
+     -nlnd|--namelnd )
+  	   nlnd=$2
+  	   shift
 	   ;;
-       -nlnd|--namelnd )
-	   nlnd=$2
-	   shift
+     -nrtm|--namertm )
+  	   nrtm=$2
+  	   shift
 	   ;;
-       -nrtm|--namertm )
-	   nrtm=$2
-	   shift
+     -nglc|--nameglc )
+  	   nglc=$2
+  	   shift
 	   ;;
-       -nglc|--nameglc )
-	   nglc=$2
-	   shift
+     -tocn|--typeocn )
+  	   type_ocn=$2
+  	   shift
 	   ;;
-       -tocn|--typeocn )
-	   type_ocn=$2
-	   shift
+     --serial )
+       serial=TRUE
+     ;;
+     --recompile|-rc )
+  	   CheckMapsFlag=-rc
+  	   echo "Will recompile ESMF gridcheck tool"
 	   ;;
-       --recompile|-rc )
-	   CheckMapsFlag=-rc
-	   echo "Will recompile ESMF gridcheck tool"
+     --nogridcheck )
+  	   SkipGridCheck=TRUE
+  	   echo "Will not check quality of maps!"
 	   ;;
-       --nogridcheck )
-	   SkipGridCheck=TRUE
-	   echo "Will not check quality of maps!"
+     -tatm|--typeatm )
+  	   type_atm=$2
+  	   shift
 	   ;;
-       -tatm|--typeatm )
-	   type_atm=$2
-	   shift
+     -h|--help )
+  	   usage
+  	   exit 0
 	   ;;
-       -h|--help )
-	   usage
-	   exit 0
-	   ;;
-       * )
-	   echo "****************************"
-	   echo "ERROR:: invalid argument $1"
-	   echo "****************************"
-	   usage
-	   exit 1
+     * )
+  	   echo "****************************"
+  	   echo "ERROR:: invalid argument $1"
+  	   echo "****************************"
+  	   usage
+  	   exit 1
 	   ;;
    esac
    shift
@@ -348,20 +358,8 @@ fi
 # run ESMF_RegridWeightGen
 #-------------------------------------------------------------------------------
 
-# Resolve interactive or batch mode command
-# NOTE - if you want to run in batch mode - you need to have a separate
-# batch file that calls this script interactively - you cannot submit
-# this script to the batch system
-
-if [ "$interactive" = "YES" ]; then
-    batchrun=""
-else
-    batchrun="--batch"
-fi
-
 cdate=`date +%y%m%d`
 file_list=""
-make_map=$SDIR/gen_ESMF_mapping_file/create_ESMF_map.sh
 
 #-------------------------------------------------------------------------------
 # Make Maps
@@ -369,40 +367,35 @@ make_map=$SDIR/gen_ESMF_mapping_file/create_ESMF_map.sh
 
 if [ ${atm_ocn} == 1 ]; then
   #--- ocn to atm conservative (area avg?) -------------------------------------
-  $make_map -fsrc $focn -nsrc $nocn -fdst $fatm -ndst $natm \
-            -tsrc $type_ocn -tdst $type_atm -map aave $batchrun
+  make_map "$focn" "$nocn" "$fatm" "$natm" "$type_ocn" "$type_atm" "aave"
   file_list="$file_list map_${nocn}_TO_${natm}_aave.$cdate.nc"
 
   #--- ocn to atm bilinear (non-conservative) ----------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $focn -nsrc $nocn -fdst $fatm -ndst $natm \
-            -tsrc $type_ocn -tdst $type_atm -map blin $batchrun
+  make_map "$focn" "$nocn" "$fatm" "$natm" "$type_ocn" "$type_atm" "blin"
   file_list="$file_list map_${nocn}_TO_${natm}_blin.$cdate.nc"
 
   #--- atm to ocn conservative (area avg?) -------------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $fatm -nsrc $natm -fdst $focn -ndst $nocn \
-            -tsrc $type_atm -tdst $type_ocn -map aave $batchrun
+  make_map "$fatm" "$natm" "$focn" "$nocn" "$type_atm" "$type_ocn" "aave"
   file_list="$file_list map_${natm}_TO_${nocn}_aave.$cdate.nc"
 
   #--- atm to ocn bilinear (non-conservative) ----------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $fatm -nsrc $natm -fdst $focn -ndst $nocn \
-            -tsrc $type_atm -tdst $type_ocn -map blin $batchrun
+  make_map "$fatm" "$natm" "$focn" "$nocn" "$type_atm" "$type_ocn" "blin"
   file_list="$file_list map_${natm}_TO_${nocn}_blin.$cdate.nc"
 
   #--- atm to ocn patch mapping (non-conservative) -------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $fatm -nsrc $natm -fdst $focn -ndst $nocn \
-            -tsrc $type_atm -tdst $type_ocn -map patc $batchrun
+  make_map "$fatm" "$natm" "$focn" "$nocn" "$type_atm" "$type_ocn" "patc"
   file_list="$file_list map_${natm}_TO_${nocn}_patc.$cdate.nc"
 fi
 
@@ -413,24 +406,21 @@ if [ $atm_lnd == 1 ]; then
     echo "----------------------------------------------------------"
     echo ""
   fi
-  $make_map -fsrc $fatm -nsrc $natm -fdst $flnd -ndst $nlnd \
-            -tsrc $type_atm -tdst global -map aave $batchrun
+  make_map "$fatm" "$natm" "$flnd" "$nlnd" "$type_atm" "global" "aave"
   file_list="$file_list map_${natm}_TO_${nlnd}_aave.$cdate.nc"
 
   #--- atm to lnd bilinear (non-conservative) ----------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $fatm -nsrc $natm -fdst $flnd -ndst $nlnd \
-            -tsrc $type_atm -tdst global -map blin $batchrun
+  make_map "$fatm" "$natm" "$flnd" "$nlnd" "$type_atm" "global" "blin"
   file_list="$file_list map_${natm}_TO_${nlnd}_blin.$cdate.nc"
 
   #--- lnd to atm conservative (area avg?) -------------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $flnd -nsrc $nlnd -fdst $fatm -ndst $natm \
-            -tsrc global -tdst $type_atm -map aave $batchrun
+  make_map "$flnd" "$nlnd" "$fatm" "$natm" "global" "$type_atm" "aave"
   file_list="$file_list map_${nlnd}_TO_${natm}_aave.$cdate.nc"
 
 fi
@@ -442,8 +432,7 @@ if [ $ocn_lnd == 1 ]; then
     echo "----------------------------------------------------------"
     echo ""
   fi
-  $make_map -fsrc $focn -nsrc $nocn -fdst $flnd -ndst $nlnd \
-            -tsrc $type_ocn -tdst global -map aave $batchrun
+  make_map "$focn" "$nocn" "$flnd" "$nlnd" "$type_ocn" "global" "aave"
   file_list="$file_list map_${nocn}_TO_${nlnd}_aave.$cdate.nc"
 fi
 
@@ -454,16 +443,14 @@ if [ $lnd_rtm == 1 ]; then
     echo "----------------------------------------------------------"
     echo ""
   fi
-  $make_map -fsrc $flnd -nsrc $nlnd -fdst $frtm -ndst $nrtm \
-            -tsrc global -tdst global -map aave $batchrun
+  make_map "$flnd" "$nlnd" "$frtm" "$nrtm" "global" "global" "aave"
   file_list="$file_list map_${nlnd}_TO_${nrtm}_aave.$cdate.nc"
 
   #--- rtm to lnd conservative (area avg) -------------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $frtm -nsrc $nrtm -fdst $flnd -ndst $nlnd \
-            -tsrc global -tdst global -map aave $batchrun
+  make_map "$frtm" "$nrtm" "$flnd" "$nlnd" "global" "global" "aave"
   file_list="$file_list map_${nrtm}_TO_${nlnd}_aave.$cdate.nc"
 
 fi
@@ -475,24 +462,21 @@ if [ $lnd_glc == 1 ]; then
     echo "----------------------------------------------------------"
     echo ""
   fi
-  $make_map -fsrc $fglc -nsrc $nglc -fdst $flnd -ndst $nlnd \
-            -tsrc regional -tdst global -map aave $batchrun
+  make_map "$fglc" "$nglc" "$flnd" "$nlnd" "regional" "global" "aave"
   file_list="$file_list map_${nglc}_TO_${nlnd}_aave.$cdate.nc"
 
   #--- lnd to glc conservative (area avg?) -------------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $flnd -nsrc $nlnd -fdst $fglc -ndst $nglc \
-            -tsrc global -tdst regional -map aave $batchrun
+  make_map "$flnd" "$nlnd" "$fglc" "$nglc" "global" "regional" "aave"
   file_list="$file_list map_${nlnd}_TO_${nglc}_aave.$cdate.nc"
 
   #--- lnd to glc bilinear (non-conservative) ----------------------------------
   echo ""
   echo "----------------------------------------------------------"
   echo ""
-  $make_map -fsrc $flnd -nsrc $nlnd -fdst $fglc -ndst $nglc \
-            -tsrc global -tdst regional -map blin $batchrun
+  make_map "$flnd" "$nlnd" "$fglc" "$nglc" "global" "regional" "blin"
   file_list="$file_list map_${nlnd}_TO_${nglc}_blin.$cdate.nc"
 
 fi
