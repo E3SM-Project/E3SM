@@ -33,10 +33,9 @@ Interpreted FORMAT sequences are:
 Standard format extensions, such as a field length and padding are supported.
 Python dictionary-format strings are also supported. For instance,
 --format "{C:4}", will print the component name padded to 4 spaces.
-=======================
-If this tool is missing any feature that you need, please go to github and
-create an issue (https://github.com/ESMCI/cime/issues). Detailed
-information is available at https://github.com/ESMCI/cime.
+
+If  you encounter problems with this tool or find it is missing any
+feature that you need, please open an issue on https://github.com/ESMCI/cime
 
     COPYRIGHT AND LICENSE
 
