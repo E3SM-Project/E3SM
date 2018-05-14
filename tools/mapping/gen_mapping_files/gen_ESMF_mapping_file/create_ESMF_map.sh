@@ -235,7 +235,8 @@ fi
 
 # machine-specific restrictions
 if [ "$cheyenne_login" == "TRUE" ] && [ "$serial" != "TRUE" ]; then
-  echo "ERROR: On the cheyenne login node, run with --serial"
+  echo "ERROR: You are trying to use parallal ESMF tools on the cheyenne login node."
+  echo "       Either run with '--serial' or move to a compute node."
   exit 1
 fi
 
