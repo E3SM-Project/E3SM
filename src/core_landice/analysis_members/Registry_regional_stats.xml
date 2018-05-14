@@ -60,6 +60,12 @@
                 <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="area-integrated surface mass balance within region"
                 />
+                <var name="regionalSumGroundedSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated surface mass balance on grounded ice within region"
+                />
+                <var name="regionalSumFloatingSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated surface mass balance on floating ice within region"
+                />
                 <var name="regionalAvgNetAccumulation" type="real" dimensions="nRegions Time" units="m yr^{-1}"
                         description="average sfcMassBal, as a thickness rate. Positive values represent ice gain."
                 />
