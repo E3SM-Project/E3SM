@@ -165,7 +165,6 @@ contains
       type (mpas_pool_type), pointer :: velocityPool
 
       ! arrays, vars needed from other pools for calculations here
-      real (kind=RKIND), pointer ::  config_ice_density
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:), pointer ::  dvEdge
@@ -273,7 +272,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
          ! get values and arrays from standard pools
-         call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
@@ -337,7 +335,7 @@ contains
 
             ! mass lass due do calving (kg yr^{-1})
             blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
-               areaCell(iCell) * config_ice_density / ( deltat / scyr )
+               areaCell(iCell) * rhoi / ( deltat / scyr )
 
             ! max surface speed
             if (surfaceSpeed(iCell) > blockMaxSurfaceSpeed) then
@@ -355,7 +353,7 @@ contains
          do iEdge = 1, nEdgesSolve
             ! Flux across GL, units = kg/yr
             blockGLflux = blockGLflux + fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) &
-                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
+                      * scyr * rhoi ! convert from m^3/s to kg/yr
          end do ! end loop over edges
 
          block => block % next
