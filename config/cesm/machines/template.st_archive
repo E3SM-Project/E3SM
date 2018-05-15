@@ -86,6 +86,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
+    sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
     caseroot, last_date, no_incomplete_logs, copy_only, test, resubmit = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         if test:

@@ -223,7 +223,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=True)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
@@ -232,7 +232,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            self._case.case_st_archive()
+            self._case.case_st_archive(resubmit=True)
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfiles = self._get_latest_cpl_logs()

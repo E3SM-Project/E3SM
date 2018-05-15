@@ -48,6 +48,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--reset", action="store_true",
                         help="Reset the case to its original state as defined by config_tests.xml")
 
+    parser.add_argument("--resubmit", action="store_true",
+                        help="Ignored in tests, but needed for all templates")
+
     parser.add_argument("--skip-preview-namelist", action="store_true",
                         help="Skip calling preview-namelist during case.run")
 

@@ -19,7 +19,7 @@ class PET(SystemTestsCompareTwo):
         """
         SystemTestsCompareTwo.__init__(self, case,
                                        separate_builds = False,
-                                       multisubmit=False,
+                                       multisubmit=True,
                                        run_two_suffix = 'single_thread',
                                        run_one_description = 'default threading',
                                        run_two_description = 'threads set to 1')
