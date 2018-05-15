@@ -172,7 +172,8 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  dvEdge
       real (kind=RKIND), dimension(:), pointer ::  thickness
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
-      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
+      real (kind=RKIND), dimension(:), pointer ::  sfcMassBalApplied
+      real (kind=RKIND), dimension(:), pointer ::  groundedSfcMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
@@ -273,7 +274,8 @@ contains
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
@@ -348,17 +350,17 @@ contains
 
             ! regional sum of sfc mass balance (kg yr^{-1})
             blockSumRegionSfcMassBal(iRegion) = blockSumRegionSfcMassBal(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * sfcMassBal(iCell) * scyr )
+                * areaCell(iCell) * sfcMassBalApplied(iCell) * scyr )
 
             ! regional sum of sfc mass balance on grounded ice (kg yr^{-1})
             blockSumRegionGroundedSfcMassBal(iRegion) = blockSumRegionGroundedSfcMassBal(iRegion) + &
                 ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * sfcMassBal(iCell) * scyr )
+                * areaCell(iCell) * groundedSfcMassBalApplied(iCell) * scyr)
 
             ! regional sum of sfc mass balance on floatingice (kg yr^{-1})
             blockSumRegionFloatingSfcMassBal(iRegion) = blockSumRegionFloatingSfcMassBal(iRegion) + &
                 ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * sfcMassBal(iCell) * scyr )
+                * areaCell(iCell) * (sfcMassBalApplied(iCell) - groundedSfcMassBalApplied(iCell)) * scyr)
 
             ! regional sum of basal mass balance (kg yr^{-1})
             blockSumRegionBasalMassBal(iRegion) = blockSumRegionBasalMassBal(iRegion) + &

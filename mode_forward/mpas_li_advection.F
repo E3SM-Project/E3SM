@@ -138,7 +138,9 @@ module li_advection
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,             & ! ice thickness (updated in this subroutine)
            bedTopography,         & ! bed topography
-           sfcMassBal,            & ! surface mass balance
+           sfcMassBal,            & ! surface mass balance (potential forcing)
+           sfcMassBalApplied,     & ! surface mass balance (actually applied)
+           groundedSfcMassBalApplied,     & ! surface mass balance on grounded locations (actually applied)
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
            floatingBasalMassBal,  & ! basal mass balance for floating ice
@@ -235,6 +237,8 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+      call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
@@ -257,7 +261,6 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
-      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -399,14 +402,6 @@ module li_advection
          ! Add the surface and basal mass balance to the layer thickness
          !-----------------------------------------------------------------
 
-         ! Zero out any positive surface mass balance for ice-free ocean cells
-
-         where ( sfcMassBal > 0.0_RKIND .and. bedTopography < config_sea_level .and. .not.(li_mask_is_ice(cellMask) ) )
-
-            sfcMassBal = 0.0_RKIND
-
-         end where
-
          ! Combine various basal mass balance fields based on mask.
          ! Grounded and floating basal mass balance should come from the thermal solver.
 
@@ -432,7 +427,11 @@ module li_advection
          call apply_mass_balance(&
               dt,                  &
               config_ice_density,  &
+              cellMask,            &
+              bedTopography,       &
               sfcMassBal,          &
+              sfcMassBalApplied,   &
+              groundedSfcMassBalApplied,   &
               basalMassBal,        &
               surfaceTracers,      &
               basalTracers,        &
@@ -619,7 +618,11 @@ module li_advection
     subroutine apply_mass_balance(&
               dt,                  &
               rhoi,                &
+              cellMask,            &
+              bedTopography,       &
               sfcMassBal,          &
+              sfcMassBalApplied,   &
+              groundedSfcMassBalApplied,   &
               basalMassBal,        &
               surfaceTracers,      &
               basalTracers,        &
@@ -627,16 +630,17 @@ module li_advection
               advectedTracers)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) ::  &
            dt,                 & !< Input: time step (s)
            rhoi                  !< Input: ice density (kg/m^3)
 
+      integer, dimension(:), intent(in) :: cellMask !< Input: mask on cells
+
       real (kind=RKIND), dimension(:), intent(in) ::  &
+           bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
            basalMassBal          !< Input: basal mass balance (kg/m^2/s)
 
@@ -645,16 +649,25 @@ module li_advection
            basalTracers          !< Input: tracer values of new ice at lower surface
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:,:), intent(inout) :: &
-           layerThickness        ! ice thickness in each layer (m)
+           layerThickness        !< Input/Output: ice thickness in each layer (m)
 
       real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-           advectedTracers       ! tracer values in each layer
+           advectedTracers       !< Input/Output: tracer values in each layer
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           sfcMassBalApplied !< Output: surface mass balance actually applied on this time step (kg/m^2/s)
+
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           groundedSfcMassBalApplied !< Output: surface mass balance actually applied to grounded ice on this time step (kg/m^2/s)
+
 
       ! local variables
 
@@ -668,6 +681,7 @@ module li_advection
       integer :: nCells     ! number of cells
       integer :: nLayers    ! number of layers
       integer :: nTracers   ! number of tracers
+      real (kind=RKIND), pointer :: config_sea_level ! sea level relative to z = 0
 
       integer :: iCell, iLayer, iTracer
 
@@ -677,9 +691,14 @@ module li_advection
 
       allocate(thckTracerProducts(nTracers))
 
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+
       ! apply surface mass balance
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
       ! If negative, then melt from the top down until the melting term is used up or the ice is gone
+
+      ! Initialize applied SMB field
+      sfcMassBalApplied(:) = sfcMassBal(:)
 
       do iCell = 1, nCells
 
@@ -692,12 +711,18 @@ module li_advection
 
          ! apply surface mass balance
 
-         if (sfcMassBal(iCell) > 0.0_RKIND) then
+         ! Zero out any positive surface mass balance for ice-free ocean cells
+         if (sfcMassBalApplied(iCell) > 0.0_RKIND .and. &
+             bedTopography(iCell) < config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
+            sfcMassBalApplied(iCell) = 0.0_RKIND
+         end if
 
-            ! surface accumulation
+         ! surface accumulation
+         if (sfcMassBalApplied(iCell) > 0.0_RKIND) then
+
             ! modify tracers conservatively in top layer
 
-            sfcAccum = sfcMassBal(iCell) * dt / rhoi
+            sfcAccum = sfcMassBalApplied(iCell) * dt / rhoi
 
             ! compute mass-tracer products in top layer
             thckTracerProducts(:) = layerThickness(1,iCell)*advectedTracers(:,1,iCell)  &
@@ -709,11 +734,10 @@ module li_advection
             ! new tracers in top layer
             advectedTracers(:,1,iCell) = thckTracerProducts(:) / layerThickness(1,iCell)
 
-         elseif (sfcMassBal(iCell) < 0.0_RKIND) then
+         ! surface ablation
+         elseif (sfcMassBalApplied(iCell) < 0.0_RKIND) then
 
-            ! surface ablation from the top down
-
-            sfcAblat = -sfcMassBal(iCell) * dt /rhoi    ! positive for melting
+            sfcAblat = -1.0_RKIND * sfcMassBalApplied(iCell) * dt /rhoi    ! positive for melting
 
             do iLayer = 1, nLayers
                if (sfcAblat > layerThickness(iLayer,iCell)) then   ! melt the entire layer
@@ -727,9 +751,19 @@ module li_advection
                endif
             enddo
 
-            !TODO - If remaining sfcAblat > 0, then keep track of it to conserve energy
+            ! Adjust applied SMB to only be the amount actually applied above (this will include ice-free cells)
+            if (sfcAblat > 0.0_RKIND) then
+               sfcMassBalApplied(iCell) = sfcMassBalApplied(iCell) + sfcAblat * rhoi / dt
+               !TODO - If remaining sfcAblat > 0, then keep track of it to conserve energy (?)
+            endif
+
 
          endif   ! sfcMassBal > 0
+
+         groundedSfcMassBalApplied(:) = 0.0_RKIND
+         where (li_mask_is_grounded_ice(cellMask) .or. bedTopography > config_sea_level)
+            groundedSfcMassBalApplied = sfcMassBalApplied
+         end where
 
          ! apply basal mass balance
 
