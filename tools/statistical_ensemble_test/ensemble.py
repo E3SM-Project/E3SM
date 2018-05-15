@@ -1,8 +1,7 @@
 #!/usr/bin/python
 import os, sys, getopt
 import random
-#import utility
-import single_run
+from single_run import process_args_dict, single_case
 
 #==============================================================================
 # set up and submit 12-month (original) or 9-time step (uf) run.  then create 
@@ -67,10 +66,10 @@ def main(argv):
         rand_ints = random_pick(3, end_range)
         
     #now create cases
-    thisdir = os.getcwd()
-   
+    print('STATUS: creating first case ...')
+
     #create first case - then clone
-    if runtype == 'verify':
+    if run_type == 'verify':
         opts_dict['pertlim'] = get_pertlim_uf(rand_ints[0])
     else: #full ensemble
         opts_dict['pertlim'] = "0"
@@ -78,31 +77,74 @@ def main(argv):
     #first case
     single_case(opts_dict, case_flags)
 
-    #now clone FIX THIS
-#    case_root=os.path.dirname(case_name)
-#    case_pfx=os.path.basename(case_name)
-#    for i in range(1,clonecount):
-#        iens='{0:03d}'.format(i)
-#        if runtype == 'validation':
-#           pertlim=get_pertlim_uf(rand_ints(i))
-#        else:
-#           pertlim=get_pertlim_uf(i)
-#        case1_name=case_pfx+"."+iens
-#        case1=case_root+"/"+case1_name
+    #now clone
+    print('STATUS: cloning additional cases ...')
 
-#        os.chdir(scripts_root)
-#        print "=== SCRIPTS_ROOT ==="
-#        print scripts_root
-#        command='scripts_root/create_clone --keepexe --case case1 --clone case'
-#        ret=os.system(command)
+    #scripts dir
+    root_dir = os.path.basename(__file__)
+    ret = os.chdir(root_dir)
+    ret = os.chdir('../../scripts')
+    scripts_dir = os.getcwd()
+
+    #we know case name ends in '.000' (already checked)
+    clone_case = opts_dict['case']
+    case_pfx = clone_case[:-4]
+
+    for i in range(1, clone_count + 1): #1: clone_count
+        if runtype == 'verify':
+           pertlim = get_pertlim_uf(rand_ints[i])
+        else: #full ensemble
+           pertlim = get_pertlim_uf(i)
+
+        iens = '{0:03d}'.format(i)
+        new_case = case_pfx + "." + iens
+        full_new_case = scripts_dir +"/" + clone_name
+
+        os.chdir(scripts_dir)
+        print ("STATUS: creating cloned case: " + clone_name)
+
+        command = scripts_dir + "/create_clone --keepexe --case " + full_new_case + " --clone" + clone_case
+        ret = os.system(command)
+
+        print ("STATUS: running setup for cloned case: " + clone_name)
+        os.chdir(full_new_case)
+        command = './case_setup'
+        ret = os.system(command)
+
+        #modify the perlim in the file
+        if runtype == 'verify': #remove old pertlim first
+            f = open("user_nl_cam.nl","r+")
+            all_lines = f.readlines()
+            f.seek(0)
+            for line in all_lines:
+                if line.find("pertlim") == -1:
+                    f.write(line)
+            f.truncate()
+            f.close()
+
+        #now append new pertlim
+        with open("user_nl_cam", "a") as f:
+            text = "pertlim = " + opts_dict['pertlim']
+            f.write(text)
+
+        #preview namelists
+        command = './preview_namelists'
+        ret = os.system(command)
+    
+        #submit?
+        if opts_dict["ns"] == False:
+            command = './case.submit'
+            ret = os.system(command)
+
+    #Final output
+    if runtype == "verify":
+        print ("STATUS: ---VERIFICATION CASES COMPLETE---")
+        print ("Set up three cases using the following pertlim values:")
+        print get_pertlim_uf(rand_ints[0]) + '   ' + get_pertlim_uf(rand_ints[1]) + "   " + get_pertlim_uf(rand_ints[2])
+    else:
+       print ("STATUS: --ENSEMBLE CASES COMPLETE---")
 
 
-        # Get value for EXEROOT from $CASE
-        # Note return string is "EXEROOT = $EXEROOT"
-        if test_suite == TRUE:
-           os.chdir(scripts_root+"/"+case)
-        else:
-           os.chdir(case)
 
 
 if __name__ == "__main__":
