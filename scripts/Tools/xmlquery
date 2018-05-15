@@ -94,7 +94,7 @@ There are two usage modes:
      - You can tailor the query by adding ONE of the following possible qualifier arguments:
        [--full --fileonly --raw --description --get-group --type --valid-values]
 
-     - The env_mach_specific.xml env_archive.xml files are not supported by this tool.
+     - The env_mach_specific.xml and env_archive.xml files are not supported by this tool.
 """
 
 from standard_script_setup import *
@@ -291,7 +291,6 @@ def _main_func(description):
     with Case(caseroot) as case:
         if listall or partial_match:
             if xmlfile:
-                comp_classes = case.get_values("COMP_CLASSES")
                 case.set_file(xmlfile)
             all_variables = sorted(case.get_record_fields(None, "varid"))
             logger.debug("all_variables: {}".format(all_variables))
