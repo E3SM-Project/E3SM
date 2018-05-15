@@ -844,7 +844,13 @@ is the value of that variable from the *previous* time level!
                 <!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
 
                 <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="potential surface mass balance"
+                />
+                <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="applied surface mass balance"
+                />
+                <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied surface mass balance on grounded ice"
                 />
                 <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="applied basal mass balance"
