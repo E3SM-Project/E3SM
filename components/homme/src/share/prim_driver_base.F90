@@ -873,7 +873,7 @@ contains
     real(kind=real_kind) :: dp, dt_q, dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t,scm_dum
-    integer :: n0_qdp,np1_qdp,r,nstep_end
+    integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in
     logical :: compute_diagnostics
     ! compute timesteps for tracer transport and vertical remap
 
@@ -982,7 +982,15 @@ contains
     !  always for tracers
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete,single_column)
+    if (single_column) then
+      nets_in=1
+      nete_in=1
+    else
+      nets_in=nets
+      nete_in=nete
+    endif
+
+    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1021,7 +1029,6 @@ contains
       call t_stopf("prim_energy_halftimes")
     endif
     
-
     ! =================================
     ! update dynamics time level pointers
     ! =================================

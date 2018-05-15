@@ -20,7 +20,7 @@ module vertremap_mod
 contains
 
 
-  subroutine vertical_remap(hybrid,elem,hvcoord,dt,np1,np1_qdp,nets,nete,single_column)
+  subroutine vertical_remap(hybrid,elem,hvcoord,dt,np1,np1_qdp,nets,nete)
 
   ! This routine is called at the end of the vertically Lagrangian
   ! dynamics step to compute the vertical flux needed to get back
@@ -44,9 +44,8 @@ contains
   type (hvcoord_t)                :: hvcoord
   real (kind=real_kind)           :: dt
 
-  logical :: single_column
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
-  integer :: q,nets_do,nete_do
+  integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
@@ -73,15 +72,7 @@ contains
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
   
-  if (single_column) then
-    nets_do=1
-    nete_do=1
-  else
-    nets_do=nets
-    nete_do=nete
-  endif
-  
-   do ie=nets_do,nete_do
+   do ie=nets,nete
      ! update final ps_v
      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
           sum(elem(ie)%state%dp3d(:,:,:,np1),3)
