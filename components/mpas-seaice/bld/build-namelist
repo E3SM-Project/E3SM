@@ -323,7 +323,7 @@ if (defined $opts{'infile'}) {
         my $val = $nl_infile->get_variable_value($group, $var);
         my @broken = split(/&/,$var);
         my $check_grp = 0; # If 1, make sure group found in definitions file
-                           # matches that specified in user_nl_mpascice
+                           # matches that specified in user_nl_mpassi
 
         # if variable has ampersand, truncate it unless it is type derived
         if ($broken[1]) {
@@ -346,14 +346,14 @@ if (defined $opts{'infile'}) {
         $nl_check_var->set_variable_value($group, $var_local,$val);
         eval { $nl_check_valid = $definition->validate($nl_check_var); };
         (not $@) or die <<"EOF";
-** ERROR: either $var_local is not a valid MPASSI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpascice. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpascice using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpassi_in namelist containing $var_local.**
+** ERROR: either $var_local is not a valid MPASSI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpassi. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpassi using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpassi_in namelist containing $var_local.**
 EOF
 
-        # If group was specified in user_nl_mpascice, make sure it matches
+        # If group was specified in user_nl_mpassi, make sure it matches
         # the group in the definitions file.
         my @group_valid = $nl_check_valid->get_group_names();
         ((not $check_grp) or ($broken[1] eq $group_valid[0])) or die <<"EOF";
-** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_mpascice. **
+** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_mpassi. **
 EOF
 
         # Add variable to validated namelist
@@ -364,7 +364,7 @@ EOF
     # If preview is desired and something has been changed in $nl_infile_valid,
     # output everything in $nl_infile_valid
     if (($preview == 1) && ($nl_infile_valid->get_group_names)) {
-      print " - The following values have been set in user_nl_mpascice:\n";
+      print " - The following values have been set in user_nl_mpassi:\n";
       print_nl_to_screen($nl_infile_valid);
     }
     # Merge input values into namelist.  Previously specified values have higher
@@ -457,7 +457,7 @@ add_default($nl, 'config_test_case_diag_type');
 # Namelist group: decomposition #
 #################################
 
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-seaice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -605,6 +605,33 @@ add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_vertical_zsalinity');
 add_default($nl, 'config_use_shortwave_bioabsorption');
 add_default($nl, 'config_use_skeletal_biochemistry');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".true.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".true.");
+        add_default($nl, 'config_use_brine', 'val'=>".true.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".true.");
+        add_default($nl, 'config_use_carbon', 'val'=>".true.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".true.");
+        add_default($nl, 'config_use_silicate', 'val'=>".true.");
+        add_default($nl, 'config_use_DMS', 'val'=>".true.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".true.");
+        add_default($nl, 'config_use_humics', 'val'=>".true.");
+        add_default($nl, 'config_use_DON', 'val'=>".true.");
+        add_default($nl, 'config_use_iron', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".false.");
+        add_default($nl, 'config_use_brine', 'val'=>".false.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".false.");
+        add_default($nl, 'config_use_carbon', 'val'=>".false.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".false.");
+        add_default($nl, 'config_use_silicate', 'val'=>".false.");
+        add_default($nl, 'config_use_DMS', 'val'=>".false.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".false.");
+        add_default($nl, 'config_use_humics', 'val'=>".false.");
+        add_default($nl, 'config_use_DON', 'val'=>".false.");
+        add_default($nl, 'config_use_iron', 'val'=>".false.");
+}
 add_default($nl, 'config_use_chlorophyll');
 add_default($nl, 'config_use_modal_aerosols');
 add_default($nl, 'config_use_zaerosols');
@@ -612,8 +639,11 @@ add_default($nl, 'config_skeletal_bgc_flux_type');
 add_default($nl, 'config_scale_initial_vertical_bgc');
 add_default($nl, 'config_biogrid_bottom_molecular_sublayer');
 add_default($nl, 'config_biogrid_top_molecular_sublayer');
+add_default($nl, 'config_bio_gravity_drainage_length_scale');
+add_default($nl, 'config_zsalinity_molecular_sublayer');
 add_default($nl, 'config_zsalinity_gravity_drainage_scale');
 add_default($nl, 'config_snow_porosity_at_ice_surface');
+add_default($nl, 'config_new_ice_fraction_biotracer');
 add_default($nl, 'config_fraction_biotracer_in_frazil');
 add_default($nl, 'config_ratio_Si_to_N_diatoms');
 add_default($nl, 'config_ratio_Si_to_N_small_plankton');
@@ -631,16 +661,29 @@ add_default($nl, 'config_ratio_Fe_to_DON');
 add_default($nl, 'config_ratio_Fe_to_DOC_saccharids');
 add_default($nl, 'config_ratio_Fe_to_DOC_lipids');
 add_default($nl, 'config_respiration_fraction_of_growth');
+add_default($nl, 'config_rapid_mobile_to_stationary_time');
+add_default($nl, 'config_long_mobile_to_stationary_time');
+add_default($nl, 'config_algal_maximum_velocity');
 add_default($nl, 'config_ratio_Fe_to_dust');
 add_default($nl, 'config_solubility_of_Fe_in_dust');
 add_default($nl, 'config_chla_absorptivity_of_diatoms');
 add_default($nl, 'config_chla_absorptivity_of_small_plankton');
 add_default($nl, 'config_chla_absorptivity_of_phaeocystis');
+add_default($nl, 'config_light_attenuation_diatoms');
+add_default($nl, 'config_light_attenuation_small_plankton');
+add_default($nl, 'config_light_attenuation_phaeocystis');
+add_default($nl, 'config_light_inhibition_diatoms');
+add_default($nl, 'config_light_inhibition_small_plankton');
+add_default($nl, 'config_light_inhibition_phaeocystis');
 add_default($nl, 'config_maximum_growth_rate_diatoms');
+add_default($nl, 'config_maximum_growth_rate_small_plankton');
+add_default($nl, 'config_maximum_growth_rate_phaeocystis');
 add_default($nl, 'config_temperature_growth_diatoms');
 add_default($nl, 'config_temperature_growth_small_plankton');
 add_default($nl, 'config_temperature_growth_phaeocystis');
 add_default($nl, 'config_grazed_fraction_diatoms');
+add_default($nl, 'config_grazed_fraction_small_plankton');
+add_default($nl, 'config_grazed_fraction_phaeocystis');
 add_default($nl, 'config_mortality_diatoms');
 add_default($nl, 'config_mortality_small_plankton');
 add_default($nl, 'config_mortality_phaeocystis');
@@ -676,15 +719,36 @@ add_default($nl, 'config_salinity_dependence_of_growth');
 add_default($nl, 'config_minimum_optical_depth');
 add_default($nl, 'config_slopped_grazing_fraction');
 add_default($nl, 'config_excreted_fraction');
+add_default($nl, 'config_fraction_mortality_to_ammonium');
+add_default($nl, 'config_fraction_iron_remineralized');
 add_default($nl, 'config_nitrification_rate');
 add_default($nl, 'config_desorption_loss_particulate_iron');
 add_default($nl, 'config_maximum_loss_fraction');
 add_default($nl, 'config_maximum_ratio_iron_to_saccharids');
+add_default($nl, 'config_respiration_loss_to_DMSPd');
+add_default($nl, 'config_DMSP_to_DMS_conversion_fraction');
+add_default($nl, 'config_DMSP_to_DMS_conversion_time');
+add_default($nl, 'config_DMS_oxidation_time');
 add_default($nl, 'config_mobility_type_diatoms');
+add_default($nl, 'config_mobility_type_small_plankton');
+add_default($nl, 'config_mobility_type_phaeocystis');
 add_default($nl, 'config_mobility_type_nitrate');
+add_default($nl, 'config_mobility_type_ammonium');
 add_default($nl, 'config_mobility_type_silicate');
 add_default($nl, 'config_mobility_type_DMSPp');
+add_default($nl, 'config_mobility_type_DMSPd');
+add_default($nl, 'config_mobility_type_humics');
+add_default($nl, 'config_mobility_type_saccharids');
+add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_proteins');
+add_default($nl, 'config_mobility_type_dissolved_iron');
 add_default($nl, 'config_mobility_type_particulate_iron');
+add_default($nl, 'config_mobility_type_black_carbon1');
+add_default($nl, 'config_mobility_type_black_carbon2');
+add_default($nl, 'config_mobility_type_dust1');
+add_default($nl, 'config_mobility_type_dust2');
+add_default($nl, 'config_mobility_type_dust3');
+add_default($nl, 'config_mobility_type_dust4');
 add_default($nl, 'config_ratio_C_to_N_diatoms');
 add_default($nl, 'config_ratio_C_to_N_small_plankton');
 add_default($nl, 'config_ratio_C_to_N_phaeocystis');
@@ -695,108 +759,6 @@ add_default($nl, 'config_scales_absorption_diatoms');
 add_default($nl, 'config_scales_absorption_small_plankton');
 add_default($nl, 'config_scales_absorption_phaeocystis');
 add_default($nl, 'config_ratio_C_to_N_proteins');
-add_default($nl, 'config_use_carbon');
-if ($ice_bgc eq 'ice_bgc') {
-        add_default($nl, 'config_algal_maximum_velocity', 'val'=>"0.0000001");
-        add_default($nl, 'config_bio_gravity_drainage_length_scale', 'val'=>"20.0");
-        add_default($nl, 'config_dms_oxidation_time', 'val'=>"12.0");
-        add_default($nl, 'config_dmsp_to_dms_conversion_fraction', 'val'=>"0.7");
-        add_default($nl, 'config_dmsp_to_dms_conversion_time', 'val'=>"5.0");
-        add_default($nl, 'config_fraction_iron_remineralized', 'val'=>"1.0");
-        add_default($nl, 'config_fraction_mortality_to_ammonium', 'val'=>"0.9");
-        add_default($nl, 'config_grazed_fraction_phaeocystis', 'val'=>"0.7");
-        add_default($nl, 'config_grazed_fraction_small_plankton', 'val'=>"0.7");
-        add_default($nl, 'config_light_attenuation_diatoms', 'val'=>"0.3");
-        add_default($nl, 'config_light_attenuation_phaeocystis', 'val'=>"0.17");
-        add_default($nl, 'config_light_attenuation_small_plankton', 'val'=>"0.2");
-        add_default($nl, 'config_light_inhibition_diatoms', 'val'=>"0.001");
-        add_default($nl, 'config_light_inhibition_phaeocystis', 'val'=>"0.04");
-        add_default($nl, 'config_light_inhibition_small_plankton', 'val'=>"0.001");
-        add_default($nl, 'config_long_mobile_to_stationary_time', 'val'=>"7776000.0");
-        add_default($nl, 'config_maximum_growth_rate_phaeocystis', 'val'=>"0.63");
-        add_default($nl, 'config_maximum_growth_rate_small_plankton', 'val'=>"0.41");
-        add_default($nl, 'config_mobility_type_ammonium', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_black_carbon1', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_black_carbon2', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dissolved_iron', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dmspd', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dust1', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dust2', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dust3', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_dust4', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_humics', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_lipids', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_phaeocystis', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_proteins', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_saccharids', 'val'=>"0.0");
-        add_default($nl, 'config_mobility_type_small_plankton', 'val'=>"0.0");
-        add_default($nl, 'config_new_ice_fraction_biotracer', 'val'=>"1.0");
-        add_default($nl, 'config_rapid_mobile_to_stationary_time', 'val'=>"3600.0");
-        add_default($nl, 'config_respiration_loss_to_dmspd', 'val'=>"0.9");
-        add_default($nl, 'config_use_ammonium', 'val'=>".true.");
-        add_default($nl, 'config_use_brine', 'val'=>".true.");
-        add_default($nl, 'config_use_carbon', 'val'=>".false.");
-        add_default($nl, 'config_use_dms', 'val'=>".true.");
-        add_default($nl, 'config_use_don', 'val'=>".true.");
-        add_default($nl, 'config_use_humics', 'val'=>".true.");
-        add_default($nl, 'config_use_iron', 'val'=>".true.");
-        add_default($nl, 'config_use_nitrate', 'val'=>".true.");
-        add_default($nl, 'config_use_nonreactive', 'val'=>".true.");
-        add_default($nl, 'config_use_silicate', 'val'=>".true.");
-        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".true.");
-        add_default($nl, 'config_use_vertical_tracers', 'val'=>".true.");
-        add_default($nl, 'config_zsalinity_molecular_sublayer', 'val'=>"0.0");
-} else {
-        add_default($nl, 'config_algal_maximum_velocity');
-        add_default($nl, 'config_bio_gravity_drainage_length_scale');
-        add_default($nl, 'config_dms_oxidation_time');
-        add_default($nl, 'config_dmsp_to_dms_conversion_fraction');
-        add_default($nl, 'config_dmsp_to_dms_conversion_time');
-        add_default($nl, 'config_fraction_iron_remineralized');
-        add_default($nl, 'config_fraction_mortality_to_ammonium');
-        add_default($nl, 'config_grazed_fraction_phaeocystis');
-        add_default($nl, 'config_grazed_fraction_small_plankton');
-        add_default($nl, 'config_light_attenuation_diatoms');
-        add_default($nl, 'config_light_attenuation_phaeocystis');
-        add_default($nl, 'config_light_attenuation_small_plankton');
-        add_default($nl, 'config_light_inhibition_diatoms');
-        add_default($nl, 'config_light_inhibition_phaeocystis');
-        add_default($nl, 'config_light_inhibition_small_plankton');
-        add_default($nl, 'config_long_mobile_to_stationary_time');
-        add_default($nl, 'config_maximum_growth_rate_phaeocystis');
-        add_default($nl, 'config_maximum_growth_rate_small_plankton');
-        add_default($nl, 'config_mobility_type_ammonium');
-        add_default($nl, 'config_mobility_type_black_carbon1');
-        add_default($nl, 'config_mobility_type_black_carbon2');
-        add_default($nl, 'config_mobility_type_dissolved_iron');
-        add_default($nl, 'config_mobility_type_dmspd');
-        add_default($nl, 'config_mobility_type_dust1');
-        add_default($nl, 'config_mobility_type_dust2');
-        add_default($nl, 'config_mobility_type_dust3');
-        add_default($nl, 'config_mobility_type_dust4');
-        add_default($nl, 'config_mobility_type_humics');
-        add_default($nl, 'config_mobility_type_lipids');
-        add_default($nl, 'config_mobility_type_phaeocystis');
-        add_default($nl, 'config_mobility_type_proteins');
-        add_default($nl, 'config_mobility_type_saccharids');
-        add_default($nl, 'config_mobility_type_small_plankton');
-        add_default($nl, 'config_new_ice_fraction_biotracer');
-        add_default($nl, 'config_rapid_mobile_to_stationary_time');
-        add_default($nl, 'config_respiration_loss_to_dmspd');
-        add_default($nl, 'config_use_ammonium');
-        add_default($nl, 'config_use_brine');
-        add_default($nl, 'config_use_carbon');
-        add_default($nl, 'config_use_dms');
-        add_default($nl, 'config_use_don');
-        add_default($nl, 'config_use_humics');
-        add_default($nl, 'config_use_iron');
-        add_default($nl, 'config_use_nitrate');
-        add_default($nl, 'config_use_nonreactive');
-        add_default($nl, 'config_use_silicate');
-        add_default($nl, 'config_use_vertical_biochemistry');
-        add_default($nl, 'config_use_vertical_tracers');
-        add_default($nl, 'config_zsalinity_molecular_sublayer');
-}
 
 #############################
 # Namelist group: shortwave #
@@ -1009,23 +971,21 @@ add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
 # Namelist group: AM_unitConversion #
 #####################################
 
-if ($ice_bgc eq 'ice_bgc') {
-        add_default($nl, 'config_AM_pointwiseStats_compute_on_startup', 'val'=>".false.");
-        add_default($nl, 'config_AM_pointwiseStats_write_on_startup', 'val'=>".false.");
-        add_default($nl, 'config_AM_pointwiseStats_enable', 'val'=>".true.");
-} else {
-        add_default($nl, 'config_AM_pointwiseStats_compute_on_startup', 'val'=>".true.");
-        add_default($nl, 'config_AM_pointwiseStats_write_on_startup', 'val'=>".true.");
-        add_default($nl, 'config_AM_pointwiseStats_enable', 'val'=>".false.");
-}
-add_default($nl, 'config_AM_pointwiseStats_compute_interval');
-add_default($nl, 'config_AM_pointwiseStats_output_stream');
+add_default($nl, 'config_AM_unitConversion_enable');
+add_default($nl, 'config_AM_unitConversion_compute_interval');
+add_default($nl, 'config_AM_unitConversion_output_stream');
+add_default($nl, 'config_AM_unitConversion_compute_on_startup');
+add_default($nl, 'config_AM_unitConversion_write_on_startup');
 
 #####################################
 # Namelist group: AM_pointwiseStats #
 #####################################
 
-add_default($nl, 'config_AM_pointwiseStats_enable');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_AM_pointwiseStats_enable', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_AM_pointwiseStats_enable');
+}
 add_default($nl, 'config_AM_pointwiseStats_compute_interval');
 add_default($nl, 'config_AM_pointwiseStats_output_stream');
 add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
