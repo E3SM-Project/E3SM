@@ -221,6 +221,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case_one_custom_postrun_action()
 
         # Second run
+        logger.info("_multisubmit {} first phase {}".format(self._multisubmit, first_phase))
         if not self._multisubmit or not first_phase:
             # Subtle issue: case1 is already in a writeable state since it tends to be opened
             # with a with statement in all the API entrances in CIME. case2 was created via clone,

@@ -19,7 +19,7 @@ class PET(SystemTestsCompareTwo):
         """
         SystemTestsCompareTwo.__init__(self, case,
                                        separate_builds = False,
-                                       multisubmit=True,
+                                       multisubmit=False,
                                        run_two_suffix = 'single_thread',
                                        run_one_description = 'default threading',
                                        run_two_description = 'threads set to 1')
@@ -39,4 +39,4 @@ class PET(SystemTestsCompareTwo):
             self._case.set_value("NTHRDS_{}".format(comp), 1)
 
         # Need to redo case_setup because we may have changed the number of threads
-
+        self._case.case_setup(reset=True, test_mode=True)
