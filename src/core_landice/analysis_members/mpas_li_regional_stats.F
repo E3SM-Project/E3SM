@@ -515,12 +515,25 @@ contains
            regionalVolumeAboveFloatation(iRegion) = reductions(14)
            regionalSumGroundingLineFlux(iRegion) = reductions(15)
 
-           regionalIceThicknessMean(iRegion) = regionalIceVolume(iRegion) / regionalIceArea(iRegion)
-           regionalAvgNetAccumulation(iRegion) = regionalSumSfcMassBal(iRegion) / regionalIceArea(iRegion) / rhoi
-           regionalAvgGroundedBasalMelt(iRegion) = -1.0_RKIND * regionalSumGroundedBasalMassBal(iRegion) / &
-           regionalGroundedIceArea(iRegion) / rhoi
-           regionalAvgSubshelfMelt(iRegion) = -1.0_RKIND * regionalSumFloatingBasalMassBal(iRegion) / &
-           regionalFloatingIceArea(iRegion) / rhoi
+           if (regionalIceArea(iRegion) > 0.0_RKIND) then
+              regionalIceThicknessMean(iRegion) = regionalIceVolume(iRegion) / regionalIceArea(iRegion)
+              regionalAvgNetAccumulation(iRegion) = regionalSumSfcMassBal(iRegion) / regionalIceArea(iRegion) / rhoi
+           else
+              regionalIceThicknessMean(iRegion) = 0.0_RKIND
+              regionalAvgNetAccumulation(iRegion) = 0.0_RKIND
+           endif
+           if (regionalGroundedIceArea(iRegion) > 0.0_RKIND) then
+              regionalAvgGroundedBasalMelt(iRegion) = -1.0_RKIND * regionalSumGroundedBasalMassBal(iRegion) / &
+                 regionalGroundedIceArea(iRegion) / rhoi
+           else
+              regionalAvgGroundedBasalMelt(iRegion) = 0.0_RKIND
+           endif
+           if (regionalFloatingIceArea(iRegion) > 0.0_RKIND) then
+              regionalAvgSubshelfMelt(iRegion) = -1.0_RKIND * regionalSumFloatingBasalMassBal(iRegion) / &
+                 regionalFloatingIceArea(iRegion) / rhoi
+           else
+              regionalAvgSubshelfMelt(iRegion) = 0.0_RKIND
+           endif
 
         block => block % next
         end do
