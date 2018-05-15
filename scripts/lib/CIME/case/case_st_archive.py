@@ -630,10 +630,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
 
     # resubmit case if appropriate
     resubmit_cnt = self.get_value("RESUBMIT")
-    logger.info("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
-    if not resubmit:
-        import traceback
-        traceback.print_stack()
+    logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
     if resubmit_cnt > 0 and resubmit:
         logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
         if self.get_value("MACH") == "mira":
