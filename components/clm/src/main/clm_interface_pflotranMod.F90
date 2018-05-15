@@ -3705,8 +3705,8 @@ contains
      smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col              , &
      smin_nh4sorb_vr              => clm_interface_data%bgc%smin_nh4sorb_vr_col          , &
 
-     decomp_cpools_delta_vr       => clm_interface_data%bgc%decomp_cpools_sourcesink_col  , &
-     decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_npools_sourcesink_col  , &
+     decomp_cpools_delta_vr       => clm_interface_data%bgc%decomp_pools_sourcesink_col  , &
+     decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_pools_sourcesink_col  , &
 
      sminn_to_plant_vr            => clm_interface_data%bgc%sminn_to_plant_vr_col         , &
      smin_no3_to_plant_vr         => clm_interface_data%bgc%smin_no3_to_plant_vr_col      , &
@@ -3797,7 +3797,7 @@ contains
 
                  decomp_cpools_delta_vr(c,j,k) = ( decomp_cpools_delta_vr(c,j,k)  &
                                 + decomp_cpools_vr_clm_loc(vec_offset+cellcount)  &
-                                * clm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> clm_bgc_data%decomp_cpools_sourcesink_col
+                                * clm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> clm_bgc_data%decomp_pools_sourcesink_col
 
                  if (clm_pf_idata%floating_cn_ratio(k)) then
                      decomp_npools_delta_vr(c,j,k) = ( decomp_npools_delta_vr(c,j,k)  &
@@ -4589,7 +4589,7 @@ contains
 
     associate(                                                                    &
          externalc               => clm_interface_data%bgc%externalc_to_decomp_cpools_col , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         decomp_cpools_delta_vr  => clm_interface_data%bgc%decomp_cpools_sourcesink_col   , &
+         decomp_cpools_delta_vr  => clm_interface_data%bgc%decomp_pools_sourcesink_col   , &
          hr_vr                   => clm_interface_data%bgc%hr_vr_col                      , &
          soil_begcb              => clm_interface_data%bgc%soil_begcb_col                   & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          )
@@ -4704,7 +4704,7 @@ contains
          externaln_to_decomp_npools   => clm_interface_data%bgc%externaln_to_decomp_npools_col, & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          externaln_to_no3_vr          => clm_interface_data%bgc%externaln_to_no3_col          , &
          externaln_to_nh4_vr          => clm_interface_data%bgc%externaln_to_nh4_col          , &
-         decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_npools_sourcesink_col  , &
+         decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_pools_sourcesink_col  , &
          decomp_npools_vr             => clm_interface_data%bgc%decomp_pools_vr_col          , &
          smin_no3_vr                  => clm_interface_data%bgc%smin_no3_vr_col               , &
          smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col               , &

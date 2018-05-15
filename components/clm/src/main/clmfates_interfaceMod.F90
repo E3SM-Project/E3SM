@@ -718,11 +718,11 @@ contains
 
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,:,i_met_lit) = &
+         carbonflux_inst%decomp_pools_sourcesink_col(c,:,i_met_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_lab_c_col(:) * dtime
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,:,i_cel_lit) = &
+         carbonflux_inst%decomp_pools_sourcesink_col(c,:,i_cel_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_cel_c_col(:) * dtime
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,:,i_lig_lit) = &
+         carbonflux_inst%decomp_pools_sourcesink_col(c,:,i_lig_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_lig_c_col(:) * dtime
       end do
 

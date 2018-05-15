@@ -318,7 +318,7 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonflux_vars%som_c_leached_col(c) = 0._r8
+       carbonflux_vars%som_leached_col(c) = 0._r8
     end do
     
     ! vertically integrate HR and decomposition cascade fluxes
@@ -359,19 +359,19 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonflux_vars%decomp_cpools_leached_col(c,l) = 0._r8
+          carbonflux_vars%decomp_pools_leached_col(c,l) = 0._r8
        end do
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonflux_vars%decomp_cpools_leached_col(c,l) = carbonflux_vars%decomp_cpools_leached_col(c,l) + &
-                  carbonflux_vars%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+             carbonflux_vars%decomp_pools_leached_col(c,l) = carbonflux_vars%decomp_pools_leached_col(c,l) + &
+                  carbonflux_vars%decomp_pools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
           end do
        end do
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonflux_vars%som_c_leached_col(c) = carbonflux_vars%som_c_leached_col(c) + &
-               carbonflux_vars%decomp_cpools_leached_col(c,l)
+          carbonflux_vars%som_leached_col(c) = carbonflux_vars%som_leached_col(c) + &
+               carbonflux_vars%decomp_pools_leached_col(c,l)
        end do
     end do
 

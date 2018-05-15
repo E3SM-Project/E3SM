@@ -70,13 +70,13 @@ contains
 
                ! column gap mortality fluxes
                cs%decomp_pools_vr_col(c,j,i_met_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_met_lit) + cf%gap_mortality_to_litr_met_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_cel_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_to_litr_cel_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_lig_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_to_litr_lig_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_cwd) = &
-                    cs%decomp_pools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_cwd) + cf%gap_mortality_to_cwd_col(c,j) * dt
 
             end do
          end do
@@ -89,29 +89,29 @@ contains
 
          ! patch-level carbon fluxes from gap-phase mortality
          ! displayed pools
-         cs%leaf_patch(p)               = cs%leaf_patch(p)              - cf%m_leafc_to_litter_patch(p)              * dt
-         cs%froot_patch(p)              = cs%froot_patch(p)             - cf%m_frootc_to_litter_patch(p)             * dt
-         cs%livestem_patch(p)           = cs%livestem_patch(p)          - cf%m_livestemc_to_litter_patch(p)          * dt
-         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%m_deadstemc_to_litter_patch(p)          * dt
-         cs%livecroot_patch(p)          = cs%livecroot_patch(p)         - cf%m_livecrootc_to_litter_patch(p)         * dt
-         cs%deadcroot_patch(p)          = cs%deadcroot_patch(p)         - cf%m_deadcrootc_to_litter_patch(p)         * dt
+         cs%leaf_patch(p)               = cs%leaf_patch(p)              - cf%m_leaf_to_litter_patch(p)              * dt
+         cs%froot_patch(p)              = cs%froot_patch(p)             - cf%m_froot_to_litter_patch(p)             * dt
+         cs%livestem_patch(p)           = cs%livestem_patch(p)          - cf%m_livestem_to_litter_patch(p)          * dt
+         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%m_deadstem_to_litter_patch(p)          * dt
+         cs%livecroot_patch(p)          = cs%livecroot_patch(p)         - cf%m_livecroot_to_litter_patch(p)         * dt
+         cs%deadcroot_patch(p)          = cs%deadcroot_patch(p)         - cf%m_deadcroot_to_litter_patch(p)         * dt
          ! storage pools
-         cs%leaf_storage_patch(p)       = cs%leaf_storage_patch(p)      - cf%m_leafc_storage_to_litter_patch(p)      * dt
-         cs%froot_storage_patch(p)      = cs%froot_storage_patch(p)     - cf%m_frootc_storage_to_litter_patch(p)     * dt
-         cs%livestem_storage_patch(p)   = cs%livestem_storage_patch(p)  - cf%m_livestemc_storage_to_litter_patch(p)  * dt
-         cs%deadstem_storage_patch(p)   = cs%deadstem_storage_patch(p)  - cf%m_deadstemc_storage_to_litter_patch(p)  * dt
-         cs%livecroot_storage_patch(p)  = cs%livecroot_storage_patch(p) - cf%m_livecrootc_storage_to_litter_patch(p) * dt
-         cs%deadcroot_storage_patch(p)  = cs%deadcroot_storage_patch(p) - cf%m_deadcrootc_storage_to_litter_patch(p) * dt
+         cs%leaf_storage_patch(p)       = cs%leaf_storage_patch(p)      - cf%m_leaf_storage_to_litter_patch(p)      * dt
+         cs%froot_storage_patch(p)      = cs%froot_storage_patch(p)     - cf%m_froot_storage_to_litter_patch(p)     * dt
+         cs%livestem_storage_patch(p)   = cs%livestem_storage_patch(p)  - cf%m_livestem_storage_to_litter_patch(p)  * dt
+         cs%deadstem_storage_patch(p)   = cs%deadstem_storage_patch(p)  - cf%m_deadstem_storage_to_litter_patch(p)  * dt
+         cs%livecroot_storage_patch(p)  = cs%livecroot_storage_patch(p) - cf%m_livecroot_storage_to_litter_patch(p) * dt
+         cs%deadcroot_storage_patch(p)  = cs%deadcroot_storage_patch(p) - cf%m_deadcroot_storage_to_litter_patch(p) * dt
          cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%m_gresp_storage_to_litter_patch(p)      * dt
-         cs%pool_patch(p)               = cs%pool_patch(p)              - cf%m_cpool_to_litter_patch(p)              * dt
+         cs%pool_patch(p)               = cs%pool_patch(p)              - cf%m_pool_to_litter_patch(p)              * dt
 
          ! transfer pools
-         cs%leaf_xfer_patch(p)          = cs%leaf_xfer_patch(p)         - cf%m_leafc_xfer_to_litter_patch(p)         * dt
-         cs%froot_xfer_patch(p)         = cs%froot_xfer_patch(p)        - cf%m_frootc_xfer_to_litter_patch(p)        * dt
-         cs%livestem_xfer_patch(p)      = cs%livestem_xfer_patch(p)     - cf%m_livestemc_xfer_to_litter_patch(p)     * dt
-         cs%deadstem_xfer_patch(p)      = cs%deadstem_xfer_patch(p)     - cf%m_deadstemc_xfer_to_litter_patch(p)     * dt
-         cs%livecroot_xfer_patch(p)     = cs%livecroot_xfer_patch(p)    - cf%m_livecrootc_xfer_to_litter_patch(p)    * dt
-         cs%deadcroot_xfer_patch(p)     = cs%deadcroot_xfer_patch(p)    - cf%m_deadcrootc_xfer_to_litter_patch(p)    * dt
+         cs%leaf_xfer_patch(p)          = cs%leaf_xfer_patch(p)         - cf%m_leaf_xfer_to_litter_patch(p)         * dt
+         cs%froot_xfer_patch(p)         = cs%froot_xfer_patch(p)        - cf%m_froot_xfer_to_litter_patch(p)        * dt
+         cs%livestem_xfer_patch(p)      = cs%livestem_xfer_patch(p)     - cf%m_livestem_xfer_to_litter_patch(p)     * dt
+         cs%deadstem_xfer_patch(p)      = cs%deadstem_xfer_patch(p)     - cf%m_deadstem_xfer_to_litter_patch(p)     * dt
+         cs%livecroot_xfer_patch(p)     = cs%livecroot_xfer_patch(p)    - cf%m_livecroot_xfer_to_litter_patch(p)    * dt
+         cs%deadcroot_xfer_patch(p)     = cs%deadcroot_xfer_patch(p)    - cf%m_deadcroot_xfer_to_litter_patch(p)    * dt
          cs%gresp_xfer_patch(p)          = cs%gresp_xfer_patch(p)         - cf%m_gresp_xfer_to_litter_patch(p)         * dt
       end do ! end of patch loop
 
@@ -160,13 +160,13 @@ contains
 
                ! column harvest fluxes
                cs%decomp_pools_vr_col(c,j,i_met_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_met_lit) + cf%harvest_to_litr_met_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_cel_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_cel_lit) + cf%harvest_to_litr_cel_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_lig_lit) = &
-                    cs%decomp_pools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+                    cs%decomp_pools_vr_col(c,j,i_lig_lit) + cf%harvest_to_litr_lig_col(c,j) * dt
                cs%decomp_pools_vr_col(c,j,i_cwd) = &
-                    cs%decomp_pools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+                    cs%decomp_pools_vr_col(c,j,i_cwd) + cf%harvest_to_cwd_col(c,j)  * dt
 
                ! wood to product pools - states updated in CNWoodProducts()
             end do
@@ -180,40 +180,40 @@ contains
 
          ! patch-level carbon fluxes from harvest mortality
          ! displayed pools
-         cs%leaf_patch(p)               = cs%leaf_patch(p)              - cf%hrv_leafc_to_litter_patch(p)              * dt
-         cs%froot_patch(p)              = cs%froot_patch(p)             - cf%hrv_frootc_to_litter_patch(p)             * dt
-         cs%livestem_patch(p)           = cs%livestem_patch(p)          - cf%hrv_livestemc_to_litter_patch(p)          * dt
-         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%hrv_deadstemc_to_prod10c_patch(p)         * dt
-         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%hrv_deadstemc_to_prod100c_patch(p)        * dt
-         cs%livecroot_patch(p)          = cs%livecroot_patch(p)         - cf%hrv_livecrootc_to_litter_patch(p)         * dt
-         cs%deadcroot_patch(p)          = cs%deadcroot_patch(p)         - cf%hrv_deadcrootc_to_litter_patch(p)         * dt
+         cs%leaf_patch(p)               = cs%leaf_patch(p)              - cf%hrv_leaf_to_litter_patch(p)              * dt
+         cs%froot_patch(p)              = cs%froot_patch(p)             - cf%hrv_froot_to_litter_patch(p)             * dt
+         cs%livestem_patch(p)           = cs%livestem_patch(p)          - cf%hrv_livestem_to_litter_patch(p)          * dt
+         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%hrv_deadstem_to_prod10_patch(p)         * dt
+         cs%deadstem_patch(p)           = cs%deadstem_patch(p)          - cf%hrv_deadstem_to_prod100_patch(p)        * dt
+         cs%livecroot_patch(p)          = cs%livecroot_patch(p)         - cf%hrv_livecroot_to_litter_patch(p)         * dt
+         cs%deadcroot_patch(p)          = cs%deadcroot_patch(p)         - cf%hrv_deadcroot_to_litter_patch(p)         * dt
 
          ! crops
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-             cs%livestem_patch(p)       = cs%livestem_patch(p)          - cf%hrv_livestemc_to_prod1c_patch(p)          *dt
-             cs%leaf_patch(p)           = cs%leaf_patch(p)              - cf%hrv_leafc_to_prod1c_patch(p)              *dt
-             cs%grain_patch(p)          = cs%grain_patch(p)             - cf%hrv_grainc_to_prod1c_patch(p)             *dt
+             cs%livestem_patch(p)       = cs%livestem_patch(p)          - cf%hrv_livestem_to_prod1_patch(p)          *dt
+             cs%leaf_patch(p)           = cs%leaf_patch(p)              - cf%hrv_leaf_to_prod1_patch(p)              *dt
+             cs%grain_patch(p)          = cs%grain_patch(p)             - cf%hrv_grain_to_prod1_patch(p)             *dt
          end if
 
          ! xsmrpool
          cs%xsmrpool_patch(p)            = cs%xsmrpool_patch(p)           - cf%hrv_xsmrpool_to_atm_patch(p)              * dt
          ! storage pools
-         cs%leaf_storage_patch(p)       = cs%leaf_storage_patch(p)      - cf%hrv_leafc_storage_to_litter_patch(p)      * dt
-         cs%froot_storage_patch(p)      = cs%froot_storage_patch(p)     - cf%hrv_frootc_storage_to_litter_patch(p)     * dt
-         cs%livestem_storage_patch(p)   = cs%livestem_storage_patch(p)  - cf%hrv_livestemc_storage_to_litter_patch(p)  * dt
-         cs%deadstem_storage_patch(p)   = cs%deadstem_storage_patch(p)  - cf%hrv_deadstemc_storage_to_litter_patch(p)  * dt
-         cs%livecroot_storage_patch(p)  = cs%livecroot_storage_patch(p) - cf%hrv_livecrootc_storage_to_litter_patch(p) * dt
-         cs%deadcroot_storage_patch(p)  = cs%deadcroot_storage_patch(p) - cf%hrv_deadcrootc_storage_to_litter_patch(p) * dt
+         cs%leaf_storage_patch(p)       = cs%leaf_storage_patch(p)      - cf%hrv_leaf_storage_to_litter_patch(p)      * dt
+         cs%froot_storage_patch(p)      = cs%froot_storage_patch(p)     - cf%hrv_froot_storage_to_litter_patch(p)     * dt
+         cs%livestem_storage_patch(p)   = cs%livestem_storage_patch(p)  - cf%hrv_livestem_storage_to_litter_patch(p)  * dt
+         cs%deadstem_storage_patch(p)   = cs%deadstem_storage_patch(p)  - cf%hrv_deadstem_storage_to_litter_patch(p)  * dt
+         cs%livecroot_storage_patch(p)  = cs%livecroot_storage_patch(p) - cf%hrv_livecroot_storage_to_litter_patch(p) * dt
+         cs%deadcroot_storage_patch(p)  = cs%deadcroot_storage_patch(p) - cf%hrv_deadcroot_storage_to_litter_patch(p) * dt
          cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%hrv_gresp_storage_to_litter_patch(p)      * dt
-         cs%pool_patch(p)               = cs%pool_patch(p)              - cf%hrv_cpool_to_litter_patch(p)              * dt
+         cs%pool_patch(p)               = cs%pool_patch(p)              - cf%hrv_pool_to_litter_patch(p)              * dt
 
          ! transfer pools
-         cs%leaf_xfer_patch(p)          = cs%leaf_xfer_patch(p)         - cf%hrv_leafc_xfer_to_litter_patch(p)         * dt
-         cs%froot_xfer_patch(p)         = cs%froot_xfer_patch(p)        - cf%hrv_frootc_xfer_to_litter_patch(p)        * dt
-         cs%livestem_xfer_patch(p)      = cs%livestem_xfer_patch(p)     - cf%hrv_livestemc_xfer_to_litter_patch(p)     * dt
-         cs%deadstem_xfer_patch(p)      = cs%deadstem_xfer_patch(p)     - cf%hrv_deadstemc_xfer_to_litter_patch(p)     * dt
-         cs%livecroot_xfer_patch(p)     = cs%livecroot_xfer_patch(p)    - cf%hrv_livecrootc_xfer_to_litter_patch(p)    * dt
-         cs%deadcroot_xfer_patch(p)     = cs%deadcroot_xfer_patch(p)    - cf%hrv_deadcrootc_xfer_to_litter_patch(p)    * dt
+         cs%leaf_xfer_patch(p)          = cs%leaf_xfer_patch(p)         - cf%hrv_leaf_xfer_to_litter_patch(p)         * dt
+         cs%froot_xfer_patch(p)         = cs%froot_xfer_patch(p)        - cf%hrv_froot_xfer_to_litter_patch(p)        * dt
+         cs%livestem_xfer_patch(p)      = cs%livestem_xfer_patch(p)     - cf%hrv_livestem_xfer_to_litter_patch(p)     * dt
+         cs%deadstem_xfer_patch(p)      = cs%deadstem_xfer_patch(p)     - cf%hrv_deadstem_xfer_to_litter_patch(p)     * dt
+         cs%livecroot_xfer_patch(p)     = cs%livecroot_xfer_patch(p)    - cf%hrv_livecroot_xfer_to_litter_patch(p)    * dt
+         cs%deadcroot_xfer_patch(p)     = cs%deadcroot_xfer_patch(p)    - cf%hrv_deadcroot_xfer_to_litter_patch(p)    * dt
          cs%gresp_xfer_patch(p)          = cs%gresp_xfer_patch(p)         - cf%hrv_gresp_xfer_to_litter_patch(p)         * dt
 
       end do ! end of patch loop

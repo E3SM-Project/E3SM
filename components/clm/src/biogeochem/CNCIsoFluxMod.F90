@@ -75,52 +75,52 @@ contains
       ! instead of 'call CIsoFluxCalc(foo, ...)' we have 'call CIsoFluxCalc(foo(begp:endp), ...)'.
       
       call CIsoFluxCalc(&
-           isotopeflux_vars%leafc_xfer_to_leafc_patch           , carbonflux_vars%leafc_xfer_to_leafc_patch, &
+           isotopeflux_vars%leaf_xfer_to_leaf_patch           , carbonflux_vars%leaf_xfer_to_leaf_patch, &
            isotopestate_vars%leaf_xfer_patch                   , carbonstate_vars%leaf_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%frootc_xfer_to_frootc_patch         , carbonflux_vars%frootc_xfer_to_frootc_patch, &
+           isotopeflux_vars%froot_xfer_to_froot_patch         , carbonflux_vars%froot_xfer_to_froot_patch, &
            isotopestate_vars%froot_xfer_patch                  , carbonstate_vars%froot_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livestemc_xfer_to_livestemc_patch   , carbonflux_vars%livestemc_xfer_to_livestemc_patch, &
+           isotopeflux_vars%livestem_xfer_to_livestem_patch   , carbonflux_vars%livestem_xfer_to_livestem_patch, &
            isotopestate_vars%livestem_xfer_patch               , carbonstate_vars%livestem_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%deadstemc_xfer_to_deadstemc_patch   , carbonflux_vars%deadstemc_xfer_to_deadstemc_patch, &
+           isotopeflux_vars%deadstem_xfer_to_deadstem_patch   , carbonflux_vars%deadstem_xfer_to_deadstem_patch, &
            isotopestate_vars%deadstem_xfer_patch               , carbonstate_vars%deadstem_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_xfer_to_livecrootc_patch , carbonflux_vars%livecrootc_xfer_to_livecrootc_patch, &
+           isotopeflux_vars%livecroot_xfer_to_livecroot_patch , carbonflux_vars%livecroot_xfer_to_livecroot_patch, &
            isotopestate_vars%livecroot_xfer_patch              , carbonstate_vars%livecroot_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%deadcrootc_xfer_to_deadcrootc_patch , carbonflux_vars%deadcrootc_xfer_to_deadcrootc_patch, &
+           isotopeflux_vars%deadcroot_xfer_to_deadcroot_patch , carbonflux_vars%deadcroot_xfer_to_deadcroot_patch, &
            isotopestate_vars%deadcroot_xfer_patch              , carbonstate_vars%deadcroot_xfer_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%leafc_to_litter_patch               , carbonflux_vars%leafc_to_litter_patch, &
+           isotopeflux_vars%leaf_to_litter_patch               , carbonflux_vars%leaf_to_litter_patch, &
            isotopestate_vars%leaf_patch                        , carbonstate_vars%leaf_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%frootc_to_litter_patch              , carbonflux_vars%frootc_to_litter_patch, &
+           isotopeflux_vars%froot_to_litter_patch              , carbonflux_vars%froot_to_litter_patch, &
            isotopestate_vars%froot_patch                       , carbonstate_vars%froot_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livestemc_to_deadstemc_patch        , carbonflux_vars%livestemc_to_deadstemc_patch, &
+           isotopeflux_vars%livestem_to_deadstem_patch        , carbonflux_vars%livestem_to_deadstem_patch, &
            isotopestate_vars%livestem_patch                    , carbonstate_vars%livestem_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_to_deadcrootc_patch      , carbonflux_vars%livecrootc_to_deadcrootc_patch, &
+           isotopeflux_vars%livecroot_to_deadcroot_patch      , carbonflux_vars%livecroot_to_deadcroot_patch, &
            isotopestate_vars%livecroot_patch                   , carbonstate_vars%livecroot_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
@@ -175,62 +175,62 @@ contains
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_leafc_patch                , carbonflux_vars%cpool_to_leafc_patch, &
+           isotopeflux_vars%pool_to_leaf_patch                , carbonflux_vars%pool_to_leaf_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_leafc_storage_patch        , carbonflux_vars%cpool_to_leafc_storage_patch, &
+           isotopeflux_vars%pool_to_leaf_storage_patch        , carbonflux_vars%pool_to_leaf_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_frootc_patch               , carbonflux_vars%cpool_to_frootc_patch, &
+           isotopeflux_vars%pool_to_froot_patch               , carbonflux_vars%pool_to_froot_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_frootc_storage_patch       , carbonflux_vars%cpool_to_frootc_storage_patch, &
+           isotopeflux_vars%pool_to_froot_storage_patch       , carbonflux_vars%pool_to_froot_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livestemc_patch            , carbonflux_vars%cpool_to_livestemc_patch, &
+           isotopeflux_vars%pool_to_livestem_patch            , carbonflux_vars%pool_to_livestem_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livestemc_storage_patch    , carbonflux_vars%cpool_to_livestemc_storage_patch, &
+           isotopeflux_vars%pool_to_livestem_storage_patch    , carbonflux_vars%pool_to_livestem_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadstemc_patch            , carbonflux_vars%cpool_to_deadstemc_patch, &
+           isotopeflux_vars%pool_to_deadstem_patch            , carbonflux_vars%pool_to_deadstem_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadstemc_storage_patch    , carbonflux_vars%cpool_to_deadstemc_storage_patch, &
+           isotopeflux_vars%pool_to_deadstem_storage_patch    , carbonflux_vars%pool_to_deadstem_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livecrootc_patch           , carbonflux_vars%cpool_to_livecrootc_patch, &
+           isotopeflux_vars%pool_to_livecroot_patch           , carbonflux_vars%pool_to_livecroot_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livecrootc_storage_patch   , carbonflux_vars%cpool_to_livecrootc_storage_patch, &
+           isotopeflux_vars%pool_to_livecroot_storage_patch   , carbonflux_vars%pool_to_livecroot_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadcrootc_patch           , carbonflux_vars%cpool_to_deadcrootc_patch, &
+           isotopeflux_vars%pool_to_deadcroot_patch           , carbonflux_vars%pool_to_deadcroot_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadcrootc_storage_patch   , carbonflux_vars%cpool_to_deadcrootc_storage_patch, &
+           isotopeflux_vars%pool_to_deadcroot_storage_patch   , carbonflux_vars%pool_to_deadcroot_storage_patch, &
            isotopestate_vars%pool_patch                        , carbonstate_vars%pool_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
@@ -330,32 +330,32 @@ contains
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%leafc_storage_to_xfer_patch         , carbonflux_vars%leafc_storage_to_xfer_patch, &
+           isotopeflux_vars%leaf_storage_to_xfer_patch         , carbonflux_vars%leaf_storage_to_xfer_patch, &
            isotopestate_vars%leaf_storage_patch                , carbonstate_vars%leaf_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%frootc_storage_to_xfer_patch        , carbonflux_vars%frootc_storage_to_xfer_patch, &
+           isotopeflux_vars%froot_storage_to_xfer_patch        , carbonflux_vars%froot_storage_to_xfer_patch, &
            isotopestate_vars%froot_storage_patch               , carbonstate_vars%froot_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livestemc_storage_to_xfer_patch     , carbonflux_vars%livestemc_storage_to_xfer_patch, &
+           isotopeflux_vars%livestem_storage_to_xfer_patch     , carbonflux_vars%livestem_storage_to_xfer_patch, &
            isotopestate_vars%livestem_storage_patch            , carbonstate_vars%livestem_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%deadstemc_storage_to_xfer_patch     , carbonflux_vars%deadstemc_storage_to_xfer_patch, &
+           isotopeflux_vars%deadstem_storage_to_xfer_patch     , carbonflux_vars%deadstem_storage_to_xfer_patch, &
            isotopestate_vars%deadstem_storage_patch            , carbonstate_vars%deadstem_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_storage_to_xfer_patch    , carbonflux_vars%livecrootc_storage_to_xfer_patch, &
+           isotopeflux_vars%livecroot_storage_to_xfer_patch    , carbonflux_vars%livecroot_storage_to_xfer_patch, &
            isotopestate_vars%livecroot_storage_patch           , carbonstate_vars%livecroot_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%deadcrootc_storage_to_xfer_patch    , carbonflux_vars%deadcrootc_storage_to_xfer_patch, &
+           isotopeflux_vars%deadcroot_storage_to_xfer_patch    , carbonflux_vars%deadcroot_storage_to_xfer_patch, &
            isotopestate_vars%deadcroot_storage_patch           , carbonstate_vars%deadcroot_storage_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
@@ -439,92 +439,92 @@ contains
     ! patch-level gap mortality fluxes
    
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_to_litter_patch                    , carbonflux_vars%m_leafc_to_litter_patch, &
+         isotopeflux_vars%m_leaf_to_litter_patch                    , carbonflux_vars%m_leaf_to_litter_patch, &
          isotopestate_vars%leaf_patch                               , carbonstate_vars%leaf_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_storage_to_litter_patch            , carbonflux_vars%m_leafc_storage_to_litter_patch, &
+         isotopeflux_vars%m_leaf_storage_to_litter_patch            , carbonflux_vars%m_leaf_storage_to_litter_patch, &
          isotopestate_vars%leaf_storage_patch                       , carbonstate_vars%leaf_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_xfer_to_litter_patch               , carbonflux_vars%m_leafc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_leaf_xfer_to_litter_patch               , carbonflux_vars%m_leaf_xfer_to_litter_patch, &
          isotopestate_vars%leaf_xfer_patch                          , carbonstate_vars%leaf_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_to_litter_patch                   , carbonflux_vars%m_frootc_to_litter_patch, &
+         isotopeflux_vars%m_froot_to_litter_patch                   , carbonflux_vars%m_froot_to_litter_patch, &
          isotopestate_vars%froot_patch                              , carbonstate_vars%froot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_storage_to_litter_patch           , carbonflux_vars%m_frootc_storage_to_litter_patch, &
+         isotopeflux_vars%m_froot_storage_to_litter_patch           , carbonflux_vars%m_froot_storage_to_litter_patch, &
          isotopestate_vars%froot_storage_patch                      , carbonstate_vars%froot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_xfer_to_litter_patch              , carbonflux_vars%m_frootc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_froot_xfer_to_litter_patch              , carbonflux_vars%m_froot_xfer_to_litter_patch, &
          isotopestate_vars%froot_xfer_patch                         , carbonstate_vars%froot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_to_litter_patch                , carbonflux_vars%m_livestemc_to_litter_patch, &
+         isotopeflux_vars%m_livestem_to_litter_patch                , carbonflux_vars%m_livestem_to_litter_patch, &
          isotopestate_vars%livestem_patch                           , carbonstate_vars%livestem_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_storage_to_litter_patch        , carbonflux_vars%m_livestemc_storage_to_litter_patch, &
+         isotopeflux_vars%m_livestem_storage_to_litter_patch        , carbonflux_vars%m_livestem_storage_to_litter_patch, &
          isotopestate_vars%livestem_storage_patch                   , carbonstate_vars%livestem_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_xfer_to_litter_patch           , carbonflux_vars%m_livestemc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_livestem_xfer_to_litter_patch           , carbonflux_vars%m_livestem_xfer_to_litter_patch, &
          isotopestate_vars%livestem_xfer_patch                      , carbonstate_vars%livestem_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_to_litter_patch                , carbonflux_vars%m_deadstemc_to_litter_patch, &
+         isotopeflux_vars%m_deadstem_to_litter_patch                , carbonflux_vars%m_deadstem_to_litter_patch, &
          isotopestate_vars%deadstem_patch                           , carbonstate_vars%deadstem_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_storage_to_litter_patch        , carbonflux_vars%m_deadstemc_storage_to_litter_patch, &
+         isotopeflux_vars%m_deadstem_storage_to_litter_patch        , carbonflux_vars%m_deadstem_storage_to_litter_patch, &
          isotopestate_vars%deadstem_storage_patch                   , carbonstate_vars%deadstem_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_xfer_to_litter_patch           , carbonflux_vars%m_deadstemc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_deadstem_xfer_to_litter_patch           , carbonflux_vars%m_deadstem_xfer_to_litter_patch, &
          isotopestate_vars%deadstem_xfer_patch                      , carbonstate_vars%deadstem_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_to_litter_patch               , carbonflux_vars%m_livecrootc_to_litter_patch, &
+         isotopeflux_vars%m_livecroot_to_litter_patch               , carbonflux_vars%m_livecroot_to_litter_patch, &
          isotopestate_vars%livecroot_patch                          , carbonstate_vars%livecroot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_storage_to_litter_patch       , carbonflux_vars%m_livecrootc_storage_to_litter_patch, &
+         isotopeflux_vars%m_livecroot_storage_to_litter_patch       , carbonflux_vars%m_livecroot_storage_to_litter_patch, &
          isotopestate_vars%livecroot_storage_patch                  , carbonstate_vars%livecroot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_xfer_to_litter_patch          , carbonflux_vars%m_livecrootc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_livecroot_xfer_to_litter_patch          , carbonflux_vars%m_livecroot_xfer_to_litter_patch, &
          isotopestate_vars%livecroot_xfer_patch                     , carbonstate_vars%livecroot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_to_litter_patch               , carbonflux_vars%m_deadcrootc_to_litter_patch, &
+         isotopeflux_vars%m_deadcroot_to_litter_patch               , carbonflux_vars%m_deadcroot_to_litter_patch, &
          isotopestate_vars%deadcroot_patch                          , carbonstate_vars%deadcroot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_storage_to_litter_patch       , carbonflux_vars%m_deadcrootc_storage_to_litter_patch, &
+         isotopeflux_vars%m_deadcroot_storage_to_litter_patch       , carbonflux_vars%m_deadcroot_storage_to_litter_patch, &
          isotopestate_vars%deadcroot_storage_patch                  , carbonstate_vars%deadcroot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_xfer_to_litter_patch          , carbonflux_vars%m_deadcrootc_xfer_to_litter_patch, &
+         isotopeflux_vars%m_deadcroot_xfer_to_litter_patch          , carbonflux_vars%m_deadcroot_xfer_to_litter_patch, &
          isotopestate_vars%deadcroot_xfer_patch                     , carbonstate_vars%deadcroot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
@@ -539,7 +539,7 @@ contains
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%m_cpool_to_litter_patch               , carbonflux_vars%m_cpool_to_litter_patch, &
+         isotopeflux_vars%m_pool_to_litter_patch               , carbonflux_vars%m_pool_to_litter_patch, &
          isotopestate_vars%pool_patch                          , carbonstate_vars%pool_patch, &
          num_soilp                                              , filter_soilp, 1._r8, 0, isotope)            
 
@@ -574,97 +574,97 @@ contains
     ! patch-level gap mortality fluxes
    
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_to_litter_patch                  , carbonflux_vars%hrv_leafc_to_litter_patch, &
+         isotopeflux_vars%hrv_leaf_to_litter_patch                  , carbonflux_vars%hrv_leaf_to_litter_patch, &
          isotopestate_vars%leaf_patch                               , carbonstate_vars%leaf_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_storage_to_litter_patch          , carbonflux_vars%hrv_leafc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_leaf_storage_to_litter_patch          , carbonflux_vars%hrv_leaf_storage_to_litter_patch, &
          isotopestate_vars%leaf_storage_patch                       , carbonstate_vars%leaf_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_xfer_to_litter_patch             , carbonflux_vars%hrv_leafc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_leaf_xfer_to_litter_patch             , carbonflux_vars%hrv_leaf_xfer_to_litter_patch, &
          isotopestate_vars%leaf_xfer_patch                          , carbonstate_vars%leaf_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_to_litter_patch                 , carbonflux_vars%hrv_frootc_to_litter_patch, &
+         isotopeflux_vars%hrv_froot_to_litter_patch                 , carbonflux_vars%hrv_froot_to_litter_patch, &
          isotopestate_vars%froot_patch                              , carbonstate_vars%froot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_storage_to_litter_patch         , carbonflux_vars%hrv_frootc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_froot_storage_to_litter_patch         , carbonflux_vars%hrv_froot_storage_to_litter_patch, &
          isotopestate_vars%froot_storage_patch                      , carbonstate_vars%froot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_xfer_to_litter_patch            , carbonflux_vars%hrv_frootc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_froot_xfer_to_litter_patch            , carbonflux_vars%hrv_froot_xfer_to_litter_patch, &
          isotopestate_vars%froot_xfer_patch                         , carbonstate_vars%froot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_to_litter_patch              , carbonflux_vars%hrv_livestemc_to_litter_patch, &
+         isotopeflux_vars%hrv_livestem_to_litter_patch              , carbonflux_vars%hrv_livestem_to_litter_patch, &
          isotopestate_vars%livestem_patch                           , carbonstate_vars%livestem_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_storage_to_litter_patch      , carbonflux_vars%hrv_livestemc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_livestem_storage_to_litter_patch      , carbonflux_vars%hrv_livestem_storage_to_litter_patch, &
          isotopestate_vars%livestem_storage_patch                   , carbonstate_vars%livestem_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_xfer_to_litter_patch         , carbonflux_vars%hrv_livestemc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_livestem_xfer_to_litter_patch         , carbonflux_vars%hrv_livestem_xfer_to_litter_patch, &
          isotopestate_vars%livestem_xfer_patch                      , carbonstate_vars%livestem_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_to_prod10c_patch             , carbonflux_vars%hrv_deadstemc_to_prod10c_patch, &
+         isotopeflux_vars%hrv_deadstem_to_prod10_patch             , carbonflux_vars%hrv_deadstem_to_prod10_patch, &
          isotopestate_vars%deadstem_patch                           , carbonstate_vars%deadstem_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_to_prod100c_patch            , carbonflux_vars%hrv_deadstemc_to_prod100c_patch, &
+         isotopeflux_vars%hrv_deadstem_to_prod100_patch            , carbonflux_vars%hrv_deadstem_to_prod100_patch, &
          isotopestate_vars%deadstem_patch                           , carbonstate_vars%deadstem_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_storage_to_litter_patch      , carbonflux_vars%hrv_deadstemc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_deadstem_storage_to_litter_patch      , carbonflux_vars%hrv_deadstem_storage_to_litter_patch, &
          isotopestate_vars%deadstem_storage_patch                   , carbonstate_vars%deadstem_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_xfer_to_litter_patch         , carbonflux_vars%hrv_deadstemc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_deadstem_xfer_to_litter_patch         , carbonflux_vars%hrv_deadstem_xfer_to_litter_patch, &
          isotopestate_vars%deadstem_xfer_patch                      , carbonstate_vars%deadstem_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_to_litter_patch             , carbonflux_vars%hrv_livecrootc_to_litter_patch, &
+         isotopeflux_vars%hrv_livecroot_to_litter_patch             , carbonflux_vars%hrv_livecroot_to_litter_patch, &
          isotopestate_vars%livecroot_patch                          , carbonstate_vars%livecroot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_storage_to_litter_patch     , carbonflux_vars%hrv_livecrootc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_livecroot_storage_to_litter_patch     , carbonflux_vars%hrv_livecroot_storage_to_litter_patch, &
          isotopestate_vars%livecroot_storage_patch                  , carbonstate_vars%livecroot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_xfer_to_litter_patch        , carbonflux_vars%hrv_livecrootc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_livecroot_xfer_to_litter_patch        , carbonflux_vars%hrv_livecroot_xfer_to_litter_patch, &
          isotopestate_vars%livecroot_xfer_patch                     , carbonstate_vars%livecroot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_to_litter_patch             , carbonflux_vars%hrv_deadcrootc_to_litter_patch, &
+         isotopeflux_vars%hrv_deadcroot_to_litter_patch             , carbonflux_vars%hrv_deadcroot_to_litter_patch, &
          isotopestate_vars%deadcroot_patch                          , carbonstate_vars%deadcroot_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_storage_to_litter_patch     , carbonflux_vars%hrv_deadcrootc_storage_to_litter_patch, &
+         isotopeflux_vars%hrv_deadcroot_storage_to_litter_patch     , carbonflux_vars%hrv_deadcroot_storage_to_litter_patch, &
          isotopestate_vars%deadcroot_storage_patch                  , carbonstate_vars%deadcroot_storage_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_xfer_to_litter_patch        , carbonflux_vars%hrv_deadcrootc_xfer_to_litter_patch, &
+         isotopeflux_vars%hrv_deadcroot_xfer_to_litter_patch        , carbonflux_vars%hrv_deadcroot_xfer_to_litter_patch, &
          isotopestate_vars%deadcroot_xfer_patch                     , carbonstate_vars%deadcroot_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
@@ -684,7 +684,7 @@ contains
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CIsoFluxCalc(&
-         isotopeflux_vars%hrv_cpool_to_litter_patch                  , carbonflux_vars%hrv_cpool_to_litter_patch, &
+         isotopeflux_vars%hrv_pool_to_litter_patch                  , carbonflux_vars%hrv_pool_to_litter_patch, &
          isotopestate_vars%pool_patch                               , carbonstate_vars%pool_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
@@ -729,102 +729,102 @@ contains
       ! patch-level fire mortality fluxes
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_to_fire_patch              , carbonflux_vars%m_leafc_to_fire_patch, &
+           isotopeflux_vars%m_leaf_to_fire_patch              , carbonflux_vars%m_leaf_to_fire_patch, &
            isotopestate_vars%leaf_patch                       , carbonstate_vars%leaf_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_storage_to_fire_patch      , carbonflux_vars%m_leafc_storage_to_fire_patch, &
+           isotopeflux_vars%m_leaf_storage_to_fire_patch      , carbonflux_vars%m_leaf_storage_to_fire_patch, &
            isotopestate_vars%leaf_storage_patch               , carbonstate_vars%leaf_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_xfer_to_fire_patch         , carbonflux_vars%m_leafc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_leaf_xfer_to_fire_patch         , carbonflux_vars%m_leaf_xfer_to_fire_patch, &
            isotopestate_vars%leaf_xfer_patch                  , carbonstate_vars%leaf_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_to_fire_patch             , carbonflux_vars%m_frootc_to_fire_patch, &
+           isotopeflux_vars%m_froot_to_fire_patch             , carbonflux_vars%m_froot_to_fire_patch, &
            isotopestate_vars%froot_patch                      , carbonstate_vars%froot_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_storage_to_fire_patch     , carbonflux_vars%m_frootc_storage_to_fire_patch, &
+           isotopeflux_vars%m_froot_storage_to_fire_patch     , carbonflux_vars%m_froot_storage_to_fire_patch, &
            isotopestate_vars%froot_storage_patch              , carbonstate_vars%froot_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_xfer_to_fire_patch        , carbonflux_vars%m_frootc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_froot_xfer_to_fire_patch        , carbonflux_vars%m_froot_xfer_to_fire_patch, &
            isotopestate_vars%froot_xfer_patch                 , carbonstate_vars%froot_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_to_fire_patch          , carbonflux_vars%m_livestemc_to_fire_patch, &
+           isotopeflux_vars%m_livestem_to_fire_patch          , carbonflux_vars%m_livestem_to_fire_patch, &
            isotopestate_vars%livestem_patch                   , carbonstate_vars%livestem_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_storage_to_fire_patch  , carbonflux_vars%m_livestemc_storage_to_fire_patch, &
+           isotopeflux_vars%m_livestem_storage_to_fire_patch  , carbonflux_vars%m_livestem_storage_to_fire_patch, &
            isotopestate_vars%livestem_storage_patch           , carbonstate_vars%livestem_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_xfer_to_fire_patch     , carbonflux_vars%m_livestemc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_livestem_xfer_to_fire_patch     , carbonflux_vars%m_livestem_xfer_to_fire_patch, &
            isotopestate_vars%livestem_xfer_patch              , carbonstate_vars%livestem_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_to_fire_patch          , carbonflux_vars%m_deadstemc_to_fire_patch, &
+           isotopeflux_vars%m_deadstem_to_fire_patch          , carbonflux_vars%m_deadstem_to_fire_patch, &
            isotopestate_vars%deadstem_patch                   , carbonstate_vars%deadstem_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_to_litter_fire_patch   , carbonflux_vars%m_deadstemc_to_litter_fire_patch, &
+           isotopeflux_vars%m_deadstem_to_litter_fire_patch   , carbonflux_vars%m_deadstem_to_litter_fire_patch, &
            isotopestate_vars%deadstem_patch                   , carbonstate_vars%deadstem_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_storage_to_fire_patch  , carbonflux_vars%m_deadstemc_storage_to_fire_patch, &
+           isotopeflux_vars%m_deadstem_storage_to_fire_patch  , carbonflux_vars%m_deadstem_storage_to_fire_patch, &
            isotopestate_vars%deadstem_storage_patch           , carbonstate_vars%deadstem_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_xfer_to_fire_patch     , carbonflux_vars%m_deadstemc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_deadstem_xfer_to_fire_patch     , carbonflux_vars%m_deadstem_xfer_to_fire_patch, &
            isotopestate_vars%deadstem_xfer_patch              , carbonstate_vars%deadstem_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_to_fire_patch         , carbonflux_vars%m_livecrootc_to_fire_patch, &
+           isotopeflux_vars%m_livecroot_to_fire_patch         , carbonflux_vars%m_livecroot_to_fire_patch, &
            isotopestate_vars%livecroot_patch                  , carbonstate_vars%livecroot_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_storage_to_fire_patch , carbonflux_vars%m_livecrootc_storage_to_fire_patch, &
+           isotopeflux_vars%m_livecroot_storage_to_fire_patch , carbonflux_vars%m_livecroot_storage_to_fire_patch, &
            isotopestate_vars%livecroot_storage_patch          , carbonstate_vars%livecroot_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_xfer_to_fire_patch    , carbonflux_vars%m_livecrootc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_livecroot_xfer_to_fire_patch    , carbonflux_vars%m_livecroot_xfer_to_fire_patch, &
            isotopestate_vars%livecroot_xfer_patch             , carbonstate_vars%livecroot_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_to_fire_patch         , carbonflux_vars%m_deadcrootc_to_fire_patch, &
+           isotopeflux_vars%m_deadcroot_to_fire_patch         , carbonflux_vars%m_deadcroot_to_fire_patch, &
            isotopestate_vars%deadcroot_patch                  , carbonstate_vars%deadcroot_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_to_litter_fire_patch  , carbonflux_vars%m_deadcrootc_to_litter_fire_patch, &
+           isotopeflux_vars%m_deadcroot_to_litter_fire_patch  , carbonflux_vars%m_deadcroot_to_litter_fire_patch, &
            isotopestate_vars%deadcroot_patch                  , carbonstate_vars%deadcroot_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_storage_to_fire_patch , carbonflux_vars%m_deadcrootc_storage_to_fire_patch, &
+           isotopeflux_vars%m_deadcroot_storage_to_fire_patch , carbonflux_vars%m_deadcroot_storage_to_fire_patch, &
            isotopestate_vars%deadcroot_storage_patch          , carbonstate_vars%deadcroot_storage_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_xfer_to_fire_patch    , carbonflux_vars%m_deadcrootc_xfer_to_fire_patch, &
+           isotopeflux_vars%m_deadcroot_xfer_to_fire_patch    , carbonflux_vars%m_deadcroot_xfer_to_fire_patch, &
            isotopestate_vars%deadcroot_xfer_patch             , carbonstate_vars%deadcroot_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
@@ -839,12 +839,12 @@ contains
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
      call CIsoFluxCalc(&
-           isotopeflux_vars%m_cpool_to_fire_patch              , carbonflux_vars%m_cpool_to_fire_patch, &
+           isotopeflux_vars%m_pool_to_fire_patch              , carbonflux_vars%m_pool_to_fire_patch, &
            isotopestate_vars%pool_patch                       , carbonstate_vars%pool_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)   
 
      call CIsoFluxCalc(&
-           isotopeflux_vars%m_cpool_to_litter_fire_patch       , carbonflux_vars%m_cpool_to_litter_fire_patch, &
+           isotopeflux_vars%m_pool_to_litter_fire_patch       , carbonflux_vars%m_pool_to_litter_fire_patch, &
            isotopestate_vars%pool_patch                       , carbonstate_vars%pool_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope) 
 
@@ -860,15 +860,15 @@ contains
                   pp = col_pp%pfti(cc) + pi - 1
                   if (veg_pp%active(pp)) then
                      do j = 1, nlevdecomp
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_cpool_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
+                        isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) = &
+                             isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) + &
+                             isotopeflux_vars%m_deadstem_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
+                        isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) = &
+                             isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) + &
+                             isotopeflux_vars%m_deadcroot_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
+                        isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) = &
+                             isotopeflux_vars%fire_mortality_to_cwd_col(cc,j) + &
+                             isotopeflux_vars%m_pool_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
 
                      end do
                   end if
@@ -927,11 +927,11 @@ contains
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
          
-         leafc_to_litter           =>    carbonflux_vars%leafc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-         frootc_to_litter          =>    carbonflux_vars%frootc_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-         phenology_c_to_litr_met_c =>    carbonflux_vars%phenology_c_to_litr_met_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
-         phenology_c_to_litr_cel_c =>    carbonflux_vars%phenology_c_to_litr_cel_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
-         phenology_c_to_litr_lig_c =>    carbonflux_vars%phenology_c_to_litr_lig_c_col   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+         leafc_to_litter           =>    carbonflux_vars%leaf_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+         frootc_to_litter          =>    carbonflux_vars%froot_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+         phenology_c_to_litr_met_c =>    carbonflux_vars%phenology_to_litr_met_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
+         phenology_c_to_litr_cel_c =>    carbonflux_vars%phenology_to_litr_cel_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
+         phenology_c_to_litr_lig_c =>    carbonflux_vars%phenology_to_litr_lig_col   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
          )
 
       do j = 1, nlevdecomp
@@ -1002,31 +1002,31 @@ contains
           croot_prof                     =>    cnstate_vars%croot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
           stem_prof                      =>    cnstate_vars%stem_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
           
-          m_leafc_to_litter              =>    carbonflux_vars%m_leafc_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_to_litter             =>    carbonflux_vars%m_frootc_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_to_litter          =>    carbonflux_vars%m_livestemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_to_litter          =>    carbonflux_vars%m_deadstemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_to_litter         =>    carbonflux_vars%m_livecrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_to_litter         =>    carbonflux_vars%m_deadcrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_storage_to_litter      =>    carbonflux_vars%m_leafc_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_storage_to_litter     =>    carbonflux_vars%m_frootc_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_storage_to_litter  =>    carbonflux_vars%m_livestemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_storage_to_litter  =>    carbonflux_vars%m_deadstemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_storage_to_litter =>    carbonflux_vars%m_livecrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_storage_to_litter =>    carbonflux_vars%m_deadcrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+          m_leafc_to_litter              =>    carbonflux_vars%m_leaf_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_to_litter             =>    carbonflux_vars%m_froot_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_to_litter          =>    carbonflux_vars%m_livestem_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_to_litter          =>    carbonflux_vars%m_deadstem_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_to_litter         =>    carbonflux_vars%m_livecroot_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_to_litter         =>    carbonflux_vars%m_deadcroot_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_leafc_storage_to_litter      =>    carbonflux_vars%m_leaf_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_storage_to_litter     =>    carbonflux_vars%m_froot_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_storage_to_litter  =>    carbonflux_vars%m_livestem_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_storage_to_litter  =>    carbonflux_vars%m_deadstem_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_storage_to_litter =>    carbonflux_vars%m_livecroot_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_storage_to_litter =>    carbonflux_vars%m_deadcroot_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
           m_gresp_storage_to_litter      =>    carbonflux_vars%m_gresp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_xfer_to_litter         =>    carbonflux_vars%m_leafc_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_xfer_to_litter        =>    carbonflux_vars%m_frootc_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_xfer_to_litter     =>    carbonflux_vars%m_livestemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_xfer_to_litter     =>    carbonflux_vars%m_deadstemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_xfer_to_litter    =>    carbonflux_vars%m_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_xfer_to_litter    =>    carbonflux_vars%m_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+          m_leafc_xfer_to_litter         =>    carbonflux_vars%m_leaf_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_xfer_to_litter        =>    carbonflux_vars%m_froot_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_xfer_to_litter     =>    carbonflux_vars%m_livestem_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_xfer_to_litter     =>    carbonflux_vars%m_deadstem_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_xfer_to_litter    =>    carbonflux_vars%m_livecroot_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_xfer_to_litter    =>    carbonflux_vars%m_deadcroot_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           m_gresp_xfer_to_litter         =>    carbonflux_vars%m_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_cpool_to_litter              =>    carbonflux_vars%m_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]  
-          gap_mortality_c_to_litr_met_c  =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
-          gap_mortality_c_to_litr_cel_c  =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
-          gap_mortality_c_to_litr_lig_c  =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
-          gap_mortality_c_to_cwdc        =>    carbonflux_vars%gap_mortality_c_to_cwdc_col            & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
+          m_cpool_to_litter              =>    carbonflux_vars%m_pool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]  
+          gap_mortality_c_to_litr_met_c  =>    carbonflux_vars%gap_mortality_to_litr_met_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
+          gap_mortality_c_to_litr_cel_c  =>    carbonflux_vars%gap_mortality_to_litr_cel_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
+          gap_mortality_c_to_litr_lig_c  =>    carbonflux_vars%gap_mortality_to_litr_lig_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
+          gap_mortality_c_to_cwdc        =>    carbonflux_vars%gap_mortality_to_cwd_col            & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
           )
           
        do j = 1, nlevdecomp
@@ -1147,35 +1147,35 @@ contains
           croot_prof                       =>    cnstate_vars%croot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
           stem_prof                        =>    cnstate_vars%stem_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
           
-          hrv_leafc_to_litter              =>    carbonflux_vars%hrv_leafc_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_to_litter             =>    carbonflux_vars%hrv_frootc_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_to_litter          =>    carbonflux_vars%hrv_livestemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_to_litter         =>    carbonflux_vars%hrv_livecrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_to_litter         =>    carbonflux_vars%hrv_deadcrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_storage_to_litter      =>    carbonflux_vars%hrv_leafc_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_storage_to_litter     =>    carbonflux_vars%hrv_frootc_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_storage_to_litter  =>    carbonflux_vars%hrv_livestemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_storage_to_litter  =>    carbonflux_vars%hrv_deadstemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_storage_to_litter =>    carbonflux_vars%hrv_livecrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_storage_to_litter =>    carbonflux_vars%hrv_deadcrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_leafc_to_litter              =>    carbonflux_vars%hrv_leaf_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_to_litter             =>    carbonflux_vars%hrv_froot_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_to_litter          =>    carbonflux_vars%hrv_livestem_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
+          phrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstem_to_prod10_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          phrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstem_to_prod100_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_to_litter         =>    carbonflux_vars%hrv_livecroot_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_to_litter         =>    carbonflux_vars%hrv_deadcroot_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_leafc_storage_to_litter      =>    carbonflux_vars%hrv_leaf_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_storage_to_litter     =>    carbonflux_vars%hrv_froot_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_storage_to_litter  =>    carbonflux_vars%hrv_livestem_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadstemc_storage_to_litter  =>    carbonflux_vars%hrv_deadstem_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_storage_to_litter =>    carbonflux_vars%hrv_livecroot_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_storage_to_litter =>    carbonflux_vars%hrv_deadcroot_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
           hrv_gresp_storage_to_litter      =>    carbonflux_vars%hrv_gresp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_xfer_to_litter         =>    carbonflux_vars%hrv_leafc_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_xfer_to_litter        =>    carbonflux_vars%hrv_frootc_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_xfer_to_litter     =>    carbonflux_vars%hrv_livestemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_xfer_to_litter     =>    carbonflux_vars%hrv_deadstemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_xfer_to_litter    =>    carbonflux_vars%hrv_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_xfer_to_litter    =>    carbonflux_vars%hrv_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_leafc_xfer_to_litter         =>    carbonflux_vars%hrv_leaf_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_xfer_to_litter        =>    carbonflux_vars%hrv_froot_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_xfer_to_litter     =>    carbonflux_vars%hrv_livestem_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadstemc_xfer_to_litter     =>    carbonflux_vars%hrv_deadstem_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_xfer_to_litter    =>    carbonflux_vars%hrv_livecroot_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_xfer_to_litter    =>    carbonflux_vars%hrv_deadcroot_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           hrv_gresp_xfer_to_litter         =>    carbonflux_vars%hrv_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_cpool_to_litter              =>    carbonflux_vars%hrv_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]      
+          hrv_cpool_to_litter              =>    carbonflux_vars%hrv_pool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]      
 
           chrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10_col           , & ! InOut:  [real(r8) (:)   ]                                                    
           chrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100_col          , & ! InOut:  [real(r8) (:)   ]                                                    
-          harvest_c_to_litr_met_c          =>    carbonflux_vars%harvest_c_to_litr_met_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
-          harvest_c_to_litr_cel_c          =>    carbonflux_vars%harvest_c_to_litr_cel_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
-          harvest_c_to_litr_lig_c          =>    carbonflux_vars%harvest_c_to_litr_lig_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
-          harvest_c_to_cwdc                =>    carbonflux_vars%harvest_c_to_cwdc_col                    & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
+          harvest_c_to_litr_met_c          =>    carbonflux_vars%harvest_to_litr_met_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
+          harvest_c_to_litr_cel_c          =>    carbonflux_vars%harvest_to_litr_cel_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
+          harvest_c_to_litr_lig_c          =>    carbonflux_vars%harvest_to_litr_lig_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+          harvest_c_to_cwdc                =>    carbonflux_vars%harvest_to_cwd_col                    & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
           )
 
        do j = 1, nlevdecomp

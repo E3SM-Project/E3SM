@@ -999,9 +999,9 @@ contains
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
     associate ( &
-     decomp_cpools_sourcesink_vr  => carbonflux_vars%decomp_cpools_sourcesink_col    , &
-     decomp_npools_sourcesink_vr  => nitrogenflux_vars%decomp_npools_sourcesink_col  , &
-     decomp_ppools_sourcesink_vr  => phosphorusflux_vars%decomp_ppools_sourcesink_col  &
+     decomp_cpools_sourcesink_vr  => carbonflux_vars%decomp_pools_sourcesink_col    , &
+     decomp_npools_sourcesink_vr  => nitrogenflux_vars%decomp_pools_sourcesink_col  , &
+     decomp_ppools_sourcesink_vr  => phosphorusflux_vars%decomp_pools_sourcesink_col  &
      )
 
     do fc = 1, num_soilc
