@@ -448,8 +448,16 @@ contains
 
          iceThicknessMean = totalIceVolume / totalIceArea
          avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
-         avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
-         avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
+         if (groundedIceArea > 0.0_RKIND) then
+            avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
+         else
+            avgGroundedBasalMelt = 0.0_RKIND
+         endif
+         if (floatingIceArea > 0.0_RKIND) then
+            avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
+         else
+            avgSubshelfMelt = 0.0_RKIND
+         endif
 
          block => block % next
       end do
