@@ -94,6 +94,7 @@ There are two usage modes:
      - You can tailor the query by adding ONE of the following possible qualifier arguments:
        [--full --fileonly --raw --description --get-group --type --valid-values]
 
+     - The env_mach_specific.xml env_archive.xml files are not supported by this tool.
 """
 
 from standard_script_setup import *
@@ -104,7 +105,7 @@ from CIME.utils import expect, convert_to_string
 import textwrap, sys, re
 
 logger = logging.getLogger("xmlquery")
-
+unsupported_files = ["env_mach_specific.xml", "env_archive.xml"]
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -216,6 +217,10 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                 groups = ['none']
 
         if xmlfile:
+            expect(xmlfile not in unsupported_files,
+                   "XML file {} is unsupported by this tool."
+                   .format(xmlfile))
+
             if not groups:
                 value =  case.get_value(var, resolved=resolved)
                 results['none'] = {}
@@ -253,9 +258,7 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
 
             if value is None:
                 if xmlfile:
-                    logger.debug(" No results found for variable {} in file {}".format(var, xmlfile))
-                    del results[group][var]
-                    continue
+                    expect(False, " No results found for variable {} in file {}".format(var, xmlfile))
                 else:
                     expect(False, " No results found for variable {}".format(var))
 
@@ -280,10 +283,18 @@ def _main_func(description):
         value, no_resolve, raw, description, get_group, full, dtype, \
         valid_values, partial_match, xmlfile = parse_command_line(sys.argv, description)
 
+    expect(xmlfile not in unsupported_files,
+           "XML file {} is unsupported by this tool."
+           .format(xmlfile))
+
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
         if listall or partial_match:
+            if xmlfile:
+                comp_classes = case.get_values("COMP_CLASSES")
+                case.set_file(xmlfile)
             all_variables = sorted(case.get_record_fields(None, "varid"))
+            logger.debug("all_variables: {}".format(all_variables))
             if partial_match:
                 all_matching_vars = []
                 for variable in variables:
