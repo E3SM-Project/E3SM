@@ -104,11 +104,11 @@ def buildnml(case, caseroot, compname):
     start_type = "default"
     if run_type == "startup":
         if clm_force_coldstart == "on": start_type = "cold"
+    else:
+        if run_type == "hybrid":
+            start_type = "startup"
         else:
-            if run_type == "hybrid":
-                start_type = "startup"
-            else:
-                start_type = run_type
+            start_type = run_type
 
     if run_type == "branch": startfiletype = "nrevsn"
 
