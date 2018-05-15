@@ -165,6 +165,13 @@
       <mask>usgs</mask>
     </model_grid>
 
+    <model_grid alias="T42_T42" not_compset="_POP">
+      <grid name="atm">T42</grid>
+      <grid name="lnd">T42</grid>
+      <grid name="ocnice">T42</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="T42_T42_mg16" not_compset="_POP">
       <grid name="atm">T42</grid>
       <grid name="lnd">T42</grid>
@@ -523,6 +530,13 @@
     </model_grid>
 
     <model_grid alias="f19_f19_mg16" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19" not_compset="_POP">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
