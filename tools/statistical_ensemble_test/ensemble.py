@@ -40,6 +40,10 @@ def main(argv):
 
     caller = 'ensemble.py'
 
+    #directory with single_run.py and ensemble.py
+    stat_dir = os.path.dirname(os.path.realpath(__file__))
+    print( "STATUS: stat_dir = " + stat_dir)
+
     opts_dict, case_flags  = process_args_dict(caller, argv)
 
     #default is verification mode (3 runs)
@@ -75,45 +79,48 @@ def main(argv):
         opts_dict['pertlim'] = "0"
    
     #first case
-    single_case(opts_dict, case_flags)
+    single_case(opts_dict, case_flags, stat_dir)
 
     #now clone
     print('STATUS: cloning additional cases ...')
 
     #scripts dir
-    root_dir = os.path.basename(__file__)
-    ret = os.chdir(root_dir)
+    print("STATUS: stat_dir = " + stat_dir)
+    ret = os.chdir(stat_dir)
     ret = os.chdir('../../scripts')
     scripts_dir = os.getcwd()
+    print ("STATUS: scripts dir = " + scripts_dir)
 
     #we know case name ends in '.000' (already checked)
     clone_case = opts_dict['case']
     case_pfx = clone_case[:-4]
 
     for i in range(1, clone_count + 1): #1: clone_count
-        if runtype == 'verify':
-           pertlim = get_pertlim_uf(rand_ints[i])
+        if run_type == 'verify':
+           this_pertlim = get_pertlim_uf(rand_ints[i])
         else: #full ensemble
-           pertlim = get_pertlim_uf(i)
+           this_pertlim = get_pertlim_uf(i)
 
         iens = '{0:03d}'.format(i)
         new_case = case_pfx + "." + iens
-        full_new_case = scripts_dir +"/" + clone_name
 
         os.chdir(scripts_dir)
-        print ("STATUS: creating cloned case: " + clone_name)
+        print ("STATUS: creating new cloned case: " + new_case)
 
-        command = scripts_dir + "/create_clone --keepexe --case " + full_new_case + " --clone" + clone_case
+        clone_args = " --keepexe --case " + new_case + " --clone " + clone_case
+        print ("        with args: " + clone_args)
+
+        command = scripts_dir + "/create_clone" + clone_args
         ret = os.system(command)
 
-        print ("STATUS: running setup for cloned case: " + clone_name)
-        os.chdir(full_new_case)
-        command = './case_setup'
+        print ("STATUS: running setup for new cloned case: " + new_case)
+        os.chdir(new_case)
+        command = './case.setup'
         ret = os.system(command)
 
         #modify the perlim in the file
-        if runtype == 'verify': #remove old pertlim first
-            f = open("user_nl_cam.nl","r+")
+        if run_type == 'verify': #remove old pertlim first
+            f = open("user_nl_cam","r+")
             all_lines = f.readlines()
             f.seek(0)
             for line in all_lines:
@@ -121,10 +128,12 @@ def main(argv):
                     f.write(line)
             f.truncate()
             f.close()
+            text = "pertlim = " + this_pertlim
+        else:
+            text = "\npertlim = " + this_pertlim
 
         #now append new pertlim
         with open("user_nl_cam", "a") as f:
-            text = "pertlim = " + opts_dict['pertlim']
             f.write(text)
 
         #preview namelists
@@ -137,7 +146,7 @@ def main(argv):
             ret = os.system(command)
 
     #Final output
-    if runtype == "verify":
+    if run_type == "verify":
         print ("STATUS: ---VERIFICATION CASES COMPLETE---")
         print ("Set up three cases using the following pertlim values:")
         print get_pertlim_uf(rand_ints[0]) + '   ' + get_pertlim_uf(rand_ints[1]) + "   " + get_pertlim_uf(rand_ints[2])

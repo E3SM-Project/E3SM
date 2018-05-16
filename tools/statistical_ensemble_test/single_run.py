@@ -13,7 +13,7 @@ def disp_usage(callType):
         print '----------------------------'
         print 'ensemble.py :'
     else: 
-        print '\nSets up a single CESM cases. '
+        print '\nSets up a single CESM case. '
         print '  '
         print '----------------------------'
         print 'single_run.py :'
@@ -58,6 +58,7 @@ def process_args_dict(caller, caller_argv):
         opts, args = getopt.getopt(caller_argv,"hf:",optkeys)
 
     except getopt.GetoptError:
+        print("\nERROR: unrecognized command line argument")
         disp_usage(caller)
         sys.exit(2)
 
@@ -114,8 +115,7 @@ def process_args_dict(caller, caller_argv):
                 print "WARNING: pertlim ignored for ensemble.py."
                 opts_dict['pertlim'] = "0"
             else:
-                opts_dict['pertlim'] = str(arg)
-                s_case_flags += ' ' + opt + ' ' + str(arg)
+                opts_dict['pertlim'] = arg
         elif opt == '--project':
             opts_dict['project'] = arg
             s_case_flags += ' ' + opt + ' ' + arg
@@ -187,7 +187,7 @@ def process_args_dict(caller, caller_argv):
         case_dir = os.path.dirname(case)
         if os.path.isdir(case_dir) == False:
             print('Error: Need a valid full path with the case name (--case).')
-    
+            sys.exit()
 
     if opts_dict['walltime'] == '00:00':
         if opts_dict['uf'] == True:
@@ -200,14 +200,10 @@ def process_args_dict(caller, caller_argv):
 
 #######
 
-def single_case(opts_dict, case_flags):
+def single_case(opts_dict, case_flags, stat_dir):
     
-    #directory with single_run.py and ensemble.py
-    root_dir = os.path.dirname(__file__)
-    #print( "STATUS: root_dir = " + root_dir)
- 
     #scripts dir
-    ret = os.chdir(root_dir)
+    ret = os.chdir(stat_dir)
     ret = os.chdir('../../scripts')
 
     ##res and compset are required for create_newcase
@@ -219,7 +215,7 @@ def single_case(opts_dict, case_flags):
     ret = os.system(command)
 
     #modify namelist settings 
-    case_path = os.path.dirname(opts_dict['case'])
+    case_path = opts_dict['case']
     print('STATUS: case_path  = ' + case_path)
     ret = os.chdir(case_path)              
                   
@@ -250,7 +246,7 @@ def single_case(opts_dict, case_flags):
         ret = os.system(command)
         
     print('STATUS: running setup for single case...')
-    command = './case_setup'
+    command = './case.setup'
     ret = os.system(command)
     
     print "STATUS: Adjusting user_nl_* files...."
@@ -263,24 +259,26 @@ def single_case(opts_dict, case_flags):
             text1 = "\navgflag_pertape = 'A'" 
             text2 = "\nnhtfrq  = -8760" 
         
-        test3 =  "inithist = 'NONE'"
+        text3 =  "\ninithist = 'NONE'"
         
         with open("user_nl_cam", "a") as f:
             f.write(text1)
             f.write(text2)
             f.write(text3)
             if opts_dict['pertlim'] != "0":         
-                text = "pertlim = " + opts_dict['pertlim']
+                text = "\npertlim = " + opts_dict['pertlim']
                 f.write(text)
+    else:
+        print("Warning: no user_nl_cam found")
 
     #clm
     if os.path.isfile('user_nl_clm') == True:
         if opts_dict['uf'] == True:
-            text1 = "\navgflag_pertape = 'I'" 
-            text2 = "\nnhtfrq  = 9" 
+            text1 = "\nhist_avgflag_pertape = 'I'" 
+            text2 = "\nhist_nhtfrq  = 9" 
         else:
-            text1 = "\navgflag_pertape = 'A'" 
-            text2 = "\nnhtfrq  = -8760" 
+            text1 = "\nhist_avgflag_pertape = 'A'" 
+            text2 = "\nhist_nhtfrq  = -8760" 
         
         with open("user_nl_clm", "a") as f:
             f.write(text1)
@@ -326,6 +324,7 @@ def single_case(opts_dict, case_flags):
     print ('STATUS: no-build = ' + str(nb))
     print ('STATUS: no-submit = ' + str(ns))
     if nb == False :
+        print("STATUS: building case ...")
         command = './case.build'
         ret = os.system(command)
         if ret != 0:
@@ -341,10 +340,16 @@ def main(argv):
 
     caller = 'single_run.py'
 
+    #directory with single_run.py and ensemble.py
+    stat_dir = os.path.dirname(os.path.realpath(__file__))
+    print( "STATUS: stat_dir = " + stat_dir)
+
     opts_dict, case_flags = process_args_dict(caller, argv)
 
 
+    single_case(opts_dict, case_flags, stat_dir)
 
+    print("STATUS: completed single run setup.")
 
 ########
 if __name__ == "__main__":
