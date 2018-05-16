@@ -144,7 +144,7 @@ class EnvMachSpecific(EnvBase):
         module_system = self.get_module_system_type()
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
-        lines = ["# This file is for user conveneance only and is not used by the model"]
+        lines = ["# This file is for user convenience only and is not used by the model"]
 
         lines.append("# Changes to this file will be ignored and overwritten")
         lines.append("# Changes to the environment should be made in env_mach_specific.xml")
