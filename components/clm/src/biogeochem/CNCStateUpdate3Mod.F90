@@ -71,7 +71,7 @@ contains
                    cs%decomp_pools_vr_col(c,j,i_met_lit) = cs%decomp_pools_vr_col(c,j,i_met_lit) &
                         + cf%m_to_litr_met_fire_col(c,j)* dt
                    cs%decomp_pools_vr_col(c,j,i_cel_lit) = cs%decomp_pools_vr_col(c,j,i_cel_lit) &
-                        + cf%m_c_to_litr_cel_fire_col(c,j)* dt
+                        + cf%m_to_litr_cel_fire_col(c,j)* dt
                    cs%decomp_pools_vr_col(c,j,i_lig_lit) = cs%decomp_pools_vr_col(c,j,i_lig_lit) &
                         + cf%m_to_litr_lig_fire_col(c,j)* dt
                 end do

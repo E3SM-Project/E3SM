@@ -960,7 +960,7 @@ contains
         m_cpool_to_litter_fire              =>    carbonflux_vars%m_pool_to_litter_fire_patch                , & ! Output: [real(r8) (:)     ]                       
         m_decomp_cpools_to_fire_vr          =>    carbonflux_vars%m_decomp_cpools_to_fire_vr_col              , & ! Output: [real(r8) (:,:,:) ]  (gC/m3/s) VR decomp. C fire loss
         m_c_to_litr_met_fire                =>    carbonflux_vars%m_to_litr_met_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_c_to_litr_cel_fire                =>    carbonflux_vars%m_c_to_litr_cel_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
+        m_c_to_litr_cel_fire                =>    carbonflux_vars%m_to_litr_cel_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
         m_c_to_litr_lig_fire                =>    carbonflux_vars%m_to_litr_lig_fire_col                      & ! Output: [real(r8) (:,:)   ]
 
         )
@@ -989,7 +989,7 @@ contains
      m_npool_to_litter_fire              =>    nitrogenflux_vars%m_pool_to_litter_fire_patch
      m_decomp_npools_to_fire_vr          =>    nitrogenflux_vars%m_decomp_npools_to_fire_vr_col            
      m_n_to_litr_met_fire                =>    nitrogenflux_vars%m_to_litr_met_fire_col                  
-     m_n_to_litr_cel_fire                =>    nitrogenflux_vars%m_n_to_litr_cel_fire_col                  
+     m_n_to_litr_cel_fire                =>    nitrogenflux_vars%m_to_litr_cel_fire_col                  
      m_n_to_litr_lig_fire                =>    nitrogenflux_vars%m_to_litr_lig_fire_col                  
 
 
@@ -1018,7 +1018,7 @@ contains
 
      m_decomp_ppools_to_fire_vr          =>    phosphorusflux_vars%m_decomp_ppools_to_fire_vr_col            
      m_p_to_litr_met_fire                =>    phosphorusflux_vars%m_to_litr_met_fire_col                  
-     m_p_to_litr_cel_fire                =>    phosphorusflux_vars%m_p_to_litr_cel_fire_col                  
+     m_p_to_litr_cel_fire                =>    phosphorusflux_vars%m_to_litr_cel_fire_col                  
      m_p_to_litr_lig_fire                =>    phosphorusflux_vars%m_to_litr_lig_fire_col                  
 
      transient_landcover = run_has_transient_landcover()

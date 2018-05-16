@@ -595,8 +595,8 @@ contains
          livecrootp_storage                  =>    phosphorusstate_vars%livecroot_storage_patch           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage                
          deadcrootp_storage                  =>    phosphorusstate_vars%deadcroot_storage_patch           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage                
 
-         prev_leafc_to_litter                =>    carbonflux_vars%prev_leafc_to_litter_patch            , & ! Output: [real(r8)  (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter               =>    carbonflux_vars%prev_frootc_to_litter_patch           , & ! Output: [real(r8)  (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
+         prev_leafc_to_litter                =>    carbonflux_vars%prev_leaf_to_litter_patch            , & ! Output: [real(r8)  (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter               =>    carbonflux_vars%prev_froot_to_litter_patch           , & ! Output: [real(r8)  (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
          leafc_xfer_to_leafc                 =>    carbonflux_vars%leaf_xfer_to_leaf_patch             , & ! Output:  [real(r8) (:)   ]                                                    
          frootc_xfer_to_frootc               =>    carbonflux_vars%froot_xfer_to_froot_patch           , & ! Output:  [real(r8) (:)   ]                                                    
          livestemc_xfer_to_livestemc         =>    carbonflux_vars%livestem_xfer_to_livestem_patch     , & ! Output:  [real(r8) (:)   ]                                                    
@@ -982,8 +982,8 @@ contains
          livecrootp_xfer                     =>    phosphorusstate_vars%livecroot_xfer_patch              , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer               
          deadcrootp_xfer                     =>    phosphorusstate_vars%deadcroot_xfer_patch              , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer               
          
-         prev_leafc_to_litter                =>    carbonflux_vars%prev_leafc_to_litter_patch            , & ! Output:  [real(r8) (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter               =>    carbonflux_vars%prev_frootc_to_litter_patch           , & ! Output:  [real(r8) (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
+         prev_leafc_to_litter                =>    carbonflux_vars%prev_leaf_to_litter_patch            , & ! Output:  [real(r8) (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter               =>    carbonflux_vars%prev_froot_to_litter_patch           , & ! Output:  [real(r8) (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
          leafc_xfer_to_leafc                 =>    carbonflux_vars%leaf_xfer_to_leaf_patch             , & ! Output:  [real(r8) (:)   ]                                                    
          frootc_xfer_to_frootc               =>    carbonflux_vars%froot_xfer_to_froot_patch           , & ! Output:  [real(r8) (:)   ]                                                    
          livestemc_xfer_to_livestemc         =>    carbonflux_vars%livestem_xfer_to_livestem_patch     , & ! Output:  [real(r8) (:)   ]                                                    
@@ -2383,8 +2383,8 @@ contains
          cpool_to_livestemc    =>    carbonflux_vars%pool_to_livestem_patch    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)               
          cpool_to_leafc        =>    carbonflux_vars%pool_to_leaf_patch        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)                    
          cpool_to_frootc       =>    carbonflux_vars%pool_to_froot_patch       , & ! Input:  [real(r8) (:) ]  allocation to fine root C (gC/m2/s)               
-         prev_leafc_to_litter  =>    carbonflux_vars%prev_leafc_to_litter_patch  , & ! Output: [real(r8) (:) ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter =>    carbonflux_vars%prev_frootc_to_litter_patch , & ! Output: [real(r8) (:) ]  previous timestep froot C litterfall flux (gC/m2/s)
+         prev_leafc_to_litter  =>    carbonflux_vars%prev_leaf_to_litter_patch  , & ! Output: [real(r8) (:) ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter =>    carbonflux_vars%prev_froot_to_litter_patch , & ! Output: [real(r8) (:) ]  previous timestep froot C litterfall flux (gC/m2/s)
          leafc_to_litter       =>    carbonflux_vars%leaf_to_litter_patch       , & ! Output: [real(r8) (:) ]  leaf C litterfall (gC/m2/s)                       
          frootc_to_litter      =>    carbonflux_vars%froot_to_litter_patch      , & ! Output: [real(r8) (:) ]  fine root C litterfall (gC/m2/s)                  
          livestemc_to_litter   =>    carbonflux_vars%livestem_to_litter_patch   , & ! Output: [real(r8) (:) ]  live stem C litterfall (gC/m2/s)                  
@@ -2402,10 +2402,10 @@ contains
          leafp_to_retransp     =>    phosphorusflux_vars%leafp_to_retransp_patch   , & ! Output: [real(r8) (:) ]  leaf P to retranslocated P pool (gP/m2/s)         
          frootp_to_litter      =>    phosphorusflux_vars%froot_to_litter_patch    , & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s) 
          
-         prev_leafn_to_litter  =>    nitrogenflux_vars%prev_leafn_to_litter_patch    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
-         prev_frootn_to_litter =>    nitrogenflux_vars%prev_frootn_to_litter_patch   , & ! Output: [real(r8) (:) ]  previous timestep froot N litterfall flux (gN/m2/s)
-         prev_leafp_to_litter  =>    phosphorusflux_vars%prev_leafp_to_litter_patch  , & ! Output: [real(r8) (:) ]  previous timestep leaf P litterfall flux (gP/m2/s)
-         prev_frootp_to_litter =>    phosphorusflux_vars%prev_frootp_to_litter_patch , & ! Output: [real(r8) (:) ]  previous timestep froot P litterfall flux (gP/m2/s)
+         prev_leafn_to_litter  =>    nitrogenflux_vars%prev_leaf_to_litter_patch    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
+         prev_frootn_to_litter =>    nitrogenflux_vars%prev_froot_to_litter_patch   , & ! Output: [real(r8) (:) ]  previous timestep froot N litterfall flux (gN/m2/s)
+         prev_leafp_to_litter  =>    phosphorusflux_vars%prev_leaf_to_litter_patch  , & ! Output: [real(r8) (:) ]  previous timestep leaf P litterfall flux (gP/m2/s)
+         prev_frootp_to_litter =>    phosphorusflux_vars%prev_froot_to_litter_patch , & ! Output: [real(r8) (:) ]  previous timestep froot P litterfall flux (gP/m2/s)
          leafn                 =>    nitrogenstate_vars%leaf_patch                  , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N                                  
          frootn                =>    nitrogenstate_vars%froot_patch                 , & ! Input:  [real(r8) (:) ]  (gN/m2) fine root N                               
          livestemn             =>    nitrogenstate_vars%livestem_patch              , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N                               

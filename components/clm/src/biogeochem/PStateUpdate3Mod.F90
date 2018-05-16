@@ -269,7 +269,7 @@ contains
 
             ! pft-level wood to column-level litter (uncombusted wood)
             ps%decomp_pools_vr_col(c,j,i_met_lit) = ps%decomp_pools_vr_col(c,j,i_met_lit) + pf%m_to_litr_met_fire_col(c,j)* dt
-            ps%decomp_pools_vr_col(c,j,i_cel_lit) = ps%decomp_pools_vr_col(c,j,i_cel_lit) + pf%m_p_to_litr_cel_fire_col(c,j)* dt
+            ps%decomp_pools_vr_col(c,j,i_cel_lit) = ps%decomp_pools_vr_col(c,j,i_cel_lit) + pf%m_to_litr_cel_fire_col(c,j)* dt
             ps%decomp_pools_vr_col(c,j,i_lig_lit) = ps%decomp_pools_vr_col(c,j,i_lig_lit) + pf%m_to_litr_lig_fire_col(c,j)* dt
          end do ! end of column loop
       end do

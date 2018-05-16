@@ -25,190 +25,52 @@ module PhosphorusFluxType
   type, public, extends (nutrientflux_type) :: phosphorusflux_type
 
      ! gap mortality fluxes
-     real(r8), pointer :: m_leafp_to_litter_patch                   (:)     ! patch leaf P mortality (gP/m2/s)
-     real(r8), pointer :: m_frootp_to_litter_patch                  (:)     ! patch fine root P mortality (gP/m2/s)
-     real(r8), pointer :: m_leafp_storage_to_litter_patch           (:)     ! patch leaf P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_frootp_storage_to_litter_patch          (:)     ! patch fine root P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_livestemp_storage_to_litter_patch       (:)     ! patch live stem P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_deadstemp_storage_to_litter_patch       (:)     ! patch dead stem P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_livecrootp_storage_to_litter_patch      (:)     ! patch live coarse root P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_deadcrootp_storage_to_litter_patch      (:)     ! patch dead coarse root P storage mortality (gP/m2/s)
-     real(r8), pointer :: m_leafp_xfer_to_litter_patch              (:)     ! patch leaf P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_frootp_xfer_to_litter_patch             (:)     ! patch fine root P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_livestemp_xfer_to_litter_patch          (:)     ! patch live stem P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_deadstemp_xfer_to_litter_patch          (:)     ! patch dead stem P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_livecrootp_xfer_to_litter_patch         (:)     ! patch live coarse root P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_deadcrootp_xfer_to_litter_patch         (:)     ! patch dead coarse root P transfer mortality (gP/m2/s)
-     real(r8), pointer :: m_livestemp_to_litter_patch               (:)     ! patch live stem P mortality (gP/m2/s)
-     real(r8), pointer :: m_deadstemp_to_litter_patch               (:)     ! patch dead stem P mortality (gP/m2/s)
-     real(r8), pointer :: m_livecrootp_to_litter_patch              (:)     ! patch live coarse root P mortality (gP/m2/s)
-     real(r8), pointer :: m_deadcrootp_to_litter_patch              (:)     ! patch dead coarse root P mortality (gP/m2/s)
      real(r8), pointer :: m_retransp_to_litter_patch                (:)     ! patch retranslocated P pool mortality (gP/m2/s)
-     real(r8), pointer :: m_ppool_to_litter_patch                   (:)     ! patch storage P pool mortality (gP/m2/s)
 
      ! harvest fluxes
-     real(r8), pointer :: hrv_leafp_to_litter_patch                 (:)     ! patch leaf P harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_frootp_to_litter_patch                (:)     ! patch fine root P harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_leafp_storage_to_litter_patch         (:)     ! patch leaf P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_frootp_storage_to_litter_patch        (:)     ! patch fine root P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_livestemp_storage_to_litter_patch     (:)     ! patch live stem P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadstemp_storage_to_litter_patch     (:)     ! patch dead stem P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_livecrootp_storage_to_litter_patch    (:)     ! patch live coarse root P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadcrootp_storage_to_litter_patch    (:)     ! patch dead coarse root P storage harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_leafp_xfer_to_litter_patch            (:)     ! patch leaf P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_frootp_xfer_to_litter_patch           (:)     ! patch fine root P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_livestemp_xfer_to_litter_patch        (:)     ! patch live stem P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadstemp_xfer_to_litter_patch        (:)     ! patch dead stem P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_livecrootp_xfer_to_litter_patch       (:)     ! patch live coarse root P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadcrootp_xfer_to_litter_patch       (:)     ! patch dead coarse root P transfer harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_livestemp_to_litter_patch             (:)     ! patch live stem P harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadstemp_to_prod10p_patch            (:)     ! patch dead stem P harvest to 10-year product pool (gP/m2/s)
-     real(r8), pointer :: hrv_deadstemp_to_prod100p_patch           (:)     ! patch dead stem P harvest to 100-year product pool (gP/m2/s)
-     real(r8), pointer :: hrv_livecrootp_to_litter_patch            (:)     ! patch live coarse root P harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_deadcrootp_to_litter_patch            (:)     ! patch dead coarse root P harvest mortality (gP/m2/s)
      real(r8), pointer :: hrv_retransp_to_litter_patch              (:)     ! patch retranslocated P pool harvest mortality (gP/m2/s)
-     real(r8), pointer :: hrv_ppool_to_litter_patch                 (:)     ! patch retranslocated P pool harvest mortality (gP/m2/s)
      real(r8), pointer :: hrv_deadstemp_to_prod10p_col              (:)     ! col dead stem P harvest mortality to 10-year product pool (gP/m2/s)
      real(r8), pointer :: hrv_deadstemp_to_prod100p_col             (:)     ! col dead stem P harvest mortality to 100-year product pool (gP/m2/s)
-     real(r8), pointer :: m_p_to_litr_met_fire_col                  (:,:)   ! col P from leaf, froot, xfer and storage P to litter labile P by fire (gP/m3/s) 
-     real(r8), pointer :: m_p_to_litr_cel_fire_col                  (:,:)   ! col P from leaf, froot, xfer and storage P to litter cellulose P by fire (gP/m3/s) 
-     real(r8), pointer :: m_p_to_litr_lig_fire_col                  (:,:)   ! col P from leaf, froot, xfer and storage P to litter lignin P by fire (gP/m3/s) 
-     real(r8), pointer :: harvest_p_to_litr_met_p_col               (:,:)   ! col P fluxes associated with harvest to litter metabolic pool (gP/m3/s)
-     real(r8), pointer :: harvest_p_to_litr_cel_p_col               (:,:)   ! col P fluxes associated with harvest to litter cellulose pool (gP/m3/s)
-     real(r8), pointer :: harvest_p_to_litr_lig_p_col               (:,:)   ! col P fluxes associated with harvest to litter lignin pool (gP/m3/s)
-     real(r8), pointer :: harvest_p_to_cwdp_col                     (:,:)   ! col P fluxes associated with harvest to CWD pool (gP/m3/s)
 
      ! crop harvest
-     real(r8), pointer :: hrv_leafp_to_prod1p_patch                 (:)     ! crop leafp harvested (gP/m2/s)
-     real(r8), pointer :: hrv_livestemp_to_prod1p_patch             (:)     ! crop stemp harvested (gP/m2/s)
-     real(r8), pointer :: hrv_grainp_to_prod1p_patch                (:)     ! crop grain harvested (gP/m2/s)
-     real(r8), pointer :: hrv_cropp_to_prod1p_patch                 (:)     ! total amount of crop P harvested (gP/m2/s)
      real(r8), pointer :: hrv_cropp_to_prod1p_col                   (:)     ! crop P harvest mortality to 1-yr product pool (gP/m2/s)
 
      ! fire P fluxes 
      real(r8), pointer :: m_decomp_ppools_to_fire_vr_col            (:,:,:) ! col vertically-resolved decomposing P fire loss (gP/m3/s)
      real(r8), pointer :: m_decomp_ppools_to_fire_col               (:,:)   ! col vertically-integrated (diagnostic) decomposing P fire loss (gP/m2/s)
-     real(r8), pointer :: m_leafp_to_fire_patch                     (:)     ! patch (gP/m2/s) fire P emissions from leafp 
-     real(r8), pointer :: m_leafp_storage_to_fire_patch             (:)     ! patch (gP/m2/s) fire P emissions from leafp_storage            
-     real(r8), pointer :: m_leafp_xfer_to_fire_patch                (:)     ! patch (gP/m2/s) fire P emissions from leafp_xfer     
-     real(r8), pointer :: m_livestemp_to_fire_patch                 (:)     ! patch (gP/m2/s) fire P emissions from livestemp 
-     real(r8), pointer :: m_livestemp_storage_to_fire_patch         (:)     ! patch (gP/m2/s) fire P emissions from livestemp_storage      
-     real(r8), pointer :: m_livestemp_xfer_to_fire_patch            (:)     ! patch (gP/m2/s) fire P emissions from livestemp_xfer
-     real(r8), pointer :: m_deadstemp_to_fire_patch                 (:)     ! patch (gP/m2/s) fire P emissions from deadstemp
-     real(r8), pointer :: m_deadstemp_storage_to_fire_patch         (:)     ! patch (gP/m2/s) fire P emissions from deadstemp_storage         
-     real(r8), pointer :: m_deadstemp_xfer_to_fire_patch            (:)     ! patch (gP/m2/s) fire P emissions from deadstemp_xfer
-     real(r8), pointer :: m_frootp_to_fire_patch                    (:)     ! patch (gP/m2/s) fire P emissions from frootp
-     real(r8), pointer :: m_frootp_storage_to_fire_patch            (:)     ! patch (gP/m2/s) fire P emissions from frootp_storage
-     real(r8), pointer :: m_frootp_xfer_to_fire_patch               (:)     ! patch (gP/m2/s) fire P emissions from frootp_xfer
-     real(r8), pointer :: m_livecrootp_to_fire_patch                (:)     ! patch (gP/m2/s) fire P emissions from m_livecrootp_to_fire
-     real(r8), pointer :: m_livecrootp_storage_to_fire_patch        (:)     ! patch (gP/m2/s) fire P emissions from livecrootp_storage     
-     real(r8), pointer :: m_livecrootp_xfer_to_fire_patch           (:)     ! patch (gP/m2/s) fire P emissions from livecrootp_xfer
-     real(r8), pointer :: m_deadcrootp_to_fire_patch                (:)     ! patch (gP/m2/s) fire P emissions from deadcrootp
-     real(r8), pointer :: m_deadcrootp_storage_to_fire_patch        (:)     ! patch (gP/m2/s) fire P emissions from deadcrootp_storage  
-     real(r8), pointer :: m_deadcrootp_xfer_to_fire_patch           (:)     ! patch (gP/m2/s) fire P emissions from deadcrootp_xfer
      real(r8), pointer :: m_retransp_to_fire_patch                  (:)     ! patch (gP/m2/s) fire P emissions from retransp
-     real(r8), pointer :: m_ppool_to_fire_patch                     (:)     ! patch (gP/m2/s) fire P emissions from ppool
-     real(r8), pointer :: m_leafp_to_litter_fire_patch              (:)     ! patch (gP/m2/s) from leafp to litter P  due to fire               
-     real(r8), pointer :: m_leafp_storage_to_litter_fire_patch      (:)     ! patch (gP/m2/s) from leafp_storage to litter P  due to fire                              
-     real(r8), pointer :: m_leafp_xfer_to_litter_fire_patch         (:)     ! patch (gP/m2/s) from leafp_xfer to litter P  due to fire                              
-     real(r8), pointer :: m_livestemp_to_litter_fire_patch          (:)     ! patch (gP/m2/s) from livestemp to litter P  due to fire                              
-     real(r8), pointer :: m_livestemp_storage_to_litter_fire_patch  (:)     ! patch (gP/m2/s) from livestemp_storage to litter P  due to fire                                     
-     real(r8), pointer :: m_livestemp_xfer_to_litter_fire_patch     (:)     ! patch (gP/m2/s) from livestemp_xfer to litter P  due to fire                                     
-     real(r8), pointer :: m_livestemp_to_deadstemp_fire_patch       (:)     ! patch (gP/m2/s) from livestemp to deadstemp P  due to fire                                     
-     real(r8), pointer :: m_deadstemp_to_litter_fire_patch          (:)     ! patch (gP/m2/s) from deadstemp to litter P  due to fire                                     
-     real(r8), pointer :: m_deadstemp_storage_to_litter_fire_patch  (:)     ! patch (gP/m2/s) from deadstemp_storage to litter P  due to fire                                               
-     real(r8), pointer :: m_deadstemp_xfer_to_litter_fire_patch     (:)     ! patch (gP/m2/s) from deadstemp_xfer to litter P  due to fire                                               
-     real(r8), pointer :: m_frootp_to_litter_fire_patch             (:)     ! patch (gP/m2/s) from frootp to litter P  due to fire                                               
-     real(r8), pointer :: m_frootp_storage_to_litter_fire_patch     (:)     ! patch (gP/m2/s) from frootp_storage to litter P  due to fire                                               
-     real(r8), pointer :: m_frootp_xfer_to_litter_fire_patch        (:)     ! patch (gP/m2/s) from frootp_xfer to litter P  due to fire                                               
-     real(r8), pointer :: m_livecrootp_to_litter_fire_patch         (:)     ! patch (gP/m2/s) from livecrootp to litter P  due to fire                                               
-     real(r8), pointer :: m_livecrootp_storage_to_litter_fire_patch (:)     ! patch (gP/m2/s) from livecrootp_storage to litter P  due to fire                                                     
-     real(r8), pointer :: m_livecrootp_xfer_to_litter_fire_patch    (:)     ! patch (gP/m2/s) from livecrootp_xfer to litter P  due to fire                                                     
-     real(r8), pointer :: m_livecrootp_to_deadcrootp_fire_patch     (:)     ! patch (gP/m2/s) from livecrootp_xfer to deadcrootp due to fire                                                     
-     real(r8), pointer :: m_deadcrootp_to_litter_fire_patch         (:)     ! patch (gP/m2/s) from deadcrootp to deadcrootp due to fire                                                       
-     real(r8), pointer :: m_deadcrootp_storage_to_litter_fire_patch (:)     ! patch (gP/m2/s) from deadcrootp_storage to deadcrootp due to fire                                                        
-     real(r8), pointer :: m_deadcrootp_xfer_to_litter_fire_patch    (:)     ! patch (gP/m2/s) from deadcrootp_xfer to deadcrootp due to fire 
      real(r8), pointer :: m_retransp_to_litter_fire_patch           (:)     ! patch (gP/m2/s) from retransp to deadcrootp due to fire                                                               
-     real(r8), pointer :: m_ppool_to_litter_fire_patch              (:)     ! patch (gP/m2/s) from ppool to deadcrootp due to fire                                                         
-     real(r8), pointer :: fire_ploss_patch                          (:)     ! patch total pft-level fire P loss (gP/m2/s) 
-     real(r8), pointer :: fire_ploss_col                            (:)     ! col total column-level fire P loss (gP/m2/s)
      real(r8), pointer :: fire_decomp_ploss_col                     (:)     ! col fire p loss from decomposable pools (gP/m2/s)
      real(r8), pointer :: fire_ploss_p2c_col                        (:)     ! col patch2col column-level fire P loss (gP/m2/s) (p2c)
-     real(r8), pointer :: fire_mortality_p_to_cwdp_col              (:,:)   ! col P fluxes associated with fire mortality to CWD pool (gP/m3/s)
 
      ! phenology fluxes from transfer pool
-     real(r8), pointer :: grainp_xfer_to_grainp_patch               (:)     ! patch grain P growth from storage for prognostic crop model (gP/m2/s)
-     real(r8), pointer :: leafp_xfer_to_leafp_patch                 (:)     ! patch leaf P growth from storage (gP/m2/s)
-     real(r8), pointer :: frootp_xfer_to_frootp_patch               (:)     ! patch fine root P growth from storage (gP/m2/s)
-     real(r8), pointer :: livestemp_xfer_to_livestemp_patch         (:)     ! patch live stem P growth from storage (gP/m2/s)
-     real(r8), pointer :: deadstemp_xfer_to_deadstemp_patch         (:)     ! patch dead stem P growth from storage (gP/m2/s)
-     real(r8), pointer :: livecrootp_xfer_to_livecrootp_patch       (:)     ! patch live coarse root P growth from storage (gP/m2/s)
-     real(r8), pointer :: deadcrootp_xfer_to_deadcrootp_patch       (:)     ! patch dead coarse root P growth from storage (gP/m2/s)
 
      ! litterfall fluxes
-     real(r8), pointer :: livestemp_to_litter_patch                 (:)     ! patch livestem P to litter (gP/m2/s)
-     real(r8), pointer :: grainp_to_food_patch                      (:)     ! patch grain P to food for prognostic crop (gP/m2/s)
-     real(r8), pointer :: leafp_to_litter_patch                     (:)     ! patch leaf P litterfall (gP/m2/s)
      real(r8), pointer :: leafp_to_retransp_patch                   (:)     ! patch leaf P to retranslocated P pool (gP/m2/s)
      real(r8), pointer :: frootp_to_retransp_patch                  (:)     ! patch fine root P to retranslocated P pool (gP/m2/s)
-     real(r8), pointer :: frootp_to_litter_patch                    (:)     ! patch fine root P litterfall (gP/m2/s)
 
      ! allocation fluxes
      real(r8), pointer :: retransp_to_ppool_patch                   (:)     ! patch deployment of retranslocated P (gP/m2/s)       
      real(r8), pointer :: sminp_to_ppool_patch                      (:)     ! patch deployment of soil mineral P uptake (gP/m2/s)
-     real(r8), pointer :: ppool_to_grainp_patch                     (:)     ! patch allocation to grain P for prognostic crop (gP/m2/s)
-     real(r8), pointer :: ppool_to_grainp_storage_patch             (:)     ! patch allocation to grain P storage for prognostic crop (gP/m2/s)
-     real(r8), pointer :: ppool_to_leafp_patch                      (:)     ! patch allocation to leaf P (gP/m2/s)
-     real(r8), pointer :: ppool_to_leafp_storage_patch              (:)     ! patch allocation to leaf P storage (gP/m2/s)
-     real(r8), pointer :: ppool_to_frootp_patch                     (:)     ! patch allocation to fine root P (gP/m2/s)
-     real(r8), pointer :: ppool_to_frootp_storage_patch             (:)     ! patch allocation to fine root P storage (gP/m2/s)
-     real(r8), pointer :: ppool_to_livestemp_patch                  (:)     ! patch allocation to live stem P (gP/m2/s)
-     real(r8), pointer :: ppool_to_livestemp_storage_patch          (:)     ! patch allocation to live stem P storage (gP/m2/s)
-     real(r8), pointer :: ppool_to_deadstemp_patch                  (:)     ! patch allocation to dead stem P (gP/m2/s)
-     real(r8), pointer :: ppool_to_deadstemp_storage_patch          (:)     ! patch allocation to dead stem P storage (gP/m2/s)
-     real(r8), pointer :: ppool_to_livecrootp_patch                 (:)     ! patch allocation to live coarse root P (gP/m2/s)
-     real(r8), pointer :: ppool_to_livecrootp_storage_patch         (:)     ! patch allocation to live coarse root P storage (gP/m2/s)
-     real(r8), pointer :: ppool_to_deadcrootp_patch                 (:)     ! patch allocation to dead coarse root P (gP/m2/s)
-     real(r8), pointer :: ppool_to_deadcrootp_storage_patch         (:)     ! patch allocation to dead coarse root P storage (gP/m2/s)
 
      ! annual turnover of storage to transfer pools           
-     real(r8), pointer :: grainp_storage_to_xfer_patch              (:)     ! patch grain P shift storage to transfer for prognostic crop (gP/m2/s)
-     real(r8), pointer :: leafp_storage_to_xfer_patch               (:)     ! patch leaf P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: frootp_storage_to_xfer_patch              (:)     ! patch fine root P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: livestemp_storage_to_xfer_patch           (:)     ! patch live stem P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: deadstemp_storage_to_xfer_patch           (:)     ! patch dead stem P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: livecrootp_storage_to_xfer_patch          (:)     ! patch live coarse root P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: deadcrootp_storage_to_xfer_patch          (:)     ! patch dead coarse root P shift storage to transfer (gP/m2/s)
      real(r8), pointer :: fert_p_patch                                (:)     ! patch applied fertilizer (gP/m2/s)
      real(r8), pointer :: fert_p_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
 
      ! turnover of livewood to deadwood, with retranslocation 
-     real(r8), pointer :: livestemp_to_deadstemp_patch              (:)     ! patch live stem P turnover (gP/m2/s)
      real(r8), pointer :: livestemp_to_retransp_patch               (:)     ! patch live stem P to retranslocated P pool (gP/m2/s)
-     real(r8), pointer :: livecrootp_to_deadcrootp_patch            (:)     ! patch live coarse root P turnover (gP/m2/s)
      real(r8), pointer :: livecrootp_to_retransp_patch              (:)     ! patch live coarse root P to retranslocated P pool (gP/m2/s)
 
      ! summary (diagnostic) flux variables, not involved in mass balance
      real(r8), pointer :: pdeploy_patch                             (:)     ! patch total P deployed to growth and storage (gP/m2/s)
-     real(r8), pointer :: pinputs_patch                             (:)     ! patch total P inputs to pft-level (gP/m2/s)
-     real(r8), pointer :: poutputs_patch                            (:)     ! patch total P outputs from pft-level (gP/m2/s)
-     real(r8), pointer :: wood_harvestp_patch                       (:)     ! patch total P losses to wood product pools (gP/m2/s)
-     real(r8), pointer :: wood_harvestp_col                         (:)     ! col total P losses to wood product pools (gP/m2/s) (p2c)
 
      ! deposition fluxes
      real(r8), pointer :: pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
      real(r8), pointer :: fert_p_to_sminp_col                            (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
 
      ! phenology: litterfall and crop fluxes
-     real(r8), pointer :: phenology_p_to_litr_met_p_col             (:,:)   ! col P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
-     real(r8), pointer :: phenology_p_to_litr_cel_p_col             (:,:)   ! col P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)
-     real(r8), pointer :: phenology_p_to_litr_lig_p_col             (:,:)   ! col P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
 
      ! gap mortality fluxes
-     real(r8), pointer :: gap_mortality_p_to_litr_met_p_col         (:,:)   ! col P fluxes associated with gap mortality to litter metabolic pool (gP/m3/s)
-     real(r8), pointer :: gap_mortality_p_to_litr_cel_p_col         (:,:)   ! col P fluxes associated with gap mortality to litter cellulose pool (gP/m3/s)
-     real(r8), pointer :: gap_mortality_p_to_litr_lig_p_col         (:,:)   ! col P fluxes associated with gap mortality to litter lignin pool (gP/m3/s)
-     real(r8), pointer :: gap_mortality_p_to_cwdp_col               (:,:)   ! col P fluxes associated with gap mortality to CWD pool (gP/m3/s)
 
      ! decomposition fluxes
      real(r8), pointer :: decomp_cascade_ptransfer_vr_col           (:,:,:) ! col vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
@@ -255,54 +117,22 @@ module PhosphorusFluxType
      real(r8), pointer :: crop_seedp_to_leaf_patch                  (:)     ! patch (gP/m2/s) seed source to leaf, for crops
 
      ! dynamic landcover fluxes
-     real(r8), pointer :: dwt_seedp_to_leaf_patch                   (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_seedp_to_leaf_grc                     (:)     ! (gP/m2/s) dwt_seedn_to_leaf_patch summed to the gridcell-level
-     real(r8), pointer :: dwt_seedp_to_deadstem_patch               (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_seedp_to_deadstem_grc                 (:)     ! (gP/m2/s) dwt_seedn_to_deadstem_patch summed to the gridcell-level
-     real(r8), pointer :: dwt_conv_pflux_patch                      (:)     ! (gP/m2/s) conversion N flux (immediate loss to atm); although this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_conv_pflux_grc                        (:)     ! (gP/m2/s) dwt_conv_nflux_patch summed to the gridcell-level
-     real(r8), pointer :: dwt_prod10p_gain_patch                    (:)     ! patch (gP/m2/s) addition to 10-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_prod100p_gain_patch                   (:)     ! patch (gP/m2/s) addition to 100-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_crop_productp_gain_patch              (:)     ! patch (gP/m2/s) addition to crop product pool from landcover change; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
-     real(r8), pointer :: dwt_slash_pflux_col                       (:)     ! (gP/m2/s) conversion slash flux due to landcover change
-
      real(r8), pointer :: dwt_seedp_to_ppool_grc                    (:)     ! col (gP/m2/s) seed source to PFT-level
      real(r8), pointer :: dwt_seedp_to_ppool_patch                  (:)     ! col (gP/m2/s) seed source to PFT-level
 
-     real(r8), pointer :: dwt_conv_pflux_col                        (:)     ! col (gP/m2/s) conversion P flux (immediate loss to atm)
-     real(r8), pointer :: dwt_prod10p_gain_col                      (:)     ! col (gP/m2/s) addition to 10-yr wood product pool
-     real(r8), pointer :: dwt_prod100p_gain_col                     (:)     ! col (gP/m2/s) addition to 100-yr wood product pool
-     real(r8), pointer :: dwt_frootp_to_litr_met_p_col              (:,:)   ! col (gP/m3/s) fine root to litter due to landcover change
-     real(r8), pointer :: dwt_frootp_to_litr_cel_p_col              (:,:)   ! col (gP/m3/s) fine root to litter due to landcover change
-     real(r8), pointer :: dwt_frootp_to_litr_lig_p_col              (:,:)   ! col (gP/m3/s) fine root to litter due to landcover change
-     real(r8), pointer :: dwt_livecrootp_to_cwdp_col                (:,:)   ! col (gP/m3/s) live coarse root to CWD due to landcover change
-     real(r8), pointer :: dwt_deadcrootp_to_cwdp_col                (:,:)   ! col (gP/m3/s) dead coarse root to CWD due to landcover change
-     real(r8), pointer :: dwt_ploss_col                             (:)     ! col (gP/m2/s) total phosphorus loss from product pools and conversion
-     real(r8), pointer :: dwt_prod10p_gain_grc                      (:)     ! col (gP/m2/s) addition to 10-yr wood product pool
-     real(r8), pointer :: dwt_prod100p_gain_grc                     (:)     ! col (gP/m2/s) addition to 100-yr wood product pool
-
      ! wood product pool loss fluxes
-     real(r8), pointer :: prod1p_loss_col                           (:)     ! col (gP/m2/s) decomposition loss from 1-yr crop product pool
-     real(r8), pointer :: prod10p_loss_col                          (:)     ! col (gP/m2/s) decomposition loss from 10-yr wood product pool
-     real(r8), pointer :: prod100p_loss_col                         (:)     ! col (gP/m2/s) decomposition loss from 100-yr wood product pool
-     real(r8), pointer :: product_ploss_col                         (:)     ! col (gP/m2/s) total wood product phosphorus loss
 
 
      ! summary (diagnostic) flux variables, not involved in mass balance
      real(r8), pointer :: pinputs_col                               (:)     ! col column-level P inputs (gP/m2/s)
      real(r8), pointer :: poutputs_col                              (:)     ! col column-level P outputs (gP/m2/s)
-     real(r8), pointer :: som_p_leached_col                         (:)     ! col total SOM P loss from vertical transport (gP/m^2/s)
-     real(r8), pointer :: decomp_ppools_leached_col                 (:,:)   ! col P loss from vertical transport from each decomposing P pool (gP/m^2/s)
-     real(r8), pointer :: decomp_ppools_transport_tendency_col      (:,:,:) ! col P tendency due to vertical transport in decomposing P pools (gP/m^3/s)
 
      ! all n pools involved in decomposition
-     real(r8), pointer :: decomp_ppools_sourcesink_col              (:,:,:) ! col (gP/m3) change in decomposing P pools
                                                                             !     (sum of all additions and subtractions from stateupdate1).  
 
      ! Misc
      real(r8), pointer :: plant_pdemand_patch                       (:)     ! P flux required to support initial GPP (gP/m2/s)
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
-     real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
      ! clm_interface & pflotran
      !------------------------------------------------------------------------
@@ -318,8 +148,6 @@ module PhosphorusFluxType
 
      real(r8), pointer :: sminp_to_plant_patch                      (:)     ! pft-level plant p uptake (gP/m2/s)
      real(r8), pointer :: plant_pdemand_vr_patch                    (:,:)   ! pft-level plant P demand
-     real(r8), pointer :: prev_leafp_to_litter_patch                (:)     ! previous timestep leaf P litterfall flux (gP/m2/s)
-     real(r8), pointer :: prev_frootp_to_litter_patch               (:)     ! previous timestep froot P litterfall flux (gP/m2/s)
      real(r8), pointer :: adsorb_to_labilep_vr                      (:,:)
      real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
      real(r8), pointer :: adsorb_to_labilep_col                     (:)
@@ -385,147 +213,30 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
-    allocate(this%m_leaf_to_litter_patch                   (begp:endp)) ; this%m_leaf_to_litter_patch                   (:) = nan
-    allocate(this%m_froot_to_litter_patch                  (begp:endp)) ; this%m_froot_to_litter_patch                  (:) = nan
-    allocate(this%m_leaf_storage_to_litter_patch           (begp:endp)) ; this%m_leaf_storage_to_litter_patch           (:) = nan
-    allocate(this%m_froot_storage_to_litter_patch          (begp:endp)) ; this%m_froot_storage_to_litter_patch          (:) = nan
-    allocate(this%m_livestem_storage_to_litter_patch       (begp:endp)) ; this%m_livestem_storage_to_litter_patch       (:) = nan
-    allocate(this%m_deadstem_storage_to_litter_patch       (begp:endp)) ; this%m_deadstem_storage_to_litter_patch       (:) = nan
-    allocate(this%m_livecroot_storage_to_litter_patch      (begp:endp)) ; this%m_livecroot_storage_to_litter_patch      (:) = nan
-    allocate(this%m_deadcroot_storage_to_litter_patch      (begp:endp)) ; this%m_deadcroot_storage_to_litter_patch      (:) = nan
-    allocate(this%m_leaf_xfer_to_litter_patch              (begp:endp)) ; this%m_leaf_xfer_to_litter_patch              (:) = nan
-    allocate(this%m_froot_xfer_to_litter_patch             (begp:endp)) ; this%m_froot_xfer_to_litter_patch             (:) = nan
-    allocate(this%m_livestem_xfer_to_litter_patch          (begp:endp)) ; this%m_livestem_xfer_to_litter_patch          (:) = nan
-    allocate(this%m_deadstem_xfer_to_litter_patch          (begp:endp)) ; this%m_deadstem_xfer_to_litter_patch          (:) = nan
-    allocate(this%m_livecroot_xfer_to_litter_patch         (begp:endp)) ; this%m_livecroot_xfer_to_litter_patch         (:) = nan
-    allocate(this%m_deadcroot_xfer_to_litter_patch         (begp:endp)) ; this%m_deadcroot_xfer_to_litter_patch         (:) = nan
-    allocate(this%m_livestem_to_litter_patch               (begp:endp)) ; this%m_livestem_to_litter_patch               (:) = nan
-    allocate(this%m_deadstem_to_litter_patch               (begp:endp)) ; this%m_deadstem_to_litter_patch               (:) = nan
-    allocate(this%m_livecroot_to_litter_patch              (begp:endp)) ; this%m_livecroot_to_litter_patch              (:) = nan
-    allocate(this%m_deadcroot_to_litter_patch              (begp:endp)) ; this%m_deadcroot_to_litter_patch              (:) = nan
+    call NutrientFluxInitAllocate(this, bounds)
+
     allocate(this%m_retransp_to_litter_patch                (begp:endp)) ; this%m_retransp_to_litter_patch                (:) = nan
-    allocate(this%m_pool_to_litter_patch                   (begp:endp)) ; this%m_pool_to_litter_patch                   (:) = nan
-    allocate(this%hrv_leaf_to_litter_patch                 (begp:endp)) ; this%hrv_leaf_to_litter_patch                 (:) = nan
-    allocate(this%hrv_froot_to_litter_patch                (begp:endp)) ; this%hrv_froot_to_litter_patch                (:) = nan
-    allocate(this%hrv_leaf_storage_to_litter_patch         (begp:endp)) ; this%hrv_leaf_storage_to_litter_patch         (:) = nan
-    allocate(this%hrv_froot_storage_to_litter_patch        (begp:endp)) ; this%hrv_froot_storage_to_litter_patch        (:) = nan
-    allocate(this%hrv_livestem_storage_to_litter_patch     (begp:endp)) ; this%hrv_livestem_storage_to_litter_patch     (:) = nan
-    allocate(this%hrv_deadstem_storage_to_litter_patch     (begp:endp)) ; this%hrv_deadstem_storage_to_litter_patch     (:) = nan
-    allocate(this%hrv_livecroot_storage_to_litter_patch    (begp:endp)) ; this%hrv_livecroot_storage_to_litter_patch    (:) = nan
-    allocate(this%hrv_deadcroot_storage_to_litter_patch    (begp:endp)) ; this%hrv_deadcroot_storage_to_litter_patch    (:) = nan
-    allocate(this%hrv_leaf_xfer_to_litter_patch            (begp:endp)) ; this%hrv_leaf_xfer_to_litter_patch            (:) = nan
-    allocate(this%hrv_froot_xfer_to_litter_patch           (begp:endp)) ; this%hrv_froot_xfer_to_litter_patch           (:) = nan
-    allocate(this%hrv_livestem_xfer_to_litter_patch        (begp:endp)) ; this%hrv_livestem_xfer_to_litter_patch        (:) = nan
-    allocate(this%hrv_deadstem_xfer_to_litter_patch        (begp:endp)) ; this%hrv_deadstem_xfer_to_litter_patch        (:) = nan
-    allocate(this%hrv_livecroot_xfer_to_litter_patch       (begp:endp)) ; this%hrv_livecroot_xfer_to_litter_patch       (:) = nan
-    allocate(this%hrv_deadcroot_xfer_to_litter_patch       (begp:endp)) ; this%hrv_deadcroot_xfer_to_litter_patch       (:) = nan
-    allocate(this%hrv_livestem_to_litter_patch             (begp:endp)) ; this%hrv_livestem_to_litter_patch             (:) = nan
-    allocate(this%hrv_deadstem_to_prod10_patch            (begp:endp)) ; this%hrv_deadstem_to_prod10_patch            (:) = nan
-    allocate(this%hrv_deadstem_to_prod100_patch           (begp:endp)) ; this%hrv_deadstem_to_prod100_patch           (:) = nan
-    allocate(this%hrv_leaf_to_prod1_patch                 (begp:endp)) ; this%hrv_leaf_to_prod1_patch                 (:) = nan
-    allocate(this%hrv_livestem_to_prod1_patch             (begp:endp)) ; this%hrv_livestem_to_prod1_patch             (:) = nan
-    allocate(this%hrv_grain_to_prod1_patch                (begp:endp)) ; this%hrv_grain_to_prod1_patch                (:) = nan
-    allocate(this%hrv_crop_to_prod1_patch                 (begp:endp)) ; this%hrv_crop_to_prod1_patch                 (:) = nan
-    allocate(this%hrv_livecroot_to_litter_patch            (begp:endp)) ; this%hrv_livecroot_to_litter_patch            (:) = nan
-    allocate(this%hrv_deadcroot_to_litter_patch            (begp:endp)) ; this%hrv_deadcroot_to_litter_patch            (:) = nan
     allocate(this%hrv_retransp_to_litter_patch              (begp:endp)) ; this%hrv_retransp_to_litter_patch              (:) = nan
-    allocate(this%hrv_pool_to_litter_patch                 (begp:endp)) ; this%hrv_pool_to_litter_patch                 (:) = nan
 
-    allocate(this%m_leaf_to_fire_patch                     (begp:endp)) ; this%m_leaf_to_fire_patch                     (:) = nan
-    allocate(this%m_leaf_storage_to_fire_patch             (begp:endp)) ; this%m_leaf_storage_to_fire_patch             (:) = nan
-    allocate(this%m_leaf_xfer_to_fire_patch                (begp:endp)) ; this%m_leaf_xfer_to_fire_patch                (:) = nan
-    allocate(this%m_livestem_to_fire_patch                 (begp:endp)) ; this%m_livestem_to_fire_patch                 (:) = nan
-    allocate(this%m_livestem_storage_to_fire_patch         (begp:endp)) ; this%m_livestem_storage_to_fire_patch         (:) = nan
-    allocate(this%m_livestem_xfer_to_fire_patch            (begp:endp)) ; this%m_livestem_xfer_to_fire_patch            (:) = nan
-    allocate(this%m_deadstem_to_fire_patch                 (begp:endp)) ; this%m_deadstem_to_fire_patch                 (:) = nan
-    allocate(this%m_deadstem_storage_to_fire_patch         (begp:endp)) ; this%m_deadstem_storage_to_fire_patch         (:) = nan
-    allocate(this%m_deadstem_xfer_to_fire_patch            (begp:endp)) ; this%m_deadstem_xfer_to_fire_patch            (:) = nan
-    allocate(this%m_froot_to_fire_patch                    (begp:endp)) ; this%m_froot_to_fire_patch                    (:) = nan
-    allocate(this%m_froot_storage_to_fire_patch            (begp:endp)) ; this%m_froot_storage_to_fire_patch            (:) = nan
-    allocate(this%m_froot_xfer_to_fire_patch               (begp:endp)) ; this%m_froot_xfer_to_fire_patch               (:) = nan
-    allocate(this%m_livecroot_to_fire_patch                (begp:endp)) ;     
-    allocate(this%m_livecroot_storage_to_fire_patch        (begp:endp)) ; this%m_livecroot_storage_to_fire_patch        (:) = nan
-    allocate(this%m_livecroot_xfer_to_fire_patch           (begp:endp)) ; this%m_livecroot_xfer_to_fire_patch           (:) = nan
-    allocate(this%m_deadcroot_to_fire_patch                (begp:endp)) ; this%m_deadcroot_to_fire_patch                (:) = nan
-    allocate(this%m_deadcroot_storage_to_fire_patch        (begp:endp)) ; this%m_deadcroot_storage_to_fire_patch        (:) = nan
-    allocate(this%m_deadcroot_xfer_to_fire_patch           (begp:endp)) ; this%m_deadcroot_xfer_to_fire_patch           (:) = nan
     allocate(this%m_retransp_to_fire_patch                  (begp:endp)) ; this%m_retransp_to_fire_patch                  (:) = nan
-    allocate(this%m_pool_to_fire_patch                     (begp:endp)) ; this%m_pool_to_fire_patch                     (:) = nan
 
-    allocate(this%m_leaf_to_litter_fire_patch              (begp:endp)) ; this%m_leaf_to_litter_fire_patch              (:) = nan
-    allocate(this%m_leaf_storage_to_litter_fire_patch      (begp:endp)) ; this%m_leaf_storage_to_litter_fire_patch      (:) = nan
-    allocate(this%m_leaf_xfer_to_litter_fire_patch         (begp:endp)) ; this%m_leaf_xfer_to_litter_fire_patch         (:) = nan
-    allocate(this%m_livestem_to_litter_fire_patch          (begp:endp)) ; this%m_livestem_to_litter_fire_patch          (:) = nan
-    allocate(this%m_livestem_storage_to_litter_fire_patch  (begp:endp)) ; this%m_livestem_storage_to_litter_fire_patch  (:) = nan
-    allocate(this%m_livestem_xfer_to_litter_fire_patch     (begp:endp)) ; this%m_livestem_xfer_to_litter_fire_patch     (:) = nan
-    allocate(this%m_livestem_to_deadstem_fire_patch       (begp:endp)) ; this%m_livestem_to_deadstem_fire_patch       (:) = nan
-    allocate(this%m_deadstem_to_litter_fire_patch          (begp:endp)) ; this%m_deadstem_to_litter_fire_patch          (:) = nan
-    allocate(this%m_deadstem_storage_to_litter_fire_patch  (begp:endp)) ; this%m_deadstem_storage_to_litter_fire_patch  (:) = nan
-    allocate(this%m_deadstem_xfer_to_litter_fire_patch     (begp:endp)) ; this%m_deadstem_xfer_to_litter_fire_patch     (:) = nan
-    allocate(this%m_froot_to_litter_fire_patch             (begp:endp)) ; this%m_froot_to_litter_fire_patch             (:) = nan
-    allocate(this%m_froot_storage_to_litter_fire_patch     (begp:endp)) ; this%m_froot_storage_to_litter_fire_patch     (:) = nan
-    allocate(this%m_froot_xfer_to_litter_fire_patch        (begp:endp)) ; this%m_froot_xfer_to_litter_fire_patch        (:) = nan
-    allocate(this%m_livecroot_to_litter_fire_patch         (begp:endp)) ; this%m_livecroot_to_litter_fire_patch         (:) = nan
-    allocate(this%m_livecroot_storage_to_litter_fire_patch (begp:endp)) ; this%m_livecroot_storage_to_litter_fire_patch (:) = nan
-    allocate(this%m_livecroot_xfer_to_litter_fire_patch    (begp:endp)) ; this%m_livecroot_xfer_to_litter_fire_patch    (:) = nan
-    allocate(this%m_livecroot_to_deadcroot_fire_patch     (begp:endp)) ; this%m_livecroot_to_deadcroot_fire_patch     (:) = nan
-    allocate(this%m_deadcroot_to_litter_fire_patch         (begp:endp)) ; this%m_deadcroot_to_litter_fire_patch         (:) = nan
-    allocate(this%m_deadcroot_storage_to_litter_fire_patch (begp:endp)) ; this%m_deadcroot_storage_to_litter_fire_patch (:) = nan
-    allocate(this%m_deadcroot_xfer_to_litter_fire_patch    (begp:endp)) ; this%m_deadcroot_xfer_to_litter_fire_patch    (:) = nan
     allocate(this%m_retransp_to_litter_fire_patch           (begp:endp)) ; this%m_retransp_to_litter_fire_patch           (:) = nan
-    allocate(this%m_pool_to_litter_fire_patch              (begp:endp)) ; this%m_pool_to_litter_fire_patch              (:) = nan
 
-    allocate(this%leaf_xfer_to_leaf_patch                 (begp:endp)) ; this%leaf_xfer_to_leaf_patch                 (:) = nan
-    allocate(this%froot_xfer_to_froot_patch               (begp:endp)) ; this%froot_xfer_to_froot_patch               (:) = nan
-    allocate(this%livestem_xfer_to_livestem_patch         (begp:endp)) ; this%livestem_xfer_to_livestem_patch         (:) = nan
-    allocate(this%deadstem_xfer_to_deadstem_patch         (begp:endp)) ; this%deadstem_xfer_to_deadstem_patch         (:) = nan
-    allocate(this%livecroot_xfer_to_livecroot_patch       (begp:endp)) ; this%livecroot_xfer_to_livecroot_patch       (:) = nan
-    allocate(this%deadcroot_xfer_to_deadcroot_patch       (begp:endp)) ; this%deadcroot_xfer_to_deadcroot_patch       (:) = nan
-    allocate(this%leaf_to_litter_patch                     (begp:endp)) ; this%leaf_to_litter_patch                     (:) = nan
     allocate(this%leafp_to_retransp_patch                   (begp:endp)) ; this%leafp_to_retransp_patch                   (:) = nan
     allocate(this%frootp_to_retransp_patch                  (begp:endp)) ; this%frootp_to_retransp_patch                  (:) = nan
-    allocate(this%froot_to_litter_patch                    (begp:endp)) ; this%froot_to_litter_patch                    (:) = nan
     allocate(this%retransp_to_ppool_patch                   (begp:endp)) ; this%retransp_to_ppool_patch                   (:) = nan
     allocate(this%sminp_to_ppool_patch                      (begp:endp)) ; this%sminp_to_ppool_patch                      (:) = nan
 
-    allocate(this%pool_to_leaf_patch              (begp:endp)) ; this%pool_to_leaf_patch              (:) = nan
-    allocate(this%pool_to_leaf_storage_patch      (begp:endp)) ; this%pool_to_leaf_storage_patch      (:) = nan
-    allocate(this%pool_to_froot_patch             (begp:endp)) ; this%pool_to_froot_patch             (:) = nan
-    allocate(this%pool_to_froot_storage_patch     (begp:endp)) ; this%pool_to_froot_storage_patch     (:) = nan
-    allocate(this%pool_to_livestem_patch          (begp:endp)) ; this%pool_to_livestem_patch          (:) = nan
-    allocate(this%pool_to_livestem_storage_patch  (begp:endp)) ; this%pool_to_livestem_storage_patch  (:) = nan
-    allocate(this%pool_to_deadstem_patch          (begp:endp)) ; this%pool_to_deadstem_patch          (:) = nan
-    allocate(this%pool_to_deadstem_storage_patch  (begp:endp)) ; this%pool_to_deadstem_storage_patch  (:) = nan
-    allocate(this%pool_to_livecroot_patch         (begp:endp)) ; this%pool_to_livecroot_patch         (:) = nan
-    allocate(this%pool_to_livecroot_storage_patch (begp:endp)) ; this%pool_to_livecroot_storage_patch (:) = nan
-    allocate(this%pool_to_deadcroot_patch         (begp:endp)) ; this%pool_to_deadcroot_patch         (:) = nan
-    allocate(this%pool_to_deadcroot_storage_patch (begp:endp)) ; this%pool_to_deadcroot_storage_patch (:) = nan
-    allocate(this%leaf_storage_to_xfer_patch       (begp:endp)) ; this%leaf_storage_to_xfer_patch       (:) = nan
-    allocate(this%froot_storage_to_xfer_patch      (begp:endp)) ; this%froot_storage_to_xfer_patch      (:) = nan
-    allocate(this%livestem_storage_to_xfer_patch   (begp:endp)) ; this%livestem_storage_to_xfer_patch   (:) = nan
-    allocate(this%deadstem_storage_to_xfer_patch   (begp:endp)) ; this%deadstem_storage_to_xfer_patch   (:) = nan
-    allocate(this%livecroot_storage_to_xfer_patch  (begp:endp)) ; this%livecroot_storage_to_xfer_patch  (:) = nan
-    allocate(this%deadcroot_storage_to_xfer_patch  (begp:endp)) ; this%deadcroot_storage_to_xfer_patch  (:) = nan
-    allocate(this%livestem_to_deadstem_patch      (begp:endp)) ; this%livestem_to_deadstem_patch      (:) = nan
     allocate(this%livestemp_to_retransp_patch       (begp:endp)) ; this%livestemp_to_retransp_patch       (:) = nan
-    allocate(this%livecroot_to_deadcroot_patch    (begp:endp)) ; this%livecroot_to_deadcroot_patch    (:) = nan
     allocate(this%livecrootp_to_retransp_patch      (begp:endp)) ; this%livecrootp_to_retransp_patch      (:) = nan
     allocate(this%pdeploy_patch                     (begp:endp)) ; this%pdeploy_patch                     (:) = nan
-    allocate(this%inputs_patch                     (begp:endp)) ; this%inputs_patch                     (:) = nan
-    allocate(this%outputs_patch                    (begp:endp)) ; this%outputs_patch                    (:) = nan
-    allocate(this%wood_harvest_patch               (begp:endp)) ; this%wood_harvest_patch               (:) = nan
-    allocate(this%fire_loss_patch                  (begp:endp)) ; this%fire_loss_patch                  (:) = nan
-    allocate(this%pool_to_grain_patch             (begp:endp)) ; this%pool_to_grain_patch             (:) = nan
-    allocate(this%pool_to_grain_storage_patch     (begp:endp)) ; this%pool_to_grain_storage_patch     (:) = nan
-    allocate(this%livestem_to_litter_patch         (begp:endp)) ; this%livestem_to_litter_patch         (:) = nan
-    allocate(this%grain_to_food_patch              (begp:endp)) ; this%grain_to_food_patch              (:) = nan
-    allocate(this%grain_xfer_to_grain_patch       (begp:endp)) ; this%grain_xfer_to_grain_patch       (:) = nan
-    allocate(this%grain_storage_to_xfer_patch      (begp:endp)) ; this%grain_storage_to_xfer_patch      (:) = nan
     allocate(this%fert_p_patch                      (begp:endp)) ; this%fert_p_patch                      (:) = nan
     allocate(this%fert_p_counter_patch                (begp:endp)) ; this%fert_p_counter_patch                (:) = nan
 
     allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col     (:) = nan
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
+    allocate(this%dwt_prod10_gain_grc              (begg:endg))                  ; this%dwt_prod10_gain_grc      (:)  =nan
+    allocate(this%dwt_prod100_gain_grc             (begg:endg))                  ; this%dwt_prod100_gain_grc     (:)  =nan
     allocate(this%hrv_deadstemp_to_prod10p_col  (begc:endc))    ; this%hrv_deadstemp_to_prod10p_col  (:) = nan
     allocate(this%hrv_deadstemp_to_prod100p_col (begc:endc))    ; this%hrv_deadstemp_to_prod100p_col (:) = nan
     allocate(this%hrv_cropp_to_prod1p_col       (begc:endc))    ; this%hrv_cropp_to_prod1p_col       (:) = nan
@@ -535,20 +246,12 @@ contains
     allocate(this%gross_pmin_col                (begc:endc))    ; this%gross_pmin_col                (:) = nan
     allocate(this%net_pmin_col                  (begc:endc))    ; this%net_pmin_col                  (:) = nan
     allocate(this%supplement_to_sminp_col       (begc:endc))    ; this%supplement_to_sminp_col       (:) = nan
-    allocate(this%prod1_loss_col               (begc:endc))    ; this%prod1_loss_col              (:) = nan
-    allocate(this%prod10_loss_col              (begc:endc))    ; this%prod10_loss_col              (:) = nan
-    allocate(this%prod100_loss_col             (begc:endc))    ; this%prod100_loss_col     (:) = nan
-    allocate(this%product_ploss_col             (begc:endc))    ; this%product_ploss_col     (:) = nan
     allocate(this%pinputs_col                   (begc:endc))    ; this%pinputs_col                   (:) = nan
     allocate(this%poutputs_col                  (begc:endc))    ; this%poutputs_col                  (:) = nan
-    allocate(this%fire_loss_col                (begc:endc))    ; this%fire_loss_col                (:) = nan
     allocate(this%fire_decomp_ploss_col         (begc:endc))    ; this%fire_decomp_ploss_col         (:) = nan
     allocate(this%fire_ploss_p2c_col            (begc:endc))    ; this%fire_ploss_p2c_col            (:) = nan
-    allocate(this%som_leached_col             (begc:endc))    ; this%som_leached_col     (:) = nan
 
-    allocate(this%m_to_litr_met_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_met_fire_col   (:,:) = nan
-    allocate(this%m_p_to_litr_cel_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_cel_fire_col   (:,:) = nan
-    allocate(this%m_to_litr_lig_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_lig_fire_col   (:,:) = nan
+    allocate(this%m_to_litr_cel_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_cel_fire_col   (:,:) = nan
     allocate(this%potential_immob_p_vr_col   (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr_col     (:,:) = nan
     allocate(this%actual_immob_p_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr_col        (:,:) = nan
     allocate(this%sminp_to_plant_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminp_to_plant_vr_col      (:,:) = nan
@@ -566,33 +269,9 @@ contains
 
     allocate(this%crop_seedp_to_leaf_patch          (begp:endp))                  ; this%crop_seedp_to_leaf_patch  (:)  =nan
 
-    allocate(this%dwt_seed_to_leaf_patch           (begp:endp))                  ; this%dwt_seed_to_leaf_patch      (:) =nan
-    allocate(this%dwt_seed_to_leaf_grc             (begg:endg))                  ; this%dwt_seed_to_leaf_grc        (:) =nan
-    allocate(this%dwt_seed_to_deadstem_patch       (begp:endp))                  ; this%dwt_seed_to_deadstem_patch  (:) =nan
-    allocate(this%dwt_seed_to_deadstem_grc         (begg:endg))                  ; this%dwt_seed_to_deadstem_grc    (:) =nan
-    allocate(this%dwt_conv_pflux_patch              (begp:endp))                  ; this%dwt_conv_pflux_patch         (:) =nan
-    allocate(this%dwt_conv_pflux_grc                (begg:endg))                  ; this%dwt_conv_pflux_grc           (:) =nan
-    allocate(this%dwt_prod10p_gain_patch            (begp:endp))                  ; this%dwt_prod10p_gain_patch       (:) =nan
-    allocate(this%dwt_prod100p_gain_patch           (begp:endp))                  ; this%dwt_prod100p_gain_patch      (:) =nan
-    allocate(this%dwt_crop_productp_gain_patch      (begp:endp))                  ; this%dwt_crop_productp_gain_patch (:) =nan
-    allocate(this%dwt_slash_flux_col               (begc:endc))                  ; this%dwt_slash_flux_col          (:) =nan
-
     allocate(this%dwt_seedp_to_ppool_grc     (begg:endg))                   ; this%dwt_seedp_to_ppool_grc     (:)   = nan
     allocate(this%dwt_seedp_to_ppool_patch   (begp:endp))                   ; this%dwt_seedp_to_ppool_patch   (:)   = nan
-    allocate(this%dwt_conv_pflux_col         (begc:endc))                   ; this%dwt_conv_pflux_col         (:)   = nan
-    allocate(this%dwt_prod10p_gain_col       (begc:endc))                   ; this%dwt_prod10p_gain_col       (:)   = nan
-    allocate(this%dwt_prod100p_gain_col      (begc:endc))                   ; this%dwt_prod100p_gain_col      (:)   = nan
-    allocate(this%dwt_loss_col              (begc:endc))                   ; this%dwt_loss_col              (:)   = nan
-    allocate(this%wood_harvest_col          (begc:endc))                   ; this%wood_harvest_col          (:)   = nan
 
-    allocate(this%dwt_prod10p_gain_grc       (begg:endg))                   ; this%dwt_prod10p_gain_grc       (:)   = nan
-    allocate(this%dwt_prod100p_gain_grc      (begg:endg))                   ; this%dwt_prod100p_gain_grc      (:)   = nan
-
-    allocate(this%dwt_froot_to_litr_met_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_met_col     (:,:) = nan
-    allocate(this%dwt_froot_to_litr_cel_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_cel_col     (:,:) = nan
-    allocate(this%dwt_froot_to_litr_lig_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_lig_col     (:,:) = nan
-    allocate(this%dwt_livecroot_to_cwd_col  (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecroot_to_cwd_col       (:,:) = nan
-    allocate(this%dwt_deadcroot_to_cwd_col  (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcroot_to_cwd_col       (:,:) = nan
 
 
     allocate(this%decomp_cascade_ptransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions ))
@@ -609,18 +288,6 @@ contains
     this%decomp_cascade_ptransfer_col     (:,:)   = nan
     this%decomp_cascade_sminp_flux_col    (:,:)   = nan
 
-    allocate(this%phenology_to_litr_met_col     (begc:endc, 1:nlevdecomp_full))
-    allocate(this%phenology_to_litr_cel_col     (begc:endc, 1:nlevdecomp_full))
-    allocate(this%phenology_to_litr_lig_col     (begc:endc, 1:nlevdecomp_full))
-    allocate(this%gap_mortality_to_litr_met_col (begc:endc, 1:nlevdecomp_full))
-    allocate(this%gap_mortality_to_litr_cel_col (begc:endc, 1:nlevdecomp_full))
-    allocate(this%gap_mortality_to_litr_lig_col (begc:endc, 1:nlevdecomp_full))
-    allocate(this%gap_mortality_to_cwd_col       (begc:endc, 1:nlevdecomp_full))
-    allocate(this%fire_mortality_to_cwd_col      (begc:endc, 1:nlevdecomp_full))
-    allocate(this%harvest_to_litr_met_col       (begc:endc, 1:nlevdecomp_full))
-    allocate(this%harvest_to_litr_cel_col       (begc:endc, 1:nlevdecomp_full))
-    allocate(this%harvest_to_litr_lig_col       (begc:endc, 1:nlevdecomp_full))
-    allocate(this%harvest_to_cwd_col             (begc:endc, 1:nlevdecomp_full))
 
     this%phenology_to_litr_met_col     (:,:) = nan
     this%phenology_to_litr_cel_col     (:,:) = nan
@@ -657,25 +324,19 @@ contains
 
     allocate(this%sminp_leached_vr_col                 (begc:endc,1:nlevdecomp_full                               ))
     allocate(this%sminp_leached_col                    (begc:endc                                                 ))
-    allocate(this%decomp_pools_leached_col            (begc:endc,1:ndecomp_pools                                 ))
-    allocate(this%decomp_pools_transport_tendency_col (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               ))
 
     this%sminp_leached_vr_col                 (:,:)   = nan
     this%sminp_leached_col                    (:)     = nan
     this%decomp_pools_leached_col            (:,:)   = nan
     this%decomp_pools_transport_tendency_col (:,:,:) = nan  
 
-    allocate(this%decomp_pools_sourcesink_col (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_pools_sourcesink_col (:,:,:) = nan
 
     allocate(this%plant_pdemand_patch         (begp:endp)) ;    this%plant_pdemand_patch         (:) = nan
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
-    allocate(this%plant_alloc_patch          (begp:endp)) ;    this%plant_alloc_patch          (:) = nan
     
     allocate(this%sminp_to_plant_patch        (begp:endp                   )) ; this%sminp_to_plant_patch        (:)   = nan
     allocate(this%plant_pdemand_vr_patch      (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr_patch      (:,:) = nan
-    allocate(this%prev_leafp_to_litter_patch  (begp:endp                   )) ; this%prev_leafp_to_litter_patch  (:)   = nan
-    allocate(this%prev_frootp_to_litter_patch (begp:endp                   )) ; this%prev_frootp_to_litter_patch (:)   = nan
     allocate(this%adsorb_to_labilep_vr        (begc:endc,1:nlevdecomp_full )) ; this%adsorb_to_labilep_vr        (:,:) = nan
     allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full )) ; this%desorb_to_solutionp_vr      (:,:) = nan
     allocate(this%adsorb_to_labilep_col       (begc:endc                   )) ; this%adsorb_to_labilep_col       (:)   = nan
@@ -1491,29 +1152,29 @@ contains
          '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
          ptr_patch=this%dwt_seed_to_deadstem_patch, default='inactive')
 
-    this%dwt_conv_pflux_grc(begg:endg) = spval
+    this%dwt_conv_flux_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_CONV_PFLUX_GRC', units='gP/m^2/s', &
          avgflag='A', &
          long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-         ptr_gcell=this%dwt_conv_pflux_grc)
+         ptr_gcell=this%dwt_conv_flux_grc)
 
-    this%dwt_conv_pflux_patch(begp:endp) = spval
+    this%dwt_conv_flux_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_CONV_PFLUX_PATCH', units='gP/m^2/s', &
          avgflag='A', &
          long_name='patch-level conversion C flux (immediate loss to atm) ' // &
          '(0 at all times except first timestep of year) ' // &
          '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-         ptr_patch=this%dwt_conv_pflux_patch, default='inactive')
+         ptr_patch=this%dwt_conv_flux_patch, default='inactive')
 
-    this%dwt_prod10p_gain_patch(begp:endp) = spval
+    this%dwt_prod10_gain_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN_PATCH', units='gP/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10p_gain_patch, default='inactive')
+         ptr_col=this%dwt_prod10_gain_patch, default='inactive')
 
-    this%dwt_prod100p_gain_patch(begp:endp) = spval
+    this%dwt_prod100_gain_patch(begp:endp) = spval
     call hist_addfld1d (fname='DWT_PROD100P_GAIN_PATCH', units='gP/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100p_gain_patch, default='inactive')
+         ptr_col=this%dwt_prod100_gain_patch, default='inactive')
 
     this%dwt_slash_flux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SLASH_PFLUX', units='gP/m^2/s', &
@@ -1530,35 +1191,35 @@ contains
          avgflag='A', long_name='seed source to PFT-level', &
          ptr_patch=this%dwt_seedp_to_ppool_patch, default='inactive')
 
-    this%dwt_conv_pflux_col(begc:endc) = spval
+    this%dwt_conv_flux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
          avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
-         ptr_col=this%dwt_conv_pflux_col, default='inactive')
+         ptr_col=this%dwt_conv_flux_col, default='inactive')
 
-    this%dwt_prod10p_gain_grc(begg:endg) = spval
+    this%dwt_prod10_gain_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN_GRC', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_gcell=this%dwt_prod10p_gain_grc, default='inactive')
+         ptr_gcell=this%dwt_prod10_gain_grc, default='inactive')
 
-    this%dwt_prod100p_gain_grc(begg:endg) = spval
+    this%dwt_prod100_gain_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD100P_GAIN_GRC', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_gcell=this%dwt_prod100p_gain_grc, default='inactive')
+         ptr_gcell=this%dwt_prod100_gain_grc, default='inactive')
 
-    this%dwt_prod10p_gain_col(begc:endc) = spval
+    this%dwt_prod10_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10p_gain_col, default='inactive')
+         ptr_col=this%dwt_prod10_gain_col, default='inactive')
 
     this%prod10_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10P_LOSS', units='gP/m^2/s', &
          avgflag='A', long_name='loss from 10-yr wood product pool', &
          ptr_col=this%prod10_loss_col, default='inactive')
 
-    this%dwt_prod100p_gain_col(begc:endc) = spval
+    this%dwt_prod100_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD100P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100p_gain_col, default='inactive')
+         ptr_col=this%dwt_prod100_gain_col, default='inactive')
 
     this%prod100_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100P_LOSS', units='gP/m^2/s', &
@@ -1570,10 +1231,10 @@ contains
          avgflag='A', long_name='loss from 1-yr crop product pool', &
          ptr_col=this%prod1_loss_col)
 
-    this%product_ploss_col(begc:endc) = spval
+    this%product_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total P loss from wood product pools', &
-         ptr_col=this%product_ploss_col, default='inactive')
+         ptr_col=this%product_loss_col, default='inactive')
 
     this%dwt_froot_to_litr_met_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_MET_P', units='gP/m^2/s',  type2d='levdcmp', &
@@ -1696,15 +1357,13 @@ contains
     !-----------------------------------------------
 
     do g = bounds%begg, bounds%endg
-       this%dwt_prod10p_gain_grc(g)          = 0._r8
-       this%dwt_prod100p_gain_grc(g)         = 0._r8
+       this%dwt_prod10_gain_grc(g)          = 0._r8
+       this%dwt_prod100_gain_grc(g)         = 0._r8
     end do
 
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
 
-       this%prev_leafp_to_litter_patch (p)  = 0._r8 
-       this%prev_frootp_to_litter_patch(p)  = 0._r8 
      
        if ( crop_prog )then
           this%fert_p_counter_patch(p)  = spval
@@ -2070,7 +1729,7 @@ contains
           ! fire
           this%fire_mortality_to_cwd_col(i,j)         = value_column
           this%m_to_litr_met_fire_col(i,j)             = value_column
-          this%m_p_to_litr_cel_fire_col(i,j)             = value_column  
+          this%m_to_litr_cel_fire_col(i,j)             = value_column  
           this%m_to_litr_lig_fire_col(i,j)             = value_column
 
           ! harvest
@@ -2113,7 +1772,7 @@ contains
        this%hrv_cropp_to_prod1p_col(i)       = value_column
        this%prod10_loss_col(i)              = value_column
        this%prod100_loss_col(i)             = value_column
-       this%product_ploss_col(i)             = value_column
+       this%product_loss_col(i)             = value_column
        this%prod1_loss_col(i)               = value_column
        this%potential_immob_p_col(i)         = value_column
        this%actual_immob_p_col(i)            = value_column
@@ -2245,16 +1904,16 @@ contains
     do g = bounds%begg, bounds%endg
        this%dwt_seed_to_leaf_grc(g)     = 0._r8
        this%dwt_seed_to_deadstem_grc(g) = 0._r8
-       this%dwt_conv_pflux_grc(g)        = 0._r8
+       this%dwt_conv_flux_grc(g)        = 0._r8
        this%dwt_seedp_to_ppool_grc(g)    = 0._r8
-       this%dwt_prod10p_gain_grc(g)      = 0._r8
-       this%dwt_prod100p_gain_grc(g)     = 0._r8
+       this%dwt_prod10_gain_grc(g)      = 0._r8
+       this%dwt_prod100_gain_grc(g)     = 0._r8
     end do
 
     do c = bounds%begc,bounds%endc
-       this%dwt_conv_pflux_col(c)        = 0._r8
-       this%dwt_prod10p_gain_col(c)      = 0._r8
-       this%dwt_prod100p_gain_col(c)     = 0._r8
+       this%dwt_conv_flux_col(c)        = 0._r8
+       this%dwt_prod10_gain_col(c)      = 0._r8
+       this%dwt_prod100_gain_col(c)     = 0._r8
        this%dwt_slash_flux_col(c)       = 0._r8
     end do
 
@@ -2463,11 +2122,11 @@ contains
 
        ! column-level P losses due to landcover change
        this%dwt_loss_col(c) = &
-            this%dwt_conv_pflux_col(c)
+            this%dwt_conv_flux_col(c)
 
 
        ! total wood product P loss
-       this%product_ploss_col(c) = &
+       this%product_loss_col(c) = &
             this%prod10_loss_col(c) + &
             this%prod100_loss_col(c) + &
             this%prod1_loss_col(c)
@@ -2546,7 +2205,7 @@ contains
                this%gap_mortality_to_litr_cel_col(c,j)* dzsoi_decomp(j) + &
                this%gap_mortality_to_litr_lig_col(c,j)* dzsoi_decomp(j) + &
                this%m_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+               this%m_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
                this%m_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
           this%plant_to_cwd_pflux(c) = &
                this%plant_to_cwd_pflux(c) + &

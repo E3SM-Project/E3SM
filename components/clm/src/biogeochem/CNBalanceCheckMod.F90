@@ -757,9 +757,9 @@ contains
 
     associate(                                                                       &
          totcolc                   =>    carbonstate_vars%totcol_col              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10c_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100c_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_flux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_leaf_grc     =>    carbonflux_vars%dwt_seed_to_leaf_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    carbonflux_vars%dwt_seed_to_deadstem_grc , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          beg_bal_grc                 =>    carbonstate_vars%beg_bal_grc                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
@@ -844,9 +844,9 @@ contains
 
     associate(                                                                       &
          totcoln                   =>    nitrogenstate_vars%totcol_col              , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
-         dwt_prod10n_gain_grc      =>    nitrogenflux_vars%dwt_prod10n_gain_grc      , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         dwt_prod100n_gain_grc     =>    nitrogenflux_vars%dwt_prod100n_gain_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         dwt_conv_nflux_grc        =>    nitrogenflux_vars%dwt_conv_nflux_grc        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_prod10n_gain_grc      =>    nitrogenflux_vars%dwt_prod10_gain_grc      , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_prod100n_gain_grc     =>    nitrogenflux_vars%dwt_prod100_gain_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_conv_nflux_grc        =>    nitrogenflux_vars%dwt_conv_flux_grc        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_leaf_grc     =>    nitrogenflux_vars%dwt_seed_to_leaf_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    nitrogenflux_vars%dwt_seed_to_deadstem_grc , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          begnb_grc                 =>    nitrogenstate_vars%beg_bal_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
@@ -939,9 +939,9 @@ contains
 
     associate(                                                                       &
          totcolp                   =>    phosphorusstate_vars%totcol_col              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
-         dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10p_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100p_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_pflux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_flux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_leaf_grc     =>    phosphorusflux_vars%dwt_seed_to_leaf_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    phosphorusflux_vars%dwt_seed_to_deadstem_grc , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          begpb_grc                 =>    phosphorusstate_vars%beg_bal_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)

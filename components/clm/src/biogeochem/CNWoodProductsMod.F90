@@ -102,57 +102,57 @@ contains
        c = filter_soilc(fc)
 
        cs%prod10_col(c)    = cs%prod10_col(c)             &
-            + cf%dwt_prod10c_gain_col(c)*dt                 & ! from landcover change
+            + cf%dwt_prod10_gain_col(c)*dt                 & ! from landcover change
             + cf%hrv_deadstemc_to_prod10_col(c)*dt         & ! from harvest
             - cf%prod10_loss_col(c)*dt                       ! from decomposition
 
        cs%prod100_col(c)   = cs%prod100_col(c)            &
-            + cf%dwt_prod100c_gain_col(c)*dt                & ! from landcover change
+            + cf%dwt_prod100_gain_col(c)*dt                & ! from landcover change
             + cf%hrv_deadstemc_to_prod100_col(c)*dt        & ! from harvest
             - cf%prod100_loss_col(c)*dt                      ! from decomposition
 
 
        if ( use_c13 ) then
           c13_cs%prod10_col(c)  = c13_cs%prod10_col(c)    &
-               + c13_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
+               + c13_cf%dwt_prod10_gain_col(c) *dt         & ! from landcover change
                + c13_cf%hrv_deadstemc_to_prod10_col(c)*dt  & ! from harvest
                - c13_cf%prod10_loss_col(c)*dt                ! from decomposition
 
           c13_cs%prod100_col(c) = c13_cs%prod100_col(c)   &
-               + c13_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
+               + c13_cf%dwt_prod100_gain_col(c)*dt         & ! from landcover change
                + c13_cf%hrv_deadstemc_to_prod100_col(c)*dt & ! from harvest
                - c13_cf%prod100_loss_col(c)*dt               ! from decomposition
        endif
 
        if ( use_c14 ) then
           c14_cs%prod10_col(c)  = c14_cs%prod10_col(c)    &
-               + c14_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
+               + c14_cf%dwt_prod10_gain_col(c) *dt         & ! from landcover change
                + c14_cf%hrv_deadstemc_to_prod10_col(c)*dt  & ! from harvest
                - c14_cf%prod10_loss_col(c)*dt                ! from decomposition
 
           c14_cs%prod100_col(c) = c14_cs%prod100_col(c)   &
-               + c14_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
+               + c14_cf%dwt_prod100_gain_col(c)*dt         & ! from landcover change
                + c14_cf%hrv_deadstemc_to_prod100_col(c)*dt & ! from harvest
                - c14_cf%prod100_loss_col(c)*dt               ! from decomposition
        endif
 
        ns%prod10_col(c)    = ns%prod10_col(c)             &
-            + nf%dwt_prod10n_gain_col(c)*dt                 & ! from landcover change
+            + nf%dwt_prod10_gain_col(c)*dt                 & ! from landcover change
             + nf%hrv_deadstemn_to_prod10n_col(c)*dt         & ! from harvest
             - nf%prod10_loss_col(c)*dt                       ! from decomposition
 
        ns%prod100_col(c)   = ns%prod100_col(c)            &
-            + nf%dwt_prod100n_gain_col(c)*dt                & ! from landcover change
+            + nf%dwt_prod100_gain_col(c)*dt                & ! from landcover change
             + nf%hrv_deadstemn_to_prod100n_col(c)*dt        & ! from harvest
             - nf%prod100_loss_col(c)*dt                      ! from decomposition
 
        ps%prod10_col(c)    = ps%prod10_col(c)             &
-            + pf%dwt_prod10p_gain_col(c)*dt                 & ! from landcover change
+            + pf%dwt_prod10_gain_col(c)*dt                 & ! from landcover change
             + pf%hrv_deadstemp_to_prod10p_col(c)*dt         & ! from harvest
             - pf%prod10_loss_col(c)*dt                       ! from decomposition
 
        ps%prod100_col(c)   = ps%prod100_col(c)            &
-            + pf%dwt_prod100p_gain_col(c)*dt                & ! from landcover change
+            + pf%dwt_prod100_gain_col(c)*dt                & ! from landcover change
             + pf%hrv_deadstemp_to_prod100p_col(c)*dt        & ! from harvest
             - pf%prod100_loss_col(c)*dt                      ! from decomposition
 
