@@ -82,6 +82,12 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
+HOMMEXX ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+ifeq ($(strip $(HOMMEXX)), preqx_cxx)
+   USE_CXX = true
+   USE_HOMMEXX = TRUE
+endif
+
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
@@ -271,6 +277,15 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_HOMMEXX)), TRUE)
+  ifdef KOKKOS_PATH
+    INC_KOKKOS:=$(KOKKOS_PATH)/include
+    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
+  else
+    $(error HOMMEXX requires KOKKOS_PATH to be set)
+  endif
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -393,6 +408,9 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
+ifdef INC_KOKKOS
+  INCLDIR += -I$(INC_KOKKOS)
+endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -454,7 +472,6 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS := $(CFLAGS)
 
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
@@ -536,6 +553,9 @@ ifdef LIB_MPI
    else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
+endif
+ifdef LIB_KOKKOS
+   SLIBS += -L$(LIB_KOKKOS) -lkokkos
 endif
 
 # For compiling and linking with external ESMF.
