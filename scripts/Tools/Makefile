@@ -472,6 +472,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
+CXXFLAGS+=$(CPPDEFS)
 
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
@@ -495,8 +496,8 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
 endif
 
 ifeq ($(MODEL),cam)
