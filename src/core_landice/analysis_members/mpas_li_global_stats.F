@@ -354,7 +354,7 @@ contains
 
             ! GL migration flux
             blockGLMigrationFlux = blockGLMigrationFlux + groundedToFloatingThickness(iCell) * areaCell(iCell) &
-               * rhoi / (deltat / scyr)
+               * rhoi / (deltat / scyr)  ! convert from m to kg/yr
 
          end do ! end loop over cells
 
@@ -362,7 +362,7 @@ contains
          do iEdge = 1, nEdgesSolve
             ! Flux across GL, units = kg/yr
             blockGLflux = blockGLflux + fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) &
-                      * scyr * rhoi ! convert from m^3/s to kg/yr
+                      * scyr * rhoi ! convert from m^2/s to kg/yr
          end do ! end loop over edges
 
          block => block % next
