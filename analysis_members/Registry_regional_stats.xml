@@ -113,7 +113,7 @@
 			clobber_mode="truncate"
 			runtime_format="single_file">
 			<var name="xtime"/> 
-			<var name="regionalIceArea"/> 
-			<var name="regionalIceVolume"/> 
+			<var name="daysSinceStart"/> 
+			<var_struct name="regionalStatsAM"/> 
 		</stream>
 	</streams>
