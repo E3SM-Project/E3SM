@@ -78,7 +78,7 @@ def buildnml(case, caseroot, compname):
         clmusr     = ""
 
     if mask_grid == "reg" and lnd_grid != "CLM_USRDAT":
-        config_opts = "-sitespf_pt $LND_GRID"
+        config_opts = "-sitespf_pt {}".format(lnd_grid)
         resolution  = lnd_grid
         clmusr      = ""
 
