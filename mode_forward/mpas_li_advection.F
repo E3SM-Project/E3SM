@@ -145,6 +145,7 @@ module li_advection
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
            floatingBasalMassBal,  & ! basal mass balance for floating ice
            dynamicThickening,     & ! dynamic thickening rate
+           groundedToFloatingThickness, & ! thickness changing from grounded to floating or vice versa
            fluxAcrossGroundingLine        ! magnitude of flux across GL
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -181,6 +182,10 @@ module li_advection
            cellMask,              & ! integer bitmask for cells
            edgeMask                 ! integer bitmask for edges
 
+      integer, dimension(:,:), pointer :: cellsOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+
       character (len=StrKIND), pointer :: &
            config_thickness_advection   ! method for advecting thickness and tracers
 
@@ -189,15 +194,20 @@ module li_advection
 
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
+           config_ocean_density,  & ! rhoo
            config_sea_level         ! sea level relative to z = 0
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
+
+      integer :: iCell1
+
+      real(kind=RKIND) :: GLfluxSign, thicknessFluxEdge
 
       integer :: err_tmp
 
       !WHL - debug
       integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
-      integer, pointer :: nCells
+      integer, pointer :: nCells, nEdges
       integer, pointer :: config_stats_cell_ID
       integer :: iEdge, iEdgeOnCell
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -247,6 +257,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'dynamicThickening', dynamicThickening)
+      call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
@@ -261,14 +272,19 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
       ! get fields from the scratch pool
       ! Note: The advectedTracers field is a scratch field containing only the tracers that need to be advected.
@@ -389,14 +405,43 @@ module li_advection
             enddo
          endif
 
+
          ! Calculate dynamicThickening (layerThickness is updated by advection at this point, while thickness is still old)
          dynamicThickening = (sum(layerThickness, 1) - thickness) / dt * scyr  ! units of m/yr
 
+
+         ! Calculate volume converted from grounded to floating
+         call grounded_to_floating(meshPool, cellMask, thickness, sum(layerThickness, 1), bedTopography, &
+            config_ice_density, config_ocean_density, config_sea_level, groundedToFloatingThickness)
+
+
          ! Update the thickness and cellMask before applying the mass balance.
          ! The update is needed because the SMB and BMB depend on whether ice is present.
-
          thickness = sum(layerThickness, 1)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
+     
+
+
+      ! Calculate flux across grounding line
+      ! Do this after new thickness & mask have been calculated
+      fluxAcrossGroundingLine(:) = 0.0_RKIND
+      do iEdge = 1, nEdges
+         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+            iCell1 = cellsOnEdge(1,iEdge)
+            !iCell2 = cellsOnEdge(2,iEdge)
+            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
+               GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
+            else
+               GLfluxSign = -1.0_RKIND
+            endif
+            do k = 1, nVertLevels
+               thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+               fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
+            enddo
+         endif
+      enddo ! edges
+
 
          !-----------------------------------------------------------------
          ! Add the surface and basal mass balance to the layer thickness
@@ -1427,25 +1472,6 @@ module li_advection
       deallocate(thicknessTracerTendency)
       deallocate(newThicknessTracers)
 
-      ! Calculate flux across grounding line
-      ! TODO: do this as part of loop above, but it needs to refactored.
-      fluxAcrossGroundingLine(:) = 0.0_RKIND
-      do iEdge = 1, nEdges
-         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-            iCell1 = cellsOnEdge(1,iEdge)
-            !iCell2 = cellsOnEdge(2,iEdge)
-            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-               GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
-            else
-               GLfluxSign = -1.0_RKIND
-            endif
-            do k = 1, nVertLevels
-               thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
-               fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
-            enddo
-         endif
-      enddo ! edges
-
       ! === error check
       if (err > 0) then
           call mpas_log_write("An error has occurred in advect_thickness_tracers_upwind.", MPAS_LOG_ERR)
@@ -1748,6 +1774,59 @@ module li_advection
       deallocate(hTsum)
 
     end subroutine vertical_remap
+
+    subroutine grounded_to_floating(meshPool, cellMaskOrig, thicknessOrig, thicknessNew, bedTopography, &
+        config_ice_density, config_ocean_density, config_sea_level, groundedToFloatingThickness)
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: LI mesh information
+
+      integer, dimension(:), intent(in) :: &
+         cellMaskOrig          !< Input: mask for cells (needed for determining presence/absence of ice)
+
+      real(kind=RKIND), dimension(:), intent(in) :: &
+         thicknessOrig         !< Input: ice thickness
+
+      real(kind=RKIND), dimension(:), intent(in) :: &
+         thicknessNew         !< Input: ice thickness
+
+      real(kind=RKIND), dimension(:), intent(in) :: &
+         bedTopography        !< Input: bed elevation
+
+      real(kind=RKIND), intent(in) :: config_ice_density
+      real(kind=RKIND), intent(in) :: config_ocean_density
+      real(kind=RKIND), intent(in) :: config_sea_level
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), intent(out) :: &
+         groundedToFloatingThickness         !< Input: ice thickness
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      groundedToFloatingThickness(:) = 0.0_RKIND
+      ! find locations that had grounded ice before but now have floating ice
+      where (li_mask_is_grounded_ice(cellMaskOrig(:)) .and. &
+             (thicknessNew(:) > 0.0_RKIND .and. (config_ice_density / config_ocean_density * thicknessNew(:)) <= &
+              (config_sea_level - bedTopography(:)) ) )
+         groundedToFloatingThickness(:) = thicknessNew(:)
+
+      ! find locations that had floating ice before but now have grounded ice
+      elsewhere (li_mask_is_floating_ice(cellMaskOrig(:)) .and. &
+             (thicknessNew(:) > 0.0_RKIND .and. (config_ice_density / config_ocean_density * thicknessNew(:)) > &
+              (config_sea_level - bedTopography(:)) ) )
+         groundedToFloatingThickness(:) = -1.0_RKIND * thicknessNew(:)
+      end where
+
+    end subroutine grounded_to_floating
 
 !***********************************************************************
 
