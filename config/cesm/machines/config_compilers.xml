@@ -1012,6 +1012,9 @@ using a fortran linker.
   <CPPDEFS>
     <append MODEL="pio1"> -DNO_MPIMOD </append>
   </CPPDEFS>
+  <SLIBS>
+    <append> -ldl </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="cheyenne">
