@@ -63,6 +63,7 @@ my $ic_date = '';
 my $ic_prefix = '';
 my $restoring_file = '';
 my $analysis_mask_file = '';
+my $eco_forcing_file = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_date .= '151031';
@@ -77,7 +78,13 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oEC60to30v3' ) {
         $ic_date .= '170905';
         $ic_prefix .= 'oEC60to30v3_60layer';
-	$decomp_date .= '161222';
+        #  modify initial condition file if ocean BGC is turned on
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                $ic_date = '180418';
+                $ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime';
+                $eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc';
+        }
+        $decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
 	$analysis_mask_file .= 'oEC60to30v3_Atlantic_region_and_southern_transect.nc';
@@ -170,16 +177,6 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$decomp_prefix .= 'mpas-o.graph.info.';
 }
 
-#--------------------------------------------------------------------
-#  modify initial condition file if ocean BGC is turned on
-#--------------------------------------------------------------------
-if ( $OCN_GRID eq 'oEC60to30v3') {
-        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
-        $ic_date = '180418';
-        $ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime';
-        }
-}
-
 chdir "$CASEBUILD/mpasoconf";
 
 #--------------------------------------------------------------------
@@ -218,7 +215,10 @@ if ($analysis_mask_file ne '') {
         print $input_list "moc = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file\n";
 }
 if ( $OCN_FORCING eq 'core_forced_restoring' ) {
-	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
+        print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
+}
+if ($eco_forcing_file ne '') {
+        print $input_list "eco_forcing $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$eco_forcing_file\n";
 }
 close($input_list);
 
@@ -1049,11 +1049,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
-        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+        if ($eco_forcing_file ne '') {
         	print $stream_file '<stream name="ecosys_monthly_flux"' . "\n";
         	print $stream_file '        type="input"' . "\n";
         	print $stream_file "        filename_template=" . '"'
-                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.monthlySurfaceForcingBGC.171120.nc"
+                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$eco_forcing_file"
                                         . '"' . "\n";
         	print $stream_file '        input_interval="none"' . "\n";
         	print $stream_file '        packages="ecosysTracersPKG">' . "\n";
