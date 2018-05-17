@@ -179,6 +179,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
       real (kind=RKIND), dimension(:), pointer ::  fluxAcrossGroundingLine
+      real (kind=RKIND), dimension(:), pointer ::  groundedToFloatingThickness
       integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCellsSolve
       integer, pointer :: nEdgesSolve
@@ -205,6 +206,7 @@ contains
       real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
       real (kind=RKIND), pointer ::  groundingLineFlux
+      real (kind=RKIND), pointer ::  groundingLineMigrationFlux
       real (kind=RKIND), pointer ::  surfaceSpeedMax
       real (kind=RKIND), pointer ::  basalSpeedMax
 
@@ -221,11 +223,12 @@ contains
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
       real (kind=RKIND) ::  blockGLflux
+      real (kind=RKIND) ::  blockGLMigrationFlux
 
       ! Local variables for calculations
 
       ! variables for processing stats
-      integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
+      integer, parameter :: kMaxVariables = 24 ! Increase if number of stats increase
       integer :: nVars
       real (kind=RKIND), dimension(kMaxVariables) :: reductions, sums, mins, maxes
 
@@ -249,6 +252,7 @@ contains
       blockSumFloatingBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
       blockGLflux = 0.0_RKIND
+      blockGLMigrationFlux = 0.0_RKIND
 
       ! initialize max to 0, min to large number
       blockThickMin = 100000.0_RKIND
@@ -286,6 +290,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
          call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
@@ -347,6 +352,10 @@ contains
                blockMaxBasalSpeed = basalSpeed(iCell)
             endif
 
+            ! GL migration flux
+            blockGLMigrationFlux = blockGLMigrationFlux + groundedToFloatingThickness(iCell) * areaCell(iCell) &
+               * rhoi / (deltat / scyr)
+
          end do ! end loop over cells
 
          ! Loop over edges
@@ -401,7 +410,8 @@ contains
       sums(13) = blockSumCalvingFlux
       sums(14) = blockSumVAF
       sums(15) = blockGLflux
-      nVars = 15
+      sums(16) = blockGLMigrationflux
+      nVars = 16
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -428,6 +438,7 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'avgSubshelfMelt', avgSubshelfMelt)
          call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
          call mpas_pool_get_array(globalStatsAMPool, 'groundingLineFlux', groundingLineFlux)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundingLineMigrationFlux', groundingLineMigrationFlux)
 
          totalIceArea = reductions(1)
          totalIceVolume = reductions(2)
@@ -444,6 +455,7 @@ contains
          totalCalvingFlux = reductions(13)
          volumeAboveFloatation = reductions(14)
          groundingLineFlux = reductions(15)
+         groundingLineMigrationFlux = reductions(16)
 
          iceThicknessMean = totalIceVolume / totalIceArea
          avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
