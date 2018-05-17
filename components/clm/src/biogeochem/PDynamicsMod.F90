@@ -659,9 +659,15 @@ contains
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
-                    biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
-                    biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j) + &
+                    if (alpha_ptase(veg_pp%itype(p)) > 1e-8_r8) then ! for numerical precision
+                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
+                       biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j) + &
                             ptase_tmp  * veg_pp%wtcol(p) * (1._r8 - alpha_ptase(veg_pp%itype(p)))
+                    else
+                       biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
+                       biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j) + &
+                            ptase_tmp  * veg_pp%wtcol(p)
+                    endif
                     biochem_pmin_vr_pot(c,j) = biochem_pmin_vr_pot(c,j) + ptase_tmp * veg_pp%wtcol(p)
                 end if
             enddo
