@@ -901,7 +901,12 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="slopeEdge"            type="real"     dimensions="nEdges Time"
                      units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
-                />
+               />
+               <!-- Scratch variables related to geometry -->
+	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
+	       description="temporary copy of cellMask"
+	       persistence="scratch"
+	       />
         </var_struct>
 
 <!-- ================ -->

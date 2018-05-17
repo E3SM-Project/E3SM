@@ -178,6 +178,9 @@ module li_advection
            surfaceTracersField,   & ! scratch field containing values of surface tracers
            basalTracersField        ! scratch field containing values of basal tracers
 
+      type (field1DInteger), pointer :: &
+           cellMaskTemporaryField ! scratch field containing old values of cellMask
+
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
            edgeMask                 ! integer bitmask for edges
@@ -310,8 +313,19 @@ module li_advection
       call mpas_allocate_scratch_field(basalTracersField, .true.)
       basalTracers => basalTracersField % array
 
+      call mpas_pool_get_field(geometryPool, 'cellMaskTemporary', cellMaskTemporaryField)
+      call mpas_allocate_scratch_field(cellMaskTemporaryField, .true.)
+
+
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
+
+      ! update masks
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! save old copycellMask for determining cells changing from grounded to floating and vice versa
+      cellMaskTemporaryField % array(:) = cellMask(:)
 
       !-----------------------------------------------------------------
       ! Horizontal transport of thickness and tracers
@@ -410,38 +424,12 @@ module li_advection
          dynamicThickening = (sum(layerThickness, 1) - thickness) / dt * scyr  ! units of m/yr
 
 
-         ! Calculate volume converted from grounded to floating
-         call grounded_to_floating(meshPool, cellMask, thickness, sum(layerThickness, 1), bedTopography, &
-            config_ice_density, config_ocean_density, config_sea_level, groundedToFloatingThickness)
-
-
          ! Update the thickness and cellMask before applying the mass balance.
          ! The update is needed because the SMB and BMB depend on whether ice is present.
          thickness = sum(layerThickness, 1)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
      
-
-
-      ! Calculate flux across grounding line
-      ! Do this after new thickness & mask have been calculated
-      fluxAcrossGroundingLine(:) = 0.0_RKIND
-      do iEdge = 1, nEdges
-         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-            iCell1 = cellsOnEdge(1,iEdge)
-            !iCell2 = cellsOnEdge(2,iEdge)
-            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-               GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
-            else
-               GLfluxSign = -1.0_RKIND
-            endif
-            do k = 1, nVertLevels
-               thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
-               fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
-            enddo
-         endif
-      enddo ! edges
-
 
          !-----------------------------------------------------------------
          ! Add the surface and basal mass balance to the layer thickness
@@ -506,6 +494,31 @@ module li_advection
          endif
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Calculate volume converted from grounded to floating
+         ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
+         call grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness)
+
+         ! Calculate flux across grounding line
+         ! Do this after new thickness & mask have been calculated, including SMB/BMB
+         fluxAcrossGroundingLine(:) = 0.0_RKIND
+         do iEdge = 1, nEdges
+            if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+               iCell1 = cellsOnEdge(1,iEdge)
+               !iCell2 = cellsOnEdge(2,iEdge)
+               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
+                  GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
+               else
+                  GLfluxSign = -1.0_RKIND
+               endif
+               do k = 1, nVertLevels
+                  thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+                  fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
+               enddo
+            endif
+         enddo ! edges
+
 
          ! Remap tracers to the standard vertical sigma coordinate
          ! Note: If tracers are not being advected, then this subroutine simply restores the
@@ -558,6 +571,7 @@ module li_advection
       call mpas_deallocate_scratch_field(layerThicknessOldField, .true.)
       call mpas_deallocate_scratch_field(basalTracersField, .true.)
       call mpas_deallocate_scratch_field(surfaceTracersField, .true.)
+      call mpas_deallocate_scratch_field(cellMaskTemporaryField, .true.)
 
       ! === error check
       if (err > 0) then
@@ -1775,29 +1789,19 @@ module li_advection
 
     end subroutine vertical_remap
 
-    subroutine grounded_to_floating(meshPool, cellMaskOrig, thicknessOrig, thicknessNew, bedTopography, &
-        config_ice_density, config_ocean_density, config_sea_level, groundedToFloatingThickness)
+    subroutine grounded_to_floating(cellMaskOrig, cellMaskNew, thicknessNew, groundedToFloatingThickness)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: LI mesh information
+      integer, dimension(:), intent(in) :: &
+         cellMaskOrig          !< Input: mask for cells before advection
 
       integer, dimension(:), intent(in) :: &
-         cellMaskOrig          !< Input: mask for cells (needed for determining presence/absence of ice)
+         cellMaskNew          !< Input: mask for cells after advection
 
       real(kind=RKIND), dimension(:), intent(in) :: &
-         thicknessOrig         !< Input: ice thickness
+         thicknessNew         !< Input: ice thickness after advection
 
-      real(kind=RKIND), dimension(:), intent(in) :: &
-         thicknessNew         !< Input: ice thickness
-
-      real(kind=RKIND), dimension(:), intent(in) :: &
-         bedTopography        !< Input: bed elevation
-
-      real(kind=RKIND), intent(in) :: config_ice_density
-      real(kind=RKIND), intent(in) :: config_ocean_density
-      real(kind=RKIND), intent(in) :: config_sea_level
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -1813,16 +1817,15 @@ module li_advection
       !-----------------------------------------------------------------
 
       groundedToFloatingThickness(:) = 0.0_RKIND
+
       ! find locations that had grounded ice before but now have floating ice
       where (li_mask_is_grounded_ice(cellMaskOrig(:)) .and. &
-             (thicknessNew(:) > 0.0_RKIND .and. (config_ice_density / config_ocean_density * thicknessNew(:)) <= &
-              (config_sea_level - bedTopography(:)) ) )
+             li_mask_is_floating_ice(cellMaskNew(:)) )
          groundedToFloatingThickness(:) = thicknessNew(:)
 
       ! find locations that had floating ice before but now have grounded ice
       elsewhere (li_mask_is_floating_ice(cellMaskOrig(:)) .and. &
-             (thicknessNew(:) > 0.0_RKIND .and. (config_ice_density / config_ocean_density * thicknessNew(:)) > &
-              (config_sea_level - bedTopography(:)) ) )
+             li_mask_is_grounded_ice(cellMaskNew(:)) )
          groundedToFloatingThickness(:) = -1.0_RKIND * thicknessNew(:)
       end where
 
