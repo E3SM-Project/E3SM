@@ -90,6 +90,9 @@
                 <var name="regionalSumGroundingLineFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="total mass flux across all grounding lines (note that flux from floating to grounded ice makes a negative contribution to this metric)"
                 />
+                <var name="regionalSumGroundingLineMigrationFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="total mass flux due to migration of the grounding line.  Positive is grounded to floating."
+                />
                 <var name="regionalSurfaceSpeedMax" type="real" dimensions="nRegions Time" units="m yr^{-1}"
                         description="maximum surface speed in the domain"
                 />
