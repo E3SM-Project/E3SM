@@ -112,6 +112,8 @@ def main(options):
         if include:
             tools_files.append(f)
 
+    tools_files.sort()
+
     # copy the index.rst.template to index.rst
     doc_dir = config.get('doc','doc_dir')
     doc_dir = os.path.abspath(doc_dir)
