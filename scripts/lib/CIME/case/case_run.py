@@ -140,7 +140,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                 if loop:
                     # Archive the last consistent set of restart files and restore them
                     if case.get_value("DOUT_S"):
-                        case.case_st_archive(no_resubmit=True)
+                        case.case_st_archive(resubmit=False)
                         case.restore_from_archive()
 
                     lid = new_lid()
@@ -254,7 +254,7 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
 
 ###############################################################################
-def case_run(self, skip_pnl=False):
+def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
@@ -301,7 +301,12 @@ def case_run(self, skip_pnl=False):
         self.read_xml()
         _save_logs(self, lid)
 
+    if set_continue_run:
+        self.set_value("CONTINUE_RUN",
+                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+
     logger.warning("check for resubmit")
-    _resubmit_check(self)
+    if submit_resubmits:
+        _resubmit_check(self)
 
     return True

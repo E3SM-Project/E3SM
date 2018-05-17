@@ -430,7 +430,12 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            (component, modspath) = test_mods.split('/',1)
+            if test_mods.find('/') != -1:
+                (component, modspath) = test_mods.split('/', 1)
+            else:
+                error = "Missing testmod component. Testmods are specified as '${component}-${testmod}'"
+                self._log_output(test, error)
+                return False, error
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
@@ -751,7 +756,7 @@ class TestScheduler(object):
 
         if not success:
             status_str += "\n    Case dir: {}\n".format(self._get_test_dir(test))
-            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.splitlines()))
+            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.encode('utf-8').splitlines()))
 
         logger.info(status_str)
 

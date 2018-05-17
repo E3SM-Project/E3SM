@@ -56,6 +56,25 @@ def redirect_logger(new_target, logger_name):
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
 
+class IndentFormatter(logging.Formatter):
+    def __init__(self, indent, fmt=None, datefmt=None):
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self._indent = indent
+
+    def format(self, record):
+        record.msg = "{}{}".format(self._indent, record.msg)
+        out = logging.Formatter.format(self, record)
+        return out
+
+def set_logger_indent(indent):
+    root_log = logging.getLogger()
+    root_log.handlers = []
+    formatter = IndentFormatter(indent)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_log.addHandler(handler)
+
 class EnvironmentContext(object):
     """
     Context manager for environment variables
@@ -338,7 +357,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         if logfile:
             expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
         else:
-            expect(False, "{} FAILED, see above")
+            expect(False, "{} FAILED, see above".format(fullcmd))
 
     # refresh case xml object from file
     if case is not None:
@@ -1003,7 +1022,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
         root_logger.setLevel(logging.INFO)
     return args
 
-
 def get_logging_options():
     """
     Use to pass same logging options as was used for current
@@ -1563,6 +1581,24 @@ def stringify_bool(val):
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
 
+def indent_string(the_string, indent_level):
+    """Indents the given string by a given number of spaces
+
+    Args:
+       the_string: str
+       indent_level: int
+
+    Returns a new string that is the same as the_string, except that
+    each line is indented by 'indent_level' spaces.
+
+    In python3, this can be done with textwrap.indent.
+    """
+
+    lines = the_string.splitlines(True)
+    padding = ' ' * indent_level
+    lines_indented = [padding + line for line in lines]
+    return ''.join(lines_indented)
+
 def verbatim_success_msg(return_val):
     return return_val
 
@@ -1588,14 +1624,14 @@ def _check_for_invalid_args(args):
             if " " in arg or arg.startswith("--"):
                 continue
             if arg.startswith("-") and len(arg) > 2:
-                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+                sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
-    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+    parser.add_argument("--mail-user", help="Email to be used for batch notification.")
 
     parser.add_argument("-M", "--mail-type", action="append",
-                        help="when to send user email. Options are: never, all, begin, end, fail."
-                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+                        help="When to send user email. Options are: never, all, begin, end, fail.\n"
+                        "You can specify multiple types with either comma-separated args or multiple -M flags.")
 
 def resolve_mail_type_args(args):
     if args.mail_type is not None:
