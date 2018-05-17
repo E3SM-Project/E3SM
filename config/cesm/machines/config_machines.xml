@@ -338,12 +338,12 @@
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/6.3.0</command>
-        <command name="load">openblas/0.2.14</command>
+        <command name="load">gnu/7.3.0</command>
+        <command name="load">openblas/0.2.20</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.4.1.1</command>
+	<command name="load">netcdf-mpi/4.6.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.16</command>
@@ -356,13 +356,16 @@
 	<command name="load">pnetcdf/1.9.0</command>
       </modules>
       <modules mpilib="openmpi">
-	<command name="load">openmpi/2.1.0</command>
-	<command name="load">netcdf/4.4.1.1</command>
+	<command name="load">openmpi/3.0.1</command>
+	<command name="load">netcdf/4.6.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.4.1</command>
       </modules>
-      <modules mpilib="mpi-serial">
+      <modules compiler="gnu" mpilib="mpi-serial">
+	<command name="load">netcdf/4.6.1</command>
+      </modules>
+      <modules compiler="!gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -370,10 +373,12 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
     <environment_variables unit_testing="true">
+      <!-- It's possible that we also need to set:
+	   LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
+      -->
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables queue="share">
@@ -2109,6 +2114,7 @@
       <modules compiler="intel">
 	<command name="load">intel/15.0.3</command>
 	<command name="load">mkl/11.1.2</command>
+	<command name="load">trilinos/11.10.2</command>
 	<command name="load">esmf</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
