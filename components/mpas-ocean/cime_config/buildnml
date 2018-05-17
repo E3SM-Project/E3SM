@@ -218,7 +218,7 @@ if ( $OCN_FORCING eq 'core_forced_restoring' ) {
         print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
 }
 if ($eco_forcing_file ne '') {
-        print $input_list "eco_forcing $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$eco_forcing_file\n";
+        print $input_list "eco_forcing = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$eco_forcing_file\n";
 }
 close($input_list);
 
