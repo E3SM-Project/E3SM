@@ -670,7 +670,11 @@ contains
                   if (j > nlevbed) then
                      this%h2osoi_vol_col(c,j) = 0.0_r8
                   else
-                     this%h2osoi_vol_col(c,j) = 0.70*watsat_col(c,j)  !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
+		     if (use_fates_planthydro) then
+                              this%h2osoi_vol_col(c,j) = 0.70_r8*watsat_col(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
+                     else
+                              this%h2osoi_vol_col(c,j) = 0.15_r8
+                     endif
                   endif
                end do
             else if (lun_pp%urbpoi(l)) then
