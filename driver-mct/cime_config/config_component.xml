@@ -1798,8 +1798,29 @@
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      A regular expression to search for an indication that a run failure was caused by a node failure
-      and should therefore be re-attempted.
+      A regular expression to search for an indication that a run failure
+       was caused by a node failure and should therefore be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+      was caused by a known event such as a timeout and should therefore
+      be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_COUNT">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>The number of times to reattempt the mpirun command if
+    MPIRUN_RETRY_REGEX is matched but ALLOCATE_SPARE_NODES is False
     </desc>
   </entry>
 
