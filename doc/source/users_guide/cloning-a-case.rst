@@ -5,7 +5,7 @@ Cloning a Case
 **************************
 
 If you have access to a run that you want to clone, the
-**create_clone** command will create a new case and run **case.setup**
+`create_clone  <../Tools_user/create_clone.html>`_ command will create a new case and run `case.setup  <../Tools_user/case.setup.html>`_
 while preserving local modifications to the case.
 
 Here is a simple example:
@@ -19,7 +19,7 @@ Here is a simple example:
 
 The `create_clone <../Tools_user/create_clone.html>`_ script preserves any local namelist modifications
 made in the **user_nl_xxxx** files as well as any source code
-modifications in the **SourceMods** tree. Otherwise, **$CASEROOT/**
+modifications in the **SourceMods/** directory tree. Otherwise, your **$CASEROOT** directory
 directory will appear as if `create_newcase  <../Tools_user/create_newcase.html>`_ had just been run.
 
 **Important**: Do not change anything in the **env_case.xml** file.

@@ -136,8 +136,10 @@ The build process handles input data as follows:
 
 - If all required data sets are found on the local disk, the build can proceed.
 
-- If any of the required input data sets are not found locally, the files that are missing are listed. At this point, you must obtain the required data from the input data server with `check_input_data <../Tools_user/check_input_data.html>`_  as shown here:
-  ::
+- If any of the required input data sets are not found locally, the
+  files that are missing are listed. At this point, you must obtain
+  the required data from the input data server with `check_input_data
+  <../Tools_user/check_input_data.html>`_ as shown here: ::
 
      check_input_data --download
 

@@ -12,8 +12,9 @@ After creating a case or changing aspects of a case, such as the pe-layout, call
 This creates the following additional files and directories in ``$CASEROOT``:
 
    =============================   ===============================================================================================================================
-   case.run                        Run script containing the batch directives. The directives are generated using the contents
-                                   of **env_mach_pes.xml**. Running `case.setup --clean <../Tools_user/case.setup.html>`_  will remove this file.
+   .case.run                       Run script containing the batch directives. The directives are generated using the contents
+                                   of **env_mach_pes.xml**. Running `case.setup --clean <../Tools_user/case.setup.html>`_  will remove this file. You should
+				   **never** run this script.
 
    Macros.make                     File containing machine-specific makefile directives for your target platform/compiler.
                                    This file is created if it does not already exist.
