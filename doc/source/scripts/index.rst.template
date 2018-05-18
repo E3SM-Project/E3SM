@@ -1,0 +1,13 @@
+.. _scripts:
+
+#######
+Scripts
+#######
+
+CIME includes a number of user scripts available outside of a CASEROOT. 
+
+.. toctree::
+   :maxdepth: 1
+
+
+

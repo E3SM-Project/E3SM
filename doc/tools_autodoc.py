@@ -18,9 +18,10 @@ if sys.hexversion < 0x02070000:
 
 import argparse
 import os
-import traceback
+import re
 import shutil
 from string import Template
+import traceback
 
 if sys.version_info[0] == 2:
     from ConfigParser import SafeConfigParser as config_parser
@@ -28,9 +29,7 @@ else:
     from configparser import ConfigParser as config_parser
 
 # -------------------------------------------------------------------------------
-#
 # User input
-#
 # -------------------------------------------------------------------------------
 
 def commandline_options():
@@ -54,7 +53,9 @@ def commandline_options():
     return options
 
 
-
+# -------------------------------------------------------------------------------
+# read the tools_autodoc.cfg configuration file
+# -------------------------------------------------------------------------------
 def read_config_file(filename):
     """Read the configuration file and process
 
@@ -70,15 +71,10 @@ def read_config_file(filename):
 
     return config
 
-
 # -------------------------------------------------------------------------------
-#
-# main
-#
+# create the rst files for the Tools configuration settings
 # -------------------------------------------------------------------------------
-
-def main(options):
-    config = read_config_file(options.config[0])
+def get_tools(config):
 
     tools_dir = config.get('tools','tools_dir')
     tools_dir = os.path.abspath(tools_dir)
@@ -112,11 +108,14 @@ def main(options):
         if include:
             tools_files.append(f)
 
+    tools_files.sort()
+
+
     # copy the index.rst.template to index.rst
-    doc_dir = config.get('doc','doc_dir')
+    doc_dir = config.get('tools','doc_dir')
     doc_dir = os.path.abspath(doc_dir)
 
-    index_template = config.get('doc','index_template')
+    index_template = config.get('tools','index_template')
     index_rst_file = index_template.split('.')[0:-1]
     index_template = os.path.join(doc_dir,index_template)
     index_rst_file = '.'.join(index_rst_file)
@@ -151,6 +150,211 @@ $tool_name
         with open(tool_file,'w') as tf:
             contents = tool_template.substitute(tool_name=f, tools_dir=tools_dir)
             tf.write(contents)
+
+    return
+
+
+# -------------------------------------------------------------------------------
+# create the rst files for the scripts configuration settings
+# -------------------------------------------------------------------------------
+def get_scripts(config):
+
+    scripts_dir = config.get('scripts','scripts_dir')
+    scripts_dir = os.path.abspath(scripts_dir)
+
+    # get list of files to exclude
+    exclude_files = config.get('scripts','exclude_files').split()
+
+    # get list of files to exclude
+    exclude_ext = config.get('scripts','exclude_ext').split()
+
+    # get list of files to exclude
+    exclude_prefix = config.get('scripts','exclude_prefix').split()
+
+    # get a list of all files in the scripts_dir
+    all_files = next(os.walk(scripts_dir))[2]
+
+    scripts_files = list()
+    # exclude files 
+    for f in all_files:
+        f = f.strip()
+        include = True
+        for e in exclude_files:
+            if f == e.strip():
+                include = False
+        for e in exclude_ext:
+            if f.endswith(e.strip()):
+                include = False
+        for e in exclude_prefix:
+            if f.startswith(e.strip()):
+                include = False
+        if include:
+            scripts_files.append(f)
+
+    scripts_files.sort()
+
+    # copy the index.rst.template to index.rst
+    doc_dir = config.get('scripts','doc_dir')
+    doc_dir = os.path.abspath(doc_dir)
+
+    index_template = config.get('scripts','index_template')
+    index_rst_file = index_template.split('.')[0:-1]
+    index_template = os.path.join(doc_dir,index_template)
+    index_rst_file = '.'.join(index_rst_file)
+    index_rst_file = os.path.join(doc_dir,index_rst_file)
+
+    shutil.copy2(index_template, index_rst_file)
+
+    # open index_rst_file in append mode
+    with open(index_rst_file,'a') as index_rst:
+        for f in scripts_files:
+            index_rst.write('   {0}\n'.format(f))
+
+    script_template = Template('''
+.. _$script_name:
+
+####################################################
+$script_name 
+####################################################
+
+**$script_name** is a script in CIMEROOT/scripts.
+
+.. toctree::
+   :maxdepth: 1
+
+.. command-output:: ./$script_name --help
+   :cwd: ../../$scripts_dir
+''')
+
+    scripts_dir = config.get('scripts','scripts_dir')
+    for f in scripts_files:
+        script_file = os.path.join(doc_dir, '{0}.rst'.format(f))
+        with open(script_file,'w') as tf:
+            contents = script_template.substitute(script_name=f, scripts_dir=scripts_dir)
+            tf.write(contents)
+
+    return
+
+
+# -------------------------------------------------------------------------------
+# this doesn't work because we need a caseroot in order to capture 
+# the help output from the template generated scripts. 
+# create the rst files for the templates configuration settings
+# -------------------------------------------------------------------------------
+def get_templates(config):
+    templates_dir = config.get('templates','templates_dir')
+    templates_dir = os.path.abspath(templates_dir)
+
+    # get list of files to exclude
+    exclude_files = config.get('templates','exclude_files').split()
+
+    # get list of files to exclude
+    exclude_ext = config.get('templates','exclude_ext').split()
+
+    # get list of files to exclude
+    exclude_prefix = config.get('templates','exclude_prefix').split()
+
+    # get a list of all files in the templates_dir
+    all_files = next(os.walk(templates_dir))[2]
+
+    template_files = list()
+    # exclude files 
+    for f in all_files:
+        f = f.strip()
+        include = True
+        for e in exclude_files:
+            if f == e.strip():
+                include = False
+        for e in exclude_ext:
+            if f.endswith(e.strip()):
+                include = False
+        for e in exclude_prefix:
+            if f.startswith(e.strip()):
+                include = False
+        if include:
+            template_files.append(f)
+
+    doc_dir = config.get('templates','doc_dir')
+    doc_dir = os.path.abspath(doc_dir)
+
+    temp_files = list()
+    # create temporary files with the {{..}} stripped out
+    for fname in template_files:
+        with open(os.path.join(templates_dir,fname),'r') as f:
+            content = f.read()
+        content = content.replace("{{ batchdirectives }}", "# {{ batchdirective }}", 1)
+        content = content.replace("os.chdir( '{{ caseroot }}')", "# os.chdir( '{{ caseroot }}')", 1)
+        content = content.replace('os.path.join("{{ cimeroot }}", "scripts", "Tools")', 'os.path.join("scripts", "Tools")',1)
+        # create a temporary file
+        tf = fname.split('.')
+        tfname = '.'.join(tf[1:])
+        if tfname == 'st_archive':
+            tfname = 'case.st_archive'
+        temp_dir = '{0}/temp_files'.format(doc_dir)
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        tfile = os.path.join(temp_dir, tfname)
+        with open(tfile, 'w') as tf:
+            tf.write(content)
+        
+        temp_files.append(tfname)
+
+    temp_files.sort()
+
+    # copy the index.rst.template to index.rst
+    index_template = config.get('templates','index_template')
+    index_rst_file = index_template.split('.')[0:-1]
+    index_template = os.path.join(doc_dir,index_template)
+    index_rst_file = '.'.join(index_rst_file)
+    index_rst_file = os.path.join(doc_dir,index_rst_file)
+
+    shutil.copy2(index_template, index_rst_file)
+
+    # open index_rst_file in append mode
+    with open(index_rst_file,'a') as index_rst:
+        for f in temp_files:
+            index_rst.write('   {0}\n'.format(f))
+
+    tmpl_template = Template('''
+.. _$tmpl_name:
+
+####################################################
+$tmpl_name 
+####################################################
+
+**$tmpl_name** is a script in CIMEROOT/config/cesm/machines
+
+.. toctree::
+   :maxdepth: 1
+
+.. command-output:: ./$tmpl_name --help
+   :cwd: ../../$templates_dir
+''')
+
+    templates_dir = config.get('templates','templates_dir')
+    for f in temp_files:
+        tmpl_file = os.path.join(doc_dir, '{0}.rst'.format(f))
+        with open(tmpl_file,'w') as tf:
+            contents = tmpl_template.substitute(tmpl_name=f, templates_dir=templates_dir)
+            tf.write(contents)
+
+    # delete the temp files
+    for f in temp_files:
+        if os.path.isfile(f):
+            os.remove(f)
+
+    return
+
+# -------------------------------------------------------------------------------
+# main
+# -------------------------------------------------------------------------------
+
+def main(options):
+    config = read_config_file(options.config[0])
+    get_tools(config)
+    get_scripts(config)
+## this doesn't work cause need a caseroot
+##    get_templates(config)
 
     return 0
 
