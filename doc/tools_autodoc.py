@@ -110,7 +110,6 @@ def get_tools(config):
 
     tools_files.sort()
 
-
     # copy the index.rst.template to index.rst
     doc_dir = config.get('tools','doc_dir')
     doc_dir = os.path.abspath(doc_dir)
