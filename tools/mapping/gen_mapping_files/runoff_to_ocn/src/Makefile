@@ -134,7 +134,7 @@ endif
 
 .PHONY: clean
 clean:
-	$(RM) -f *.f *.f90 *.d *.mod $(OBJS) $(EXEC) $(DEPGEN)
+	$(RM) -f *.f *.f90 *.d *.mod *.optrpt $(OBJS) $(EXEC) $(DEPGEN)
 
 .PHONY: distclean
 distclean: clean

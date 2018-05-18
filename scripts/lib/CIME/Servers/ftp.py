@@ -1,5 +1,5 @@
 """
-FTP Server class.  Interact with a server using FTP protocal
+FTP Server class.  Interact with a server using FTP protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
@@ -33,9 +33,8 @@ class FTP(GenericServer):
         except:
             logger.warning("ERROR from ftp server, trying next server")
             return False
-
         if rel_path not in stat:
-            if not stat[0].startswith(rel_path):
+            if not stat or not stat[0].startswith(rel_path):
                 logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
                 return False
         return True
