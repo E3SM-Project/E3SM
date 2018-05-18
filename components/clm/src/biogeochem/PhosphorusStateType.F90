@@ -33,6 +33,7 @@ module PhosphorusStateType
   use NutrientStateType      , only : NutrientStatePatchSummary
   use NutrientStateType      , only : NutrientStateColumnSummary
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
+  use CNSpeciesMod           , only : species_history_name_suffix_from_string
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -105,9 +106,10 @@ contains
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
     real(r8)          , intent(in)    :: decomp_pools_1m_col (bounds%begc:, 1:)
 
-    this%species      = species_from_string('p')
-    this%name         = species_name_from_string('p')
-    this%restart_name = 'p'
+    this%species             = species_from_string('p')
+    this%name                = species_name_from_string('p')
+    this%history_name_suffix = species_history_name_suffix_from_string('p')
+    this%restart_name        = 'p'
 
     call this%InitAllocate (bounds )
 
@@ -201,7 +203,7 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
-    call NutrientStateInitAllocate(this, bounds)
+    call NutrientStateInitHistory(this, bounds)
 
     this%retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP', units='gP/m^2', &

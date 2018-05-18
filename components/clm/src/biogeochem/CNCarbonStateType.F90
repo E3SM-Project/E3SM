@@ -23,6 +23,7 @@ module CNCarbonStateType
   use clm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
+  use CNSpeciesMod           , only : species_history_name_suffix_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use NutrientStateType      , only : nutrientstate_type
   use NutrientStateType      , only : NutrientStateInitHistory, NutrientStateInitAllocate
@@ -81,9 +82,10 @@ contains
     real(r8)               , intent(in)           :: ratio
     type(carbonstate_type) , intent(in), optional :: c12_carbonstate_vars
 
-    this%species      = species_from_string(carbon_type)
-    this%name         = species_name_from_string(carbon_type)
-    this%restart_name = 'c'
+    this%species             = species_from_string(carbon_type)
+    this%name                = species_name_from_string(carbon_type)
+    this%history_name_suffix = species_history_name_suffix_from_string(carbon_type)
+    this%restart_name        = 'c'
 
     call this%InitAllocate ( bounds)
     call this%InitHistory  ( bounds, carbon_type)
@@ -162,30 +164,30 @@ contains
 
     call NutrientStateInitHistory(this, bounds)
 
-       this%woodc_patch(begp:endp) = spval
-       call hist_addfld1d (fname=trim(this%name)//'_WOOD', units='g' // trim(this%name) // '/m^2', &
-             avgflag='A', long_name=trim(this%name)//' wood ', &
-             ptr_patch=this%woodc_patch)
+    this%woodc_patch(begp:endp) = spval
+    call hist_addfld1d (fname='WOOD' // trim(this%name), units='g' // trim(this%name) // '/m^2', &
+         avgflag='A', long_name=trim(this%name)//' wood ', &
+         ptr_patch=this%woodc_patch)
 
-       this%gresp_storage_patch(begp:endp) = spval
-       call hist_addfld1d (fname=trim(this%name)//'_GRESP_STORAGE', units='g' // trim(this%name) // '/m^2', &
-             avgflag='A', long_name=trim(this%name)//' growth respiration storage', &
-             ptr_patch=this%gresp_storage_patch, default='inactive')
+    this%gresp_storage_patch(begp:endp) = spval
+    call hist_addfld1d (fname='GRESP_STORAGE', units='g' // trim(this%name) // '/m^2', &
+         avgflag='A', long_name=trim(this%name)//' growth respiration storage', &
+         ptr_patch=this%gresp_storage_patch, default='inactive')
 
-       this%gresp_xfer_patch(begp:endp) = spval
-       call hist_addfld1d (fname=trim(this%name)//'_GRESP_XFER', units='g' // trim(this%name) // '/m^2', &
-             avgflag='A', long_name=trim(this%name)//' growth respiration transfer', &
-             ptr_patch=this%gresp_xfer_patch, default='inactive')
+    this%gresp_xfer_patch(begp:endp) = spval
+    call hist_addfld1d (fname='GRESP_XFER', units='g' // trim(this%name) // '/m^2', &
+         avgflag='A', long_name=trim(this%name)//' growth respiration transfer', &
+         ptr_patch=this%gresp_xfer_patch, default='inactive')
 
-       this%xsmrpool_patch(begp:endp) = spval
-       call hist_addfld1d (fname=trim(this%name)//'_XSMRPOOL', units='g' // trim(this%name) // '/m^2', &
-             avgflag='A', long_name=trim(this%name)//' temporary photosynthate pool', &
-             ptr_patch=this%xsmrpool_patch, default='active')
+    this%xsmrpool_patch(begp:endp) = spval
+    call hist_addfld1d (fname='XSMRPOOL', units='g' // trim(this%name) // '/m^2', &
+         avgflag='A', long_name=trim(this%name)//' temporary photosynthate pool', &
+         ptr_patch=this%xsmrpool_patch, default='active')
 
-       this%fuelc_col(begc:endc) = spval
-       call hist_addfld1d (fname=trim(this%name)//'_FUEL', units='g' // trim(this%name) // '/m^2', &
-             avgflag='A', long_name=trim(this%name)//' fuel load', &
-             ptr_col=this%fuelc_col, default='inactive')
+    this%fuelc_col(begc:endc) = spval
+    call hist_addfld1d (fname='FUEL' // trim(this%name), units='g' // trim(this%name) // '/m^2', &
+         avgflag='A', long_name=trim(this%name)//' fuel load', &
+         ptr_col=this%fuelc_col, default='inactive')
 
 
  end subroutine InitHistory

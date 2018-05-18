@@ -33,6 +33,7 @@ module CNSpeciesMod
 
   public :: species_from_string      ! convert a string representation to one of the constants defined here
   public :: species_name_from_string ! convert a string representation to nutrient name
+  public :: species_history_name_suffix_from_string
 
 contains
 
@@ -100,5 +101,36 @@ contains
 
   end function species_name_from_string
 
+  !-----------------------------------------------------------------------
+  function species_history_name_suffix_from_string(species_string) result(name_suffix)
+    !
+    ! !DESCRIPTION:
+    ! Convert a string representation to species name
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in) :: species_string  ! string representation of species (should be lowercase)
+    !
+    ! !LOCAL VARIABLES:
+    character(len=3)             :: name_suffix
+
+    character(len=*), parameter :: subname = 'species_name_from_string'
+    !-----------------------------------------------------------------------
+
+    select case (species_string)
+    case ('c12')
+       name_suffix = ''
+    case ('c13')
+       name_suffix = 'C13_'
+    case ('c14')
+       name_suffix = 'C14_'
+    case ('n')
+       name_suffix = ''
+    case ('p')
+       name_suffix = ''
+    end select
+
+  end function species_history_name_suffix_from_string
 
 end module CNSpeciesMod

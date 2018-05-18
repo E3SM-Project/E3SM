@@ -31,6 +31,7 @@ module CNNitrogenStateType
   use NutrientStateType      , only : NutrientStatePatchSummary
   use NutrientStateType      , only : NutrientStateColumnSummary
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
+  use CNSpeciesMod           , only : species_history_name_suffix_from_string
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -143,9 +144,10 @@ contains
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
     real(r8)          , intent(in)    :: decomp_pools_1m_col (bounds%begc:, 1:)
 
-    this%species      = species_from_string('n')
-    this%name         = species_name_from_string('n')
-    this%restart_name = 'n'
+    this%species             = species_from_string('n')
+    this%name                = species_name_from_string('n')
+    this%history_name_suffix = species_history_name_suffix_from_string('n')
+    this%restart_name        = 'n'
 
     call this%InitAllocate (bounds )
 
@@ -271,7 +273,7 @@ contains
     !-------------------------------
     
     this%retransn_patch(begp:endp) = spval
-    call hist_addfld1d (fname='N_RETRANS', units='gN/m^2', &
+    call hist_addfld1d (fname='RETRANSN', units='gN/m^2', &
          avgflag='A', long_name='plant pool of retranslocated N', &
          ptr_patch=this%retransn_patch)
 
@@ -283,14 +285,14 @@ contains
     if ( nlevdecomp_full > 1 ) then
 
        this%sminn_col(begc:endc) = spval
-       call hist_addfld1d (fname='N_SMIN', units='gN/m^2', &
+       call hist_addfld1d (fname='SMINN', units='gN/m^2', &
             avgflag='A', long_name='soil mineral N', &
             ptr_col=this%sminn_col)
 
     endif
 
     this%plant_n_buffer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='N_PLANT_BUFFER', units='gN/m^2', &
+    call hist_addfld1d (fname='PLANTN_BUFFER', units='gN/m^2', &
             avgflag='A', long_name='plant nitrogen stored as buffer', &
             ptr_col=this%plant_n_buffer_patch,default='inactive')
     
@@ -341,12 +343,12 @@ contains
        end if
 
        this%sminn_vr_col(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='N_SMIN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+       call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral N', &
             ptr_col=this%sminn_vr_col, default = 'inactive')
     else
        this%sminn_vr_col(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='N_SMIN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+       call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral N', &
             ptr_col=this%sminn_vr_col)
     end if
