@@ -90,7 +90,7 @@ def buildnml(case, caseroot, compname):
     # write out cppdefs to env_build.xml
     # this will determine if need to rebuild at runtime - force user to call $CASE.buildexe
 
-    case.set_value("CICE_CPPDEFS", "'{}'".format(cppdefs))
+    case.set_value("CICE_CPPDEFS", "{}".format(cppdefs))
 
     case.flush()
 
