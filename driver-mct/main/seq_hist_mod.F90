@@ -1335,18 +1335,7 @@ contains
     call seq_comm_getdata(CPLID, mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
 
     call seq_infodata_getData(infodata, &
-<<<<<<< HEAD
-         drv_threading=drv_threading,   &
-         atm_present=atm_present,       &
-         lnd_present=lnd_present,       &
-         rof_present=rof_present,       &
-         ice_present=ice_present,       &
-         ocn_present=ocn_present,       &
-         glc_present=glc_present,       &
-         wav_present=wav_present,       &
-=======
          drv_threading=drv_threading, &
->>>>>>> esmci_remote_for_split/master
          model_doi_url=model_doi_url)
 
     lwrite_now = .true.
