@@ -29,8 +29,6 @@ Addendum
    :maxdepth: 2
 
    glossary/index.rst
-   scripts/index.rst
-   case_scripts/index.rst	
    Tools_user/index.rst
    xml_files/index.rst
    CIME_api/modules.rst
