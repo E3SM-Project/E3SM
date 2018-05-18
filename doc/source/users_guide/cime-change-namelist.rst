@@ -152,7 +152,7 @@ The namelist file for DROF is ``drof_in`` (or ``drof_in_NNN`` for multiple insta
 
 
 Customizing CESM active component-specific namelist settings
----------------------------------------------------
+------------------------------------------------------------
 
 CAM
 ~~~

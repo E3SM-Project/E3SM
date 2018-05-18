@@ -12,14 +12,17 @@ defines the compset and the processor layout that will be
 created. CIME determines the primary component based on the
 combination of prognostic, data and stub components used in the
 requested compset. As an example, the primary component for a compset
-that has a prognostic atmosphere, land and cice (in prescribed mode) and a data ocean is
-the atmosphere component (for cesm this is CAM).
-In the case that all components are prognostic, the primary component is referred to as **allactive**.
+that has a prognostic atmosphere, land and cice (in prescribed mode)
+and a data ocean is the atmosphere component (for cesm this is CAM).
+In the case that all components are prognostic, the primary component
+is referred to as **allactive**.
 
-CIME cases have significant flexibility with respect to the layout of components
-across different hardware processors. There are up to eight unique models (atm, lnd, rof, ocn, ice,
-glc, wav, cpl) that are managed independently by the CIME driver, each with a unique MPI communicator.
-In addition, the driver runs on the union of all processors and controls the sequencing and hardware partitioning.
+CIME cases have significant flexibility with respect to the layout of
+components across different hardware processors. There are up to eight
+unique models (atm, lnd, rof, ocn, ice, glc, wav, cpl) that are
+managed independently by the CIME driver, each with a unique MPI
+communicator.  In addition, the driver runs on the union of all
+processors and controls the sequencing and hardware partitioning.
 
 .. _defining-pes:
 
@@ -31,10 +34,14 @@ to find the supported out-of-the-box model pe-settings for the primary component
 
 When your run `create_newcase  <../Tools_user/create_newcase.html>`_, CIME identifies the primary component and the setting of the ``PES_SPEC_FILE`` in the standard output.
 
-By default, each primary component has a **config_pes.xml** file in its **cime_config** directory.
-That file specifies out-of-the-box pe-layout for compsets that the primary component defines.
-Currently, the pe-layout can have dependencies on the compset, the model grid and the target machine.
-Finally, there might be more than one out-of-the-box pe-layout that could be used for a compset/grid/machine combination: one for a low processor setting and one for a high processor setting.
+By default, each primary component has a **config_pes.xml** file in
+its **cime_config** directory.  That file specifies out-of-the-box
+pe-layout for compsets that the primary component defines.  Currently,
+the pe-layout can have dependencies on the compset, the model grid and
+the target machine.  Finally, there might be more than one
+out-of-the-box pe-layout that could be used for a compset/grid/machine
+combination: one for a low processor setting and one for a high
+processor setting.
 
 A typical entry in a **config_pes.xml** looks like this:
 
@@ -54,43 +61,42 @@ Given the various dependencies, CIME uses an order of precedence to determine th
 
 1. grid match
 
-   CIME first searches the grid nodes for a grid match in **config_grids.xml**.
-
-   The search is based on a regular expression match for the grid longname.
-
-   All grid matches are then used in the subsequent search.
-
-   If there is no grid match, all nodes that have ``<grid name="any">`` are used in the subsequent search.
+   | CIME first searches the grid nodes for a grid match in **config_grids.xml**.
+   | The search is based on a regular expression match for the grid longname.
+   | All grid matches are then used in the subsequent search.
+   | If there is no grid match, all nodes that have ``<grid name="any">`` are used in the subsequent search.
 
 2. machine match
 
-   CIME next uses the list of nodes obtained in the grid match to search for the machine name using the ``<mach>`` nodes.
-
-   If there is no machine match, then all nodes with ``<machine name="any">`` are used in the subsequent search.
+   | CIME next uses the list of nodes obtained in the grid match to search for the machine name using the ``<mach>`` nodes.
+   | If there is no machine match, then all nodes with ``<machine name="any">`` are used in the subsequent search.
 
 3. pesize and compset match
 
-   CIME next uses the list of nodes obtained in the machine match to search for pesize and compset using the ``<pes>`` nodes.
-
-   If there is no match, the node with ``<pes pesize="any" compset="any">`` is used.
+   | CIME next uses the list of nodes obtained in the machine match to search for pesize and compset using the ``<pes>`` nodes.
+   | If there is no match, the node with ``<pes pesize="any" compset="any">`` is used.
 
 When `create_newcase  <../Tools_user/create_newcase.html>`_  is called, it outputs the matches that are found in determining the best out-of-the-box pe-layout.
 
-Where is the PE layout set
---------------------------
+Setting the PE layout
+---------------------
 
-Optimizing the throughput and efficiency of a CIME experiment often involves customizing the processor (PE) layout. (See :ref:`load balancing <optimizing-processor-layout>`.)
-CIME provides significant flexibility with respect to the layout of components across different hardware processors.
-In general, the CIME components -- atm, lnd, ocn, and so on -- can run on overlapping or mutually unique processors.
-While each component is associated with a unique MPI communicator, the CIME driver runs on the union of all processors and controls the sequencing and hardware partitioning.
+Optimizing the throughput and efficiency of a CIME experiment often
+involves customizing the processor (PE) layout. (See :ref:`load
+balancing <optimizing-processor-layout>`.)  CIME provides significant
+flexibility with respect to the layout of components across different
+hardware processors.  In general, the CIME components -- atm, lnd,
+ocn, and so on -- can run on overlapping or mutually unique
+processors.  While each component is associated with a unique MPI
+communicator, the CIME driver runs on the union of all processors and
+controls the sequencing and hardware partitioning.
 
-Settings in the **env_mach_pes.xml** file determine:
-
-* the number of MPI tasks and OpenMP threads for each component.
-* the number of instances of each component.
-* the layout of the components across the hardware processors.
-
-The entries in **env_mach_pes.xml** have the following meanings:
+The pe-layout settings are controlled by the ``$CASEROOT`` file
+**env_mach_pes.xml** file. Variables in this file determine the number
+of MPI tasks and OpenMP threads for each component, the number of
+instances of each component and the layout of the components across
+the hardware processors. The entries in **env_mach_pes.xml** have the
+following meanings:
 
 * ``MAX_MPITASKS_PER_NODE``
    | The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified.
@@ -118,16 +124,20 @@ The entries in **env_mach_pes.xml** have the following meanings:
    | The number of component instances, which are spread evenly across NTASKS.
 
 * ``COST_PER_NODE``
-   | The numbers of cores/node used for accounting purposes. The user should not normally need to set this - but it is useful for understanding how you will
-   be charged.
+   | The numbers of cores/node used for accounting purposes. The user should not normally need to set this - but it is useful for understanding how you will be charged.
 
 Each CIME component has corresponding entries for ``NTASKS``, ``NTHRDS``, ``ROOTPE`` and ``NINST`` in the **env_mach_pes.xml** file. The layout of components on processors has no impact on the science.
 If all components have identical ``NTASKS``, ``NTHRDS``, and ``ROOTPE`` settings, all components will run sequentially on the same hardware processors.
 
-The scientific sequencing is hardwired into the driver. Changing processor layouts does not change intrinsic coupling lags or coupling sequencing.
+The scientific sequencing is hardwired into the driver. Changing
+processor layouts does not change intrinsic coupling lags or coupling
+sequencing.
 
-The coupler component has its own processor specification for doing computations such as mapping, merging, diagnostics, and flux calculation.
-This is distinct from the driver, which automatically runs on the union of all processors to manage model concurrency and sequencing.
+The coupler component has its own processor specification for doing
+computations such as mapping, merging, diagnostics, and flux
+calculation.  This is distinct from the driver, which automatically
+runs on the union of all processors to manage model concurrency and
+sequencing.
 
 For a **fully active configuration**, the atmosphere component is
 hardwired in the driver to never run concurrently with the land or ice
@@ -149,24 +159,31 @@ Resources for your case will be allocated according to the following logic.
 
 * The total number of cores that are allocated will be based on the product of (1) and (2) below where
 
-  1. MAX(ROOTPE(comp) + NTASKS(comp)) across all components
-  2. MAX(NTHRDS) across all components
+  1. ``MAX(ROOTPE(comp) + NTASKS(comp))`` across all components
+  2. ``MAX(NTHRDS)`` across all components
 
-  | In the following example, the atmosphere and ocean will run concurrently. The atmosphere will use 16 MPI tasks each with 4 threads per task for a total of 64 cores.
-  The ocean will use 16 MPI tasks with 1 thread per task. BUT since the atmosphere has 4 threads, the ocean will use 64 total cores. The total number of cores will be 128.
-  The atmosphere will run on MPI tasks 0-15 and the ocean will run on MPI tasks 16-31 in the global MPI communicators.
+In the following example, the atmosphere and ocean will run concurrently. The atmosphere will use 16 MPI tasks each with 4 threads per task for a total of 64 cores. The ocean will use 16 MPI tasks with 1 thread per task. BUT since the atmosphere has 4 threads, the ocean will use 64 total cores. The total number of cores will be 128. The atmosphere will run on MPI tasks 0-15 and the ocean will run on MPI tasks 16-31 in the global MPI communicators.
+
   ::
 
      NTASKS_ATM=16 NTHRDS_ATM=4  ROOTPE_ATM=0
      NTASKS_OCN=16 NTHRDS_OCN=1  ROOTPE_OCN=16
 
-  CIME ensures that the batch submission script (**case.submit**) will automatically requests 128 hardware processors, and the first 16 MPI
-  tasks will be laid out on the first 64 hardware processors with a stride of 4. The next 16 MPI tasks are laid out on the second set of
-  64 hardware processors in the same manner, even though the ocean is not threaded.
-  If you had set ``ROOTPE_OCN`` to 64 in this example, a total of 312 processors would be requested, the atmosphere would be laid out on
-  the first 64 hardware processors in 16x4 fashion, and the ocean model would be laid out on hardware processors 255-311. Hardware
-  processors 64-254 would be allocated but completely idle.
-  | We strongly encourage you to use the **preview_run** script to review the environment and job submit commands for your case.
+CIME ensures that the batch submission script (`case.submit
+<../Tools_user/case.submit.html>`_ ) will automatically requests 128
+hardware processors, and the first 16 MPI tasks will be laid out on
+the first 64 hardware processors with a stride of 4. The next 16 MPI
+tasks are laid out on the second set of 64 hardware processors in the
+same manner, even though the ocean is not threaded.  If you had set
+``ROOTPE_OCN`` to 64 in this example, a total of 312 processors would
+be requested, the atmosphere would be laid out on the first 64
+hardware processors in 16x4 fashion, and the ocean model would be laid
+out on hardware processors 255-311. Hardware processors 64-254 would
+be allocated but completely idle.
+
+We strongly encourage you to use the `preview_run
+<../Tools_user/preview_run.html>`_ script to review the environment
+and job submit commands for your case.
 
 .. _optimizing-processor-layout:
 
@@ -219,43 +236,49 @@ some point in the timestepping sequence.
 
 **One approach to load balancing**
 
-Carry out a PFS test (see `:ref:`testing`_)
+Carry out a :ref:`PFS test <testing>`. This test is by default a
+20-day model run with restarts and history output turned off. This
+should help you find the layout that has the best load balance for the
+targeted number of processors. This provides a reasonable performance
+estimate for the production run for most of the runtime.
 
-20-day model runs with restarts and history turned off in order to find the layout that has the best load balance for the targeted number of processors. This provides a reasonable performance estimate for the production run for most of the runtime.
+Seasonal variation and spin-up costs can change performance over time,
+so even after a production run has started, review the timing output
+occasionally to see if any layout changes might improve throughput or
+decrease cost.
 
-Treat the end-of-month history and end-of-run restart I/O as a separate cost.
+In determining an optimal load balance for a specific configuration,
+two pieces of information are useful.
 
-To set up this test configuration, create your production case, and then edit **env_run.xml** to set ``STOP_OPTION`` to ndays, ``STOP_N`` to 20, and ``RESTART_OPTION`` to never.
+* Which components are most expensive.
 
-Seasonal variation and spin-up costs can change performance over time, so even after a production run has started, review the timing output occasionally to see if any layout changes might improve throughput or decrease cost.
-
-In determining an optimal load balance for a specific configuration, two pieces of information are useful.
-
-- Which components are most expensive.
-
-- How individual components scale. Do they run faster with all MPI or mixed MPI/OpenMP decomposition strategies? What are their optimal decompositions at each processor count? If the cost and scaling of the components are unknown, several short tests with arbitrary component pe counts can help establish component scaling and sweet spots.
+* How individual components scale. Do they run faster with all MPI or
+  mixed MPI/OpenMP decomposition strategies? What are their optimal
+  decompositions at each processor count? If the cost and scaling of
+  the components are unknown, several short tests with arbitrary
+  component pe counts can help establish component scaling and sweet
+  spots.
 
 **Determining an optimal load balance**
 
-- Start with the most expensive component and a fixed optimal processor count and decomposition for that component.
+* Start with the most expensive component and a fixed optimal processor count and decomposition for that component.
 
-- Test the systems, varying the sequencing/concurrency of the components and the pe counts of the other components.
+* Vary the concurrency and pe counts of the other components.
 
-- Identify a few potential load balance configurations, then run each a few times to establish run-to-run variability and determine the best layout.
+* Identify a few potential load balance configurations, then run each a few times to establish run-to-run variability and determine the best layout.
 
 In all cases, review the component run times in the timing output file for both overall throughput and independent component timings. Identify idle processors by considering the component concurrency in conjunction with the component timing.
 
 In general, a few component layout options are most reasonable:
 
-- fully sequential,
+* fully sequential,
+* fully sequential except the ocean running concurrently,
+* fully concurrent except the atmosphere running sequentially with the ice, rof, and land components.
 
-- fully sequential except the ocean running concurrently,
-
-- fully concurrent except the atmosphere running sequentially with the ice, rof, and land components.
-
-Finally, run on a subset of the atmosphere processors, either sequentially or concurrently with the land and ice.
-
-The concurrency is limited in part by hardwired sequencing in the driver. The sequencing is set by scientific constraints, although there may be some addition flexibility with respect to concurrency when running with mixed active and data models.
+The concurrency is limited in part by hardwired sequencing in the
+driver. The sequencing is set by scientific constraints, although
+there may be some addition flexibility with respect to concurrency
+when running with mixed active and data models.
 
 **Some general rules for finding optimal configurations**
 
@@ -263,10 +286,12 @@ The concurrency is limited in part by hardwired sequencing in the driver. The se
 
 - Make sure your cheapest components keep up with your most expensive components. In other words, a component that runs on 1024 processors should not be waiting on a component running on 16 processors.
 
-- Before running the job, make sure the batch queue settings in the **$CASE.run** script are set correctly for your run. Review the account numbers, queue names and time limits. The ideal time limit, queue and run length are dependent on each other and on the current model throughput.
+- Before running the job, make sure the batch queue settings are set correctly for your run. Review the account numbers, queue names and time limits. The ideal time limit, queue and run length are dependent on each other and on the current model throughput.
 
 - Take full advantage of the hardware resources. If you are charged by the 32-way node, you might as well target a total processor count that is a multiple of 32.
 
 - Keep a single component on a single node, if possible, to minimize internal component communication cost.
 
 - Assume that hardware performance can vary due to contention on the interconnect, file systems, or other areas. If you are unsure of a timing result, run cases multiple times.
+
+.. todo:: give an example of a fully active case - show the pe-layout and timing file here.

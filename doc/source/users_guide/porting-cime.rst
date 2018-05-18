@@ -154,11 +154,10 @@ These are the recommended steps for validating a port for the CESM model:
 
 2. Carry out ensemble consistency tests:
 
-   This is described in
-   **$CIMEROOT/tools/statistical_ensemble_test/README**.  The CESM-ECT (CESM Ensemble Consistency Test) determines whether a new
-   simulation set up (new machine, compiler, etc.) is statistically distinguishable from an accepted ensemble.  The ECT process
-   involves comparing several runs (3) generated with the new scenario to an ensemble built on a trusted machine (currently cheyenne). The
-   python ECT tools are located in the pyCECT subdirectory **$CIMEROOT/tools/statistical_ensemble_test/pyCECT.
+   This is described in **$CIMEROOT/tools/statistical_ensemble_test/README**.
+   The CESM-ECT (CESM Ensemble Consistency Test) determines whether a new simulation set up (new machine, compiler, etc.) is statistically distinguishable from an accepted ensemble.
+   The ECT process involves comparing several runs (3) generated with the new scenario to an ensemble built on a trusted machine (currently cheyenne).
+   The python ECT tools are located in the pyCECT subdirectory **$CIMEROOT/tools/statistical_ensemble_test/pyCECT.
 
    The verification tools in the CESM-ECT suite are:
 

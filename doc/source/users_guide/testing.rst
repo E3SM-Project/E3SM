@@ -123,7 +123,7 @@ The following are the type of tests that are supported by CIME:
    | Compare base and single_thread.
 
 * ``PFS``
-   | Performance test setup. (default 20 days)
+   | Performance test setup. History and restart output is turned off. (default 20 days)
 
 * ``ICP``
    | CICE performance test.

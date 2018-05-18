@@ -29,6 +29,7 @@ CIME supports out-of-the-box *component sets*, *model grids* and *hardware platf
 
 The [CASE] argument must be a string and may not contain any of the following special characters
 ::
+
    > + * ? < > / { } [ ] ~ ` @ :
 
 ======================================
@@ -41,11 +42,14 @@ Running `create_newcase  <../Tools_user/create_newcase.html>`_ creates the follo
 
 **User Scripts**
 
+- `case.build  <../Tools_user/case.build.html>`_
+     Script to build component and utility libraries and model executable.
+
 - `case.setup  <../Tools_user/case.setup.html>`_
     Script used to set up the case (create the case.run script, Macros file and user_nl_xxx files).
 
-- `case.build  <../Tools_user/case.build.html>`_
-     Script to build component and utility libraries and model executable.
+- `case.st_archive <../Tools_user/case.st_archive.html>`_
+     Script to perform short term archiving to disk for your case output. Note that this script is run automatically by the normal CIME workflow.
 
 - `case.submit <../Tools_user/case.submit.html>`_
      Script to submit the case to run using the machine's batch queueing system.
