@@ -316,18 +316,6 @@
     </values>
   </entry>
 
-  <entry id="model_doi_url" modify_via_xml="MODEL_DOI_URL">
-    <type>char</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      model doi url
-    </desc>
-    <values>
-      <value>$MODEL_DOI_URL</value>
-    </values>
-  </entry>
-
   <entry id="username" modify_via_xml="USER">
     <type>char</type>
     <category>expdef</category>
