@@ -2,6 +2,29 @@
 
 Originator: Chris Fischer 
 Date: 5-17-2018
+Tag: cime_cesm2_0_rel_02
+Answer Changes: Round Off for Cheyenne gnu
+Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Update Cheyenne gnu compiler to 7.3.0
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+    Merge pull request #2611 from ESMCI/fischer/gnu7
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
 Tag: cime_cesm2_0_rel_01
 Answer Changes: None
 Tests: scripts_regression_tests
