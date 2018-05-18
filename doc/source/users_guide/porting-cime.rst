@@ -150,7 +150,7 @@ These are the recommended steps for validating a port for the CESM model:
 
       > $CIME_OUTPUT_ROOT/cs.status.[testid]
 
-   where testid was indicated in the output when calling **./create_test**.
+   where testid was indicated in the output when calling `create_test <../Tools_user/create_test.html>`_
 
 2. Carry out ensemble consistency tests:
 
