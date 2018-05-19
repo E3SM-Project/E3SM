@@ -9,8 +9,8 @@
 !  Polvani, Scott and Thomas, MWR 2004
 !  Jablonowski and Williamson, QJR (2006) 132 
 !
-
-
+!  MT 2017-11: be sure to DSS the initial condition for NGGPS tracers
+!
 module baroclinic_inst_mod
 !
 !  This module contains the initial condititions for two baroclinic
@@ -244,7 +244,7 @@ endif
 
 ! if we run a test case with 10 tracers, assume we want to reproduce the AVEC benchmarks
 ! using SJ's test tracers:
-! MT 2017-11: these tracers can be discontinous at element edges due to roundoff
+! tracers can be discontinous at element edges due to roundoff
 ! need to DSS the initial condition
 if (qsize==10) then
    allocate(var3d(np,np,nlev,nets:nete))
