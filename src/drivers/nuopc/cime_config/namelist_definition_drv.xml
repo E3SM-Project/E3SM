@@ -4,42 +4,6 @@
 
 <entry_id version="2.0">
 
-  <!-- Each namelist variable is defined in an <entry> element.  The
-     content of the element is the documentation of how the variable is
-     used.  Other elements  are:
-     id
-          The variable's name.  *** N.B. *** The name must be lower case.
-          The module convert all namelist variable names to lower case
-          since Fortran is case insensitive.
-     type
-          An abbreviation of the fortran declaration for the variable.
-	  Valid declarations are:
-             char, integer, logical, real
-	  Any of these types may be followed by a comma separated list of
-	  integers enclosed in parenthesis to indicate an array.
-	  The current namelist validation code only distinquishes between
-	  string and non-string types.
-     input_pathname
-          Only include this attribute to indicate that the variable
-          contains the pathname of an input dataset that resides in the
-          CIME inputdata directory tree.
-
-	  The recognized values are
-           "abs"  - an absolute  pathname is required
-	   "rel:var_name"  - the  pathname is relative and that
-            the namelist variable "var_name" contains the absolute
-	    root directory.
-           "mapping" - the absolute inputdata path is specified and
-            will be included in the cpl.inputdata_list
-     category
-          A category assigned for organizing the documentation.
-     group
-          The namelist group that the variable is declared in.
-     valid_values
-          This is an optional attribute that is mainly useful for variables
-          that have only a small number of allowed values.
-  -->
-
   <!-- =========================== -->
   <!--  NUOPC driver run sequence  -->
   <!-- =========================== -->
@@ -51,52 +15,67 @@
     <values>
       <value>
       @ocn_cpl_dt   #ocean coupling step
-	  MED med_phases_prep_ocn
-	  MED med_connectors_prep_med2ocn
+	  MED med_phases_prep_ocn_accum_avg
 	  MED -> OCN :remapMethod=redist
-	  OCN
 	  @atm_cpl_dt   # atmosphere coupling step
-            MED med_phases_prep_ice
-            MED med_connectors_prep_med2ice
-            MED -> ICE :remapMethod=redist
-            MED med_phases_prep_wav
-            MED med_connectors_prep_med2wav
-            MED -> WAV :remapMethod=redist
+            MED med_phases_prep_ocn_map
+	    MED med_phases_aofluxes_run
+	    MED med_phases_prep_ocn_merge
+	    MED med_phases_prep_ocn_accum_fast
+ 	    MED med_phases_ocnalb_run
+	    #
             MED med_phases_prep_lnd
             MED med_connectors_prep_med2lnd
             MED -> LND :remapMethod=redist
-            MED med_phases_prep_glc
-            MED med_connectors_prep_med2glc
-            MED -> GLC :remapMethod=redist
+	    #
+            MED med_phases_prep_ice
+            MED med_connectors_prep_med2ice
+            MED -> ICE :remapMethod=redist
+	    #
+            MED med_phases_prep_wav
+            MED med_connectors_prep_med2wav
+            MED -> WAV :remapMethod=redist
+	    #
             MED med_phases_prep_rof
             MED med_connectors_prep_med2rof
             MED -> ROF :remapMethod=redist
+	    #
             ICE
             LND
             ROF
 	    WAV
-            ROF -> MED :remapMethod=redist
-            MED med_connectors_post_rof2med
-            LND -> MED :remapMethod=redist
-            MED med_connectors_post_lnd2med
+	    #
             ICE -> MED :remapMethod=redist
             MED med_connectors_post_ice2med
             MED med_fraction_set
-	    MED med_phases_aofluxes_run
-	    MED med_phases_ocnalb_run
+	    #
+            LND -> MED :remapMethod=redist
+            MED med_connectors_post_lnd2med
+	    #
+            ROF -> MED :remapMethod=redist
+            MED med_connectors_post_rof2med
+	    #
+            MED med_phases_prep_glc
+            MED med_connectors_prep_med2glc
+            MED -> GLC :remapMethod=redist
+	    #
             MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
             MED -> ATM :remapMethod=redist
+	    #
             ATM
 	    GLC
+	    #
             WAV -> MED :remapMethod=redist
             MED med_connectors_post_wav2med
+	    #
             GLC -> MED :remapMethod=redist
             MED med_connectors_post_glc2med
+	    #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-            MED med_phases_accum_fast
 	  @
+	  OCN
   	  OCN -> MED :remapMethod=redist
 	  MED med_connectors_post_ocn2med
       @
@@ -755,10 +734,6 @@
     </values>
   </entry>
 
-  <!-- =========================================== -->
-  <!-- DRIVER attributes                          -->
-  <!-- =========================================== -->
-
   <entry id="model_version">
     <type>char</type>
     <category>expdef</category>
@@ -1410,11 +1385,6 @@ n    </desc>
       <value>$CPL_DECOMP</value>
     </values>
   </entry>
-
-  <!-- ===========================  -->
-  <!-- mapping attributes -->
-  <!-- ===========================  -->
-
 
   <!-- ===========================     -->
   <!-- MED history attributes          -->

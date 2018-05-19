@@ -2,8 +2,6 @@ module MED
 
   !-----------------------------------------------------------------------------
   ! Mediator Component.
-  ! This mediator operates on two timescales and keeps two internal Clocks to
-  ! do so.
   !-----------------------------------------------------------------------------
 
   use ESMF
@@ -60,18 +58,20 @@ module MED
   use med_connectors_mod        , only: med_connectors_post_wav2med
   use med_connectors_mod        , only: med_connectors_post_glc2med
   use med_phases_mod            , only: med_phases_init 
+  use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_map
+  use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_merge
+  use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_fast
+  use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_avg
   use med_phases_prep_atm_mod   , only: med_phases_prep_atm
-  use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn
   use med_phases_prep_ice_mod   , only: med_phases_prep_ice
   use med_phases_prep_lnd_mod   , only: med_phases_prep_lnd
   use med_phases_prep_rof_mod   , only: med_phases_prep_rof
   use med_phases_prep_wav_mod   , only: med_phases_prep_wav
   use med_phases_prep_glc_mod   , only: med_phases_prep_glc
-  use med_phases_accum_fast_mod , only: med_phases_accum_fast
-  use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
-  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
-  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_init 
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_init 
+  use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
+  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_init 
+  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
   use med_fraction_mod          , only: med_fraction_set
   use med_constants_mod         , only: med_constants_dbug_flag
   use med_constants_mod         , only: med_constants_spval_init
@@ -83,7 +83,6 @@ module MED
   use med_map_mod               , only: med_map_MapNorm_init
 
   implicit none
-
   private
 
   integer            :: dbrc
@@ -93,6 +92,7 @@ module MED
   integer            :: localPet
   logical            :: mastertask
   integer            :: dbug_flag = med_constants_dbug_flag
+
   character(len=*)  , parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
   real(ESMF_KIND_R8), parameter :: spval_init  = med_constants_spval_init
   real(ESMF_KIND_R8), parameter :: spval       = med_constants_spval
@@ -100,7 +100,7 @@ module MED
   integer           , parameter :: ispval_mask = med_constants_ispval_mask
   character(*)      , parameter :: u_FILE_u    = __FILE__
 
-  public SetServices
+  public  SetServices
 
   private InitializeP0
   private InitializeIPDv03p1 ! advertise fields
@@ -179,24 +179,6 @@ contains
 
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_DataInitialize, &
          specRoutine=DataInitialize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !------------------
-    ! setup various mediator phases
-    !------------------
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_phases_accum_fast"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_phases_accum_fast", specRoutine=med_phases_accum_fast, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_fraction_set"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_fraction_set", specRoutine=med_fraction_set, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -304,7 +286,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
-    ! prep routines for model imports
+    ! prep routines for atm
     !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
@@ -314,12 +296,41 @@ contains
          specPhaseLabel="med_phases_prep_atm", specRoutine=med_phases_prep_atm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    !------------------
+    ! prep routines for ocn
+    !------------------
+
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_phases_prep_ocn"/), userRoutine=mediator_routine_Run, rc=rc)
+         phaseLabelList=(/"med_phases_prep_ocn_map"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_phases_prep_ocn", specRoutine=med_phases_prep_ocn, rc=rc)
+         specPhaseLabel="med_phases_prep_ocn_map", specRoutine=med_phases_prep_ocn_map, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_prep_ocn_merge"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_prep_ocn_merge", specRoutine=med_phases_prep_ocn_merge, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_prep_ocn_accum_fast"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_prep_ocn_accum_fast", specRoutine=med_phases_prep_ocn_accum_fast, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_prep_ocn_accum_avg"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_prep_ocn_accum_avg", specRoutine=med_phases_prep_ocn_accum_avg, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! prep routines for ice
+    !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
          phaseLabelList=(/"med_phases_prep_ice"/), userRoutine=mediator_routine_Run, rc=rc)
@@ -328,12 +339,20 @@ contains
          specPhaseLabel="med_phases_prep_ice", specRoutine=med_phases_prep_ice, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    !------------------
+    ! prep routines for lnd
+    !------------------
+
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
          phaseLabelList=(/"med_phases_prep_lnd"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
          specPhaseLabel="med_phases_prep_lnd", specRoutine=med_phases_prep_lnd, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! prep routines for rof
+    !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
          phaseLabelList=(/"med_phases_prep_rof"/), userRoutine=mediator_routine_Run, rc=rc)
@@ -342,12 +361,20 @@ contains
          specPhaseLabel="med_phases_prep_rof", specRoutine=med_phases_prep_rof, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    !------------------
+    ! prep routines for wav
+    !------------------
+
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
          phaseLabelList=(/"med_phases_prep_wav"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
          specPhaseLabel="med_phases_prep_wav", specRoutine=med_phases_prep_wav, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! prep routines for glc
+    !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
          phaseLabelList=(/"med_phases_prep_glc"/), userRoutine=mediator_routine_Run, rc=rc)
@@ -364,7 +391,7 @@ contains
          phaseLabelList=(/"med_phases_ocnalb_run"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-      specPhaseLabel="med_phases_ocnalb_run", specRoutine=med_phases_ocnalb_run, rc=rc)
+         specPhaseLabel="med_phases_ocnalb_run", specRoutine=med_phases_ocnalb_run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -379,14 +406,24 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
+    ! phase routine for updating fractions
+    !------------------
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_fraction_set"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_fraction_set", specRoutine=med_fraction_set, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
     ! attach specializing method(s)
     ! -> NUOPC specializes by default --->>> first need to remove the default
     !------------------
 
     call ESMF_MethodRemove(gcomp, mediator_label_CheckImport, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_CheckImport, &
-         specRoutine=NUOPC_NoOp, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_CheckImport, specRoutine=NUOPC_NoOp, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -396,8 +433,7 @@ contains
 
     call ESMF_MethodRemove(gcomp, mediator_label_SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_SetRunClock, &
-         specRoutine=SetRunClock, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_SetRunClock, specRoutine=SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine SetServices
@@ -1211,7 +1247,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-
     type(InternalState)                :: is_local
     type(ESMF_Clock)                   :: clock
     type(ESMF_State)                   :: importState, exportState
