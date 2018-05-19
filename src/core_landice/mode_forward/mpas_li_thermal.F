@@ -51,6 +51,7 @@ module li_thermal
    public :: li_thermal_init, li_thermal_solver, &
              li_init_linear_temperature_in_column,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
+             li_temperature_to_enthalpy_kelvin, li_enthalpy_to_temperature_kelvin, &
              li_compute_pressure_melting_point_fields, &
              li_basal_melt_floating_ice
 
@@ -1977,6 +1978,73 @@ module li_thermal
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  !  routine li_temperature_to_enthalpy_kelvin
+!
+!> \brief MPAS convert temperature to enthalpy
+!> \author William Lipscomb, Tong Zhang
+!> \date   April 2018
+!> \details
+!>  This routine computes the enthalpy in each layer of an ice column,
+!>  given the temperature (K) and water fraction.
+!-----------------------------------------------------------------------
+
+    subroutine li_temperature_to_enthalpy_kelvin(&
+         layerCenterSigma,  &
+         thickness,         &
+         temperature,       &
+         waterfrac,         &
+         enthalpy)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           temperature,        & !< Input: interior ice temperature
+           waterfrac             !< Input: interior water fraction
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           enthalpy              !< Output:  interior ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: &
+           pmpTemperature         ! pressure melting point temperature
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in column
+
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! Solve for enthalpy
+
+      do k = 1, nVertLevels
+         enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
+                      + waterfrac(k) * rho_water * (cp_ice * (pmpTemperature(k)+kelvin_to_celsius) + latent_heat_ice)
+      end do
+
+    end subroutine li_temperature_to_enthalpy_kelvin
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  !  routine li_temperature_to_enthalpy
 !
 !> \brief MPAS convert temperature to enthalpy
@@ -2179,6 +2247,142 @@ module li_thermal
 
     end subroutine li_enthalpy_to_temperature
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_enthalpy_to_temperature_kelvin
+!
+!> \brief MPAS convert enthalpy to temperature
+!> \author William Lipscomb, Tong Zhang
+!> \date   April 2018
+!> \details
+!>  This routine computes the temperature (K) and water fraction in each layer
+!>  of an ice column, given the enthalpy.
+!-----------------------------------------------------------------------
+
+    subroutine li_enthalpy_to_temperature_kelvin(&
+         layerCenterSigma,   &
+         thickness,          &
+         enthalpy,           &
+         temperature,        &
+         waterfrac,          &
+         surfaceEnthalpy,    &
+         surfaceTemperature, &
+         basalEnthalpy,      &
+         basalTemperature)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+           enthalpy              !< Input/output: interior ice enthalpy
+
+      real (kind=RKIND), intent(inout) , optional :: &
+           surfaceEnthalpy,    & !< Input/output: surface ice enthalpy
+           basalEnthalpy         !< Input/output: basal ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           temperature           !< Output: interior ice temperature
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           waterfrac             !< Output: interior water fraction
+
+      real (kind=RKIND), intent(out), optional :: &
+           surfaceTemperature, & !< Output: surface ice temperature
+           basalTemperature      !< Output: basal ice temperature
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpEnthalpy
+
+      real (kind=RKIND) :: pmpTemperatureBed
+      real (kind=RKIND) :: pmpEnthalpyBed
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in ice interior
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! find pressure melting point temperature at bed
+      call pressure_melting_point(&
+           thickness, &
+           pmpTemperatureBed)
+
+      ! Find pressure melting point enthalpy
+      pmpEnthalpy(:) = (pmpTemperature(:)+kelvin_to_celsius) * rhoi*cp_ice
+      pmpEnthalpyBed = (pmpTemperatureBed+kelvin_to_celsius) * rhoi*cp_ice
+
+      ! Solve for temperature and waterfrac in ice interior
+
+      ! ice interior
+
+      do k = 1, nVertLevels
+         if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
+            temperature(k) = (pmpTemperature(k)+kelvin_to_celsius)
+            waterfrac(k) = (enthalpy(k) - pmpEnthalpy(k)) /        &
+                          ((rho_water-rhoi)*cp_ice*(pmpTemperature(k)+kelvin_to_celsius) + rho_water*latent_heat_ice)
+         else   ! cold ice
+            temperature(k) = enthalpy(k) / (rhoi*cp_ice)
+            waterfrac(k) = 0.0_RKIND
+         endif
+      enddo   ! k
+
+      ! surface temperature (optional)
+
+      if (present(surfaceEnthalpy) .and. present(surfaceTemperature)) then
+
+         if (surfaceEnthalpy >= (kelvin_to_celsius*rhoi*cp_ice)) then   ! temperate ice
+            surfaceTemperature = kelvin_to_celsius
+            ! Reset surfaceEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the top surface
+            !  is infinitesimally thin.
+            surfaceEnthalpy = kelvin_to_celsius*rhoi*cp_ice
+         else   ! cold ice
+            surfaceTemperature = surfaceEnthalpy / (rhoi*cp_ice)
+         endif
+
+      endif
+
+      ! basal temperature (optional)
+
+      if (present(basalEnthalpy) .and. present(basalTemperature)) then
+
+         k = nVertLevels + 1
+         if (basalEnthalpy >= pmpEnthalpyBed) then   ! temperate ice
+            basalTemperature = (pmpTemperatureBed+kelvin_to_celsius)
+            ! Reset basalEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the lower surface
+            !  is infinitesimally thin.
+            basalEnthalpy = pmpEnthalpyBed
+         else   ! cold ice
+            basalTemperature = basalEnthalpy / (rhoi*cp_ice)
+         endif
+
+      endif
+
+    end subroutine li_enthalpy_to_temperature_kelvin
 !***********************************************************************
 !***********************************************************************
 ! Private subroutines:
