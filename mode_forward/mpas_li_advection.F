@@ -893,7 +893,7 @@ module li_advection
          surfaceTracers,   &
          basalTracers)
 
-      use li_thermal, only: li_temperature_to_enthalpy
+      use li_thermal, only: li_temperature_to_enthalpy_kelvin
 
       !-----------------------------------------------------------------
       !
@@ -1000,7 +1000,7 @@ module li_advection
 
          do iCell = 1, nCellsSolve
 
-            call li_temperature_to_enthalpy(&
+            call li_temperature_to_enthalpy_kelvin(&
                  layerCenterSigma,      &
                  thickness(iCell),      &
                  temperature(:,iCell),  &
@@ -1058,7 +1058,7 @@ module li_advection
          thermalPool,        &
          advectedTracers)
 
-      use li_thermal, only: li_enthalpy_to_temperature
+      use li_thermal, only: li_enthalpy_to_temperature_kelvin
 
       !-----------------------------------------------------------------
       !
@@ -1138,7 +1138,7 @@ module li_advection
 
          do iCell = 1, nCellsSolve
 
-            call li_enthalpy_to_temperature(&
+            call li_enthalpy_to_temperature_kelvin(&
                  layerCenterSigma,                           &
                  thickness(iCell),                           &
                  enthalpy(:,iCell),     &
