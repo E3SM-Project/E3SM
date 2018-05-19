@@ -261,7 +261,7 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12.3</command>
+      <command name="load">craype/2.5.12</command>
       <command name="load">pmi/5.0.12</command>
 
       <command name="rm">cray-mpich</command>
@@ -438,7 +438,7 @@
     </modules>
 
     <modules>
-      <command name="swap">craype craype/2.5.12.3</command>
+      <command name="swap">craype craype/2.5.12</command>
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
       <command name="rm">craype-haswell</command>
