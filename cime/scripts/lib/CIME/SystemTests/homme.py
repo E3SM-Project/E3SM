@@ -27,7 +27,7 @@ class HOMME(SystemTestsCommon):
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
             baseline = self._case.get_value("BASELINE_ROOT")
-            basegen  = self._case.get_value("BASEGEN_CASE")
+            #basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
             #generate = self._case.get_value("GENERATE_BASELINE")
             compare  = self._case.get_value("COMPARE_BASELINE")
