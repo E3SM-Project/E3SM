@@ -23,7 +23,7 @@ module CNCarbonStateType
   use clm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
-  use CNSpeciesMod           , only : species_history_name_suffix_from_string
+  use CNSpeciesMod           , only : species_history_name_prefix_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use NutrientStateType      , only : nutrientstate_type
   use NutrientStateType      , only : NutrientStateInitHistory, NutrientStateInitAllocate
@@ -84,7 +84,7 @@ contains
 
     this%species             = species_from_string(carbon_type)
     this%name                = species_name_from_string(carbon_type)
-    this%history_name_suffix = species_history_name_suffix_from_string(carbon_type)
+    this%history_name_prefix = species_history_name_prefix_from_string(carbon_type)
     this%restart_name        = 'c'
 
     call this%InitAllocate ( bounds)

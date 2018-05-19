@@ -33,7 +33,7 @@ module PhosphorusStateType
   use NutrientStateType      , only : NutrientStatePatchSummary
   use NutrientStateType      , only : NutrientStateColumnSummary
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
-  use CNSpeciesMod           , only : species_history_name_suffix_from_string
+  use CNSpeciesMod           , only : species_history_name_prefix_from_string
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -108,7 +108,7 @@ contains
 
     this%species             = species_from_string('p')
     this%name                = species_name_from_string('p')
-    this%history_name_suffix = species_history_name_suffix_from_string('p')
+    this%history_name_prefix = species_history_name_prefix_from_string('p')
     this%restart_name        = 'p'
 
     call this%InitAllocate (bounds )

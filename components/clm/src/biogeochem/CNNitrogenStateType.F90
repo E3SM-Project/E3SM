@@ -31,7 +31,7 @@ module CNNitrogenStateType
   use NutrientStateType      , only : NutrientStatePatchSummary
   use NutrientStateType      , only : NutrientStateColumnSummary
   use CNSpeciesMod           , only : species_from_string, species_name_from_string
-  use CNSpeciesMod           , only : species_history_name_suffix_from_string
+  use CNSpeciesMod           , only : species_history_name_prefix_from_string
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -146,7 +146,7 @@ contains
 
     this%species             = species_from_string('n')
     this%name                = species_name_from_string('n')
-    this%history_name_suffix = species_history_name_suffix_from_string('n')
+    this%history_name_prefix = species_history_name_prefix_from_string('n')
     this%restart_name        = 'n'
 
     call this%InitAllocate (bounds )

@@ -16,6 +16,8 @@ module PhosphorusFluxType
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   use NutrientFluxType
+  use CNSpeciesMod           , only : species_name_from_string
+  use CNSpeciesMod           , only : species_history_name_prefix_from_string
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -186,6 +188,10 @@ contains
 
     class(phosphorusflux_type) :: this
     type(bounds_type), intent(in) :: bounds  
+
+    this%name                = species_name_from_string('p')
+    this%history_name_prefix = species_history_name_prefix_from_string('p')
+    this%restart_name        = 'p'
 
     call this%InitAllocate (bounds)
     call this%InitHistory (bounds)
@@ -401,6 +407,8 @@ contains
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
 
+    call NutrientFluxInitHistory(this, bounds)
+
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
        vr_suffix = "_vr"
@@ -408,245 +416,15 @@ contains
        vr_suffix = ""
     endif
 
-    this%m_leaf_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P mortality', &
-         ptr_patch=this%m_leaf_to_litter_patch, default='inactive')
-
-    this%m_froot_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P mortality', &
-         ptr_patch=this%m_froot_to_litter_patch, default='inactive')
-
-    this%m_leaf_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P storage mortality', &
-         ptr_patch=this%m_leaf_storage_to_litter_patch, default='inactive')
-
-    this%m_froot_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P storage mortality', &
-         ptr_patch=this%m_froot_storage_to_litter_patch, default='inactive')
-
-    this%m_livestem_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P storage mortality', &
-         ptr_patch=this%m_livestem_storage_to_litter_patch, default='inactive')
-
-    this%m_deadstem_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P storage mortality', &
-         ptr_patch=this%m_deadstem_storage_to_litter_patch, default='inactive')
-
-    this%m_livecroot_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P storage mortality', &
-         ptr_patch=this%m_livecroot_storage_to_litter_patch, default='inactive')
-
-    this%m_deadcroot_storage_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P storage mortality', &
-         ptr_patch=this%m_deadcroot_storage_to_litter_patch, default='inactive')
-
-    this%m_leaf_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P transfer mortality', &
-         ptr_patch=this%m_leaf_xfer_to_litter_patch, default='inactive')
-
-    this%m_froot_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P transfer mortality', &
-         ptr_patch=this%m_froot_xfer_to_litter_patch, default='inactive')
-
-    this%m_livestem_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P transfer mortality', &
-         ptr_patch=this%m_livestem_xfer_to_litter_patch, default='inactive')
-
-    this%m_deadstem_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P transfer mortality', &
-         ptr_patch=this%m_deadstem_xfer_to_litter_patch, default='inactive')
-
-    this%m_livecroot_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P transfer mortality', &
-         ptr_patch=this%m_livecroot_xfer_to_litter_patch, default='inactive')
-
-    this%m_deadcroot_xfer_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P transfer mortality', &
-         ptr_patch=this%m_deadcroot_xfer_to_litter_patch, default='inactive')
-
-    this%m_livestem_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P mortality', &
-         ptr_patch=this%m_livestem_to_litter_patch, default='inactive')
-
-    this%m_deadstem_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P mortality', &
-         ptr_patch=this%m_deadstem_to_litter_patch, default='inactive')
-
-    this%m_livecroot_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P mortality', &
-         ptr_patch=this%m_livecroot_to_litter_patch, default='inactive')
-
-    this%m_deadcroot_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P mortality', &
-         ptr_patch=this%m_deadcroot_to_litter_patch, default='inactive')
-
     this%m_retransp_to_litter_patch(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSP_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool mortality', &
          ptr_patch=this%m_retransp_to_litter_patch, default='inactive')
 
-    this%m_pool_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_PPOOL_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='Storage P pool mortality', &
-         ptr_patch=this%m_pool_to_litter_patch, default='inactive')
-
-    this%m_leaf_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P fire loss', &
-         ptr_patch=this%m_leaf_to_fire_patch, default='inactive')
-
-    this%m_froot_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P fire loss ', &
-         ptr_patch=this%m_froot_to_fire_patch, default='inactive')
-
-    this%m_leaf_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P storage fire loss', &
-         ptr_patch=this%m_leaf_storage_to_fire_patch, default='inactive')
-
-    this%m_froot_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P storage fire loss', &
-         ptr_patch=this%m_froot_storage_to_fire_patch, default='inactive')
-
-    this%m_livestem_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P storage fire loss', &
-         ptr_patch=this%m_livestem_storage_to_fire_patch, default='inactive')
-
-    this%m_deadstem_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P storage fire loss', &
-         ptr_patch=this%m_deadstem_storage_to_fire_patch, default='inactive')
-
-    this%m_livecroot_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P storage fire loss', &
-         ptr_patch=this%m_livecroot_storage_to_fire_patch, default='inactive')
-
-    this%m_deadcroot_storage_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P storage fire loss', &
-         ptr_patch=this%m_deadcroot_storage_to_fire_patch, default='inactive')
-
-    this%m_leaf_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LEAFP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P transfer fire loss', &
-         ptr_patch=this%m_leaf_xfer_to_fire_patch, default='inactive')
-
-    this%m_froot_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_FROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P transfer fire loss', &
-         ptr_patch=this%m_froot_xfer_to_fire_patch, default='inactive')
-
-    this%m_livestem_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P transfer fire loss', &
-         ptr_patch=this%m_livestem_xfer_to_fire_patch, default='inactive')
-
-    this%m_deadstem_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P transfer fire loss', &
-         ptr_patch=this%m_deadstem_xfer_to_fire_patch, default='inactive')
-
-    this%m_livecroot_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P transfer fire loss', &
-         ptr_patch=this%m_livecroot_xfer_to_fire_patch, default='inactive')
-
-    this%m_deadcroot_xfer_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P transfer fire loss', &
-         ptr_patch=this%m_deadcroot_xfer_to_fire_patch, default='inactive')
-
-    this%m_livestem_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVESTEMP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P fire loss', &
-         ptr_patch=this%m_livestem_to_fire_patch, default='inactive')
-
-    this%m_deadstem_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P fire loss', &
-         ptr_patch=this%m_deadstem_to_fire_patch, default='inactive')
-
-    this%m_deadstem_to_litter_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADSTEMP_TO_LITTER_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P fire mortality to litter', &
-         ptr_patch=this%m_deadstem_to_litter_fire_patch, default='inactive')
-
-    this%m_livecroot_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_LIVECROOTP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P fire loss', &
-         ptr_patch=this%m_livecroot_to_fire_patch, default='inactive')
-
-    this%m_deadcroot_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P fire loss', &
-         ptr_patch=this%m_deadcroot_to_fire_patch, default='inactive')
-
-    this%m_deadcroot_to_litter_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_DEADCROOTP_TO_LITTER_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P fire mortality to litter', &
-         ptr_patch=this%m_deadcroot_to_litter_fire_patch, default='inactive')
-
     this%m_retransp_to_fire_patch(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSP_TO_FIRE', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool fire loss', &
          ptr_patch=this%m_retransp_to_fire_patch, default='inactive')
-
-    this%m_pool_to_fire_patch(begp:endp) = spval
-    call hist_addfld1d (fname='M_PPOOL_TO_FIRE', units='gP/m^2/s', &
-         avgflag='A', long_name='Storage P pool fire loss', &
-         ptr_patch=this%m_pool_to_fire_patch, default='inactive')
-
-    this%leaf_xfer_to_leaf_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LEAFP_XFER_TO_LEAFP', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P growth from storage', &
-         ptr_patch=this%leaf_xfer_to_leaf_patch, default='inactive')
-
-    this%froot_xfer_to_froot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP_XFER_TO_FROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P growth from storage', &
-         ptr_patch=this%froot_xfer_to_froot_patch, default='inactive')
-
-    this%livestem_xfer_to_livestem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP_XFER_TO_LIVESTEMP', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P growth from storage', &
-         ptr_patch=this%livestem_xfer_to_livestem_patch, default='inactive')
-
-    this%deadstem_xfer_to_deadstem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADSTEMP_XFER_TO_DEADSTEMP', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P growth from storage', &
-         ptr_patch=this%deadstem_xfer_to_deadstem_patch, default='inactive')
-
-    this%livecroot_xfer_to_livecroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP_XFER_TO_LIVECROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P growth from storage', &
-         ptr_patch=this%livecroot_xfer_to_livecroot_patch, default='inactive')
-
-    this%deadcroot_xfer_to_deadcroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADCROOTP_XFER_TO_DEADCROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P growth from storage', &
-         ptr_patch=this%deadcroot_xfer_to_deadcroot_patch, default='inactive')
 
     this%leaf_to_litter_patch(begp:endp) = spval
     call hist_addfld1d (fname='LEAFP_TO_LITTER', units='gP/m^2/s', &
@@ -658,11 +436,6 @@ contains
          avgflag='A', long_name='leaf P to retranslocated P pool', &
          ptr_patch=this%leafp_to_retransp_patch, default='inactive')
 
-    this%froot_to_litter_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP_TO_LITTER', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P litterfall', &
-         ptr_patch=this%froot_to_litter_patch, default='inactive')
-
     this%retransp_to_ppool_patch(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP_TO_PPOOL', units='gP/m^2/s', &
          avgflag='A', long_name='deployment of retranslocated P', &
@@ -673,110 +446,10 @@ contains
          avgflag='A', long_name='deployment of soil mineral P uptake', &
          ptr_patch=this%sminp_to_ppool_patch)
 
-    this%pool_to_leaf_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LEAFP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to leaf P', &
-         ptr_patch=this%pool_to_leaf_patch, default='inactive')
-
-    this%pool_to_leaf_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LEAFP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to leaf P storage', &
-         ptr_patch=this%pool_to_leaf_storage_patch, default='inactive')
-
-    this%pool_to_froot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_FROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to fine root P', &
-         ptr_patch=this%pool_to_froot_patch, default='inactive')
-
-    this%pool_to_froot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_FROOTP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to fine root P storage', &
-         ptr_patch=this%pool_to_froot_storage_patch, default='inactive')
-
-    this%pool_to_livestem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LIVESTEMP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to live stem P', &
-         ptr_patch=this%pool_to_livestem_patch, default='inactive')
-
-    this%pool_to_livestem_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LIVESTEMP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to live stem P storage', &
-         ptr_patch=this%pool_to_livestem_storage_patch, default='inactive')
-
-    this%pool_to_deadstem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_DEADSTEMP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to dead stem P', &
-         ptr_patch=this%pool_to_deadstem_patch, default='inactive')
-
-    this%pool_to_deadstem_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_DEADSTEMP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to dead stem P storage', &
-         ptr_patch=this%pool_to_deadstem_storage_patch, default='inactive')
-
-    this%pool_to_livecroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LIVECROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to live coarse root P', &
-         ptr_patch=this%pool_to_livecroot_patch, default='inactive')
-
-    this%pool_to_livecroot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_LIVECROOTP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to live coarse root P storage', &
-         ptr_patch=this%pool_to_livecroot_storage_patch, default='inactive')
-
-    this%pool_to_deadcroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_DEADCROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to dead coarse root P', &
-         ptr_patch=this%pool_to_deadcroot_patch, default='inactive')
-
-    this%pool_to_deadcroot_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PPOOL_TO_DEADCROOTP_STORAGE', units='gP/m^2/s', &
-         avgflag='A', long_name='allocation to dead coarse root P storage', &
-         ptr_patch=this%pool_to_deadcroot_storage_patch, default='inactive')
-
-    this%leaf_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LEAFP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='leaf P shift storage to transfer', &
-         ptr_patch=this%leaf_storage_to_xfer_patch, default='inactive')
-
-    this%froot_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='fine root P shift storage to transfer', &
-         ptr_patch=this%froot_storage_to_xfer_patch, default='inactive')
-
-    this%livestem_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P shift storage to transfer', &
-         ptr_patch=this%livestem_storage_to_xfer_patch, default='inactive')
-
-    this%deadstem_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADSTEMP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead stem P shift storage to transfer', &
-         ptr_patch=this%deadstem_storage_to_xfer_patch, default='inactive')
-
-    this%livecroot_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P shift storage to transfer', &
-         ptr_patch=this%livecroot_storage_to_xfer_patch, default='inactive')
-
-    this%deadcroot_storage_to_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DEADCROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
-         avgflag='A', long_name='dead coarse root P shift storage to transfer', &
-         ptr_patch=this%deadcroot_storage_to_xfer_patch, default='inactive')
-
-    this%livestem_to_deadstem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVESTEMP_TO_DEADSTEMP', units='gP/m^2/s', &
-         avgflag='A', long_name='live stem P turnover', &
-         ptr_patch=this%livestem_to_deadstem_patch, default='inactive')
-
     this%livestemp_to_retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMP_TO_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='live stem P to retranslocated P pool', &
          ptr_patch=this%livestemp_to_retransp_patch, default='inactive')
-
-    this%livecroot_to_deadcroot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LIVECROOTP_TO_DEADCROOTP', units='gP/m^2/s', &
-         avgflag='A', long_name='live coarse root P turnover', &
-         ptr_patch=this%livecroot_to_deadcroot_patch, default='inactive')
 
     this%livecrootp_to_retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP_TO_RETRANSP', units='gP/m^2/s', &
@@ -787,16 +460,6 @@ contains
     call hist_addfld1d (fname='PDEPLOY', units='gP/m^2/s', &
          avgflag='A', long_name='total P deployed in new growth', &
          ptr_patch=this%pdeploy_patch)
-
-    this%wood_harvest_patch(begp:endp) = spval
-    call hist_addfld1d (fname='WOOD_HARVESTP', units='gP/m^2/s', &
-         avgflag='A', long_name='wood harvest P (to product pools)', &
-         ptr_patch=this%wood_harvest_patch, default='inactive')
-
-    this%fire_loss_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PFT_FIRE_PLOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='total pft-level fire P loss', &
-         ptr_patch=this%fire_loss_patch, default='inactive')
 
     if (crop_prog) then
        this%fert_p_patch(begp:endp) = spval
@@ -940,11 +603,6 @@ contains
 
        endif
     end do
-
-    this%som_leached_col(begc:endc) = spval
-    call hist_addfld1d (fname='SOM_P_LEACHED', units='gP/m^2/s', &
-         avgflag='A', long_name='total flux of P from SOM pools due to leaching', &
-         ptr_col=this%som_leached_col, default='inactive')
 
     do k = 1, ndecomp_pools
        if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
@@ -1113,11 +771,6 @@ contains
          avgflag='A', long_name='biochemical rate of P mineralization', &
          ptr_col=this%biochem_pmin_col)
 
-    this%fire_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='total column-level fire P loss', &
-         ptr_col=this%fire_loss_col, default='inactive')
-
     this%fire_decomp_ploss_col(begc:endc) = spval
     call hist_addfld1d (fname='DECOMP_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='fire P loss of decomposable pools', &
@@ -1128,59 +781,6 @@ contains
          avgflag='A', long_name='crop seed source to leaf', &
          ptr_patch=this%crop_seedp_to_leaf_patch, default='inactive')
 
-    this%dwt_seed_to_leaf_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_GRC', units='gP/m^2/s', &
-         avgflag='A', long_name='seed source to patch-level leaf', &
-         ptr_gcell=this%dwt_seed_to_leaf_grc, default='inactive')
-
-    this%dwt_seed_to_leaf_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_PATCH', units='gP/m^2/s', &
-         avgflag='A', &
-         long_name='patch-level seed source to patch-level leaf ' // &
-         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-         ptr_patch=this%dwt_seed_to_leaf_patch, default='inactive')
-
-    this%dwt_seed_to_deadstem_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_GRC', units='gP/m^2/s', &
-         avgflag='A', long_name='seed source to patch-level deadstem', &
-         ptr_gcell=this%dwt_seed_to_deadstem_grc, default='inactive')
-
-    this%dwt_seed_to_deadstem_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_PATCH', units='gP/m^2/s', &
-         avgflag='A', &
-         long_name='patch-level seed source to patch-level deadstem ' // &
-         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-         ptr_patch=this%dwt_seed_to_deadstem_patch, default='inactive')
-
-    this%dwt_conv_flux_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DWT_CONV_PFLUX_GRC', units='gP/m^2/s', &
-         avgflag='A', &
-         long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-         ptr_gcell=this%dwt_conv_flux_grc)
-
-    this%dwt_conv_flux_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DWT_CONV_PFLUX_PATCH', units='gP/m^2/s', &
-         avgflag='A', &
-         long_name='patch-level conversion C flux (immediate loss to atm) ' // &
-         '(0 at all times except first timestep of year) ' // &
-         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-         ptr_patch=this%dwt_conv_flux_patch, default='inactive')
-
-    this%dwt_prod10_gain_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DWT_PROD10P_GAIN_PATCH', units='gP/m^2/s', &
-         avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10_gain_patch, default='inactive')
-
-    this%dwt_prod100_gain_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DWT_PROD100P_GAIN_PATCH', units='gP/m^2/s', &
-         avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100_gain_patch, default='inactive')
-
-    this%dwt_slash_flux_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_SLASH_PFLUX', units='gP/m^2/s', &
-         avgflag='A', long_name='slash P flux to litter and CWD due to land use', &
-         ptr_col=this%dwt_slash_flux_col)
-
     this%dwt_seedp_to_ppool_grc(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_GRC', units='gP/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level', &
@@ -1190,81 +790,6 @@ contains
     call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_PATCH', units='gP/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level', &
          ptr_patch=this%dwt_seedp_to_ppool_patch, default='inactive')
-
-    this%dwt_conv_flux_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
-         avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
-         ptr_col=this%dwt_conv_flux_col, default='inactive')
-
-    this%dwt_prod10_gain_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DWT_PROD10P_GAIN_GRC', units='gP/m^2/s', &
-         avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_gcell=this%dwt_prod10_gain_grc, default='inactive')
-
-    this%dwt_prod100_gain_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DWT_PROD100P_GAIN_GRC', units='gP/m^2/s', &
-         avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_gcell=this%dwt_prod100_gain_grc, default='inactive')
-
-    this%dwt_prod10_gain_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
-         avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10_gain_col, default='inactive')
-
-    this%prod10_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD10P_LOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='loss from 10-yr wood product pool', &
-         ptr_col=this%prod10_loss_col, default='inactive')
-
-    this%dwt_prod100_gain_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_PROD100P_GAIN', units='gP/m^2/s', &
-         avgflag='A', long_name='addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100_gain_col, default='inactive')
-
-    this%prod100_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD100P_LOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='loss from 100-yr wood product pool', &
-         ptr_col=this%prod100_loss_col, default='inactive')
-
-    this%prod1_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='PROD1P_LOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='loss from 1-yr crop product pool', &
-         ptr_col=this%prod1_loss_col)
-
-    this%product_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='total P loss from wood product pools', &
-         ptr_col=this%product_loss_col, default='inactive')
-
-    this%dwt_froot_to_litr_met_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_MET_P', units='gP/m^2/s',  type2d='levdcmp', &
-         avgflag='A', long_name='fine root to litter due to landcover change', &
-         ptr_col=this%dwt_froot_to_litr_met_col, default='inactive')
-
-    this%dwt_froot_to_litr_cel_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_CEL_P', units='gP/m^2/s',  type2d='levdcmp', &
-         avgflag='A', long_name='fine root to litter due to landcover change', &
-         ptr_col=this%dwt_froot_to_litr_cel_col, default='inactive')
-
-    this%dwt_froot_to_litr_lig_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_LIG_P', units='gP/m^2/s',  type2d='levdcmp', &
-         avgflag='A', long_name='fine root to litter due to landcover change', &
-         ptr_col=this%dwt_froot_to_litr_lig_col, default='inactive')
-
-    this%dwt_livecroot_to_cwd_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='DWT_LIVECROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
-         avgflag='A', long_name='live coarse root to CWD due to landcover change', &
-         ptr_col=this%dwt_livecroot_to_cwd_col, default='inactive')
-
-    this%dwt_deadcroot_to_cwd_col(begc:endc,:) = spval
-    call hist_addfld_decomp (fname='DWT_DEADCROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
-         avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
-         ptr_col=this%dwt_deadcroot_to_cwd_col, default='inactive')
-
-    this%dwt_loss_col(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_PLOSS', units='gP/m^2/s', &
-         avgflag='A', long_name='total phosphorus loss from landcover conversion', &
-         ptr_col=this%dwt_loss_col, default='inactive')
 
     if (crop_prog) then
        this%fert_p_to_sminp_col(begc:endc) = spval
@@ -1283,11 +808,6 @@ contains
     call hist_addfld1d (fname='AVAIL_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='P flux available from retranslocation pool', &
          ptr_patch=this%avail_retransp_patch, default='active')
-
-    this%plant_alloc_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PLANT_PALLOC', units='gP/m^2/s', &
-         avgflag='A', long_name='total allocated P flux', &
-         ptr_patch=this%plant_alloc_patch, default='active')
 
     ! bgc interface
     this%plant_pdemand_col(begc:endc) = spval
