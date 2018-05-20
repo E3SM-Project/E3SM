@@ -47,8 +47,7 @@ set namelist = nggps-tiny.nl ; set name = tiny
 #
 setenv OMP_STACKSIZE 16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 setenv PER_NODE  64          #  MPI per node
-setenv OMP_NUM_THREADS 4
-#setenv OMP_NUM_THREADS 1
+setenv OMP_NUM_THREADS 2
 
 # number of virtual cores per MPI task
 set VC_PER_MPI = 256  # Set this to 272 if using PER_NODE divides 272 instead of 256
