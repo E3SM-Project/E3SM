@@ -53,14 +53,10 @@ setenv OMP_NUM_THREADS 2
 set VC_PER_MPI = 256  # Set this to 272 if using PER_NODE divides 272 instead of 256
 @ VC_PER_MPI /= $PER_NODE
 
-if ( $PER_NODE > 68 ) then
-   setenv KMP_AFFINITY granularity=thread,scatter
-   set bind = --cpu_bind=thread
-else
-   setenv KMP_AFFINITY granularity=core,scatter
-   set bind = --cpu_bind=core
-endif
-
+setenv KMP_AFFINITY granularity=core,scatter
+set bind = --cpu_bind=core
+#setenv KMP_AFFINITY granularity=thread,scatter
+#set bind = --cpu_bind=thread
 
 
 # compute number of MPI tasks

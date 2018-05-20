@@ -56,13 +56,10 @@ setenv OMP_NUM_THREADS 1
 setenv OMP_STACKSIZE 64M     #  Edison has 64GB per node
 setenv PER_NODE  24          # 24 or 48 for hyperthreading
 
-if ( $PER_NODE == 48 ) then
-   setenv KMP_AFFINITY granularity=thread,scatter
-   set bind = --cpu_bind=thread
-else
-   setenv KMP_AFFINITY granularity=core,scatter
-   set bind = --cpu_bind=core
-endif
+setenv KMP_AFFINITY granularity=core,scatter
+set bind = --cpu_bind=core
+#setenv KMP_AFFINITY granularity=thread,scatter
+#set bind = --cpu_bind=thread
 
 # compute number of MPI tasks
 if (! ${?SLURM_NNODES} ) then 
