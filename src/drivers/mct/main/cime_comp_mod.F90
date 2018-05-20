@@ -956,12 +956,12 @@ contains
 
     ! Check cpl_seq_option
 
-    if (trim(cpl_seq_option) /= 'CESM1_ORIG' .and. &
-         trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. &
-         trim(cpl_seq_option) /= 'CESM1_MOD' .and. &
-         trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT' .and. &
-         trim(cpl_seq_option) /= 'RASM_OPTION1' .and. &
-         trim(cpl_seq_option) /= 'RASM_OPTION2' ) then
+    if (trim(cpl_seq_option) /= 'CESM1_MOD' .and. &
+        trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT' .and. &
+        trim(cpl_seq_option) /= 'RASM_OPTION1' .and. &
+        trim(cpl_seq_option) /= 'RASM_OPTION2' .and. &
+        trim(cpl_seq_option) /= 'NUOPC' .and. &
+        trim(cpl_seq_option) /= 'NUOPC_TIGHT' ) then
        call shr_sys_abort(subname//' invalid cpl_seq_option = '//trim(cpl_seq_option))
     endif
 
@@ -2271,7 +2271,6 @@ contains
        !  This will be used later in the ice prep and in the
        !  atm/ocn flux calculation
        !----------------------------------------------------------
-
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
           call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
@@ -2286,7 +2285,6 @@ contains
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
        !----------------------------------------------------------
-
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_atmocn_setup()
@@ -2294,12 +2292,12 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| OCN SETUP-SEND (cesm1_orig, cesm1_orig_tight, cesm1_mod, cesm1_mod_tight, or rasm_option1)
+       !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
        !----------------------------------------------------------
-
        if (ocn_present .and. ocnrun_alarm) then
-          if (trim(cpl_seq_option) == 'CESM1_ORIG' .or. trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-              trim(cpl_seq_option) == 'CESM1_MOD'  .or. trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'  .or. &
+          if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option) == 'NUOPC_TIGHT'     .or. &
               trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_ocn_setup_send()
           end if
@@ -2308,7 +2306,6 @@ contains
        !----------------------------------------------------------
        !| LND SETUP-SEND
        !----------------------------------------------------------
-
        if (lnd_present .and. lndrun_alarm) then
           call cime_run_lnd_setup_send()
        endif
@@ -2383,10 +2380,10 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| RUN OCN MODEL (cesm1_orig_tight or cesm1_mod_tight)
+       !| RUN OCN MODEL (cesm1_mod_tight, nuopc_tight)
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
-          if (trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
+          if (trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
              call component_run(Eclock_o, ocn, ocn_run, infodata, &
                   seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
                   seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
@@ -2397,20 +2394,21 @@ contains
        end if
 
        !----------------------------------------------------------
-       !| OCN RECV-POST (cesm1_orig_tight or cesm1_mod_tight)
+       !| OCN RECV-POST (cesm1_mod_tight, nuopc_tight)
        !----------------------------------------------------------
        if (ocn_present .and. ocnnext_alarm) then
-          if (trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
+          if (trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
              call cime_run_ocn_recv_post()
           endif
        end if
 
        !----------------------------------------------------------
-       !| ATM/OCN SETUP (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
+       !| ATM/OCN SETUP (cesm1_mod or cesm1_mod_tight)
        !----------------------------------------------------------
        if (ocn_present) then
-          if (trim(cpl_seq_option) == 'CESM1_ORIG' .or. trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT'  .or.  &
-              trim(cpl_seq_option) == 'CESM1_MOD'  .or. trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' ) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option)=='NUOPC_TIGHT' ) then
              call cime_run_atmocn_setup()
           end if
        endif
@@ -2481,11 +2479,13 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| RUN OCN MODEL (NOT cesm1_orig_tight or cesm1_mod_tight)
+       !| RUN OCN MODEL (NOT cesm1_mod_tight or nuopc_tight)
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
-          if (trim(cpl_seq_option) == 'CESM1_ORIG'   .or. trim(cpl_seq_option) /= 'CESM1_MOD' .or. &
-              trim(cpl_seq_option) == 'RASM_OPTION1' .or. trim(cpl_seq_option) /= 'RASM_OPTION2' ) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'    .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION1' .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION2' .or. &
+              trim(cpl_seq_option) == 'NUOPC') then
              call component_run(Eclock_o, ocn, ocn_run, infodata, &
                   seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
                   seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
@@ -2548,10 +2548,13 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| OCN RECV-POST (NOT cesm1_orig_tight and cesm1_mod_tight)
+       !| OCN RECV-POST (NOT cesm1_mod_tight or nuopc_tight)
        !----------------------------------------------------------
        if (ocn_present .and. ocnnext_alarm) then
-          if (trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT') then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'    .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION1' .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION2' .or. &
+              trim(cpl_seq_option) == 'NUOPC') then
              call cime_run_ocn_recv_post()
           end if
        end if
@@ -2580,9 +2583,8 @@ contains
                comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
                timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
                run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
-          !---------------------------------------------------------------------
+
           !| ESP computes resume options for other components -- update everyone
-          !---------------------------------------------------------------------
           call seq_infodata_exchange(infodata, CPLALLESPID, 'esp2cpl_run')
        endif
 
@@ -3141,7 +3143,7 @@ contains
     endif
 
     !----------------------------------------------------
-    !| ocn average 
+    ! ocn average 
     !----------------------------------------------------
     if (iamin_CPLID .and. ocn_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
@@ -3149,8 +3151,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        ! finish accumulating ocean inputs
-       ! reset the value of x2o_ox with the value in x2oacc_ox
-       ! (module variable in prep_ocn_mod)
+       ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
        call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
@@ -3161,7 +3162,7 @@ contains
     endif
 
     !----------------------------------------------------
-    !| cpl -> ocn 
+    ! cpl -> ocn 
     !----------------------------------------------------
     if (iamin_CPLALLOCNID .and. ocn_prognostic) then
        call component_exch(ocn, flow='x2c', &
@@ -3178,9 +3179,8 @@ contains
   subroutine cime_run_ocn_recv_post()
 
     !----------------------------------------------------------
-    !| ocn -> cpl (cesm1_orig_tight or cesm1_mod_tight)
+    ! ocn -> cpl 
     !----------------------------------------------------------
-    
     if (iamin_CPLALLOCNID) then
        call component_exch(ocn, flow='c2x', &
             infodata=infodata, infodata_string='ocn2cpl_run', &
@@ -3190,9 +3190,8 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| ocn post (cesm1_orig_tight or cesm1_mod_tight)
+    ! ocn post 
     !----------------------------------------------------------
-
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
        call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
@@ -3221,52 +3220,32 @@ contains
           if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
 
-          if (trim(cpl_seq_option) == 'NUOPC' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
+          if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
              if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
              if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
           end if
        end if
 
-       if (cpl_seq_option == 'RASM_OPTION1' .or. cpl_seq_option == 'RASM_OPTION2') then
-          ! atm/ocn flux on atm grid (rasm_option1)
-          call cime_run_atmocn_fluxes()
-       end if
+       ! atm/ocn flux on atm grid 
+       call cime_run_atmocn_fluxes()
+       
+       if (ocn_prognostic) then
+          ! ocn prep-merge 
+          xao_ox => prep_aoflux_get_xao_ox()
+          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-       if (cpl_seq_option == 'RASM_OPTION1' .or. cpl_seq_option == 'RASM_OPTION2' .or. &
-           cpl_seq_option == 'CESM1_ORIG'   .or. cpl_seq_option == 'CESM1_ORIG_TIGHT') then
-          if (ocn_prognostic) then
-             !| ocn prep-merge (cesm1_orig or cesm1_orig_tight)
-             xao_ox => prep_aoflux_get_xao_ox()
-             call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-             ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-             call prep_ocn_accum(timer='CPL:atmocnp_accum')
-          endif
+          ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+          call prep_ocn_accum(timer='CPL:atmocnp_accum')
        endif
-
-       if (trim(cpl_seq_option) == 'CESM1_ORIG' .or. trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT'  .or.  &
-           trim(cpl_seq_option) == 'CESM1_MOD'  .or. trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' ) then
-          ! atm/ocn fluxes (cesm1_orig, cesm1_orig_tight, cesm1_mod, cesm1_mod_tight)
-          call cime_run_atmocn_fluxes()
-       end if
-
-       if (cpl_seq_option == 'CESM1_MOD' .or. cpl_seq_option == 'CESM1_MOD_TIGHT') then
-          ! ocn prep-merge (cesm1_mod, cesm1_mod_tight)
-          if (ocn_prognostic) then
-             xao_ox => prep_aoflux_get_xao_ox()
-             call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-             ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-             call prep_ocn_accum(timer='CPL:atmocnp_accum')
-          endif
-       endif
-
+       
        !----------------------------------------------------------
-       !| ocn albedos (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
-       !  (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
+       ! ocn albedos 
+       ! (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
        !----------------------------------------------------------
        call cime_run_ocn_albedos()
 
        !----------------------------------------------------------
-       !| ocn budget (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
+       ! ocn budget 
        !----------------------------------------------------------
        if (do_budgets) then
           call cime_run_calc_budgets3()
@@ -3291,7 +3270,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (atm_c2_lnd) call prep_lnd_calc_a2x_lx(timer='CPL:lndprep_atm2lnd')
-       if (trim(cpl_seq_option) == 'NUOPC' .or. trim(cpl_seq_option) /= 'NUOPC_TIGHT') then
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
           if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
        end if
 
@@ -3416,7 +3395,7 @@ contains
   subroutine cime_run_glc_recv_post()
 
     !----------------------------------------------------------
-    !| glc -> cpl
+    ! glc -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLGLCID) then
        call component_exch(glc, flow='c2x', infodata=infodata, infodata_string='glc2cpl_run', &
@@ -3426,7 +3405,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| glc post
+    ! glc post
     !----------------------------------------------------------
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
@@ -3436,7 +3415,7 @@ contains
        call component_diag(infodata, glc, flow='c2x', comment= 'recv glc', &
             info_debug=info_debug, timer_diag='CPL:glcpost_diagav')
 
-       if (trim(cpl_seq_option) /= 'NUOPC' .and. trim(cpl_seq_option) /= 'NUOPC_TIGHT') then
+       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
           if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
           if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
           if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
@@ -3453,7 +3432,7 @@ contains
   subroutine cime_run_rof_setup_send()
 
     !----------------------------------------------------
-    !| rof prep-merge
+    ! rof prep-merge
     !----------------------------------------------------
     if (iamin_CPLID .and. rof_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
@@ -3475,7 +3454,7 @@ contains
     endif
 
     !----------------------------------------------------
-    !| cpl -> rof
+    ! cpl -> rof
     !----------------------------------------------------
     if (iamin_CPLALLROFID .and. rof_prognostic) then
        call component_exch(rof, flow='x2c', &
@@ -3492,7 +3471,7 @@ contains
   subroutine cime_run_rof_recv_post()
 
     !----------------------------------------------------------
-    !| rof -> cpl
+    ! rof -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLROFID) then
        call component_exch(rof, flow='c2x', &
@@ -3503,7 +3482,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| rof post
+    ! rof post
     !----------------------------------------------------------
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
@@ -3513,7 +3492,7 @@ contains
        call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
             info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
 
-       if (trim(cpl_seq_option) /= 'NUOPC' .and. trim(cpl_seq_option) /= 'NUOPC_TIGHT') then
+       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
           if (rof_c2_lnd) call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
           if (rof_c2_ice) call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
           if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
@@ -3549,7 +3528,7 @@ contains
     !  done already for use by atmocn flux and ice model prep
     
     !----------------------------------------------------
-    !| ice prep-merge
+    ! ice prep-merge
     !----------------------------------------------------
     if (iamin_CPLID .and. ice_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
@@ -3558,7 +3537,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
        
        if (ocn_c2_ice) call prep_ice_calc_o2x_ix(timer='CPL:iceprep_ocn2ice')
-       if (trim(cpl_seq_option) == 'NUOPC' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
           if (rof_c2_ice) call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
           if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
        end if
@@ -3580,7 +3559,7 @@ contains
     endif
 
     !----------------------------------------------------
-    !| cpl -> ice
+    ! cpl -> ice
     !----------------------------------------------------
     if (iamin_CPLALLICEID .and. ice_prognostic) then
        call component_exch(ice, flow='x2c', &
@@ -3597,7 +3576,7 @@ contains
   subroutine cime_run_ice_recv_post()
 
     !----------------------------------------------------------
-    !| ice -> cpl
+    ! ice -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLICEID) then
        call component_exch(ice, flow='c2x', &
@@ -3608,7 +3587,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| ice post
+    ! ice post
     !----------------------------------------------------------
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
@@ -3629,7 +3608,7 @@ contains
   subroutine cime_run_wav_setup_send
 
     !----------------------------------------------------------
-    !| wav prep-merge
+    ! wav prep-merge
     !----------------------------------------------------------
     if (iamin_CPLID .and. wav_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
@@ -3651,7 +3630,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| cpl -> wav
+    ! cpl -> wav
     !----------------------------------------------------------
     if (iamin_CPLALLWAVID .and. wav_prognostic) then
        call component_exch(wav, flow='x2c', &
@@ -3668,7 +3647,7 @@ contains
   subroutine cime_run_wav_recv_post()
 
     !----------------------------------------------------------
-    !| wav -> cpl
+    ! wav -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLWAVID) then
        call component_exch(wav, flow='c2x', infodata=infodata, infodata_string='wav2cpl_run', &
@@ -3678,7 +3657,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| wav post
+    ! wav post
     !----------------------------------------------------------
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
