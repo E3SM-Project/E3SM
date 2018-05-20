@@ -67,6 +67,7 @@ contains
     use shr_sys_mod          , only : shr_sys_flush
     use clm_instMod          , only : canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars, &
                                       temperature_vars, solarabs_vars, photosyns_vars, soilstate_vars
+    use clm_time_manager     , only : get_curr_time_string
 
     !
     ! !ARGUMENTS:
@@ -86,6 +87,7 @@ contains
     
     ! debug PET 4/27/2018
     integer :: t, l, c, p, lun_id
+    character(len=256)   :: dateTimeString
     !------------------------------------------------------------------------
 
     call c2g(bounds, &
@@ -116,11 +118,15 @@ contains
          energyflux_vars%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
-    
+
+#define SUBGRID_DEBUG
+#ifdef SUBGRID_DEBUG         
     ! debug PET 4/27/2018
-    if (bounds%begg <= 4817 .and. bounds%endg >= 4817) then
-      write(iulog,*)'gridcell, avsdr',4817, lnd2atm_vars%albd_grc(4817,1)
-      do t=grc_pp%topi(4817), grc_pp%topf(4817)
+    if (bounds%begg <= 137 .and. bounds%endg >= 137) then
+      call get_curr_time_string(dateTimeString)
+      write(iulog,*)'Timestep: ',trim(dateTimeString)
+      write(iulog,*)'gridcell, avsdr',137, lnd2atm_vars%albd_grc(137,1)
+      do t=grc_pp%topi(137), grc_pp%topf(137)
         write(iulog,*)'topounit, wt, gcell',t,top_pp%wtgcell(t),top_pp%gridcell(t)
         do l=1,max_lunit
           lun_id = top_pp%landunit_indices(l,t)
@@ -128,8 +134,7 @@ contains
             write(iulog,*)'  lun_id, lun_type, wt, topo',lun_id, lun_pp%itype(lun_id), &
                lun_pp%wttopounit(lun_id),lun_pp%topounit(lun_id)
             do c=lun_pp%coli(lun_id), lun_pp%colf(lun_id)
-              write(iulog,*)'    col, col_type, wt, landunit, liqvol1, liqvol2',c,col_pp%itype(c), &
-                col_pp%wtlunit(c),col_pp%landunit(c), waterstate_vars%h2osoi_liqvol_col(c,1), waterstate_vars%h2osoi_liqvol_col(c,2)
+              write(iulog,*)'    col, col_type, wt, landunit',c,col_pp%itype(c), col_pp%wtlunit(c),col_pp%landunit(c)
               do p=col_pp%pfti(c),col_pp%pftf(c)
                 write(iulog,*)'      pft, pft_type, wt, col, leafc, btran, vcmaxcintsun',p,veg_pp%itype(p), &
                   veg_pp%wtcol(p), veg_pp%column(p), carbonstate_vars%leafc_patch(p), energyflux_vars%btran_patch(p), &
@@ -141,6 +146,7 @@ contains
       end do
       call shr_sys_flush(iulog)
     end if
+#endif
        
 
     do g = bounds%begg,bounds%endg

@@ -324,7 +324,7 @@ contains
        is_active_l = .true.
 
     else
-       g = lun_pp%gridcell(t)
+       g = lun_pp%gridcell(l)
        t = lun_pp%topounit(l)
 
        is_active_l = .false.
