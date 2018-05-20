@@ -398,17 +398,17 @@
 
   <entry id="CPL_SEQ_OPTION">
     <type>char</type>
-    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
-    <default_value>CESM1_MOD_TIGHT</default_value>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
+    <default_value>NUOPC_TIGHT</default_value>
     <values match="last">
-      <value compset="_DATM.*_DOCN%SOM"              >RASM_OPTION1</value>
-      <value compset="_POP2"                         >RASM_OPTION1</value>
-      <value compset="_POP2" grid="oi%gx1v6"         >RASM_OPTION1</value>
-      <value compset="_POP2" grid="oi%gx1v7"         >RASM_OPTION1</value>
-      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">RASM+OPTION1</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"    >RASM_OPTION1</value>
-      <value compset="_SOCN"                         >RASM_OPTION1</value>
-      <value compset="_MPAS"                         >RASM_OPTION1</value>
+      <value compset="_DATM.*_DOCN%SOM"              >NUOPC_TIGHT</value>
+      <value compset="_POP2"                         >NUOPC_TIGHT</value>
+      <value compset="_POP2" grid="oi%gx1v6"         >NUOPC_TIGHT</value>
+      <value compset="_POP2" grid="oi%gx1v7"         >NUOPC_TIGHT</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">NUOPC_TIGHT</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"    >NUOPC_TIGHT</value>
+      <value compset="_SOCN"                         >NUOPC_TIGHT</value>
+      <value compset="_MPAS"                         >NUOPC_TIGHT</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
