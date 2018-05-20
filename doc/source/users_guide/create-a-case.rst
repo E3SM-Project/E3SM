@@ -6,140 +6,155 @@ Creating a Case
 
 Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
 
+This is a test.
+
+
 ===================================
 Calling **create_newcase**
 ===================================
 
-The first step in creating a CIME-based experiment is to use **create_newcase**.
+The first step in creating a CIME-based experiment is to use `create_newcase  <../Tools_user/create_newcase.html>`_.
 
 If you are not on an out-of-the box CIME-supported platform, you will need to :ref:`port <porting>` CIME to your system before proceeding.
 
-Review the input options for **create_newcase** in the  **help** text.::
+Review the input options for `create_newcase  <../Tools_user/create_newcase.html>`_ in the  **help** text.::
 
   > create_newcase --help
 
-The only required arguments to **create_newcase** are shown here::
+The only required arguments to `create_newcase  <../Tools_user/create_newcase.html>`_ are shown here::
 
   > create_newcase --case [CASE] --compset [COMPSET] --res [GRID]
 
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms* (machines).
 
 The [CASE] argument must be a string and may not contain any of the following special characters
-  > + * ? < > / { } [ ] ~ ` @ :
+::
+
+   > + * ? < > / { } [ ] ~ ` @ :
 
 ======================================
 Results of calling **create_newcase**
 ======================================
 
-Following is a simple example of using **create_newcase** with aliases for both compset and grid names.
-The complete example appears in the :ref:`basic example <use-cases-basic-example>`.
+`create_newcase  <../Tools_user/create_newcase.html>`_ installs files in ``$CASEROOT`` that will build and run the model and to optionally archive the case on the target platform.
 
-Here, ``$CIMEROOT`` is the full pathname of the root directory of the CIME distribution::
+Running `create_newcase  <../Tools_user/create_newcase.html>`_ creates the following scripts, files and directories in ``$CASEROOT``:
 
-  > cd $CIMEROOT/scripts
-  > create_newcase --case ~/cime/example1 --compset A --res f09_g16_rx1
+**User Scripts**
 
-In the example, the command creates a ``$CASEROOT`` directory: **~/cime/example1**. If that directory already exists, a warning is printed and the command aborts. Additional details:
+- `case.build  <../Tools_user/case.build.html>`_
+     Script to build component and utility libraries and model executable.
 
-- ``$CASE`` can include letters, numbers,  ".", and "_". In the example, it is ``example1``.
+- `case.setup  <../Tools_user/case.setup.html>`_
+    Script used to set up the case (create the case.run script, Macros file and user_nl_xxx files).
 
-- The compset is ``2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV``.
+- `case.st_archive <../Tools_user/case.st_archive.html>`_
+     Script to perform short term archiving to disk for your case output. Note that this script is run automatically by the normal CIME workflow.
 
-- The model resolution is ``a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null``.
+- `case.submit <../Tools_user/case.submit.html>`_
+     Script to submit the case to run using the machine's batch queueing system.
 
-- **create_newcase** installs files in ``$CASEROOT`` to build and run the model and to optionally archive the case on the target platform.
+- `case.cmpgen_namelist <../Tools_user/case.submit.html>`_
+     Script to perform namelist baseline operations (compare, generate, or both)."
 
-Running **create_newcase** creates various scripts, files and directories ``$CASEROOT``, as shown here.
+- `xmlchange <../Tools_user/xmlchange.html>`_
+     Script to modify values in the xml files.
 
-- ``user scripts``
+- `xmlquery <../Tools_user/xmlquery.html>`_
+     Script to query values in the xml files.
 
-   ====================  =====================================================================================================
-   case.setup            Script used to set up the case (create the case.run script, the Macros file and user_nl_xxx files).
-   case.build            Script to build component and utility libraries and model executable.
-   case.submit           Script to submit the case to run using the machine's batch queueing system.
-   case.cmpgen_namelist  Script to perform namelist baseline operations (compare, generate, or both).
-   xmlchange             Script to modify values in the xml files.
-   xmlquery              Script to query values in the xml files.
-   preview_namelists     Script for users to see their component namelists in ``$CASEROOT/CaseDocs`` before running the model.
-   preview_run           Script for users to see batch submit and mpirun command.
-   check_input_data      Script for checking for various input data sets and moving them into place.
-   check_case            Script to verify case is set up correctly
-   pelayout              Script to query and modify the NTASKS, ROOTPE, and NTHRDS for each component model.  This a convenience script that can be used in place of xmlchange and xmlquery.
-   ====================  =====================================================================================================
+- `preview_namelists <../Tools_user/preview_namelists.html>`_
+     Script for users to see their component namelists in ``$CASEROOT/CaseDocs`` before running the model.
 
-- ``XML files``
+- `preview_run <../Tools_user/preview_run.html>`_
+     Script for users to see batch submit and mpirun command."
 
-   =====================  ===============================================================================================================================
-   env_archive.xml        Defines patters of files to be sent to the short-term archive.
-   env_mach_specific.xml  Sets a number of machine-specific environment variables for building and/or running.
+- `check_input_data <../Tools_user/check_input_data.html>`_
+     Script for checking for various input data sets and moving them into place.
 
-                          You can edit this file at any time.
+- `check_case <../Tools_user/check_case.html>`_
+     Script to verify case is set up correctly.
 
-   env_case.xml           Sets case specific variables (e.g. model components, model and case root directories).
+- `pelayout <../Tools_user/pelayout.html>`_
+     Script to query and modify the NTASKS, ROOTPE, and NTHRDS for each component model.
+     This a convenience script that can be used in place of `xmlchange <../Tools_user/xmlchange.html>`_ and `xmlquery <../Tools_user/xmlquery.html>`_.
 
-                          Cannot be modified after a case has been created.
+**XML Files**
 
-                          To make changes, your should re-run **create_newcase** with different options.
-   env_build.xml          Sets model build settings.
+- env_archive.xml
+   Defines patterns of files to be sent to the short-term archive.
+   You can edit this file at any time. You **CANNOT** use `xmlchange <../Tools_user/xmlchange.html>`_  to modify variables in this file."
 
-                          This includes component resolutions and component compile-time configuration options.
-                          You must run the case.build command after changing this file.
+- env_mach_specific.xml
+   Sets a number of machine-specific environment variables for building and/or running.
+   You **CANNOT** use `xmlchange <../Tools_user/xmlchange.html>`_  to modify variables in this file.
 
-   env_mach_pes.xml       Sets component machine-specific processor layout (see :ref:`changing pe layout<changing-the-pe-layout>` ).
+- env_build.xml
+   Sets model build settings. This includes component resolutions and component compile-time configuration options.
+   You must run the case.build command after changing this file.
 
-                          The settings in this are critical to a well-load-balanced simulation (see :ref:`load balancing <optimizing-processor-layout>`).
-   env_run.xml            Sets runtime settings such as length of run, frequency of restarts, output of coupler diagnostics,
-                          and short-term and long-term archiving.  This file can be edited at any time before a job starts.
+- env_run.xml
+   Sets runtime settings such as length of run, frequency of restarts, output of coupler diagnostics, and short-term and long-term archiving.
+   This file can be edited at any time before a job starts.
 
-   env_batch.xml          Sets batch system settings such as wallclock time and queue name.
+- env_mach_pes.xml
+   Sets component machine-specific processor layout (see changing pe layout ).
+   The settings in this are critical to a well-load-balanced simulation (see :ref:`load balancing <optimizing-processor-layout>`).
 
-   =====================  ===============================================================================================================================
+- env_batch.xml
+   Sets batch system settings such as wallclock time and queue name."
 
-- ``User Source Mods Directory``
+**User Source Mods Directory**
 
-   =====================  ===============================================================================================================================
-   SourceMods             Top-level directory containing subdirectories for each compset component where
-                          you can place modified source code for that component.  You may also place modified
-			  buildnml and buildlib scripts here.
-   =====================  ===============================================================================================================================
+- SourceMods
+   Top-level directory containing subdirectories for each compset component where you can place modified source code for that component.
+   You may also place modified buildnml and buildlib scripts here."
 
-- ``Provenance``
+**Provenance**
 
-   =====================  ===============================================================================================================================
-   README.case            File detailing **create_newcase** usage. This is a good place to keep track of runtime problems and changes.
-   CaseStatus             File containing a list of operations done in the current case.
-   =====================  ===============================================================================================================================
+- README.case
+   File detailing `create_newcase  <../Tools_user/create_newcase.html>`_ usage.
+   This is a good place to keep track of runtime problems and changes."
 
-- ``non-modifiable work directories``
+- CaseStatus
+   File containing a list of operations done in the current case.
 
-   =====================  ===============================================================================================================================
-   Buildconf/             Work directory containing scripts to generate component namelists and component and utility libraries
-                          (PIO or MCT, for example). You should never have to edit the contents of this directory.
-   LockedFiles/           Work directory that holds copies of files that should not be changed.
 
-                          Certain xml files are *locked* after their variables have been used by should no longer be changed.
+**Non-modifiable work directories**
 
-                          CIME does this by *locking* a file and not permitting you to modify that file unless, depending on the file,                              ``case.setup --clean`` or  ``case.build --clean`` is called.
+- Buildconf,
+   Work directory containing scripts to generate component namelists and component and utility libraries (PIO or MCT, for example). You should never have to edit the contents of this directory.
 
-   Tools/                 Work directory containing support utility scripts. You should never need to edit the contents of this directory.
-   =====================  ===============================================================================================================================
+- LockedFiles/
+   Work directory that holds copies of files that should not be changed. Certain xml files are *locked* after their variables have been used by should no longer be changed (see below).
 
-The ``$CASEROOT`` xml files are organized so that variables can be locked at certain points after they have been resolved (used) in other parts of the scripts system.
+- Tools/
+   Work directory containing support utility scripts. You should never need to edit the contents of this directory."
 
-CIME does the following:
+===================================
+Locked files in your case directory
+===================================
 
-- Locks variables in **env_case.xml** after **create_newcase**.
+The ``$CASEROOT`` xml files are organized so that variables can be
+locked at certain points after they have been resolved (used) in other
+parts of the scripts system.
 
-- Locks variables in **env_mach_pes.xml** after **case.setup**.
+CIME does this by *locking* a file in ``$CASEROOT/LockedFiles`` and
+not permitting you to modify that file unless, depending on the file,
+you call `case.setup --clean <../Tools_user/case.setup.html>`_ or
+`case.build --clean <../Tools_user/case.build.html>`_ .
 
-- Locks variables in **env_build.xml** after completion of **case.build**.
+CIME locks your ``$CASEROOT`` files according to the following rules:
 
-Variables in **env_run.xml**, **env_batch.xml** and **env_archive.xml** are never locked, and most can be changed at any time. There are some exceptions in the **env_batch.xml** file.
+- Locks variables in **env_case.xml** after `create_newcase  <../Tools_user/create_newcase.html>`_.
+   The **env_case.xml** file can never be unlocked.
 
-The **env_case.html** file can never be unlocked.
+- Locks variables in **env_mach_pes.xml** after `case.setup  <../Tools_user/case.setup.html>`_.
+   To unlock **env_mach_pes.xml**, run `case.setup --clean <../Tools_user/case.setup.html>`_.
 
-These other files can be "unlocked" as follows:
+- Locks variables in **env_build.xml** after completion of `case.build  <../Tools_user/case.build.html>`_.
+   To unlock **env_build.xml**, run `case.build --clean  <../Tools_user/case.build.html>`_
 
-- To unlock **env_mach_pes.xml**, run ``case.setup --clean``.
+- Variables in **env_run.xml**, **env_batch.xml** and **env_archive.xml** are never locked, and most can be changed at any time.
 
-- To unlock **env_build.xml**, run ``case.build --clean``.
+- There are some exceptions in the **env_batch.xml** file.
