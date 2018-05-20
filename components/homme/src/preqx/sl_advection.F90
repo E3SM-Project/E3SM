@@ -163,7 +163,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 #endif
         do k = 1, nlev
            call ALE_departure_from_gll(dep_points_all(:,:,k,ie), &
-                elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+                elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, normalize=.true.)
         end do
      end do
      call t_stopf('SLMM_v2x')
@@ -243,7 +243,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 #endif
         do k = 1, nlev
            call ALE_departure_from_gll(dep_points, elem(ie)%derived%vstar(:,:,:,k), &
-                elem(ie), dt)
+                elem(ie), dt, normalize=.true.)
 
            ! Unpack all tracer neighbor data on level k.
            kptr = (k-1)*n
@@ -302,7 +302,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         do k=1,nlev
 
            ! find departure points
-           call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+           call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, .false.)
 
            ! find element containing departure point
            call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
@@ -837,7 +837,7 @@ end subroutine ALE_RKdss
 !
 ! OUTPUT:
 !-----------------------------------------------------------------------------------!
-subroutine ALE_departure_from_gll(acart, vstar, elem, dt)
+subroutine ALE_departure_from_gll(acart, vstar, elem, dt, normalize)
   use physical_constants,     only : rearth
   use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, change_coordinates
   use time_mod,               only : timelevel_t
@@ -851,10 +851,11 @@ subroutine ALE_departure_from_gll(acart, vstar, elem, dt)
   real (kind=real_kind)   ,intent(in)   :: vstar(np,np,2)
   type (element_t)        ,intent(in)   :: elem
   real (kind=real_kind)   ,intent(in)   :: dt
+  logical, intent(in) :: normalize
 
   integer                               :: i,j
 
-  real (kind=real_kind)                 :: uxyz (np,np,3)
+  real (kind=real_kind)                 :: uxyz (np,np,3), norm
 
    ! convert velocity from lat/lon to cartesian 3D
 
@@ -873,6 +874,13 @@ subroutine ALE_departure_from_gll(acart, vstar, elem, dt)
         acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/rearth
         acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/rearth
         acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/rearth
+        if (normalize) then
+           norm = sqrt(acart(i,j)%x*acart(i,j)%x + acart(i,j)%y*acart(i,j)%y + &
+                acart(i,j)%z*acart(i,j)%z)
+           acart(i,j)%x = acart(i,j)%x / norm
+           acart(i,j)%y = acart(i,j)%y / norm
+           acart(i,j)%z = acart(i,j)%z / norm
+        end if
      enddo
   enddo
 
