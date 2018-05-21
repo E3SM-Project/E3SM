@@ -2271,19 +2271,17 @@ contains
        !  This will be used later in the ice prep and in the
        !  atm/ocn flux calculation
        !----------------------------------------------------------
-       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
-          if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
-             call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-             
-             call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-             
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
-          endif
-       end if
-
+       if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
+          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+          
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+       endif
+       
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
        !----------------------------------------------------------
@@ -3224,7 +3222,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
-          if (atm_c2_ocn .or. atm_c2_ice) call prep_ocn_calc_a2x_ox(timer='CPL:atmocnp_atm2ocn')
+          if (atm_c2_ocn) call prep_ocn_calc_a2x_ox(timer='CPL:atmocnp_atm2ocn')
        end if
 
        if (ocn_prognostic) then
