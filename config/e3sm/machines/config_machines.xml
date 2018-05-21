@@ -267,6 +267,7 @@
       <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
+      <command name="rm">zlib</command>
     </modules>
 
     <modules>
@@ -316,8 +317,6 @@
       <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="rm">zlib</command>
-      <command name="load">zlib/1.2.8</command>
     </modules>
   </module_system>
 
@@ -405,6 +404,7 @@
       <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
+      <command name="rm">zlib</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
       <command name="load">craype</command>
@@ -471,8 +471,6 @@
       <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="rm">zlib</command>
-      <command name="load">zlib/1.2.8</command>
     </modules>
 
     <!--command name="list">&gt;&amp; ml.txt</command-->
@@ -1043,7 +1041,7 @@
          <TESTS>e3sm_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi</MPILIBS>
-         <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
+         <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
          <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1573,7 +1571,7 @@
       <executable>aprun</executable>
       <arguments>
         <arg name="num_tasks" >-n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node" >-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTALPES` ];then echo `./xmlquery --value TOTALPES`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
+        <arg name="tasks_per_node" >-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTAL_TASKS` ];then echo `./xmlquery --value TOTAL_TASKS`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
         <arg name="hyperthreading" >--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
         <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
       </arguments>
@@ -1583,6 +1581,7 @@
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
+      <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
       <env name="labeling"> </env>
       <env name="SMP_VARS"> </env>
     </environment_variables>
@@ -1643,12 +1642,10 @@
         <command name="load">cray-mpich/7.6.2</command>
       </modules>
       <modules mpilib="mpt">
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-        <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">cray-hdf5/1.10.0.3</command>
         <command name="load">cray-netcdf/4.4.1.1.3</command>
       </modules>
     </module_system>
@@ -2093,7 +2090,6 @@
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PCT_SPARE_NODES>10</PCT_SPARE_NODES>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PROJECT>cli115</PROJECT>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -2918,15 +2914,15 @@
 		<command name="load">subversion/1.9.3</command>
 		<command name="load">git/2.13.0</command>
 		<command name="load">cmake/3.9.2</command>
-		<command name="load">essl/6.1.0-prpq</command>
+		<command name="load">essl/6.1.0-20180406</command>
 		<command name="load">netlib-lapack/3.6.1</command>
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
-        <command name="load">pgi/18.1</command>
+        <command name="load">pgi/18.3</command>
       </modules>
       <modules compiler="ibm">
-        <command name="load">xl/20180223-beta</command>
+        <command name="load">xl/20180406-beta</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
@@ -2939,17 +2935,17 @@
       <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="pgi*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180110</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>

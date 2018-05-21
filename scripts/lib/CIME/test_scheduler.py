@@ -119,7 +119,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -131,6 +131,7 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+        self._allow_pnl       = allow_pnl
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -661,7 +662,9 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        cmd = "./case.submit --skip-preview-namelist"
+        cmd = "./case.submit"
+        if not self._allow_pnl:
+            cmd += " --skip-preview-namelist"
         if self._no_batch:
             cmd += " --no-batch"
         if self._mail_user:

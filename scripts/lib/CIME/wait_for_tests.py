@@ -138,7 +138,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
         measurement_elem = xmlet.SubElement(results_elem, "Measurement")
 
         value_elem = xmlet.SubElement(measurement_elem, "Value")
-        value_elem.text = get_test_output(test_norm_path)
+        value_elem.text = ''.join([item for item in get_test_output(test_norm_path) if ord(item) < 128])
 
     elapsed_time_elem = xmlet.SubElement(testing_elem, "ElapsedMinutes")
     elapsed_time_elem.text = "0" # Skip for now

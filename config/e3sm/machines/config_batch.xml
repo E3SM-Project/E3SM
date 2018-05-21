@@ -496,8 +496,8 @@
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-       <directive>-alloc_flags gpumps</directive>
-       <directive>-alloc_flags smt2</directive>
+       <directive compiler="!pgiacc">-alloc_flags smt2</directive>
+       <directive compiler="pgiacc">-alloc_flags "gpumps smt2"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>
