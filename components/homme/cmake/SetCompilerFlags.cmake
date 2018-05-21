@@ -172,7 +172,7 @@ ENDIF ()
 ##############################################################################
 OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
-OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" TRUE)
+OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
 
 # If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
 IF (NOT ${ENABLE_OPENMP}) 
