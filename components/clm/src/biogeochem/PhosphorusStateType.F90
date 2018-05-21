@@ -1258,7 +1258,7 @@ contains
     begc = bounds%begc
     endc = bounds%endc
 
-    !this%dyn_bal_adjustments_col(begc:endc) = 0._r8
+    this%dyn_bal_adjustments_col(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp

@@ -130,7 +130,7 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 
-    if (.not. use_fates) then
+    !if (.not. use_fates) then
        allocate(nutrient_state%deadcroot_patch         (begp :endp)) ;  nutrient_state%deadcroot_patch         (:)   = nan
        allocate(nutrient_state%deadcroot_storage_patch (begp :endp)) ;  nutrient_state%deadcroot_storage_patch (:)   = nan
        allocate(nutrient_state%deadcroot_xfer_patch    (begp :endp)) ;  nutrient_state%deadcroot_xfer_patch    (:)   = nan
@@ -162,7 +162,7 @@ contains
        allocate(nutrient_state%totveg_patch            (begp :endp)) ;  nutrient_state%totveg_patch            (:)   = nan
        allocate(nutrient_state%totpft_patch            (begp :endp)) ;  nutrient_state%totpft_patch            (:)   = nan
        allocate(nutrient_state%totveg_abg_patch        (begp :endp)) ;  nutrient_state%totveg_abg_patch        (:)   = nan
-    end if
+    !end if
 
     allocate(nutrient_state%beg_bal_col             (begc:endc))                   ; nutrient_state%beg_bal_col             (:)     = nan
     allocate(nutrient_state%beg_bal_grc             (begg:endg))                   ; nutrient_state%beg_bal_grc             (:)     = nan
@@ -571,7 +571,6 @@ contains
 
     SHR_ASSERT_ALL((ubound(dwt_leaf_seed           ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(dwt_deadstem_seed       ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(dwt_pool_seed           ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(conv_flux               ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(dwt_froot_to_litter     ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(dwt_livecroot_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
@@ -580,6 +579,9 @@ contains
     SHR_ASSERT_ALL((ubound(prod100_flux            ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(crop_product_flux       ) == (/endp/)), errMsg(__FILE__, __LINE__))
 
+    if (present(dwt_pool_seed)) then
+       SHR_ASSERT_ALL((ubound(dwt_pool_seed           ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    endif
     if (present(pool_seed_patch)) then
        SHR_ASSERT_ALL((ubound(pool_seed_patch       ) == (/endp/)), errMsg(__FILE__, __LINE__))
     endif
@@ -605,7 +607,7 @@ contains
          seed_leaf_xfer_patch       = seed_leaf_xfer_patch(begp:endp)     , &
          seed_deadstem_patch        = seed_deadstem_patch(begp:endp)     , &
          pool_seed_param            = pool_seed_param                     , &
-         pool_seed_patch            = pool_seed_patch(begp:endp))
+         pool_seed_patch            = pool_seed_patch)
 
     ! 1) LEAF_PATCH
     call patch_state_updater%update_patch_state(            &
