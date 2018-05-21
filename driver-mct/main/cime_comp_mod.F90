@@ -2271,20 +2271,24 @@ contains
        !  This will be used later in the ice prep and in the
        !  atm/ocn flux calculation
        !----------------------------------------------------------
-       if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
-          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
-       endif
+       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
+          if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
+             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
+             call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+             
+             call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+             
+             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+             call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+          endif
+       end if
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
        !----------------------------------------------------------
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_atmocn_setup()
@@ -2405,10 +2409,12 @@ contains
        !----------------------------------------------------------
        !| ATM/OCN SETUP (cesm1_mod or cesm1_mod_tight)
        !----------------------------------------------------------
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
               trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
-              trim(cpl_seq_option)=='NUOPC_TIGHT' ) then
+              trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
              call cime_run_atmocn_setup()
           end if
        endif
@@ -2456,6 +2462,8 @@ contains
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option2)
        !----------------------------------------------------------
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION2') then
              call cime_run_atmocn_setup()
@@ -3215,14 +3223,17 @@ contains
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
+          if (atm_c2_ocn .or. atm_c2_ice) call prep_ocn_calc_a2x_ox(timer='CPL:atmocnp_atm2ocn')
+       end if
+
        if (ocn_prognostic) then
           ! Map to ocn
           if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
-
           if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
-             if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
-             if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
+             if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:atmocnp_rof2ocn')
+             if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:atmocnp_glc2ocn')
           end if
        end if
 
