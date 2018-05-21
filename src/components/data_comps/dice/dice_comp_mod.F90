@@ -450,7 +450,7 @@ CONTAINS
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
-    character(*), parameter :: F01   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
+    character(*), parameter :: F01   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------

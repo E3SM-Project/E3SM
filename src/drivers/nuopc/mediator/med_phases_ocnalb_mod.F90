@@ -88,12 +88,13 @@ contains
     type(ESMF_GeomType_Flag)    :: geomtype
     integer                     :: n
     integer                     :: lsize
-    real(ESMF_KIND_R8), pointer           :: rmask(:)  ! ocn domain mask
+    real(ESMF_KIND_R8), pointer :: rmask(:)  ! ocn domain mask
     integer                     :: dimCount
     integer                     :: spatialDim
     integer                     :: numOwnedElements
     type(InternalState)         :: is_local
     real(ESMF_KIND_R8), pointer :: ownedElemCoords(:)
+    character(len=CL)           :: tempc1,tempc2
     character(*), parameter     :: subname = '(med_phases_ocnalb_init) '
     !-----------------------------------------------------------------------
 
@@ -164,7 +165,10 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        lsize = size(swndr)
        if (numOwnedElements /= lsize) then
-          call ESMF_LogWrite(trim(subname)//": ERROR numOwnedElements not equal to local size", ESMF_LOGMSG_INFO, rc=rc)
+          write(tempc1,'(i10)') numOwnedElements
+          write(tempc2,'(i10)') lsize
+          call ESMF_LogWrite(trim(subname)//": ERROR numOwnedElements "// trim(tempc1) // &
+               " not equal to local size "// trim(tempc2), ESMF_LOGMSG_INFO, rc=rc)
           rc = ESMF_FAILURE
           return
        end if

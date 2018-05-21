@@ -232,8 +232,10 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (is_local%wrap%comp_present(compice)) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -256,7 +258,11 @@ contains
                   swvdf(n) * (1.0_ESMF_KIND_R8 - avsdf(n))
        fswabsi =  swndr(n) * (1.0_ESMF_KIND_R8 - anidr(n)) + &
                   swndf(n) * (1.0_ESMF_KIND_R8 - anidf(n))
-       swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
+       if (is_local%wrap%comp_present(compice)) then
+          swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
+       else
+          swnet(n) = ofracr_scaled*(fswabsv + fswabsi)
+       end if
        ! if (i2o_per_cat) then
        !   Sf_ofrac(n)  = ofrac(n)
        !   Sf_ofracr(n) = ofracr(n)

@@ -257,7 +257,7 @@ module docn_comp_nuopc
     ! for the ocn_present flag being set to false (i.e. null mode)
     ! NOTE: only the ocn_prognostic flag is needed below
 
-    !DEBUG - hard wire for now to get atm/ocn flux computation working
+    !TODO: - hard wire prognostic for now to get atm/ocn flux computation and ocn albedos computedworking
     ocn_prognostic = .true.
 
     if (ocn_prognostic) then
