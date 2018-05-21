@@ -164,31 +164,32 @@ contains
 
     call NutrientStateInitHistory(this, bounds)
 
-    this%woodc_patch(begp:endp) = spval
-    call hist_addfld1d (fname='WOOD' // trim(this%name), units='g' // trim(this%name) // '/m^2', &
-         avgflag='A', long_name=trim(this%name)//' wood ', &
-         ptr_patch=this%woodc_patch)
+    if (.not.use_fates) then
+       this%woodc_patch(begp:endp) = spval
+       call hist_addfld1d (fname='WOOD' // trim(this%name), units='g' // trim(this%name) // '/m^2', &
+            avgflag='A', long_name=trim(this%name)//' wood ', &
+            ptr_patch=this%woodc_patch)
 
-    this%gresp_storage_patch(begp:endp) = spval
-    call hist_addfld1d (fname='GRESP_STORAGE', units='g' // trim(this%name) // '/m^2', &
-         avgflag='A', long_name=trim(this%name)//' growth respiration storage', &
-         ptr_patch=this%gresp_storage_patch, default='inactive')
+       this%gresp_storage_patch(begp:endp) = spval
+       call hist_addfld1d (fname='GRESP_STORAGE', units='g' // trim(this%name) // '/m^2', &
+            avgflag='A', long_name=trim(this%name)//' growth respiration storage', &
+            ptr_patch=this%gresp_storage_patch, default='inactive')
 
-    this%gresp_xfer_patch(begp:endp) = spval
-    call hist_addfld1d (fname='GRESP_XFER', units='g' // trim(this%name) // '/m^2', &
-         avgflag='A', long_name=trim(this%name)//' growth respiration transfer', &
-         ptr_patch=this%gresp_xfer_patch, default='inactive')
+       this%gresp_xfer_patch(begp:endp) = spval
+       call hist_addfld1d (fname='GRESP_XFER', units='g' // trim(this%name) // '/m^2', &
+            avgflag='A', long_name=trim(this%name)//' growth respiration transfer', &
+            ptr_patch=this%gresp_xfer_patch, default='inactive')
 
-    this%xsmrpool_patch(begp:endp) = spval
-    call hist_addfld1d (fname='XSMRPOOL', units='g' // trim(this%name) // '/m^2', &
-         avgflag='A', long_name=trim(this%name)//' temporary photosynthate pool', &
-         ptr_patch=this%xsmrpool_patch, default='active')
+       this%xsmrpool_patch(begp:endp) = spval
+       call hist_addfld1d (fname='XSMRPOOL', units='g' // trim(this%name) // '/m^2', &
+            avgflag='A', long_name=trim(this%name)//' temporary photosynthate pool', &
+            ptr_patch=this%xsmrpool_patch, default='active')
+    end if
 
     this%fuelc_col(begc:endc) = spval
     call hist_addfld1d (fname='FUEL' // trim(this%name), units='g' // trim(this%name) // '/m^2', &
          avgflag='A', long_name=trim(this%name)//' fuel load', &
          ptr_col=this%fuelc_col, default='inactive')
-
 
  end subroutine InitHistory
 

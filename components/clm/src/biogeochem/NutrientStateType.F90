@@ -242,6 +242,28 @@ contains
     name = nutrient_state%name
     name_prefix = nutrient_state%history_name_prefix
 
+    if (use_fates) then
+       if ( nlevdecomp_full > 1 ) then
+          nutrient_state%totsom_1m_col(begc:endc) = spval
+          call hist_addfld1d (fname=trim(name_prefix) // 'TOTSOM' // trim(name) // '_1m', units=trim(unit), &
+               avgflag='A', long_name=trim(name) // ' total soil organic matter to 1 meter depth', &
+               ptr_col=nutrient_state%totsom_1m_col)
+       end if
+
+       nutrient_state%totlit_col(begc:endc) = spval
+       call hist_addfld1d (fname=trim(name_prefix) // 'TOTLIT' // trim(name), units=trim(unit), &
+            avgflag='A', long_name=trim(name) // ' total litter', &
+            ptr_col=nutrient_state%totlit_col)
+
+       nutrient_state%totsom_col(begc:endc) = spval
+       call hist_addfld1d (fname=trim(name_prefix) // 'TOTSOM' // trim(name), units=trim(unit), &
+            avgflag='A', long_name=trim(name) // ' total soil organic matter', &
+            ptr_col=nutrient_state%totsom_col)
+
+       return
+
+    end if
+
     nutrient_state%deadcroot_patch(begp:endp) = spval
     call hist_addfld1d (fname=trim(name_prefix) // 'DEADCROOT' // trim(name), units=trim(unit), &
          avgflag='A', long_name = trim(name) // ' dead coarse root', &
@@ -456,11 +478,6 @@ contains
             ptr_col=nutrient_state%totlit_1m_col)
     end if
 
-    nutrient_state%totlit_col(begc:endc) = spval
-    call hist_addfld1d (fname=trim(name_prefix) // 'TOTLIT' // trim(name), units=trim(unit), &
-         avgflag='A', long_name=trim(name) // ' total litter', &
-         ptr_col=nutrient_state%totlit_col)
-
     nutrient_state%totpft_patch(begp:endp) = spval
     call hist_addfld1d (fname=trim(name_prefix) // 'TOTPFT' // trim(name), units=trim(unit), &
          avgflag='A', long_name = trim(name) // ' total patch-level, including pool', &
@@ -470,18 +487,6 @@ contains
     call hist_addfld1d (fname=trim(name_prefix) // 'TOTPROD' // trim(name), units=trim(unit), &
          avgflag='A', long_name = trim(name) // ' total wood product', &
          ptr_col=nutrient_state%totprod_col, default='inactive')
-
-    if ( nlevdecomp_full > 1 ) then
-       nutrient_state%totsom_1m_col(begc:endc) = spval
-       call hist_addfld1d (fname=trim(name_prefix) // 'TOTSOM' // trim(name) // '_1m', units=trim(unit), &
-            avgflag='A', long_name=trim(name) // ' total soil organic matter to 1 meter depth', &
-            ptr_col=nutrient_state%totsom_1m_col)
-    end if
-
-    nutrient_state%totsom_col(begc:endc) = spval
-    call hist_addfld1d (fname=trim(name_prefix) // 'TOTSOM' // trim(name), units=trim(unit), &
-         avgflag='A', long_name=trim(name) // ' total soil organic matter', &
-         ptr_col=nutrient_state%totsom_col)
 
     nutrient_state%totveg_patch(begp:endp) = spval
     call hist_addfld1d (fname=trim(name_prefix) //  'TOTVEG' // trim(name), units=trim(unit), &
