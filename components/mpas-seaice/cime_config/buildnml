@@ -53,6 +53,7 @@ my $grid_date = '';
 my $grid_prefix = '';
 my $decomp_date = '';
 my $decomp_prefix = '';
+my $points_file = '';
 
 if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_date .= '151020';
@@ -69,6 +70,11 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_prefix .= 'seaice.EC60to30v3';
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+        if ( $ICE_BGC eq 'ice_bgc') {
+                $grid_date = '180418';
+                $grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime';
+                $points_file = 'seaice_points_EC60to30_v3_net3_12152017.nc';
+	}
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
 	$grid_date .= '171101';
 	$grid_prefix .= 'seaice.EC60to30v3.restartFrom_anvil0926';
@@ -177,6 +183,9 @@ if (( $RUN_TYPE eq 'hybrid') || ( $RUN_TYPE eq 'branch' )) {
 
 open(my $input_list, "+>", "$CASEBUILD/mpassi.input_data_list");
 print $input_list "mesh = $input_file\n";
+if ($points_file ne '') {
+        print $input_list "points = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$points_file\n";
+}
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -254,8 +263,8 @@ while ($inst_counter <= $NINST_ICE) {
 
 # Write streams file if there isn't one in SourceMods
 
-if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
-	$sysmod = "cp $CASEROOT/SourceMods/src.mpassi/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpascice/$STREAM_NAME $RUNDIR/$STREAM_NAME";
 	system($sysmod) == 0 or die "ERROR mpassi buildnml: $sysmod fails: $?\n";
 } else {
 	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
@@ -625,11 +634,119 @@ if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
         if ( $ICE_BGC eq 'ice_bgc' ) {
                 print $stream_file '    <var name="totalVerticalBiologyIce"/>' . "\n";
                 print $stream_file '    <var name="totalChlorophyll"/>' . "\n";
-                print $stream_file '    <var name="totalNitrate"/>' . "\n";
                 print $stream_file '    <var name="primaryProduction"/>' . "\n";
+                print $stream_file '    <var name="bioShortwaveFlux"/>' . "\n";
+                print $stream_file '    <var name="netBrineHeight"/>' . "\n";
+                print $stream_file '    <var name="newlyFormedIce"/>' . "\n";
+                print $stream_file '    <var name="pondAreaCell"/>' . "\n";
+                print $stream_file '    <var name="snowThicknessChange"/>' . "\n";
+                print $stream_file '    <var name="snowAlbedoCell"/>' . "\n";
+                print $stream_file '    <var name="bareIceAlbedoCell"/>' . "\n";
+                print $stream_file '    <var name="pondAlbedoCell"/>' . "\n";
+                print $stream_file '    <var name="verticalAlgaeIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalNitrateIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalSilicateIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalAmmoniumIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalDMSIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalDMSPdIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalNonreactiveIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalHumicsIceCell"/>' . "\n";
+                print $stream_file '    <var name="verticalDissolvedIronIceCell"/>' . "\n";
+                print $stream_file '    <var name="iceEnthalpyCell"/>' . "\n";
+                print $stream_file '    <var name="iceSalinityCell"/>' . "\n";
+                print $stream_file '    <var name="oceanBioFluxes"/>' . "\n";
+                print $stream_file '    <var name="oceanBioConcentrations"/>' . "\n";
+                print $stream_file '    <var name="netNitrateUptake"/>' . "\n";
+                print $stream_file '    <var name="netAmmoniumUptake"/>' . "\n";
+                print $stream_file '    <var name="netSpecificAlgalGrowthRate"/>' . "\n";
         }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+
+        if ( $ICE_BGC eq 'ice_bgc' ) {
+                if ($points_file ne '') {
+                        print $stream_file '<immutable_stream name="pointLocationsInput"' . "\n";
+                        print $stream_file '                  type="input"' . "\n";
+                        print $stream_file "                  filename_template=" . '"'
+                                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$points_file"
+                                                                . '"' . "\n";
+                        print $stream_file '                  input_interval="initial_only"' . "\n";
+                        print $stream_file '                  runtime_format="single_file" />' . "\n";
+            }
+
+            print $stream_file '' . "\n";
+
+            print $stream_file '<stream name="pointwiseStatsOutput"' . "\n";
+            print $stream_file '        type="output"' . "\n";
+            print $stream_file '        io_type="netcdf"' . "\n";
+            print $stream_file '        filename_template="pointwiseStats.$Y-$M-$D.nc"' . "\n";
+            print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
+            print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+            print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
+            print $stream_file '        clobber_mode="truncate"' . "\n";
+            print $stream_file '        packages="pointwiseStatsAMPKG"' . "\n";
+            print $stream_file '        runtime_format="single_file">' . "\n";
+
+            print $stream_file '' . "\n";
+
+            print $stream_file '    <var name="pointNames"/>' . "\n";
+            print $stream_file '    <var name="pointCellGlobalID"/>' . "\n";
+            print $stream_file '    <var name="xtime"/>' . "\n";
+            print $stream_file '    <var name="latCell"/>' . "\n";
+            print $stream_file '    <var name="lonCell"/>' . "\n";
+            print $stream_file '    <var name="latPoint"/>' . "\n";
+            print $stream_file '    <var name="lonPoint"/>' . "\n";
+            print $stream_file '    <var name="xPoint"/>' . "\n";
+            print $stream_file '    <var name="yPoint"/>' . "\n";
+            print $stream_file '    <var name="zPoint"/>' . "\n";
+            print $stream_file '    <var name="totalVerticalBiologyIce"/>' . "\n";
+            print $stream_file '    <var name="brineFractionCell"/>' . "\n";
+            print $stream_file '    <var name="netBrineHeight"/>' . "\n";
+            print $stream_file '    <var name="firstYearIceAreaCell"/>' . "\n";
+            print $stream_file '    <var name="levelIceAreaCell"/>' . "\n";
+            print $stream_file '    <var name="pondAreaCell"/>' . "\n";
+            print $stream_file '    <var name="surfaceIceMelt"/>' . "\n";
+            print $stream_file '    <var name="basalIceMelt"/>' . "\n";
+            print $stream_file '    <var name="lateralIceMelt"/>' . "\n";
+            print $stream_file '    <var name="congelation"/>' . "\n";
+            print $stream_file '    <var name="snowiceFormation"/>' . "\n";
+            print $stream_file '    <var name="frazilFormation"/>' . "\n";
+            print $stream_file '    <var name="snowThicknessChange"/>' . "\n";
+            print $stream_file '    <var name="snowAlbedoCell"/>' . "\n";
+            print $stream_file '    <var name="bareIceAlbedoCell"/>' . "\n";
+            print $stream_file '    <var name="pondAlbedoCell"/>' . "\n";
+            print $stream_file '    <var name="verticalAlgaeIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalNitrateIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalSilicateIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalAmmoniumIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalDMSIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalDMSPdIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalNonreactiveIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalHumicsIceCell"/>' . "\n";
+            print $stream_file '    <var name="verticalDissolvedIronIceCell"/>' . "\n";
+            print $stream_file '    <var name="iceEnthalpyCell"/>' . "\n";
+            print $stream_file '    <var name="iceSalinityCell"/>' . "\n";
+            print $stream_file '    <var name="oceanBioFluxes"/>' . "\n";
+            print $stream_file '    <var name="oceanBioConcentrations"/>' . "\n";
+            print $stream_file '    <var name="primaryProduction"/>' . "\n";
+            print $stream_file '    <var name="netNitrateUptake"/>' . "\n";
+            print $stream_file '    <var name="netAmmoniumUptake"/>' . "\n";
+            print $stream_file '    <var name="netSpecificAlgalGrowthRate"/>' . "\n";
+            print $stream_file '    <var name="totalChlorophyll"/>' . "\n";
+            print $stream_file '    <var name="iceAreaCell"/>' . "\n";
+            print $stream_file '    <var name="iceVolumeCell"/>' . "\n";
+            print $stream_file '    <var name="snowVolumeCell"/>' . "\n";
+            print $stream_file '    <var name="iceVolumeRidged"/>' . "\n";
+            print $stream_file '    <var name="oceanShortwaveFlux"/>' . "\n";
+            print $stream_file '    <var name="shortwaveDown"/>' . "\n";
+            print $stream_file '    <var name="bioShortwaveFlux"/>' . "\n";
+            print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
+            print $stream_file '    <var name="seaSurfaceSalinity"/>' . "\n";
+            print $stream_file '</stream>' . "\n";
+        }
+
+        print $stream_file '' . "\n";
+
 	print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
