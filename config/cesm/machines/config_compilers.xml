@@ -69,8 +69,11 @@ using a fortran linker.
      compilers -->
 <compiler>
   <CPPDEFS>
-    <append> -D<env>OS</env> </append>
+    <!-- See if we can remove -DCESMCOUPLED below after MOM6 NUOPC cap is unified -->
+    <append> -D<env>OS</env> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
+    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
+    <append MODEL="mom"> -DMOM6_CAP </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -1037,6 +1040,9 @@ using a fortran linker.
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="laramie">
