@@ -83,6 +83,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif 
+
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
