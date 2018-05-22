@@ -768,8 +768,8 @@ module namelist_mod
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
+       call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
-      call set_mesh_dimensions()
       call MeshOpen(mesh_file, par)
     end if
     ! set map
