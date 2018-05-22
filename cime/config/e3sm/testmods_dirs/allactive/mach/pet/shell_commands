@@ -6,10 +6,10 @@ if [ `./xmlquery --value MACH` == theta ]&&
   # get number of nodes
   nodes=$(./preview_run | grep nodes | grep -o '[[:digit:]]*')
   echo "nodes=$nodes"
-  if [ $nodes -lt 8 ]; then
-    # increase ntasks to get into production queue: 8 nodes, 64 mpi/node
-    ./xmlchange --id NTASKS --val 512
-    echo "new NTASKS=512"
+  if [ $nodes -lt 128 ]; then
+    # increase ntasks to get into production queue: 128 nodes, 64 mpi/node
+    ./xmlchange --id NTASKS --val 8192
+    echo "new NTASKS=8192"
   fi
   ./xmlchange --id JOB_QUEUE --val default
   echo "new queue=default"
