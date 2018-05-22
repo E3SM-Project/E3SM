@@ -59,7 +59,7 @@
   <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>edison</NODENAME_REGEX>
   <TESTS>e3sm_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
+  <COMPILERS>intel,intel18,gnu,gnu7</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -85,7 +85,7 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n $TOTALPES</arg>
+      <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
@@ -134,26 +134,35 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/17.0.2.174</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.1.163</command>
+      <command name="load">intel/18.0.2.199</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="gnu">
       <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.06.1</command>
+    </modules>
+
+    <modules compiler="gnu7">
+      <command name="rm">PrgEnv-intel</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
+      <command name="rm">gcc</command>
+      <command name="load">gcc/7.2.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.12.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
@@ -220,7 +229,7 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n $TOTALPES</arg>
+      <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
@@ -258,6 +267,7 @@
       <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
+      <command name="rm">zlib</command>
     </modules>
 
     <modules>
@@ -270,14 +280,13 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
@@ -305,11 +314,9 @@
 
     <modules>
       <command name="rm">git</command>
-      <command name="load">git/2.15.1</command>
+      <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="rm">zlib</command>
-      <command name="load">zlib/1.2.8</command>
     </modules>
   </module_system>
 
@@ -333,7 +340,7 @@
   <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
   <NODENAME_REGEX>cori</NODENAME_REGEX>
   <TESTS>e3sm_developer</TESTS>
-  <COMPILERS>intel,gnu</COMPILERS>
+  <COMPILERS>intel,gnu,gnu7</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -360,7 +367,7 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n $TOTALPES</arg>
+      <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
@@ -378,7 +385,6 @@
       <command name="rm">craype</command>
       <command name="rm">craype-mic-knl</command>
       <command name="rm">craype-haswell</command>
-
       <command name="rm">PrgEnv-intel</command>
       <command name="rm">PrgEnv-cray</command>
       <command name="rm">PrgEnv-gnu</command>
@@ -398,6 +404,7 @@
       <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
+      <command name="rm">zlib</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
       <command name="load">craype</command>
@@ -416,17 +423,26 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
+    </modules>
+
+    <modules compiler="gnu7">
+      <command name="rm">PrgEnv-intel</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
+      <command name="rm">gcc</command>
+      <command name="load">gcc/7.2.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.12.1</command>
     </modules>
 
     <modules>
@@ -452,11 +468,9 @@
     </modules>
     <modules>
       <command name="rm">git</command>
-      <command name="load">git/2.15.1</command>
+      <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="rm">zlib</command>
-      <command name="load">zlib/1.2.8</command>
     </modules>
 
     <!--command name="list">&gt;&amp; ml.txt</command-->
@@ -489,6 +503,94 @@
   </environment_variables>
 </machine>
 
+<!-- Skylake nodes of Stampede2 at TACC -->
+<machine MACH="stampede2">
+  <DESC>Stampede2. Intel skylake nodes at TACC.  48 cores per node, batch system is SLURM</DESC>
+  <NODENAME_REGEX>.*stampede2.*</NODENAME_REGEX>
+  <TESTS>e3sm_developer</TESTS>
+  <COMPILERS>intel,gnu</COMPILERS>
+  <MPILIBS>impi</MPILIBS>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/stampede2</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>$ENV{SCRATCH}/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>$ENV{SCRATCH}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <BASELINE_ROOT>$ENV{SCRATCH}/baselines/$COMPILER</BASELINE_ROOT>
+  <CCSM_CPRNC>$ENV{SCRATCH}/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+  <SAVE_TIMING_DIR>$ENV{SCRATCH}</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme</SAVE_TIMING_DIR_PROJECTS>
+  <OS>LINUX</OS>
+  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>96</MAX_TASKS_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
+  <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+  <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+  <mpirun mpilib="default">
+    <executable>ibrun</executable>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
+    <init_path lang="python">/opt/apps/lmod/lmod/init/python</init_path>
+    <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
+    <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
+    <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+    <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
+    <cmd_path lang="sh">module -q</cmd_path>
+    <cmd_path lang="csh">module -q</cmd_path>
+
+    <modules>
+      <command name="purge"></command>
+    </modules>
+
+    <modules compiler="intel">
+      <command name="load">intel/18.0.0</command>
+    </modules>
+
+    <modules compiler="gnu">
+      <command name="load">gcc/6.3.0</command>
+    </modules>
+
+    <modules mpilib="impi">
+      <command name="load">impi/18.0.0</command>
+    </modules>
+
+    <modules mpilib="mpi-serial">
+      <command name="load">hdf5/1.8.16</command>
+      <command name="load">netcdf/4.3.3.1</command>
+    </modules>
+    <modules mpilib="!mpi-serial">
+      <command name="load">phdf5/1.8.16</command>
+      <command name="load">parallel-netcdf/4.3.3.1</command>
+      <command name="load">pnetcdf/1.8.1</command>
+    </modules>
+    <modules>
+      <command name="load">git</command>
+      <command name="load">cmake</command>
+      <command name="load">autotools</command>
+      <command name="load">xalt</command>
+      <!--command name="load">TACC</command-->
+      <!--command name="load">python/2.7.13</command-->
+    </modules>
+
+  </module_system>
+
+  <environment_variables>
+    <env name="MPICH_ENV_DISPLAY">1</env>
+    <env name="MPICH_VERSION_DISPLAY">1</env>
+
+    <env name="OMP_STACKSIZE">128M</env>
+    <env name="OMP_PROC_BIND">spread</env>
+    <env name="OMP_PLACES">threads</env>
+    <env name="I_MPI_PIN">1</env>
+    <env name="MY_MPIRUN_OPTIONS">-l</env>
+  </environment_variables>
+
+</machine>
+
 
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
@@ -516,7 +618,9 @@
 
 <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
-    <NODENAME_REGEX></NODENAME_REGEX>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <module_system type="none"></module_system>
     <OS>LINUX</OS>
     <TESTS>e3sm_developer</TESTS>
     <COMPILERS>gnu</COMPILERS>
@@ -539,7 +643,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
 </machine>
@@ -573,7 +677,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
         <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
@@ -647,7 +751,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -714,7 +818,7 @@
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
     <arguments>
-      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="num_tasks"> --n {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
     </arguments>
   </mpirun>
@@ -787,7 +891,7 @@
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
     <arguments>
-      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="num_tasks"> --n {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
     </arguments>
   </mpirun>
@@ -856,13 +960,13 @@
          <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="num_tasks"> -n {{ total_tasks }} </arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpich">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="num_tasks"> -n {{ total_tasks }} </arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
@@ -937,7 +1041,7 @@
          <TESTS>e3sm_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi</MPILIBS>
-         <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
+         <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
          <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -959,7 +1063,7 @@
          <mpirun mpilib="openmpi">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="num_tasks"> -n {{ total_tasks }} </arg>
              <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
              <!--arg name="label" DEBUG="TRUE">-tag-output</arg>
              <arg name="bindings" DEBUG="TRUE">-report-bindings</arg-->
@@ -969,7 +1073,7 @@
            <executable>mpiexec</executable>
            <arguments>
              <arg name="label"> -l</arg>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="num_tasks"> -n {{ total_tasks }} </arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
@@ -1080,7 +1184,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks" > -n $TOTALPES</arg>
+        <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -1166,7 +1270,7 @@
              <arguments>
                <arg name="label">--label short</arg>
                <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
-               <arg name="num_tasks">--np $TOTALPES</arg>
+               <arg name="num_tasks">--np {{ total_tasks }}</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
                <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
@@ -1186,8 +1290,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"></env>
-      <env name="BGQ_STACKSIZE"></env>
+      <env name="BGQ_SMP_VARS"> </env>
+      <env name="BGQ_STACKSIZE"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
@@ -1403,7 +1507,7 @@
              <arguments>
                <arg name="label">--label short</arg>
                <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
-               <arg name="num_tasks">--np $TOTALPES</arg>
+               <arg name="num_tasks">--np {{ total_tasks }}</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
                <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
@@ -1423,8 +1527,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"></env>
-      <env name="BGQ_STACKSIZE"></env>
+      <env name="BGQ_SMP_VARS"> </env>
+      <env name="BGQ_STACKSIZE"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
@@ -1466,8 +1570,8 @@
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-        <arg name="num_tasks" >-n $TOTALPES</arg>
-        <arg name="tasks_per_node" >-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTALPES` ];then echo `./xmlquery --value TOTALPES`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
+        <arg name="num_tasks" >-n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node" >-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTAL_TASKS` ];then echo `./xmlquery --value TOTAL_TASKS`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
         <arg name="hyperthreading" >--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
         <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
       </arguments>
@@ -1477,8 +1581,9 @@
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
-      <env name="labeling"></env>
-      <env name="SMP_VARS"></env>
+      <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
+      <env name="labeling"> </env>
+      <env name="SMP_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
@@ -1537,12 +1642,10 @@
         <command name="load">cray-mpich/7.6.2</command>
       </modules>
       <modules mpilib="mpt">
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-        <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">cray-hdf5/1.10.0.3</command>
         <command name="load">cray-netcdf/4.4.1.1.3</command>
       </modules>
     </module_system>
@@ -1577,7 +1680,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
         <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -1650,7 +1753,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="mpi">--mpi=none</arg>
-	<arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	<arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
 	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
 	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -1692,7 +1795,7 @@
 <machine MACH="constance">
          <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
          <OS>LINUX</OS>
-         <COMPILERS>intel,pgi</COMPILERS>
+         <COMPILERS>intel,pgi,nag</COMPILERS>
          <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
@@ -1717,7 +1820,7 @@
 	   <executable>srun</executable>
 	   <arguments>
 	     <arg name="mpi">--mpi=none</arg>
-	     <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	     <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
 	     <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
 	     <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
 	   </arguments>
@@ -1725,7 +1828,7 @@
 	 <mpirun mpilib="mvapich">
 	   <executable>srun</executable>
 	   <arguments>
-	     <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	     <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
 	     <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
 	     <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
 	   </arguments>
@@ -1733,13 +1836,13 @@
 	 <mpirun mpilib="intelmpi">
 	   <executable>mpirun</executable>
 	   <arguments>
-	     <arg name="num_tasks">-n $TOTALPES</arg>
+	     <arg name="num_tasks">-n {{ total_tasks }}</arg>
 	   </arguments>
 	 </mpirun>
 	 <mpirun mpilib="openmpi">
 	   <executable>mpirun</executable>
 	   <arguments>
-	     <arg name="num_tasks">-n $TOTALPES</arg>
+	     <arg name="num_tasks">-n {{ total_tasks }}</arg>
 	   </arguments>
 	 </mpirun>
 	 <module_system type="module">
@@ -1766,11 +1869,21 @@
 	   <modules compiler="pgi">
 	     <command name="load">pgi/14.10</command>
 	   </modules>
+	   <modules compiler="nag">
+	     <command name="load">nag/6.0</command>
+	     <command name="load">mkl/15.0.1</command>
+	   </modules>
 	   <modules mpilib="mvapich">
 	     <command name="load">mvapich2/2.1</command>
 	   </modules>
-	   <modules mpilib="mvapich2">
+	   <modules mpilib="mvapich2" compiler= "intel">
 	     <command name="load">mvapich2/2.1</command>
+	   </modules>
+	   <modules mpilib="mvapich2" compiler= "pgi">
+	     <command name="load">mvapich2/2.1</command>
+	   </modules>
+	   <modules mpilib="mvapich2" compiler= "nag">
+	     <command name="load">mvapich2/2.3b</command>
 	   </modules>
 	   <modules mpilib="intelmpi">
 	     <command name="load">intelmpi/5.0.1.035</command>
@@ -1778,8 +1891,14 @@
 	   <modules mpilib="openmpi">
 	     <command name="load">openmpi/1.8.3</command>
 	   </modules>
-	   <modules>
+	   <modules compiler = "intel">
 	     <command name="load">netcdf/4.3.2</command>
+	   </modules>
+	   <modules compiler = "pgi">
+	     <command name="load">netcdf/4.3.2</command>
+	   </modules>
+	   <modules compiler = "nag">
+	     <command name="load">netcdf/4.4.1.1</command>
 	   </modules>
 	 </module_system>
 	 <environment_variables>
@@ -1787,6 +1906,9 @@
 	   <env name="NETCDF_HOME">$ENV{NETCDF_LIB}/../</env>
 	 </environment_variables>
 	 <environment_variables compiler="intel">
+	   <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
+	 </environment_variables>
+	 <environment_variables compiler="nag">
 	   <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
 	 </environment_variables>
 </machine>
@@ -1812,7 +1934,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np $TOTALPES</arg>
+			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
 			<arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1860,7 +1982,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np $TOTALPES</arg>
+			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
                         <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1897,7 +2019,7 @@
       <mpirun mpilib="openmpi" compiler="gnu">
         <executable>mpirun</executable>
         <arguments>
-          <arg name="num_tasks"> -np $TOTALPES</arg>
+          <arg name="num_tasks"> -np {{ total_tasks }}</arg>
           <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
         </arguments>
       </mpirun>
@@ -1956,7 +2078,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/lustre/atlas1/cli115/world-shared/E3SM/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
     <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
@@ -1968,7 +2090,6 @@
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PCT_SPARE_NODES>10</PCT_SPARE_NODES>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PROJECT>cli115</PROJECT>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -2128,7 +2249,7 @@
            <arguments>
              <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-             <arg name="num_tasks" > -n $TOTALPES</arg>
+             <arg name="num_tasks" > -n {{ total_tasks }}</arg>
              <arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
              <arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
@@ -2249,19 +2370,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mvapich">
 		<executable>srun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -2301,19 +2422,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mvapich">
 		<executable>srun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -2359,103 +2480,6 @@
 	</environment_variables>
 </machine>
 
-<machine MACH="caldera">
-  <DESC>NCAR IBM, os is Linux, 16 pes/node, intended for ncar testing of e3sm cime</DESC>
-  <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
-  <OS>LINUX</OS>
-  <COMPILERS>intel,pgi,gnu</COMPILERS>
-  <MPILIBS>mpich2,pempi</MPILIBS>
-  <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
-  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-  <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
-  <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-  <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
-  <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
-  <BATCH_SYSTEM>none</BATCH_SYSTEM>
-  <SUPPORTED_BY>jedwards@ucar.edu</SUPPORTED_BY>
-  <GMAKE_J>8</GMAKE_J>
-  <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-  <MAX_MPITASKS_PER_NODE>15</MAX_MPITASKS_PER_NODE>
-  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <mpirun >
-    <executable>mpirun.lsf</executable>
-  </mpirun>
-  <mpirun mpilib="mpi-serial">
-    <executable></executable>
-  </mpirun>
-  <module_system type="module">
-    <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
-    <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
-    <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
-    <init_path lang="python">/glade/apps/opt/lmod/lmod/init/env_modules_python.py</init_path>
-    <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
-    <cmd_path lang="sh">module</cmd_path>
-    <cmd_path lang="csh">module</cmd_path>
-    <cmd_path lang="python">/glade/apps/opt/lmod/lmod/libexec/lmod python</cmd_path>
-    <modules>
-      <command name="purge"/>
-      <command name="load">ncarenv/1.0</command>
-      <command name="load">ncarbinlibs/1.1</command>
-      <command name="load">perlmods</command>
-      <command name="load">gmake/4.1</command>
-      <command name="load">python</command>
-      <command name="load">all-python-libs</command>
-    </modules>
-    <modules compiler="intel">
-      <command name="load">intel/15.0.3</command>
-      <command name="load">mkl/11.1.2</command>
-      <command name="load">trilinos/11.10.2</command>
-      <command name="load">esmf</command>
-    </modules>
-    <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
-      <command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
-    </modules>
-    <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
-      <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
-    </modules>
-    <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
-      <command name="load">esmf-6.3.0rp1-ncdfio-uni-g</command>
-    </modules>
-    <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
-      <command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
-    </modules>
-    <modules compiler="pgi">
-      <command name="load">pgi/15.10</command>
-    </modules>
-    <modules compiler="gnu">
-      <command name="load">gnu/5.2.0</command>
-    </modules>
-    <modules mpilib="mpi-serial">
-      <command name="load">netcdf/4.3.3.1</command>
-    </modules>
-    <modules mpilib="!mpi-serial">
-      <command name="load">netcdf-mpi/4.3.3.1</command>
-      <command name="load">pnetcdf/1.6.1</command>
-    </modules>
-    <modules>
-      <command name="load">ncarcompilers/1.0</command>
-      <command name="load">cmake/3.0.2</command>
-    </modules>
-  </module_system>
-  <environment_variables>
-    <env name="OMP_STACKSIZE">256M</env>
-    <env name="MP_LABELIO">yes</env>
-    <env name="MP_INFOLEVEL">2</env>
-    <env name="MP_SHARED_MEMORY">yes</env>
-    <env name="MP_EUILIB">us</env>
-    <env name="MP_MPILIB">$MPILIB</env>
-    <env name="MP_STDOUTMODE">unordered</env>
-    <env name="MP_RC_USE_LMC">yes</env>
-  </environment_variables>
-  <environment_variables DEBUG="TRUE">
-    <env name="MP_EAGER_LIMIT">0</env>
-  </environment_variables>
-</machine>
-
 <machine MACH="mesabi">
         <DESC>Mesabi batch queue</DESC>
         <OS>LINUX</OS>
@@ -2488,7 +2512,7 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n $TOTALPES</arg>
+                <arg name="num_tasks"> -n {{ total_tasks }}</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
                 <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
@@ -2527,7 +2551,7 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n $TOTALPES</arg>
+                <arg name="num_tasks"> -n {{ total_tasks }}</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
                 <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
@@ -2556,17 +2580,18 @@
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="num_tasks">-np {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="num_tasks">-np {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
@@ -2619,17 +2644,18 @@
   <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="num_tasks">-np {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="num_tasks">-np {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
@@ -2686,7 +2712,7 @@
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="num_tasks">-np {{ total_tasks }}</arg>
       <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
@@ -2725,7 +2751,7 @@
 	 <executable>/lustre/atlas/world-shared/cli900/helper_scripts/mpirun.summitdev</executable>
 	 <!-- <executable>jsrun</executable> -->
 	 <arguments>
-	     <arg name="num_tasks" > -n $TOTALPES -N $MAX_MPITASKS_PER_NODE </arg>
+	     <arg name="num_tasks" > -n {{ total_tasks }} -N $MAX_MPITASKS_PER_NODE </arg>
 	     <!-- <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE </arg> -->
 		 <!-- <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS} -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg> -->
 	 </arguments>
@@ -2737,13 +2763,13 @@
 		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
 		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
 
-		 <arg name="num_tasks" > -n ALL_HOSTS -p $TOTALPES </arg>
+		 <arg name="num_tasks" > -n ALL_HOSTS -p {{ total_tasks }} </arg>
 		 Old options: <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg>
 		 <arg name="show-binding"> report-bindings </arg>
 		 <arg name="show-processmap"> display-map </arg>
 		-->
 
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/sh</init_path>
       <init_path lang="csh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/csh</init_path>
@@ -2816,6 +2842,129 @@
 		 <!-- <env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4-xl-20170914-beta</env> -->
       <!-- </environment_variables> -->
       <environment_variables mpilib="!mpi-serial">
+        <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+      </environment_variables>
+</machine>
+
+<machine MACH="summit">
+<!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
+	 <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
+	 <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
+	 <TESTS>e3sm_developer</TESTS>
+	 <COMPILERS>ibm,pgi,pgiacc,gnu</COMPILERS>
+	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
+	 <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
+	 <CIME_OUTPUT_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm_scratch</CIME_OUTPUT_ROOT>
+	 <RUNDIR>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/$CASE/run</RUNDIR>
+	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+	 <DIN_LOC_ROOT>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/inputdata</DIN_LOC_ROOT>
+	 <DIN_LOC_ROOT_CLMFORC>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	 <DOUT_S_ROOT>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/archive/$CASE</DOUT_S_ROOT>
+	 <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+	 <BASELINE_ROOT>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/baselines/$COMPILER</BASELINE_ROOT>
+	 <CCSM_CPRNC>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+	 <SAVE_TIMING_DIR>/gpfs/alpinetds/proj-shared/$PROJECT/e3sm</SAVE_TIMING_DIR>
+     <SAVE_TIMING_DIR_PROJECTS>cli115,csc190</SAVE_TIMING_DIR_PROJECTS>
+	 <OS>LINUX</OS>
+	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+	 <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+	 <GMAKE_J>32</GMAKE_J>
+	 <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
+	 <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
+	 <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
+	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>csc190</PROJECT>
+	 <CHARGE_ACCOUNT>CSC190ACME</CHARGE_ACCOUNT>
+	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+
+	 <mpirun mpilib="spectrum-mpi">
+	 <!-- Use a helper script to tweak jsrun options -->
+	 <executable>/gpfs/alpinetds/world-shared/csc190/e3sm/mpirun.summit</executable>
+	 <!-- <executable>jsrun</executable> -->
+	 <arguments>
+	     <arg name="num_tasks" > -n {{ total_tasks }} -N $MAX_MPITASKS_PER_NODE </arg>
+	 </arguments>
+	 </mpirun>
+		<!-- Useful jsrun options:
+		-n	(hyphen-hyphen)nrs	Number of resource sets
+		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set
+		-c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
+		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
+		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
+		-->
+
+    <module_system type="module" allow_error="true">
+      <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
+      <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/perl</init_path>
+      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <cmd_path lang="perl">module</cmd_path>
+      <cmd_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/7.7.10/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+      <!-- Always execute -->
+      <modules>
+		<command name="purge"/>
+		<command name="ls"/>
+		<command name="load">DefApps</command>
+		<command name="load">python/3.5.2</command>
+		<command name="load">subversion/1.9.3</command>
+		<command name="load">git/2.13.0</command>
+		<command name="load">cmake/3.9.2</command>
+		<command name="load">essl/6.1.0-20180406</command>
+		<command name="load">netlib-lapack/3.6.1</command>
+      </modules>
+      <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
+      <modules compiler="pgi">
+        <command name="load">pgi/18.3</command>
+      </modules>
+      <modules compiler="ibm">
+        <command name="load">xl/20180406-beta</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/6.4.0</command>
+      </modules>
+
+      <modules>
+        <command name="load">netcdf/4.4.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+      </modules>
+      <!-- mpi lib settings -->
+	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
+      <modules compiler="ibm" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+      <modules compiler="pgi*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules>
+    </module_system>
+      <!-- Default -->
+      <environment_variables>
+		  <env name="COMPILER">$COMPILER</env>
+		  <env name="MPILIB">$MPILIB</env>
+		  <env name="OMP_STACKSIZE">128M</env>
+		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+		  <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+		  <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
+      </environment_variables>
+      <environment_variables SMP_PRESENT="TRUE">
+		  <env name="OMP_NUM_THREADS">$ENV{OMP_NUM_THREADS}</env>
+      </environment_variables>
+      <environment_variables mpilib="!mpi-serial">
+		<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
 </machine>

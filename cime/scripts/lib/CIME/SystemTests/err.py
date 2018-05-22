@@ -2,11 +2,10 @@
 CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
-import glob, os, shutil
+import glob, os
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.restart_tests import RestartTest
-from CIME.case_st_archive import restore_from_archive
-from CIME.utils import ls_sorted_by_mtime
+from CIME.utils import ls_sorted_by_mtime, safe_copy
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class ERR(RestartTest):
         rest_root = os.path.abspath(os.path.join(dout_s_root,"rest"))
         restart_list = ls_sorted_by_mtime(rest_root)
         expect(len(restart_list) >= 1, "No restart files found in {}".format(rest_root))
-        restore_from_archive(self._case, rest_dir=
+        self._case.restore_from_archive(rest_dir=
             os.path.join(rest_root, restart_list[0]))
 
     def _case_two_custom_postrun_action(self):
@@ -47,5 +46,4 @@ class ERR(RestartTest):
                                                  "*.nc.{}".format(self._run_one_suffix))):
             orig_file = case_file[:-(1+len(self._run_one_suffix))]
             if not os.path.isfile(orig_file):
-                shutil.copyfile(case_file, orig_file)
-
+                safe_copy(case_file, orig_file)

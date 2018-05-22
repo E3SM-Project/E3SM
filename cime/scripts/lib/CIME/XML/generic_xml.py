@@ -3,10 +3,12 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
+
 import xml.etree.ElementTree as ET
 #pylint: disable=import-error
 from distutils.spawn import find_executable
-import getpass, shutil
+import getpass
 import six
 from copy import deepcopy
 
@@ -121,7 +123,7 @@ class GenericXML(object):
             new_case = os.path.dirname(newfile)
             if not os.path.exists(new_case):
                 os.makedirs(new_case)
-            shutil.copy(self.filename, newfile)
+            safe_copy(self.filename, newfile)
 
         self.tree = None
         self.filename = newfile
@@ -376,7 +378,7 @@ class GenericXML(object):
         for node in valnodes:
             self.set_text(node, value)
 
-    def get_resolved_value(self, raw_value):
+    def get_resolved_value(self, raw_value, allow_unresolved_envvars=False):
         """
         A value in the xml file may contain references to other xml
         variables or to environment variables. These are refered to in
@@ -411,8 +413,10 @@ class GenericXML(object):
             logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
             env_var_exists = env_var in os.environ
-            expect(env_var_exists, "Undefined env var '{}'".format(env_var))
-            item_data = item_data.replace(m.group(), os.environ[env_var])
+            if not allow_unresolved_envvars:
+                expect(env_var_exists, "Undefined env var '{}'".format(env_var))
+            if env_var_exists:
+                item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):
             logger.debug("execute {} in shell".format(item_data))

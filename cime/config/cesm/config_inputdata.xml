@@ -1,24 +1,28 @@
 <?xml version="1.0"?>
 
 <inputdata>
-<!-- server precidence is order in this file.  Highest preference at top -->
+  <!-- server precidence is order in this file.  Highest preference at top -->
+  <!-- If the client doesn't have the protocal it will be skipped -->
+  <server>
+    <comment>grid ftp requires the globus-url-copy tool on the client side </comment>
+    <protocal>gftp</protocal>
+    <address>ftp://gridanon.cgd.ucar.edu:2811/cesm/inputdata/</address>
+  </server>
+
   <server>
     <protocal>svn</protocal>
     <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 
-<!-- test servers ftp and wget are tested and supported, grid-ftp not yet
   <server>
+    <comment> ftp requires the python package ftplib </comment>
     <protocal>ftp</protocal>
-    <address>ftp.cgd.ucar.edu/pub/jedwards/inputdata</address>
+    <address>ftp.cgd.ucar.edu/cesm/inputdata</address>
   </server>
+
   <server>
     <protocal>wget</protocal>
-    <address>ftp://ftp.cgd.ucar.edu/pub/jedwards/inputdata</address>
+    <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
   </server>
-  <server>
-    <protocal>grid-ftp</protocal>
-    <address>ftp://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
-  </server>
--->
+
 </inputdata>

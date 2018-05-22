@@ -306,6 +306,18 @@
   </entry>
 -->
 
+  <entry id="model_doi_url" modify_via_xml="MODEL_DOI_URL">
+    <type>char</type>
+    <category>expdef</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      model doi url
+    </desc>
+    <values>
+      <value>$MODEL_DOI_URL</value>
+    </values>
+  </entry>
+
   <entry id="username" modify_via_xml="USER">
     <type>char</type>
     <category>expdef</category>
@@ -1778,7 +1790,7 @@
     </values>
   </entry>
 
-  <entry id="stop_ymd" modify_via_xml="STOP_YMD">
+  <entry id="stop_ymd" modify_via_xml="STOP_DATE">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -2240,13 +2252,13 @@
   </entry>
 
   <!-- =========================== -->
-  <!-- group seq_ccsm_pes          -->
+  <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 
   <entry id="atm_ntasks" modify_via_xml="NTASKS_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the atm components.
       set by NTASKS_ATM in env_configure.xml.
@@ -2258,8 +2270,8 @@
 
   <entry id="atm_nthreads" modify_via_xml="NTHRDS_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the atm component.
       set by NTHRDS_ATM in env_configure.xml.
@@ -2271,8 +2283,8 @@
 
   <entry id="atm_rootpe" modify_via_xml="ROOTPE_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the atm component.
       set by ROOTPE_ATM in env_configure.xml.
@@ -2284,8 +2296,8 @@
 
   <entry id="atm_pestride" modify_via_xml="PSTRID_ATM">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the atm component.
       set by PSTRID_ATM in env_configure.xml.
@@ -2297,8 +2309,8 @@
 
   <entry id="atm_layout" modify_via_xml="NINST_ATM_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance atms (if there are more than 1)
@@ -2310,8 +2322,8 @@
 
   <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
@@ -2323,8 +2335,8 @@
 
   <entry id="lnd_nthreads" modify_via_xml="NTHRDS_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_LND in env_configure.xml.
@@ -2336,8 +2348,8 @@
 
   <entry id="lnd_rootpe" modify_via_xml="ROOTPE_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
@@ -2349,8 +2361,8 @@
 
   <entry id="lnd_pestride" modify_via_xml="PSTRID_LND">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
@@ -2362,8 +2374,8 @@
 
   <entry id="lnd_layout" modify_via_xml="NINST_LND_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance lnds (if there are more than 1)
@@ -2375,8 +2387,8 @@
 
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the ice components.
       set by NTASKS_ICE in env_configure.xml.
@@ -2388,8 +2400,8 @@
 
   <entry id="ice_nthreads" modify_via_xml="NTHRDS_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the ice component.
       set by NTHRDS_ICE in env_configure.xml.
@@ -2401,8 +2413,8 @@
 
   <entry id="ice_rootpe" modify_via_xml="ROOTPE_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the ice component.
       set by ROOTPE_ICE in env_configure.xml.
@@ -2414,8 +2426,8 @@
 
   <entry id="ice_pestride" modify_via_xml="PSTRID_ICE">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the ice component.
       set by PSTRID_ICE in env_configure.xml.
@@ -2427,8 +2439,8 @@
 
   <entry id="ice_layout" modify_via_xml="NINST_ICE_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance ices (if there are more than 1)
@@ -2440,8 +2452,8 @@
 
   <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the ocn components.
       set by NTASKS_OCN in env_configure.xml.
@@ -2453,8 +2465,8 @@
 
   <entry id="ocn_nthreads" modify_via_xml="NTHRDS_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the ocn component.
       set by NTHRDS_OCN in env_configure.xml.
@@ -2466,8 +2478,8 @@
 
   <entry id="ocn_rootpe" modify_via_xml="ROOTPE_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the ocn component.
       set by ROOTPE_OCN in env_configure.xml.
@@ -2479,8 +2491,8 @@
 
   <entry id="ocn_pestride" modify_via_xml="PSTRID_OCN">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the ocn component.
       set by PSTRID_OCN in env_configure.xml.  default: 1
@@ -2492,8 +2504,8 @@
 
   <entry id="ocn_layout" modify_via_xml="NINST_OCN_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance ocns (if there are more than 1)
@@ -2505,8 +2517,8 @@
 
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the glc components.
       set by NTASKS_GLC in env_configure.xml.
@@ -2518,8 +2530,8 @@
 
   <entry id="glc_nthreads" modify_via_xml="NTHRDS_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the glc component.
       set by NTHRDS_GLC in env_configure.xml.
@@ -2531,8 +2543,8 @@
 
   <entry id="glc_rootpe" modify_via_xml="ROOTPE_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the glc component.
       set by ROOTPE_GLC in env_configure.xml.
@@ -2544,8 +2556,8 @@
 
   <entry id="glc_pestride" modify_via_xml="PSTRID_GLC">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the glc component.
       set by PSTRID_GLC in env_configure.xml.
@@ -2557,8 +2569,8 @@
 
   <entry id="glc_layout" modify_via_xml="NINST_GLC_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance glcs (if there are more than 1)
@@ -2570,8 +2582,8 @@
 
   <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the wav components.
       set by NTASKS_WAV in env_configure.xml.
@@ -2583,8 +2595,8 @@
 
   <entry id="wav_nthreads" modify_via_xml="NTHRDS_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the wav component.
       set by NTHRDS_WAV in env_configure.xml.
@@ -2596,8 +2608,8 @@
 
   <entry id="wav_rootpe" modify_via_xml="ROOTPE_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the wav component.
       set by ROOTPE_WAV in env_configure.xml.
@@ -2609,8 +2621,8 @@
 
   <entry id="wav_pestride" modify_via_xml="PSTRID_WAV">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the wav component.
       set by PSTRID_WAV in env_configure.xml.
@@ -2622,8 +2634,8 @@
 
   <entry id="wav_layout" modify_via_xml="NINST_WAV_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance wavs (if there are more than 1)
@@ -2635,8 +2647,8 @@
 
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the lnd components.
       set by NTASKS_LND in env_configure.xml.
@@ -2648,8 +2660,8 @@
 
   <entry id="rof_nthreads" modify_via_xml="NTHRDS_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
       set by NTHRDS_ROF in env_configure.xml.
@@ -2661,8 +2673,8 @@
 
   <entry id="rof_rootpe" modify_via_xml="ROOTPE_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the lnd component.
       set by ROOTPE_LND in env_configure.xml.
@@ -2674,8 +2686,8 @@
 
   <entry id="rof_pestride" modify_via_xml="PSTRID_ROF">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the lnd component.
       set by PSTRID_LND in env_configure.xml.
@@ -2687,8 +2699,8 @@
 
   <entry id="rof_layout" modify_via_xml="NINST_ROF_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance lnds (if there are more than 1)
@@ -2700,8 +2712,8 @@
 
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the esp components.
       set by NTASKS_ESP in env_configure.xml.
@@ -2713,8 +2725,8 @@
 
   <entry  id="esp_nthreads" modify_via_xml="NTHRDS_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the esp component.
       set by NTHRDS_ESP in env_configure.xml.
@@ -2726,8 +2738,8 @@
 
   <entry  id="esp_rootpe" modify_via_xml="ROOTPE_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the esp component.
       set by ROOTPE_ESP in env_configure.xml.
@@ -2739,8 +2751,8 @@
 
   <entry  id="esp_pestride" modify_via_xml="PSTRID_ESP">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the esp component.
       set by PSTRID_ESP in env_configure.xml.
@@ -2752,8 +2764,8 @@
 
   <entry  id="esp_layout" modify_via_xml="NINST_ESP_LAYOUT">
     <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <valid_values>concurrent,sequential</valid_values>
     <desc>
       Layout of multi-instance external system processor (if there are more than 1)
@@ -2765,8 +2777,8 @@
 
   <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of mpi tasks assigned to the cpl components.
       set by NTASKS_CPL in env_configure.xml.
@@ -2778,8 +2790,8 @@
 
   <entry id="cpl_nthreads" modify_via_xml="NTHRDS_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the number of threads per mpi task for the cpl component.
       set by NTHRDS_CPL in env_configure.xml.
@@ -2791,8 +2803,8 @@
 
   <entry id="cpl_rootpe" modify_via_xml="ROOTPE_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the global mpi task rank of the root processor assigned to the cpl component.
       set by ROOTPE_CPL in env_configure.xml.
@@ -2804,8 +2816,8 @@
 
   <entry id="cpl_pestride" modify_via_xml="PSTRID_CPL">
     <type>integer</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
     <desc>
       the mpi global processors stride associated with the mpi tasks for the cpl component.
       set by PSTRID_CPL in env_configure.xml.

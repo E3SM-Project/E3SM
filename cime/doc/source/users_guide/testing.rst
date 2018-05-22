@@ -220,11 +220,11 @@ To run two tests::
 
 To run a test suite::
 
-  ./create_test acme_developer
+  ./create_test e3sm_developer
 
 To run a test suite excluding a specific test::
 
-  ./create_test acme_developer ^SMS.f19_f19.A
+  ./create_test e3sm_developer ^SMS.f19_f19.A
 
 See create_test -h for the full list of options
 
@@ -232,7 +232,7 @@ Interpreting test output is pretty easy, looking at an example::
 
   % ./create_test SMS.f19_f19.A
 
-  Creating test directory /home/jgfouca/acme/scratch/SMS.f19_f19.A.melvin_gnu.20170504_163152_31aahy
+  Creating test directory /home/jgfouca/e3sm/scratch/SMS.f19_f19.A.melvin_gnu.20170504_163152_31aahy
   RUNNING TESTS:
     SMS.f19_f19.A.melvin_gnu
   Starting CREATE_NEWCASE for test SMS.f19_f19.A.melvin_gnu with 1 procs
@@ -249,7 +249,7 @@ Interpreting test output is pretty easy, looking at an example::
   Finished RUN for test SMS.f19_f19.A.melvin_gnu in 35.068546 seconds (PASS). [COMPLETED 1 of 1]
   At test-scheduler close, state is:
   PASS SMS.f19_f19.A.melvin_gnu RUN
-    Case dir: /home/jgfouca/acme/scratch/SMS.f19_f19.A.melvin_gnu.20170504_163152_31aahy
+    Case dir: /home/jgfouca/e3sm/scratch/SMS.f19_f19.A.melvin_gnu.20170504_163152_31aahy
   test-scheduler took 154.780044079 seconds
 
 You can see that create_test informs the user of the case directory and of the progress and duration
@@ -271,23 +271,19 @@ results to a baseline area.
 Take a batch of results for the jenkins user for the testid 'mytest' and copy the results to
 baselines for 'master'::
 
-  ./bless_test_results -r /home/jenkins/acme/scratch/jenkins/ -t mytest -b master
+  ./bless_test_results -r /home/jenkins/e3sm/scratch/jenkins/ -t mytest -b master
 
 Take a batch of results for the jenkins user for the testid 'mytest' and compare the results to
 baselines for 'master'::
 
-  ./compare_test_results -r /home/jenkins/acme/scratch/jenkins/ -t mytest -b master
-
-===================
-manage_testlists
-===================
+  ./compare_test_results -r /home/jenkins/e3sm/scratch/jenkins/ -t mytest -b master
 
 =============
 Adding tests
 =============
 
-Open the update_acme_tests.py file, you'll see a python dict at the top
-of the file called TEST_SUITES, find the test category you want to
+Open the config/$model/tests.py file, you'll see a python dict at the top
+of the file called _TESTS, find the test category you want to
 change in this dict and add your testcase to the list.  Note the
 comment at the top of this file indicating that you add a test with
 this format: test>.<grid>.<compset>, and then there is a second

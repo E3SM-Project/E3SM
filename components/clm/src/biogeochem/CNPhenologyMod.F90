@@ -2417,7 +2417,13 @@ contains
          npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch      , &
          ppool_to_leafp        =>    phosphorusflux_vars%ppool_to_leafp_patch        , &
          ppool_to_frootp       =>    phosphorusflux_vars%ppool_to_frootp_patch       , &
-         ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch      &
+         ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch    , &
+         hrv_leafc_to_prod1c   =>    carbonflux_vars%hrv_leafc_to_prod1c_patch       , & ! Input:  [real(r8) (:)] crop leafc harvested
+         hrv_livestemc_to_prod1c  => carbonflux_vars%hrv_livestemc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop stemc harvested
+         hrv_leafn_to_prod1n   =>    nitrogenflux_vars%hrv_leafn_to_prod1n_patch     , & ! Input:  [real(r8) (:)] crop leafn harvested
+         hrv_livestemn_to_prod1n  => nitrogenflux_vars%hrv_livestemn_to_prod1n_patch , & ! Input:  [real(r8) (:)] crop stemn harvested
+         hrv_leafp_to_prod1p   =>    phosphorusflux_vars%hrv_leafp_to_prod1p_patch   , & ! Input:  [real(r8) (:)] crop leafp harvested
+         hrv_livestemp_to_prod1p  => phosphorusflux_vars%hrv_livestemp_to_prod1p_patch & ! Input:  [real(r8) (:)] crop stemp harvested
          )
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
@@ -2448,24 +2454,37 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-               ! calculate the leaf N litterfall and retranslocation
-               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
-
-               ! calculate fine root N litterfall (no retranslocation of fine root N)
-               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
-
-               ! calculate the leaf P litterfall and retranslocation
-               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
-
-               ! calculate fine root P litterfall (no retranslocation of fine root N)
-               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
-                
                if (ivt(p) >= npcropmin) then
-                  livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
-                  livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
-               end if
+                  if (offset_counter(p) == dt) then
+                      t1 = 1.0_r8 / dt
+
+                     ! this assumes that offset_counter == dt for crops
+                     ! if this were ever changed, we'd need to add code to the
+                     ! "else"
+                     leafn_to_litter(p) = (t1 * leafn(p) + npool_to_leafn(p)) - hrv_leafn_to_prod1n(p)
+                     leafp_to_litter(p) = (t1 * leafp(p) + ppool_to_leafp(p)) - hrv_leafp_to_prod1p(p)
+
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+
+                     livestemn_to_litter(p) = (t1 * livestemn(p) + npool_to_livestemn(p)) - hrv_livestemn_to_prod1n(p)
+                     livestemp_to_litter(p) = (t1 * livestemp(p) + ppool_to_livestemp(p)) - hrv_livestemp_to_prod1p(p)
+                  end if
+               else
+                  ! calculate the leaf N litterfall and retranslocation
+                  leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+                  leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+
+                  ! calculate fine root N litterfall (no retranslocation of fine root N)
+                  frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+
+                  ! calculate the leaf P litterfall and retranslocation
+                  leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+                  leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+
+                  ! calculate fine root P litterfall (no retranslocation of fine root N)
+                  frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+               end if 
             else
                if (offset_counter(p) == dt) then
                   t1 = 1.0_r8 / dt

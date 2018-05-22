@@ -47,12 +47,11 @@ def buildlib(bldroot, installpath, caseroot):
             " SHAREDPATH={}"\
             .format(gptl_dir , bldroot, os.path.join(caseroot,"Macros.make"),
                     gptl_dir, bldroot, installpath)
-        build_threaded = case.get_value("SMP") or case.get_value("BUILD_THREADED")
+        build_threaded = case.get_build_threaded()
         if build_threaded:
             gmake_opts += " compile_threaded=true "
 
         gmake_cmd = case.get_value("GMAKE")
-
 
         # This runs the gptl make command
         cmd = "{} {}".format(gmake_cmd, gmake_opts)

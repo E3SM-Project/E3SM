@@ -289,7 +289,7 @@ contains
     use fileutils ,  only : getfil
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl,  only : paramfile, use_ed
+    use clm_varctl,  only : paramfile, use_fates
     use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
@@ -663,7 +663,7 @@ contains
        call ncd_io('fyield',fyield, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     endif
-    if(use_crop .and. use_dynroot)then
+    if(use_dynroot)then
        call ncd_io('root_dmx',root_dmx, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     endif
@@ -919,7 +919,7 @@ contains
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
-       if(.not. use_ed)then
+       if(.not. use_fates)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
@@ -965,7 +965,7 @@ contains
        fcur(:) = fcurdv(:)
     end if
 
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
        end if

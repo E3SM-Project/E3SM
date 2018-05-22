@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -35,9 +35,9 @@ def _save_build_provenance_e3sm(case, lid):
 
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
-    if os.path.exists(describe_prov):
-        os.remove(describe_prov)
-    run_cmd_no_fail("git describe", arg_stdout=describe_prov, from_dir=cimeroot)
+    desc = get_current_commit(tag=True, repo=cimeroot)
+    with open(describe_prov, "w") as fd:
+        fd.write(desc)
 
     # Save HEAD
     headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
@@ -83,9 +83,9 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     manic = os.path.join(srcroot, "manage_externals","checkout_externals")
     out = None
     if os.path.exists(manic):
-        out = run_cmd_no_fail(manic + " --status --verbose", from_dir=srcroot)
+        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
-    with open(os.path.join(caseroot, "README.case"), "a") as fd:
+    with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
         if version is not None and version != "unknown":
             fd.write("CESM version is {}\n".format(version))
         if out is not None:
@@ -102,7 +102,7 @@ def save_build_provenance(case, lid=None):
             _save_build_provenance_cesm(case, lid)
 
 def _save_prerun_timing_e3sm(case, lid):
-    project = case.get_value("PROJECT", subgroup="case.run")
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 
@@ -213,10 +213,10 @@ def _save_prerun_timing_e3sm(case, lid):
             copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
 
     # Save state of repo
-    if os.path.exists(os.path.join(cimeroot, ".git")):
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=cimeroot)
-    else:
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=os.path.dirname(cimeroot))
+    from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
+    desc = get_current_commit(tag=True, repo=from_repo)
+    with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
+        fd.write(desc)
 
     # What this block does is mysterious to me (JGF)
     if job_id is not None:
@@ -293,7 +293,7 @@ def _save_postrun_timing_e3sm(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
-    project = case.get_value("PROJECT", subgroup="case.run")
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 
@@ -382,22 +382,25 @@ _GLOBAL_MINUMUM_TIME    = 900
 _GLOBAL_WIGGLE          = 1000
 _WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
-def get_recommended_test_time_based_on_past(baseline_root, test):
+def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
     if baseline_root is not None:
         try:
             the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
             if os.path.exists(the_path):
                 last_line = int(open(the_path, "r").readlines()[-1])
-                best_walltime = None
-                for cutoff, tolerance in _WALLTIME_TOLERANCE:
-                    if last_line <= cutoff:
-                        best_walltime = int(float(last_line) * tolerance)
-                        break
+                if raw:
+                    best_walltime = last_line
+                else:
+                    best_walltime = None
+                    for cutoff, tolerance in _WALLTIME_TOLERANCE:
+                        if last_line <= cutoff:
+                            best_walltime = int(float(last_line) * tolerance)
+                            break
 
-                if best_walltime < _GLOBAL_MINUMUM_TIME:
-                    best_walltime = _GLOBAL_MINUMUM_TIME
+                    if best_walltime < _GLOBAL_MINUMUM_TIME:
+                        best_walltime = _GLOBAL_MINUMUM_TIME
 
-                best_walltime += _GLOBAL_WIGGLE
+                    best_walltime += _GLOBAL_WIGGLE
 
                 return convert_to_babylonian_time(best_walltime)
         except:

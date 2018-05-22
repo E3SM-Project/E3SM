@@ -1,12 +1,11 @@
 """
 functions for building CIME models
 """
+import glob, shutil, time, threading, subprocess
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
 from CIME.provenance            import save_build_provenance
-from CIME.preview_namelists     import create_namelists, create_dirs
-from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
-import glob, shutil, time, threading, gzip, subprocess
+from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +94,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build))
 
         # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
-        shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
+        safe_copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
 
         logs.append(file_build)
 
@@ -197,12 +196,12 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.set_value("BUILD_COMPLETE", False)
 
     # User may have rm -rf their build directory
-    create_dirs(case)
+    case.create_dirs()
 
     case.flush()
     if not model_only and not buildlist:
         logger.info("Generating component namelists as part of build")
-        create_namelists(case)
+        case.create_namelists()
 
     return sharedpath
 
@@ -240,11 +239,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.{}".format(lib))
         logger.info("Building {} with output to file {}".format(lib,file_build))
 
-        stat,_,_ = run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
-                                  [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
+        run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
+                       [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
-        expect(stat == 0, "BUILD FAIL: buildlib.{} failed, cat {}".format(lib, file_build))
         logs.append(file_build)
         if lib == "pio":
             bldlog = open(file_build, "r")
@@ -303,7 +301,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
-        shutil.copy(mod_file, incroot)
+        safe_copy(mod_file, incroot)
 
     t2 = time.time()
     logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
@@ -380,14 +378,14 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     expect(os.path.isdir(caseroot), "'{}' is not a valid directory".format(caseroot))
     os.chdir(caseroot)
 
-    expect(os.path.exists(get_batch_script_for_job("case.run")),
+    expect(os.path.exists(get_batch_script_for_job(case.get_primary_job())),
            "ERROR: must invoke case.setup script before calling build script ")
 
     cimeroot = case.get_value("CIMEROOT")
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    check_lockedfiles(case)
+    case.check_lockedfiles()
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -432,7 +430,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     smp_value           = case.get_value("SMP_VALUE")
     clm_use_petsc       = case.get_value("CLM_USE_PETSC")
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
-    mpasli_use_albany   = case.get_value("MPASLI_USE_ALBANY")
+    mali_use_albany     = case.get_value("MALI_USE_ALBANY")
     use_moab            = case.get_value("USE_MOAB")
     clm_config_opts     = case.get_value("CLM_CONFIG_OPTS")
     cam_config_opts     = case.get_value("CAM_CONFIG_OPTS")
@@ -464,7 +462,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable)
     os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
-    os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
+    os.environ["MALI_USE_ALBANY"]      = stringify_bool(mali_use_albany)
     os.environ["USE_MOAB"]             = stringify_bool(use_moab)
 
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
@@ -498,11 +496,11 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 
     # Set the overall USE_ALBANY variable to TRUE if any of the
     # *_USE_ALBANY variables are TRUE.
-    # For now, there is just the one MPASLI_USE_ALBANY variable, but in
+    # For now, there is just the one MALI_USE_ALBANY variable, but in
     # the future there may be others -- so USE_ALBANY will be true if
     # ANY of those are true.
 
-    use_albany = stringify_bool(mpasli_use_albany)
+    use_albany = stringify_bool(mali_use_albany)
     case.set_value("USE_ALBANY", use_albany)
     os.environ["USE_ALBANY"] = use_albany
 
@@ -544,23 +542,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 ###############################################################################
 def post_build(case, logs, build_complete=False):
 ###############################################################################
-
-    logdir = case.get_value("LOGDIR")
-
-    #zip build logs to CASEROOT/logs
-    if logdir:
-        bldlogdir = os.path.join(logdir, "bld")
-        if not os.path.exists(bldlogdir):
-            os.makedirs(bldlogdir)
-
     for log in logs:
-        logger.info("Copying build log {} to {}".format(log, bldlogdir))
-        with open(log, 'rb') as f_in:
-            with gzip.open("{}.gz".format(log), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        if "sharedlibroot" not in log:
-            shutil.copy("{}.gz".format(log), os.path.join(bldlogdir, "{}.gz".format(os.path.basename(log))))
-        os.remove(log)
+        gzip_existing_file(log)
 
     if build_complete:
 

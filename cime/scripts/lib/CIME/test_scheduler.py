@@ -14,8 +14,8 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 import six
-from update_e3sm_tests import get_recommended_test_time
-from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
+from get_tests import get_recommended_test_time
+from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.generic_xml import GenericXML
@@ -25,8 +25,8 @@ from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
-from CIME.check_lockedfiles import lock_file
 from CIME.provenance import get_recommended_test_time_based_on_past
+from CIME.locked_files import lock_file
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,34 @@ def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads
 
     return new_test_names
 
+_TIME_CACHE = {}
+###############################################################################
+def _get_time_est(test, baseline_root, as_int=False, use_cache=False, raw=False):
+###############################################################################
+    if test in _TIME_CACHE and use_cache:
+        return _TIME_CACHE[test]
+
+    recommended_time = get_recommended_test_time_based_on_past(baseline_root, test, raw=raw)
+
+    if recommended_time is None:
+        recommended_time = get_recommended_test_time(test)
+
+    if as_int:
+        if recommended_time is None:
+            recommended_time = 9999999999
+        else:
+            recommended_time = convert_to_seconds(recommended_time)
+
+    if use_cache:
+        _TIME_CACHE[test] = recommended_time
+
+    return recommended_time
+
+###############################################################################
+def _order_tests_by_runtime(tests, baseline_root):
+###############################################################################
+    tests.sort(key=lambda x: _get_time_est(x, baseline_root, as_int=True, use_cache=True, raw=True), reverse=True)
+
 ###############################################################################
 class TestScheduler(object):
 ###############################################################################
@@ -91,7 +119,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -103,6 +131,7 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+        self._allow_pnl       = allow_pnl
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -186,9 +215,13 @@ class TestScheduler(object):
                     test_baseline = os.path.join(full_baseline_dir, test_name)
                     if os.path.isdir(test_baseline):
                         existing_baselines.append(test_baseline)
+
                 expect(allow_baseline_overwrite or len(existing_baselines) == 0,
                        "Baseline directories already exists {}\n" \
                        "Use -o to avoid this error".format(existing_baselines))
+
+        if self._cime_model == "e3sm":
+            _order_tests_by_runtime(test_names, self._baseline_root)
 
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
@@ -255,6 +288,7 @@ class TestScheduler(object):
 
     ###########################################################################
     def get_testnames(self):
+    ###########################################################################
         return list(self._tests.keys())
 
     ###########################################################################
@@ -350,7 +384,9 @@ class TestScheduler(object):
             rc, output, errput = run_cmd(cmd, from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
-                                 "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".format(phase, test, cmd, output + "\n" + errput))
+                                 "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".
+                                 format(phase, test, cmd,
+                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
@@ -363,7 +399,9 @@ class TestScheduler(object):
                 # succeeded was the submission.
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
-                                 "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".format(phase, test, cmd, output + "\n" + errput))
+                                 "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".
+                                 format(phase, test, cmd,
+                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
                 return True, errput
 
     ###########################################################################
@@ -393,11 +431,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if get_model() == "e3sm":
-                component = "allactive"
-                modspath = test_mods
-            else:
-                (component, modspath) = test_mods.split('/',1)
+            (component, modspath) = test_mods.split('/',1)
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
@@ -441,16 +475,21 @@ class TestScheduler(object):
 
         if self._queue is not None:
             create_newcase_cmd += " --queue={}".format(self._queue)
+        else:
+            # We need to hard code the queue for this test on cheyenne
+            # otherwise it runs in share and fails intermittently
+            test_case = CIME.utils.parse_test_name(test)[0]
+            if test_case == "NODEFAIL":
+                machine = machine if machine is not None else self._machobj.get_machine_name()
+                if machine == "cheyenne":
+                    create_newcase_cmd += " --queue=regular"
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime {}".format(self._walltime)
         else:
             # model specific ways of setting time
-            if get_model() == "e3sm":
-                recommended_time = get_recommended_test_time_based_on_past(self._baseline_root, test)
-
-                if recommended_time is None:
-                    recommended_time = get_recommended_test_time(test)
+            if self._cime_model == "e3sm":
+                recommended_time = _get_time_est(test, self._baseline_root)
 
                 if recommended_time is not None:
                     create_newcase_cmd += " --walltime {}".format(recommended_time)
@@ -573,7 +612,7 @@ class TestScheduler(object):
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
             # if we are running a single test we don't need sharedlibroot
-            if len(self._tests) > 1 and get_model() != "e3sm":
+            if len(self._tests) > 1 and self._cime_model != "e3sm":
                 case.set_value("SHAREDLIBROOT",
                                os.path.join(self._output_root,
                                             "sharedlibroot.{}".format(self._test_id)))
@@ -618,7 +657,9 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        cmd = "./case.submit --skip-preview-namelist"
+        cmd = "./case.submit"
+        if not self._allow_pnl:
+            cmd += " --skip-preview-namelist"
         if self._no_batch:
             cmd += " --no-batch"
         if self._mail_user:
@@ -646,19 +687,10 @@ class TestScheduler(object):
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
             total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
-            threads = eval(run_cmd_no_fail("./xmlquery NTHRDS --value", from_dir=test_dir))
-            max_threads = 0
-            for item in threads:
-                _, comp_threads = item.split(":")
-                comp_threads = int(comp_threads)
-                if comp_threads > max_threads:
-                    max_threads = comp_threads
-
-            max_cores = total_pes * max_threads
-            return max_cores
+            return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
-            if get_model() == "cesm":
+            if self._cime_model == "cesm":
                 # Will force serialization of sharedlib builds
                 # TODO - instead of serializing, compute all library configs needed and build
                 # them all in parallel
@@ -843,7 +875,7 @@ class TestScheduler(object):
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            if get_model() == "cesm":
+            if self._cime_model == "cesm":
                 template_file = os.path.join(python_libs_root, "testreporter.template")
                 template = open(template_file, "r").read()
                 template = template.replace("<PATH>",

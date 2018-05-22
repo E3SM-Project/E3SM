@@ -603,7 +603,7 @@ contains
      integer :: cid       ! clump index
      !------------------------------------------------------------------------------
 
-     npfts_ghost    = procinfo%ncells_ghost
+     ncells_ghost   = procinfo%ncells_ghost
      nlunits_ghost  = procinfo%nlunits_ghost
      ncols_ghost    = procinfo%ncols_ghost
      npfts_ghost    = procinfo%npfts_ghost

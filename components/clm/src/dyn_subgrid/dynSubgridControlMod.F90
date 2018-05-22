@@ -186,7 +186,7 @@ contains
     ! Check consistency of namelist settingsn
     !
     ! !USES:
-    use clm_varctl     , only : iulog, use_cndv, use_ed, use_cn, use_crop
+    use clm_varctl     , only : iulog, use_cndv, use_fates, use_cn, use_crop
     !
     ! !ARGUMENTS:
     !
@@ -218,8 +218,8 @@ contains
           write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_cndv'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
-       if (use_ed) then
-          write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_ed'
+       if (use_fates) then
+          write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_fates'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
@@ -229,11 +229,11 @@ contains
           write(iulog,*) 'ERROR: do_transient_crops can only be true if use_crop is true'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
-       if (use_ed) then
+       if (use_fates) then
           ! NOTE(wjs, 2017-01-13) ED / FATES does not currently have a mechanism for
           ! changing its column areas, with the consequent changes in aboveground biomass
           ! per unit area. See https://github.com/NGEET/ed-clm/issues/173
-          write(iulog,*) 'ERROR: do_transient_crops does not currently work with use_ed'
+          write(iulog,*) 'ERROR: do_transient_crops does not currently work with use_fates'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
@@ -243,8 +243,8 @@ contains
           write(iulog,*) 'ERROR: do_harvest can only be true if use_cn is true'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
-       if (use_ed) then
-          write(iulog,*) 'ERROR: do_harvest currently does not work with use_ed'
+       if (use_fates) then
+          write(iulog,*) 'ERROR: do_harvest currently does not work with use_fates'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if

@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class FTP(GenericServer):
     def __init__(self, address, user='', passwd=''):
         ftp_server, root_address = address.split('/', 1)
+        logger.info("server address {} root path {}".format(ftp_server, root_address))
         self.ftp = FTPpy(ftp_server)
 
         stat = self.ftp.login(user, passwd)
@@ -27,18 +28,37 @@ class FTP(GenericServer):
         self._ftp_server = address
 
     def fileexists(self, rel_path):
-        stat = self.ftp.nlst(rel_path)
+        try:
+            stat = self.ftp.nlst(rel_path)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
 
         if rel_path not in stat:
-            logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
-            return None
-        return self
+            if not stat[0].startswith(rel_path):
+                logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
+                return False
+        return True
 
     def getfile(self, rel_path, full_path):
-        stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
+        try:
+            stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
 
-        if (stat != 0):
-            logging.warning("FAIL: FTP repo '{}' does not have file '{}'\n".
-                            format(self._ftp_server,rel_path))
+        if (stat != '226 Transfer complete.'):
+            logging.warning("FAIL: Failed to retreve file '{}' from FTP repo '{}' stat={}\n".
+                            format(rel_path, self._ftp_server, stat))
             return False
         return True
+
+    def getdirectory(self, rel_path, full_path):
+        try:
+            stat = self.ftp.nlst(rel_path)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
+
+        for _file in stat:
+            self.getfile(_file, full_path+os.sep+os.path.basename(_file))

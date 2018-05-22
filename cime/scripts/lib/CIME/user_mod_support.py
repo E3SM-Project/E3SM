@@ -3,8 +3,8 @@ user_mod_support.py
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd_no_fail
-import shutil, glob
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def apply_user_mods(caseroot, user_mods_path, keepexe=None):
                     else:
                         logger.info("Adding SourceMod to case {}".format(case_source_mods))
                     try:
-                        shutil.copyfile(source_mods, case_source_mods)
+                        safe_copy(source_mods, case_source_mods)
                     except:
                         expect(False, "Could not write file {} in caseroot {}".format(case_source_mods,caseroot))
 
@@ -93,7 +93,7 @@ def apply_user_mods(caseroot, user_mods_path, keepexe=None):
     for shell_command_file in case_shell_command_files:
         if os.path.isfile(shell_command_file):
             os.chmod(shell_command_file, 0o777)
-            run_cmd_no_fail(shell_command_file)
+            run_cmd_no_fail(shell_command_file,verbose=True)
 
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):

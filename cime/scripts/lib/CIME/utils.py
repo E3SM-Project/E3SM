@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, fnmatch
 import errno, signal, warnings, filecmp
 import stat as statlib
 import six
@@ -21,7 +21,6 @@ def redirect_stdout(new_target):
         yield new_target # run some code with the replaced stdout
     finally:
         sys.stdout = old_target # restore to the previous value
-
 
 @contextmanager
 def redirect_stderr(new_target):
@@ -127,9 +126,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     >>> check_name("/some/file/path/case.name", fullpath=True)
     True
+    >>> check_name("mycase+mods")
+    False
+    >>> check_name("mycase?mods")
+    False
+    >>> check_name("mycase*mods")
+    False
     """
 
-    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -268,52 +273,76 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
 _hack=object()
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
+    """
+    This code will try to import and run each cmd as a subroutine
+    if that fails it will run it as a program in a seperate shell
 
-    # This code will try to import and run each buildnml as a subroutine
-    # if that fails it will run it as a program in a seperate shell
-    do_run_cmd = False
-    stat = 0
-    output = ""
-    errput = ""
-    try:
-        mod = imp.load_source(subname, cmd)
-        logger.info("   Calling {}".format(cmd))
-        if logfile:
-            with redirect_logger(open(logfile,"w"), subname):
+    Raises exception on failure.
+    """
+    do_run_cmd = True
+
+    # Before attempting to load the script make sure it contains the subroutine
+    # we are expecting
+    with open(cmd, 'r') as fd:
+        for line in fd.readlines():
+            if re.search(r"^def {}\(".format(subname), line):
+                do_run_cmd = False
+                break
+
+    if not do_run_cmd:
+        try:
+            mod = imp.load_source(subname, cmd)
+            logger.info("   Calling {}".format(cmd))
+            if logfile:
+                with open(logfile,"w") as log_fd:
+                    with redirect_logger(log_fd, subname):
+                        with redirect_stdout_stderr(log_fd):
+                            getattr(mod, subname)(*subargs)
+            else:
                 getattr(mod, subname)(*subargs)
+
+        except (SyntaxError, AttributeError) as _:
+            pass # Need to try to run as shell command
+
+        except:
+            if logfile:
+                with open(logfile, "a") as log_fd:
+                    log_fd.write(str(sys.exc_info()[1]))
+
+                expect(False, "{} FAILED, cat {}".format(cmd, logfile))
+            else:
+                raise
+
         else:
-            getattr(mod, subname)(*subargs)
+            return # Running as python function worked, we're done
 
-    except SyntaxError:
-        do_run_cmd = True
+    logger.info("   Running {} ".format(cmd))
+    if case is not None:
+        case.flush()
 
-    except AttributeError:
-        do_run_cmd = True
+    fullcmd = cmd
+    if isinstance(cmdargs, list):
+        for arg in cmdargs:
+            fullcmd += " " + str(arg)
+    else:
+        fullcmd += " " + cmdargs
 
-    if do_run_cmd:
-        logger.info("   Running {} ".format(cmd))
-        if case is not None:
-            case.flush()
+    if logfile:
+        fullcmd += " >& {} ".format(logfile)
 
-        fullcmd = cmd
-        if isinstance(cmdargs, list):
-            for arg in cmdargs:
-                fullcmd += " " + str(arg)
-        else:
-            fullcmd += " " + cmdargs
-
-        if logfile:
-            fullcmd += " > {} ".format(logfile)
-
-        output = run_cmd_no_fail("{}".format(fullcmd),
-                                 combine_output=True,
-                                 from_dir=from_dir)
+    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True, from_dir=from_dir)
+    if output: # Will be empty if logfile
         logger.info(output)
-        # refresh case xml object from file
-        if case is not None:
-            case.read_xml()
 
-    return stat, output, errput
+    if stat != 0:
+        if logfile:
+            expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
+        else:
+            expect(False, "{} FAILED, see above")
+
+    # refresh case xml object from file
+    if case is not None:
+        case.read_xml()
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
@@ -615,10 +644,8 @@ def get_current_commit(short=False, repo=None, tag=False):
         rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
         rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
-    if rc == 0:
-        return output
-    else:
-        return 'unknown'
+
+    return output if rc == 0 else "unknown"
 
 def get_scripts_location_within_cime():
     """
@@ -697,7 +724,47 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_dir, tgt_dir, file_map):
+def safe_copy(src_path, tgt_path):
+    """
+    A flexbile and safe copy routine. Will try to copy file and metadata, but this
+    can fail if the current user doesn't own the tgt file. A fallback data-only copy is
+    attempted in this case. Works even if overwriting a read-only file.
+
+    tgt_path can be a directory, src_path must be a file
+
+    most of the complexity here is handling the case where the tgt_path file already
+    exists. This problem does not exist for the tree operations so we don't need to wrap those.
+    """
+
+    tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
+
+    # Handle pre-existing file
+    if os.path.isfile(tgt_path):
+        st = os.stat(tgt_path)
+        owner_uid = st.st_uid
+
+        # Handle read-only files if possible
+        if not os.access(tgt_path, os.W_OK):
+            if owner_uid == os.getuid():
+                # I am the owner, make writeable
+                os.chmod(st.st_mode | statlib.S_IWRITE)
+            else:
+                # I won't be able to copy this file
+                raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
+
+        if owner_uid == os.getuid():
+            # I am the owner, copy file contents, permissions, and metadata
+            shutil.copy2(src_path, tgt_path)
+        else:
+            # I am not the owner, just copy file contents
+            shutil.copyfile(src_path, tgt_path)
+
+    else:
+        # We are making a new file, copy file contents, permissions, and metadata.
+        # This can fail if the underlying directory is not writable by current user.
+        shutil.copy2(src_path, tgt_path)
+
+def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
     Copies a set of files from one dir to another. Works even if overwriting a
     read-only file. Files can be relative paths and the relative path will be
@@ -707,9 +774,7 @@ def safe_copy(src_dir, tgt_dir, file_map):
         full_tgt = os.path.join(tgt_dir, tgt_file)
         full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
         expect(os.path.isfile(full_src), "Source dir '{}' missing file '{}'".format(src_dir, src_file))
-        if (os.path.isfile(full_tgt)):
-            os.remove(full_tgt)
-        shutil.copy2(full_src, full_tgt)
+        safe_copy(full_src, full_tgt)
 
 def symlink_force(target, link_name):
     """
@@ -853,6 +918,18 @@ def get_charge_account(machobj=None):
 
     logger.info("No charge_account info available, using value from PROJECT")
     return get_project(machobj)
+
+def find_files(rootdir, pattern):
+    """
+    recursively find all files matching a pattern
+    """
+    result = []
+    for root, _, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
 
 
 def setup_standard_logging_options(parser):
@@ -1208,11 +1285,11 @@ def append_status(msg, sfile, caseroot='.'):
 
     # Reduce empty lines in CaseStatus. It's a very concise file
     # and does not need extra newlines for readability
-    line_ending = "" if sfile == "CaseStatus" else "\n"
+    line_ending = "\n"
 
     with open(os.path.join(caseroot, sfile), "a") as fd:
         fd.write(ctime + msg + line_ending)
-        fd.write("\n ---------------------------------------------------\n" + line_ending)
+        fd.write(" ---------------------------------------------------" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """
@@ -1402,8 +1479,8 @@ def ls_sorted_by_mtime(path):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    logdir = case.get_value("LOGDIR")
-    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(logdir, model)))
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(rundir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
@@ -1476,7 +1553,7 @@ def copy_umask(src, dst):
     Preserves all file metadata except making sure new file obeys umask
     """
     curr_umask = get_umask()
-    shutil.copy2(src, dst)
+    safe_copy(src, dst)
     octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
     dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
     os.chmod(dst, octal_base - curr_umask)
@@ -1535,7 +1612,7 @@ def resolve_mail_type_args(args):
 def copyifnewer(src, dest):
     """ if dest does not exist or is older than src copy src to dest """
     if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
-        shutil.copy2(src, dest)
+        safe_copy(src, dest)
 
 class SharedArea(object):
     """

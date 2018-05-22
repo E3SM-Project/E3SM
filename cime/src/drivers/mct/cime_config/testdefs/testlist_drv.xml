@@ -68,6 +68,11 @@
   </test>
   <test name="SMS" grid="f19_g16" compset="X">
     <machines>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+	<options>
+	  <option name="wallclock">00:10</option>
+	</options>
+      </machine>
       <machine name="cheyenne" compiler="intel" category="jim">
 	<options>
 	  <option name="wallclock">00:10</option>
@@ -611,6 +616,11 @@
         <options>
           <option name="wallclock">00:30:00</option>
          </options>
+      </machine>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+        <options>
+          <option name="wallclock">00:30:00</option>
+        </options>
       </machine>
     </machines>
   </test>

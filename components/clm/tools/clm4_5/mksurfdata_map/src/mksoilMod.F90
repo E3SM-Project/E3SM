@@ -1042,7 +1042,11 @@ subroutine mksoilord(ldomain, mapfname, datfname, ndiag, &
 
         ! If land but no order, set order to  6?
 
-           if (soil_order_o(no)==0) soil_order_o(no) = 15 ! check with xiaojuan 
+           if (soil_order_o(no)==0) soil_order_o(no) = 15
+        ! If ocean, change the soil order to a valid value (the valid value for soil order is 1-15,
+        ! but the values of ocean gridcells are 16 in the raw data) 
+           if (soil_order_o(no)==16) soil_order_o(no) = 15 
+ 
 
         ! Set order for grid cells that are 100% glacier to zero. Otherwise,
         ! must have a soil order for the non-glacier portion of grid cell.

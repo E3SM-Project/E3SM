@@ -5,6 +5,8 @@
  <xs:attribute name="compname" type="xs:string"/>
  <xs:attribute name="compclass" type="xs:string"/>
  <xs:attribute name="version" type="xs:string"/>
+ <xs:attribute name="disposition" type="xs:string"/>
+
 
  <!-- definition of simple elements -->
  <xs:element name="rest_file_extension" type="xs:string"/>
@@ -30,6 +32,7 @@
        <xs:element ref="hist_file_extension" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="rest_history_varname" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="rpointer" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="test_file_names" minOccurs="0" maxOccurs="1"/>
      </xs:sequence>
      <xs:attribute ref="compname" use="required"/>
      <xs:attribute ref="compclass" use="required"/>
@@ -45,5 +48,23 @@
     </xs:complexType>
   </xs:element>
 
-</xs:schema>
+ <xs:element name="tfile">
+   <xs:complexType>
+     <xs:simpleContent>
+       <xs:extension base="xs:string">
+         <xs:attribute ref="disposition" />
+       </xs:extension>
+     </xs:simpleContent>
+   </xs:complexType>
+ </xs:element>
 
+
+  <xs:element name="test_file_names">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="tfile" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -359,7 +359,8 @@ subroutine stratiform_tend( &
 
    use cloud_fraction,   only: cldfrc, cldfrc_fice
    use physics_types,    only: physics_state, physics_ptend
-   use physics_types,    only: physics_ptend_init, physics_update
+   use physics_types,    only: physics_ptend_init
+   use physics_update_mod, only: physics_update
    use physics_types,    only: physics_ptend_sum,  physics_state_copy
    use physics_types,    only: physics_state_dealloc
    use cam_history,      only: outfld

@@ -52,14 +52,6 @@
     <desc>full pathname of case</desc>
   </entry>
 
-  <entry id="LOGDIR">
-    <type>char</type>
-    <default_value>$CASEROOT/logs</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Extra copies of the component log files will be saved here.</desc>
-  </entry>
-
   <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
@@ -696,7 +688,7 @@
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
   </entry>
 
-  <entry id="BUILD_THREADED">
+  <entry id="FORCE_BUILD_SMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -738,9 +730,9 @@
     <desc>TRUE implies linking to the Albany library - set
     automatically by XXX_USE_ALBANY options (do not edit). Flag to
     turn on linking to the Albany library. Currently this is used by
-    MPASLI. Note that Albany is a C++ library, so setting this
+    MALI. Note that Albany is a C++ library, so setting this
     variable to TRUE will involve the inclusion of C++ code in the
-    MPASLI executable. This is currently only supported for certain
+    MALI executable. This is currently only supported for certain
     machines.</desc>
   </entry>
 
@@ -891,7 +883,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
@@ -902,7 +894,7 @@
     <type>char</type>
     <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
     <default_value>ESMF_LOGKIND_NONE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>
       Determines what ESMF log files (if any) are generated when
@@ -2030,7 +2022,8 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>The mpi processor stride associated with the mpi tasks</desc>
+    <desc>The mpi global processors stride associated with the mpi tasks for the a component</desc>
+
   </entry>
 
   <entry id="TOTALPES">
@@ -2038,7 +2031,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>total number of MPI tasks (setup automatically - DO NOT EDIT)</desc>
+    <desc>total number of physical cores used (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">

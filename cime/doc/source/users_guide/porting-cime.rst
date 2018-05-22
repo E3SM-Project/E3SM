@@ -1,15 +1,14 @@
 .. _porting:
 
-*********************************************
+==============================================
 Porting and validating CIME on a new platform
-*********************************************
+==============================================
 
 One of the first steps for many users is getting CIME-based models running on their local machine.
 This section describes that process.
 
-===========================
 Required libraries/packages
-===========================
+---------------------------
 
 The machine needs to have:
 
@@ -21,9 +20,55 @@ A pnetcdf library is optional.
 
 If you are using MPI, make sure you can run a basic MPI parallel program on your machine before you attempt a CIME port. You can use this :ref:`MPI example <mpi-example>` to check.
 
-=================
+.. _mpi-example:
+
+An MPI example
+---------------
+
+It is usually very helpful to assure that you can run a basic mpi parallel program on your machine prior to attempting a CIME port. 
+Understanding how to compile and run the program fhello_world_mpi.F90 shown here could potentially save many hours of frustration.
+::
+
+   program fhello_world_mpi.F90
+     use mpi
+     implicit none
+     integer ( kind = 4 ) error
+     integer ( kind = 4 ) id
+     integer p
+     character(len=MPI_MAX_PROCESSOR_NAME) :: name
+     integer clen
+     integer, allocatable :: mype(:)
+     real ( kind = 8 ) wtime
+
+     call MPI_Init ( error )
+     call MPI_Comm_size ( MPI_COMM_WORLD, p, error )
+     call MPI_Comm_rank ( MPI_COMM_WORLD, id, error )
+     if ( id == 0 ) then
+        wtime = MPI_Wtime ( )
+     
+        write ( *, '(a)' ) ' '
+        write ( *, '(a)' ) 'HELLO_MPI - Master process:'
+        write ( *, '(a)' ) '  FORTRAN90/MPI version'
+        write ( *, '(a)' ) ' '
+        write ( *, '(a)' ) '  An MPI test program.'
+        write ( *, '(a)' ) ' '
+        write ( *, '(a,i8)' ) '  The number of processes is ', p
+        write ( *, '(a)' ) ' '
+     end if
+     call MPI_GET_PROCESSOR_NAME(NAME, CLEN, ERROR)
+     write ( *, '(a)' ) ' '
+     write ( *, '(a,i8,a,a)' ) '  Process ', id, ' says "Hello, world!" ',name(1:clen)
+
+     call MPI_Finalize ( error )
+   end program
+
+As an example, on a MAC with 2 cores that has mpich with gnu fortran you would issue the following two commands:
+
+
+
+
 Steps for porting
-=================
+---------------------------
 
 Porting CIME involves several steps in which you create, at a minimum, a **config_machines.xml** file in your **$HOME/.cime** directory.
 In addition, if you have a batch system, you will also need to add a **config_batch.xml** file to your **$HOME/.cime** directory.
@@ -60,7 +105,7 @@ Follow these steps:
    - Otherwise, copy **$CIME/config/xml_schemas/config_machines_template.xml** to
      **$HOME/.cime/config_machines.xml**.
 
-   Fill in the contents of **$HOME/.cime/config_machines.xml** that are specific to your machine. For more details see :ref:`customize the config_machines.xml file <customizing-machine-file>`.
+   Fill in the contents of **$HOME/.cime/config_machines.xml** that are specific to your machine. For more details see :ref:`the config_machines.xml file <machinefile>`.
 
    Check to ensure that your **config_machines.xml** file conforms to the CIME schema definition by doing the following:
    ::
@@ -84,147 +129,8 @@ After running those steps correctly, you are ready to try a case at your target 
    Once you have successfully created the required xml files in your .cime directory and are satisfied with the results you can merge them into the default files in the **config/$CIME_MODEL/machines** directory.
    If you would like to make this machine definition available generally you may then issue a pull request to add your changes to the git repository.
 
-.. _customizing-machine-file:
-
-===========================================
-config_machines.xml - machine specific file
-===========================================
-
-The machine-specific file is defined in the model-specific :ref:`config_machines.xml <defining-machines>`.
-
-To make a machine CIME-compatible, add the appropriate entries for the machine in **config_machines.xml**.
-
-Each ``<machine>`` tag requires the following input:
-
-- ``DESC``: a text description of the machine
-- ``NODENAME_REGEX``: a regular expression used to identify the machine. It must work on compute nodes as well as login nodes. Use the ``machine`` option for **create_test** or **create_newcase** if this flag is not available.
-- ``OS``: the machine's operating system
-- ``PROXY``: optional http proxy for access to the internet
-- ``COMPILERS``: compilers supported on the machine, in comma-separated list, default first
-- ``MPILIBS``: mpilibs supported on the machine, in comma-separated list, default first
-- ``PROJECT``: a project or account number used for batch jobs; can be overridden in environment or in **$HOME/.cime/config**
-- ``SAVE_TIMING_DIR``: (E3SM only) target directory for archiving timing output
-- ``SAVE_TIMING_DIR_PROJECTS``: (ACME only) projects whose jobs archive timing output
-- ``CIME_OUTPUT_ROOT``: Base directory for case output; the **bld** and **run** directories are written below here
-- ``DIN_LOC_ROOT``: location of the input data directory
-- ``DIN_LOC_ROOT_CLMFORC``: optional input location for clm forcing data
-- ``DOUT_S_ROOT``: root directory of short-term archive files
-- ``DOUT_L_MSROOT``: root directory on mass store system for long-term archive files
-- ``BASELINE_ROOT``: root directory for system test baseline files
-- ``CCSM_CPRNC``: location of the cprnc tool, which compares model output in testing
-- ``GMAKE``: gnu-compatible make tool; default is "gmake"
-- ``GMAKE_J``: optional number of threads to pass to the gmake flag
-- ``TESTS``: (E3SM only) list of tests to run on the machine
-- ``BATCH_SYSTEM``: batch system used on this machine (none is okay)
-- ``SUPPORTED_BY``: contact information for support for this system
-- ``MAX_TASKS_PER_NODE``: maximum number of threads/tasks per shared memory node on the machine
-- ``MAX_MPITASKS_PER_NODE``: number of physical PES per shared node on the machine. In practice the MPI tasks per node will not exceed this value.
-- ``PROJECT_REQUIRED``: Does this machine require a project to be specified to the batch system?
-- ``mpirun``: The mpi exec to start a job on this machine.
-  This is itself an element that has sub-elements that must be filled:
-
-  * Must have a required ``<executable>`` element
-  * May have optional attributes of ``compiler``, ``mpilib`` and/or ``threaded``
-  * May have an optional ``<arguments>`` element which in turn contains one or more ``<arg>`` elements.
-    These specify the arguments to the mpi executable and are dependent on your mpi library implementation.
-
-
-- ``module_system``: How and what modules to load on this system. Module systems allow you to easily load multiple compiler environments on a machine. CIME provides support for two types of module tools: `module <http://www.tacc.utexas.edu/tacc-projects/mclay/lmod>`_ and `soft  <http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html>`_. If neither of these is available on your machine, simply set ``<module_system type="none"\>``.
-
-- ``environment_variables``: environment_variables to set on the system
-   This contains sub-elements ``<env>`` with the ``name`` attribute specifying the environment variable name, and the element value specifying the corresponding environment variable value. If the element value is not set, the corresponding environment variable will be unset in your shell.
-
-   For example, the following sets the environment variable ``OMP_STACKSIZE`` to 256M:
-   ::
-
-      <env name="OMP_STACKSIZE">256M</env>
-
-   The following unsets this environment variable in the shell:
-   ::
-
-      <env name="OMP_STACKSIZE"></env>
-
-   .. note:: These changes are **ONLY** activated for the CIME build and run environment, **BUT NOT** for your login shell. To activate them for your login shell, source either **$CASEROOT/.env_mach_specific.sh** or **$CASEROOT/.env_mach_specific.csh**, depending on your shell.
-
-.. _customizing-compiler-file:
-
-=================================================
-config_compilers.xml - compiler paths and options
-=================================================
-
-The **config_compilers.xml** file defines compiler flags for building CIME (and also CESM and E3SM prognostic CIME-driven components).
-
-#. General compiler flags (e.g., for the gnu compiler) that are machine- and componen-independent are listed first.
-
-#. Compiler flags specific to a particular operating system are listed next.
-
-#. Compiler flags that are specific to particular machines are listed next.
-
-#. Compiler flags that are specific to particular CIME-driven components are listed last.
-
-The order of listing is a convention and not a requirement.
-
-The possible elements and attributes that can exist in the file are documented in **$CIME/config/xml_schemas/config_compilers_v2.xsd**.
-
-To clarify several conventions:
-
-- The ``<append>`` element implies that any previous definition of that element's parent will be appended with the new element value.
-  As an example, the following entry in **config_compilers.xml** would append the value of ``CPPDEFS`` with ``-D $OS`` where ``$OS`` is the environment value of ``OS``.
-
-  ::
-
-     <compiler>
-        <CPPDEFS>
-            <append> -D<env>OS</env> </append>
-        </CPPDEFS>
-     </compiler>
-
-- The ``<base>`` element overwrites its parent element's value. For example, the following entry would overwrite the ``CONFIG_ARGS`` for machine ``melvin`` with a ``gnu`` compiler to be ``--host=Linux``.
-
-  ::
-
-     <compiler MACH="melvin" COMPILER="gnu">
-        <CONFIG_ARGS>
-           <base> --host=Linux </base>
-        </CONFIG_ARGS>
-     </compiler>
-
-
-.. _customizing-batch-file:
-
-===================================
-config_batch.xml - batch directives
-===================================
-
-The **config_batch.xml** schema is defined in **$CIMEROOT/config/xml_schemas/config_batch.xsd**.
-
-CIME supports these batch systems: pbs, cobalt, lsf and slurm.
-
-As is the case for **config_compilers.xml**, the entries in **config_batch.xml** are hierarchical.
-
-#. General configurations for each system are provided at the top of the file.
-
-#. Specific modifications for a given machine are provided below.  In particular each machine should define its own queues.
-
-#. Following is a machine-specific queue section.  This section details the parameters for each queue on the target machine.
-
-#. The last section describes several things:
-
-   - each job that will be submitted to the queue for a CIME workflow,
-
-   - the template file that will be used to generate that job,
-
-   - the prerequisites that must be met before the job is submitted, and
-
-   - the dependencies that must be satisfied before the job is run.
-
-By default the CIME workflow consists of two jobs (**case.run**, **case.st_archive**).
-
-In addition, there is **case.test** job that is used by the CIME system test workflow.
-
-====================================================
 Validating your port
-====================================================
+---------------------------
 
 The following port validation is recommended for any new machine.
 Carrying out these steps does not guarantee the model is running properly in all cases nor that the model is scientifically valid on the new machine.

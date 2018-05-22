@@ -4,6 +4,8 @@
 Creating a Case
 *********************************
 
+Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
+
 ===================================
 Calling **create_newcase**
 ===================================
@@ -20,7 +22,10 @@ The only required arguments to **create_newcase** are shown here::
 
   > create_newcase --case [CASE] --compset [COMPSET] --res [GRID]
 
-CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms*. Compsets and grids were discussed in the :ref:`previous section <case-basics>`.
+CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms* (machines).
+
+The [CASE] argument must be a string and may not contain any of the following special characters
+  > + * ? < > / { } [ ] ~ ` @ :
 
 ======================================
 Results of calling **create_newcase**

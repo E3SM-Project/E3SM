@@ -166,7 +166,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use clm_varctl           , only : use_cndv, use_cn, create_glacier_mec_landunit, use_ed
+    use clm_varctl           , only : use_cndv, use_cn, create_glacier_mec_landunit, use_fates
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -268,7 +268,7 @@ contains
           call dynCNDV_interp(bounds_clump, dgvs_vars)
        end if
        
-       if (use_ed) then
+       if (use_fates) then
           call dyn_ED(bounds_clump)
        end if
 

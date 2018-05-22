@@ -180,10 +180,10 @@ module seq_comm_mct
   character(*), parameter :: layout_concurrent = 'concurrent'
   character(*), parameter :: layout_sequential = 'sequential'
 
-  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,2i7,i3,'(',a,i7,')',' (',a,i3,')','(',a,a,')')"
-  character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i7,3x,'(',a,i7,')',' (',a,i3,')','(',a,2i6,')')"
-  character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i7,3x,'(',a,i7,')',' (',a,i3,')')"
-  character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    5x,'(',a,i7,')',' (',a,i3,')')"
+  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')','(',a,a,')')"
+  character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
+  character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
+  character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
 
   ! Exposed for use in the esp component, please don't use this elsewhere
   integer, public :: Global_Comm
@@ -235,7 +235,7 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
 
-    namelist /ccsm_pes/  &
+    namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
          lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
          ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout, &
@@ -321,7 +321,7 @@ contains
        if (ierr == 0) then
           ierr = 1
           do while( ierr > 0 )
-             read(nu, nml=ccsm_pes, iostat=ierr)
+             read(nu, nml=cime_pes, iostat=ierr)
           end do
           close(nu)
        end if

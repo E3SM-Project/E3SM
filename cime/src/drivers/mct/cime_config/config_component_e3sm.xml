@@ -2,6 +2,14 @@
 
 <entry_id version="2.0">
 
+  <entry id="MODEL_DOI_URL">
+    <type>char</type>
+    <default_value>https://doi.org/10.11578/E3SM/dc.20180418.36</default_value>
+    <group>run_metadata</group>
+    <file>env_case.xml</file>
+    <desc>run DOI</desc>
+  </entry> 
+
   <entry id="DRV_THREADING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -140,7 +148,7 @@
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
-      <value compset="_MPASCICE.*_MPASO"         >RASM_OPTION1</value>
+      <value compset="_MPASCICE.*_MPASO"           >RASM_OPTION1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -164,22 +172,26 @@
 
   <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2_DMSA</valid_values>
+    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2C_OI,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="_CAM\d+"     >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
-      <value compset="_BGC%BDRD">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_BGC%BCRD">CO2C</value>
-      <value compset="_BGC%BDRC">CO2C</value>
-      <value compset="_BGC%BCRC">CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -231,10 +243,10 @@
     <default_value>day</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">year</value>
-      <value compset="_DLND.*_MPASLI">year</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">day</value>
+      <value compset="_DLND.*_MALI">year</value>
+      <value compset="_SLND.*SOCN.*_MALI">day</value>
       <value compset="_MPASO"       >day</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">day</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">day</value>
       <value compset="_CAM.*_CLM.*MPASO">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
@@ -264,9 +276,9 @@
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
       <value compset="_MPASO">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -315,9 +327,9 @@
     <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
@@ -335,9 +347,9 @@
     <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -361,9 +373,9 @@
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
@@ -388,9 +400,9 @@
     <default_value>1</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">1</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">1</value>
       <value compset="_CAM.*_CLM.*MPASO">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
@@ -431,9 +443,9 @@
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DLND.*_MPASLI">1</value>
-      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_DLND.*_MALI">1</value>
+      <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">8</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
@@ -597,6 +609,7 @@
       <value compset="^2000.+AV1C-L"				>368.865</value>
       <value compset="^2000.+AV1C-H01A"				>368.865</value>
       <value compset="^2000.+AV1C-H01B"				>368.865</value>
+      <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
@@ -647,7 +660,7 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="_CLM45.+CISM\d">TRUE</value>
-      <value compset="_CLM45.*_MPASLI">TRUE</value>
+      <value compset="_CLM45.*_MALI">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->

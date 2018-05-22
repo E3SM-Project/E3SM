@@ -54,7 +54,7 @@ Except for **intel/** and **lib/**, each directory contains an **obj/** subdirec
 
 The *mct*, *pio*, *gptl* and *csm_share* libraries are placed in a directory tree that reflects their dependencies. See the **bldlog** for a given component to locate the library.
 
-Special **include** modules are placed in **lib/include**. The model executable (**cesm.exe** or **acme.exe**, for example) is placed directly in ``$EXEROOT``.
+Special **include** modules are placed in **lib/include**. The model executable (**cesm.exe** or **e3sm.exe**, for example) is placed directly in ``$EXEROOT``.
 
 Component namelists, component logs, output data sets, and restart files are placed in ``$RUNDIR``.
 It is important to note that ``$RUNDIR`` and ``$EXEROOT`` are independent variables that are set in the **$CASEROOT/env_run.xml** file.

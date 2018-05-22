@@ -22,7 +22,7 @@ import six
 import collections
 
 from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
-import update_e3sm_tests
+import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.compilers import Compilers
@@ -220,8 +220,9 @@ class N_TestUnitTest(unittest.TestCase):
         os.makedirs(test_dir)
         unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
-        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
-                            %(unit_test_tool,test_dir,test_spec_dir))
+        args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
+        args += " --machine {}".format(MACHINE.get_machine_name())
+        run_cmd_no_fail("{} {}".format(unit_test_tool, args))
         cls._do_teardown.append(test_dir)
 
     def test_b_cime_f90_unit_tests(self):
@@ -237,9 +238,9 @@ class N_TestUnitTest(unittest.TestCase):
         os.makedirs(test_dir)
         test_spec_dir = CIME.utils.get_cime_root()
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
-
-        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
-                            %(unit_test_tool,test_dir,test_spec_dir))
+        args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
+        args += " --machine {}".format(MACHINE.get_machine_name())
+        run_cmd_no_fail("{} {}".format(unit_test_tool, args))
         cls._do_teardown.append(test_dir)
 
     @classmethod
@@ -303,6 +304,8 @@ class J_TestCreateNewcase(unittest.TestCase):
                               from_dir=testdir, expected_stat=1)
         run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+
+        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
 
         cls._do_teardown.append(testdir)
 
@@ -948,7 +951,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     def test_a_phases(self):
     ###########################################################################
         # exclude the MEMLEAK tests here.
-        tests = update_e3sm_tests.get_full_test_names(["cime_test_only",
+        tests = get_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_P1.f09_g16.X",
                                                        "^TESTMEMLEAKPASS_P1.f09_g16.X",
                                                        "^TESTTESTDIFF_P1.f19_g16_rx1.A",
@@ -1025,7 +1028,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_b_full(self):
     ###########################################################################
-        tests = update_e3sm_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
+        tests = get_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
                            output_root=TEST_ROOT,compiler=self._compiler, mpilib=TEST_MPILIB)
@@ -1091,7 +1094,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
     def test_c_use_existing(self):
     ###########################################################################
-        tests = update_e3sm_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
+        tests = get_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
@@ -1228,11 +1231,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def assert_num_leftovers(self):
     ###########################################################################
-        # There should only be two directories matching the test_id in both
-        # the testroot (bld/run dump area) and jenkins root
-        if (test_id is None):
-            test_id = self._baseline_name
-        num_tests_in_tiny = len(update_e3sm_tests.get_test_suite("cime_test_only_pass"))
+        num_tests_in_tiny = len(get_tests.get_test_suite("cime_test_only_pass"))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -1486,7 +1485,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
         # Test that re-running works
-        tests = update_e3sm_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
+        tests = get_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
         for test in tests:
             casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
 
@@ -1502,7 +1501,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
                 with TestStatus(test_dir=casedir) as ts:
                     ts.set_status(MEMLEAK_PHASE, TEST_PEND_STATUS)
 
-            run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+            run_cmd_assert_result(self, "./case.submit --skip-preview-namelist", from_dir=casedir)
 
         self._wait_for_tests(self._baseline_name)
 
@@ -1605,13 +1604,13 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=False) as case:
-            build_threaded = case.get_value("BUILD_THREADED")
+            build_threaded = case.get_value("SMP_PRESENT")
             self.assertFalse(build_threaded)
 
             build_threaded = case.get_build_threaded()
             self.assertFalse(build_threaded)
 
-            case.set_value("BUILD_THREADED", True)
+            case.set_value("FORCE_BUILD_SMP", True)
 
             build_threaded = case.get_build_threaded()
             self.assertTrue(build_threaded)
@@ -1626,7 +1625,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=False) as case:
-            build_threaded = case.get_value("BUILD_THREADED")
+            build_threaded = case.get_value("SMP_PRESENT")
             self.assertTrue(build_threaded)
 
             build_threaded = case.get_build_threaded()
@@ -2686,7 +2685,7 @@ OR
 
     \033[1;32m# Run test test_wait_for_test_all_pass from class M_TestWaitForTests \033[0m
     > {0} M_TestWaitForTests.test_wait_for_test_all_pass
-"""
+""".format(os.path.basename(sys.argv[0]))
 
     parser = argparse.ArgumentParser(usage=help_str,
                                      description=description,

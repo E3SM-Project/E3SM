@@ -64,7 +64,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak 
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use clm_varctl           , only : use_cn, use_betr, use_ed, use_pflotran, pf_hmode
+    use clm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
@@ -231,7 +231,7 @@ contains
             filter_hydrologyc, soilstate_vars, waterflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
-      if( use_ed ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
+      if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
                                                       soilstate_vars, waterflux_vars)
 
       !------------------------------------------------------------------------------------
@@ -453,7 +453,7 @@ contains
          end do
       end do
 
-      if ( (use_cn .or. use_ed) .and. &
+      if ( (use_cn .or. use_fates) .and. &
          .not.(use_pflotran .and. pf_hmode) ) then
          ! Update soilpsi.
          ! ZMS: Note this could be merged with the following loop updating smp_l in the future.
@@ -480,7 +480,7 @@ contains
          end do
       end if
 
-      if (use_cn .or. use_ed) then
+      if (use_cn .or. use_fates) then
          ! Available soil water up to a depth of 0.05 m.
          ! Potentially available soil water (=whc) up to a depth of 0.05 m.
          ! Water content as fraction of whc up to a depth of 0.05 m.

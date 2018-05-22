@@ -128,8 +128,8 @@ subroutine dadadj (lchnk   ,ncol    , &
 !
 ! Formats
 !
-800   format(' lat,lon = ',2i5,', zeps= ',e9.4)
-810   format(//,'DADADJ: Convergence criterion doubled to EPS=',E9.4, &
+800   format(' lat,lon = ',2i5,', zeps= ',e11.4)
+810   format(//,'DADADJ: Convergence criterion doubled to EPS=',E11.4, &
              ' for'/'        DRY CONVECTIVE ADJUSTMENT at Lat,Lon=', &
              2i5)
 end subroutine dadadj
