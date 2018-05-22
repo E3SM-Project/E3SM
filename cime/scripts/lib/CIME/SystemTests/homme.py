@@ -32,7 +32,6 @@ class HOMME(SystemTestsCommon):
             gmake    = self._case.get_value("GMAKE")
             cprnc    = self._case.get_value("CCSM_CPRNC")
 
-            #basename = basegen if generate else basecmp
             if compare:
                 basename = basecmp
                 baselinedir = baseline
