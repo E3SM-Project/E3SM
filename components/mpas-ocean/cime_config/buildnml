@@ -35,6 +35,7 @@ def buildnml(case, caseroot, compname):
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
+    nthrds_ocn        = case.get_value("NTHRDS_OCN")
     ocn_pio_typename  = case.get_value("OCN_PIO_TYPENAME")
     ninst_ocn         = 1 # Change if you want multiple instances... though this isn't coded yet.
     rundir            = case.get_value("RUNDIR")
@@ -48,6 +49,13 @@ def buildnml(case, caseroot, compname):
     if not os.path.isdir(mpasoconf_dir): os.mkdir(mpasoconf_dir)
 
     #--------------------------------------------------------------------
+    # MPAS-O with active BGC fails bfb restart with more than 1 thread
+    # DO NOT run with ocean bgc turned on with more than 1 thread
+    #--------------------------------------------------------------------
+    expect(nthrds_ocn == 1 or ocn_bgc == 'no_bgc',
+           " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
+
+    #--------------------------------------------------------------------
     # Determine date stamp, from grid names
     #--------------------------------------------------------------------
 
@@ -57,6 +65,7 @@ def buildnml(case, caseroot, compname):
     ic_prefix = ''
     restoring_file = ''
     analysis_mask_file = ''
+    eco_forcing_file = ''
 
     if ocn_grid == 'oEC60to30':
         ic_date += '151031'
@@ -71,6 +80,11 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'oEC60to30v3':
         ic_date += '170905'
         ic_prefix += 'oEC60to30v3_60layer'
+        #  modify initial condition file if ocean BGC is turned on
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '180418'
+            ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
+            eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
         decomp_date += '161222'
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
@@ -197,6 +211,9 @@ def buildnml(case, caseroot, compname):
         if ocn_forcing == 'core_forced_restoring':
             input_list.write("sss = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, restoring_file))
 
+        if eco_forcing_file != '':
+            input_list.write("eco_forcing = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, eco_forcing_file))
+
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpasoconf
     #--------------------------------------------------------------------
@@ -284,11 +301,7 @@ def buildnml(case, caseroot, compname):
             lines.append('                  io_type="{}"'.format(ocn_pio_typename))
 
         lines.append('                  input_interval="initial_only"')
-        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            lines.append('                  filename_template="{}/ocn/mpas-o/{}/oEC60to30v3.161222+BGC_IC.nc"'.format(din_loc_root, ocn_mask))
-        else:
-            lines.append('                  filename_template="{}"'.format(input_file))
-
+        lines.append('                  filename_template="{}"'.format(input_file))
         lines.append('/>')
         lines.append('')
         lines.append('<!--')
@@ -344,7 +357,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="vertGMBolusVelocityTop"/>')
         lines.append('    <var name="vertAleTransportTop"/>')
         lines.append('    <var name="tendSSH"/>')
-        lines.append('    <var_struct name="tracers"/>')
+        lines.append('    <var_array name="activeTracers"/>')
         lines.append('    <var name="layerThickness"/>')
         lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="ssh"/>')
@@ -645,6 +658,24 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="barotropicSpeed"/>')
         lines.append('    <var name="landIceFreshwaterFlux"/>')
         lines.append('    <var name="pressureAdjustedSSH"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="avgOceanSurfacePhytoC"/>')
+            lines.append('    <var name="avgOceanSurfaceDIC"/>')
+            lines.append('    <var name="avgOceanSurfaceNO3"/>')
+            lines.append('    <var name="avgOceanSurfaceSiO3"/>')
+            lines.append('    <var name="avgOceanSurfaceNH4"/>')
+            lines.append('    <var name="avgOceanSurfaceDOCr"/>')
+            lines.append('    <var name="avgOceanSurfaceFeDissolved"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="mixedLayerDepthsOutput"')
@@ -678,7 +709,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var_array name="surfaceVelocity"/>')
         lines.append('    <var_array name="SSHGradient"/>')
         lines.append('    <var name="xtime"/>')
-        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="pressureAdjustedSSH"/>')
         lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="velocityZonal"/>')
         lines.append('    <var name="velocityMeridional"/>')
@@ -692,6 +723,24 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var_array name="activeTracerVertMixTendency"/>')
         lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
         lines.append('    <var_array name="avgValueWithinOceanVolumeRegion"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="avgOceanSurfacePhytoC"/>')
+            lines.append('    <var name="avgOceanSurfaceDIC"/>')
+            lines.append('    <var name="avgOceanSurfaceNO3"/>')
+            lines.append('    <var name="avgOceanSurfaceSiO3"/>')
+            lines.append('    <var name="avgOceanSurfaceNH4"/>')
+            lines.append('    <var name="avgOceanSurfaceDOCr"/>')
+            lines.append('    <var name="avgOceanSurfaceFeDissolved"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
@@ -792,8 +841,91 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            lines.append('    <var_struct name="ecosysDiagFieldsLevel1"/>')
-            lines.append('    <var_struct name="ecosysAuxiliary"/>')
+            lines.append('    <var name="PH_PREV_ALT_CO2_3D"/>')
+            lines.append('    <var name="dust_FLUX_IN"/>')
+            lines.append('    <var name="IRON_FLUX_IN"/>')
+            lines.append('    <var name="PAR_surface"/>')
+            lines.append('    <var name="windSpeedSquared10m"/>')
+            lines.append('    <var name="atmosphericCO2"/>')
+            lines.append('    <var name="atmosphericCO2_ALT_CO2"/>')
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+            lines.append('    <var name="ecosys_diag_O2_ZMIN"/>')
+            lines.append('    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ctot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ctot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ntot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ntot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ptot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ptot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Sitot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Sitot"/>')
+            lines.append('    <var name="ecosys_diag_photoC_zint"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3_zint"/>')
+            lines.append('    <var name="ecosys_diag_PAR_avg"/>')
+            lines.append('    <var name="ecosys_diag_POC_FLUX_IN"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_FLUX_IN"/>')
+            lines.append('    <var name="ecosys_diag_auto_graze_TOT"/>')
+            lines.append('    <var name="ecosys_diag_zoo_loss"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3_TOT"/>')
+            lines.append('    <var name="ecosys_diag_NITRIF"/>')
+            lines.append('    <var name="ecosys_diag_DENITRIF"/>')
+            lines.append('    <var name="ecosys_diag_calcToSed"/>')
+            lines.append('    <var name="ecosys_diag_pocToSed"/>')
+            lines.append('    <var name="ecosys_diag_SedDenitrif"/>')
+            lines.append('    <var name="ecosys_diag_tot_Nfix"/>')
+            lines.append('    <var name="ecosys_diag_O2_PRODUCTION"/>')
+            lines.append('    <var name="ecosys_diag_O2_CONSUMPTION"/>')
+            lines.append('    <var name="ecosys_diag_pH_3D"/>')
+            lines.append('    <var name="ecosys_diag_POC_PROD"/>')
+            lines.append('    <var name="ecosys_diag_POC_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_POC_ACCUM"/>')
+            lines.append('    <var name="ecosys_diag_N_lim"/>')
+            lines.append('    <var name="ecosys_diag_P_lim"/>')
+            lines.append('    <var name="ecosys_diag_Fe_lim"/>')
+            lines.append('    <var name="ecosys_diag_SiO3_lim"/>')
+            lines.append('    <var name="ecosys_diag_light_lim"/>')
+            lines.append('    <var name="ecosys_diag_photoC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3"/>')
+            lines.append('    <var name="ecosys_diag_photoFe"/>')
+            lines.append('    <var name="ecosys_diag_photoNO3"/>')
+            lines.append('    <var name="ecosys_diag_photoNH4"/>')
+            lines.append('    <var name="ecosys_diag_DOP_uptake"/>')
+            lines.append('    <var name="ecosys_diag_PO4_uptake"/>')
+            lines.append('    <var name="ecosys_diag_auto_graze"/>')
+            lines.append('    <var name="ecosys_diag_auto_loss"/>')
+            lines.append('    <var name="ecosys_diag_auto_agg"/>')
+            lines.append('    <var name="ecosys_diag_CO2star"/>')
+            lines.append('    <var name="ecosys_diag_dCO2star"/>')
+            lines.append('    <var name="ecosys_diag_pCO2surface"/>')
+            lines.append('    <var name="ecosys_diag_dpCO2"/>')
+            lines.append('    <var name="ecosys_diag_pistonVel_CO2"/>')
+            lines.append('    <var name="ecosys_diag_Schmidt_CO2"/>')
+            lines.append('    <var name="ecosys_diag_xkw"/>')
+            lines.append('    <var name="ecosys_diag_pistonVel_O2"/>')
+            lines.append('    <var name="ecosys_diag_O2_saturation"/>')
+            lines.append('    <var name="ecosys_diag_Schmidt_O2"/>')
+            lines.append('    <var name="ecosys_diag_CO2star_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_dCO2star_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_pCO2surface_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_dpCO2_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_tot_bSi_form"/>')
+            lines.append('    <var name="ecosys_diag_DOC_prod"/>')
+            lines.append('    <var name="ecosys_diag_DOC_remin"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_form_zint"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_PROD"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_tot_CaCO3_form"/>')
+            lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
+            lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
 
         lines.append('</stream>')
         lines.append('')
@@ -875,10 +1007,10 @@ def buildnml(case, caseroot, compname):
         lines.append('        output_interval="stream:restart:output_interval">')
         lines.append('</stream>')
         lines.append('')
-        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+        if eco_forcing_file != '':
             lines.append('<stream name="ecosys_monthly_flux"')
             lines.append('        type="input"')
-            lines.append('        filename_template="{}/ocn/mpas-o/{}/oEC60to30v3.monthlySurfaceForcingBGC.170301.nc"'.format(din_loc_root, ocn_mask))
+            lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, eco_forcing_file))
             lines.append('        input_interval="none"')
             lines.append('        packages="ecosysTracersPKG">')
             lines.append('    <var name="xtime"/>')
