@@ -6,18 +6,18 @@ dummy:
 
 xlf:
 	( $(MAKE) all \
-	"FC_PARALLEL = mpxlf90" \
-	"CC_PARALLEL = mpcc" \
-	"CXX_PARALLEL = mpixlcxx" \
-	"FC_SERIAL = xlf90" \
-	"CC_SERIAL = xlc" \
-	"CXX_SERIAL = xlcxx" \
+	"FC_PARALLEL = mpifort" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpic++" \
+	"FC_SERIAL = xlf2003_r" \
+	"CC_SERIAL = xlc_r" \
+	"CXX_SERIAL = xlc++_r" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O3" \
+	"FFLAGS_OPT = -O3 -qufmt=be" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -O0 -g -C" \
+	"FFLAGS_DEBUG = -O0 -g -C -qufmt=be" \
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
@@ -401,8 +401,8 @@ FCINCLUDES =
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
 ifeq "$(USE_PIO2)" "true"
-	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
-	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	override CPPFLAGS += -DUSE_PIO2
 	LIBS = -L$(PIO)/lib -lpiof -lpioc
 ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # Check for GPTL library for PIO2
 	LIBS += -lgptl
@@ -414,8 +414,8 @@ else
 endif
 else
 ifeq "$(USE_PIO2)" "true"
-	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
-	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	override CPPFLAGS += -DUSE_PIO2
 	LIBS = -L$(PIO) -lpiof -lpioc
 ifneq ($(wildcard $(PIO)/libgptl.a), ) # Check for GPTL library for PIO2
 	LIBS += -lgptl
@@ -574,6 +574,7 @@ else
 endif
 
 ifeq "$(GEN_F90)" "true"
+	override CPPFLAGS += -Uvector
 	GEN_F90_MESSAGE="MPAS generated and was built with intermediate .f90 files."
 else
 	override GEN_F90=false
