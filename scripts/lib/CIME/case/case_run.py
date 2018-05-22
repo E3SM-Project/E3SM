@@ -62,14 +62,14 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
     # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
     # variable while the job is in the queue
-    logger.info("{} NAME CREATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("{} NAMELIST CREATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     if skip_pnl:
         case.create_namelists(component='cpl')
     else:
         logger.info("Generating namelists for {}".format(caseroot))
         case.create_namelists()
 
-    logger.info("{} NAME CREATION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("{} NAMELIST CREATION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     logger.info("-------------------------------------------------------------------------")
     logger.info(" - Prestage required restarts into {}".format(rundir))
