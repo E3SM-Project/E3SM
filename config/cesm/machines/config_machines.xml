@@ -560,7 +560,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">papi/5.5.1.3</command>
-	<command name="swap">craype craype/2.5.12.3</command>
+	<command name="swap">craype craype/2.5.12</command>
       </modules>
       <modules>
 	<command name="switch">cray-libsci/17.09.1</command>
@@ -663,7 +663,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="swap">craype craype/2.5.12.3</command>
+	<command name="swap">craype craype/2.5.12</command>
       </modules>
       <modules>
 	<command name="switch">cray-libsci/17.09.1</command>
