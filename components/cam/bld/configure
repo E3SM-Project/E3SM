@@ -2779,20 +2779,20 @@ sub write_filepath
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	    print $fh "$camsrcdir/homme/src/share\n";
+      print $fh "$camsrcdir/homme/src/share\n";
       if ($opts{'dyn_target'} eq 'preqx') {
-	      print $fh "$camsrcdir/homme/src/preqx\n";
+        print $fh "$camsrcdir/homme/src/preqx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       } 
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
-	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
+        print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
       elsif ($opts{'dyn_target'} eq 'preqx_cxx') {
-        print $fh "$camsrcdir/homme/src/preqx_cxx\n";
-        print $fh "$camsrcdir/homme/src/preqx_cxx/share\n";
-        print $fh "$camsrcdir/homme/src/preqx_cxx/cxx\n";
-        print $fh "$camsrcdir/homme/src/preqx_cxx/cxx/mpi\n";
+        print $fh "$camsrcdir/hommexx/src/preqx\n";
+        print $fh "$camsrcdir/hommexx/src/share\n";
+        print $fh "$camsrcdir/hommexx/src/share/cxx\n";
+        print $fh "$camsrcdir/hommexx/src/share/cxx/mpi\n";
       }
     }
 
@@ -2903,9 +2903,11 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq 'se' and $opts{'dyn_target'} eq 'preqx_cxx') {
+	print $fh " -DHOMMEXX";
 	print $fh " -DHOMMEXX_DEFAULT_SPACE";
 	print $fh " -DHOMMEXX_MPI_ON_DEVICE=1";
 	print $fh " -DAVX_VERSION=0";
+	print $fh " -DHOMMEXX_CUDA_MIN_WARP_PER_TEAM=4"
     }
 
     print $fh "\n";
