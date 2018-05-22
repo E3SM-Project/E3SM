@@ -157,11 +157,7 @@
             jp(lay) = 58
          endif
          jp1 = jp(lay) + 1
-#ifdef APPLY_POST_DECK_BUGFIXES
          fp = min(3._r8, max(-2._r8, 5._r8 * (preflog(jp(lay)) - plog)))
-#else
-         fp = 5._r8 * (preflog(jp(lay)) - plog)
-#endif
 
 ! Determine, for each reference pressure (JP and JP1), which
 ! reference temperature (these are different for each  
@@ -177,22 +173,14 @@
          elseif (jt(lay) .gt. 4) then
             jt(lay) = 4
          endif
-#ifdef APPLY_POST_DECK_BUGFIXES
          ft = min(3._r8, max(-2._r8, ((tavel(lay)-tref(jp(lay)))/15._r8) - float(jt(lay)-3)))
-#else
-         ft = ((tavel(lay)-tref(jp(lay)))/15._r8) - float(jt(lay)-3)
-#endif
          jt1(lay) = int(3._r8 + (tavel(lay)-tref(jp1))/15._r8)
          if (jt1(lay) .lt. 1) then
             jt1(lay) = 1
          elseif (jt1(lay) .gt. 4) then
             jt1(lay) = 4
          endif
-#ifdef APPLY_POST_DECK_BUGFIXES
          ft1 = min(3._r8, max(-2._r8, ((tavel(lay)-tref(jp1))/15._r8) - float(jt1(lay)-3)))
-#else
-         ft1 = ((tavel(lay)-tref(jp1))/15._r8) - float(jt1(lay)-3)
-#endif
 
          water = wkl(1,lay)/coldry(lay)
          scalefac = pavel(lay) * stpfac / tavel(lay)
@@ -210,11 +198,7 @@
          forfac(lay) = scalefac / (1.+water)
          factor = (332.0_r8-tavel(lay))/36.0_r8
          indfor(lay) = min(2, max(1, int(factor)))
-#ifdef APPLY_POST_DECK_BUGFIXES
          forfrac(lay) = min(3._r8, max(-2._r8, factor - float(indfor(lay))))
-#else
-         forfrac(lay) = factor - float(indfor(lay))
-#endif
 
 ! Set up factors needed to separately include the water vapor
 ! self-continuum in the calculation of absorption coefficient.
@@ -222,11 +206,7 @@
          selffac(lay) = water * forfac(lay)
          factor = (tavel(lay)-188.0_r8)/7.2_r8
          indself(lay) = min(9, max(1, int(factor)-7))
-#ifdef APPLY_POST_DECK_BUGFIXES
          selffrac(lay) = min(3._r8, max(-2._r8, factor - float(indself(lay) + 7)))
-#else
-         selffrac(lay) = factor - float(indself(lay) + 7)
-#endif
 
 ! Calculate needed column amounts.
 
@@ -264,11 +244,7 @@
          forfac(lay) = scalefac / (1.+water)
          factor = (tavel(lay)-188.0_r8)/36.0_r8
          indfor(lay) = 3
-#ifdef APPLY_POST_DECK_BUGFIXES
          forfrac(lay) = min(3._r8, max(-2._r8, factor - 1.0_r8))
-#else
-         forfrac(lay) = factor - 1.0_r8
-#endif
 
 ! Calculate needed column amounts.
 
