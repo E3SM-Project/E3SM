@@ -715,6 +715,9 @@ module namelist_mod
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
 
+    ! use maximum available:
+    if (NThreads == -1) NThreads = omp_get_max_threads()
+
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
