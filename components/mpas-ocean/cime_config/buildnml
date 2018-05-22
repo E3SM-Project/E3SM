@@ -471,7 +471,7 @@ def buildnml(case, caseroot, compname):
 
         lines.append('<stream name="mocStreamfunctionOutput"')
         lines.append('        type="output"')
-        lines.append('        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"\n')
+        lines.append('        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"')
         lines.append('        filename_interval="01-00-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1078,6 +1078,7 @@ def buildnml(case, caseroot, compname):
         lines.append('</stream>')
         lines.append('')
         lines.append('</streams>')
+        lines.append('')
 
         with open(os.path.join(rundir, stream_name), "w") as fd:
             fd.write("\n".join(lines))
