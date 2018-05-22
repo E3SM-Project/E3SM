@@ -315,7 +315,7 @@ def buildnml(case, caseroot, compname):
         lines.append('unique file.')
         lines.append('-->')
         lines.append('<immutable_stream name="restart"')
-        lines.append('                  type="inputoutput"')
+        lines.append('                  type="input;output"')
         if ocn_grid.startswith("oRRS1"):
             lines.append('                  io_type="pnetcdf,cdf5"')
         else:
@@ -786,7 +786,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="dThreshMLD"/>')
         lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="vertVelocityTop"/>')
-        if ocn_grid.startswith("oRRS1"):
+        if not ocn_grid.startswith("oRRS1"):
             lines.append('    <var name="normalGMBolusVelocity"/>')
             lines.append('    <var name="vertGMBolusVelocityTop"/>')
 
@@ -956,7 +956,7 @@ def buildnml(case, caseroot, compname):
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyRestart"')
-        lines.append('        type="inputoutput"')
+        lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
@@ -968,7 +968,7 @@ def buildnml(case, caseroot, compname):
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
-        lines.append('        type="inputoutput"')
+        lines.append('        type="input;output"')
         if ocn_grid.startswith("oRRS1"):
             lines.append('        io_type="pnetcdf,cdf5"')
         else:
@@ -984,7 +984,7 @@ def buildnml(case, caseroot, compname):
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsClimatologyRestart"')
-        lines.append('        type="inputoutput"')
+        lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
@@ -996,7 +996,7 @@ def buildnml(case, caseroot, compname):
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsCustomRestart"')
-        lines.append('        type="inputoutput"')
+        lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
