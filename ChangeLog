@@ -1,5 +1,75 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 5-22-2018
+Tag: cime_cesm2_0_rel_03
+Answer Changes: None
+Tests: scripts_regression_tests, build tests on Cori.
+Dependencies:
+
+Brief Summary: Third release candidate.
+    - Update environment modules for Cori.
+    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
+    - Tweaks to cism-specific documentation.
+    - Update for Sphinx v1.7 and doc version 5.6.
+    - More doc updates.
+    - Maint 5.6 - documentation updates.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
+c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
+1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
+08f12ea Merge pull request #2616 from bertinia/maint-5.6
+72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
+7049dab Merge pull request #2614 from bertinia/maint-5.6
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	doc/Makefile
+M	doc/README
+D	doc/source/README
+M	doc/source/conf.py
+M	doc/source/users_guide/building-a-case.rst
+A	doc/source/users_guide/cime-change-namelist.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/compsets.rst
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/grids.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/users_guide/introduction-and-overview.rst
+M	doc/source/users_guide/machine.rst
+M	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/setting-up-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/troubleshooting.rst
+M	doc/source/users_guide/unit_testing.rst
+D	doc/source/users_guide/use_cases/basics-a-basic-example.rst
+D	doc/source/users_guide/use_cases/basics-setting-up-a-branch-or-hybrid-run.rst
+D	doc/source/users_guide/use_cases/cesm-nml.rst
+D	doc/source/users_guide/use_cases/datamod-nml.rst
+D	doc/source/users_guide/use_cases/driver-nml.rst
+D	doc/source/users_guide/use_cases/namelist-gen.rst
+D	doc/source/users_guide/use_cases/use-cases.rst
+A	doc/source/users_guide/workflows.rst
+M	doc/tools_autodoc.cfg
+M	doc/tools_autodoc.py
+M	scripts/Tools/xmlquery
+D	scripts/manage_pes
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 5-17-2018
 Tag: cime_cesm2_0_rel_02
