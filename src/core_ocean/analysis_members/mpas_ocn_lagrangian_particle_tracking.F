@@ -763,9 +763,9 @@ contains
 !          sumUU = sumUU + lonVel*lonVel
 !          sumUV = sumUV + lonVel*latVel
 !          sumVV = sumVV + latVel*latVel
-#ifdef MPAS_DEBUG
-          call mpas_timer_stop("storeSingleParticleStats")
-#endif
+!#ifdef MPAS_DEBUG
+!          call mpas_timer_stop("storeSingleParticleStats")
+!#endif
           !}}}
 
           ! properly store particle position (because we can't store arrays directly for particles and must
