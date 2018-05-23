@@ -66,7 +66,7 @@ contains
     use VegetationType       , only : veg_pp
     use shr_sys_mod          , only : shr_sys_flush
     use clm_instMod          , only : canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars, &
-                                      temperature_vars, solarabs_vars, photosyns_vars, soilstate_vars
+                                      temperature_vars, solarabs_vars, photosyns_vars, soilstate_vars, cnstate_vars
     use clm_time_manager     , only : get_curr_time_string
 
     !
@@ -119,7 +119,7 @@ contains
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
-#define SUBGRID_DEBUG
+! #define SUBGRID_DEBUG
 #ifdef SUBGRID_DEBUG         
     ! debug PET 4/27/2018
     if (bounds%begg <= 137 .and. bounds%endg >= 137) then
@@ -134,11 +134,15 @@ contains
             write(iulog,*)'  lun_id, lun_type, wt, topo',lun_id, lun_pp%itype(lun_id), &
                lun_pp%wttopounit(lun_id),lun_pp%topounit(lun_id)
             do c=lun_pp%coli(lun_id), lun_pp%colf(lun_id)
-              write(iulog,*)'    col, col_type, wt, landunit',c,col_pp%itype(c), col_pp%wtlunit(c),col_pp%landunit(c)
+              write(iulog,*)'    col, col_type, wt, landunit, cropf, lfwt, dtrotr, fbac, fbac1, farea, fuelc', &
+                c,col_pp%itype(c), col_pp%wtlunit(c),col_pp%landunit(c), &
+                cnstate_vars%cropf_col(c), cnstate_vars%lfwt_col(c), cnstate_vars%dtrotr_col(c), &
+                cnstate_vars%fbac_col(c), cnstate_vars%fbac1_col(c), cnstate_vars%farea_burned_col(c), &
+                carbonstate_vars%fuelc_crop_col(c)
               do p=col_pp%pfti(c),col_pp%pftf(c)
-                write(iulog,*)'      pft, pft_type, wt, col, leafc, btran, vcmaxcintsun',p,veg_pp%itype(p), &
-                  veg_pp%wtcol(p), veg_pp%column(p), carbonstate_vars%leafc_patch(p), energyflux_vars%btran_patch(p), &
-                  surfalb_vars%vcmaxcintsun_patch(p)
+                write(iulog,*)'      pft, pft_type, wt, col, leafc, fire, flit',p,veg_pp%itype(p), &
+                  veg_pp%wtcol(p), veg_pp%column(p), carbonstate_vars%leafc_patch(p), &
+                  carbonflux_vars%m_leafc_to_fire_patch(p), carbonflux_vars%m_leafc_to_litter_fire_patch(p)
               end do
             end do
           end if
