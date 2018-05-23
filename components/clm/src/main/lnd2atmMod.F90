@@ -58,17 +58,6 @@ contains
     ! !USES:
     use clm_varcon, only : sb
     
-    ! debug PET 4/27/2018
-    use landunit_varcon      , only : max_lunit
-    use TopounitType         , only : top_pp
-    use LandunitType         , only : lun_pp
-    use ColumnType           , only : col_pp
-    use VegetationType       , only : veg_pp
-    use shr_sys_mod          , only : shr_sys_flush
-    use clm_instMod          , only : canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars, &
-                                      temperature_vars, solarabs_vars, photosyns_vars, soilstate_vars, cnstate_vars
-    use clm_time_manager     , only : get_curr_time_string
-
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -79,15 +68,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g                                    ! index
-    real(r8), parameter :: amC   = 12.0_r8          ! Atomic mass number for Carbon
-    real(r8), parameter :: amO   = 16.0_r8          ! Atomic mass number for Oxygen
-    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
-    ! The following converts g of C to kg of CO2
-    real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
     
-    ! debug PET 4/27/2018
-    integer :: t, l, c, p, lun_id
-    character(len=256)   :: dateTimeString
     !------------------------------------------------------------------------
 
     call c2g(bounds, &
@@ -118,40 +99,6 @@ contains
          energyflux_vars%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
-
-! #define SUBGRID_DEBUG
-#ifdef SUBGRID_DEBUG         
-    ! debug PET 4/27/2018
-    if (bounds%begg <= 137 .and. bounds%endg >= 137) then
-      call get_curr_time_string(dateTimeString)
-      write(iulog,*)'Timestep: ',trim(dateTimeString)
-      write(iulog,*)'gridcell, avsdr',137, lnd2atm_vars%albd_grc(137,1)
-      do t=grc_pp%topi(137), grc_pp%topf(137)
-        write(iulog,*)'topounit, wt, gcell',t,top_pp%wtgcell(t),top_pp%gridcell(t)
-        do l=1,max_lunit
-          lun_id = top_pp%landunit_indices(l,t)
-          if (lun_id >= 0) then            
-            write(iulog,*)'  lun_id, lun_type, wt, topo',lun_id, lun_pp%itype(lun_id), &
-               lun_pp%wttopounit(lun_id),lun_pp%topounit(lun_id)
-            do c=lun_pp%coli(lun_id), lun_pp%colf(lun_id)
-              write(iulog,*)'    col, col_type, wt, landunit, cropf, lfwt, dtrotr, fbac, fbac1, farea, fuelc', &
-                c,col_pp%itype(c), col_pp%wtlunit(c),col_pp%landunit(c), &
-                cnstate_vars%cropf_col(c), cnstate_vars%lfwt_col(c), cnstate_vars%dtrotr_col(c), &
-                cnstate_vars%fbac_col(c), cnstate_vars%fbac1_col(c), cnstate_vars%farea_burned_col(c), &
-                carbonstate_vars%fuelc_crop_col(c)
-              do p=col_pp%pfti(c),col_pp%pftf(c)
-                write(iulog,*)'      pft, pft_type, wt, col, leafc, fire, flit',p,veg_pp%itype(p), &
-                  veg_pp%wtcol(p), veg_pp%column(p), carbonstate_vars%leafc_patch(p), &
-                  carbonflux_vars%m_leafc_to_fire_patch(p), carbonflux_vars%m_leafc_to_litter_fire_patch(p)
-              end do
-            end do
-          end if
-        end do
-      end do
-      call shr_sys_flush(iulog)
-    end if
-#endif
-       
 
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))

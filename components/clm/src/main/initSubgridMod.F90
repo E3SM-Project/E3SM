@@ -60,6 +60,7 @@ contains
     !
     ! !USES
     use clm_varcon, only : ispval
+    use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
     implicit none
@@ -155,9 +156,11 @@ contains
        if (grc_pp%landunit_indices(ltype, curg) == ispval) then
           grc_pp%landunit_indices(ltype, curg) = l
        else
-          ! write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this gridcell'
-          ! write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
-          ! call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          if (max_topounits == 1) then
+            write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this gridcell'
+            write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
+            call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          end if
        end if
     end do
 
