@@ -37,6 +37,7 @@ module CNBalanceCheckMod
   use clm_varctl          , only : forest_fert_exp
   use VegetationType      , only : veg_pp
   use pftvarcon           , only: noveg
+  use clm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -346,7 +347,7 @@ contains
          col_endnb(c) = totcoln(c)
 
          ! calculate total column-level inputs
-         if (nu_com .ne. 'RD') then
+         if (NFIX_PTASE_plant) then
             col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
          else
             col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
