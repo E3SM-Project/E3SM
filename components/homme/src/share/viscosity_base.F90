@@ -20,7 +20,8 @@ use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
-    edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
+    edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack, &
+    edgevpack_nlyr, edgevunpack_nlyr
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
 use control_mod, only : hypervis_scaling, nu, nu_div
@@ -106,7 +107,7 @@ logical var_coef1
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
          enddo
-         call edgeVpack(edgeq, qtens(:,:,:,q,ie),nlev,nlev*(q-1),ie)
+         call edgeVpack_nlyr(edgeq, elem(ie)%desc, qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
       enddo
    enddo
 
@@ -121,7 +122,7 @@ logical var_coef1
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-        call edgeVunpack(edgeq, qtens(:,:,:,q,ie),nlev,nlev*(q-1),ie)
+        call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
@@ -452,9 +453,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
    
    do ie=nets,nete
       kptr = 0
-      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
    enddo
    
    call t_startf('nmm_bexchV')
@@ -463,9 +464,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       do q=1,qsize
       do k=1,nlev
           min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
@@ -489,9 +490,9 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
    enddo
 
    call t_startf('nmm_bexchS_start')
@@ -516,9 +517,9 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
 
    do ie=nets,nete
       kptr = 0
-      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
-      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       do q=1,qsize
       do k=1,nlev
           min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
@@ -681,7 +682,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
 #else
 
 
-subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,nt,min_neigh,max_neigh,min_var,max_var,kmass)
+subroutine neighbor_minmax(elem,hybrid,edge3,nets,nete,nt,min_neigh,max_neigh,min_var,max_var,kmass)
 !
 ! compute Q min&max over the element and all its neighbors
 !
@@ -689,7 +690,7 @@ subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,nt,min_neigh,max_nei
 integer :: nets,nete,nt
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout) :: elem(:)
-type (EdgeBuffer_t)  , intent(in) :: edgeMinMax
+type (EdgeBuffer_t)  , intent(in) :: edge3
 real (kind=real_kind) :: min_neigh(nlev,nets:nete)
 real (kind=real_kind) :: max_neigh(nlev,nets:nete)
 real (kind=real_kind),optional :: min_var(nlev,nets:nete)
@@ -697,7 +698,6 @@ real (kind=real_kind),optional :: max_var(nlev,nets:nete)
 real (kind=real_kind) :: Qmin(np,np,nlev)
 real (kind=real_kind) :: Qmax(np,np,nlev)
 real (kind=real_kind) :: Qvar(np,np,nlev)
-type (EdgeBuffer_t)          :: edgebuf
 integer, optional :: kmass
 type (EdgeDescriptor_t), allocatable :: desc(:)
 
@@ -716,10 +716,6 @@ integer :: ie,k,q
     enddo
   endif
 
-    ! create edge buffer for 3 fields
-    call initEdgeBuffer(hybrid%par,edgebuf,elem,3*nlev)
-
-
     ! compute p min, max
     do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -731,13 +727,15 @@ integer :: ie,k,q
           ! max - min - crude approximation to TV within the element:
           Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
        enddo
-       call edgeVpack(edgebuf,Qmax,nlev,0,ie)
-       call edgeVpack(edgebuf,Qmin,nlev,nlev,ie)
-       call edgeVpack(edgebuf,Qvar,nlev,2*nlev,ie)
+       ! cant use more efficient edgeVpack_nlyr() interface because below we use the old
+       ! edgeVunpackMin/Max interface
+       call edgeVpack(edge3,Qmax,nlev,0,ie)
+       call edgeVpack(edge3,Qmin,nlev,nlev,ie)
+       call edgeVpack(edge3,Qvar,nlev,2*nlev,ie)
     enddo
     
     call t_startf('nmm_bexchV')
-    call bndry_exchangeV(hybrid,edgebuf)
+    call bndry_exchangeV(hybrid,edge3)
     call t_stopf('nmm_bexchV')
        
     do ie=nets,nete
@@ -758,7 +756,7 @@ integer :: ie,k,q
              Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-          call edgeVunpackMin(edgebuf,Qvar,nlev,2*nlev,ie)
+          call edgeVunpackMin(edge3,Qvar,nlev,2*nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -776,7 +774,7 @@ integer :: ie,k,q
              Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-          call edgeVunpackMax(edgebuf,Qvar,nlev,2*nlev,ie)
+          call edgeVunpackMax(edge3,Qvar,nlev,2*nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -787,8 +785,8 @@ integer :: ie,k,q
 
 
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-       call edgeVunpackMax(edgebuf,Qmax,nlev,0,ie)
-       call edgeVunpackMin(edgebuf,Qmin,nlev,nlev,ie)
+       call edgeVunpackMax(edge3,Qmax,nlev,0,ie)
+       call edgeVunpackMin(edge3,Qmin,nlev,nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -799,7 +797,6 @@ integer :: ie,k,q
        
     end do
 
-    call FreeEdgeBuffer(edgebuf) 
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER

@@ -176,17 +176,15 @@ contains
     use kinds,          only: real_kind
     use dimensions_mod, only: np, nlev
     use element_mod,    only: element_t
-    use edge_mod,       only: edgevpack, edgevunpack, edgedgvunpack
+    use edge_mod,       only: edgevpack, edgevunpack
     use edgetype_mod,   only: EdgeBuffer_t
     use hybrid_mod,     only: hybrid_t
     use derivative_mod, only: derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
-         divergence_sphere_wk, edge_flux_u_cg
+         divergence_sphere_wk
     use time_mod,       only: timelevel_t
     use control_mod,    only:  test_case, limiter_option, nu, nu_s, kmass
     use bndry_mod,      only: bndry_exchangev
     use viscosity_mod,  only: neighbor_minmax, biharmonic_wk
-    !  FOR DEBUGING use only 
-    !    use schedule_mod
     use global_norms_mod
     use types_mod,      only: rk_t
 
@@ -229,7 +227,7 @@ contains
     real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
     real (kind=real_kind), dimension(np,np)      :: E          ! kinetic energy term
     real (kind=real_kind), dimension(np,np)      :: zeta       ! relative vorticity
-    real (kind=real_kind), dimension(np,np)      :: div, flux, plocal
+    real (kind=real_kind), dimension(np,np)      :: div, plocal
     real (kind=real_kind), dimension(np,np,2)    :: ulatlon
 
     real (kind=real_kind) :: v1,v2,fjmax(4)
@@ -736,7 +734,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-    use edge_mod, only : edgevpack, edgevunpack
+    use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
     use edgetype_mod, only : EdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
@@ -816,9 +814,9 @@ contains
              enddo
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
+             call edgeVpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt),nlev,kptr,3*nlev)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
+             call edgeVpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,3*nlev)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -827,9 +825,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr,3*nlev)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr,3*nlev)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -870,9 +868,9 @@ contains
              enddo
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
+             call edgeVpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt),nlev,kptr,3*nlev)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
+             call edgeVpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,3*nlev)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -881,9 +879,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%p(:,:,:,nt), nlev, kptr,3*nlev)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
+             call edgeVunpack_nlyr(edge3,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr,3*nlev)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -985,7 +983,7 @@ contains
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : edgevpack, edgevunpack
+  use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -1067,9 +1065,9 @@ contains
      ! Pack cube edges of tendencies, rotate velocities
      ! ===================================================
      kptr=0
-     call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
+     call edgeVpack_nlyr(edge3,elem(ie)%desc,ptens(1,1,1,ie),nlev,kptr,3*nlev)
      kptr=nlev
-     call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+     call edgeVpack_nlyr(edge3,elem(ie)%desc,vtens(1,1,1,1,ie),2*nlev,kptr,3*nlev)
   end do
   
   
@@ -1088,10 +1086,10 @@ contains
      ! Unpack the edges for vgradp and vtens
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie), nlev, kptr,3*nlev)
      
      kptr=nlev
-     call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie), 2*nlev, kptr, 3*nlev)
      
      ! ===========================================================
      ! Compute velocity and pressure tendencies for all levels
@@ -1130,285 +1128,5 @@ contains
   
 
 
-
-!=======================================================================================!
-!  Advection Flux Term							   		!
-!  from DG code - modified for CG velocity
-!=======================================================================================!
-function adv_flux_term(elem,deriv,contrauv,si,si_neighbor) result(numflux)
-!=======================================================================================!
-    use derivative_mod, only : derivative_t
-    use element_mod, only : element_t
-    integer, parameter :: south=1, east=2, north=3, west=4
-    type (derivative_t)         :: deriv
-    real (kind=real_kind), dimension(np,np,2),intent(in) :: contrauv
-    real (kind=real_kind), dimension(np,np),  intent(in) :: si
-    real (kind=real_kind), dimension(0:np+1,0:np+1),   intent(in) :: si_neighbor
-    type (element_t) :: elem
-
-    real (kind=real_kind), dimension(np,4) :: si_senw
-    real (kind=real_kind), dimension(np,np) :: numflux
-    real (kind=real_kind), dimension(np,np) :: mij
-    real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
-    real(kind=real_kind) ::  alfa1, alfa2, left, right, f_left, f_right, s1,s2
-!    real(kind=real_kind) :: ul, ur
-    integer i,j
-!=======================================================================================!
-    mij(:,:)  = 0
-    mij(1,1)  = 1
-    mij(np,np)= 1
-
-    ! convert from edgeDGVunpack variable to Ram's variables:
-    si_senw(:,south) = si_neighbor(1:np,0)
-    si_senw(:,north) = si_neighbor(1:np,np+1)
-    si_senw(:,east) = si_neighbor(np+1,1:np)
-    si_senw(:,west) = si_neighbor(0,1:np)
-
-    ! South & North    Max flux Jacobians
-!   ul = abs(contrauv(i,1,2))
-    alfa1 = maxval(abs(contrauv(1:np,1,2)))
-!   ur = abs(contrauv(i,np,2))
-    alfa2 = maxval(abs(contrauv(1:np,np,2)))
-
-    do i = 1, np
-       ! South wall
-       left = si_senw(i,south)
-       right  = si(i,1)
-!       f_left = fxy_halo(i,south,2)
-!       f_right = fxy(i,1,2)
-       f_left = left*contrauv(i,1,2)
-       f_right= right*contrauv(i,1,2)
-       lf_south(i) =  0.5D0 *(f_left + f_right - alfa1*(right - left))
-
-       ! North wall
-       left  = si(i,np)
-       right = si_senw(i,north)
-!       f_left  = fxy(i,np,2)
-!       f_right = fxy_halo(i,north,2)
-       f_left  = left*contrauv(i,np,2)
-       f_right = right*contrauv(i,np,2)
-       lf_north(i) =  0.5D0 *(f_left + f_right - alfa2*(right - left))
-
-    enddo
-
-
-    ! East & West   max of Flux Jacobians
-
-!    ur = abs(contrauv(1,j,1))
-    alfa1 = maxval(abs(contrauv(1,1:np,1)))
-!    ul = abs(contrauv(np,j,1))
-    alfa2 = maxval(abs(contrauv(np,1:np,1)))
-
-    do j = 1, np
-       !West wall
-       left  =  si_senw(j,west)
-       right  = si(1,j)
-!       f_left  = fxy_halo(j,west,1)
-!       f_right = fxy(1,j,1)
-       f_left = left*contrauv(1,j,1)
-       f_right= right*contrauv(1,j,1)
-       lf_west(j) =  0.5D0 *(f_left + f_right - alfa1*(right - left))
-
-       !East wall
-       left  = si(np,j)
-       right  = si_senw(j,east)
-!       f_left  = fxy(np,j,1)
-!       f_right = fxy_halo(j,east,1)
-       f_left = left*contrauv(np,j,1)
-       f_right= right*contrauv(np,j,1)
-       lf_east(j) =  0.5D0 *(f_left + f_right - alfa2*(right - left))
-
-    enddo
-
-    !Flux integral along the element boundary
-    ! note: added metdet() below which is not used in DG code.  
-    ! in CG code, all integrals used in weak formulation match physical integrals used
-    ! to define mass and energy:
-    ! ds (arc length)   =  metdet(i,j)*w(i)
-    ! dA (area measure) =  metdet(i,j)*w(i)*w(j)
-
-    do j = 1, np
-       do i = 1, np
-
-          s1 =  (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)*elem%metdet(i,j)
-          s2 =  (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)*elem%metdet(i,j)
-
-          numflux(i,j) = (s1 + s2) * rrearth
-
-       enddo
-    enddo
-!=======================================================================================!
-end function adv_flux_term
-
-
-!==================================================================================!
-! Element-wise Max flux Jacobian for SW system 
-! from DG code, modified for CG velocity
-!----------------------------------------------------------------------------------
- Function sw_fjmax(contuv,si,si_neighbor,elem) result(fjmax)
-!----------------------------------------------------------------------------------
- use element_mod, only : element_t
- Implicit None
- real (kind=real_kind),dimension(np,np,2),intent(in):: contuv
- real (kind=real_kind), dimension(np,np),  intent(in) :: si
- real (kind=real_kind), dimension(0:np+1,0:np+1),   intent(in) :: si_neighbor
- type (element_t) :: elem
-
- real (kind=real_kind),dimension(np,np) :: gh11,gh22,g11,g22
- real (kind=real_kind),dimension(np,4)  :: gh11_halo, gh22_halo 
- real (kind=real_kind),dimension(4)   :: fjmax
- real (kind=real_kind):: alfa1,alfa2, ul,ur 
- integer, parameter:: south=1,east=2,north=3,west=4
- integer:: i,j
-!========================================================
-#if 0
-    ! for debugging: with this, we should duplicate adv_flux_term()
-    g11=0
-    g22=0
-#else
-    g11=(elem%metinv(:,:,1,1))   ! sqrt(g11)=contra component of nhat on east/west edges
-    g22=(elem%metinv(:,:,2,2))   ! sgrt(g22)=contra component of nhat on north/south edges
-#endif
-
-    gh11(:,:) = (si(:,:))*g11(:,:)
-    gh22(:,:) = (si(:,:))*g22(:,:)
-
-    ! convert from edgeDGVunpack variable to Ram's variables:
-    gh11_halo(:,south) = (si_neighbor(1:np,0))*g11(1:np,1)
-    gh11_halo(:,north) = (si_neighbor(1:np,np+1))*g11(1:np,np)
-    gh11_halo(:,east) = (si_neighbor(np+1,1:np))*g11(np,1:np)
-    gh11_halo(:,west) = (si_neighbor(0,1:np))*g11(1,1:np)
-
-    gh22_halo(:,south) = (si_neighbor(1:np,0))*g22(1:np,1)
-    gh22_halo(:,north) = (si_neighbor(1:np,np+1))*g22(1:np,np)
-    gh22_halo(:,east) = (si_neighbor(np+1,1:np))*g22(np,1:np)
-    gh22_halo(:,west) = (si_neighbor(0,1:np))*g22(1,1:np)
-
-
-
-
-    alfa1 = 0.0D0
-    alfa2 = 0.0D0
-    do i = 1, np
-       ul = abs(contuv(i,1,2))      + sqrt(gh22(i,1))
-       ur = abs(contuv(i,1,2))      + sqrt(gh22_halo(i,south))
-       alfa1= max(alfa1,ul,ur)
-       
-       ul = abs(contuv(i,np,2)) + sqrt(gh22_halo(i,north))
-       ur = abs(contuv(i,np,2))     + sqrt(gh22(i,np))
-       alfa2= max(alfa2,ul,ur)
-    enddo
-
-    fjmax(south) = alfa1
-    fjmax(north) = alfa2
-
-    alfa1 = 0.0D0
-    alfa2 = 0.0D0
-    do j = 1, np
-       ul = abs(contuv(1,j,1))  + sqrt(gh11_halo(j,west))
-       ur = abs(contuv(1,j,1))  + sqrt(gh11(1,j))
-     alfa1= max(alfa1,ul,ur)
-       ul = abs(contuv(np,j,1))  + sqrt(gh11(np,j))
-       ur = abs(contuv(np,j,1))  + sqrt(gh11_halo(j,east))
-     alfa2= max(alfa2,ul,ur)
-    enddo
-
-    fjmax(west) = alfa1
-    fjmax(east) = alfa2 
-
-   End Function sw_fjmax  
-!=======================================================================================!
-
-!=======================================================================================! 
-subroutine swsys_flux(numeqn,elem,deriv,fjmax,si,si_neighbor,uvcontra,fluxout)
-   use element_mod, only : element_t
-   use derivative_mod, only : derivative_t
-   integer, parameter :: south=1, east=2, north=3, west=4
-   integer, intent(in):: numeqn
-   type (derivative_t)                                  :: deriv
-   type (element_t) :: elem
-   real (kind=real_kind), dimension(4),    intent(in)   :: fjmax
-   real (kind=real_kind), dimension(np,np,2,numeqn),intent(in) :: uvcontra
-   real (kind=real_kind), dimension(np,np,numeqn),  intent(in) :: si
-   real (kind=real_kind), dimension(0:np+1,0:np+1,numeqn),   intent(in) :: si_neighbor
-   real (kind=real_kind), dimension(np,np,numeqn), intent(out) :: fluxout
-
-   real (kind=real_kind), dimension(np,4,numeqn) :: si_senw
-   real (kind=real_kind), dimension(np,np) :: mij
-   real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
-   real(kind=real_kind) ::  left, right, f_left, f_right, s1,s2
-
-   integer i,j,eqn 
-
-      mij(:,:) = 0.0D0
-      mij(1,1) = 1.0D0
-    mij(np,np) = 1.0D0
-
-    !For SW-system  (u1,u2,dp,pt) order   (4 equations)
-
-    fluxout(:,:,:) = 0.0D0 
-
-      do eqn = 1, numeqn
-         ! convert from edgeDGVunpack variable to Ram's variables:
-         si_senw(:,south,eqn) = si_neighbor(1:np,0,eqn)
-         si_senw(:,north,eqn) = si_neighbor(1:np,np+1,eqn)
-         si_senw(:,east,eqn) = si_neighbor(np+1,1:np,eqn)
-         si_senw(:,west,eqn) = si_neighbor(0,1:np,eqn)
-         
-
-           ! East & West   LF flux  (fjmax <- max of flux Jacobian)
-
-         do j = 1, np
-
-                    left  = si_senw(j,west,eqn) 
-                   right  = si(1,j,eqn) 
-                  f_left  = uvcontra(1,j,1,eqn)*left
-                  f_right = uvcontra(1,j,1,eqn)*right
-               lf_west(j) = 0.5D0 *(f_left + f_right - fjmax(west)*(right - left))
-
-                    left  = si(np,j,eqn) 
-                   right  = si_senw(j,east,eqn) 
-                  f_left  = uvcontra(np,j,1,eqn)*left
-                  f_right = uvcontra(np,j,1,eqn)*right
-               lf_east(j) = 0.5D0 *(f_left + f_right - fjmax(east)*(right - left))
-
-          end do
-
-           ! North& South  LF flux  (fjmax <- max of flux Jacobian)
-
-         do i = 1, np
-
-                     left = si_senw(i,south,eqn) 
-                   right  = si(i,1,eqn) 
-                   f_left = uvcontra(i,1,2,eqn)*left
-                  f_right = uvcontra(i,1,2,eqn)*right
-              lf_south(i) = 0.5D0 *(f_left + f_right - fjmax(south)*(right - left))
-
-                    left  = si(i,np,eqn) 
-                    right = si_senw(i,north,eqn) 
-                  f_left  = uvcontra(i,np,2,eqn)*left
-                  f_right = uvcontra(i,np,2,eqn)*right
-              lf_north(i) = 0.5D0 *(f_left + f_right - fjmax(north)*(right - left))
-
-         end do
-
-        !Flux integral along the element boundary
-        ! note: added metdet() below which is not used in DG code.  
-        ! in CG code, all integrals used in weak formulation match physical integrals used
-        ! to define mass and energy:
-        ! v dot nhat ds (arc length)   =  ucontra * metdet(i,j)*w(i)
-        ! dA (area measure)            =  metdet(i,j)*w(i)*w(j)
-        do j = 1, np
-        do i = 1, np
-            s1 = (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j) * elem%metdet(i,j) 
-            s2 = (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i) * elem%metdet(i,j)
-            fluxout(i,j,eqn) = (s1 + s2) * rrearth
-        end do
-        end do
-
-    end do 
-
- end subroutine  swsys_flux 
-!=======================================================================================================! 
 
 end module advance_mod

@@ -18,7 +18,7 @@ module sl_advection
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
   use control_mod, only        : integration, test_case, hypervis_order, use_semi_lagrange_transport
-  use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer,&
+  use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g, &
                                  initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
@@ -34,7 +34,6 @@ module sl_advection
   save
 
   type (ghostBuffer3D_t)   :: ghostbuf_tr
-  type (EdgeBuffer_t)      :: edgeveloc
 
   public :: Prim_Advec_Tracers_remap_ALE, sl_init1
 
@@ -48,7 +47,6 @@ contains
     type (element_t) :: elem(:)
 
     if  (use_semi_lagrange_transport) then
-       call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
        call initghostbuffer3D(ghostbuf_tr,nlev*qsize,np)
        call interpolate_tracers_init()
     endif
@@ -589,15 +587,15 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
     enddo
-    call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+    call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,2*nlev)
   enddo
 
   call t_startf('ALE_RKdss_bexchV')
-  call bndry_exchangeV(hy,edgeveloc)
+  call bndry_exchangeV(hy,edge_g)
   call t_stopf('ALE_RKdss_bexchV')
 
   do ie=nets,nete
-    call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+    call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,2*nlev)
     do k=1, nlev
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
