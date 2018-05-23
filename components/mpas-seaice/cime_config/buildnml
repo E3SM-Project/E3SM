@@ -73,7 +73,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         if ( $ICE_BGC eq 'ice_bgc') {
                 $grid_date = '180418';
                 $grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime';
-                $points_file = 'seaice_points_EC60to30_v3_net3_12152017.nc';
+                $points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc';
 	}
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
 	$grid_date .= '171101';
