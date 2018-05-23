@@ -41,7 +41,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
-    !w
+    !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
     ! variables (except for gap-phase mortality and fire fluxes)
