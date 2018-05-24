@@ -151,7 +151,8 @@ module li_thermal
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness, &                ! ice thickness
-           upperSurface                ! ice upper surface
+           upperSurface, &               ! ice upper surface
+           basalWaterThickness
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
@@ -238,6 +239,7 @@ module li_thermal
          ! get arrays from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
 
          ! get arrays from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1079,6 +1081,13 @@ module li_thermal
                           surfaceTemperature(iCell), &
                           basalEnthalpy,             &
                           basalTemperature(iCell))
+
+                     denth_bot = basalTemperature(iCell) - temperature(nVertLevels,iCell)
+                     basalConductiveFlux(iCell) = -iceConductivity/thickness(iCell) * &
+                        denth_bot/(1.0_RKIND - layerCenterSigma(nVertLevels))
+                    ! TODO change denth here to dtemp. The basal conductive flux should be calculated using temperature, not
+                    ! enthalpy. If we use enthalpy, basalConductiveFlux will always equals to basal heat flux, causing problem
+
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
@@ -2664,7 +2673,7 @@ module li_thermal
                                     ! if false, take the arithmetic average
 
       diffusivityCold = iceConductivity / (rhoi*cp_ice)
-      diffusivityTemperate = diffusivityCold / 100.0_RKIND
+      diffusivityTemperate = diffusivityCold / 1.0_RKIND
 
       ! set enthalpy at surface and bed
       surfaceEnthalpy = surfaceTemperature * rhoi*cp_ice
@@ -2736,12 +2745,24 @@ module li_thermal
 
          dEnthalpyTemp = enthalpyTemp(k) - enthalpyTemp(k-1)   ! = dEnthalpy in cold ice, < dEnthalpy in temperate ice
 
-         if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
-            avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
-            avgFactor = min(1.0_RKIND, avgFactor)
+         !if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
+         !   avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
+         !   avgFactor = min(1.0_RKIND, avgFactor)
+         !else
+         !   avgFactor = 0.0_RKIND
+         !endif
+         ! I think the above lines are probably problematic...
+
+         if (abs(dEnthalpy) > 0.0_RKIND) then
+             if (dEnthalpyTemp/dEnthalpy == 1) then
+                 avgFactor = 1
+             else
+                 avgFactor = 1
+             endif
          else
-            avgFactor = 0.0_RKIND
+             avgFactor = 1
          endif
+         ! Always use diffusivityCold
 
          if (harmonic_avg) then  ! take a harmonic average
                                  ! This gives slower cooling of temperate layers and allows
@@ -2750,6 +2771,8 @@ module li_thermal
          else   ! take an arithmetic average
                 ! This gives faster cooling of temperate layers and smaller gradients
             diffusivity(k) = avgFactor*diffusivityCold + (1.0_RKIND - avgFactor)*diffusivityTemperate
+            diffusivity(k) = diffusivityCold 
+            ! Not sure if we need diffusivityTemperate. I think we can just use diffusivityCold for everywhere. 
          endif
 
       end do
@@ -2767,8 +2790,8 @@ module li_thermal
 
       factor = deltat / thickness**2
 
-      subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels)   * dsigmaTerm(1:nVertLevels,1)
-      supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1) * dsigmaTerm(1:nVertLevels,2)
+      subd(2:nVertLevels+1) = -factor * diffusivityCold   * dsigmaTerm(1:nVertLevels,1)
+      supd(2:nVertLevels+1) = -factor * diffusivityCold * dsigmaTerm(1:nVertLevels,2)
       diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
       rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
 
@@ -2791,17 +2814,21 @@ module li_thermal
 
       else    ! grounded ice
 
-         if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
+           call mpas_log_write('basalTemperature, pmpTemperatureBed $r $r', realArgs=(/basalTemperature, pmpTemperatureBed/))
+
+         !if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
 
             ! Positive-thickness basal temperate boundary Layer
             !WHL - Not sure whether this condition is ideal. It implies that basalEnthalpy = enthalpy(nVertLevels).
 
-            subd(nVertLevels+2) = -1.0_RKIND
-            diag(nVertLevels+2) =  1.0_RKIND
-            supd(nVertLevels+2) =  0.0_RKIND
-            rhs(nVertLevels+2)  =  0.0_RKIND
+         !   subd(nVertLevels+2) = -1.0_RKIND
+         !   diag(nVertLevels+2) =  1.0_RKIND
+         !   supd(nVertLevels+2) =  0.0_RKIND
+         !   rhs(nVertLevels+2)  =  0.0_RKIND
 
-         elseif (abs(basalTemperature -  pmpTemperatureBed) < 0.001_RKIND) then  ! melting
+         ! Don't need this for now
+
+         if (abs(basalTemperature -  pmpTemperatureBed) < 0.001_RKIND) then  ! melting
 
             ! Zero-thickness basal temperate boundary layer
             ! Hold basal temperature at pressure melting point
@@ -2900,8 +2927,7 @@ module li_thermal
            thickness,             & !< Input: ice thickness (m)
            basalFrictionFlux,     & !< Input: basal frictional heating flux (W m-2), >= 0
            basalHeatFlux,         & !< Input: geothermal heating flux (W m-2), positive up
-           basalConductiveFlux,   & !< Input: heat conducted from ice interior to bed (W m-2), positive down
-           basalWaterThickness      !< Input: thickness of basal water layer (m)
+           basalConductiveFlux    !< Input: heat conducted from ice interior to bed (W m-2), positive down
 
       integer, dimension(:), intent(in) :: &
            iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
@@ -2915,7 +2941,8 @@ module li_thermal
            temperature              !< Input/output: temperature (deg C)
 
       real(kind=RKIND), dimension(:), intent(inout) :: &
-           basalTemperature         !< Input/output: basal temperature (deg C)
+           basalTemperature,        & !< Input/output: basal temperature (deg C)
+           basalWaterThickness      !< Input: thickness of basal water layer (m)
 
       real(kind=RKIND), dimension(:,:), intent(inout) :: &
            waterfrac                !< Input/output: water fraction
@@ -2975,6 +3002,7 @@ module li_thermal
             !       and overlying layers with a different enthalpy also melt.
 
             netBasalFlux = basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)  ! W/m^2
+            !call mpas_log_write("netBasalFlux G condFlux $r $r $r", realArgs=(/netBasalFlux, basalHeatFlux(iCell),basalConductiveFlux(iCell)/))
 
             if (abs(netBasalFlux) < eps11) then  ! netBasalFlux might be slightly different from zero
                                                  ! because of rounding errors; if so, then zero out
@@ -2982,10 +3010,17 @@ module li_thermal
             endif
 
             if (trim(config_thermal_solver) == 'enthalpy') then
-               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
+               !groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)
+                basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
+                !call mpas_log_write("waterThickness grdMassBal dt $r $r $r", realArgs=(/basalWaterThickness(iCell), groundedBasalMassBal(iCell), deltat/))
+                if (basalWaterThickness(iCell) < 0.0_RKIND) then
+                    basalWaterThickness(iCell) = 0.0_RKIND
+                endif
             else   ! temperature solver
                groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)   ! m/s
             endif
+
 
          endif   ! ice is present and grounded
 
@@ -3068,8 +3103,9 @@ module li_thermal
             ! Note: I don't think energy conservation is violated here, because no energy is associated with
             !       the infinitesimally thin layer at the bed.
 
-            if (groundedBasalMassBal(iCell) > 0.0_RKIND .and. basalWaterThickness(iCell) == 0.0_RKIND .and. &
-                 basalTemperature(iCell) >= pmpTemperatureBed) then
+            !if (groundedBasalMassBal(iCell) > 0.0_RKIND .and. basalWaterThickness(iCell) == 0.0_RKIND .and. &
+            !     basalTemperature(iCell) >= pmpTemperatureBed) then
+            if (basalWaterThickness(iCell) == 0.0_RKIND .and. basalTemperature(iCell) >= pmpTemperatureBed) then
                basalTemperature(iCell) = pmpTemperatureBed - 0.01_RKIND
             endif
 
