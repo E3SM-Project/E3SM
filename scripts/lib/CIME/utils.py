@@ -175,8 +175,7 @@ def _read_cime_config_file():
     PROJECT=someprojectnumber
     """
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
-                       "mail_user", "machine", "mpilib", "compiler", "walltime", "job_queue",
-                       "input_dir", "pesfile")
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
                               "test_root", "output_root", "baseline_root", "clean",
                               "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",

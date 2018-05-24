@@ -5,7 +5,7 @@ Script to create a new CIME Case Control System (CSS) experimental case.
 """
 
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect, get_model, get_cime_config
 from CIME.case          import Case
 from argparse           import RawTextHelpFormatter
 
@@ -21,6 +21,7 @@ def parse_command_line(args, cimeroot, description):
                                      formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
+    cime_config = get_cime_config()
 
     parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
@@ -90,7 +91,12 @@ def parse_command_line(args, cimeroot, description):
                         "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
                         "\nThis argument is required if --user-grid is an argument.")
 
-    parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
+    if cime_config.has_option('main','SRCROOT'):
+        srcroot_default = cime_config.get('main', 'srcroot')
+    else:
+        srcroot_default = os.path.dirname(cimeroot)
+
+    parser.add_argument("--srcroot", default=srcroot_default,
                         help="Alternative pathname for source root directory. "
                         "The default is cimeroot/../")
 
@@ -156,6 +162,8 @@ def parse_command_line(args, cimeroot, description):
 
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
+    elif cime_config.has_option("main","input_dir"):
+        args.input_dir = os.path.abspath(cime_config.get("main","input_dir"))
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
