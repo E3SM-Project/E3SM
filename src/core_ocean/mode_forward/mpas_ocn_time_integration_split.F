@@ -135,6 +135,9 @@ module ocn_time_integration_split
 
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
+      logical, pointer :: config_disable_thick_all_tend
+      logical, pointer :: config_disable_vel_all_tend
+      logical, pointer :: config_disable_tr_all_tend
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
       logical, pointer :: config_compute_active_tracer_budgets
@@ -236,6 +239,9 @@ module ocn_time_integration_split
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
       call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
       call mpas_pool_get_config(domain % configs, 'config_vel_correction', config_vel_correction)
+      call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
+      call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
+      call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
 
       call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
@@ -378,6 +384,11 @@ module ocn_time_integration_split
       n_bcl_iter(config_n_ts_iter) = config_n_bcl_iter_end
 
       do split_explicit_step = 1, config_n_ts_iter
+
+         if (config_disable_thick_all_tend .and. config_disable_vel_all_tend .and. config_disable_tr_all_tend) then
+           exit ! don't compute in loop meant to update velocity, thickness, and tracers
+         end if
+
          call mpas_timer_start('se loop')
 
          stage1_tend_time = min(split_explicit_step,2)
