@@ -459,6 +459,7 @@
 
 			<stream name="basicmesh"/>
 			<var name="thickness"/>
+			<var name="basalWaterThickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
 			<var name="sfcMassBal"/>
@@ -524,6 +525,7 @@
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
+			<var name="basalWaterThickness"/>
 			<var name="temperature"/>
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
