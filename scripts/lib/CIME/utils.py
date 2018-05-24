@@ -174,12 +174,25 @@ def _read_cime_config_file():
     CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
+    allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
+                       "mail_user", "machine", "mpilib", "compiler", "walltime", "job_queue",
+                       "input_dir", "pesfile")
+    allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
+                              "test_root", "output_root", "baseline_root", "clean",
+                              "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
+                              "walltime", "job_queue", "allow_baseline_overwrite", "wait",
+                              "force_procs", "force_threads", "input_dir", "pesfile", "retry",
+                              "walltime")
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
+        for item,_ in cime_config.items('main'):
+            expect(item in allowed_in_main,"Unknown option in config section \"main\": {}".format(item))
+        for item,_ in cime_config.items('create_test'):
+            expect(item in allowed_in_create_test,"Unknown option in config section \"test\": {}".format(item))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
@@ -257,7 +270,9 @@ def get_model():
 
     # One last try
     if (model is None):
-        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        srcroot = cime_config.get('main','SRCROOT')
+        if srcroot is None:
+            srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
         if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
            or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
