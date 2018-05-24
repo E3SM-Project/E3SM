@@ -809,6 +809,7 @@ contains
           roce_16O    (n) = 1.0_r8   ! H216O surface ratio     ~ mol/mol
           roce_HDO    (n) = 1.0_r8   ! HDO   surface ratio     ~ mol/mol
           roce_18O    (n) = 1.0_r8   ! H218O surface ratio     ~ mol/mol
+
           dens        (n) = 1.0_r8   ! atm density             ~ kg/m^3
           tbot        (n) = 300.0_r8 ! atm temperature         ~ Kelvin
           uGust       (n) = 0.0_r8
@@ -817,26 +818,29 @@ contains
           prec_gust   (n) = 0.0_r8
           fswpen      (n) = 0.0_r8
           ocnsal      (n) = 0.0_r8
-          warm        (n) = 0.0_r8
-          salt        (n) = 0.0_r8
-          speed       (n) = 0.0_r8
-          regime      (n) = 0.0_r8
-          warmMax     (n) = 0.0_r8
-          windMax     (n) = 0.0_r8
-          qSolAvg     (n) = 0.0_r8
-          windAvg     (n) = 0.0_r8
-          warmMaxInc  (n) = 0.0_r8
-          windMaxInc  (n) = 0.0_r8
-          qSolInc     (n) = 0.0_r8
-          windInc     (n) = 0.0_r8
-          tbulk       (n) = 0.0_r8
-          tskin       (n) = 0.0_r8
-          tskin_day   (n) = 0.0_r8
-          tskin_night (n) = 0.0_r8
-          cskin       (n) = 0.0_r8
-          cskin_night (n) = 0.0_r8
-          swdn        (n) = 0.0_r8
-          swup        (n) = 0.0_r8
+
+          if (do_flux_diurnal) then
+             warm        (n) = 0.0_r8
+             salt        (n) = 0.0_r8
+             speed       (n) = 0.0_r8
+             regime      (n) = 0.0_r8
+             warmMax     (n) = 0.0_r8
+             windMax     (n) = 0.0_r8
+             qSolAvg     (n) = 0.0_r8
+             windAvg     (n) = 0.0_r8
+             warmMaxInc  (n) = 0.0_r8
+             windMaxInc  (n) = 0.0_r8
+             qSolInc     (n) = 0.0_r8
+             windInc     (n) = 0.0_r8
+             tbulk       (n) = 0.0_r8
+             tskin       (n) = 0.0_r8
+             tskin_day   (n) = 0.0_r8
+             tskin_night (n) = 0.0_r8
+             cskin       (n) = 0.0_r8
+             cskin_night (n) = 0.0_r8
+             swdn        (n) = 0.0_r8
+             swup        (n) = 0.0_r8
+          end if
        enddo
     else
        do n = 1,lsize

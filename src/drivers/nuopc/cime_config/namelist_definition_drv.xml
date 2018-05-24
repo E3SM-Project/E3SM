@@ -16,6 +16,7 @@
       <value>
       @ocn_cpl_dt   #ocean coupling step
 	  MED med_phases_prep_ocn_accum_avg
+          MED med_connectors_prep_med2ocn
 	  MED -> OCN :remapMethod=redist
 	  @atm_cpl_dt   # atmosphere coupling step
             MED med_phases_prep_ocn_map
