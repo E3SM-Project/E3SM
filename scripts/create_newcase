@@ -18,10 +18,10 @@ def parse_command_line(args, cimeroot, description):
                                      formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
-
-    model = get_model()
-
-    cime_config = get_cime_config()
+    try:
+        cime_config = get_cime_config()
+    except:
+        cime_config = None
 
     parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
@@ -91,7 +91,7 @@ def parse_command_line(args, cimeroot, description):
                         "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
                         "\nThis argument is required if --user-grid is an argument.")
 
-    if cime_config.has_option('main','SRCROOT'):
+    if cime_config and cime_config.has_option('main','SRCROOT'):
         srcroot_default = cime_config.get('main', 'srcroot')
     else:
         srcroot_default = os.path.dirname(cimeroot)
@@ -105,11 +105,14 @@ def parse_command_line(args, cimeroot, description):
 
     # The following is a deprecated option
     parser.add_argument("--script-root", dest="script_root", default=None, help=argparse.SUPPRESS)
+    if cime_config:
+        model = get_model()
+    else:
+        model = None
 
     if model == "cesm":
         parser.add_argument("--run-unsupported", action="store_true",
                             help="Force the creation of a case that is not tested or supported by CESM developers.")
-
     # hidden argument indicating called from create_test
     # Indicates that create_newcase was called from create_test - do not use otherwise.
     parser.add_argument("--test", "-test", action="store_true", help=argparse.SUPPRESS)
@@ -162,7 +165,7 @@ def parse_command_line(args, cimeroot, description):
 
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
-    elif cime_config.has_option("main","input_dir"):
+    elif cime_config and cime_config.has_option("main","input_dir"):
         args.input_dir = os.path.abspath(cime_config.get("main","input_dir"))
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\

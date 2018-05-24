@@ -175,7 +175,7 @@ def _read_cime_config_file():
     PROJECT=someprojectnumber
     """
     allowed_sections = ("main", "create_test")
-    
+
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
                        "mail_user", "machine", "mpilib", "compiler", "input_dir")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
@@ -1019,7 +1019,8 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
 
     # scripts_regression_tests is the only thing that should pass a None argument in parser
     if parser is not None:
-        _check_for_invalid_args(args[1:])
+        if "--help" not in args[1:]:
+            _check_for_invalid_args(args[1:])
         args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
