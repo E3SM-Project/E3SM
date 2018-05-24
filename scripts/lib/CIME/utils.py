@@ -245,6 +245,8 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    if not cime_config.has_section('main'):
+        cime_config.add_section('main')
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -271,7 +273,9 @@ def get_model():
 
     # One last try
     if (model is None):
-        srcroot = cime_config.get('main','SRCROOT')
+        srcroot = None
+        if cime_config.has_section('main') and cime_config.has_option('main', 'SRCROOT'):
+            srcroot = cime_config.get('main','SRCROOT')
         if srcroot is None:
             srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
         if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
