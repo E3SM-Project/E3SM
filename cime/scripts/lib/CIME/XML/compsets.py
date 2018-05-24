@@ -79,12 +79,13 @@ class Compsets(GenericXML):
 
     def print_values(self, arg_help=True):
         help_text = self.get_value(name="help")
-        compsets_text = self.get_value("names")
+        compsets = self.get_children("compset")
         if arg_help:
             logger.info(" {} ".format(help_text))
 
         logger.info("       --------------------------------------")
         logger.info("       Compset Alias: Compset Long Name ")
         logger.info("       --------------------------------------")
-        for key in sorted(compsets_text.keys()):
-            logger.info("   {:20} : {}".format(key, compsets_text[key]))
+        for compset in compsets:
+            logger.info("   {:20} : {}".format(self.text(self.get_child("alias",root=compset)),
+                                               self.text(self.get_child("lname", root=compset))))

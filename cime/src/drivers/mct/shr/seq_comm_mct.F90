@@ -222,6 +222,7 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, &
@@ -234,7 +235,7 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
 
-    namelist /ccsm_pes/  &
+    namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
          lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
          ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout, &
@@ -320,7 +321,7 @@ contains
        if (ierr == 0) then
           ierr = 1
           do while( ierr > 0 )
-             read(nu, nml=ccsm_pes, iostat=ierr)
+             read(nu, nml=cime_pes, iostat=ierr)
           end do
           close(nu)
        end if
@@ -405,7 +406,7 @@ contains
        pelist(3,1) = cpl_pestride
     end if
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
-    call seq_comm_setcomm(CPLID,pelist,cpl_nthreads,'CPL')
+    call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
     call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
@@ -449,12 +450,18 @@ contains
 
     ! Initialize MCT
 
+    ! ensure that all driver_comm processes initialized their comms
+    call mpi_barrier(DRIVER_COMM,ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_barrier driver pre-mct-init')
+
     ! add up valid comps on local pe
 
+    valid_comps = '*'
     myncomps = 0
     do n = 1,ncomps
        if (seq_comms(n)%mpicom /= MPI_COMM_NULL) then
           myncomps = myncomps + 1
+          valid_comps(n) = seq_comms(n)%name
        endif
     enddo
 
@@ -477,7 +484,7 @@ contains
     enddo
 
     if (myncomps /= size(comps)) then
-       write(logunit,*) trim(subname),' ERROR in myncomps ',myncomps,size(comps)
+       write(logunit,*) trim(subname),' ERROR in myncomps ',myncomps,size(comps),comps,valid_comps
        call shr_sys_abort()
     endif
 
@@ -571,9 +578,9 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
-          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=drv_comm_id)
        else
-          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
+          call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=n,tinst=num_inst_comp)
        endif
        call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
     enddo
@@ -605,8 +612,6 @@ contains
     ! Also calls mct_world_clean, to be symmetric with the mct_world_init call from
     ! seq_comm_init.
 
-    integer :: id
-
     character(*), parameter :: subName =   '(seq_comm_clean) '
     !----------------------------------------------------------
 
@@ -634,7 +639,7 @@ contains
     integer :: mpigrp_world
     integer :: mpigrp
     integer :: mpicom
-    integer :: ntask,ntasks,cnt
+    integer :: ntasks
     integer :: ierr
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
@@ -711,7 +716,7 @@ contains
     endif
 
     if (seq_comms(ID)%iamroot) then
-       write(logunit,F11) trim(subname),'  initialize ID ',ID,seq_comms(ID)%name, &
+       write(logunit,F11) trim(subname),'  init ID ',ID,seq_comms(ID)%name, &
             ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads,&
             ' suffix =',trim(seq_comms(ID)%suffix)
     endif
@@ -827,12 +832,12 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        if (loglevel > 1) then
-          write(logunit,F12) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F12) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join IDs =',ID1,ID2,' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads, &
                ' cpl/cmp pes =',seq_comms(ID)%cplpe,seq_comms(ID)%cmppe
        else
-          write(logunit,F13) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F13) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join IDs =',ID1,ID2,' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        endif
@@ -950,11 +955,11 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        if (loglevel > 1) then
-          write(logunit,F14) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F14) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join multiple comp IDs',' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        else
-          write(logunit,F14) trim(subname),' initialize ID ',ID,seq_comms(ID)%name, &
+          write(logunit,F14) trim(subname),' init ID ',ID,seq_comms(ID)%name, &
                ' join multiple comp IDs',' npes =',seq_comms(ID)%npes, &
                ' nthreads =',seq_comms(ID)%nthreads
        endif
@@ -1129,14 +1134,16 @@ contains
   integer function seq_comm_getnthreads()
 
     implicit none
-    integer :: omp_get_num_threads
     character(*),parameter :: subName =   '(seq_comm_getnthreads) '
-
-    seq_comm_getnthreads = -1
 #ifdef _OPENMP
+    integer :: omp_get_num_threads
+    seq_comm_getnthreads = -1
+
     !$OMP PARALLEL
     seq_comm_getnthreads = omp_get_num_threads()
     !$OMP END PARALLEL
+#else
+    seq_comm_getnthreads = -1
 #endif
 
   end function seq_comm_getnthreads

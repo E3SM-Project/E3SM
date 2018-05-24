@@ -11,14 +11,13 @@ module desp_comp_mod
   use shr_mpi_mod,     only: shr_mpi_bcast
   use esmf,            only: ESMF_Clock
   use perf_mod,        only: t_startf, t_stopf, t_barrierf
-
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_advance
   use shr_strdata_mod, only: shr_strdata_pioinit
-
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
   use seq_comm_mct,    only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_comm_mct,    only: num_inst_cpl => num_inst_driver
+
   ! Used to link esp components across multiple drivers
   use seq_comm_mct,    only: global_comm
 
@@ -51,11 +50,10 @@ module desp_comp_mod
   integer(IN)                 :: npes                   ! total number of tasks
   integer(IN),      parameter :: master_task=0          ! task number of master task
   integer(IN)                 :: logunit                ! logging unit number
-  integer(IN)                 :: loglevel
+  integer(IN)                 :: loglevel               ! logging level
   integer                     :: inst_index             ! number of current instance (ie. 1)
   character(len=16)           :: inst_name              ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)           :: inst_suffix            ! char string associated with instance
-  ! (ie. "_0001" or "")
+  character(len=16)           :: inst_suffix            ! char string associated with instance (ie. "_0001" or "")
   character(len=CL)           :: desp_mode              ! mode of operation
   character(len=*), parameter :: rpprefix  = 'rpointer.'
   character(len=*), parameter :: rpfile    = rpprefix//'esp'
@@ -81,30 +79,18 @@ module desp_comp_mod
      module procedure get_restart_filenames_a
      module procedure get_restart_filenames_s
   end interface get_restart_filenames
-
-  SAVE
-
+  
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: desp_comp_init
-  !
-  ! !DESCRIPTION:
-  !     initialize data esp model
-  !
-  ! !REVISION HISTORY:
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine desp_comp_init(EClock, espid, mpicom_in, phase, read_restart,    &
        esp_present, esp_prognostic)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! !DESCRIPTION: initialize data esp model
 
+    ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(in)  :: EClock
     integer,          intent(in)  :: espid
     integer,          intent(in)  :: mpicom_in
@@ -112,8 +98,6 @@ CONTAINS
     logical,          intent(in)  :: read_restart
     logical,          intent(out) :: esp_present    ! flag
     logical,          intent(out) :: esp_prognostic ! flag
-
-    !EOP
 
     !--- local variables ---
     integer(IN)                    :: ierr       ! error code
@@ -323,20 +307,12 @@ CONTAINS
   end subroutine desp_comp_init
 
   !=============================================================================
-  !BOP==========================================================================
-  !
-  ! !IROUTINE: desp_comp_run
-  !
-  ! !DESCRIPTION:
-  !     run method for data esp model
-  !
-  ! !REVISION HISTORY:
-  !
-  ! !INTERFACE: ---------------------------------------------------------------
-
   subroutine desp_comp_run(EClock, case_name, pause_sig, atm_resume,          &
        lnd_resume, rof_resume, ocn_resume, ice_resume, glc_resume,            &
        wav_resume, cpl_resume)
+
+    ! !DESCRIPTION: run method for data esp model
+
     use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
     use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
     use seq_comm_mct, only: num_inst_wav
@@ -577,28 +553,13 @@ CONTAINS
   end subroutine desp_comp_run
 
   !============================================================================
-  !BOP ========================================================================
-  !
-  ! !IROUTINE: desp_comp_final
-  !
-  ! !DESCRIPTION:
-  !     finalize method for data esp model
-  !
-  ! !REVISION HISTORY:
-  !
-  ! !INTERFACE: ---------------------------------------------------------------
-  !
   subroutine desp_comp_final()
 
-    !EOP
-
+    ! !DESCRIPTION: finalize method for data esp model
     !--- formats ---
     character(*), parameter :: F00   = "('(desp_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(desp_comp_final) ',73('-'))"
     character(*), parameter :: subName = "(desp_comp_final) "
-
-    !--------------------------------------------------------------------------
-    !
     !--------------------------------------------------------------------------
 
     call t_startf('DESP_FINAL')
@@ -612,9 +573,8 @@ CONTAINS
     call t_stopf('DESP_FINAL')
 
   end subroutine desp_comp_final
-  !============================================================================
-  !============================================================================
 
+  !============================================================================
   subroutine get_restart_filenames_a(comp_ind, filenames, retcode)
     use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID
     use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix, cpl_inst_tag
@@ -714,6 +674,7 @@ CONTAINS
 
   end subroutine get_restart_filenames_a
 
+  !============================================================================
   subroutine get_restart_filenames_s(comp_ind, filename, retcode)
 
     ! Dummy arguments

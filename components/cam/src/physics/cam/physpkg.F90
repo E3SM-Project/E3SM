@@ -17,9 +17,10 @@ module physpkg
   use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
-       physics_ptend, physics_tend_init, physics_update,    &
+       physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
+  use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,        only: get_ncols_p
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
@@ -90,7 +91,8 @@ module physpkg
   logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
   logical           :: prog_modal_aero     ! Prognostic modal aerosols present
   logical           :: micro_do_icesupersat
-
+  logical           :: pergro_test_active= .false.
+  logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
   !======================================================================= 
@@ -168,8 +170,9 @@ subroutine phys_register
                       do_aerocom_ind3_out      = do_aerocom_ind3,  &
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
-                      micro_do_icesupersat_out = micro_do_icesupersat)
-
+                      micro_do_icesupersat_out = micro_do_icesupersat, &
+                      pergro_test_active_out   = pergro_test_active, &
+                      pergro_mods_out          = pergro_mods)
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -747,6 +750,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call pbuf_initialize(pbuf2d)
 
+    !initialize physics update interface routine
+    call physics_update_init()
     ! Initialize subcol scheme
     call subcol_init(pbuf2d)
 
@@ -833,7 +838,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call tsinti(tmelt, latvap, rair, stebol, latice)
 
-    call radiation_init
+    call radiation_init(phys_state)
 
     call rad_solar_var_init()
 
@@ -900,6 +905,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize Nudging Parameters
     !--------------------------------
     if(Nudge_Model) call nudging_init
+
+    
+   !BSINGH -  addfld and adddefault calls for perturb growth testing    
+    if(pergro_test_active)call add_fld_default_calls()
 
 end subroutine phys_init
 
@@ -1318,7 +1327,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
     use constituents,       only: cnst_get_ind
-    use physics_types,      only: physics_state, physics_tend, physics_ptend, physics_update,    &
+    use physics_types,      only: physics_state, physics_tend, physics_ptend,    &
          physics_dme_adjust, set_dry_to_wet, physics_state_check
     use majorsp_diffusion,  only: mspd_intr  ! WACCM-X major diffusion
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
@@ -1812,10 +1821,10 @@ subroutine tphysbc (ztodt,               &
     use microp_driver,   only: microp_driver_tend
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
-    use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_update, &
+    use physics_types,   only: physics_state, physics_tend, physics_ptend, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
-    use cam_history,     only: outfld
+    use cam_history,     only: outfld, fieldname_len
     use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
@@ -1897,7 +1906,7 @@ subroutine tphysbc (ztodt,               &
     integer ncol                               ! number of atmospheric columns
     integer ierr
 
-    integer  i,k,m                             ! Longitude, level, constituent indices
+    integer  i,k,m,ihist                       ! Longitude, level, constituent indices
     integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
@@ -1967,6 +1976,7 @@ subroutine tphysbc (ztodt,               &
 
     logical   :: lq(pcnst)
 
+    character(len=fieldname_len)   :: varname, vsuffix
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
     ! by aero_model_wetdep subroutine. 
 
@@ -2035,6 +2045,14 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
+    if (pergro_test_active) then 
+       !call outfld calls
+       do ihist = 1 , nvars_prtrb_hist
+          vsuffix  = trim(adjustl(hist_vars(ihist)))
+          varname  = trim(adjustl(vsuffix))//'_topphysbc' ! form variable name
+          call outfld( trim(adjustl(varname)),get_var(state,vsuffix), pcols , lchnk )
+       enddo
+    endif
 
     static_ener_ac_idx = pbuf_get_index('static_ener_ac')
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
@@ -2342,7 +2360,8 @@ if (l_tracer_aero) then
        ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
        ! detrainment, then the reserved condensate is snow.
        if (carma_do_detrain) then
-          call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, prec_str(:ncol)+rliq(:ncol), snow_str(:ncol)+rliq(:ncol), zero)
+          call check_energy_chng(state, tend, "carma_tend", &
+               nstep, ztodt, zero, prec_str(:ncol)+rliq(:ncol), snow_str(:ncol)+rliq(:ncol), zero)
        else
           call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
        end if
@@ -2818,5 +2837,43 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
 end subroutine phys_timestep_init
+
+
+subroutine add_fld_default_calls()
+  !BSINGH -  For adding addfld and add defualt calls
+  use cam_history,        only: addfld, add_default, fieldname_len
+
+  implicit none
+
+  !Add all existing ptend names for the addfld calls
+  character(len=20), parameter :: vlist(27) = (/     'topphysbc           '                       ,&
+       'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
+       'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
+       'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&
+       'cldwat_mic          ','aero_model_wetdep_ma','convtran2           ','cam_radheat         ',&
+       'chemistry           ','vdiff               ','rayleigh_friction   ','aero_model_drydep_ma',&
+       'Grav_wave_drag      ','convect_shallow_off ','clubb_ice1          ','clubb_det           ',&
+       'clubb_ice4          ','clubb_srf           ' /)
+
+
+
+  character(len=fieldname_len) :: varname
+  character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
+  
+  integer :: iv, ntot, ihist
+
+  ntot = size(vlist)
+
+  do ihist = 1 , nvars_prtrb_hist
+     do iv = 1, ntot   
+        
+        varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
+
+        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
+        call add_default (trim(adjustl(varname)), 1, ' ')        
+     enddo
+  enddo
+
+end subroutine add_fld_default_calls
 
 end module physpkg

@@ -65,7 +65,7 @@ contains
     type(mct_aVect)          , intent(in)    :: fractions_ax(:)
     !
     ! Local Variables
-    integer                     :: exi  , efi, eoi
+    integer                     :: exi
     integer                     :: lsize_o
     integer                     :: lsize_a
     character(SHR_KIND_CS)      :: aoflux_grid ! grid for atm ocn flux calc

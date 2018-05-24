@@ -18,6 +18,7 @@ module dlnd_comp_mod
   use shr_strdata_mod   , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
+  use shr_cal_mod       , only: shr_cal_ymdtod2string
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
 
@@ -299,7 +300,7 @@ CONTAINS
     call t_adj_detailf(+2)
     call dlnd_comp_run(EClock, x2l, l2x, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart)
+         inst_suffix, logunit)
     call t_adj_detailf(-2)
 
     if (my_task == master_task) write(logunit,F00) 'dlnd_comp_init done'
@@ -312,8 +313,7 @@ CONTAINS
   !===============================================================================
   subroutine dlnd_comp_run(EClock, x2l, l2x, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
-    use shr_cal_mod, only: shr_cal_ymdtod2string
+       inst_suffix, logunit, case_name)
 
     ! !DESCRIPTION:  run method for dlnd model
     implicit none
@@ -331,7 +331,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---

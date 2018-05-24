@@ -377,7 +377,7 @@ module cmparray_mod
     end do
 
     return
-666 format('cmp3d: ', a10, 3(1x, i4), 3(1x, e20.14))
+666 format('cmp3d: ', a10, 3(1x, i4), 3(1x, e21.14))
 
   end subroutine cmparray_3d_R
 
@@ -452,7 +452,7 @@ module cmparray_mod
     end do
 
     print 666, name, chksum, imin, jmin, kmin, imax, jmax, kmax
-666 format('chksum: ', a8, 1x, e20.14, 6(1x, i4))
+666 format('chksum: ', a8, 1x, e21.14, 6(1x, i4))
 
   end subroutine chksum_3d_R
 

@@ -4,9 +4,10 @@ module CNEcosystemDynMod
   ! Ecosystem dynamics: phenology, vegetation
   !
   ! !USES:
+  use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : flanduse_timeseries, use_c13, use_c14, use_ed, use_dynroot
+  use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -143,7 +144,7 @@ contains
     !-----------------------------------------------------------------------
   
     ! only do if ed is off
-    if( .not. use_ed) then
+    if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
@@ -206,6 +207,7 @@ contains
        call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
+       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
        call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        if ( use_c13 ) then
@@ -225,7 +227,7 @@ contains
 
        call t_stopf('CNPsum')
 
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynLeaching
 
@@ -327,7 +329,7 @@ contains
     ! Call the main CN routines
 
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
 
        ! --------------------------------------------------
        ! zero the column-level C and N fluxes
@@ -432,7 +434,7 @@ contains
        ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
        if (use_century_decomp) then
           call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
        else
           call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
                canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
@@ -457,7 +459,7 @@ contains
 
        call t_stopf('CNAllocation - phase-1')
 
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynNoLeaching1
 
@@ -554,7 +556,7 @@ contains
 
     ! Call the main CN routines
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
@@ -627,8 +629,8 @@ contains
           call t_startf('CNRootDyn')
 
           call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
-               cnstate_vars, crop_vars,  soilstate_vars)
+               canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
+               cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
           call t_stopf('CNRootDyn')
        end if
 
@@ -675,15 +677,15 @@ contains
        end if
 
        call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -748,7 +750,7 @@ contains
        call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-       if (flanduse_timeseries /= ' ') then
+       if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)
@@ -849,7 +851,7 @@ contains
        if( use_c14 ) then
           call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        endif    
-    end if !end of if not use_ed block
+    end if !end of if not use_fates block
 
   end subroutine CNEcosystemDynNoLeaching2
 

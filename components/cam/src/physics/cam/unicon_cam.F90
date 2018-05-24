@@ -879,7 +879,8 @@ subroutine unicon_init_cnst(name, q, gcid)
       return
 ! JHYoon
    end if
-
+#else
+   q = 0.0_r8
 #endif
 
 end subroutine unicon_init_cnst
@@ -1407,7 +1408,9 @@ subroutine unicon_cam_tend(dt, state, cam_in, sgh30, &
          call outfld(trim(varname), trten_pos_inv(:,:,m), mix, lchnk)
       end if
    end do
-
+#else
+   out = unicon_out_t(cmfmc=0.0_r8,slflx=0.0_r8,qtflx=0.0_r8,&
+                      rqc=0.0_r8,rliq=0.0_r8,cnt=0.0_r8,cnb=0.0_r8)
 #endif
 
 end subroutine unicon_cam_tend

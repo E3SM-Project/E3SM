@@ -1,17 +1,18 @@
 #pylint: disable=import-error
 from six.moves import queue
-import os, time, threading, socket, signal, distutils.spawn, shutil, glob
+import os, time, threading, socket, signal, shutil, glob
+#pylint: disable=import-error
+from distutils.spawn import find_executable
 import logging
 import xml.etree.ElementTree as xmlet
 
 import CIME.utils
-from CIME.utils import expect, Timeout, run_cmd_no_fail
+from CIME.utils import expect, Timeout, run_cmd_no_fail, safe_copy
 from CIME.XML.machines import Machines
 from CIME.test_status import *
 
-
 SIGNAL_RECEIVED           = False
-ACME_MAIN_CDASH           = "ACME_Climate"
+E3SM_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 SLEEP_INTERVAL_SEC        = .1
 
@@ -53,7 +54,7 @@ def get_test_output(test_path):
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
     # We assume all cases were created from the same code repo
-    first_result_case = os.path.dirname(results.iteritems().next()[1][0])
+    first_result_case = os.path.dirname(list(results.items())[0][1][0])
     try:
         srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
     except:
@@ -137,7 +138,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
         measurement_elem = xmlet.SubElement(results_elem, "Measurement")
 
         value_elem = xmlet.SubElement(measurement_elem, "Value")
-        value_elem.text = get_test_output(test_norm_path)
+        value_elem.text = ''.join([item for item in get_test_output(test_norm_path) if ord(item) < 128])
 
     elapsed_time_elem = xmlet.SubElement(testing_elem, "ElapsedMinutes")
     elapsed_time_elem.text = "0" # Skip for now
@@ -147,7 +148,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     etree.write(os.path.join(data_rel_path, "Test.xml"))
 
 ###############################################################################
-def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname):
+def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload):
 ###############################################################################
 
     data_rel_path = os.path.join("Testing", utc_time)
@@ -160,24 +161,33 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
         for test_name, test_data in results.items():
             test_path, test_status = test_data
 
-            if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
-                ts = TestStatus(os.path.dirname(test_path))
+            if test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS] or force_log_upload:
+                test_case_dir = os.path.dirname(test_path)
+                ts = TestStatus(test_case_dir)
 
                 build_status    = ts.get_status(MODEL_BUILD_PHASE)
                 run_status      = ts.get_status(RUN_PHASE)
                 baseline_status = ts.get_status(BASELINE_PHASE)
-                if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS):
-                    param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
-                    log_src_dir = run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=os.path.dirname(test_path))
 
-                    log_dst_dir = os.path.join(log_dir, "{}_{}_logs".format(test_name, param))
-                    os.makedirs(log_dst_dir)
-                    for log_file in glob.glob(os.path.join(log_src_dir, "*log*")):
-                        shutil.copy(log_file, log_dst_dir)
-                    for log_file in glob.glob(os.path.join(log_src_dir, "*.cprnc.out*")):
-                        shutil.copy(log_file, log_dst_dir)
+                if build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS or force_log_upload:
+                    case_dirs = [test_case_dir]
+                    case_base = os.path.basename(test_case_dir)
+                    test_case2_dir = os.path.join(test_case_dir, "case2", case_base)
+                    if os.path.exists(test_case2_dir):
+                        case_dirs.append(test_case2_dir)
 
-                    need_to_upload = True
+                    for case_dir in case_dirs:
+                        param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
+                        log_src_dir = run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=case_dir)
+
+                        log_dst_dir = os.path.join(log_dir, "{}{}_{}_logs".format(test_name, "" if case_dir == test_case_dir else ".case2", param))
+                        os.makedirs(log_dst_dir)
+                        for log_file in glob.glob(os.path.join(log_src_dir, "*log*")):
+                            safe_copy(log_file, log_dst_dir)
+                        for log_file in glob.glob(os.path.join(log_src_dir, "*.cprnc.out*")):
+                            safe_copy(log_file, log_dst_dir)
+
+                        need_to_upload = True
 
         if (need_to_upload):
 
@@ -210,7 +220,7 @@ r"""<?xml version="1.0" encoding="UTF-8"?>
             shutil.rmtree(log_dir)
 
 ###############################################################################
-def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group):
+def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group, force_log_upload=False):
 ###############################################################################
 
     #
@@ -225,7 +235,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     hostname = Machines().get_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
-        logging.warning("Could not convert hostname '{}' into an ACME machine name".format(hostname))
+        logging.warning("Could not convert hostname '{}' into an E3SM machine name".format(hostname))
 
     dart_config = \
 """
@@ -254,7 +264,7 @@ ScpCommand: {4}
 # Dashboard start time
 NightlyStartTime: {5} UTC
 """.format(os.getcwd(), hostname, cdash_build_name, cdash_project,
-           distutils.spawn.find_executable("scp"), cdash_timestamp)
+           find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
         dart_fd.write(dart_config)
@@ -268,7 +278,7 @@ NightlyStartTime: {5} UTC
 
     create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
 
-    create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
+    create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload)
 
     run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
@@ -347,9 +357,10 @@ def wait_for_tests(test_paths,
                    ignore_namelists=False,
                    ignore_memleak=False,
                    cdash_build_name=None,
-                   cdash_project=ACME_MAIN_CDASH,
+                   cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
-                   timeout=None):
+                   timeout=None,
+                   force_log_upload=False):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -366,6 +377,6 @@ def wait_for_tests(test_paths,
         all_pass &= test_status == TEST_PASS_STATUS
 
     if cdash_build_name:
-        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
+        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, force_log_upload)
 
     return all_pass

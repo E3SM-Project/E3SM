@@ -86,7 +86,7 @@ contains
     !
     ! Local Variables
     integer                          :: lsize_i
-    integer                          :: eai, eoi, egi, eri, eii
+    integer                          :: eai, eoi, egi, eri
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: samegrid_ig   ! samegrid glc and ice
     logical                          :: samegrid_ro   ! samegrid rof and ice/ocn
@@ -193,7 +193,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eoi, eai, egi, efi, eii, eri
+    integer                  :: eoi, eai, egi, eii, eri
     real(r8)                 :: flux_epbalfact ! adjusted precip factor
     type(mct_avect), pointer :: x2i_ix
     character(*), parameter  :: subname = '(prep_ice_mrg)'

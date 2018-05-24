@@ -317,6 +317,7 @@ module PhosphorusFluxType
      real(r8), pointer :: smin_p_to_plant_col                       (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_litter_pflux                     (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_cwd_pflux                        (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: supplement_to_plantp                      (:)     ! supplementary P flux for plant 
 
    contains
 
@@ -655,15 +656,22 @@ contains
     allocate(this%smin_p_to_plant_col         (begc:endc                   )) ; this%smin_p_to_plant_col         (:)   = nan
     allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
+    allocate(this%supplement_to_plantp        (begp:endp                   )) ; this%supplement_to_plantp        (:)   = 0.d0
 
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
-    allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
-    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
-    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
-    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
-    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 ; this%sminp_net_transport_vr_col        (:,:)   = spval
-    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
+    allocate(this%plant_pdemand_col                 (begc:endc))
+    this%plant_pdemand_col                 (:)     = nan
+    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))
+    this%plant_pdemand_vr_col (:,:) = nan
+    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools))
+    this%externalp_to_decomp_ppools_col    (:,:,:) = spval
+    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    
+    this%externalp_to_decomp_delta_col     (:)     = spval
+    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 
+    this%sminp_net_transport_vr_col        (:,:)   = spval
+    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    
+    this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
   end subroutine InitAllocate
 

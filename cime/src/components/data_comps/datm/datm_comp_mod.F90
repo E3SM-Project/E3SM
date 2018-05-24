@@ -51,14 +51,12 @@ module datm_comp_mod
 
   character(CS) :: myModelName = 'atm'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
   real(R8)      :: tbotmax               ! units detector
   real(R8)      :: tdewmax               ! units detector
   real(R8)      :: anidrmax              ! existance detector
 
   character(len=*),parameter :: rpfile = 'rpointer.atm'
 
-  real(R8),parameter :: aerodep_spval = 1.e29_r8    ! special aerosol deposition
   real(R8),parameter :: tKFrz  = SHR_CONST_TKFRZ
   real(R8),parameter :: degtorad = SHR_CONST_PI/180.0_R8
   real(R8),parameter :: pstd   = SHR_CONST_PSTD     ! standard pressure ~ Pa
@@ -76,8 +74,7 @@ module datm_comp_mod
        -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
   integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
-  integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet,kco2p,kco2d
-  integer(IN) :: kbid,kbod,kbiw,koid,kood,koiw,kdw1,kdw2,kdw3,kdw4,kdd1,kdd2,kdd3,kdd4
+  integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
@@ -88,10 +85,7 @@ module datm_comp_mod
   integer(IN) :: krl_18O, krl_HDO
   integer(IN) :: ksc_18O, ksc_HDO
   integer(IN) :: ksl_18O, ksl_HDO
-  integer(IN) :: sshum_16O, sshum_18O, sshum_HDO
   integer(IN) :: srh_16O, srh_18O, srh_HDO
-  integer(IN) :: sprecc_18O, sprecc_HDO
-  integer(IN) :: sprecl_18O, sprecl_HDO
   integer(IN) :: sprecn_16O, sprecn_18O, sprecn_HDO
 
   ! anomaly forcing
@@ -387,8 +381,6 @@ CONTAINS
        kswvdr= mct_aVect_indexRA(a2x,'Faxa_swvdr')
        kswvdf= mct_aVect_indexRA(a2x,'Faxa_swvdf')
        kswnet= mct_aVect_indexRA(a2x,'Faxa_swnet')
-       kco2p = mct_aVect_indexRA(a2x,'Sa_co2prog',perrWith='quiet')
-       kco2d = mct_aVect_indexRA(a2x,'Sa_co2diag',perrWith='quiet')
 
        if (wiso_datm) then  ! water isotopic forcing
           kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
@@ -403,21 +395,6 @@ CONTAINS
           ksl_18O   = mct_aVect_indexRA(a2x,'Faxa_snowl_18O')
           ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
        end if
-
-       kbid  = mct_aVect_indexRA(a2x,'Faxa_bcphidry')
-       kbod  = mct_aVect_indexRA(a2x,'Faxa_bcphodry')
-       kbiw  = mct_aVect_indexRA(a2x,'Faxa_bcphiwet')
-       koid  = mct_aVect_indexRA(a2x,'Faxa_ocphidry')
-       kood  = mct_aVect_indexRA(a2x,'Faxa_ocphodry')
-       koiw  = mct_aVect_indexRA(a2x,'Faxa_ocphiwet')
-       kdd1  = mct_aVect_indexRA(a2x,'Faxa_dstdry1')
-       kdd2  = mct_aVect_indexRA(a2x,'Faxa_dstdry2')
-       kdd3  = mct_aVect_indexRA(a2x,'Faxa_dstdry3')
-       kdd4  = mct_aVect_indexRA(a2x,'Faxa_dstdry4')
-       kdw1  = mct_aVect_indexRA(a2x,'Faxa_dstwet1')
-       kdw2  = mct_aVect_indexRA(a2x,'Faxa_dstwet2')
-       kdw3  = mct_aVect_indexRA(a2x,'Faxa_dstwet3')
-       kdw4  = mct_aVect_indexRA(a2x,'Faxa_dstwet4')
 
        call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
        call mct_aVect_zero(x2a)
@@ -621,7 +598,6 @@ CONTAINS
     character(CL) :: rest_file_strm    ! restart_file
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: stepno            ! step number
-    integer(IN)   :: eday              ! elapsed day
     real(R8)      :: rday              ! elapsed day
     real(R8)      :: cosFactor         ! cosine factor
     real(R8)      :: factor            ! generic/temporary correction factor
@@ -632,7 +608,7 @@ CONTAINS
     character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
 
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
@@ -670,25 +646,6 @@ CONTAINS
     call t_barrierf('datm_scatter_BARRIER',mpicom)
 
     call t_startf('datm_scatter')
-    if (trim(datamode) /= 'COPYALL') then
-       lsize = mct_avect_lsize(a2x)
-       do n = 1,lsize
-          a2x%rAttr(kbid,n) = aerodep_spval
-          a2x%rAttr(kbod,n) = aerodep_spval
-          a2x%rAttr(kbiw,n) = aerodep_spval
-          a2x%rAttr(koid,n) = aerodep_spval
-          a2x%rAttr(kood,n) = aerodep_spval
-          a2x%rAttr(koiw,n) = aerodep_spval
-          a2x%rAttr(kdd1,n) = aerodep_spval
-          a2x%rAttr(kdd2,n) = aerodep_spval
-          a2x%rAttr(kdd3,n) = aerodep_spval
-          a2x%rAttr(kdd4,n) = aerodep_spval
-          a2x%rAttr(kdw1,n) = aerodep_spval
-          a2x%rAttr(kdw2,n) = aerodep_spval
-          a2x%rAttr(kdw3,n) = aerodep_spval
-          a2x%rAttr(kdw4,n) = aerodep_spval
-       enddo
-    endif
     if (firstcall) then
        allocate(ilist_av(SDATM%nstreams))
        allocate(olist_av(SDATM%nstreams))

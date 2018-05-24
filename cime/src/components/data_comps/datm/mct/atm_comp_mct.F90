@@ -34,7 +34,6 @@ module atm_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
   type(shr_strdata_type) :: SDATM
-  character(CS)          :: myModelName = 'atm' ! user defined model name
   integer(IN)            :: mpicom              ! mpi communicator
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)

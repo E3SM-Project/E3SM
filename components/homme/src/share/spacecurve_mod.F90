@@ -3,6 +3,11 @@
 #endif
 
 module spacecurve_mod
+!
+!
+! Revisions:
+! Mark Taylor: 2018/3  Remove memory leaks, make most routines private
+!
   use kinds, only : iulog
   implicit none
   private
@@ -21,16 +26,10 @@ module spacecurve_mod
   integer,public                              :: vcnt   ! visitation count
   logical,private                             :: verbose=.FALSE. 
 
-  type (factor_t),  public                      :: fact
+  type (factor_t), private                  :: fact
 
-  !JMD new addition
   SAVE:: fact
-  public :: map 
-  public :: hilbert_old
-  public :: PeanoM,hilbert, Cinco
-  public :: GenCurve
   public :: GenSpaceCurve
-  public :: log2,Factor
   public :: PrintCurve
   public :: IsFactorable,IsLoadBalanced
   public :: genspacepart
@@ -899,6 +898,9 @@ contains
   end function GenCurve
   !---------------------------------------------------------
   function Factor(num) result(res)
+  ! note: this function is allocating memory in the 'fact' struct
+  ! to avoid memory leaks, the calling program needs to deallocate
+  ! this array.  poor design choice. 
 
     implicit none
     integer,intent(in)  :: num
@@ -988,7 +990,8 @@ contains
     else
        IsFactorable = .FALSE.
     endif
-
+    deallocate(fact%factors)
+    
   end function IsFactorable
   !------------------------------------------------
   subroutine map(l)
@@ -1033,7 +1036,9 @@ contains
        !  The array ordered will contain the visitation order
        ordered(:,:) = 0
 
-       call map(level) 
+       call map(level)
+       deallocate(fact%factors)
+
 
        Mesh(:,:) = ordered(:,:)
 

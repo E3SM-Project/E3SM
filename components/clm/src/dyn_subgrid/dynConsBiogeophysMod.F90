@@ -23,6 +23,14 @@ module dynConsBiogeophysMod
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType         , only : veg_pp                
+  use TotalWaterAndHeatMod, only : ComputeLiqIceMassNonLake, ComputeLiqIceMassLake
+  use TotalWaterAndHeatMod, only : ComputeHeatNonLake, ComputeHeatLake
+  use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
+  use TotalWaterAndHeatMod, only : heat_base_temp
+  use clm_varcon        , only : tfrz, cpliq
+  use subgridAveMod     , only : p2c, c2g
+  use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
+  use clm_varcon      , only : spval
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -32,13 +40,16 @@ module dynConsBiogeophysMod
   public :: dyn_hwcontent_final           ! compute grid-level heat and water content, after land cover change; also compute dynbal fluxes
   !
   ! !PRIVATE MEMBER FUNCTIONS
-  private :: dyn_hwcontent                ! do the actual computation of grid-level heat and water content
+  private :: dyn_water_content            ! compute gridcell total liquid and ice water contents
+  private :: dyn_heat_content             ! compute gridcell total heat contents
   !---------------------------------------------------------------------------
 
 contains
 
   !---------------------------------------------------------------------------
-  subroutine dyn_hwcontent_init(bounds, &
+  subroutine dyn_hwcontent_init(bounds,                                      &
+       num_nolakec, filter_nolakec,                                          &
+       num_lakec, filter_lakec,                                              &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
     !
@@ -50,6 +61,10 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds  
+    integer                  , intent(in)    :: num_nolakec
+    integer                  , intent(in)    :: filter_nolakec(:)
+    integer                  , intent(in)    :: num_lakec
+    integer                  , intent(in)    :: filter_lakec(:)
     type(urbanparams_type)   , intent(in)    :: urbanparams_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
@@ -63,39 +78,29 @@ contains
     integer :: g   ! grid cell index
     !-------------------------------------------------------------------------------
     
-    ! initialize heat and water content and dynamic balance fields to zero
-    do g = bounds%begg, bounds%endg
-       waterstate_vars%liq2_grc(g)           = 0._r8
-       waterstate_vars%liq1_grc(g)           = 0._r8
-       waterstate_vars%ice2_grc(g)           = 0._r8 
-       waterstate_vars%ice1_grc(g)           = 0._r8
+    call dyn_water_content(bounds,                                        &
+         num_nolakec, filter_nolakec,                                     &
+         num_lakec, filter_lakec,                                         &
+         soilhydrology_vars, waterstate_vars, lakestate_vars,             &
+         liquid_mass = waterstate_vars%liq1_grc(bounds%begg:bounds%endg), &
+         ice_mass    = waterstate_vars%ice1_grc(bounds%begg:bounds%endg))
 
-       waterflux_vars%qflx_liq_dynbal_grc(g) = 0._r8
-       waterflux_vars%qflx_ice_dynbal_grc(g) = 0._r8
-
-       temperature_vars%heat2_grc(g)         = 0._r8
-       temperature_vars%heat1_grc(g)         = 0._r8
-
-       energyflux_vars%eflx_dynbal_grc(g)    = 0._r8
-    enddo
-
-    call dyn_hwcontent( bounds, &
-         waterstate_vars%liq1_grc(bounds%begg:bounds%endg), &
-         waterstate_vars%ice1_grc(bounds%begg:bounds%endg), &
-         temperature_vars%heat1_grc(bounds%begg:bounds%endg) , &
-         urbanparams_vars, soilstate_vars, soilhydrology_vars, &
-         temperature_vars, waterstate_vars, lakestate_vars)
+    call dyn_heat_content( bounds,                                        &
+         num_nolakec, filter_nolakec,                                     &
+         num_lakec, filter_lakec,                                         &
+         urbanparams_vars, soilstate_vars, soilhydrology_vars,            &
+         temperature_vars, waterstate_vars,                               &
+         heat_grc = temperature_vars%heat1_grc(bounds%begg:bounds%endg),  &
+         liquid_water_temp_grc = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg))
 
   end subroutine dyn_hwcontent_init
 
   !---------------------------------------------------------------------------
   subroutine dyn_hwcontent_final(bounds, &
+       num_nolakec, filter_nolakec, &
+       num_lakec, filter_lakec, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
-    !
-    ! !DESCRIPTION:
-    ! Compute grid cell-level heat and water content after land cover change, and compute
-    ! the dynbal fluxes
     !
     ! Should be called AFTER all subgrid weight updates this time step
     !
@@ -104,247 +109,239 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds  
+    integer                  , intent(in)    :: num_nolakec
+    integer                  , intent(in)    :: filter_nolakec(:)
+    integer                  , intent(in)    :: num_lakec
+    integer                  , intent(in)    :: filter_lakec(:)
     type(urbanparams_type)   , intent(in)    :: urbanparams_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
+    type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(energyflux_type)    , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
+    integer  :: begg, endg
     integer  :: g     ! grid cell index
     real(r8) :: dtime ! land model time step (sec)
+    real(r8) :: delta_liq(bounds%begg:bounds%endg)  ! change in gridcell h2o liq content
+    real(r8) :: delta_ice(bounds%begg:bounds%endg)  ! change in gridcell h2o ice content
+    real(r8) :: delta_heat(bounds%begg:bounds%endg) ! change in gridcell heat content
     !---------------------------------------------------------------------------
 
-    call dyn_hwcontent( bounds,                                &
-         waterstate_vars%liq2_grc(bounds%begg:bounds%endg),    &
-         waterstate_vars%ice2_grc(bounds%begg:bounds%endg),    &
-         temperature_vars%heat2_grc(bounds%begg:bounds%endg) , &
-         urbanparams_vars, soilstate_vars, soilhydrology_vars, &
-         temperature_vars, waterstate_vars, lakestate_vars)
+    begg = bounds%begg
+    endg = bounds%endg
 
     dtime = get_step_size()
-    do g = bounds%begg, bounds%endg
-       waterflux_vars%qflx_liq_dynbal_grc (g) = (waterstate_vars%liq2_grc  (g) - waterstate_vars%liq1_grc  (g))/dtime
-       waterflux_vars%qflx_ice_dynbal_grc (g) = (waterstate_vars%ice2_grc  (g) - waterstate_vars%ice1_grc  (g))/dtime
-       energyflux_vars%eflx_dynbal_grc    (g) = (temperature_vars%heat2_grc(g) - temperature_vars%heat1_grc(g))/dtime
-    end do
+    call dyn_water_content(bounds, &
+         num_nolakec, filter_nolakec, &
+         num_lakec, filter_lakec, &
+         soilhydrology_vars, waterstate_vars, lakestate_vars, &
+         liquid_mass = waterstate_vars%liq2_grc(bounds%begg:bounds%endg), &
+         ice_mass    = waterstate_vars%ice2_grc(bounds%begg:bounds%endg))
+
+    call dyn_heat_content( bounds,                                &
+         num_nolakec, filter_nolakec, &
+         num_lakec, filter_lakec, &
+         urbanparams_vars, soilstate_vars, soilhydrology_vars, &
+         temperature_vars, waterstate_vars, &
+         heat_grc = temperature_vars%heat2_grc(bounds%begg:bounds%endg), &
+         liquid_water_temp_grc = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg))
+
+    if (get_for_testing_zero_dynbal_fluxes()) then
+       do g = begg, endg
+          delta_liq(g) = 0._r8
+          delta_ice(g) = 0._r8
+          delta_heat(g) = 0._r8
+      end do
+    else
+       do g = begg, endg
+          delta_liq(g)  = waterstate_vars%liq2_grc(g) - waterstate_vars%liq1_grc(g)
+          delta_ice(g)  = waterstate_vars%ice2_grc(g) - waterstate_vars%ice1_grc(g)
+          delta_heat(g) = temperature_vars%heat2_grc(g) - temperature_vars%heat1_grc(g)
+          waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
+          waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
+          energyflux_vars%eflx_dynbal_grc    (g) = delta_heat(g)/dtime
+       end do
+    end if
+
+    !call AdjustDeltaHeatForDeltaLiq( &
+    !     bounds, &
+    !     delta_liq = delta_liq(bounds%begg:bounds%endg), &
+    !     liquid_water_temp1 = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg), &
+    !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
+    !     delta_heat = delta_heat(bounds%begg:bounds%endg))
+
+    !call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_liq(begg:endg))
+    !call waterflux_vars%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
+    !     waterflux_vars%qflx_liq_dynbal_grc(begg:endg))
+
+    !call waterflux_vars%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_ice(begg:endg))
+    !call waterflux_vars%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
+    !     waterflux_vars%qflx_ice_dynbal_grc(begg:endg))
+
+    !call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
+    !     delta_heat(begg:endg))
+    !call energyflux_vars%eflx_dynbal_dribbler%get_curr_flux(bounds, &
+    !     energyflux_vars%eflx_dynbal_grc(begg:endg))
 
   end subroutine dyn_hwcontent_final
 
+  !-----------------------------------------------------------------------
+  subroutine dyn_water_content(bounds, &
+       num_nolakec, filter_nolakec, &
+       num_lakec, filter_lakec, &
+       soilhydrology_vars, waterstate_vars, lakestate_vars, &
+       liquid_mass, ice_mass)
+    !
+    ! !DESCRIPTION:
+    ! Compute gridcell total liquid and ice water contents
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds  
+    integer                  , intent(in)    :: num_nolakec
+    integer                  , intent(in)    :: filter_nolakec(:)
+    integer                  , intent(in)    :: num_lakec
+    integer                  , intent(in)    :: filter_lakec(:)
+    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
+    type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(lakestate_type)     , intent(in)    :: lakestate_vars
+    real(r8)                 , intent(out)   :: liquid_mass( bounds%begg: ) ! kg m-2
+    real(r8)                 , intent(out)   :: ice_mass( bounds%begg: )    ! kg m-2
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: liquid_mass_col(bounds%begc:bounds%endc) ! kg m-2
+    real(r8) :: ice_mass_col(bounds%begc:bounds%endc)    ! kg m-2
+
+    
+    character(len=*), parameter :: subname = 'dyn_water_content'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(liquid_mass) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(ice_mass) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+
+    call ComputeLiqIceMassNonLake(bounds, num_nolakec, filter_nolakec, &
+         soilhydrology_vars, waterstate_vars, &
+         liquid_mass_col(bounds%begc:bounds%endc), &
+         ice_mass_col(bounds%begc:bounds%endc))
+
+    call ComputeLiqIceMassLake(bounds, num_lakec, filter_lakec, &
+         waterstate_vars, lakestate_vars, &
+         liquid_mass_col(bounds%begc:bounds%endc), &
+         ice_mass_col(bounds%begc:bounds%endc))
+
+    call c2g(bounds, &
+         carr = liquid_mass_col(bounds%begc:bounds%endc), &
+         garr = liquid_mass(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', &
+         l2g_scale_type = 'unity')
+
+    call c2g(bounds, &
+         carr = ice_mass_col(bounds%begc:bounds%endc), &
+         garr = ice_mass(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', &
+         l2g_scale_type = 'unity')
+
+  end subroutine dyn_water_content
+
+
   !---------------------------------------------------------------------------
-  subroutine dyn_hwcontent(bounds, gcell_liq, gcell_ice, gcell_heat, &
+  subroutine dyn_heat_content(bounds, &
+       num_nolakec, filter_nolakec, &
+       num_lakec, filter_lakec, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, &
-       temperature_vars, waterstate_vars, lakestate_vars)
+       temperature_vars, waterstate_vars, &
+       heat_grc, liquid_water_temp_grc)
 
     ! !DESCRIPTION:
     ! Compute grid-level heat and water content to track conservation with respect to
     ! dynamic land cover.
-
-    ! !USES:
-    use landunit_varcon , only : istsoil, istice, istwet, istdlak, istice_mec, istcrop
-    use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
-    use clm_varcon      , only : cpice,  cpliq, denh2o
-    use clm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevlak
+    !
+    ! Heat content is computed relative to a baseline of 0 C. So temperatures above 0 C
+    ! lead to a positive heat content, temperatures below 0 C lead to a negative heat
+    ! content. For water, the baseline is considered to be ice at 0 C, so for liquid water
+    ! we include the latent heat of fusion.
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)  :: bounds  
-    real(r8)                 , intent(out) :: gcell_liq ( bounds%begg: )   ! [gridcell]
-    real(r8)                 , intent(out) :: gcell_ice ( bounds%begg: )   ! [gridcell]
-    real(r8)                 , intent(out) :: gcell_heat( bounds%begg: )   ! [gridcell]
+    integer                  , intent(in)  :: num_nolakec
+    integer                  , intent(in)  :: filter_nolakec(:)
+    integer                  , intent(in)  :: num_lakec
+    integer                  , intent(in)  :: filter_lakec(:)
     type(urbanparams_type)   , intent(in)  :: urbanparams_vars
     type(soilstate_type)     , intent(in)  :: soilstate_vars
     type(soilhydrology_type) , intent(in)  :: soilhydrology_vars
     type(temperature_type)   , intent(in)  :: temperature_vars
     type(waterstate_type)    , intent(in)  :: waterstate_vars
-    type(lakestate_type)     , intent(in)  :: lakestate_vars
+
+    real(r8)                 , intent(out) :: heat_grc( bounds%begg: ) ! total heat content for each grid cell [J/m^2]
+    real(r8)                 , intent(out) :: liquid_water_temp_grc( bounds%begg: ) ! weighted average liquid water temperature for each grid cell (K)
+
     !
     ! !LOCAL VARIABLES:
-    integer  :: li,lf         ! loop initial/final indicies
-    integer  :: ci,cf         ! loop initial/final indicies
-    integer  :: pi,pf         ! loop initial/final indicies
+    integer  :: g
 
-    integer  :: g,l,c,p,k     ! loop indicies (grid,lunit,column,pft,vertical level)
+    real(r8) :: heat_col(bounds%begc:bounds%endc)  ! sum of heat content for all columns [J/m^2]
+    real(r8) :: heat_liquid_col(bounds%begc:bounds%endc) ! sum of heat content for all columns: liquid water, excluding latent heat [J/m^2]
+    real(r8) :: cv_liquid_col(bounds%begc:bounds%endc) ! sum of liquid heat capacity for all columns [J/(m^2 K)]
 
-    real(r8) :: wtgcell       ! weight relative to grid cell
-    real(r8) :: wtcol         ! weight relative to column
-    real(r8) :: liq           ! sum of liquid water at column level
-    real(r8) :: ice           ! sum of frozen water at column level
-    real(r8) :: heat          ! sum of heat content at column level
-    real(r8) :: cv            ! heat capacity [J/(m^2 K)]
-
-    integer ,pointer :: nlev_improad(:)  ! number of impervious road layers
-    real(r8),pointer :: cv_wall(:,:)     ! thermal conductivity of urban wall
-    real(r8),pointer :: cv_roof(:,:)     ! thermal conductivity of urban roof
-    real(r8),pointer :: cv_improad(:,:)  ! thermal conductivity of urban impervious road
-    integer ,pointer :: snl(:)           ! number of snow layers
-    real(r8),pointer :: t_soisno(:,:)    ! soil temperature (Kelvin)
-    real(r8),pointer :: h2osno(:)        ! snow water (mm H2O)
-    real(r8),pointer :: h2osoi_liq(:,:)  ! liquid water (kg/m2)
-    real(r8),pointer :: h2osoi_ice(:,:)  ! frozen water (kg/m2)
-    real(r8),pointer :: watsat(:,:)      ! volumetric soil water at saturation (porosity)
-    real(r8),pointer :: csol(:,:)        ! heat capacity, soil solids (J/m**3/Kelvin)
-    real(r8),pointer :: wa_col(:)        ! water in the unconfined aquifer (mm)
-    real(r8),pointer :: dz(:,:)          ! layer depth (m)
+    real(r8) :: heat_liquid_grc(bounds%begg:bounds%endg) ! heat_liquid_col averaged to grid cell [J/m^2]
+    real(r8) :: cv_liquid_grc(bounds%begg:bounds%endg) ! cv_liquid_col averaged to grid cell [J/(m^2 K)]
     !-------------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(gcell_liq)  == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(gcell_ice)  == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(gcell_heat) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(heat_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(liquid_water_temp_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
 
-    snl          => col_pp%snl
-    dz           => col_pp%dz
-    nlev_improad => urbanparams_vars%nlev_improad
-    cv_wall      => urbanparams_vars%cv_wall
-    cv_roof      => urbanparams_vars%cv_roof
-    cv_improad   => urbanparams_vars%cv_improad
-    watsat       => soilstate_vars%watsat_col
-    csol         => soilstate_vars%csol_col
-    wa_col       => soilhydrology_vars%wa_col
-    t_soisno     => temperature_vars%t_soisno_col
-    h2osoi_liq   => waterstate_vars%h2osoi_liq_col
-    h2osoi_ice   => waterstate_vars%h2osoi_ice_col
-    h2osno       => waterstate_vars%h2osno_col
+    heat_col(bounds%begc:bounds%endc)        = spval
+    heat_liquid_col(bounds%begc:bounds%endc) = spval
+    cv_liquid_col(bounds%begc:bounds%endc)   = spval
 
-    ! Get relevant sizes
+    call ComputeHeatNonLake(bounds, num_nolakec, filter_nolakec, &
+         urbanparams_vars, soilstate_vars, &
+         temperature_vars, waterstate_vars, soilhydrology_vars, &
+         heat = heat_col(bounds%begc:bounds%endc), &
+         heat_liquid = heat_liquid_col(bounds%begc:bounds%endc), &
+         cv_liquid = cv_liquid_col(bounds%begc:bounds%endc))
 
-    do g = bounds%begg,bounds%endg ! loop over grid cells
-       gcell_liq  (g) = 0.0_r8   ! sum for one grid cell
-       gcell_ice  (g) = 0.0_r8   ! sum for one grid cell
-       gcell_heat (g) = 0.0_r8   ! sum for one grid cell
+    call ComputeHeatLake(bounds, num_lakec, filter_lakec, &
+         soilstate_vars, temperature_vars, waterstate_vars, &
+         heat = heat_col(bounds%begc:bounds%endc), &
+         heat_liquid = heat_liquid_col(bounds%begc:bounds%endc), &
+         cv_liquid = cv_liquid_col(bounds%begc:bounds%endc))
+
+    call c2g(bounds, &
+         carr = heat_col(bounds%begc:bounds%endc), &
+         garr = heat_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', &
+         l2g_scale_type = 'unity')
+
+    call c2g(bounds, &
+         carr = heat_liquid_col(bounds%begc:bounds%endc), &
+         garr = heat_liquid_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', &
+         l2g_scale_type = 'unity')
+
+    call c2g(bounds, &
+         carr = cv_liquid_col(bounds%begc:bounds%endc), &
+         garr = cv_liquid_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', &
+         l2g_scale_type = 'unity')
+
+    do g = bounds%begg, bounds%endg
+       if (cv_liquid_grc(g) > 0._r8) then
+          liquid_water_temp_grc(g) = &
+               (heat_liquid_grc(g) / cv_liquid_grc(g)) + heat_base_temp
+       else
+          ! 0 or negative water mass in this grid cell: set an arbitrary temperature
+          liquid_water_temp_grc(g) = tfrz
+       end if
     end do
 
-    do l = bounds%begl,bounds%endl
-       g = lun_pp%gridcell(l)
-       ci = lun_pp%coli(l)
-       cf = lun_pp%colf(l)
-       do c = ci,cf   ! loop over columns
-
-          liq   = 0.0_r8 ! sum for one column
-          ice   = 0.0_r8
-          heat  = 0.0_r8
-
-          !--- water & ice, above ground only ---
-          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
-               .or. (lun_pp%itype(l) == istwet                                   )  &
-               .or. (lun_pp%itype(l) == istice                                   )  &
-               .or. (lun_pp%itype(l) == istice_mec                               )  &           
-               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_roof       )  &
-               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_imperv)  &
-               .or. (lun_pp%itype(l) == istdlak                                  )  &
-               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
-
-             if ( snl(c) < 0 ) then
-                do k = snl(c)+1,0 ! loop over snow layers
-                   liq   = liq   + h2osoi_liq(c,k)
-                   ice   = ice   + h2osoi_ice(c,k)
-                end do
-             else                 ! no snow layers exist
-                ice = ice + waterstate_vars%h2osno_col(c)
-             end if
-          end if
-
-          !--- water & ice, below ground only ---
-          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
-               .or. (lun_pp%itype(l) == istwet                                   )  &
-               .or. (lun_pp%itype(l) == istice                                   )  &
-               .or. (lun_pp%itype(l) == istdlak                                  )  &
-               .or. (lun_pp%itype(l) == istice_mec                               )  &           
-               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
-             do k = 1,nlevgrnd
-                liq   = liq   + h2osoi_liq(c,k)
-                ice   = ice   + h2osoi_ice(c,k)
-             end do
-          end if
-
-          !--- water & ice, below ground, for lakes ---
-          if ( lun_pp%itype(l) == istdlak ) then
-             do k = 1,nlevlak
-                liq   = liq   + (1 - lakestate_vars%lake_icefrac_col(c,k)) * col_pp%dz_lake(c,k) * denh2o
-                ice   = ice   +      lakestate_vars%lake_icefrac_col(c,k)  * col_pp%dz_lake(c,k) * denh2o
-                ! lake layers do not change thickness when freezing, so denh2o should be used
-                ! (thermal properties are appropriately adjusted; see LakeTemperatureMod)
-             end do
-          end if
-
-          !--- water in aquifer ---
-          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
-               .or. (lun_pp%itype(l) == istwet                                   )  &
-               .or. (lun_pp%itype(l) == istice                                   )  &
-               .or. (lun_pp%itype(l) == istice_mec                               )  &           
-               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
-             liq = liq + soilhydrology_vars%wa_col(c)
-          end if
-
-          !--- water in canopy (at pft level) ---
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
-             do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
-                if (veg_pp%active(p)) then
-                   liq = liq + waterstate_vars%h2ocan_patch(p) * veg_pp%wtcol(p)
-                end if
-             end do
-          end if
-
-          !--- heat content, below ground only ---
-          if (nlevurb > 0) then
-             do k = 1,nlevurb
-                if (col_pp%itype(c)==icol_sunwall .OR. col_pp%itype(c)==icol_shadewall) then
-                   cv = cv_wall(l,k) * dz(c,k)
-                   heat = heat + cv*t_soisno(c,k) / 1.e6_r8 
-                else if (col_pp%itype(c) == icol_roof) then
-                   cv = cv_roof(l,k) * dz(c,k)
-                   heat = heat + cv*t_soisno(c,k) / 1.e6_r8 
-                end if
-             end do
-          end if
-          do k = 1,nlevgrnd
-             if (col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
-                  .and. col_pp%itype(c) /= icol_roof) then
-                if (col_pp%itype(c) == icol_road_imperv .and. k >= 1 .and. k <= nlev_improad(l)) then
-                   cv = cv_improad(l,k) * dz(c,k)
-                else if (lun_pp%itype(l) /= istwet .AND. lun_pp%itype(l) /= istice .AND. lun_pp%itype(l) /= istice_mec) then
-                   cv = csol(c,k)*(1-watsat(c,k))*dz(c,k) + (h2osoi_ice(c,k)*cpice + h2osoi_liq(c,k)*cpliq)
-                else
-                   cv = (h2osoi_ice(c,k)*cpice + h2osoi_liq(c,k)*cpliq)
-                endif
-                heat = heat + cv*t_soisno(c,k) / 1.e6_r8 
-             end if
-          end do
-
-          !--- heat content, below ground in lake water, for lakes ---
-          do k = 1,nlevlak
-             if (lun_pp%itype(l) == istdlak) then
-                cv = denh2o*col_pp%dz_lake(c,k)*( lakestate_vars%lake_icefrac_col(c,k)*cpice + &
-                     (1 - lakestate_vars%lake_icefrac_col(c,k))*cpliq )
-                heat = heat + cv*temperature_vars%t_lake_col(c,k) / 1.e6_r8
-             end if
-          end do
-
-          !--- heat content, above ground only ---
-          if ( snl(c) < 0 ) then
-             do k = snl(c)+1,0 ! loop over snow layers
-                cv = cpliq*h2osoi_liq(c,k) + cpice*h2osoi_ice(c,k)
-                heat = heat + cv*t_soisno(c,k) / 1.e6_r8
-             end do
-          else if ( h2osno(c) > 0.0_r8 .and. lun_pp%itype(l) /= istdlak) then
-             ! the heat capacity (not latent heat) of snow without snow layers
-             ! is currently ignored in LakeTemperature, so it should be ignored here
-             k = 1
-             cv = cpice*h2osno(c)
-             heat = heat + cv*t_soisno(c,k) / 1.e6_r8
-          end if
-
-          !--- scale x/m^2 column-level values into x/m^2 gridcell-level values ---
-          gcell_liq  (g) = gcell_liq  (g) + liq   * col_pp%wtgcell(c)
-          gcell_ice  (g) = gcell_ice  (g) + ice   * col_pp%wtgcell(c)
-          gcell_heat (g) = gcell_heat (g) + heat  * col_pp%wtgcell(c)
-
-       end do ! column loop      
-    end do ! landunit loop
-
-  end subroutine dyn_hwcontent
+  end subroutine dyn_heat_content
 
 end module dynConsBiogeophysMod

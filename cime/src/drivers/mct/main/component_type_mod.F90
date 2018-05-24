@@ -150,7 +150,7 @@ contains
 
   function component_get_name(comp)
     type(component_type), intent(in), target :: comp
-    character(len=CL) :: component_get_name
+    character(len=seq_comm_namelen) :: component_get_name
     component_get_name = comp%name
   end function component_get_name
 

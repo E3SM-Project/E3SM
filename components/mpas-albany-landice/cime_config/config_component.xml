@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_GLC">
+    <type>char</type>
+    <valid_values>mali</valid_values>
+    <default_value>mali</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land-ice component</desc>
+  </entry>
+
+  <entry id="MALI_CONFIG_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>build_component_mali</group>
+    <file>env_build.xml</file>
+    <desc>MALI configure options. Currently not used</desc>
+  </entry>
+
+  <entry id="MALI_USE_ALBANY">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="_MALI">TRUE</value>
+      <value compset="_MALISIA">FALSE</value>
+    </values>
+    <group>build_component_mali</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies MALI is built with support for the Albany
+      library The first-order velocity solver in MALI uses the
+      Albany library.  In order to use that velocity solver, MALI
+      must be built with Albany support and linking to Albany must
+      occur when building the ACME executable.  This occurs if this
+      variable is set to TRUE.  Note that is only available on a
+      limited set of machines/compilers.  This must remain FALSE to
+      run MALI on a machine that does not have Albany, or for which
+      the CIME scripts are not aware of the existence of
+      Albany.</desc>
+  </entry>
+
+  <entry id="GLC_SMB">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>run_component_cism</group>
+    <file>env_run.xml</file>
+    <desc>true => do surface mass balance, false => PDD, nec_glc is set to 1</desc>
+  </entry>
+
+  <description>
+    <desc compset="_MALI">MPAS-Albany Land Ice default (Albany-FO solver):</desc>
+    <desc compset="_MALISIA" >MPAS-Albany Land Ice (shallow ice solver):</desc>
+  </description>
+
+  <help>
+    =========================================
+    MPAS-ALBANY LAND ICE naming conventions
+    =========================================
+    MALISIA   => native shallow ice solver
+    MALI      => external Albany First-order solver
+  </help>
+
+</definitions_variables>

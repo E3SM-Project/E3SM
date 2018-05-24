@@ -115,8 +115,6 @@ module seq_rest_mod
   logical     :: wav_prognostic         ! .true.  => wav comp expects input
   logical     :: esp_prognostic         ! .true.  => esp comp expects input
 
-  integer(IN) :: info_debug = 0         ! local info_debug level
-
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -160,8 +158,6 @@ contains
     integer(IN)          :: n,n1,n2,n3
     real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
-    character(CS)        :: string
-    integer(IN)          :: ierr          ! MPI error return
     character(len=*), parameter :: subname = "(seq_rest_read) "
 
     !-------------------------------------------------------------------------------
@@ -327,7 +323,6 @@ contains
     logical       :: cplroot          ! root pe on cpl id
     integer(IN)   :: iun              ! unit number
     character(CL) :: rest_file        ! Local path to restart filename
-    integer(IN)   :: ierr             ! MPI error return
     type(mct_gsMap),pointer :: gsmap
     character(len=6) :: year_char
 

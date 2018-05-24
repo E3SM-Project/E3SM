@@ -122,9 +122,7 @@ contains
   ! Tests of shr_cal_advDate
   ! ------------------------------------------------------------------------
 
-  ! BUG(wjs, 2017-12-22, https://github.com/ESMCI/cime/issues/2164) Skipping this test
-  ! until shr_cal_advDate is fixed
-  ! @Test
+  @Test
   subroutine advDate_int_1dayPlus1sec(this)
     class(TestShrCal), intent(inout) :: this
     integer(i4) :: date_in, date_out
@@ -141,9 +139,7 @@ contains
     @assertEqual(101._r8, sec_out, tolerance=tol)
   end subroutine advDate_int_1dayPlus1sec
 
-  ! BUG(wjs, 2017-12-22, https://github.com/ESMCI/cime/issues/2164) Skipping this test
-  ! until shr_cal_advDate is fixed
-  ! @Test
+  @Test
   subroutine advDate_int_minus1dayMinus1sec(this)
     class(TestShrCal), intent(inout) :: this
     integer(i4) :: date_in, date_out
@@ -161,28 +157,6 @@ contains
   end subroutine advDate_int_minus1dayMinus1sec
 
   @Test
-  subroutine advDate_int_1dayPlus1sec_secIn0(this)
-    ! This is like advDate_int_1dayPlus1sec, but with secIN = 0. This test serves a
-    ! purpose while advDate_int_1dayPlus1sec is failing; once that one is passing, this
-    ! one can be removed.
-    class(TestShrCal), intent(inout) :: this
-    integer(i4) :: date_in, date_out
-    real(r8) :: sec_in, sec_out
-
-    date_in = 98760317
-    sec_in = 0._r8
-    call shr_cal_advDate(delta = 86401._r8, units = 'seconds', &
-         dateIN = date_in, secIN = sec_in, &
-         dateOUT = date_out, secOUT = sec_out, &
-         calendar = 'noleap')
-
-    @assertEqual(98760318, date_out)
-    @assertEqual(1._r8, sec_out, tolerance=tol)
-  end subroutine advDate_int_1dayPlus1sec_secIn0
-
-  ! BUG(wjs, 2017-12-22, https://github.com/ESMCI/cime/issues/2164) Skipping this test
-  ! until shr_cal_advDate is fixed
-  ! @Test
   subroutine advDate_long_1dayPlus1sec(this)
     class(TestShrCal), intent(inout) :: this
     integer(i8) :: date_in, date_out
@@ -199,9 +173,7 @@ contains
     @assertEqual(101._r8, sec_out, tolerance=tol)
   end subroutine advDate_long_1dayPlus1sec
 
-  ! BUG(wjs, 2017-12-22, https://github.com/ESMCI/cime/issues/2164) Skipping this test
-  ! until shr_cal_advDate is fixed
-  ! @Test
+  @Test
   subroutine advDate_long_minus1dayMinus1sec(this)
     class(TestShrCal), intent(inout) :: this
     integer(i8) :: date_in, date_out
@@ -217,26 +189,6 @@ contains
     @assertEqual(9876540316_i8, date_out)
     @assertEqual(99._r8, sec_out, tolerance=tol)
   end subroutine advDate_long_minus1dayMinus1sec
-
-  @Test
-  subroutine advDate_long_1dayPlus1sec_secIn0(this)
-    ! This is like advDate_long_1dayPlus1sec, but with secIN = 0. This test serves a
-    ! purpose while advDate_long_1dayPlus1sec is failing; once that one is passing, this
-    ! one can be removed.
-    class(TestShrCal), intent(inout) :: this
-    integer(i8) :: date_in, date_out
-    real(r8) :: sec_in, sec_out
-
-    date_in = 9876540317_i8
-    sec_in = 0._r8
-    call shr_cal_advDate(delta = 86401._r8, units = 'seconds', &
-         dateIN = date_in, secIN = sec_in, &
-         dateOUT = date_out, secOUT = sec_out, &
-         calendar = 'noleap')
-
-    @assertEqual(9876540318_i8, date_out)
-    @assertEqual(1._r8, sec_out, tolerance=tol)
-  end subroutine advDate_long_1dayPlus1sec_secIn0
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_cal_advDateInt

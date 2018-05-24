@@ -208,7 +208,6 @@ CONTAINS
     real(R8) :: nextsw_cday
     real(R8) :: julday
     integer  :: liradsw
-    integer  :: yy,mm,dd
     character(*),parameter :: subName =  '(datm_shr_getNextRadCDay) '
     !-------------------------------------------------------------------------------
 
@@ -348,7 +347,6 @@ CONTAINS
 
     !--- data that describes the local model domain ---
     integer(IN)      :: ni0,nj0       ! dimensions of global bundle0
-    integer(IN)      :: ni1,nj1,nf1   ! dimensions of global bundle1
     integer(IN)      :: i,j,n         ! generic indicies
     integer(IN)      :: my_task       ! local pe number
     integer(IN)      :: ier           ! error code

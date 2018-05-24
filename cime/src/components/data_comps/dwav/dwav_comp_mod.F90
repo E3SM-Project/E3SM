@@ -240,7 +240,7 @@ CONTAINS
     call t_adj_detailf(+2)
     call dwav_comp_run(EClock, x2w, w2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart)
+         inst_suffix, logunit)
     call t_adj_detailf(-2)
 
     if (my_task == master_task) write(logunit, F00) 'dwav_comp_init done'
@@ -253,7 +253,7 @@ CONTAINS
   !===============================================================================
   subroutine dwav_comp_run(EClock, x2w, w2x, &
        SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+       inst_suffix, logunit, case_name)
 
     use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION:  run method for dwav model
@@ -272,7 +272,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -349,7 +348,7 @@ CONTAINS
     if (write_restart) then
        call t_startf('dwav_restart')
        call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
-       write(rest_file,"(6aa)") &
+       write(rest_file,"(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
        write(rest_file_strm,"(6a)") &

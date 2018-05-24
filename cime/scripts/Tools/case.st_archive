@@ -1,8 +1,0 @@
-#! /bin/bash -e
-
-if [ "$#" -ne 0 ]; then
-    echo "Usage: ./case.st_archive"
-    exit 1
-fi
-
-./case.submit --job case.st_archive --no-batch

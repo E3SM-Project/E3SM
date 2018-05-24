@@ -86,6 +86,8 @@ module TemperatureType
      real(r8), pointer :: hc_soisno_col            (:)   ! col soil plus snow heat content (MJ/m2)
      real(r8), pointer :: heat1_grc                (:)   ! grc initial gridcell total heat content
      real(r8), pointer :: heat2_grc                (:)   ! grc post land cover change total heat content
+     real(r8), pointer :: liquid_water_temp1_grc   (:)   ! grc initial weighted average liquid water temperature (K)
+     real(r8), pointer :: liquid_water_temp2_grc   (:)   ! grc post land cover change weighted average liquid water temperature (K)
 
      ! Flags
      integer , pointer :: imelt_col                (:,:) ! flag for melting (=1), freezing (=2), Not=0 (-nlevsno+1:nlevgrnd) 
@@ -226,6 +228,8 @@ contains
     allocate(this%hc_soisno_col            (begc:endc))                      ; this%hc_soisno_col            (:)   = nan
     allocate(this%heat1_grc                (begg:endg))                      ; this%heat1_grc                (:)   = nan
     allocate(this%heat2_grc                (begg:endg))                      ; this%heat2_grc                (:)   = nan
+    allocate(this%liquid_water_temp1_grc   (begg:endg))                      ; this%liquid_water_temp1_grc   (:)   = nan
+    allocate(this%liquid_water_temp2_grc   (begg:endg))                      ; this%liquid_water_temp2_grc   (:)   = nan
 
     ! flags
     allocate(this%imelt_col                (begc:endc,-nlevsno+1:nlevgrnd))  ; this%imelt_col                (:,:) = huge(1)
@@ -421,6 +425,11 @@ contains
          avgflag='A', long_name='post land cover change total heat content', &
          ptr_lnd=this%heat2_grc, default='inactive')  
 
+    this%liquid_water_temp1_grc(begg:endg) = spval
+    call hist_addfld1d (fname='LIQUID_WATER_TEMP1', units='K', &
+         avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
+         ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
+
     this%snot_top_col(begc:endc) = spval 
     call hist_addfld1d (fname='SNOTTOPL', units='K/m', &
          avgflag='A', long_name='snow temperature (top layer)', &
@@ -581,7 +590,8 @@ contains
                         this%t_soisno_col(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1)) 
                      end do
                      ! Set wall and roof layers to initial air temperature
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                       .or. col_pp%itype(c) == icol_roof) then
                      this%t_soisno_col(c,1:nlevurb) = 297.56
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
@@ -593,7 +603,8 @@ contains
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1)) 
                      end do
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                       .or. col_pp%itype(c) == icol_roof) then
                      ! Set wall and roof layers to initial air temperature
                      this%t_soisno_col(c,1:nlevurb) = 289.46
                   else

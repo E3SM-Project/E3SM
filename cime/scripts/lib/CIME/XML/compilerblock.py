@@ -157,7 +157,7 @@ class CompilerBlock(object):
 
         logger.debug("First pass output={}".format(output))
 
-        for child in self._db.get_children(root=elem, no_validate=True):
+        for child in self._db.get_children(root=elem):
             if self._db.name(child) == "env":
                 # <env> tags just need to be expanded by the writer.
                 output += writer.environment_variable_string(self._db.text(child))
@@ -241,10 +241,10 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        for elem in self._db.get_children(root=self._compiler_elem, no_validate=True):
+        for elem in self._db.get_children(root=self._compiler_elem):
             # Deal with "flag"-type variables.
             if self._db.name(elem) in flag_vars:
-                for child in self._db.get_children(root=elem, no_validate=True):
+                for child in self._db.get_children(root=elem):
                     self._add_elem_to_lists(self._db.name(elem), child, value_lists)
             else:
                 self._add_elem_to_lists(self._db.name(elem), elem, value_lists)

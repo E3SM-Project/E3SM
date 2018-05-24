@@ -37,8 +37,10 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
+    'sphinx.ext.todo',
     'sphinxcontrib.programoutput'
 ]
+todo_include_todos=True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -165,9 +167,7 @@ texinfo_documents = [
 
 pdf_documents = [
     (master_doc,
-     u'CIME_Users_Guide', 
-     u'CIME Users Guide (PDF)', 
+     u'CIME_Users_Guide',
+     u'CIME Users Guide (PDF)',
      u'Staff of the NSF/CESM and DOE/E3SM projects'),
 ]
-
-

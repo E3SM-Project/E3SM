@@ -19,7 +19,7 @@ module restart_physics
                                 pio_def_var, pio_def_dim, &
                                 pio_put_var, pio_get_var
   use cospsimulator_intr, only: docosp
-  use radiation,          only: cosp_cnt_init, cosp_cnt
+  use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num
 
   implicit none
   private
@@ -38,6 +38,8 @@ module restart_physics
     character(len=256) :: pname  ! Full abs-ems restart filepath
     character(len=8)   :: num
 
+    logical           :: pergro_mods = .false.
+
     type(var_desc_t) :: trefmxav_desc, trefmnav_desc, flwds_desc, landm_desc, sgh_desc, &
          sgh30_desc, solld_desc, co2prog_desc, co2diag_desc, sols_desc, soll_desc, &
          solsd_desc, fsnt_desc, flns_desc, emstot_desc, absnxt_desc(4), &
@@ -50,14 +52,14 @@ module restart_physics
 
     type(var_desc_t), allocatable :: abstot_desc(:)
 
-    type(var_desc_t) :: cospcnt_desc
+    type(var_desc_t) :: cospcnt_desc, rad_randn_seedrst_desc
 
   CONTAINS
     subroutine init_restart_physics ( File, pbuf2d)
       
     use physics_buffer,      only: pbuf_init_restart, physics_buffer_desc
     use radiation,           only: radiation_do
-    use ppgrid,              only: pver, pverp
+    use ppgrid,              only: pver, pverp, pcols
     use chemistry,           only: chem_init_restart
     use prescribed_ozone,    only: init_prescribed_ozone_restart
     use prescribed_ghg,      only: init_prescribed_ghg_restart
@@ -68,6 +70,7 @@ module restart_physics
     use cam_pio_utils,       only: cam_pio_def_dim
     use subcol_utils,        only: is_subcol_on
     use subcol,              only: subcol_init_restart
+    use phys_control,        only: phys_getopts
 
     type(file_desc_t), intent(inout) :: file
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -77,7 +80,11 @@ module restart_physics
     integer                      :: dimids(4)
     integer, allocatable         :: hdimids(:)
     integer                      :: ndims, pver_id, pverp_id
+    integer                      :: kiss_seed_dim
+
     type(cam_grid_header_info_t) :: info
+
+    call phys_getopts(pergro_mods_out = pergro_mods)
 
     call pio_seterrorhandling(File, PIO_BCAST_ERROR)
     ! Probably should have the grid write this out.
@@ -194,6 +201,12 @@ module restart_physics
     if (is_subcol_on()) then
       call subcol_init_restart(file, hdimids)
     end if
+
+    if (pergro_mods) then
+       call cam_pio_def_dim(File, 'kiss_seeds_dim', kiss_seed_num, kiss_seed_dim, existOK=.false.)
+       dimids(hdimcnt+1) = kiss_seed_dim
+       ierr = pio_def_var(File, 'rad_randn_seedrst', pio_int, dimids(1:hdimcnt+1), rad_randn_seedrst_desc)
+    endif
       
   end subroutine init_restart_physics
 
@@ -230,7 +243,8 @@ module restart_physics
       !
       type(io_desc_t), pointer :: iodesc
       real(r8):: tmpfield(pcols, begchunk:endchunk)
-      integer :: i, m          ! loop index
+      integer :: tmp_seedrst(pcols, kiss_seed_num, begchunk:endchunk)
+      integer :: i, m, iseed, icol          ! loop index
       integer :: ncol          ! number of vertical columns
       integer :: ierr
       integer :: physgrid
@@ -463,6 +477,26 @@ module restart_physics
         ierr = pio_put_var(File, cospcnt_desc, (/cosp_cnt(begchunk)/))
       end if
 
+      if (pergro_mods) then
+         do i  = begchunk, endchunk
+            ncol = cam_out(i)%ncol
+            do iseed = 1 , kiss_seed_num             
+               do icol = 1, ncol
+                  tmp_seedrst(icol,iseed,i) = rad_randn_seedrst(icol,iseed,i)
+               enddo
+               if(ncol < pcols) then
+                  tmp_seedrst(ncol+1:pcols,iseed,i) = huge(1)
+               end if
+            enddo
+         enddo
+         
+         dims(1) = size(tmp_seedrst, 1) ! Should be pcols
+         dims(2) = size(tmp_seedrst, 2) ! Should be kiss_seed_num
+         dims(3) = size(tmp_seedrst, 3) ! Should be endchunk - begchunk + 1
+         gdims(nhdims+1) = kiss_seed_num
+         call cam_grid_write_dist_array(File, physgrid, dims(1:3),             &
+              gdims(1:nhdims+1), tmp_seedrst, rad_randn_seedrst_desc)
+      endif
       
     end subroutine write_restart_physics
 
@@ -505,7 +539,7 @@ module restart_physics
      character(len=4)         :: num
      integer                  :: dims(3), gdims(3), nhdims
      integer                  :: err_handling
-     integer                  :: physgrid
+     integer                  :: physgrid, astat
      !-----------------------------------------------------------------------
 
      ! Allocate memory in physics buffer, buffer, comsrf, and radbuffer modules.
@@ -811,6 +845,26 @@ module restart_physics
            ierr = pio_get_var(File, vardesc, cosp_cnt_init)
         end if
      end if
+
+     if (pergro_mods) then
+        dims(2) = kiss_seed_num
+        dims(3) = csize
+        gdims(nhdims+1) = dims(2)
+        ierr = pio_inq_varid(File, 'rad_randn_seedrst', vardesc)
+        if(ierr == PIO_NOERR) then
+           allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
+           if( astat /= 0 ) then
+              if(masterproc)write(iulog,*) 'restart_physics.F90-read_restart_physics: failed to allocate rad_randn_seedrst; error = ',astat
+              call endrun()
+           end if
+        
+           call cam_grid_read_dist_array(File, physgrid, dims(1:3),           &
+                gdims(1:nhdims+1), rad_randn_seedrst, vardesc)
+        else
+           if(masterproc)write(iulog,*) 'restart_physics.F90-read_restart_physics: unable to find rad_randn_seedrst variable in restart file; error = ',ierr
+           call endrun()
+        endif
+     endif
 
    end subroutine read_restart_physics
 

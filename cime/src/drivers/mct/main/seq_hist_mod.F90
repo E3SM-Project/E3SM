@@ -110,8 +110,6 @@ module seq_hist_mod
   integer(IN) :: glc_nx, glc_ny         ! nx,ny of 2d grid, if known
   integer(IN) :: wav_nx, wav_ny         ! nx,ny of 2d grid, if known
 
-  integer(IN) :: info_debug = 0         ! local info_debug level
-
   !--- temporary pointers ---
   type(mct_aVect), pointer :: r2x_ox(:)
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -156,18 +154,17 @@ contains
     integer(IN)   :: start_ymd    ! Starting date YYYYMMDD
     integer(IN)   :: start_tod    ! Starting time-of-day (s)
     real(r8)      :: curr_time    ! Time interval since reference time
-    integer(IN)   :: yy,mm,dd     ! year, month, day
     integer(IN)   :: fk           ! index
     character(CL) :: time_units   ! units of time variable
     character(CL) :: calendar     ! calendar type
     character(CL) :: case_name    ! case name
     character(CL) :: hist_file    ! Local path to history filename
-    integer(IN)   :: lsize        ! local size of an aVect
     real(r8)      :: tbnds(2)     ! CF1.0 time bounds
     logical       :: whead,wdata  ! for writing restart/history cdf files
     character(len=18) :: date_str
     type(mct_gsMap), pointer :: gsmap
     type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
+    character(CL) :: model_doi_url 
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -204,7 +201,8 @@ contains
          glc_nx=glc_nx, glc_ny=glc_ny,        &
          wav_nx=wav_nx, wav_ny=wav_ny,        &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
-         case_name=case_name)
+         case_name=case_name,                 &
+         model_doi_url=model_doi_url)
 
     !--- Get current date from clock needed to label the history pointer file ---
 
@@ -222,7 +220,7 @@ contains
     if (iamin_CPLID) then
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-       call seq_io_wopen(hist_file,clobber=.true.)
+       call seq_io_wopen(hist_file,clobber=.true., model_doi_url=model_doi_url)
 
        ! loop twice, first time write header, second time write data for perf
 
@@ -450,6 +448,7 @@ contains
     type(mct_gGrid),  pointer :: dom    ! component domain on cpl pes
     type(mct_avect),  pointer :: c2x    ! component->coupler avs on cpl pes
     type(mct_avect),  pointer :: x2c    ! coupler->component avs on cpl pes
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -493,7 +492,8 @@ contains
          histavg_rof=histavg_rof,             &
          histavg_glc=histavg_glc,             &
          histavg_wav=histavg_wav,             &
-         histavg_xao=histavg_xao)
+         histavg_xao=histavg_xao,             &
+         model_doi_url=model_doi_url)
 
     ! Get current date from clock needed to label the histavg pointer file
 
@@ -782,7 +782,7 @@ contains
        if (iamin_CPLID) then
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          call seq_io_wopen(hist_file, clobber=.true.)
+          call seq_io_wopen(hist_file, clobber=.true., model_doi_url=model_doi_url)
 
           ! loop twice,  first time write header,  second time write data for perf
 
@@ -1033,7 +1033,7 @@ contains
     type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8), parameter :: c0 = 0.0_r8 ! zero
-
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1056,7 +1056,8 @@ contains
          ice_present=ice_present,       &
          ocn_present=ocn_present,       &
          glc_present=glc_present,       &
-         wav_present=wav_present)
+         wav_present=wav_present,       &
+         model_doi_url=model_doi_url)
 
     lwrite_now = .true.
     useavg = .false.
@@ -1154,7 +1155,7 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
           if (fk1 == 1) then
-             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found)
+             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found, model_doi_url=model_doi_url)
           endif
 
           ! loop twice,  first time write header,  second time write data for perf
@@ -1293,7 +1294,7 @@ contains
     type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8),parameter :: c0 = 0.0_r8 ! zero
-
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1314,7 +1315,8 @@ contains
          ice_present=ice_present,       &
          ocn_present=ocn_present,       &
          glc_present=glc_present,       &
-         wav_present=wav_present)
+         wav_present=wav_present,       &
+         model_doi_url=model_doi_url)
 
     lwrite_now = .true.
     useavg = .false.
@@ -1383,9 +1385,9 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
           if (fk1 == 1) then
-             call seq_io_wopen(hist_file(found), clobber=.true.)
+             call seq_io_wopen(hist_file(found), clobber=.true. , model_doi_url=model_doi_url)
           else
-             call seq_io_wopen(hist_file(found), clobber=.false.)
+             call seq_io_wopen(hist_file(found), clobber=.false., model_doi_url=model_doi_url)
           endif
 
           ! loop twice,  first time write header,  second time write data for perf

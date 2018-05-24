@@ -11,7 +11,7 @@ module atm2lndType
   use shr_megan_mod , only : shr_megan_mechcomps_n
   use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_cndv, use_ed
+  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_cndv, use_fates
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
@@ -185,20 +185,20 @@ contains
 
     !DMR - variables added for CPL_BYPASS option 
 #ifdef CPL_BYPASS
-    allocate(this%timelen                             (1:8))        ; this%timelen                       (:)   = ival_int
-    allocate(this%timelen_spinup                      (1:8))        ; this%timelen_spinup                (:)   = ival_int
-    allocate(this%tindex                (begg:endg,1:8,1:2))        ; this%tindex                    (:,:,:)   = ival_int
+    allocate(this%timelen                            (1:14))        ; this%timelen                       (:)   = ival_int
+    allocate(this%timelen_spinup                     (1:14))        ; this%timelen_spinup                (:)   = ival_int
+    allocate(this%tindex               (begg:endg,1:14,1:2))        ; this%tindex                    (:,:,:)   = ival_int
     allocate(this%metsource                                )        ; this%metsource                           = ival_int   
-    allocate(this%npf                                 (1:8))        ; this%npf                           (:)   = ival
-    allocate(this%atm_input        (8,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
-    allocate(this%add_offsets                         (1:8))        ; this%add_offsets                   (:)   = ival_float 
-    allocate(this%scale_factors                       (1:8))        ; this%scale_factors                 (:)   = ival_float
+    allocate(this%npf                                (1:14))        ; this%npf                           (:)   = ival
+    allocate(this%atm_input       (14,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
+    allocate(this%add_offsets                        (1:14))        ; this%add_offsets                   (:)   = ival_float 
+    allocate(this%scale_factors                      (1:14))        ; this%scale_factors                 (:)   = ival_float
     allocate(this%startyear_met                            )        ; this%startyear_met                       = ival_int
     allocate(this%endyear_met_spinup                       )        ; this%endyear_met_spinup                  = ival_int
     allocate(this%endyear_met_trans                        )        ; this%endyear_met_trans                   = ival_int
-    allocate(this%timeres                             (1:8))        ; this%timeres                       (:)   = ival
-    allocate(this%var_offset               (8,begg:endg,12))        ; this%var_offset                (:,:,:)   = ival
-    allocate(this%var_mult                 (8,begg:endg,12))        ; this%var_mult                  (:,:,:)   = ival
+    allocate(this%timeres                            (1:14))        ; this%timeres                       (:)   = ival
+    allocate(this%var_offset              (14,begg:endg,12))        ; this%var_offset                (:,:,:)   = ival
+    allocate(this%var_mult                (14,begg:endg,12))        ; this%var_mult                  (:,:,:)   = ival
     allocate(this%co2_input                      (1,1,3000))        ; this%co2_input                 (:,:,:)   = ival    
     allocate(this%c13o2_input                    (1,1,3000))        ; this%c13o2_input               (:,:,:)   = ival
     allocate(this%ndepind                     (begg:endg,2))        ; this%ndepind                     (:,:)   = ival_int
@@ -272,7 +272,7 @@ contains
     allocate(this%prec10_patch                  (begp:endp))        ; this%prec10_patch                  (:)   = nan
     allocate(this%prec60_patch                  (begp:endp))        ; this%prec60_patch                  (:)   = nan
     allocate(this%prec365_patch                 (begp:endp))        ; this%prec365_patch                 (:)   = nan
-    if (use_ed) then
+    if (use_fates) then
        allocate(this%prec24_patch               (begp:endp))        ; this%prec24_patch                  (:)   = nan
        allocate(this%rh24_patch                 (begp:endp))        ; this%rh24_patch                    (:)   = nan
        allocate(this%wind24_patch               (begp:endp))        ; this%wind24_patch                  (:)   = nan
@@ -509,7 +509,7 @@ contains
             subgrid_type='pft', numlev=1, init_value=0._r8)
     end if
 
-    if ( use_ed ) then
+    if ( use_fates ) then
        call init_accum_field (name='PREC24', units='m', &
             desc='24hr sum of precipitation', accum_type='runmean', accum_period=-1, &
             subgrid_type='pft', numlev=1, init_value=0._r8)
@@ -591,7 +591,7 @@ contains
        this%t_mo_patch(begp:endp) = rbufslp(begp:endp)
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call extract_accum_field ('PREC24', rbufslp, nstep)
        this%prec24_patch(begp:endp) = rbufslp(begp:endp)
 
@@ -694,7 +694,7 @@ contains
 
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call update_accum_field  ('PREC24', rbufslp, nstep)
        call extract_accum_field ('PREC24', this%prec24_patch, nstep)
 

@@ -66,7 +66,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: rof_present               ! flag
     logical           :: rof_prognostic            ! flag
     logical           :: rofice_present            ! flag
@@ -185,7 +184,6 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
-    logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(rof_run_mct) "
     !-------------------------------------------------------------------------------
@@ -204,7 +202,7 @@ CONTAINS
 
     call drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+       inst_suffix, logunit, case_name=case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

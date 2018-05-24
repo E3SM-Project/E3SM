@@ -303,7 +303,7 @@ contains
     ! Run the checksum to verify communication schedule
     ! =================================================================
 
-    call testchecksum(elem,par,GridEdge)
+    !call testchecksum(elem,par,GridEdge)  ! broken
 
     ! =================================================================
     ! Initialize mass_matrix

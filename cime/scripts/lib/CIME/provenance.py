@@ -5,9 +5,9 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
 
-import tarfile, getpass, signal, glob, shutil
+import tarfile, getpass, signal, glob, shutil, sys
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +28,16 @@ def _get_batch_job_id_for_syslog(case):
 
     return None
 
-def _save_build_provenance_acme(case, lid):
+def _save_build_provenance_e3sm(case, lid):
     cimeroot = case.get_value("CIMEROOT")
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
 
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
-    if os.path.exists(describe_prov):
-        os.remove(describe_prov)
-    run_cmd_no_fail("git describe", arg_stdout=describe_prov, from_dir=cimeroot)
+    desc = get_current_commit(tag=True, repo=cimeroot)
+    with open(describe_prov, "w") as fd:
+        fd.write(desc)
 
     # Save HEAD
     headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
@@ -79,22 +79,30 @@ def _save_build_provenance_acme(case, lid):
 def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
+    srcroot = case.get_value("SRCROOT")
+    manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    out = None
+    if os.path.exists(manic):
+        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
     caseroot = case.get_value("CASEROOT")
-    with open(os.path.join(caseroot, "README.case"), "a") as fd:
-        fd.write("CESM version is {}\n".format(version))
+    with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
+        if version is not None and version != "unknown":
+            fd.write("CESM version is {}\n".format(version))
+        if out is not None:
+            fd.write("{}\n".format(out))
 
 def save_build_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
         lid = os.environ["LID"] if lid is None else lid
 
-        if model == "acme":
-            _save_build_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_build_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_build_provenance_cesm(case, lid)
 
-def _save_prerun_timing_acme(case, lid):
-    project = case.get_value("PROJECT", subgroup="case.run")
+def _save_prerun_timing_e3sm(case, lid):
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 
@@ -205,10 +213,10 @@ def _save_prerun_timing_acme(case, lid):
             copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
 
     # Save state of repo
-    if os.path.exists(os.path.join(cimeroot, ".git")):
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=cimeroot)
-    else:
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=os.path.dirname(cimeroot))
+    from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
+    desc = get_current_commit(tag=True, repo=from_repo)
+    with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
+        fd.write(desc)
 
     # What this block does is mysterious to me (JGF)
     if job_id is not None:
@@ -230,15 +238,15 @@ def _save_prerun_timing_acme(case, lid):
         if sample_interval > 0:
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
             os.mkdir(archive_checkpoints)
-            touch("{}/acme.log.{}".format(rundir, lid))
+            touch("{}/e3sm.log.{}".format(rundir, lid))
             syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!".format(sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))
 
-def _save_prerun_provenance_acme(case, lid):
+def _save_prerun_provenance_e3sm(case, lid):
     if case.get_value("SAVE_TIMING"):
-        _save_prerun_timing_acme(case, lid)
+        _save_prerun_timing_e3sm(case, lid)
 
 def _save_prerun_provenance_cesm(case, lid): # pylint: disable=unused-argument
     pass
@@ -254,8 +262,8 @@ def save_prerun_provenance(case, lid=None):
         env_module.save_all_env_info(os.path.join(logdir, "run_environment.txt.{}".format(lid)))
 
         model = case.get_value("MODEL")
-        if model == "acme":
-            _save_prerun_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_prerun_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_prerun_provenance_cesm(case, lid)
 
@@ -267,7 +275,7 @@ def _save_postrun_provenance_cesm(case, lid):
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
 
-def _save_postrun_timing_acme(case, lid):
+def _save_postrun_timing_e3sm(case, lid):
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
 
@@ -279,13 +287,13 @@ def _save_postrun_timing_acme(case, lid):
 
     shutil.rmtree(rundir_timing_dir)
 
-    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
+    gzip_existing_file(os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid))
 
     # JGF: not sure why we do this
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
-    project = case.get_value("PROJECT", subgroup="case.run")
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
     if not case.is_save_timing_dir_project(project):
         return
 
@@ -334,7 +342,7 @@ def _save_postrun_timing_acme(case, lid):
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
-    globs_to_copy.append("logs/acme.log.{}.gz".format(lid))
+    globs_to_copy.append("logs/e3sm.log.{}.gz".format(lid))
     globs_to_copy.append("logs/cpl.log.{}.gz".format(lid))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
@@ -354,16 +362,63 @@ def _save_postrun_timing_acme(case, lid):
             if not filename.endswith(".gz"):
                 gzip_existing_file(os.path.join(root, filename))
 
-def _save_postrun_provenance_acme(case, lid):
+def _save_postrun_provenance_e3sm(case, lid):
     if case.get_value("SAVE_TIMING"):
-        _save_postrun_timing_acme(case, lid)
+        _save_postrun_timing_e3sm(case, lid)
 
 def save_postrun_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
         lid = os.environ["LID"] if lid is None else lid
 
-        if model == "acme":
-            _save_postrun_provenance_acme(case, lid)
+        if model == "e3sm":
+            _save_postrun_provenance_e3sm(case, lid)
         elif model == "cesm":
             _save_postrun_provenance_cesm(case, lid)
+
+_WALLTIME_BASELINE_NAME = "walltimes"
+_WALLTIME_FILE_NAME     = "walltimes"
+_GLOBAL_MINUMUM_TIME    = 900
+_GLOBAL_WIGGLE          = 1000
+_WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
+
+def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
+    if baseline_root is not None:
+        try:
+            the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
+            if os.path.exists(the_path):
+                last_line = int(open(the_path, "r").readlines()[-1])
+                if raw:
+                    best_walltime = last_line
+                else:
+                    best_walltime = None
+                    for cutoff, tolerance in _WALLTIME_TOLERANCE:
+                        if last_line <= cutoff:
+                            best_walltime = int(float(last_line) * tolerance)
+                            break
+
+                    if best_walltime < _GLOBAL_MINUMUM_TIME:
+                        best_walltime = _GLOBAL_MINUMUM_TIME
+
+                    best_walltime += _GLOBAL_WIGGLE
+
+                return convert_to_babylonian_time(best_walltime)
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
+
+    return None
+
+def save_test_time(baseline_root, test, time_seconds):
+    if baseline_root is not None:
+        try:
+            the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
+            if not os.path.exists(the_dir):
+                os.makedirs(the_dir)
+
+            the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
+            with open(the_path, "a") as fd:
+                fd.write("{}\n".format(int(time_seconds)))
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))

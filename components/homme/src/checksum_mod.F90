@@ -6,8 +6,10 @@ module checksum_mod
   use edgetype_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem
-
-
+!
+! Revisions
+! Mark Taylor 2018/3   disable testchecksum - test is broken and always fails
+!
   implicit none
 
   private
@@ -17,7 +19,6 @@ module checksum_mod
   ! and these buffers have to be thread-shared
   type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
-  type (edgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost
   private :: genchecksum
@@ -69,6 +70,8 @@ contains
     allocate(TestPattern_g(np,np,nlev,nelem))
     allocate(Checksum_g(np,np,nlev,nelem))
 
+    ! Code to generate Checksum_g is commented out in genchecksum().  it needs to be updated
+    stop 'testchecksum() not working'
     call genchecksum(TestPattern_g,Checksum_g,GridEdge)
 
 
@@ -163,6 +166,8 @@ contains
                 if(Checksum_l(ix,iy,k,i) .ne. Checksum_g(ix,iy,k,ig)) then
                    write(*,100) iam , INT(TestPattern_l(ix,iy,k,i)),   &
                         INT(Checksum_g(ix,iy,k,ig)), INT(Checksum_l(ix,iy,k,i))
+                   write(*,*) iam , ix,iy,k,ig,TestPattern_l(ix,iy,k,i),   &
+                        Checksum_g(ix,iy,k,ig), Checksum_l(ix,iy,k,i)
                    ChecksumError=.TRUE.
                 endif
              enddo
@@ -172,6 +177,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(i),'Verified'
        endif
+       if (ChecksumError) print *,'testchecksum: edgeVpack/exchange test failure'
     enddo
     ! =========================================
     ! Perform checksum for DG boundary exchange
@@ -181,13 +187,13 @@ contains
     !   Pack up the communication buffer
     !==================================================
 
-    if (par%masterproc) print *,'testchecksum: before call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeDGVpack'
     do ielem=1,nelemd
        kptr=0
        numlev=nlev
        call edgeDGVpack(buffer,Checksum_l(1,1,1,ielem),numlev,kptr,ielem)
     enddo
-    if (par%masterproc) print *,'testchecksum: after call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeDGVpack'
 
     !==================================================
     !  Perform the boundary exchange
@@ -199,7 +205,7 @@ contains
     !   UnPack and accumulate the communication buffer
     !==================================================
 
-    if (par%masterproc) print *,'testchecksum: before call to edgeVunpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeDGVunpack'
     do ielem=1,nelemd
        kptr   = 0
        numlev = nlev
@@ -258,6 +264,7 @@ contains
           if(.NOT. ChecksumError) print *, 'IAM: ',iam,'testchecksum: Element', &
                pSchedule%Local2Global(ie),'Verified'
        endif
+       if (ChecksumError) print *, 'testchecksum: edgeDGVpack/exchange test failure'
     enddo
 
 
@@ -416,26 +423,6 @@ contains
   enddo
   pout=0
   cout=0
-
-#if 0
-  ! DSS pin, to make all edge points agree exactly:
-  call initedgebuffer(edge1,elem,nlev)
-  do ie=nets,nete
-     kptr=0
-     do k=1,nlev
-        pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%spheremp(:,:)
-     enddo
-     call edgeVpack(edge1, pin(:,:,:,ie),nlev,kptr,ie)
-  end do
-  call bndry_exchangeV(hybrid,edge1)
-  do ie=nets,nete
-     kptr=0
-     call edgeVunpack(edge1, pin(:,:,:,ie), nlev, kptr, ie)
-     do k=1,nlev
-        pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-     enddo
-  enddo
-#endif
 
 
 

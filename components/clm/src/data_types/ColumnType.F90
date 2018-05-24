@@ -24,6 +24,7 @@ module ColumnType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
   use clm_varcon     , only : spval, ispval
+  use column_varcon  , only : is_hydrologically_active
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -62,6 +63,9 @@ module ColumnType
      real(r8), pointer :: dz_lake              (:,:) ! lake layer thickness (m)  (1:nlevlak)
      real(r8), pointer :: z_lake               (:,:) ! layer depth for lake (m)
      real(r8), pointer :: lakedepth            (:)   ! variable lake depth (m)                             
+
+     ! other column characteristics
+     logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
 
    contains
 
@@ -112,6 +116,8 @@ contains
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
     allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
 
+    allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
+
   end subroutine col_pp_init
 
   !------------------------------------------------------------------------
@@ -145,6 +151,7 @@ contains
     deallocate(this%topo_std   )
     deallocate(this%nlevbed    )
     deallocate(this%zibed      )
+    deallocate(this%hydrologically_active)
 
   end subroutine col_pp_clean
 

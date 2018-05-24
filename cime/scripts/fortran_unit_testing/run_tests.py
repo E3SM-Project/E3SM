@@ -91,7 +91,7 @@ requires genf90.pl to be in the user's path."""
                         help="""MPI Library to use in build.
                         If not specified, use the default for this machine/compiler.
                         Must match an MPILIB option in config_compilers.xml.
-                        e.g., for yellowstone, can use 'mpich2'.
+                        e.g., for cheyenne, can use 'mpt'.
                         Only relevant if --use-mpi is specified."""
     )
 
@@ -351,7 +351,7 @@ def _main():
         }
 
         # We can get away with specifying case=None since we're using exe_only=True
-        mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
+        mpirun_command, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
         mpirun_command = machspecific.get_resolved_value(mpirun_command)
         logger.info("mpirun command is '{}'".format(mpirun_command))
 

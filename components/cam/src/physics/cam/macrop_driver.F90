@@ -439,7 +439,8 @@ end subroutine macrop_driver_readnl
 
   use cloud_fraction,   only: cldfrc, cldfrc_fice
   use physics_types,    only: physics_state, physics_ptend
-  use physics_types,    only: physics_ptend_init, physics_update
+  use physics_types,    only: physics_ptend_init
+  use physics_update_mod, only: physics_update
   use physics_types,    only: physics_ptend_sum,  physics_state_copy
   use physics_types,    only: physics_state_dealloc
   use cam_history,      only: outfld
@@ -712,7 +713,7 @@ end subroutine macrop_driver_readnl
    lq(ixcldice) = .TRUE.
    lq(ixnumliq) = .TRUE.
    lq(ixnumice) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdetrain', ls=.true., lq=lq)   ! Initialize local physics_ptend object
+   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdetrain_mac', ls=.true., lq=lq)   ! Initialize local physics_ptend object
 
      ! Procedures :
      ! (1) Partition detrained convective cloud water into liquid and ice based on T.
@@ -902,7 +903,7 @@ end subroutine macrop_driver_readnl
 
       latsub = latvap + latice
 
-      call physics_ptend_init(ptend_loc, state%psetcols, 'iceadj', ls=.true., lq=lq)
+      call physics_ptend_init(ptend_loc, state%psetcols, 'iceadj_mac', ls=.true., lq=lq)
 
       stend(:ncol,:)=0._r8
       qvtend(:ncol,:)=0._r8

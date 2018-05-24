@@ -5,8 +5,6 @@ case.setup - create the $caseroot/case.run script and user_nl_xxx component name
 """
 
 from standard_script_setup import *
-
-from CIME.case_setup import case_setup
 from CIME.case       import Case
 
 ###############################################################################
@@ -52,7 +50,7 @@ def _main_func(description):
 ###############################################################################
     caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        case_setup(case, clean=clean, test_mode=test_mode, reset=reset)
+        case.case_setup(clean=clean, test_mode=test_mode, reset=reset)
 
 if __name__ == "__main__":
     _main_func(__doc__)

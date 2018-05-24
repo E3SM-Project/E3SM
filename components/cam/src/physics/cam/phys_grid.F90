@@ -125,7 +125,7 @@ module phys_grid
 
    integer, dimension(:), allocatable, private :: dyn_to_latlon_gcol_map
                                        ! map from unsorted (dynamics) to lat/lon sorted grid indices
-   integer, dimension(:), allocatable, private :: latlon_to_dyn_gcol_map
+   integer, dimension(:), allocatable, public :: latlon_to_dyn_gcol_map !now beingh used in RRTMG radiation.F90
                                        ! map from lat/lon sorted grid to unsorted (dynamics) indices
    integer, dimension(:), allocatable, private :: lonlat_to_dyn_gcol_map
                                        ! map from lon/lat sorted grid to unsorted (dynamics) indices
@@ -189,7 +189,7 @@ module phys_grid
      integer  :: col                   ! column index in chunk
    end type knuhc
 
-   type (knuhc), dimension(:), allocatable, private :: knuhcs
+   type (knuhc), dimension(:), allocatable, public :: knuhcs !now beingh used in RRTMG radiation.F90
                                        ! map from global column indices
                                        ! to chunk'ed grid
 
@@ -722,7 +722,7 @@ contains
        ! Early clean-up, to minimize memory high water mark
        deallocate( lat_p )
        deallocate( lon_p )
-       deallocate( latlon_to_dyn_gcol_map )
+       !deallocate( latlon_to_dyn_gcol_map ) !do not deallocate as it is being used in RRTMG radiation.F90
        if  (twin_alg .eq. 1) deallocate( lonlat_to_dyn_gcol_map )
        if  (twin_alg .eq. 1) deallocate( clon_p_cnt )
        if  (twin_alg .eq. 1) deallocate( clon_p_idx )
@@ -811,7 +811,7 @@ contains
     enddo
 
     deallocate( pchunkid )
-    deallocate( npchunks )
+    !deallocate( npchunks ) !do not deallocate as it is being used in RRTMG radiation.F90
     !
     !-----------------------------------------------------------------------
     !
@@ -4420,7 +4420,7 @@ logical function phys_grid_initialized ()
    deallocate( cid_offset  )
    deallocate( local_cid   )
    deallocate( cols )
-   deallocate( knuhcs )
+   !deallocate( knuhcs ) !do not deallocate as it is being used in RRTMG radiation.F90
 
    return
    end subroutine create_chunks

@@ -109,8 +109,7 @@ contains
     real(R8), pointer :: maski(:)            ! ice  mask on atm decomp (all grids same)
     real(R8), pointer :: masko(:)            ! ocn  mask on atm decomp (all grids same)
     !
-    integer(IN) :: n, kl, ko, ki             ! indicies
-    integer(IN) :: k1,k2,k3                  ! indicies
+    integer(IN) :: n            ! indicies
     !
     integer(IN) :: mpicom_cplid
     !
@@ -134,7 +133,6 @@ contains
     integer(IN)  :: gicesize                 ! global size of ice  grid
     integer(IN)  :: gglcsize                 ! global size of glc  grid
     integer(IN)  :: npts                     ! local size temporary
-    integer(IN)  :: ier                      ! error code
     real(R8)     :: diff,dmaxo,dmaxi         ! difference tracker
     logical      :: iamroot                  ! local masterproc
     real(R8)     :: eps_frac                 ! epsilon for fractions
@@ -145,7 +143,6 @@ contains
     real(R8)     :: eps_oigrid               ! epsilon for grid coords, ocn/ice
     real(R8)     :: eps_oiarea               ! epsilon for areas, ocn/ice
     real(R8)     :: my_eps_frac              ! local eps_frac value
-    real(R8)     :: rmin1,rmax1,rmin,rmax    ! local min max computation
     !
     real(R8),allocatable :: mask (:)         ! temporary real vector, domain mask
     !
@@ -645,7 +642,7 @@ contains
     lmask = 1.0_R8
     if (present(mask)) then
        if (size(mask) /= npts) then
-	  call shr_sys_abort(subName//" ERROR: mask size mis-match")
+          call shr_sys_abort(subName//" ERROR: mask size mis-match")
        endif
        lmask = mask
     endif
@@ -654,15 +651,15 @@ contains
 
     if (trim(attr) == "lon") then
        do n = 1,npts
-	  if (data2(n) > data1(n)) then
-	     do while ( (data1(n)+360.0_R8) < (data2(n)+180.0_R8) ) ! longitude is periodic
-		data1(n) = data1(n) + 360.0_R8
-	     end do
-	  else
-	     do while ( (data2(n)+360.0_R8) < (data1(n)+180.0_R8) ) ! longitude is periodic
-		data2(n) = data2(n) + 360.0_R8
-	     end do
-	  endif
+          if (data2(n) > data1(n)) then
+             do while ( (data1(n)+360.0_R8) < (data2(n)+180.0_R8) ) ! longitude is periodic
+                data1(n) = data1(n) + 360.0_R8
+             end do
+          else
+             do while ( (data2(n)+360.0_R8) < (data1(n)+180.0_R8) ) ! longitude is periodic
+                data2(n) = data2(n) + 360.0_R8
+             end do
+          endif
        enddo
     endif
 
@@ -672,12 +669,12 @@ contains
     ndiff = 0
     do n=1,npts
        if (lmask(n) > eps_tiny) then
-	  diff = abs(data1(n)-data2(n))
-	  max_diff = max(max_diff,diff)
-	  if (diff > eps) then
+          diff = abs(data1(n)-data2(n))
+          max_diff = max(max_diff,diff)
+          if (diff > eps) then
       !debug            write(logunit,*)'n= ',n,' data1= ',data1(n),' data2= ',data2(n),' diff= ',diff, ' eps= ',eps
-	     ndiff = ndiff + 1
-	  endif
+             ndiff = ndiff + 1
+          endif
        end if
     end do
 
@@ -723,7 +720,7 @@ contains
     ! Local variables
     !
     integer                :: j1,j2,m1,n,rcode
-    integer                :: gridsize,m2dsize,d2msize
+    integer                :: gridsize
     real(R8)               :: rmin1,rmax1,rmin,rmax
     real(R8)               :: rmask,rarea,raream
     character(cl)          :: lcomment

@@ -18,11 +18,70 @@ class EnvBase(EntryID):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath, schema=schema)
+        EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+
+        self._id_map = None
+        self._group_map = None
+
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.add_child(headernode)
+        else:
+            self._setup_cache()
+
+    def _setup_cache(self):
+        self._id_map = {}    # map id directly to nodes
+        self._group_map = {} # map group name to entry id dict
+
+        group_elems = self.get_children("group")
+        for group_elem in group_elems:
+            group_name = self.get(group_elem, "id")
+            expect(group_name not in self._group_map, "Repeat group '{}'".format(group_name))
+            group_map = {}
+            self._group_map[group_name] = group_map
+            entry_elems = self.get_children("entry", root=group_elem)
+            for entry_elem in entry_elems:
+                entry_id = self.get(entry_elem, "id")
+                expect(entry_id not in group_map, "Repeat entry '{}' in group '{}'".format(entry_id, group_name))
+                group_map[entry_id] = entry_elem
+                if entry_id in self._id_map:
+                    self._id_map[entry_id].append(entry_elem)
+                else:
+                    self._id_map[entry_id] = [entry_elem]
+
+        self.lock()
+
+    def change_file(self, newfile, copy=False):
+        self.unlock()
+        EntryID.change_file(self, newfile, copy=copy)
+        self._setup_cache()
+
+    def get_children(self, name=None, attributes=None, root=None):
+        if self.locked and name == "entry" and attributes is not None and attributes.keys() == ["id"]:
+            entry_id = attributes["id"]
+            if root is None or self.name(root) == "file":
+                if entry_id in self._id_map:
+                    return self._id_map[entry_id]
+                else:
+                    return []
+            else:
+                expect(self.name(root) == "group", "Unexpected elem '{}' for {}, attrs {}".format(self.name(root), self.filename, self.attrib(root)))
+                group_id = self.get(root, "id")
+                if group_id in self._group_map and entry_id in self._group_map[group_id]:
+                    return [self._group_map[group_id][entry_id]]
+                else:
+                    return []
+
+        else:
+            # Non-compliant look up
+            return EntryID.get_children(self, name=name, attributes=attributes, root=root)
+
+    def scan_children(self, nodename, attributes=None, root=None):
+        if self.locked and nodename == "entry" and attributes is not None and attributes.keys() == ["id"]:
+            return EnvBase.get_children(self, name=nodename, attributes=attributes, root=root)
+        else:
+            return EntryID.scan_children(self, nodename, attributes=attributes, root=root)
 
     def set_components(self, components):
         if hasattr(self, '_components'):

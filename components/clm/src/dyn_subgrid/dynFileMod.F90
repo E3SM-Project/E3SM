@@ -7,7 +7,7 @@ module dynFileMod
   !
   ! !USES:
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use dynTimeInfoMod , only : time_info_type
+  use dynTimeInfoMod , only : time_info_type, year_position_type
   use ncdio_pio      , only : file_desc_t, ncd_pio_openfile, ncd_inqdid, ncd_inqdlen, ncd_io
   use abortutils     , only : endrun
   implicit none
@@ -32,7 +32,7 @@ contains
   ! ======================================================================
 
   !-----------------------------------------------------------------------
-  type(dyn_file_type) function constructor(filename)
+  type(dyn_file_type) function constructor(filename, year_position)
     !
     ! !DESCRIPTION:
     ! Initialize a dyn_file_type object
@@ -43,10 +43,10 @@ contains
     !
     ! !USES:
     use fileutils        , only : getfil
-    use clm_time_manager , only : get_curr_date
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: filename
+    type(year_position_type) , intent(in) :: year_position
     !
     ! !LOCAL VARIABLES:
     character(len=256) :: locfn      ! local file name
@@ -79,9 +79,7 @@ contains
     
     ! Initialize object containing time information for the file
 
-    call get_curr_date(cur_year, mon, day, sec)
-
-    constructor%time_info = time_info_type(years, cur_year)
+    constructor%time_info = time_info_type(years, year_position)
 
     deallocate(years)
 

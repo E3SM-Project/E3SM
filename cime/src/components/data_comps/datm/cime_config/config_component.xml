@@ -10,12 +10,11 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSW][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
-    <desc option="GSW"> GSWP3 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
@@ -59,12 +58,8 @@
   <entry id="DATM_PRESAERO">
     <type>char</type>
     <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,cplhist</valid_values>
-    <default_value>none</default_value>
+    <default_value>clim_2000</default_value>
     <values match="last">
-      <value compset="^1850_">clim_1850</value>
-      <value compset="^2000_">clim_2000</value>
-      <value compset="^2003_">clim_2000</value>
-      <value compset="^4804_">clim_2000</value>
       <value compset="^1850_">clim_1850</value>
       <value compset="^RCP8_">rcp8.5</value>
       <value compset="^RCP6_">rcp6.0</value>
@@ -72,9 +67,6 @@
       <value compset="^RCP2_">rcp2.6</value>
       <value compset="^HIST_">trans_1850-2000</value>
       <value compset="^20TR_">trans_1850-2000</value>
-      <value compset="_DICE.*_POP2">none</value>
-      <value compset="_DLND.*_DICE.*_DOCN">none</value>
-      <value compset="_SLND.*_DICE.*_DOCN">none</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
     </values>
     <group>run_component_datm</group>

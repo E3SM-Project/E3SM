@@ -73,7 +73,7 @@ contains
     integer(IN)                :: ID_s
     integer(IN)                :: ID_d
     integer(IN)                :: ID_join
-    integer(IN)                :: mapid, mapidmin, mapidmax
+    integer(IN)                :: mapid
     integer(IN)                :: mpicom_s, mpicom_d, mpicom_join
     type(mct_gsmap) , pointer  :: gsmap_s
     type(mct_gsmap) , pointer  :: gsmap_d
@@ -788,11 +788,10 @@ contains
     !
     character(len=*),parameter :: subname = "(seq_mctext_avExtend) "
     integer :: mpicom
-    integer :: rank,rank2
+    integer :: rank
     integer :: lsizei, lsizen
     integer :: srank,srankg
     integer :: ierr
-    integer :: nints
     character(len=CXX) :: iList,rList
     !-----------------------------------------------------------------------
 
@@ -869,11 +868,10 @@ contains
 
     character(len=*),parameter :: subname = "(seq_mctext_avCreate) "
     integer :: mpicom
-    integer :: rank,rank2
+    integer :: rank
     integer :: lsizei, lsizen
     integer :: srank,srankg
     integer :: ierr
-    integer :: nints
     character(len=CXX) :: iList,rList
 
     call seq_comm_getinfo(ID,mpicom=mpicom,iam=rank)
