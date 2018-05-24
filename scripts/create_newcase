@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def parse_command_line(args, cimeroot, description):
 ###############################################################################
-
-    model = get_model()
-
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
+
+    model = get_model()
+
     cime_config = get_cime_config()
 
     parser.add_argument("--case", "-case", required=True,
