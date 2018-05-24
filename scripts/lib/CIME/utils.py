@@ -189,9 +189,9 @@ def _read_cime_config_file():
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
         for item,_ in cime_config.items('main'):
-            expect(item in allowed_in_main,"Unknown option in config section \"main\": {}".format(item))
+            expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
         for item,_ in cime_config.items('create_test'):
-            expect(item in allowed_in_create_test,"Unknown option in config section \"test\": {}".format(item))
+            expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
