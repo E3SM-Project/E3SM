@@ -249,7 +249,7 @@ contains
     allocate(this%qflx_deficit_col         (begc:endc))              ; this%qflx_deficit_col         (:)   = nan
     allocate(this%qflx_floodc_col          (begc:endc))              ; this%qflx_floodc_col          (:)   = nan
     allocate(this%qflx_sl_top_soil_col     (begc:endc))              ; this%qflx_sl_top_soil_col     (:)   = nan
-    allocate(this%qflx_runoff_col          (begc:endc))              ; this%qflx_runoff_col          (:)   = nan
+    allocate(this%qflx_runoff_col          (begc:endc))              ; this%qflx_runoff_col          (:)   = 0._r8
     allocate(this%qflx_runoff_r_col        (begc:endc))              ; this%qflx_runoff_r_col        (:)   = nan
     allocate(this%qflx_runoff_u_col        (begc:endc))              ; this%qflx_runoff_u_col        (:)   = nan
     allocate(this%qflx_rsub_sat_col        (begc:endc))              ; this%qflx_rsub_sat_col        (:)   = nan
@@ -693,7 +693,15 @@ contains
 
     call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
     call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
-
+    !needed for betr biogeochemistry
+    call restartvar(ncid=ncid, flag=flag, varname='qflx_runoff', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='column runoff', units='mm H2O s-1', &
+         interpinic_flag='interp', readvar=readvar, data=this%qflx_runoff_col)
+    if (flag == 'read' .and. .not. readvar) then
+       ! initial run, not restart: initialize qflx_snofrz_lyr to zero
+       this%qflx_runoff_col(bounds%begc:bounds%endc) = 0._r8
+    endif    
   end subroutine Restart
 
   
