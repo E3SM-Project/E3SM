@@ -188,10 +188,12 @@ def _read_cime_config_file():
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
-        for item,_ in cime_config.items('main'):
-            expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
-        for item,_ in cime_config.items('create_test'):
-            expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
+        if cime_config.has_section('main'):
+            for item,_ in cime_config.items('main'):
+                expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
+        if cime_config.has_section('create_test'):
+            for item,_ in cime_config.items('create_test'):
+                expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
