@@ -298,9 +298,9 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         logger.info("{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-            logger.info("{} GET TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            logger.info("{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
             get_timing(self, lid)     # Run the getTiming script
-            logger.info("{} GET TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            logger.info("{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         if data_assimilation:
             logger.info("{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
