@@ -174,6 +174,8 @@ def _read_cime_config_file():
     CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
+    allowed_sections = ("main", "create_test")
+    
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
                        "mail_user", "machine", "mpilib", "compiler", "input_dir")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
@@ -188,6 +190,8 @@ def _read_cime_config_file():
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
+        for section in cime_config.sections():
+            expect(section in allowed_sections,"Unknown section {} in .cime/config\nallowed sections are {}".format(section, allowed_sections))
         if cime_config.has_section('main'):
             for item,_ in cime_config.items('main'):
                 expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
