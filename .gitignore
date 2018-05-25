@@ -9,6 +9,9 @@ buildlib.*c
 # ignore for the merge to master and orphaning of the gh-pages branch
 doc/build
 
+# ignore temporary doc files
+doc/source/Tools_user/temp_files
+
 # ignore the JENKINS files created when make html is run
 scripts/Tools/JENKINS*
 

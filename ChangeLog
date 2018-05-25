@@ -1,5 +1,174 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 5-22-2018
+Tag: cime_cesm2_0_rel_03
+Answer Changes: None
+Tests: scripts_regression_tests, build tests on Cori.
+Dependencies:
+
+Brief Summary: Third release candidate.
+    - Update environment modules for Cori.
+    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
+    - Tweaks to cism-specific documentation.
+    - Update for Sphinx v1.7 and doc version 5.6.
+    - More doc updates.
+    - Maint 5.6 - documentation updates.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
+c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
+1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
+08f12ea Merge pull request #2616 from bertinia/maint-5.6
+72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
+7049dab Merge pull request #2614 from bertinia/maint-5.6
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	doc/Makefile
+M	doc/README
+D	doc/source/README
+M	doc/source/conf.py
+M	doc/source/users_guide/building-a-case.rst
+A	doc/source/users_guide/cime-change-namelist.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/compsets.rst
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/grids.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/users_guide/introduction-and-overview.rst
+M	doc/source/users_guide/machine.rst
+M	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/setting-up-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/troubleshooting.rst
+M	doc/source/users_guide/unit_testing.rst
+D	doc/source/users_guide/use_cases/basics-a-basic-example.rst
+D	doc/source/users_guide/use_cases/basics-setting-up-a-branch-or-hybrid-run.rst
+D	doc/source/users_guide/use_cases/cesm-nml.rst
+D	doc/source/users_guide/use_cases/datamod-nml.rst
+D	doc/source/users_guide/use_cases/driver-nml.rst
+D	doc/source/users_guide/use_cases/namelist-gen.rst
+D	doc/source/users_guide/use_cases/use-cases.rst
+A	doc/source/users_guide/workflows.rst
+M	doc/tools_autodoc.cfg
+M	doc/tools_autodoc.py
+M	scripts/Tools/xmlquery
+D	scripts/manage_pes
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_02
+Answer Changes: Round Off for Cheyenne gnu
+Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Update Cheyenne gnu compiler to 7.3.0
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+    Merge pull request #2611 from ESMCI/fischer/gnu7
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_01
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Move cam section out of config archive.
+    - Add commas to output using --value.
+    - Fix multisubmit tests were not resubmitting.
+    - A new script to add additional metadata for stat ensemble test.
+    - Fix formatting issue.
+    - Update iyear for 2000 runs.
+    - Merge branch 'master' of github.com:ESMCI/cime
+    - These grids are needed for cime standalone testing.
+    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+950cda0 Merge pull request #2608 from jedwards4b/config_archive_dist
+2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
+f1d501f Merge pull request #2600 from jedwards4b/test_issues
+5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
+8ce38a4 fix formatting issue
+6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
+c04da3c Merge branch 'master' of github.com:ESMCI/cime
+166a40c these grids are needed for cime standalone testing
+7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	scripts/Tools/xmlquery
+M	scripts/lib/CIME/SystemTests/pet.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/test_scheduler.py
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/mct/atm_comp_mct.F90
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	tools/mapping/check_maps/README
+M	tools/mapping/check_maps/check_map.sh
+M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
+M	tools/mapping/check_maps/src/Makefile
+M	tools/mapping/gen_domain_files/src/.gitignore
+M	tools/mapping/gen_domain_files/src/Makefile
+A	tools/mapping/gen_mapping_files/.gitignore
+M	tools/mapping/gen_mapping_files/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/.gitignore
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+D	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/regridbatch.yellowstone.sh
+M	tools/mapping/gen_mapping_files/gen_cesm_maps.sh
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/.gitignore
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/Makefile
+M	tools/mapping/map_field/.gitignore
+M	tools/mapping/map_field/README
+M	tools/mapping/map_field/src/Makefile
+M	tools/statistical_ensemble_test/README
+A	tools/statistical_ensemble_test/addmetadata.sh
+A	tools/statistical_ensemble_test/ensemble.py
+A	tools/statistical_ensemble_test/single_run.py
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 5-14-2018
 Tag: cime5.6.7
