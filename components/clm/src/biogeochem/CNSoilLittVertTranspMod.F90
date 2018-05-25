@@ -239,35 +239,35 @@ contains
 
          select case (i_type)
          case (1)  ! C
-            conc_ptr          => carbonstate_vars%decomp_cpools_vr_col
-            source            => carbonflux_vars%decomp_cpools_sourcesink_col
-            trcr_tendency_ptr => carbonflux_vars%decomp_cpools_transport_tendency_col
+            conc_ptr          => carbonstate_vars%decomp_pools_vr_col
+            source            => carbonflux_vars%decomp_pools_sourcesink_col
+            trcr_tendency_ptr => carbonflux_vars%decomp_pools_transport_tendency_col
          case (2)  ! N
-            conc_ptr          => nitrogenstate_vars%decomp_npools_vr_col
-            source            => nitrogenflux_vars%decomp_npools_sourcesink_col
-            trcr_tendency_ptr => nitrogenflux_vars%decomp_npools_transport_tendency_col
+            conc_ptr          => nitrogenstate_vars%decomp_pools_vr_col
+            source            => nitrogenflux_vars%decomp_pools_sourcesink_col
+            trcr_tendency_ptr => nitrogenflux_vars%decomp_pools_transport_tendency_col
          case (3)  ! P
-            conc_ptr          => phosphorusstate_vars%decomp_ppools_vr_col
-            source            => phosphorusflux_vars%decomp_ppools_sourcesink_col
-            trcr_tendency_ptr => phosphorusflux_vars%decomp_ppools_transport_tendency_col
+            conc_ptr          => phosphorusstate_vars%decomp_pools_vr_col
+            source            => phosphorusflux_vars%decomp_pools_sourcesink_col
+            trcr_tendency_ptr => phosphorusflux_vars%decomp_pools_transport_tendency_col
          case (4)
             if ( use_c13 ) then
                ! C13
-               conc_ptr          => c13_carbonstate_vars%decomp_cpools_vr_col
-               source            => c13_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c13_carbonflux_vars%decomp_cpools_transport_tendency_col
+               conc_ptr          => c13_carbonstate_vars%decomp_pools_vr_col
+               source            => c13_carbonflux_vars%decomp_pools_sourcesink_col
+               trcr_tendency_ptr => c13_carbonflux_vars%decomp_pools_transport_tendency_col
             else
                ! C14
-               conc_ptr          => c14_carbonstate_vars%decomp_cpools_vr_col
-               source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
+               conc_ptr          => c14_carbonstate_vars%decomp_pools_vr_col
+               source            => c14_carbonflux_vars%decomp_pools_sourcesink_col
+               trcr_tendency_ptr => c14_carbonflux_vars%decomp_pools_transport_tendency_col
             endif
          case (5)
             if ( use_c14 .and. use_c13 ) then
                ! C14
-               conc_ptr          => c14_carbonstate_vars%decomp_cpools_vr_col
-               source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
+               conc_ptr          => c14_carbonstate_vars%decomp_pools_vr_col
+               source            => c14_carbonflux_vars%decomp_pools_sourcesink_col
+               trcr_tendency_ptr => c14_carbonflux_vars%decomp_pools_transport_tendency_col
             else
                write(iulog,*) 'error.  ncase = 5, but c13 and c14 not both enabled.'
                call endrun(msg=errMsg(__FILE__, __LINE__))

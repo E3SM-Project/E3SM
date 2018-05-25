@@ -2461,7 +2461,7 @@ contains
 
          canopy_cond   =>    energyflux_vars%canopy_cond_patch   , & ! Input:  [real(r8) (:)    ]  tracer conductance for canopy [m/s]               
 
-         frootc        =>    carbonstate_vars%frootc_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C                               
+         frootc        =>    carbonstate_vars%froot_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C                               
 
          annavg_agnpp  =>    carbonflux_vars%annavg_agnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average aboveground NPP          
          annavg_bgnpp  =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP          

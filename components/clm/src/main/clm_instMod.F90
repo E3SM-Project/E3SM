@@ -175,26 +175,26 @@ contains
 
     if (use_cn) then
        call nitrogenstate_vars%Init(bounds_proc,                      &
-            carbonstate_vars%leafc_patch(begp:endp),                  &
-            carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
-            carbonstate_vars%deadstemc_patch(begp:endp),              &
-            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
-            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
-            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
+            carbonstate_vars%leaf_patch(begp:endp),                  &
+            carbonstate_vars%leaf_storage_patch(begp:endp),          &
+            carbonstate_vars%froot_patch(begp:endp),                 &
+            carbonstate_vars%froot_storage_patch(begp:endp),         &
+            carbonstate_vars%deadstem_patch(begp:endp),              &
+            carbonstate_vars%decomp_pools_vr_col(begc:endc, 1:, 1:), &
+            carbonstate_vars%decomp_pools_col(begc:endc, 1:),        &
+            carbonstate_vars%decomp_pools_1m_col(begc:endc, 1:))
 
        call nitrogenflux_vars%Init(bounds_proc)
 
        call phosphorusstate_vars%Init(bounds_proc,                    &
-            carbonstate_vars%leafc_patch(begp:endp),                  &
-            carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
-            carbonstate_vars%deadstemc_patch(begp:endp),              &
-            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
-            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
-            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
+            carbonstate_vars%leaf_patch(begp:endp),                  &
+            carbonstate_vars%leaf_storage_patch(begp:endp),          &
+            carbonstate_vars%froot_patch(begp:endp),                 &
+            carbonstate_vars%froot_storage_patch(begp:endp),         &
+            carbonstate_vars%deadstem_patch(begp:endp),              &
+            carbonstate_vars%decomp_pools_vr_col(begc:endc, 1:, 1:), &
+            carbonstate_vars%decomp_pools_col(begc:endc, 1:),        &
+            carbonstate_vars%decomp_pools_1m_col(begc:endc, 1:))
 
        call phosphorusflux_vars%Init(bounds_proc)
 

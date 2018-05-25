@@ -64,16 +64,16 @@ contains
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
                    ! pft-level wood to column-level CWD (uncombusted wood)
-                   cs%decomp_cpools_vr_col(c,j,i_cwd) = cs%decomp_cpools_vr_col(c,j,i_cwd) &
-                        + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
+                   cs%decomp_pools_vr_col(c,j,i_cwd) = cs%decomp_pools_vr_col(c,j,i_cwd) &
+                        + cf%fire_mortality_to_cwd_col(c,j) * dt
 
                    ! pft-level wood to column-level litter (uncombusted wood)
-                   cs%decomp_cpools_vr_col(c,j,i_met_lit) = cs%decomp_cpools_vr_col(c,j,i_met_lit) &
-                        + cf%m_c_to_litr_met_fire_col(c,j)* dt
-                   cs%decomp_cpools_vr_col(c,j,i_cel_lit) = cs%decomp_cpools_vr_col(c,j,i_cel_lit) &
-                        + cf%m_c_to_litr_cel_fire_col(c,j)* dt
-                   cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) &
-                        + cf%m_c_to_litr_lig_fire_col(c,j)* dt
+                   cs%decomp_pools_vr_col(c,j,i_met_lit) = cs%decomp_pools_vr_col(c,j,i_met_lit) &
+                        + cf%m_to_litr_met_fire_col(c,j)* dt
+                   cs%decomp_pools_vr_col(c,j,i_cel_lit) = cs%decomp_pools_vr_col(c,j,i_cel_lit) &
+                        + cf%m_to_litr_cel_fire_col(c,j)* dt
+                   cs%decomp_pools_vr_col(c,j,i_lig_lit) = cs%decomp_pools_vr_col(c,j,i_lig_lit) &
+                        + cf%m_to_litr_lig_fire_col(c,j)* dt
                 end do
              end do
          end if !(.not.(use_pflotran .and. pf_cmode))
@@ -83,7 +83,7 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cs%decomp_cpools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) - cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+                  cs%decomp_pools_vr_col(c,j,l) = cs%decomp_pools_vr_col(c,j,l) - cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
                end do
             end do
          end do
@@ -96,52 +96,52 @@ contains
          
          ! pft-level carbon fluxes from fire
          ! displayed pools
-         cs%leafc_patch(p)              = cs%leafc_patch(p)               - cf%m_leafc_to_fire_patch(p)            * dt
-         cs%leafc_patch(p)              = cs%leafc_patch(p)               - cf%m_leafc_to_litter_fire_patch(p)     * dt
-         cs%frootc_patch(p)             = cs%frootc_patch(p)              - cf%m_frootc_to_fire_patch(p)           * dt
-         cs%frootc_patch(p)             = cs%frootc_patch(p)              - cf%m_frootc_to_litter_fire_patch(p)    * dt
-         cs%livestemc_patch(p)          = cs%livestemc_patch(p)           - cf%m_livestemc_to_fire_patch(p)        * dt
-         cs%livestemc_patch(p)          = cs%livestemc_patch(p)           - cf%m_livestemc_to_litter_fire_patch(p) * dt
-         cs%deadstemc_patch(p)          = cs%deadstemc_patch(p)           - cf%m_deadstemc_to_fire_patch(p)        * dt
-         cs%deadstemc_patch(p)          = cs%deadstemc_patch(p)           - cf%m_deadstemc_to_litter_fire_patch(p) * dt
-         cs%livecrootc_patch(p)         = cs%livecrootc_patch(p)          - cf%m_livecrootc_to_fire_patch(p)       * dt
-         cs%livecrootc_patch(p)         = cs%livecrootc_patch(p)          - cf%m_livecrootc_to_litter_fire_patch(p)* dt
-         cs%deadcrootc_patch(p)         = cs%deadcrootc_patch(p)          - cf%m_deadcrootc_to_fire_patch(p)       * dt
-         cs%deadcrootc_patch(p)         = cs%deadcrootc_patch(p)          - cf%m_deadcrootc_to_litter_fire_patch(p)* dt
+         cs%leaf_patch(p)              = cs%leaf_patch(p)               - cf%m_leaf_to_fire_patch(p)            * dt
+         cs%leaf_patch(p)              = cs%leaf_patch(p)               - cf%m_leaf_to_litter_fire_patch(p)     * dt
+         cs%froot_patch(p)             = cs%froot_patch(p)              - cf%m_froot_to_fire_patch(p)           * dt
+         cs%froot_patch(p)             = cs%froot_patch(p)              - cf%m_froot_to_litter_fire_patch(p)    * dt
+         cs%livestem_patch(p)          = cs%livestem_patch(p)           - cf%m_livestem_to_fire_patch(p)        * dt
+         cs%livestem_patch(p)          = cs%livestem_patch(p)           - cf%m_livestem_to_litter_fire_patch(p) * dt
+         cs%deadstem_patch(p)          = cs%deadstem_patch(p)           - cf%m_deadstem_to_fire_patch(p)        * dt
+         cs%deadstem_patch(p)          = cs%deadstem_patch(p)           - cf%m_deadstem_to_litter_fire_patch(p) * dt
+         cs%livecroot_patch(p)         = cs%livecroot_patch(p)          - cf%m_livecroot_to_fire_patch(p)       * dt
+         cs%livecroot_patch(p)         = cs%livecroot_patch(p)          - cf%m_livecroot_to_litter_fire_patch(p)* dt
+         cs%deadcroot_patch(p)         = cs%deadcroot_patch(p)          - cf%m_deadcroot_to_fire_patch(p)       * dt
+         cs%deadcroot_patch(p)         = cs%deadcroot_patch(p)          - cf%m_deadcroot_to_litter_fire_patch(p)* dt
 
          ! storage pools
-         cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)       - cf%m_leafc_storage_to_fire_patch(p)            * dt
-         cs%leafc_storage_patch(p)      = cs%leafc_storage_patch(p)       - cf%m_leafc_storage_to_litter_fire_patch(p)     * dt
-         cs%frootc_storage_patch(p)     = cs%frootc_storage_patch(p)      - cf%m_frootc_storage_to_fire_patch(p)           * dt
-         cs%frootc_storage_patch(p)     = cs%frootc_storage_patch(p)      - cf%m_frootc_storage_to_litter_fire_patch(p)    * dt
-         cs%livestemc_storage_patch(p)  = cs%livestemc_storage_patch(p)   - cf%m_livestemc_storage_to_fire_patch(p)        * dt
-         cs%livestemc_storage_patch(p)  = cs%livestemc_storage_patch(p)   - cf%m_livestemc_storage_to_litter_fire_patch(p) * dt
-         cs%deadstemc_storage_patch(p)  = cs%deadstemc_storage_patch(p)   - cf%m_deadstemc_storage_to_fire_patch(p)        * dt
-         cs%deadstemc_storage_patch(p)  = cs%deadstemc_storage_patch(p)   - cf%m_deadstemc_storage_to_litter_fire_patch(p) * dt
-         cs%livecrootc_storage_patch(p) = cs%livecrootc_storage_patch(p)  - cf%m_livecrootc_storage_to_fire_patch(p)       * dt
-         cs%livecrootc_storage_patch(p) = cs%livecrootc_storage_patch(p)  - cf%m_livecrootc_storage_to_litter_fire_patch(p)* dt
-         cs%deadcrootc_storage_patch(p) = cs%deadcrootc_storage_patch(p)  - cf%m_deadcrootc_storage_to_fire_patch(p)       * dt
-         cs%deadcrootc_storage_patch(p) = cs%deadcrootc_storage_patch(p)  - cf%m_deadcrootc_storage_to_litter_fire_patch(p)* dt
+         cs%leaf_storage_patch(p)      = cs%leaf_storage_patch(p)       - cf%m_leaf_storage_to_fire_patch(p)            * dt
+         cs%leaf_storage_patch(p)      = cs%leaf_storage_patch(p)       - cf%m_leaf_storage_to_litter_fire_patch(p)     * dt
+         cs%froot_storage_patch(p)     = cs%froot_storage_patch(p)      - cf%m_froot_storage_to_fire_patch(p)           * dt
+         cs%froot_storage_patch(p)     = cs%froot_storage_patch(p)      - cf%m_froot_storage_to_litter_fire_patch(p)    * dt
+         cs%livestem_storage_patch(p)  = cs%livestem_storage_patch(p)   - cf%m_livestem_storage_to_fire_patch(p)        * dt
+         cs%livestem_storage_patch(p)  = cs%livestem_storage_patch(p)   - cf%m_livestem_storage_to_litter_fire_patch(p) * dt
+         cs%deadstem_storage_patch(p)  = cs%deadstem_storage_patch(p)   - cf%m_deadstem_storage_to_fire_patch(p)        * dt
+         cs%deadstem_storage_patch(p)  = cs%deadstem_storage_patch(p)   - cf%m_deadstem_storage_to_litter_fire_patch(p) * dt
+         cs%livecroot_storage_patch(p) = cs%livecroot_storage_patch(p)  - cf%m_livecroot_storage_to_fire_patch(p)       * dt
+         cs%livecroot_storage_patch(p) = cs%livecroot_storage_patch(p)  - cf%m_livecroot_storage_to_litter_fire_patch(p)* dt
+         cs%deadcroot_storage_patch(p) = cs%deadcroot_storage_patch(p)  - cf%m_deadcroot_storage_to_fire_patch(p)       * dt
+         cs%deadcroot_storage_patch(p) = cs%deadcroot_storage_patch(p)  - cf%m_deadcroot_storage_to_litter_fire_patch(p)* dt
          cs%gresp_storage_patch(p)      = cs%gresp_storage_patch(p)       - cf%m_gresp_storage_to_fire_patch(p)            * dt
          cs%gresp_storage_patch(p)      = cs%gresp_storage_patch(p)       - cf%m_gresp_storage_to_litter_fire_patch(p)     * dt
 
          ! transfer pools
-         cs%leafc_xfer_patch(p)         = cs%leafc_xfer_patch(p)          - cf%m_leafc_xfer_to_fire_patch(p)            * dt
-         cs%leafc_xfer_patch(p)         = cs%leafc_xfer_patch(p)          - cf%m_leafc_xfer_to_litter_fire_patch(p)     * dt
-         cs%frootc_xfer_patch(p)        = cs%frootc_xfer_patch(p)         - cf%m_frootc_xfer_to_fire_patch(p)           * dt
-         cs%frootc_xfer_patch(p)        = cs%frootc_xfer_patch(p)         - cf%m_frootc_xfer_to_litter_fire_patch(p)    * dt
-         cs%livestemc_xfer_patch(p)     = cs%livestemc_xfer_patch(p)      - cf%m_livestemc_xfer_to_fire_patch(p)        * dt
-         cs%livestemc_xfer_patch(p)     = cs%livestemc_xfer_patch(p)      - cf%m_livestemc_xfer_to_litter_fire_patch(p) * dt
-         cs%deadstemc_xfer_patch(p)     = cs%deadstemc_xfer_patch(p)      - cf%m_deadstemc_xfer_to_fire_patch(p)        * dt
-         cs%deadstemc_xfer_patch(p)     = cs%deadstemc_xfer_patch(p)      - cf%m_deadstemc_xfer_to_litter_fire_patch(p) * dt
-         cs%livecrootc_xfer_patch(p)    = cs%livecrootc_xfer_patch(p)     - cf%m_livecrootc_xfer_to_fire_patch(p)       * dt
-         cs%livecrootc_xfer_patch(p)    = cs%livecrootc_xfer_patch(p)     - cf%m_livecrootc_xfer_to_litter_fire_patch(p)* dt
-         cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)     - cf%m_deadcrootc_xfer_to_fire_patch(p)       * dt
-         cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)     - cf%m_deadcrootc_xfer_to_litter_fire_patch(p)* dt
+         cs%leaf_xfer_patch(p)         = cs%leaf_xfer_patch(p)          - cf%m_leaf_xfer_to_fire_patch(p)            * dt
+         cs%leaf_xfer_patch(p)         = cs%leaf_xfer_patch(p)          - cf%m_leaf_xfer_to_litter_fire_patch(p)     * dt
+         cs%froot_xfer_patch(p)        = cs%froot_xfer_patch(p)         - cf%m_froot_xfer_to_fire_patch(p)           * dt
+         cs%froot_xfer_patch(p)        = cs%froot_xfer_patch(p)         - cf%m_froot_xfer_to_litter_fire_patch(p)    * dt
+         cs%livestem_xfer_patch(p)     = cs%livestem_xfer_patch(p)      - cf%m_livestem_xfer_to_fire_patch(p)        * dt
+         cs%livestem_xfer_patch(p)     = cs%livestem_xfer_patch(p)      - cf%m_livestem_xfer_to_litter_fire_patch(p) * dt
+         cs%deadstem_xfer_patch(p)     = cs%deadstem_xfer_patch(p)      - cf%m_deadstem_xfer_to_fire_patch(p)        * dt
+         cs%deadstem_xfer_patch(p)     = cs%deadstem_xfer_patch(p)      - cf%m_deadstem_xfer_to_litter_fire_patch(p) * dt
+         cs%livecroot_xfer_patch(p)    = cs%livecroot_xfer_patch(p)     - cf%m_livecroot_xfer_to_fire_patch(p)       * dt
+         cs%livecroot_xfer_patch(p)    = cs%livecroot_xfer_patch(p)     - cf%m_livecroot_xfer_to_litter_fire_patch(p)* dt
+         cs%deadcroot_xfer_patch(p)    = cs%deadcroot_xfer_patch(p)     - cf%m_deadcroot_xfer_to_fire_patch(p)       * dt
+         cs%deadcroot_xfer_patch(p)    = cs%deadcroot_xfer_patch(p)     - cf%m_deadcroot_xfer_to_litter_fire_patch(p)* dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_fire_patch(p)            * dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_litter_fire_patch(p)     * dt
-         cs%cpool_patch(p)              = cs%cpool_patch(p)               - cf%m_cpool_to_fire_patch(p)                 * dt
-         cs%cpool_patch(p)              = cs%cpool_patch(p)               - cf%m_cpool_to_litter_fire_patch(p)          * dt
+         cs%pool_patch(p)              = cs%pool_patch(p)               - cf%m_pool_to_fire_patch(p)                 * dt
+         cs%pool_patch(p)              = cs%pool_patch(p)               - cf%m_pool_to_litter_fire_patch(p)          * dt
 
 
       end do ! end of pft loop

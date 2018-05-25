@@ -291,11 +291,11 @@ contains
     allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = ival
 
     ! decomposition flux:
-    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               
+    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_cpools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_npools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_ppools_sourcesink_col     (:,:,:) = ival
 
     allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
