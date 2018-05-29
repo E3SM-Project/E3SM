@@ -230,13 +230,12 @@ for mct, etc.
   <!--                     * inv: invalid operands         -->
   <!--                     * divz divide by zero           -->
   <!--                     * ovf: floating point overflow   -->
-  <!--  -Mlist          => Create a listing file             -->
   <!--  -F              => leaves file.f for each preprocessed file.F file  -->
   <!--  -time           => Print execution time for each compiler step  -->
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -Mlist -time </CFLAGS>
+  <CFLAGS> -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
@@ -249,7 +248,7 @@ for mct, etc.
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -Mlist  -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
