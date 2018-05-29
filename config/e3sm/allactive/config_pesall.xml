@@ -7646,7 +7646,7 @@
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>ne30-wcycl on 128 nodes</comment>
-        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
