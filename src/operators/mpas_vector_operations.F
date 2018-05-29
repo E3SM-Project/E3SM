@@ -21,6 +21,7 @@ module mpas_vector_operations
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_log
 
    implicit none
    private
@@ -706,21 +707,21 @@ contains
 
     ! Initialize normal unit vectors at each edge
     ! These vectors point from cell to cell.
-    ! At boundaries, one cell does not exist, so it points from cell to edge.
+    ! At boundaries, one cell does not exist, so it points from cell to edge or from edge to cell.
     do iEdge = 1,nEdges
       cell1 = cellsOnEdge(1,iEdge)
       cell2 = cellsOnEdge(2,iEdge)
 
       if (cell1 == nCells+1) then ! this is a boundary edge
-        ! the normal points from the cell location to the edge location
+        ! the normal points from the edge location to the cell location
         if (is_periodic) then
-          edgeNormalVectors(1,iEdge) = mpas_fix_periodicity(xEdge(iEdge), xCell(cell2), x_period) - xCell(cell2)
-          edgeNormalVectors(2,iEdge) = mpas_fix_periodicity(yEdge(iEdge), yCell(cell2), y_period) - yCell(cell2)
-          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+          edgeNormalVectors(1,iEdge) = xCell(cell2) - mpas_fix_periodicity(xEdge(iEdge), xCell(cell2), x_period)
+          edgeNormalVectors(2,iEdge) = yCell(cell2) - mpas_fix_periodicity(yEdge(iEdge), yCell(cell2), y_period)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zEdge(iEdge)
         else
-          edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell2)
-          edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell2)
-          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+          edgeNormalVectors(1,iEdge) = xCell(cell2) - xEdge(iEdge)
+          edgeNormalVectors(2,iEdge) = yCell(cell2) - yEdge(iEdge)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zEdge(iEdge)
         end if
 
       else if (cell2 == nCells+1) then ! this is a boundary edge
@@ -925,20 +926,20 @@ contains
 
       xnew = mpas_fix_periodicity(x1, xc, xLen)
       if (abs(xnew - pii ) > eps) then
-         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
-           "x1's periodicity fix has error greater than tolerance -- FAILED."
+         call mpas_log_write("Error in mpas_unit_test_fix_periodicity: " // &
+           "x1's periodicity fix has error greater than tolerance -- FAILED.", MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x1 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_fix_periodicity: x1 test - SUCCESS')
       endif
 
       xnew = mpas_fix_periodicity(x2, xc, xLen)
       if (abs(xnew - pii ) > eps) then
-         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
-           "x2's periodicity fix has error greater than tolerance -- FAILED."
+         call mpas_log_write("Error in mpas_unit_test_fix_periodicity: " // &
+           "x2's periodicity fix has error greater than tolerance -- FAILED.", MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x2 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_fix_periodicity: x2 test - SUCCESS')
       endif
 
    end subroutine mpas_unit_test_fix_periodicity!}}}

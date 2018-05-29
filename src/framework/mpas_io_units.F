@@ -21,7 +21,6 @@ module mpas_io_units
 
    use mpas_kind_types
 
-   integer, save :: stdoutUnit, stderrUnit
    integer, parameter, private :: maxUnits = 99
    logical, dimension(0:maxUnits), private, save :: unitsInUse
 
@@ -78,83 +77,5 @@ module mpas_io_units
         unitsInUse(releasedUnit) = .false.
 
     end subroutine mpas_release_unit!}}}
-
-!***********************************************************************
-!
-!  routine mpas_io_units_set_stdout
-!
-!> \brief   MPAS Set stdout unit number
-!> \author  Doug Jacobsen
-!> \date    07/18/2013
-!> \details 
-!> This routine sets the unit number for stdout
-!
-!-----------------------------------------------------------------------
-    subroutine mpas_io_units_set_stdout(stdoutUnit_in)!{{{
-        integer, intent(in) :: stdoutUnit_in
-
-
-        if(stdoutUnit /= stdoutUnit_in) then
-            unitsInUse(stdoutUnit) = .false.
-            stdoutUnit = stdoutUnit_in
-            unitsInUse(stdoutUnit) = .true.
-        end if
-
-    end subroutine mpas_io_units_set_stdout!}}}
-
-!***********************************************************************
-!
-!  routine mpas_io_units_set_stderr
-!
-!> \brief   MPAS Set stderr unit number
-!> \author  Doug Jacobsen
-!> \date    07/18/2013
-!> \details 
-!> This routine sets the unit number for stderr
-!
-!-----------------------------------------------------------------------
-    subroutine mpas_io_units_set_stderr(stderrUnit_in)!{{{
-        integer, intent(in) :: stderrUnit_in
-
-
-        if(stderrUnit /= stderrUnit_in) then
-            unitsInUse(stderrUnit) = .false.
-            stderrUnit = stderrUnit_in
-            unitsInUse(stderrUnit) = .true.
-        end if
-
-    end subroutine mpas_io_units_set_stderr!}}}
-
-!***********************************************************************
-!
-!  routine mpas_init_logger
-!
-!> \brief   MPAS Logger initialization
-!> \author  Doug Jacobsen
-!> \date    07/18/2013
-!> \details 
-!> This routine initializes the MPAS logger
-!
-!-----------------------------------------------------------------------
-    subroutine mpas_io_units_init(stdoutUnit_in, stderrUnit_in)!{{{
-        integer, intent(in), optional :: stdoutUnit_in !< Input - Optional: Unit to set stdoutUnit to
-        integer, intent(in), optional :: stderrUnit_in !< Input - Optional: Unit to set stderrUnit to
-
-        if(present(stdoutUnit_in)) then
-            stdoutUnit = stdoutUnit_in
-        else
-            stdoutUnit = 6
-        end if
-
-        if(present(stderrUnit_in)) then
-            stderrUnit = stderrUnit_in
-        else
-            stderrUnit = 0
-        end if
-        
-        unitsInUse(stdoutUnit) = .true.
-        unitsInUse(stderrUnit) = .true.
-
-    end subroutine mpas_io_units_init!}}}
 
 end module mpas_io_units

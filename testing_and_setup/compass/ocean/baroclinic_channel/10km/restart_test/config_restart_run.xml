@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<config case="restart_run">
+	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
+		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
+		<option name="config_do_restart">.true.</option>
+		<option name="config_run_duration">0000_00:05:00</option>
+		<option name="config_start_time">0001-01-01_00:05:00</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
+		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
+		<stream name="output">
+			<attribute name="output_interval">0000-00-00_00:05:00</attribute>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

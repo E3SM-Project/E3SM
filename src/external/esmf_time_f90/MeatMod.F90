@@ -22,7 +22,7 @@ contains
 ! Convert fraction to string with leading sign.
 ! If fraction simplifies to a whole number or if
 ! denominator is zero, return empty string.
-! INTEGER*8 interface.  
+! INTEGER*8 interface.
 SUBROUTINE fraction_to_stringi8( numerator, denominator, frac_str )
   IMPLICIT NONE
   INTEGER(ESMF_KIND_I8), INTENT(IN) :: numerator
@@ -48,7 +48,7 @@ END SUBROUTINE fraction_to_stringi8
 ! Convert fraction to string with leading sign.
 ! If fraction simplifies to a whole number or if
 ! denominator is zero, return empty string.
-! INTEGER interface.  
+! INTEGER interface.
 SUBROUTINE fraction_to_string( numerator, denominator, frac_str )
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: numerator

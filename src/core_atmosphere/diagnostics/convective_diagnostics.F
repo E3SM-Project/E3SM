@@ -7,8 +7,9 @@
 !
 module convective_diagnostics
 
-    use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+    use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, MPAS_LOG_ERR, MPAS_LOG_CRIT
     use mpas_kind_types, only : RKIND
+    use mpas_log, only : mpas_log_write
 
     type (MPAS_pool_type), pointer :: mesh
     type (MPAS_pool_type), pointer :: state
@@ -748,7 +749,7 @@ module convective_diagnostics
         endif
       enddo
     ENDIF
-    if(debug_level.ge.100) print *,'  kmax,maxthe = ',kmax,maxthe
+    if(debug_level.ge.100) call mpas_log_write('  kmax,maxthe = $i $r', intArgs=(/kmax/), realArgs=(/maxthe/))
 
   ELSEIF(source.eq.3)THEN
     ! use mixed layer
@@ -775,13 +776,12 @@ module convective_diagnostics
       avgth = 0.0
       avgqv = 0.0
       k = 2
-      if(debug_level.ge.100) print *,'  ml_depth = ',ml_depth
-      if(debug_level.ge.100) print *,'  k,z,th,q:'
-      if(debug_level.ge.100) print *,1,z(1),th(1),q(1)
+      if(debug_level.ge.100) call mpas_log_write('  ml_depth = $r', realArgs=(/ml_depth/))
+      if(debug_level.ge.100) call mpas_log_write('  k,z,th,q: $i $r $r $r', intArgs=(/1/), realArgs=(/z(1),th(1),q(1)/))
 
       do while( (z(k).le.ml_depth) .and. (k.le.nk) )
 
-        if(debug_level.ge.100) print *,k,z(k),th(k),q(k)
+        if(debug_level.ge.100) call mpas_log_write('$i $r $r $r', intArgs=(/k/), realArgs=(/z(k),th(k),q(k)/))
 
         avgth = avgth + 0.5*(z(k)-z(k-1))*(th(k)+th(k-1))
         avgqv = avgqv + 0.5*(z(k)-z(k-1))*(q(k)+q(k-1))
@@ -793,12 +793,12 @@ module convective_diagnostics
       th2 = th(k-1)+(th(k)-th(k-1))*(ml_depth-z(k-1))/(z(k)-z(k-1))
       qv2 =  q(k-1)+( q(k)- q(k-1))*(ml_depth-z(k-1))/(z(k)-z(k-1))
 
-      if(debug_level.ge.100) print *,999,ml_depth,th2,qv2
+      if(debug_level.ge.100) call mpas_log_write('999 $r $r $r', realArgs=(/ml_depth,th2,qv2/))
 
       avgth = avgth + 0.5*(ml_depth-z(k-1))*(th2+th(k-1))
       avgqv = avgqv + 0.5*(ml_depth-z(k-1))*(qv2+q(k-1))
 
-      if(debug_level.ge.100) print *,k,z(k),th(k),q(k)
+      if(debug_level.ge.100) call mpas_log_write('$i $r $r $r', intArgs=(/k/), realArgs=(/z(k),th(k),q(k)/))
 
       avgth = avgth/ml_depth
       avgqv = avgqv/ml_depth
@@ -807,17 +807,16 @@ module convective_diagnostics
 
     ENDIF
 
-    if(debug_level.ge.100) print *,avgth,avgqv
+    if(debug_level.ge.100) call mpas_log_write('$r $r', realArgs=real((/avgth,avgqv/),kind=RKIND))
 
   ELSE
 
-!    print *
-!    print *,'  Unknown value for source'
-!    print *
-!    print *,'  source = ',source
-!    print *
-!    stop
-    write(0,*) 'getcape: unknown value for source'
+!    call mpas_log_write('')
+!    call mpas_log_write('  Unknown value for source')
+!    call mpas_log_write('')
+!    call mpas_log_write('  source = $i', intArgs=(/source/))
+!    call mpas_log_write('', messageType=MPAS_LOG_CRIT)
+    call mpas_log_write('getcape: unknown value for source', messageType=MPAS_LOG_ERR)
     return
 
   ENDIF
@@ -862,13 +861,13 @@ module convective_diagnostics
     endif
 
       the = getthe(p2,t2,t2,qv2)
-      if(debug_level.ge.100) print *,'  the = ',the
+      if(debug_level.ge.100) call mpas_log_write('  the = $r', realArgs=(/the/))
 
 !---- begin ascent of parcel ----!
 
       if(debug_level.ge.100)then
-        print *,'  Start loop:'
-        print *,'  p2,th2,qv2 = ',p2,th2,qv2
+        call mpas_log_write('  Start loop:')
+        call mpas_log_write('  p2,th2,qv2 = $r $r $r', realArgs=(/p2,th2,qv2/))
       endif
 
     do while( doit .and. (k.lt.nk) )
@@ -932,16 +931,16 @@ module convective_diagnostics
                        +lhs*(qi2-qi1)/(cpm*tbar)     &
                        +(rm/cpm-rd/cp)*alog(p2/p1) )
 
-          if(i .gt. 90 .and. debug_level .gt. 0) print *,i,th2,thlast,th2-thlast
+          if(i .gt. 90 .and. debug_level .gt. 0) call mpas_log_write('$i $r $r $r', intArgs=(/i/), realArgs=(/th2,thlast,th2-thlast/))
           if(i .gt. 100)then
-!            print *
-!            print *,'  Error:  lack of convergence'
-!            print *
-!            print *,'  ... stopping iteration '
-!            print *
+!            call mpas_log_write('')
+!            call mpas_log_write('  Error:  lack of convergence')
+!            call mpas_log_write('')
+!            call mpas_log_write('  ... stopping iteration ')
+!            call mpas_log_write('')
 !            stop 1001
             if (debug_level .gt. 0) then
-               write(0,*) 'getcape: lack of convergence'
+               call mpas_log_write('getcape: lack of convergence', messageType=MPAS_LOG_ERR)
             end if
             return
           endif
@@ -963,11 +962,11 @@ module convective_diagnostics
           ql2 = 0.0
           qi2 = 0.0
         ELSEIF(adiabat.le.0.or.adiabat.ge.5)THEN
-!          print *
-!          print *,'  Undefined adiabat'
-!          print *
+!          call mpas_log_write('')
+!          call mpas_log_write('  Undefined adiabat')
+!          call mpas_log_write('')
 !          stop 10000
-          write(0,*) 'getcape: Undefined adiabat'
+          call mpas_log_write('getcape: Undefined adiabat', messageType=MPAS_LOG_ERR)
           return
         ENDIF
 
@@ -988,11 +987,11 @@ module convective_diagnostics
         parea =  0.5*b2*dz*frac
         narea = narea-0.5*b1*dz*(1.0-frac)
         if(debug_level.ge.200)then
-          print *,'      b1,b2 = ',b1,b2
-          print *,'      p1,ps,p2 = ',p(k-1),ps,p(k)
-          print *,'      frac = ',frac
-          print *,'      parea = ',parea
-          print *,'      narea = ',narea
+          call mpas_log_write('      b1,b2 = $r $r', realArgs=(/b1,b2/))
+          call mpas_log_write('      p1,ps,p2 = $r $r $r', realArgs=(/p(k-1),ps,p(k)/))
+          call mpas_log_write('      frac = $r', realArgs=(/frac/))
+          call mpas_log_write('      parea = $r', realArgs=(/parea/))
+          call mpas_log_write('      narea = $r', realArgs=(/narea/))
         endif
         cin  = cin  + narea
         narea = 0.0
@@ -1003,11 +1002,11 @@ module convective_diagnostics
         parea =  0.5*b1*dz*frac
         narea = -0.5*b2*dz*(1.0-frac)
         if(debug_level.ge.200)then
-          print *,'      b1,b2 = ',b1,b2
-          print *,'      p1,ps,p2 = ',p(k-1),ps,p(k)
-          print *,'      frac = ',frac
-          print *,'      parea = ',parea
-          print *,'      narea = ',narea
+          call mpas_log_write('      b1,b2 = $r $r', realArgs=(/b1,b2/))
+          call mpas_log_write('      p1,ps,p2 = $r $r $r', realArgs=(/p(k-1),ps,p(k)/))
+          call mpas_log_write('      frac = $r', realArgs=(/frac/))
+          call mpas_log_write('      parea = $r', realArgs=(/parea/))
+          call mpas_log_write('      narea = $r', realArgs=(/narea/))
         endif
       elseif( b2.lt.0.0 )then
         ! still collecting negative buoyancy
@@ -1022,8 +1021,7 @@ module convective_diagnostics
       cape = cape + max(0.0,parea)
 
       if(debug_level.ge.200)then
-        write(6,102) p2,b1,b2,cape,cin,cloud
-102     format(5(f13.4),2x,l1)
+        call mpas_log_write('$r $r $r $r $r $l', realArgs=(/p2,b1,b2,cape,cin/), logicArgs=(/cloud/))
       endif
 
       if( (p(k).le.10000.0).and.(b2.lt.0.0) )then

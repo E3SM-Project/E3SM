@@ -63,9 +63,9 @@ module ESMF_TimeIntervalMod
       type ESMF_TimeInterval
         ! time interval is expressed as basetime
         type(ESMF_BaseTime) :: basetime  ! inherit base class
-        ! Relative year and month fields support monthly or yearly time 
-        ! intervals.  Many operations are undefined when these fields are 
-        ! non-zero!  
+        ! Relative year and month fields support monthly or yearly time
+        ! intervals.  Many operations are undefined when these fields are
+        ! non-zero!
         INTEGER :: YR                    ! relative year
         INTEGER :: MM                    ! relative month
         logical :: starttime_set           ! reference time set
@@ -91,18 +91,19 @@ module ESMF_TimeIntervalMod
 
 !!!!!!!!! added by jhe
       public ESMF_TimeIntervalDIVQuot
-      public ESMF_TimeIntervalIsPositive      
+      public ESMF_TimeIntervalIsPositive
 !
 
 ! !PRIVATE MEMBER FUNCTIONS:
- 
+
 ! overloaded operator functions
- 
+
       public operator(/)
       private ESMF_TimeIntervalQuotI
 
       public operator(*)
       private ESMF_TimeIntervalProdI
+      private ESMF_TimeIntervalProdI8
 
 ! Inherited and overloaded from ESMF_BaseTime
 
@@ -147,6 +148,7 @@ module ESMF_TimeIntervalMod
 
 ! !PRIVATE MEMBER FUNCTIONS:
       module procedure ESMF_TimeIntervalProdI
+      module procedure ESMF_TimeIntervalProdI8
 
 ! !DESCRIPTION:
 !     This interface overloads the * operator for the {\tt ESMF\_TimeInterval}
@@ -314,10 +316,10 @@ module ESMF_TimeIntervalMod
       integer, intent(out), optional :: mm
       integer, intent(out), optional :: D
       real(ESMF_KIND_R8),   intent(out), optional :: d_r8
-      integer(ESMF_KIND_I8),intent(out), optional :: S_i8      
+      integer(ESMF_KIND_I8),intent(out), optional :: S_i8
       integer, intent(out), optional :: S
       integer, intent(out), optional :: Sn
-      integer, intent(out), optional :: Sd      
+      integer, intent(out), optional :: Sd
       character*(*), optional, intent(out) :: TimeString
       integer, intent(out), optional :: rc
 
@@ -326,13 +328,13 @@ module ESMF_TimeIntervalMod
 !     Get the value of the {\tt ESMF\_TimeInterval} in units specified by the
 !     user via F90 optional arguments.
 !
-!     Time manager represents and manipulates time internally with integers 
+!     Time manager represents and manipulates time internally with integers
 !     to maintain precision.  Hence, user-specified floating point values are
 !     converted internally from integers.
 !
 !     See {\tt ../include/ESMC\_BaseTime.h} and
 !     {\tt ../include/ESMC\_TimeInterval.h} for complete description.
-!     
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[timeinterval]
@@ -500,7 +502,7 @@ module ESMF_TimeIntervalMod
         D = seconds / SECONDS_PER_DAY
         IF ( PRESENT(S) )   S    = mod( seconds, SECONDS_PER_DAY )
         IF ( PRESENT(S_i8)) S_i8 = mod( seconds, SECONDS_PER_DAY )
-      ELSE 
+      ELSE
         IF ( PRESENT(S) )   S    = seconds
         IF ( PRESENT(S_i8)) S_i8 = seconds
       END IF
@@ -523,16 +525,16 @@ module ESMF_TimeIntervalMod
       IF ( PRESENT( timeString ) ) THEN
         CALL ESMFold_TimeIntervalGetString( timeinterval, timeString, rc=ierr )
       ENDIF
-      
+
       IF ( PRESENT(Sn) ) THEN
         Sn = timeinterval%basetime%Sn
       ENDIF
       IF ( PRESENT(Sd) ) THEN
         Sd = timeinterval%basetime%Sd
       ENDIF
-      
+
       IF ( PRESENT(rc) ) rc = ierr
-    
+
       end subroutine ESMF_TimeIntervalGet
 
 !------------------------------------------------------------------------------
@@ -584,7 +586,7 @@ module ESMF_TimeIntervalMod
 !     Set the value of the {\tt ESMF\_TimeInterval} in units specified by
 !     the user via F90 optional arguments
 !
-!     Time manager represents and manipulates time internally with integers 
+!     Time manager represents and manipulates time internally with integers
 !     to maintain precision.  Hence, user-specified floating point values are
 !     converted internally to integers.
 !
@@ -769,7 +771,7 @@ module ESMF_TimeIntervalMod
 !     TMG1.5.9
 !EOP
 
-! NOTE:  Sn, and Sd are not yet included in the returned string...  
+! NOTE:  Sn, and Sd are not yet included in the returned string...
 !PRINT *,'DEBUG ESMFold_TimeIntervalGetString():  YR,MM,S,Sn,Sd = ', &
 !        timeinterval%YR, &
 !        timeinterval%MM, &
@@ -786,7 +788,7 @@ module ESMF_TimeIntervalMod
         iS = timeinterval%basetime%S
         iSn = timeinterval%basetime%Sn
         signstr = ''
-      ENDIF 
+      ENDIF
       iSd = timeinterval%basetime%Sd
 
       D = iS / SECONDS_PER_DAY
@@ -915,7 +917,7 @@ module ESMF_TimeIntervalMod
       function ESMF_TimeIntervalDIVQuot(timeinterval1, timeinterval2)
 
 ! !RETURN VALUE:
-      INTEGER :: ESMF_TimeIntervalDIVQuot 
+      INTEGER :: ESMF_TimeIntervalDIVQuot
 
 ! !ARGUMENTS:
       type(ESMF_TimeInterval), intent(in) :: timeinterval1
@@ -1016,7 +1018,7 @@ module ESMF_TimeIntervalMod
 
 !------------------------------------------------------------------------------
 !BOP
-! !IROUTINE:  ESMF_TimeIntervalQuotI - Divide time interval by an integer, return time interval result 
+! !IROUTINE:  ESMF_TimeIntervalQuotI - Divide time interval by an integer, return time interval result
 
 ! !INTERFACE:
       function ESMF_TimeIntervalQuotI(timeinterval, divisor)
@@ -1114,6 +1116,56 @@ module ESMF_TimeIntervalMod
 
       end function ESMF_TimeIntervalProdI
 
+
+!------------------------------------------------------------------------------
+!BOP
+! !IROUTINE:   ESMF_TimeIntervalProdI8 - Multiply a time interval by an integer
+
+! !INTERFACE:
+      function ESMF_TimeIntervalProdI8(timeinterval, multiplier)
+
+! !RETURN VALUE:
+      type(ESMF_TimeInterval) :: ESMF_TimeIntervalProdI8
+
+! !ARGUMENTS:
+      type(ESMF_TimeInterval), intent(in) :: timeinterval
+      integer(kind=ESMF_KIND_I8), intent(in) :: multiplier
+! !LOCAL:
+      integer    :: rc
+
+! !DESCRIPTION:
+!     Multiply a {\tt ESMF\_TimeInterval} by an integer, return product as a
+!     {\tt ESMF\_TimeInterval}
+!
+!     The arguments are:
+!     \begin{description}
+!     \item[timeinterval]
+!          The multiplicand
+!     \item[mutliplier]
+!          Integer multiplier
+!     \end{description}
+!
+! !REQUIREMENTS:
+!     TMG1.5.7, TMG7.2
+!EOP
+      CALL timeintchecknormalized( timeinterval, 'ESMF_TimeIntervalProdI arg1', &
+                                   relative_interval=.true. )
+
+      CALL ESMF_TimeIntervalSet( ESMF_TimeIntervalProdI8, rc=rc )
+!$$$move this into overloaded operator(*) in BaseTime
+      ESMF_TimeIntervalProdI8%basetime%S  = &
+        timeinterval%basetime%S * multiplier
+      ESMF_TimeIntervalProdI8%basetime%Sn = &
+        timeinterval%basetime%Sn * multiplier
+      ! Don't multiply Sd
+      ESMF_TimeIntervalProdI8%basetime%Sd = timeinterval%basetime%Sd
+      ESMF_TimeIntervalProdI8%MM = timeinterval%MM * multiplier
+      ESMF_TimeIntervalProdI8%YR = timeinterval%YR * multiplier
+      CALL normalize_timeint( ESMF_TimeIntervalProdI8 )
+
+      end function ESMF_TimeIntervalProdI8
+
+
 !------------------------------------------------------------------------------
 !
 ! This section includes the inherited ESMF_BaseTime class overloaded operators
@@ -1141,13 +1193,13 @@ module ESMF_TimeIntervalMod
 !     The arguments are:
 !     \begin{description}
 !     \item[timeinterval1]
-!          The augend 
+!          The augend
 !     \item[timeinterval2]
 !          The addend
 !     \end{description}
 !
 ! !REQUIREMENTS:
-!     TMG1.5.4, TMG2.4.4, TMG2.4.5, TMG2.4.6, TMG5.1, TMG5.2, 
+!     TMG1.5.4, TMG2.4.4, TMG2.4.5, TMG2.4.6, TMG5.1, TMG5.2,
 !                 TMG7.2
 !EOP
       CALL timeintchecknormalized( timeinterval1, 'ESMF_TimeIntervalSum arg1', &
@@ -1170,20 +1222,20 @@ module ESMF_TimeIntervalMod
 !------------------------------------------------------------------------------
 !BOP
 ! !IROUTINE:  ESMF_TimeIntervalDiff - Subtract one time interval from another
-   
+
 ! !INTERFACE:
       function ESMF_TimeIntervalDiff(timeinterval1, timeinterval2)
 
 ! !RETURN VALUE:
       type(ESMF_TimeInterval) :: ESMF_TimeIntervalDiff
 
-! !ARGUMENTS: 
+! !ARGUMENTS:
       type(ESMF_TimeInterval), intent(in) :: timeinterval1
       type(ESMF_TimeInterval), intent(in) :: timeinterval2
 ! !LOCAL:
       integer                             :: rc
 ! !DESCRIPTION:
-!     Subtract timeinterval2 from timeinterval1, return remainder as a 
+!     Subtract timeinterval2 from timeinterval1, return remainder as a
 !     {\tt ESMF\_TimeInterval}.
 !     Map overloaded (-) operator interface function to {\tt ESMF\_BaseTime}
 !     base class.
@@ -1191,7 +1243,7 @@ module ESMF_TimeIntervalMod
 !     The arguments are:
 !     \begin{description}
 !     \item[timeinterval1]
-!          The minuend 
+!          The minuend
 !     \item[timeinterval2]
 !          The subtrahend
 !     \end{description}
@@ -1462,8 +1514,8 @@ module ESMF_TimeIntervalMod
       integer :: rcint
 
 ! !DESCRIPTION:
-!     Return true if time interval is greater than zero,  
-!     false otherwise. 
+!     Return true if time interval is greater than zero,
+!     false otherwise.
 !
 !     The arguments are:
 !     \begin{description}
@@ -1524,7 +1576,7 @@ module ESMF_TimeIntervalMod
 
 !------------------------------------------------------------------------------
 
-! Exits with error message if timeInt is not normalized.  
+! Exits with error message if timeInt is not normalized.
 SUBROUTINE timeintchecknormalized( timeInt, msgstr, relative_interval )
   IMPLICIT NONE
   TYPE(ESMF_TimeInterval), INTENT(IN) :: timeInt

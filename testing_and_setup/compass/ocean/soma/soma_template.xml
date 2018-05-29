@@ -1,0 +1,27 @@
+<!--
+This template assumes the following templates have been applied before it
+	Streams templates:
+		output.xml from ocean/templates/streams
+		forcing_data.xml from ocean/templates/streams
+		global_stats.xml from ocean/templates/analysis_members
+		zonal_mean.xml from ocean/templates/analysis_members
+		okubo_weiss.xml from ocean/templates/analysis_members
+		high_frequency_output.xml from ocean/templates/analysis_members
+		time_filters.xml from ocean/templates/analysis_members
+		eliassen_palm.xml from ocean/templates/analysis_members
+		mixed_layer_depths.xml from ocean/templates/analysis_members
+		lagrangian_particle_tracking.xml from ocean/templates/analysis_members
+ -->
+
+<template>
+	<namelist>
+		<template file="soma_run.xml" path_base="script_configuration_dir"/>
+		<template file="soma_analysis_members.xml" path_base="script_configuration_dir"/>
+	</namelist>
+
+	<streams>
+		<template file="soma_run.xml" path_base="script_configuration_dir"/>
+		<template file="soma_analysis_members.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+</template>

@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_interface
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_constants
@@ -71,8 +70,18 @@
 
 
 !=================================================================================================================
- subroutine allocate_forall_physics
+ subroutine allocate_forall_physics(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  if(.not.allocated(psfc_p) ) allocate(psfc_p(ims:ime,jms:jme)         )
  if(.not.allocated(ptop_p) ) allocate(ptop_p(ims:ime,jms:jme)         )
@@ -125,8 +134,18 @@
  end subroutine allocate_forall_physics
 
 !=================================================================================================================
- subroutine deallocate_forall_physics
+ subroutine deallocate_forall_physics(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
 
  if(allocated(psfc_p)  ) deallocate(psfc_p  )
  if(allocated(ptop_p)  ) deallocate(ptop_p  )
@@ -178,10 +197,11 @@
  end subroutine deallocate_forall_physics
 
 !=================================================================================================================
- subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics,its,ite)
+ subroutine MPAS_to_physics(configs,mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
@@ -193,6 +213,8 @@
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: pbl_scheme
+
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni
 
@@ -213,17 +235,19 @@
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine MPAS_to_phys:'
-!write(0,*) 'ims=',ims,' ime=',ime
-!write(0,*) 'jms=',jms,' jme=',jme
-!write(0,*) 'kms=',kms,' kme=',kme
-!write(0,*)
-!write(0,*) 'its=',its,' ite=',ite
-!write(0,*) 'jts=',jts,' jte=',jte
-!write(0,*) 'kts=',kts,' kte=',kte
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine MPAS_to_phys:')
+!call mpas_log_write('ims=$i ime=$i',intArgs=(/ims,ime/))
+!call mpas_log_write('jms=$i jme=$i',intArgs=(/jms,jme/))
+!call mpas_log_write('kms=$i kme=$i',intArgs=(/kms,kme/))
+!call mpas_log_write('')
+!call mpas_log_write('its=$i ite=$i',intArgs=(/its,ite/))
+!call mpas_log_write('jts=$i jte=$i',intArgs=(/jts,jte/))
+!call mpas_log_write('kts=$i kte=$i',intArgs=(/kts,kte/))
 
 !initialization:
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
+
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
  call mpas_pool_get_array(mesh,'fzm'    ,fzm    )
@@ -344,20 +368,20 @@
 
 !check that the pressure in the layer above the surface is greater than that in the layer
 !above it:
- 201 format(3i8,10(1x,e15.8))
  do j = jts,jte
  do i = its,ite
     if(pres_p(i,1,j) .le. pres_p(i,2,j)) then
-       write(0,*)
-       write(0,*) '--- subroutine MPAS_to_phys - pressure(1) < pressure(2):'
-       write(0,*) 'i      =', i
-       write(0,*) 'latCell=', latCell(i)/degrad
-       write(0,*) 'lonCell=', lonCell(i)/degrad
+       call mpas_log_write('')
+       call mpas_log_write('--- subroutine MPAS_to_phys - pressure(1) < pressure(2):')
+       call mpas_log_write('i      =$i', intArgs=(/i/))
+       call mpas_log_write('latCell=$r', realArgs=(/latCell(i)/degrad/))
+       call mpas_log_write('lonCell=$r', realArgs=(/lonCell(i)/degrad/))
        do k = kts,kte
-          write(0,201) j,i,k,dz_p(i,k,j),pressure_b(k,i),pressure_p(k,i),pres_p(i,k,j), &
-             rho_p(i,k,j),th_p(i,k,j),t_p(i,k,j),qv_p(i,k,j)
+          call mpas_log_write('$i $i $i $r $r $r $r $r $r $r $r', intArgs=(/j,i,k/),&
+             realArgs=(/dz_p(i,k,j),pressure_b(k,i),pressure_p(k,i),pres_p(i,k,j), &
+                        rho_p(i,k,j),th_p(i,k,j),t_p(i,k,j),qv_p(i,k,j)/))
        enddo
-!      call mpas_dmpar_global_abort('ERROR: pressure increasing with height')
+!      call mpas_log_write('pressure increasing with height', messageType=MPAS_LOG_CRIT)
     endif
  enddo
  enddo
@@ -446,10 +470,11 @@
  end subroutine MPAS_to_physics
 
 !=================================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
+ subroutine microphysics_from_MPAS(configs,mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
@@ -459,6 +484,7 @@
  integer:: time_lev
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: nt_c,mu_c
@@ -475,6 +501,8 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -585,10 +613,11 @@
  end subroutine microphysics_from_MPAS
 
 !=================================================================================================================
- subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
+ subroutine microphysics_to_MPAS(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
 
  integer,intent(in):: itimestep,time_lev
@@ -601,6 +630,7 @@
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
@@ -620,6 +650,8 @@
  real(kind=RKIND):: rho1,rho2,tem1,tem2
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)

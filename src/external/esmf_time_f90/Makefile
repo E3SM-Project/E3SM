@@ -18,7 +18,7 @@ OBJS = ESMF_AlarmClockMod.o \
 
 all: $(OBJS)
 	ar -ru libesmf_time.a *.o
-	
+
 ESMF_AlarmClockMod.o: ESMF_AlarmMod.o ESMF_ClockMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o
 
 ESMF_AlarmMod.o: ESMF_BaseMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o
@@ -34,7 +34,7 @@ ESMF_ClockMod.o: ESMF_BaseMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o ESMF_Alarm
 ESMF.o: ESMF_AlarmMod.o ESMF_BaseMod.o ESMF_BaseTimeMod.o \
 		ESMF_CalendarMod.o ESMF_ClockMod.o ESMF_FractionMod.o \
 		ESMF_TimeIntervalMod.o ESMF_TimeMod.o ESMF_ShrTimeMod.o \
-		ESMF_AlarmClockMod.o ESMF_Stubs.o MeatMod.o 
+		ESMF_AlarmClockMod.o ESMF_Stubs.o MeatMod.o
 
 ESMF_FractionMod.o:
 

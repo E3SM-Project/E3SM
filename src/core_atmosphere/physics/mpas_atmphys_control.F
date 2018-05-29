@@ -9,7 +9,6 @@
  module mpas_atmphys_control
  use mpas_dmpar
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_utilities
@@ -97,8 +96,8 @@
                                   config_sfclayer_scheme
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_namelist_check:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_namelist_check:')
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
@@ -111,8 +110,8 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
- write(0,*)
- write(0,*) '----- Setting up physics suite '''//trim(config_physics_suite)//''' -----'
+ call mpas_log_write('')
+ call mpas_log_write('----- Setting up physics suite '''//trim(config_physics_suite)//''' -----')
 
  !
  !setup schemes according to the selected physics suite:
@@ -243,7 +242,7 @@
  if((config_radt_lw_scheme.ne.'off' .and. config_radt_cld_scheme.eq.'off') .or. &
     (config_radt_sw_scheme.ne.'off' .and. config_radt_cld_scheme.eq.'off')) then
 
-    write(0,*)
+    call mpas_log_write('')
     write(mpas_err_message,'(A,A10)') &
        '    config_radt_cld_scheme is not set for radiation calculation'
     call physics_message(mpas_err_message)
@@ -297,17 +296,17 @@
     config_radt_sw_scheme    .eq. 'off' .and. &
     config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
- write(0,*) ' '
- write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
- write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
- write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
- write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
- write(0,*) '    config_radt_cld_scheme     = ', trim(config_radt_cld_scheme)
- write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
- write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
- write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
- write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
- write(0,*)
+ call mpas_log_write('')
+ call mpas_log_write('    config_microp_scheme       = '//trim(config_microp_scheme))
+ call mpas_log_write('    config_convection_scheme   = '//trim(config_convection_scheme))
+ call mpas_log_write('    config_pbl_scheme          = '//trim(config_pbl_scheme))
+ call mpas_log_write('    config_gwdo_scheme         = '//trim(config_gwdo_scheme))
+ call mpas_log_write('    config_radt_cld_scheme     = '//trim(config_radt_cld_scheme))
+ call mpas_log_write('    config_radt_lw_scheme      = '//trim(config_radt_lw_scheme))
+ call mpas_log_write('    config_radt_sw_scheme      = '//trim(config_radt_sw_scheme))
+ call mpas_log_write('    config_sfclayer_scheme     = '//trim(config_sfclayer_scheme))
+ call mpas_log_write('    config_lsm_scheme          = '//trim(config_lsm_scheme))
+ call mpas_log_write('')
 
  end subroutine physics_namelist_check
 
@@ -364,8 +363,8 @@
     
  endif
 
-!write(0,*) '--- enter subroutine physics_namelist_check.'
-!write(0,*)
+!call mpas_log_write('--- enter subroutine physics_namelist_check.')
+!call mpas_log_write('')
 
  end subroutine physics_registry_init
 
@@ -400,19 +399,19 @@
     inquire(file='MP_THOMPSON_QIautQS_DATA.DBL'  ,exist=l_qi_aut_qs)
     inquire(file='MP_THOMPSON_freezeH2O_DATA.DBL',exist=l_freezeH2O)
 
-!   write(0,*)
-!   write(0,*) '--- enter subroutine physics_tables_init:'
-!   write(0,*) 'l_qr_acr_qg = ',l_qr_acr_qg
-!   write(0,*) 'l_qr_acr_qs = ',l_qr_acr_qs
-!   write(0,*) 'l_qi_aut_qs = ',l_qi_aut_qs
-!   write(0,*) 'l_freezeH2O = ',l_freezeH2O
+!   call mpas_log_write('')
+!   call mpas_log_write('--- enter subroutine physics_tables_init:')
+!   call mpas_log_write('l_qr_acr_qg = $l',logicArgs=(/l_qr_acr_qg/))
+!   call mpas_log_write('l_qr_acr_qs = $l',logicArgs=(/l_qr_acr_qs/))
+!   call mpas_log_write('l_qi_aut_qs = $l',logicArgs=(/l_qi_aut_qs/))
+!   call mpas_log_write('l_freezeH2O = $l',logicArgs=(/l_freezeH2O/))
 
     if(.not. (l_qr_acr_qg .and. l_qr_acr_qs .and. l_qi_aut_qs .and. l_freezeH2O)) then
        write(mpas_err_message,'(A)') &
           '--- tables to run the Thompson cloud microphysics scheme do not exist: run build_tables first.'
        call physics_error_fatal(mpas_err_message)
     endif
-!   write(0,*) 'l_mp_tables = ',l_mp_tables
+!   call mpas_log_write('l_mp_tables = $l',logicArgs=(/l_mp_tables/))
 
  endif
 

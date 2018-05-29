@@ -1,0 +1,38 @@
+<template>
+	<streams>
+		<stream name="KPP_testing">
+			<attribute name="filename_template">output/KPP_test.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="name">KPP_testing</attribute>
+			<attribute name="filename_interval">00-01-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_01:00:00</attribute>
+			<add_contents>
+				<member name="mesh" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="vertNonLocalFlux" type="var_array"/>
+				<member name="xtime" type="var"/>
+				<member name="zMid" type="var"/>
+				<member name="zTop" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="bulkRichardsonNumber" type="var"/>
+				<member name="bulkRichardsonNumberBuoy" type="var"/>
+				<member name="unresolvedShear" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="boundaryLayerDepthEdge" type="var"/>
+				<member name="surfaceFrictionVelocity" type="var"/>
+				<member name="penetrativeTemperatureFluxOBL" type="var"/>
+				<member name="surfaceBuoyancyForcing" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="transportVelocityZonal" type="var"/>
+				<member name="transportVelocityMeridional" type="var"/>
+				<member name="RiTopOfCell" type="var"/>
+				<member name="vertViscTopOfCell" type="var"/>
+				<member name="vertDiffTopOfCell" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

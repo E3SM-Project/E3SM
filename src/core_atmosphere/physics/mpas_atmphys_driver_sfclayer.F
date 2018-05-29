@@ -8,8 +8,8 @@
 !=================================================================================================================
  module mpas_atmphys_driver_sfclayer
  use mpas_kind_types
- use mpas_derived_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -76,16 +76,29 @@
 ! * changed the definition of dx_p to match that used in other physics parameterizations.
 !   parameterizations.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
+! * since we removed the local variable sfclayer_scheme from mpas_atmphys_vars.F, now defines sfclayer_scheme
+!   as a pointer to config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
+
 
  contains
 
 
 !=================================================================================================================
- subroutine allocate_sfclayer(config_frac_seaice)
+ subroutine allocate_sfclayer(configs)
 !=================================================================================================================
 
- logical,intent(in):: config_frac_seaice
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ logical,pointer:: config_frac_seaice
+ character(len=StrKIND),pointer:: sfclayer_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme   )
 
  if(.not.allocated(dx_p)    ) allocate(dx_p(ims:ime,jms:jme)    )
  if(.not.allocated(br_p)    ) allocate(br_p(ims:ime,jms:jme)    )
@@ -200,11 +213,20 @@
  end subroutine allocate_sfclayer
 
 !=================================================================================================================
- subroutine deallocate_sfclayer(config_frac_seaice)
+ subroutine deallocate_sfclayer(configs)
 !=================================================================================================================
 
- logical,intent(in):: config_frac_seaice
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ logical,pointer:: config_frac_seaice
+ character(len=StrKIND),pointer:: sfclayer_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme   )
 
  if(allocated(dx_p)    ) deallocate(dx_p    )
  if(allocated(br_p)    ) deallocate(br_p    )
@@ -324,6 +346,7 @@
 
 !local pointers:
  logical,pointer:: config_frac_seaice
+ character(len=StrKIND),pointer:: sfclayer_scheme
 
  real(kind=RKIND),pointer:: len_disp
  real(kind=RKIND),dimension(:),pointer:: meshDensity
@@ -343,8 +366,9 @@
 !-----------------------------------------------------------------------------------------------------------------
 
 !input variables:
- call mpas_pool_get_config(configs,'config_len_disp'   ,len_disp)
- call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme   )
+ call mpas_pool_get_config(configs,'config_len_disp'       ,len_disp          )
  call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
 
  call mpas_pool_get_array(diag_physics,'hpbl'    ,hpbl    )
@@ -568,6 +592,7 @@
 
 !local pointers:
  logical,pointer:: config_frac_seaice
+ character(len=StrKIND),pointer:: sfclayer_scheme
 
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,flhc,flqc,gz1oz0,hfx,qfx,  &
                                          qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,wspd, &
@@ -585,7 +610,8 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme   )
 
 !inout variables:
  call mpas_pool_get_array(diag_physics,'br'    ,br    )
@@ -755,13 +781,19 @@
  end subroutine sfclayer_to_MPAS
 
 !=================================================================================================================
- subroutine init_sfclayer
+ subroutine init_sfclayer(configs)
 !=================================================================================================================
 
-!local variables:
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local variables and pointers:
  logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
+ character(len=StrKIND),pointer:: sfclayer_scheme
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme)
 
  sfclayer_select: select case (trim(sfclayer_scheme))
 
@@ -774,7 +806,6 @@
     case default
 
  end select sfclayer_select
-
 
  end subroutine init_sfclayer
 
@@ -795,6 +826,7 @@
 
 !local pointers:
  logical,pointer:: config_do_restart,config_frac_seaice
+ character(len=StrKIND),pointer:: sfclayer_scheme
  real(kind=RKIND),dimension(:),pointer:: areaCell
 
 !local variables:
@@ -802,11 +834,12 @@
  real(kind=RKIND):: dx
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_sfclayer:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_sfclayer:')
 
- call mpas_pool_get_config(configs,'config_do_restart' ,config_do_restart )
- call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_do_restart'     ,config_do_restart )
+ call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme',sfclayer_scheme   )
 
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
@@ -821,6 +854,7 @@
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("sf_monin_obukhov")
+       call mpas_timer_start('Monin-Obukhov')
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
@@ -880,8 +914,10 @@
                       its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                      )
        endif
+       call mpas_timer_stop('Monin-Obukhov')
 
     case("sf_mynn")
+       call mpas_timer_start('MYNN_sfclay')
        call sfclay_mynn( &
                    p3d      = pres_hyd_p , pi3d     = pi_p       , psfcpa    = psfc_p     , &
                    th3d     = th_p       , t3d      = t_p        , u3d       = u_p        , &
@@ -945,6 +981,7 @@
                       its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                           )
        endif
+       call mpas_timer_stop('MYNN_sfclay')
 
     case default
 
@@ -953,7 +990,7 @@
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(configs,sfc_input,diag_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_sfclayer.'
+!call mpas_log_write('--- end subroutine driver_sfclayer.')
 
  end subroutine driver_sfclayer
 

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="internal_waves_5km_template.xml" path_base="script_resolution_dir"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="internal_waves_5km_template.xml" path_base="script_resolution_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

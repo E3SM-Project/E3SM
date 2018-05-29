@@ -23,7 +23,7 @@
 			description="subdirectory to write eddy census text files"
 			possible_values="any valid directory name"
 		/>
-		<nml_option name="config_AM_globalStats_stream_name" type="character" default_value="globalStatsOutput" units="unitless"
+		<nml_option name="config_AM_globalStats_output_stream" type="character" default_value="globalStatsOutput" units="unitless"
 			description="Name of the stream that the globalStats analysis member should get information from."
 			possible_values="Any existing stream, or 'none'"
 		/>
@@ -32,6 +32,34 @@
 		<package name="globalStatsAMPKG" description="This package includes variables required for the global statistics analysis member."/>
 	</packages>
 	<var_struct name="globalStatsAM" time_levs="1" packages="globalStatsAMPKG">
+		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaCell variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="areaEdgeGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaEdge variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="areaTriangleGlobal" type="real" dimensions="Time" units="m^2"
+			 description="sum of the areaTriangle variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="volumeCellGlobal" type="real" dimensions="Time" units="m^3"
+			 description="sum of the volumeCell variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="volumeEdgeGlobal" type="real" dimensions="Time" units="m^3"
+			 description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="CFLNumberGlobal" type="real" dimensions="Time" units="unitless"
+			 description="maximum CFL number over the full domain"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="landIceFloatingAreaSum" type="real" dimensions="Time" units="m^2"
+			description="sum of areaCell where landIceMask == 1, used to normalize global statistics in land-ice cavities"
+			packages="forwardMode;analysisMode"
+		/>
 		<var_array name="minGlobalStats" type="real" dimensions="Time">
 			<var name="layerThicknessMin" array_group="mins" units="m"
 				 description="Minimum global value of layerThickness in ocean cells."
@@ -60,7 +88,7 @@
 			<var name="pressureMin" array_group="mins" units="N m^{-2}"
 				 description="Minimum global value of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialMin" array_group="mins" units="m^s s^{-2}"
+			<var name="montgomeryPotentialMin" array_group="mins" units="m^2 s^{-2}"
 				 description="Minimum global value of the Montgomery Potential in ocean cells."
 			/>
 			<var name="vertVelocityTopMin" array_group="mins" units="m s^{-1}"
@@ -81,8 +109,50 @@
 			<var name="salinityMin" units="PSU" array_group="mins"
 				 description="Minimum global value of salinity in ocean cells."
 			/>
-			<var name="tracer1Min" units="unitless" array_group="mins"
-				 description="Minimum global value of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepMin" array_group="mins" units="m"
+				 description="Minimum global value of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyMin" array_group="mins" units="m s^{-1}"
+				 description="Minimum global value of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassMin" array_group="mins" units="kg m^{-2}"
+				 description="Minimum global value of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatMin" array_group="mins" units="J m^{-2}"
+				 description="Minimum global value of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassMin" array_group="mins" units="kg m^{-2}"
+				 description="Minimum global value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
@@ -114,7 +184,7 @@
 			<var name="pressureMax" array_group="maxes" units="N m^{-2}"
 				 description="Maximum global value of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialMax" array_group="maxes" units="m^s s^{-2}"
+			<var name="montgomeryPotentialMax" array_group="maxes" units="m^2 s^{-2}"
 				 description="Maximum global value of the Montgomery Potential in ocean cells."
 			/>
 			<var name="vertVelocityTopMax" array_group="maxes" units="m s^{-1}"
@@ -135,62 +205,146 @@
 			<var name="salinityMax" units="PSU" array_group="maxes"
 				 description="Maximum global value of salinity in ocean cells."
 			/>
-			<var name="tracer1Max" units="unitless" array_group="maxes"
-				 description="Maximum global value of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepMax" array_group="maxes" units="m"
+				 description="Maximum global value of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyMax" array_group="maxes" units="m s^{-1}"
+				 description="Maximum global value of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassMax" array_group="maxes" units="kg m^{-2}"
+				 description="Maximum global value of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatMax" array_group="maxes" units="J m^{-2}"
+				 description="Maximum global value of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassMax" array_group="maxes" units="kg m^{-2}"
+				 description="Maximum global value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
 		<var_array name="sumGlobalStats" type="real" dimensions="Time">
-			<var name="layerThicknessSum" array_group="sums" units="m"
+			<var name="layerThicknessSum" array_group="sums" units="m^3"
 				 description="Accumulated global value of layerThickness in ocean cells."
 			/>
-			<var name="normalVelocitySum" array_group="sums" units="m s^{-1}"
+			<var name="normalVelocitySum" array_group="sums" units="m^4 s^{-1}"
 				 description="Accumulated global value of normalVelocity on ocean edges."
 			/>
-			<var name="tangentialVelocitySum" array_group="sums" units="m s^{-1}"
+			<var name="tangentialVelocitySum" array_group="sums" units="m^4 s^{-1}"
 				 description="Accumulated global value of tangentialVelocity on ocean edges."
 			/>
-			<var name="layerThicknessEdgeSum" array_group="sums" units="m"
+			<var name="layerThicknessEdgeSum" array_group="sums" units="m^3"
 				 description="Accumulated global value of layerThicknessEdge on ocean edges."
 			/>
-			<var name="relativeVorticitySum" array_group="sums" units="s^{-1}"
+			<var name="relativeVorticitySum" array_group="sums" units="m^2 s^{-1}"
 				 description="Accumulated global value of relativeVorticity on ocean vertices."
 			/>
-			<var name="enstrophySum" array_group="sums"  units="s^{-2}"
+			<var name="enstrophySum" array_group="sums"  units="m^2 s^{-2}"
 				 description="Accumulated global value of enstrophy in ocean cells."
 			/>
-			<var name="kineticEnergyCellSum" array_group="sums" units="m^2 s^{-2}"
+			<var name="kineticEnergyCellSum" array_group="sums" units="m^5 s^{-2}"
 				 description="Accumulated global value of kineticEnergy in ocean cells."
 			/>
-			<var name="normalizedAbsoluteVorticitySum" array_group="sums" units="s^{-1}"
+			<var name="normalizedAbsoluteVorticitySum" array_group="sums" units="m^3 s^{-1}"
 				 description="Accumulated global value of normalizedAbsoluteVorticity on ocean vertices."
 			/>
-			<var name="pressureSum" array_group="sums" units="N m^{-2}"
+			<var name="pressureSum" array_group="sums" units="N m"
 				 description="Accumulated global value of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialSum" array_group="sums" units="m^s s^{-2}"
+			<var name="montgomeryPotentialSum" array_group="sums" units="m^5 s^{-2}"
 				 description="Accumulated global value of the Montgomery Potential in ocean cells."
 			/>
-			<var name="vertVelocityTopSum" array_group="sums" units="m s^{-1}"
+			<var name="vertVelocityTopSum" array_group="sums" units="m^4 s^{-1}"
 				 description="Accumulated global value of vertVelocityTop in ocean cells."
 			/>
-			<var name="vertAleTransportTopSum" array_group="sums" units="m s^{-1}"
+			<var name="vertAleTransportTopSum" array_group="sums" units="m^4 s^{-1}"
 				 description="Accumulated global value of vertAleTransportTop in ocean cells."
 			/>
-			<var name="lowFreqDivergenceSum" array_group="sums" units="s^{-1}"
+			<var name="lowFreqDivergenceSum" array_group="sums" units="m^3 s^{-1}"
 				 description="Accumulated global value of lowFreqDivergence in ocean cells."
 			/>
-			<var name="highFreqThicknessSum" array_group="sums" units="m"
+			<var name="highFreqThicknessSum" array_group="sums" units="m^4"
 				 description="Accumulated global value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureSum" units="^\circ C" array_group="sums"
+			<var name="temperatureSum" units="m^3 ^\circ C" array_group="sums"
 				 description="Accumulated global value of temperature in ocean cells."
 			/>
-			<var name="salinitySum" units="PSU" array_group="sums"
+			<var name="salinitySum" units="m^3 PSU" array_group="sums"
 				 description="Accumulated global value of salinity in ocean cells."
 			/>
-			<var name="tracer1Sum" units="unitless" array_group="sums"
-				 description="Accumulated global value of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepSum" array_group="sums" units="m^3"
+				 description="Accumulated global value of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencySum" array_group="sums" units="m^3 s^{-1}"
+				 description="Accumulated global value of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassSum" array_group="sums" units="kg"
+				 description="Accumulated global value of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatSum" array_group="sums" units="J"
+				 description="Accumulated global value of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassSum" array_group="sums" units="kg"
+				 description="Accumulated global value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
@@ -222,7 +376,7 @@
 			<var name="pressureRms" array_group="rms" units="N m^{-2}"
 				 description="Global root mean square value of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialRms" array_group="rms" units="m^s s^{-2}"
+			<var name="montgomeryPotentialRms" array_group="rms" units="m^2 s^{-2}"
 				 description="Global root mean square value of the Montgomery Potential in ocean cells."
 			/>
 			<var name="vertVelocityTopRms" array_group="rms" units="m s^{-1}"
@@ -243,8 +397,50 @@
 			<var name="salinityRms" units="PSU" array_group="rms"
 				 description="Global root mean square value of salinity in ocean cells."
 			/>
-			<var name="tracer1Rms" units="unitless" array_group="rms"
-				 description="Global root mean square value of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepRms" array_group="rms" units="m"
+				 description="Global root mean square value of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyRms" array_group="rms" units="m s^{-1}"
+				 description="Global root mean square value of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassRms" array_group="rms" units="kg m^{-2}"
+				 description="Global root mean square value of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatRms" array_group="rms" units="J m^{-2}"
+				 description="Global root mean square value of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassRms" array_group="rms" units="kg m^{-2}"
+				 description="Global root mean square value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
@@ -276,7 +472,7 @@
 			<var name="pressureAvg" array_group="avg" units="N m^{-2}"
 				 description="Average value of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialAvg" array_group="avg" units="m^s s^{-2}"
+			<var name="montgomeryPotentialAvg" array_group="avg" units="m^2 s^{-2}"
 				 description="Average value of the Montgomery Potential in ocean cells."
 			/>
 			<var name="vertVelocityTopAvg" array_group="avg" units="m s^{-1}"
@@ -297,8 +493,50 @@
 			<var name="salinityAvg" units="PSU" array_group="avg"
 				 description="Average value of salinity in ocean cells."
 			/>
-			<var name="tracer1Avg" units="PSU" array_group="avg"
-				 description="Average value of salinity in ocean cells."
+			<var name="layerThicknessPreviousTimestepAvg" array_group="avg" units="m"
+				 description="Average value of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyAvg" array_group="avg" units="m s^{-1}"
+				 description="Average value of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassAvg" array_group="avg" units="kg m^{-2}"
+				 description="Average value of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatAvg" array_group="avg" units="J m^{-2}"
+				 description="Average value of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassAvg" array_group="avg" units="kg m^{-2}"
+				 description="Average value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
@@ -306,10 +544,10 @@
 			<var name="layerThicknessMinVertSum" array_group="vertSumMin" units="m"
 				 description="Minimum vertical sum of layerThickness in ocean cells."
 			/>
-			<var name="normalVelocityMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+			<var name="normalVelocityMinVertSum" array_group="vertSumMin" units="m^2 s^{-1}"
 				 description="Minimum vertical sum of normalVelocity on ocean edges."
 			/>
-			<var name="tangentialVelocityMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+			<var name="tangentialVelocityMinVertSum" array_group="vertSumMin" units="m^2 s^{-1}"
 				 description="Minimum vertical sum of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMinVertSum" array_group="vertSumMin" units="m"
@@ -321,38 +559,80 @@
 			<var name="enstrophyMinVertSum" array_group="vertSumMin" units="s^{-2}"
 				 description="Minimum vertical sum of enstrophy in ocean cells."
 			/>
-			<var name="kineticEnergyCellMinVertSum" array_group="vertSumMin" units="m^2 s^{-2}"
+			<var name="kineticEnergyCellMinVertSum" array_group="vertSumMin" units="m^3 s^{-2}"
 				 description="Minimum vertical sum of kineticEnergy in ocean cells."
 			/>
-			<var name="normalizedAbsoluteVorticityMinVertSum" array_group="vertSumMin" units="s^{-1}"
+			<var name="normalizedAbsoluteVorticityMinVertSum" array_group="vertSumMin" units="m s^{-1}"
 				 description="Minimum vertical sum of normalizedAbsoluteVorticity on ocean vertices."
 			/>
-			<var name="pressureMinVertSum" array_group="vertSumMin" units="N m^{-2}"
+			<var name="pressureMinVertSum" array_group="vertSumMin" units="N m^{-1}"
 				 description="Minimum vertical sum of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialMinVertSum" array_group="vertSumMin" units="m^s s^{-2}"
+			<var name="montgomeryPotentialMinVertSum" array_group="vertSumMin" units="m^3 s^{-2}"
 				 description="Minimum vertical sum of the Montgomery Potential in ocean cells."
 			/>
-			<var name="vertVelocityTopMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+			<var name="vertVelocityTopMinVertSum" array_group="vertSumMin" units="m^2 s^{-1}"
 				 description="Minimum vertical sum of vertVelocityTop in ocean cells."
 			/>
-			<var name="vertAleTransportTopMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+			<var name="vertAleTransportTopMinVertSum" array_group="vertSumMin" units="m^2 s^{-1}"
 				 description="Minimum vertical sum of vertAleTransportTop in ocean cells."
 			/>
-			<var name="lowFreqDivergenceMinVertSum" array_group="vertSumMin" units="s^{-1}"
+			<var name="lowFreqDivergenceMinVertSum" array_group="vertSumMin" units="m s^{-1}"
 				 description="Minimum vertical sum of lowFreqDivergence in ocean cells."
 			/>
-			<var name="highFreqThicknessMinVertSum" array_group="vertSumMin" units="m"
+			<var name="highFreqThicknessMinVertSum" array_group="vertSumMin" units="m^2"
 				 description="Minimum vertical sum of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMinVertSum" units="^\circ C" array_group="vertSumMin"
+			<var name="temperatureMinVertSum" units="m ^\circ C" array_group="vertSumMin"
 				 description="Minimum vertical sum of temperature in ocean cells."
 			/>
-			<var name="salinityMinVertSum" units="PSU" array_group="vertSumMin"
+			<var name="salinityMinVertSum" units="m PSU" array_group="vertSumMin"
 				 description="Minimum vertical sum of salinity in ocean cells."
 			/>
-			<var name="tracer1MinVertSum" units="unitless" array_group="vertSumMin"
-				 description="Minimum vertical sum of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepMinVertSum" array_group="vertSumMin" units="m"
+				 description="Minimum vertical sum of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+				 description="Minimum vertical sum of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassMinVertSum" array_group="vertSumMin" units="kg m^{-2}"
+				 description="Minimum vertical sum of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatMinVertSum" array_group="vertSumMin" units="J m^{-2}"
+				 description="Minimum vertical sum of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassMinVertSum" array_group="vertSumMin" units="kg m^{-2}"
+				 description="Minimum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
 
@@ -360,10 +640,10 @@
 			<var name="layerThicknessMaxVertSum" array_group="vertSumMax" units="m"
 				 description="Maximum vertical sum of layerThickness in ocean cells."
 			/>
-			<var name="normalVelocityMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+			<var name="normalVelocityMaxVertSum" array_group="vertSumMax" units="m^2 s^{-1}"
 				 description="Maximum vertical sum of normalVelocity on ocean edges."
 			/>
-			<var name="tangentialVelocityMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+			<var name="tangentialVelocityMaxVertSum" array_group="vertSumMax" units="m^2 s^{-1}"
 				 description="Maximum vertical sum of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMaxVertSum" array_group="vertSumMax" units="m"
@@ -375,40 +655,98 @@
 			<var name="enstrophyMaxVertSum" array_group="vertSumMax" units="s^{-2}"
 				 description="Maximum vertical sum of enstrophy in ocean cells."
 			/>
-			<var name="kineticEnergyCellMaxVertSum" array_group="vertSumMax" units="m^2 s^{-2}"
+			<var name="kineticEnergyCellMaxVertSum" array_group="vertSumMax" units="m^3 s^{-2}"
 				 description="Maximum vertical sum of kineticEnergy in ocean cells."
 			/>
-			<var name="normalizedAbsoluteVorticityMaxVertSum" array_group="vertSumMax" units="s^{-1}"
+			<var name="normalizedAbsoluteVorticityMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
 				 description="Maximum vertical sum of normalizedAbsoluteVorticity on ocean vertices."
 			/>
-			<var name="pressureMaxVertSum" array_group="vertSumMax" units="N m^{-2}"
+			<var name="pressureMaxVertSum" array_group="vertSumMax" units="N m^{-1}"
 				 description="Maximum vertical sum of pressure in ocean cells."
 			/>
-			<var name="montgomeryPotentialMaxVertSum" array_group="vertSumMax" units="m^s s^{-2}"
+			<var name="montgomeryPotentialMaxVertSum" array_group="vertSumMax" units="m^3 s^{-2}"
 				 description="Maximum vertical sum of the Montgomery Potential in ocean cells."
 			/>
-			<var name="vertVelocityTopMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+			<var name="vertVelocityTopMaxVertSum" array_group="vertSumMax" units="m^2 s^{-1}"
 				 description="Maximum vertical sum of vertVelocityTop in ocean cells."
 			/>
-			<var name="vertAleTransportTopMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+			<var name="vertAleTransportTopMaxVertSum" array_group="vertSumMax" units="m^2 s^{-1}"
 				 description="Maximum vertical sum of vertAleTransportTop in ocean cells."
 			/>
-			<var name="lowFreqDivergenceMaxVertSum" array_group="vertSumMax" units="s^{-1}"
+			<var name="lowFreqDivergenceMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
 				 description="Maximum vertical sum of lowFreqDivergence in ocean cells."
 			/>
-			<var name="highFreqThicknessMaxVertSum" array_group="vertSumMax" units="m"
+			<var name="highFreqThicknessMaxVertSum" array_group="vertSumMax" units="m^2"
 				 description="Maximum vertical sum of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMaxVertSum" units="^\circ C" array_group="vertSumMax"
+			<var name="temperatureMaxVertSum" units="m ^\circ C" array_group="vertSumMax"
 				 description="Maximum vertical sum of temperature in ocean cells."
 			/>
-			<var name="salinityMaxVertSum" units="PSU" array_group="vertSumMax"
+			<var name="salinityMaxVertSum" units="m PSU" array_group="vertSumMax"
 				 description="Maximum vertical sum of salinity in ocean cells."
 			/>
-			<var name="tracer1MaxVertSum" units="unitless" array_group="vertSumMax"
-				 description="Maximum vertical sum of tracer 1 in ocean cells."
+			<var name="layerThicknessPreviousTimestepMaxVertSum" array_group="vertSumMax" units="m"
+				 description="Maximum vertical sum of previous step layerThickness in ocean cells."
+			/>
+			<var name="frazilLayerThicknessTendencyMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+				 description="Maximum vertical sum of layer thickness tendency due to frazil formation in ocean cells."
+			/>
+			<var name="evaporationFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of evaporationFlux in ocean cells."
+			/>
+			<var name="rainFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of rainFlux in ocean cells."
+			/>
+			<var name="snowFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of snowFlux in ocean cells."
+			/>
+			<var name="seaIceFreshWaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="riverRunoffFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of riverRunoffFlux in ocean cells."
+			/>
+			<var name="iceRunoffFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of iceRunoffFlux in ocean cells."
+			/>
+			<var name="temperatureFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of temperatureFlux in ocean cells."
+			/>
+			<var name="salinityFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of salinityFlux in ocean cells."
+			/>
+			<var name="salinityRestoringFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of salinityRestoringFlux in ocean cells."
+			/>
+			<var name="landIceFreshwaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}m"
+				 description="Maximum vertical sum of landIceFreshwaterFlux in ocean cells."
+			/>
+			<var name="accumulatedLandIceMassMaxVertSum" array_group="vertSumMax" units="kg m^{-2}"
+				 description="Maximum vertical sum of accumulatedLandIceMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceHeatMaxVertSum" array_group="vertSumMax" units="J m^{-2}"
+				 description="Maximum vertical sum of accumulatedLandIceHeat in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilMassMaxVertSum" array_group="vertSumMax" units="kg m^{-2}"
+				 description="Maximum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
 			/>
 		</var_array>
+		<var name="totalVolumeChange" type="real" dimensions="Time" units="m"
+			 description="Total volume change of the ocean relative to previous timestep"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="netFreshwaterInput" type="real" dimensions="Time" units="m"
+			 description="Net fresh water change (input-output) over the timestep due to surface fluxes and frazil formation"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="absoluteFreshWaterConservation" type="real" dimensions="Time" units="m"
+			 description="Difference between change in ocean volume and freshwater input"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="relativeFreshWaterConservation" type="real" dimensions="Time" units="unitless"
+			 description="Difference between change in ocean volume and freshwater input divided by volume change"
+			 packages="forwardMode;analysisMode"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
@@ -421,6 +759,9 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
+			<var name="daysSinceStartOfSim"/>
+			<var name="volumeCellGlobal"/>
+			<var name="CFLNumberGlobal"/>
 			<var_array name="minGlobalStats"/>
 			<var_array name="maxGlobalStats"/>
 			<var_array name="sumGlobalStats"/>

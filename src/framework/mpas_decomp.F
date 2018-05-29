@@ -18,16 +18,16 @@
 !-----------------------------------------------------------------------
 
 #define COMMA ,
-#define DECOMP_DEBUG_WRITE(M) ! write(stderrUnit, *) M
-#define DECOMP_WARN_WRITE(M) write(stderrUnit, *) 'WARNING: '//M
-#define DECOMP_ERROR_WRITE(M) write(stderrUnit, *) 'ERROR: '//M
+#define DECOMP_DEBUG_WRITE(M) ! call mpas_log_write(M)
+#define DECOMP_WARN_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define DECOMP_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_CRIT)
 
 module mpas_decomp
 
    use mpas_kind_types
    use mpas_derived_types
    use mpas_stream_manager
-   use mpas_io_units
+   use mpas_log
 
    implicit none
 

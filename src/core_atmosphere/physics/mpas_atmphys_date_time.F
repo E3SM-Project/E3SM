@@ -8,6 +8,7 @@
 !=================================================================================================================
  module mpas_atmphys_date_time
  use mpas_kind_types
+ use mpas_log, only : mpas_log_write
 
  implicit none
  private
@@ -122,9 +123,9 @@
  real(kind=RKIND):: gmt
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine monthly_interp_to_date:'
-!write(0,*) '--- current_date  = ',trim(date_str)
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine monthly_interp_to_date:')
+!call mpas_log_write('--- current_date  = '//trim(date_str))
 
  write(day15,fmt='(I2.2)') 15
  do l = 1 , 12
@@ -142,8 +143,8 @@
 
  call get_julgmt(date_str,target_julyr,target_julday,gmt)
  target_date = target_julyr * 1000 + target_julday
-!write(0,*) '--- target_julday =',target_julday
-!write(0,*) '--- target_date   =',target_date
+!call mpas_log_write('--- target_julday = $i',intArgs=(/target_julday/))
+!call mpas_log_write('--- target_date   = $i',intArgs=(/target_date/))
 
  find_month : do l = 0 , 12
     if((middle(l) .lt. target_date) .and. (middle(l+1) .ge. target_date)) then
@@ -170,8 +171,6 @@
     endif
  enddo find_month
  
-!201 format(i6,3(1x,e15.8))
-
  end subroutine monthly_interp_to_date
 
 !=================================================================================================================

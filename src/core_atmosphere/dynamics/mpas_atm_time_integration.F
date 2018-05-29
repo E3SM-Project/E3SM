@@ -112,8 +112,8 @@ module atm_time_integration
       if (trim(config_time_integration) == 'SRK3') then
          call atm_srk3(domain, dt, itimestep)
       else
-         call mpas_dmpar_global_abort('Unknown time integration option '//trim(config_time_integration), deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Currently, only ''SRK3'' is supported.')
+         call mpas_log_write('Unknown time integration option '//trim(config_time_integration), messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Currently, only ''SRK3'' is supported.', messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_set_time(currTime, dateTimeString=timeStamp)
@@ -278,13 +278,13 @@ module atm_time_integration
       dynamics_split = config_dynamics_split
       if (config_split_dynamics_transport) then
         dt_dynamics = dt/real(dynamics_split)
-        write(0,*) ' split dynamics-transport integration ',dynamics_split
+        call mpas_log_write(' split dynamics-transport integration $i', intArgs=(/dynamics_split/))
       else
         dynamics_split = 1
         dt_dynamics = dt
-        write(0,*) ' coupled RK3 dynamics-transport integration '
+        call mpas_log_write(' coupled RK3 dynamics-transport integration ')
       end if
-      if (.not. config_scalar_advection )  write(0,*) ' scalar advection turned off '
+      if (.not. config_scalar_advection ) call mpas_log_write(' scalar advection turned off ')
 
       number_of_sub_steps = config_number_of_sub_steps
 
@@ -415,7 +415,7 @@ module atm_time_integration
       call mpas_timer_stop('atm_compute_moist_coefficients')
 
 #ifdef DO_PHYSICS
-      call mpas_timer_start('physics_addtend')
+      call mpas_timer_start('physics_get_tend')
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -439,7 +439,7 @@ module atm_time_integration
                      tend_rho_physics )
          block => block % next
       end do
-      call mpas_timer_stop('physics_addtend')
+      call mpas_timer_stop('physics_get_tend')
 #endif
 
       !
@@ -616,6 +616,7 @@ module atm_time_integration
                block => block % next
             end do
             call mpas_timer_stop('atm_compute_dyn_tend')
+
 
             !***********************************
             !  need tendencies at all edges of owned cells -
@@ -3333,7 +3334,7 @@ module atm_time_integration
 
       if (local_advance_density) then
          if ((.not.present(scalar_tend)) .or. (.not.present(rho_zz_int))) then
-            call mpas_dmpar_global_abort('Error: rho_zz_int or scalar_tend not supplied to atm_advance_scalars( ) when advance_density=.true.')
+            call mpas_log_write('Error: rho_zz_int or scalar_tend not supplied to atm_advance_scalars( ) when advance_density=.true.', messageType=MPAS_LOG_CRIT)
          end if
 
          do iCell=cellSolveStart,cellSolveEnd
@@ -3985,7 +3986,7 @@ module atm_time_integration
 
       if (local_advance_density) then
          if (.not.present(rho_zz_int)) then
-            call mpas_dmpar_global_abort('Error: rho_zz_int not supplied to atm_advance_scalars_mono_work( ) when advance_density=.true.')
+            call mpas_log_write('Error: rho_zz_int not supplied to atm_advance_scalars_mono_work( ) when advance_density=.true.', messageType=MPAS_LOG_CRIT)
          end if
 
          !  begin with update of density
@@ -4048,7 +4049,7 @@ module atm_time_integration
             scmax = max(scmax,scalar_old(k,iCell))
          end do
          end do
-         write(0,*) ' scmin, scmin old in ',scmin,scmax
+         call mpas_log_write(' scmin, scmin old in $r $r', realArgs=(/scmin,scmax/))
 
          scmin = scalar_new(1,1)
          scmax = scalar_new(1,1)
@@ -4058,7 +4059,7 @@ module atm_time_integration
             scmax = max(scmax,scalar_new(k,iCell))
          end do
          end do
-         write(0,*) ' scmin, scmin new in ',scmin,scmax
+         call mpas_log_write(' scmin, scmin new in ', realArgs=(/scmin,scmax/))
 #endif
 
 
@@ -4411,15 +4412,15 @@ module atm_time_integration
             scmax = max(scmax,scalar_new(k,iCell))
             scmin = min(scmin,scalar_new(k,iCell))
             if (s_max(k,iCell) < scalar_new(k,iCell)) then
-               write(32,*) ' over - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+               call mpas_log_write(' over - k,iCell,s_min,s_max,scalar_new ', intArgs=(/k,iCell/), realArgs=(/s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)/))
             end if
             if (s_min(k,iCell) > scalar_new(k,iCell)) then
-               write(32,*) ' under - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+               call mpas_log_write(' under - k,iCell,s_min,s_max,scalar_new ', intArgs=(/k,iCell/), realArgs=(/s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)/))
             end if
          end do
          end do
-         write(0,*) ' scmin, scmax new out ',scmin,scmax
-         write(0,*) ' icell_min, k_min ',icellmax, kmax
+         call mpas_log_write(' scmin, scmax new out $r $r', realArgs=(/scmin,scmax/))
+         call mpas_log_write(' icell_min, k_min ', intArgs=(/icellmax, kmax/))
 #endif
 
          ! the update should be positive definite. but roundoff can sometimes leave small negative values
@@ -6037,6 +6038,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: u
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: pressure_p
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_base
       real (kind=RKIND), dimension(:,:), pointer :: exner
       real (kind=RKIND), dimension(:,:), pointer :: exner_base
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
@@ -6069,6 +6071,7 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'u', u, time_lev)
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_base)
       call mpas_pool_get_array(diag, 'exner', exner)
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
@@ -6149,6 +6152,7 @@ module atm_time_integration
       do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             exner(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_p(k,iCell) + rtheta_base(k,iCell)))**rcv
+            exner_base(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_base(k,iCell)))**rcv  ! WCS addition 20180403
          end do
       end do
 
@@ -6158,6 +6162,7 @@ module atm_time_integration
                                                * (  exner(k,iCell) * rtheta_p(k,iCell) &
                                                   + rtheta_base(k,iCell) * (exner(k,iCell) - exner_base(k,iCell)) &
                                                  )
+            pressure_base(k,iCell) = zz(k,iCell) * rgas * exner_base(k,iCell) * rtheta_base(k,iCell)      ! WCS addition 20180403
          end do
       end do
 
@@ -7025,7 +7030,7 @@ module atm_time_integration
        call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
 
       if (config_print_detailed_minmax_vel) then
-         write(0,*) ' '
+         call mpas_log_write('')
 
          block => domain % blocklist
          do while (associated(block))
@@ -7077,8 +7082,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min w: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global min w: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_min, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -7112,8 +7118,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max w: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max w: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             scalar_min = 1.0e20
             indexMax = -1
@@ -7147,8 +7154,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min u: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global min u: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_min, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -7182,8 +7190,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max u: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max u: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -7218,8 +7227,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max wsp: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max wsp: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             !
             ! Check for NaNs
@@ -7227,7 +7237,7 @@ module atm_time_integration
             do iCell = 1, nCellsSolve
             do k = 1, nVertLevels
                if (ieee_is_nan(w(k,iCell))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''w'' field.')
+                  call mpas_log_write('NaN detected in ''w'' field.', messageType=MPAS_LOG_CRIT)
                end if
             end do
             end do
@@ -7235,7 +7245,7 @@ module atm_time_integration
             do iEdge = 1, nEdgesSolve
             do k = 1, nVertLevels
                if (ieee_is_nan(u(k,iEdge))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''u'' field.')
+                  call mpas_log_write('NaN detected in ''u'' field.', messageType=MPAS_LOG_CRIT)
                end if
             end do
             end do
@@ -7244,7 +7254,7 @@ module atm_time_integration
          end do
 
       else if (config_print_global_minmax_vel) then
-         write(0,*) ' '
+         call mpas_log_write('')
 
          block => domain % blocklist
          do while (associated(block))
@@ -7266,7 +7276,7 @@ module atm_time_integration
             end do
             call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
             call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max w ', global_scalar_min, global_scalar_max
+            call mpas_log_write('global min, max w $r $r', realArgs=(/global_scalar_min, global_scalar_max/))
 
             scalar_min = 0.0
             scalar_max = 0.0
@@ -7278,14 +7288,16 @@ module atm_time_integration
             end do
             call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
             call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max u ', global_scalar_min, global_scalar_max
+            call mpas_log_write('global min, max u $r $r', realArgs=(/global_scalar_min, global_scalar_max/))
 
             block => block % next
          end do
       end if
 
       if (config_print_global_minmax_sca) then
-         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) write(0,*) ' '
+         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) then
+            call mpas_log_write('')
+         end if
 
          block => domain % blocklist
          do while (associated(block))
@@ -7307,7 +7319,7 @@ module atm_time_integration
                end do
                call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
                call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-               write(0,'(a,i4,2(1x,e17.10))') ' global min, max scalar ', iScalar, global_scalar_min, global_scalar_max
+               call mpas_log_write(' global min, max scalar $i $r $r', intArgs=(/iScalar/), realArgs=(/global_scalar_min, global_scalar_max/))
             end do
 
             block => block % next

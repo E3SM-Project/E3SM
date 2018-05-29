@@ -24,6 +24,7 @@ module ocn_layer_volume_weighted_averages
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_log
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -54,6 +55,8 @@ module ocn_layer_volume_weighted_averages
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   logical :: computeActiveTracerBudgetsOn
 
 !***********************************************************************
 
@@ -102,9 +105,15 @@ contains
       !
       !-----------------------------------------------------------------
 
+      logical, pointer :: config_compute_active_tracer_budgets
+
       err = 0
 
-   end subroutine ocn_init_layer_volume_weighted_averages!}}}
+      call mpas_pool_get_config(domain % configs,'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
+
+      computeActiveTracerBudgetsOn = config_compute_active_tracer_budgets
+
+    end subroutine ocn_init_layer_volume_weighted_averages!}}}
 
 !***********************************************************************
 !
@@ -159,6 +168,7 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:,:), pointer :: minValueWithinOceanLayerRegion
       real (kind=RKIND), dimension(:,:,:), pointer :: maxValueWithinOceanLayerRegion
@@ -175,14 +185,20 @@ contains
       real (kind=RKIND), dimension(:,:),   pointer :: velocityZonal
       real (kind=RKIND), dimension(:,:),   pointer :: velocityMeridional
       real (kind=RKIND), dimension(:,:),   pointer :: vertVelocityTop
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVertMixTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerHorizontalAdvectionTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVerticalAdvectionTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerSurfaceFluxTendency
+      real (kind=RKIND),dimension(:,:),pointer::temperatureShortWaveTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerNonLocalTendency
       real (kind=RKIND), dimension(:,:),   pointer :: kineticEnergyCell
       real (kind=RKIND), dimension(:,:),   pointer :: relativeVorticityCell
       real (kind=RKIND), dimension(:,:),   pointer :: divergence
 
       ! pointers to data in mesh pool
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nLayerVolWeightedAvgFields, nOceanRegionsTmp
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: index_temperature, index_salinity
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
 
@@ -195,9 +211,6 @@ contains
       ! local variables
       integer :: iDataField, nDefinedDataFields
       integer :: iCell, iLevel, iRegion, iTracer, err_tmp
-
-      ! package flag
-      logical, pointer :: layerVolumeWeightedAverageAMPKGActive
 
       ! buffers data for message passaging
       integer :: kBuffer, kBufferLength
@@ -237,9 +250,12 @@ contains
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanLayerRegion', minValueWithinOceanLayerRegion)
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanLayerRegion', maxValueWithinOceanLayerRegion)
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanLayerRegion', avgValueWithinOceanLayerRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanVolumeRegion', minValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanVolumeRegion', maxValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanVolumeRegion', avgValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanVolumeRegion', &
+                               minValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanVolumeRegion', &
+                               maxValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanVolumeRegion', &
+                               avgValueWithinOceanVolumeRegion)
 
       ! loop over blocks
       ! NOTE: code is not valid for multiple blocks !
@@ -269,6 +285,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -276,8 +293,8 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nLayerVolWeightedAvgFields', nLayerVolWeightedAvgFields)
          call mpas_pool_get_dimension(block % dimensions, 'nOceanRegionsTmp', nOceanRegionsTmp)
-         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -286,9 +303,8 @@ contains
          ! test to make sure the arrays are big enough
          nDefinedDataFields = size(avgValueWithinOceanLayerRegion,dim=1)
          if (nDefinedDataFields > nLayerVolWeightedAvgFields) then
-             write (stderrUnit,*) 'Abort: nDefinedDataFields > nLayerVolWeightedAvgFields'
-             write (stderrUnit,*) '     :  increase size of ocn_layer_volume_weighted_averages scratch space'
-             call mpas_dmpar_abort(dminfo)
+             call mpas_log_write("Abort: nDefinedDataFields > nLayerVolWeightedAvgFields" // &
+                "    increase size of ocn_layer_volume_weighted_averages scratch space", MPAS_LOG_CRIT )
          endif
 
          ! get pointers to data that will be analyzed
@@ -300,10 +316,20 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+         if ( computeActiveTracerBudgetsOn ) then
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
+                   activeTracerHorizontalAdvectionTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
+                   activeTracerVerticalAdvectionTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerVertMixTendency',activeTracerVertMixTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
+           call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+         end if
 
          ! initialize buffers
          workBufferSum(:) = 0.0_RKIND
@@ -320,7 +346,7 @@ contains
             call compute_mask(iLevel, maxLevelCell, nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
 
             ! copy data into work array
-            workArray( :,:) = 0.0
+            workArray( :,:) = 0.0_RKIND
             workArray( 1,:) = workMask(:)
             workArray( 2,:) = areaCell(:)
             workArray( 3,:) = layerThickness(iLevel,:)
@@ -330,12 +356,37 @@ contains
             workArray( 7,:) = velocityZonal(iLevel,:)
             workArray( 8,:) = velocityMeridional(iLevel,:)
             workArray( 9,:) = vertVelocityTop(iLevel,:)
-            workArray(10,:) = tracers(indexTemperature,iLevel,:)
-            workArray(11,:) = tracers(indexSalinity,iLevel,:)
+            if ( associated(activeTracers) ) workArray(10,:) = activeTracers(index_temperature,iLevel,:)
+            if ( associated(activeTracers) ) workArray(11,:) = activeTracers(index_salinity,iLevel,:)
             workArray(12,:) = kineticEnergyCell(iLevel,:)
             workArray(13,:) = relativeVorticityCell(iLevel,:)
             workArray(14,:) = divergence(iLevel,:)
             workArray(15,:) = relativeVorticityCell(iLevel,:)*relativeVorticityCell(iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(16,:) = &
+               activeTracerHorizontalAdvectionTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(17,:) = &
+               activeTracerHorizontalAdvectionTendency(index_salinity,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(18,:) = &
+               activeTracerVerticalAdvectionTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(19,:) = &
+               activeTracerVerticalAdvectionTendency(index_salinity,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(20,:) = &
+               activeTracerSurfaceFluxTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(21,:) = &
+               activeTracerSurfaceFluxTendency(index_salinity,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(22,:) = &
+               temperatureShortWaveTendency(iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(23,:) = &
+               activeTracerNonLocalTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(24,:) = &
+               activeTracerNonLocalTendency(index_salinity,iLevel,:) 
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(25,:) = &
+               activeTracerVertMixTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(26,:) = &
+               activeTracerVertMixTendency(index_salinity,iLevel,:)
+
+
+
 
             call compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
 
@@ -387,16 +438,20 @@ contains
       do iRegion=1,nOceanRegionsTmp
         do iDataField=1,nDefinedDataFields
           do iLevel=1,nVertLevels
-             avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) + avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion)
+             avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) &
+                                                                  + avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion)
           enddo
         enddo
         do iDataField=4,nDefinedDataFields
-          avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) / max(avgValueWithinOceanVolumeRegion(3,iRegion),1.0e-8_RKIND)
+          avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) &
+                                                               / max(avgValueWithinOceanVolumeRegion(3,iRegion),1.0e-8_RKIND)
         enddo
         ! normalize total region volume by total volume cell area
-        avgValueWithinOceanVolumeRegion(3,iRegion) = avgValueWithinOceanVolumeRegion(3,iRegion) / max(avgValueWithinOceanVolumeRegion(2,iRegion),1.0e-8_RKIND)
+        avgValueWithinOceanVolumeRegion(3,iRegion) = avgValueWithinOceanVolumeRegion(3,iRegion) &
+                                                   / max(avgValueWithinOceanVolumeRegion(2,iRegion),1.0e-8_RKIND)
         ! normalize total volume cell area by total number of cells
-        avgValueWithinOceanVolumeRegion(2,iRegion) = avgValueWithinOceanVolumeRegion(2,iRegion) / max(avgValueWithinOceanVolumeRegion(1,iRegion),1.0e-8_RKIND)
+        avgValueWithinOceanVolumeRegion(2,iRegion) = avgValueWithinOceanVolumeRegion(2,iRegion) &
+                                                   / max(avgValueWithinOceanVolumeRegion(1,iRegion),1.0e-8_RKIND)
       enddo
 
       ! find min/max with region volume
@@ -412,12 +467,15 @@ contains
       do iLevel=1,nVertLevels
          ! normalize all field by total volume in each layer
          do iDataField=4,nDefinedDataFields
-            avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) = avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(3,iLevel,iRegion),1.0e-8_RKIND)
+            avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) = avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) &
+                                                               / max(avgValueWithinOceanLayerRegion(3,iLevel,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total layer volume by layer area
-         avgValueWithinOceanLayerRegion(3,iLevel,iRegion) = avgValueWithinOceanLayerRegion(3,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(2,iLevel,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanLayerRegion(3,iLevel,iRegion) = avgValueWithinOceanLayerRegion(3,iLevel,iRegion) &
+                                                          / max(avgValueWithinOceanLayerRegion(2,iLevel,iRegion),1.0e-8_RKIND)
          ! normalize total layer area by number of cells in region
-         avgValueWithinOceanLayerRegion(2,iLevel,iRegion) = avgValueWithinOceanLayerRegion(2,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(1,iLevel,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanLayerRegion(2,iLevel,iRegion) = avgValueWithinOceanLayerRegion(2,iLevel,iRegion) &
+                                                          / max(avgValueWithinOceanLayerRegion(1,iLevel,iRegion),1.0e-8_RKIND)
       enddo
       enddo
 
@@ -441,7 +499,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND 
+   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       if(iLevel.le.maxLevelCell(iCell)) workMask(iCell) = 1.0_RKIND
@@ -505,7 +563,7 @@ contains
    integer :: iCell, iDataField
    real(kind=RKIND) :: cellMask, cellArea, cellVolume
 
-   workSum = 0.0
+   workSum = 0.0_RKIND
    do iCell=1,nCellsSolve
     cellMask   = workMask(iCell)                                           ! mask
     cellArea   = cellMask * workArray(2,iCell)                             ! area

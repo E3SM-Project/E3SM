@@ -24,7 +24,7 @@ module ocn_equation_of_state_jm
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_io_units
+   use mpas_log
    use ocn_constants
 
    implicit none
@@ -63,24 +63,24 @@ contains
 !> \brief   Calls JM equation of state
 !> \author  Mark Petersen and Todd Ringler
 !> \date    September 2011, updated August 2013
-!> \details 
-!>  This routine uses a JM equation of state to update the density. 
+!> \details
+!>  This routine uses a JM equation of state to update the density.
 !>
-!>  Density can be computed in-situ using k_displaced=0 and 
+!>  Density can be computed in-situ using k_displaced=0 and
 !>      displacement_type = 'relative'.
 !>
-!>  Potential density (referenced to top layer) can be computed 
+!>  Potential density (referenced to top layer) can be computed
 !>      using k_displaced=1 and displacement_type = 'absolute'.
 !>
-!>  The density of SST/SSS after adiabatic displacement to each layer 
+!>  The density of SST/SSS after adiabatic displacement to each layer
 !>      can be computed using displacement_type = 'surfaceDisplaced'.
 !>
-!>  When using displacement_type = 'surfaceDisplaced', k_displaced is 
+!>  When using displacement_type = 'surfaceDisplaced', k_displaced is
 !>      ignored and tracersSurfaceLayerValue must be present.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(meshPool, k_displaced, displacement_type, &
+   subroutine ocn_equation_of_state_jm_density(meshPool, scratchPool, nCells, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
        tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -93,11 +93,11 @@ contains
    !
    ! Input: mesh - mesh metadata
    !        s - state: tracers
-   !        k_displaced 
+   !        k_displaced
 
    !  If k_displaced=0, density is returned with no displacement
    !  If k_displaced>0,the density returned is that for a parcel
-   !  adiabatically displaced from its original level to level 
+   !  adiabatically displaced from its original level to level
    !  k_displaced.
 
    !
@@ -107,6 +107,8 @@ contains
       implicit none
 
       type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
+      integer, intent(in) :: nCells
       integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -117,13 +119,12 @@ contains
          thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
-      type (dm_info) :: dminfo
       integer :: iEdge, iCell, iVertex, k, k_displaced_local
-      integer, pointer :: nCells, nEdges, nVertices, nVertLevels
+      integer, pointer :: nVertices, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       character(len=60) :: displacement_type_local
 
-      real (kind=RKIND) :: & 
+      real (kind=RKIND) :: &
          depth, &
          DRDT0,             &! d(density)/d(temperature), for surface
          DRDS0,             &! d(density)/d(salinity   ), for surface
@@ -137,14 +138,14 @@ contains
         refBottomDepth, pRefEOS
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
-      real (kind=RKIND), dimension(:,:), allocatable :: &
+      real (kind=RKIND), dimension(:), pointer :: &
          TQ,SQ,             &! adjusted T,S
          BULK_MOD,          &! Bulk modulus
          SQR,DENOMK,        &! work arrays
          RHO_S,             &! density at the surface
          WORK1, WORK2, WORK3, WORK4, T2
-      real (kind=RKIND), dimension(:,:,:), allocatable :: &
-         tracerTS
+      real (kind=RKIND), dimension(:), allocatable :: &
+         tracerTemp, tracerSalt
 
 !-----------------------------------------------------------------------
 !
@@ -155,126 +156,106 @@ contains
       !*** for density of fresh water (standard UNESCO)
 
       real (kind=RKIND), parameter ::              &
-         unt0 =   999.842594,           &
-         unt1 =  6.793952e-2,           &
-         unt2 = -9.095290e-3,           &
-         unt3 =  1.001685e-4,           &
-         unt4 = -1.120083e-6,           &
-         unt5 =  6.536332e-9
-   
+         unt0 =   999.842594_RKIND,           &
+         unt1 =  6.793952e-2_RKIND,           &
+         unt2 = -9.095290e-3_RKIND,           &
+         unt3 =  1.001685e-4_RKIND,           &
+         unt4 = -1.120083e-6_RKIND,           &
+         unt5 =  6.536332e-9_RKIND
+
       !*** for dependence of surface density on salinity (UNESCO)
 
       real (kind=RKIND), parameter ::              &
-         uns1t0 =  0.824493 ,           &
-         uns1t1 = -4.0899e-3,           &
-         uns1t2 =  7.6438e-5,           &
-         uns1t3 = -8.2467e-7,           &
-         uns1t4 =  5.3875e-9,           &
-         unsqt0 = -5.72466e-3,          &
-         unsqt1 =  1.0227e-4,           &
-         unsqt2 = -1.6546e-6,           &
-         uns2t0 =  4.8314e-4
-   
+         uns1t0 =  0.824493_RKIND ,           &
+         uns1t1 = -4.0899e-3_RKIND,           &
+         uns1t2 =  7.6438e-5_RKIND,           &
+         uns1t3 = -8.2467e-7_RKIND,           &
+         uns1t4 =  5.3875e-9_RKIND,           &
+         unsqt0 = -5.72466e-3_RKIND,          &
+         unsqt1 =  1.0227e-4_RKIND,           &
+         unsqt2 = -1.6546e-6_RKIND,           &
+         uns2t0 =  4.8314e-4_RKIND
+
       !*** from Table A1 of Jackett and McDougall
-   
+
       real (kind=RKIND), parameter ::              &
-         bup0s0t0 =  1.965933e+4,       &
-         bup0s0t1 =  1.444304e+2,       &
-         bup0s0t2 = -1.706103   ,       &
-         bup0s0t3 =  9.648704e-3,       &
-         bup0s0t4 = -4.190253e-5
-   
+         bup0s0t0 =  1.965933e+4_RKIND,       &
+         bup0s0t1 =  1.444304e+2_RKIND,       &
+         bup0s0t2 = -1.706103_RKIND   ,       &
+         bup0s0t3 =  9.648704e-3_RKIND,       &
+         bup0s0t4 = -4.190253e-5_RKIND
+
       real (kind=RKIND), parameter ::              &
-         bup0s1t0 =  5.284855e+1,       &
-         bup0s1t1 = -3.101089e-1,       &
-         bup0s1t2 =  6.283263e-3,       &
-         bup0s1t3 = -5.084188e-5
-   
+         bup0s1t0 =  5.284855e+1_RKIND,       &
+         bup0s1t1 = -3.101089e-1_RKIND,       &
+         bup0s1t2 =  6.283263e-3_RKIND,       &
+         bup0s1t3 = -5.084188e-5_RKIND
+
       real (kind=RKIND), parameter ::              &
-         bup0sqt0 =  3.886640e-1,       &
-         bup0sqt1 =  9.085835e-3,       &
-         bup0sqt2 = -4.619924e-4
-   
+         bup0sqt0 =  3.886640e-1_RKIND,       &
+         bup0sqt1 =  9.085835e-3_RKIND,       &
+         bup0sqt2 = -4.619924e-4_RKIND
+
       real (kind=RKIND), parameter ::              &
-         bup1s0t0 =  3.186519   ,       &
-         bup1s0t1 =  2.212276e-2,       &
-         bup1s0t2 = -2.984642e-4,       &
-         bup1s0t3 =  1.956415e-6 
-   
+         bup1s0t0 =  3.186519_RKIND   ,       &
+         bup1s0t1 =  2.212276e-2_RKIND,       &
+         bup1s0t2 = -2.984642e-4_RKIND,       &
+         bup1s0t3 =  1.956415e-6_RKIND
+
       real (kind=RKIND), parameter ::              &
-         bup1s1t0 =  6.704388e-3,       &
-         bup1s1t1 = -1.847318e-4,       &
-         bup1s1t2 =  2.059331e-7,       &
-         bup1sqt0 =  1.480266e-4 
-   
+         bup1s1t0 =  6.704388e-3_RKIND,       &
+         bup1s1t1 = -1.847318e-4_RKIND,       &
+         bup1s1t2 =  2.059331e-7_RKIND,       &
+         bup1sqt0 =  1.480266e-4_RKIND
+
       real (kind=RKIND), parameter ::              &
-         bup2s0t0 =  2.102898e-4,       &
-         bup2s0t1 = -1.202016e-5,       &
-         bup2s0t2 =  1.394680e-7,       &
-         bup2s1t0 = -2.040237e-6,       &
-         bup2s1t1 =  6.128773e-8,       &
-         bup2s1t2 =  6.207323e-10
-   
+         bup2s0t0 =  2.102898e-4_RKIND,       &
+         bup2s0t1 = -1.202016e-5_RKIND,       &
+         bup2s0t2 =  1.394680e-7_RKIND,       &
+         bup2s1t0 = -2.040237e-6_RKIND,       &
+         bup2s1t1 =  6.128773e-8_RKIND,       &
+         bup2s1t2 =  6.207323e-10_RKIND
+
       integer :: k_test, k_ref
-   
+
       err = 0
-   
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-!  allocate local T,S tracer field
-      allocate(tracerTS(2,nVertLevels,nCells+1))
-
-!  fill tracerTS
-      if (displacement_type == 'surfaceDisplaced') then
-        if(present(tracersSurfaceLayerValue)) then
-          do k=1,nVertLevels
-            tracerTS(1,k,:) = tracersSurfaceLayerValue(indexT,:)
-            tracerTS(2,k,:) = tracersSurfaceLayerValue(indexS,:)
-          enddo
-          displacement_type_local = 'relative'
-          k_displaced_local = 0
-        else
-          write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
-          call mpas_dmpar_abort(dminfo)
-        endif
-      else
-        tracerTS(1,:,:) = tracers(indexT,:,:)
-        tracerTS(2,:,:) = tracers(indexS,:,:)
-        displacement_type_local = trim(displacement_type)
-        k_displaced_local = k_displaced
-      endif
+      allocate(tracerTemp(nVertLevels))
+      allocate(tracerSalt(nVertLevels))
 
 !  Jackett and McDougall
-      tmin = -2.0  ! valid pot. temp. range
-      tmax = 40.0 
-      smin =  0.0  ! valid salinity, in psu   
-      smax = 42.0 
+      tmin = -2.0_RKIND  ! valid pot. temp. range
+      tmax = 40.0_RKIND
+      smin =  0.0_RKIND  ! valid salinity, in psu
+      smax = 42.0_RKIND
 
 !  This function computes pressure in bars from depth in meters
-!  using a mean density derived from depth-dependent global 
-!  average temperatures and salinities from Levitus 1994, and 
+!  using a mean density derived from depth-dependent global
+!  average temperatures and salinities from Levitus 1994, and
 !  integrating using hydrostatic balance.
 
       allocate(pRefEOS(nVertLevels),p(nVertLevels),p2(nVertLevels))
-      allocate(TQ(nVertLevels,nCells),SQ(nVertLevels,nCells),BULK_MOD(nVertLevels,nCells),SQR(nVertLevels,nCells),DENOMK(nVertLevels,nCells), RHO_S(nVertLevels,nCells), &
-         WORK1(nVertLevels,nCells), WORK2(nVertLevels,nCells), WORK3(nVertLevels,nCells), WORK4(nVertLevels,nCells), T2(nVertLevels,nCells))
 
+      allocate(SQ(nVertLevels), TQ(nVertLevels), SQR(nVertLevels), T2(nVertLevels), WORK1(nVertLevels), &
+               WORK2(nVertLevels), RHO_S(nVertLevels), WORK3(nVertLevels), WORK4(nVertLevels), &
+               BULK_MOD(nVertLevels), DENOMK(nVertLevels))
 
       ! This could be put in the init routine.
       ! Note I am using refBottomDepth, so pressure on top level does
       ! not include SSH contribution.  I am not sure if that matters, but
       ! POP does it the same way.
-      depth = 0.5*refBottomDepth(1)
-      pRefEOS(1) = 0.059808*(exp(-0.025*depth) - 1.0) &
-          + 0.100766*depth + 2.28405e-7*depth**2
+      depth = 0.5_RKIND*refBottomDepth(1)
+      pRefEOS(1) = 0.059808_RKIND*(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
+          + 0.100766_RKIND*depth + 2.28405e-7_RKIND*depth**2
       do k = 2,nVertLevels
-         depth = 0.5*(refBottomDepth(k)+refBottomDepth(k-1))
-         pRefEOS(k) = 0.059808*(exp(-0.025*depth) - 1.0) &
-             + 0.100766*depth + 2.28405e-7*depth**2
+         depth = 0.5_RKIND*(refBottomDepth(k)+refBottomDepth(k-1))
+         pRefEOS(k) = 0.059808_RKIND*(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
+             + 0.100766_RKIND*depth + 2.28405e-7_RKIND*depth**2
       enddo
 
       !  If k_displaced=0, in-situ density is returned (no displacement)
@@ -286,14 +267,27 @@ contains
       !     referenced to level k_displaced for all k
       !  NOTE: k_displaced = 0 or > nVertLevels is incompatible with 'absolute'
       !     so abort if necessary
+      if (displacement_type == 'surfaceDisplaced') then
+        if(present(tracersSurfaceLayerValue)) then
+          displacement_type_local = 'relative'
+          k_displaced_local = 0
+        else
+           call mpas_log_write( &
+             'tracersSurfaceLayerValue must be present when displacement_type is ' &
+                                    // '''surfaceDisplaced'' in JM EOS', &
+               MPAS_LOG_CRIT)
+        endif
+      else
+        displacement_type_local = trim(displacement_type)
+        k_displaced_local = k_displaced
+      endif
 
       if (displacement_type_local == 'absolute' .and.   &
          (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
 
-         write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
-             ' k_displaced must be between 1 and nVertLevels for ', &
-             'displacement_type = absolute'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_log_write('Abort: In equation_of_state_jm' // &
+             ' k_displaced must be between 1 and nVertLevels for ' // &
+             'displacement_type = absolute', MPAS_LOG_CRIT)
       endif
 
       if (k_displaced_local == 0) then
@@ -315,97 +309,124 @@ contains
          enddo
       endif
 
+      !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT, DRDS0, DKDS, DRHODS)
       do iCell=1,nCells
+         if (displacement_type == 'surfaceDisplaced') then
+           if(present(tracersSurfaceLayerValue)) then
+             do k=1,nVertLevels
+               tracerTemp(k) = tracersSurfaceLayerValue(indexT,iCell)
+               tracerSalt(k) = tracersSurfaceLayerValue(indexS,iCell)
+             enddo
+           else
+             call mpas_log_write( &
+               'tracersSurfaceLayerValue must be present in JM EOS call',  &
+               MPAS_LOG_CRIT)
+           endif
+         else
+           do k = 1, nVertLevels
+              tracerTemp(k) = tracers(indexT, k, iCell)
+              tracerSalt(k) = tracers(indexS, k, iCell)
+           end do
+         endif
+
          do k=1,maxLevelCell(iCell)
-            SQ(k,iCell)  = max(min(tracerTS(2,k,iCell),smax),smin)
-            TQ(k,iCell)  = max(min(tracerTS(1,k,iCell),tmax),tmin)
-   
-            SQR(k,iCell) = sqrt(SQ(k,iCell))
-            T2(k,iCell)  = TQ(k,iCell)*TQ(k,iCell)
+            SQ(k)  = max(min(tracerSalt(k),smax),smin)
+            TQ(k)  = max(min(tracerTemp(k),tmax),tmin)
+
+            SQR(k) = sqrt(SQ(k))
+            T2(k)  = TQ(k)*TQ(k)
 
             !***
             !*** first calculate surface (p=0) values from UNESCO eqns.
             !***
 
-            WORK1(k,iCell) = uns1t0 + uns1t1*TQ(k,iCell) + & 
-                   (uns1t2 + uns1t3*TQ(k,iCell) + uns1t4*T2(k,iCell))*T2(k,iCell)
-            WORK2(k,iCell) = SQR(k,iCell)*(unsqt0 + unsqt1*TQ(k,iCell) + unsqt2*T2(k,iCell))
+            WORK1(k) = uns1t0 + uns1t1*TQ(k) + &
+                   (uns1t2 + uns1t3*TQ(k) + uns1t4*T2(k))*T2(k)
+            WORK2(k) = SQR(k)*(unsqt0 + unsqt1*TQ(k) + unsqt2*T2(k))
 
-            RHO_S(k,iCell) = unt1*TQ(k,iCell) + (unt2 + unt3*TQ(k,iCell) + (unt4 + unt5*TQ(k,iCell))*T2(k,iCell))*T2(k,iCell) &
-                            + (uns2t0*SQ(k,iCell) + WORK1(k,iCell) + WORK2(k,iCell))*SQ(k,iCell)
+            RHO_S(k) = unt1*TQ(k) + (unt2 + unt3*TQ(k) + (unt4 + unt5*TQ(k))*T2(k))*T2(k) &
+                            + (uns2t0*SQ(k) + WORK1(k) + WORK2(k))*SQ(k)
 
             !***
-            !*** now calculate bulk modulus at pressure p from 
+            !*** now calculate bulk modulus at pressure p from
             !*** Jackett and McDougall formula
             !***
 
-            WORK3(k,iCell) = bup0s1t0 + bup0s1t1*TQ(k,iCell) +                    &
-                    (bup0s1t2 + bup0s1t3*TQ(k,iCell))*T2(k,iCell) +                &
-                    p(k) *(bup1s1t0 + bup1s1t1*TQ(k,iCell) + bup1s1t2*T2(k,iCell)) + &
-                    p2(k)*(bup2s1t0 + bup2s1t1*TQ(k,iCell) + bup2s1t2*T2(k,iCell))
-            WORK4(k,iCell) = SQR(k,iCell)*(bup0sqt0 + bup0sqt1*TQ(k,iCell) + bup0sqt2*T2(k,iCell) + &
+            WORK3(k) = bup0s1t0 + bup0s1t1*TQ(k) +                    &
+                    (bup0s1t2 + bup0s1t3*TQ(k))*T2(k) +                &
+                    p(k) *(bup1s1t0 + bup1s1t1*TQ(k) + bup1s1t2*T2(k)) + &
+                    p2(k)*(bup2s1t0 + bup2s1t1*TQ(k) + bup2s1t2*T2(k))
+            WORK4(k) = SQR(k)*(bup0sqt0 + bup0sqt1*TQ(k) + bup0sqt2*T2(k) + &
                          bup1sqt0*p(k))
-   
-            BULK_MOD(k,iCell)  = bup0s0t0 + bup0s0t1*TQ(k,iCell) +                    &
-                        (bup0s0t2 + bup0s0t3*TQ(k,iCell) + bup0s0t4*T2(k,iCell))*T2(k,iCell) + &
-                        p(k) *(bup1s0t0 + bup1s0t1*TQ(k,iCell) +                &
-                        (bup1s0t2 + bup1s0t3*TQ(k,iCell))*T2(k,iCell)) +           &
-                        p2(k)*(bup2s0t0 + bup2s0t1*TQ(k,iCell) + bup2s0t2*T2(k,iCell)) + &
-                        SQ(k,iCell)*(WORK3(k,iCell) + WORK4(k,iCell))
-  
-            DENOMK(k,iCell) = 1.0/(BULK_MOD(k,iCell) - p(k))
-   
-            density(k,iCell) = (unt0 + RHO_S(k,iCell))*BULK_MOD(k,iCell)*DENOMK(k,iCell)
+
+            BULK_MOD(k)  = bup0s0t0 + bup0s0t1*TQ(k) +                    &
+                        (bup0s0t2 + bup0s0t3*TQ(k) + bup0s0t4*T2(k))*T2(k) + &
+                        p(k) *(bup1s0t0 + bup1s0t1*TQ(k) +                &
+                        (bup1s0t2 + bup1s0t3*TQ(k))*T2(k)) +           &
+                        p2(k)*(bup2s0t0 + bup2s0t1*TQ(k) + bup2s0t2*T2(k)) + &
+                        SQ(k)*(WORK3(k) + WORK4(k))
+
+            DENOMK(k) = 1.0/(BULK_MOD(k) - p(k))
+
+            density(k, iCell) = (unt0 + RHO_S(k))*BULK_MOD(k)*DENOMK(k)
 
          end do
-      end do
 
-      if (present(thermalExpansionCoeff)) then
-         do iCell=1,nCells
+         if (present(thermalExpansionCoeff)) then
             do k=1,maxLevelCell(iCell)
-               DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
-                  (3.0*unt3 + 4.0*unt4*TQ(k,iCell) + 5.0*unt5*T2(k,iCell))*T2(k,iCell) + &
-                  (uns1t1 + 2.0*uns1t2*TQ(k,iCell) +                 &
-                   (3.0*uns1t3 + 4.0*uns1t4*TQ(k,iCell))*T2(k,iCell) +         &
-                   (unsqt1 + 2.0*unsqt2*TQ(k,iCell))*SQR(k,iCell) )*SQ(k,iCell)
+               DRDT0 =  unt1 + 2.0_RKIND*unt2*TQ(k) +                      &
+                  (3.0_RKIND*unt3 + 4.0_RKIND*unt4*TQ(k) + 5.0_RKIND*unt5*T2(k))*T2(k) + &
+                  (uns1t1 + 2.0_RKIND*uns1t2*TQ(k) +                 &
+                   (3.0_RKIND*uns1t3 + 4.0_RKIND*uns1t4*TQ(k))*T2(k) +         &
+                   (unsqt1 + 2.0_RKIND*unsqt2*TQ(k))*SQR(k) )*SQ(k)
 
-               DKDT  = bup0s0t1 + 2.0*bup0s0t2*TQ(k,iCell) +                       &
-                 (3.0*bup0s0t3 + 4.0*bup0s0t4*TQ(k,iCell))*T2(k,iCell) +               &
-                  p(k) *(bup1s0t1 + 2.0*bup1s0t2*TQ(k,iCell) + 3.0*bup1s0t3*T2(k,iCell)) + &
-                  p2(k)*(bup2s0t1 + 2.0*bup2s0t2*TQ(k,iCell)) +                  &
-                  SQ(k,iCell)*(bup0s1t1 + 2.0*bup0s1t2*TQ(k,iCell) + 3.0*bup0s1t3*T2(k,iCell) +  &
-                  p(k)  *(bup1s1t1 + 2.0*bup1s1t2*TQ(k,iCell)) +             &
-                  p2(k) *(bup2s1t1 + 2.0*bup2s1t2*TQ(k,iCell)) +             &
-                  SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
+               DKDT  = bup0s0t1 + 2.0_RKIND*bup0s0t2*TQ(k) +                       &
+                 (3.0_RKIND*bup0s0t3 + 4.0_RKIND*bup0s0t4*TQ(k))*T2(k) +               &
+                  p(k) *(bup1s0t1 + 2.0_RKIND*bup1s0t2*TQ(k) + 3.0_RKIND*bup1s0t3*T2(k)) + &
+                  p2(k)*(bup2s0t1 + 2.0_RKIND*bup2s0t2*TQ(k)) +                  &
+                  SQ(k)*(bup0s1t1 + 2.0_RKIND*bup0s1t2*TQ(k) + 3.0_RKIND*bup0s1t3*T2(k) +  &
+                  p(k)  *(bup1s1t1 + 2.0_RKIND*bup1s1t2*TQ(k)) +             &
+                  p2(k) *(bup2s1t1 + 2.0_RKIND*bup2s1t2*TQ(k)) +             &
+                  SQR(k)*(bup0sqt1 + 2.0_RKIND*bup0sqt2*TQ(k)))
 
-               DRHODT = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
-                  p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
-
+               DRHODT = (DENOMK(k)*(DRDT0*BULK_MOD(k) -                    &
+                  p(k)*(unt0+RHO_S(k))*DKDT*DENOMK(k)))
 
                thermalExpansionCoeff(k,iCell) = -DRHODT/density(k,iCell)
-
             end do
-         end do
-      endif
+         end if
 
-      if (present(salineContractionCoeff)) then
-         do iCell=1,nCells
+         if (present(salineContractionCoeff)) then
             do k=1,maxLevelCell(iCell)
-               DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
-               DKDS = WORK3(k,iCell) + 1.5*WORK4(k,iCell)
+               DRDS0  = 2.0_RKIND*uns2t0*SQ(k) + WORK1(k) + 1.5_RKIND*WORK2(k)
+               DKDS = WORK3(k) + 1.5_RKIND*WORK4(k)
 
-               DRHODS = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
-                   p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))
+               DRHODS = DENOMK(k)*(DRDS0*BULK_MOD(k) -                    &
+                   p(k)*(unt0+RHO_S(k))*DKDS*DENOMK(k))
 
                salineContractionCoeff(k,iCell) = DRHODS/density(k,iCell)
 
             end do
-         end do
-      endif
+
+         end if
+      end do
+      !$omp end do
 
       deallocate(pRefEOS,p,p2)
-      deallocate(tracerTS)
-      deallocate(TQ,SQ,T2,BULK_MOD,SQR,DENOMK,RHO_S, WORK1, WORK2, WORK3, WORK4)
+      deallocate(tracerTemp)
+      deallocate(tracerSalt)
+
+      deallocate(SQ)
+      deallocate(TQ)
+      deallocate(SQR)
+      deallocate(T2)
+      deallocate(WORK1)
+      deallocate(WORK2)
+      deallocate(RHO_S)
+      deallocate(WORK3)
+      deallocate(WORK4)
+      deallocate(BULK_MOD)
+      deallocate(DENOMK)
 
    end subroutine ocn_equation_of_state_jm_density!}}}
 
@@ -416,11 +437,11 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

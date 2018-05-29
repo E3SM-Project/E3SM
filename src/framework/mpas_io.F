@@ -10,8 +10,7 @@ module mpas_io
    use mpas_derived_types
    use mpas_attlist
    use mpas_dmpar
-   use mpas_io_units
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use pio
    use piolib_mod
@@ -111,33 +110,34 @@ module mpas_io
 
       local_ierr = 0
 
-!      write(stderrUnit,*) 'Called MPAS_io_init()'
+!      call mpas_log_write('Called MPAS_io_init()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       if (present(io_system)) then
          ioContext % pio_iosystem => io_system
       else
-!write(stderrUnit,*) 'MGD PIO_init'
+!call mpas_log_write('MGD PIO_init')
          if ( io_task_count < 0 .or. io_task_count > ioContext % dminfo % nprocs ) then
-            write(stderrUnit, *) ' ERROR: PIO io_task_count has a value of ', io_task_count
-            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            call mpas_log_write('PIO io_task_count has a value of $i.', MPAS_LOG_ERR, intArgs=(/io_task_count/))
+            call mpas_log_write('        It must be between 1 and $i.', MPAS_LOG_ERR, intArgs=(/ioContext % dminfo % nprocs/) )
             local_ierr = 1
          end if
 
          if ( io_task_stride <= 0 .or. io_task_stride > ioContext % dminfo % nprocs ) then
-            write(stderrUnit, *) ' ERROR: PIO io_task_stride has a value of ', io_task_stride
-            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            call mpas_log_write('PIO io_task_stride has a value of $i.', MPAS_LOG_ERR, intArgs=(/io_task_stride/) )
+            call mpas_log_write('        It must be between 1 and $i.', MPAS_LOG_ERR, intArgs=(/ioContext % dminfo % nprocs/) )
             local_ierr = 1
          end if
 
          if ( io_task_stride * io_task_count > ioContext % dminfo % nprocs ) then
-            write(stderrUnit, *) ' ERROR: PIO io_task_stride * io_task_count has a value of ', io_task_stride * io_task_count
-            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            call mpas_log_write('PIO io_task_stride * io_task_count has a value of $i.', MPAS_LOG_ERR, &
+                    intArgs=(/io_task_stride * io_task_count/) )
+            call mpas_log_write('        It must be between 1 and $i.', MPAS_LOG_ERR, intArgs=(/ioContext % dminfo % nprocs/) )
             local_ierr = 1
          end if
 
          if ( local_ierr /= 0 ) then
-            call mpas_dmpar_global_abort('ERROR: Invalid PIO configuration.')
+            call mpas_log_write('Invalid PIO configuration.', MPAS_LOG_CRIT)
          end if
 
          allocate(ioContext % pio_iosystem)
@@ -228,7 +228,7 @@ module mpas_io
       logical :: local_clobber, local_truncate
       logical :: exists
 
-!      write(stderrUnit,*) 'Called MPAS_io_open()'
+!      call mpas_log_write('Called MPAS_io_open()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       if (present(clobber_file)) then
@@ -290,7 +290,7 @@ module mpas_io
       end if
 
       if (mode == MPAS_IO_WRITE) then
-!write(stderrUnit,*) 'MGD PIO_createfile'
+!call mpas_log_write('MGD PIO_createfile')
          if (ioContext % dminfo % my_proc_id == 0) then
             inquire(file=trim(filename), exist=exists)
          end if
@@ -308,9 +308,11 @@ module mpas_io
             MPAS_io_open % preexisting_file = .true.
          else
             pio_ierr = PIO_createfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
+#ifdef MPAS_DEBUG
             if (exists) then
-               write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
+               call mpas_log_write('MPAS I/O: Truncating existing data in output file '//trim(filename), MPAS_LOG_WARN)
             end if
+#endif
          end if
       else
          inquire(file=trim(filename), exist=exists)
@@ -319,7 +321,7 @@ module mpas_io
             if (present(ierr)) ierr = MPAS_IO_ERR_NOEXIST_READ
             return
          end if
-!write(stderrUnit,*) 'MGD PIO_openfile'
+!call mpas_log_write('MGD PIO_openfile')
          pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
       endif
       if (pio_ierr /= PIO_noerr) then
@@ -330,7 +332,7 @@ module mpas_io
       if (mode == MPAS_IO_READ .or. MPAS_io_open % preexisting_file) then
 !MPAS_io_open % pio_unlimited_dimid = 44
          pio_ierr = PIO_inquire(MPAS_io_open % pio_file, unlimitedDimID=MPAS_io_open % pio_unlimited_dimid)
-!write(stderrUnit,*) 'Found unlimited dim ', MPAS_io_open % pio_unlimited_dimid
+!call mpas_log_write('Found unlimited dim $i', intArgs=(/MPAS_io_open % pio_unlimited_dimid/) )
          if (pio_ierr /= PIO_noerr) then
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
@@ -368,7 +370,7 @@ module mpas_io
 
       integer :: pio_ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_inq_unlimited_dim()'
+!      call mpas_log_write('Called MPAS_io_inq_unlimited_dim()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -404,7 +406,7 @@ module mpas_io
       type (dimlist_type), pointer :: dim_cursor
       integer :: pio_ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_inq_dim()'
+!      call mpas_log_write('Called MPAS_io_inq_dim()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -486,7 +488,7 @@ module mpas_io
       type (dimlist_type), pointer :: new_dimlist_node
       type (dimlist_type), pointer :: dim_cursor
 
-!      write(stderrUnit,*) 'Called MPAS_io_def_dim()'
+!      call mpas_log_write('Called MPAS_io_def_dim()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -575,15 +577,15 @@ module mpas_io
       ! Keep dimension information
       if (.not. associated(handle % dimlist_head)) then
          handle % dimlist_head => new_dimlist_node
-!write(stderrUnit,*) 'Assigning head for '//trim(dimname)
+!call mpas_log_write('Assigning head for '//trim(dimname))
       end if
       if (.not. associated(handle % dimlist_tail)) then
          handle % dimlist_tail => new_dimlist_node
-!write(stderrUnit,*) 'Assigning tail for '//trim(dimname)
+!call mpas_log_write('Assigning tail for '//trim(dimname))
       else
          handle % dimlist_tail % next => new_dimlist_node
          handle % dimlist_tail => handle % dimlist_tail % next
-!write(stderrUnit,*) 'Extending tail for '//trim(dimname)
+!call mpas_log_write('Extending tail for '//trim(dimname))
       end if
 
    end subroutine MPAS_io_def_dim
@@ -611,7 +613,7 @@ module mpas_io
       integer :: pio_ierr
 
 
-!      write(stderrUnit,*) 'Called MPAS_io_inq_var()'
+!      call mpas_log_write('Called MPAS_io_inq_var()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -628,7 +630,7 @@ module mpas_io
       field_cursor => handle % fieldlist_head
       do while (associated(field_cursor))
          if (trim(fieldname) == trim(field_cursor % fieldhandle % fieldname)) then
-!write(stderrUnit,*) 'Already found variable in fieldlist'
+!call mpas_log_write('Already found variable in fieldlist')
             found = .true.
             exit
          end if
@@ -653,10 +655,10 @@ module mpas_io
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             deallocate(new_fieldlist_node % fieldhandle)
             deallocate(new_fieldlist_node)
-            write(stderrUnit,*) 'WARNING: Variable ', trim(fieldname), ' not in input file.'
+            call mpas_log_write('Variable ' // trim(fieldname) // ' not in input file.', MPAS_LOG_WARN)
             return
          end if
-!write(stderrUnit,*) 'Inquired about variable ID', new_fieldlist_node % fieldhandle % fieldid
+!call mpas_log_write('Inquired about variable ID $i.', intArgs=(/new_fieldlist_node % fieldhandle % fieldid/) )
 
          ! Get field type
          pio_ierr = PIO_inq_vartype(handle % pio_file, new_fieldlist_node % fieldhandle % fieldid, new_fieldlist_node % fieldhandle % field_type)
@@ -666,7 +668,7 @@ module mpas_io
             deallocate(new_fieldlist_node)
             return
          end if
-!write(stderrUnit,*) 'Inquired about variable type', new_fieldlist_node % fieldhandle % field_type
+!call mpas_log_write('Inquired about variable type $i.', intArgs=(/new_fieldlist_node % fieldhandle % field_type/) )
 
          ! Convert to MPAS type
          new_fieldlist_node % fieldhandle % precision = MPAS_IO_NATIVE_PRECISION
@@ -691,7 +693,7 @@ module mpas_io
             deallocate(new_fieldlist_node)
             return
          end if
-!write(stderrUnit,*) 'Inquired about number of dimensions ', new_fieldlist_node % fieldhandle % ndims
+!call mpas_log_write('Inquired about number of dimensions $i', intArgs=(/new_fieldlist_node % fieldhandle % ndims/) )
 
          allocate(dimids(new_fieldlist_node % fieldhandle % ndims))
 
@@ -705,7 +707,7 @@ module mpas_io
                deallocate(dimids)
                return
             end if
-!write(stderrUnit,*) 'Inquired about dimension IDs ', dimids
+!call mpas_log_write('Inquired about dimension IDs $i.', intArgs=(/dimids/) )
          end if
 
          allocate(new_fieldlist_node % fieldhandle % dims(new_fieldlist_node % fieldhandle % ndims))
@@ -726,7 +728,7 @@ module mpas_io
                deallocate(dimids)
                return
             end if
-!write(stderrUnit,*) 'Inquired about dimension size ', new_fieldlist_node % fieldhandle % dims(i) % dimsize
+!call mpas_log_write('Inquired about dimension size $i', intArgs=(/new_fieldlist_node % fieldhandle % dims(i) % dimsize/)
 
             pio_ierr = PIO_inq_dimname(handle % pio_file, dimids(i), new_fieldlist_node % fieldhandle % dims(i) % dimname)
             if (pio_ierr /= PIO_noerr) then
@@ -736,7 +738,7 @@ module mpas_io
                deallocate(dimids)
                return
             end if
-!write(stderrUnit,*) 'Inquired about dimension name ', trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)
+!call mpas_log_write('Inquired about dimension name ' // trim(new_fieldlist_node % fieldhandle % dims(i) % dimname))
 
          end do
 
@@ -745,15 +747,15 @@ module mpas_io
          ! Keep variable information for future reference
          if (.not. associated(handle % fieldlist_head)) then
             handle % fieldlist_head => new_fieldlist_node
-!write(stderrUnit,*) 'Assigning head for '//trim(fieldname)
+!call mpas_log_write('Assigning head for '//trim(fieldname))
          end if
          if (.not. associated(handle % fieldlist_tail)) then
             handle % fieldlist_tail => new_fieldlist_node
-!write(stderrUnit,*) 'Assigning tail for '//trim(fieldname)
+!call mpas_log_write('Assigning tail for '//trim(fieldname))
          else
             handle % fieldlist_tail % next => new_fieldlist_node
             handle % fieldlist_tail => handle % fieldlist_tail % next
-!write(stderrUnit,*) 'Extending tail for '//trim(fieldname)
+!call mpas_log_write('Extending tail for '//trim(fieldname))
          end if
 
          ! Keep dimension information for any new dimensions that were encountered
@@ -762,7 +764,7 @@ module mpas_io
             dim_cursor => handle % dimlist_head
             do while (associated(dim_cursor))
                if (trim(dim_cursor % dimhandle % dimname) == trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)) then
-!write(stderrUnit,*) 'Already have dimension '//trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)//' in our list...'
+!call mpas_log_write('Already have dimension '//trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)//' in our list...')
                   found = .true.
                   exit
                end if
@@ -776,15 +778,15 @@ module mpas_io
                new_dimlist_node % dimhandle = new_fieldlist_node % fieldhandle % dims(i)
                if (.not. associated(handle % dimlist_head)) then
                   handle % dimlist_head => new_dimlist_node
-!write(stderrUnit,*) 'Assigning head for '//trim(new_dimlist_node % dimhandle % dimname)
+!call mpas_log_write('Assigning head for '//trim(new_dimlist_node % dimhandle % dimname))
                end if
                if (.not. associated(handle % dimlist_tail)) then
                   handle % dimlist_tail => new_dimlist_node
-!write(stderrUnit,*) 'Assigning tail for '//trim(new_dimlist_node % dimhandle % dimname)
+!call mpas_log_write('Assigning tail for '//trim(new_dimlist_node % dimhandle % dimname))
                else
                   handle % dimlist_tail % next => new_dimlist_node
                   handle % dimlist_tail => handle % dimlist_tail % next
-!write(stderrUnit,*) 'Extending tail for '//trim(new_dimlist_node % dimhandle % dimname)
+!call mpas_log_write('Extending tail for '//trim(new_dimlist_node % dimhandle % dimname))
                end if
             end if
          end do
@@ -838,7 +840,7 @@ module mpas_io
       integer :: local_precision
 
 
-!      write(stderrUnit,*) 'Called MPAS_io_def_var()'
+!      call mpas_log_write('Called MPAS_io_def_var()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -870,19 +872,19 @@ module mpas_io
       ! Check whether this field has already been defined
       !
       ndims = size(dimnames)
-!write(stderrUnit,*) 'Defining variable with ',ndims,' dimensions'
+!call mpas_log_write('Defining variable with $i dimensions', intArgs=(/ndims/))
       field_cursor => handle % fieldlist_head
       do while (associated(field_cursor))
          if (trim(fieldname) == trim(field_cursor % fieldhandle % fieldname)) then
             if (ndims /= field_cursor % fieldhandle % ndims) then
                if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_VAR
-!               write(stderrUnit,*) 'Error: Field '//trim(fieldname)//' previously defined with conflicting number of dimensions: ', &
-!                           ndims, field_cursor % fieldhandle % ndims
+!               call mpas_log_write('Field '//trim(fieldname)//' previously defined with conflicting number of dimensions: $i $i',&
+!                           MPAS_LOG_ERR, intArgs=(/ndims, field_cursor % fieldhandle % ndims/) )
             end if
             if (fieldtype /= field_cursor % fieldhandle % field_type) then
                if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_VAR
-!               write(stderrUnit,*) 'Error: Field '//trim(fieldname)//' previously defined with conflicting type: ', &
-!                           fieldtype, field_cursor % fieldhandle % field_type
+!               call mpas_log_write('Field '//trim(fieldname)//' previously defined with conflicting type: ', &
+!                           MPAS_LOG_ERR, intArgs=(/fieldtype, field_cursor % fieldhandle % field_type/) )
             end if
             return
          end if
@@ -963,7 +965,7 @@ module mpas_io
             dimids(i) = dim_cursor % dimhandle % dimid
             if (dim_cursor % dimhandle % is_unlimited_dim) new_fieldlist_node % fieldhandle % has_unlimited_dim = .true.
             new_fieldlist_node % fieldhandle % dims(i) = dim_cursor % dimhandle
-!write(stderrUnit,*) 'Found dimension '//trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)//' for field '//trim(fieldname)
+!call mpas_log_write('Found dimension '//trim(new_fieldlist_node % fieldhandle % dims(i) % dimname)//' for field '//trim(fieldname))
          else
             if (present(ierr)) ierr = MPAS_IO_ERR_UNDEFINED_DIM
             deallocate(new_fieldlist_node % fieldhandle % dims)
@@ -971,7 +973,7 @@ module mpas_io
             deallocate(new_fieldlist_node)
             deallocate(dimids)
             return
-!            write(stderrUnit,*) 'Error finding dimension '//trim(dimnames(i))//' for field '//trim(fieldname)
+!            call mpas_log_write('Error finding dimension '//trim(dimnames(i))//' for field '//trim(fieldname), MPAS_LOG_ERR)
          end if
       end do
 
@@ -1019,15 +1021,15 @@ module mpas_io
       ! Keep variable information for future use
       if (.not. associated(handle % fieldlist_head)) then
          handle % fieldlist_head => new_fieldlist_node
-!write(stderrUnit,*) 'Assigning head for '//trim(fieldname)
+!call mpas_log_write('Assigning head for '//trim(fieldname))
       end if
       if (.not. associated(handle % fieldlist_tail)) then
          handle % fieldlist_tail => new_fieldlist_node
-!write(stderrUnit,*) 'Assigning tail for '//trim(fieldname)
+!call mpas_log_write('Assigning tail for '//trim(fieldname))
       else
          handle % fieldlist_tail % next => new_fieldlist_node
          handle % fieldlist_tail => handle % fieldlist_tail % next
-!write(stderrUnit,*) 'Extending tail for '//trim(fieldname)
+!call mpas_log_write('Extending tail for '//trim(fieldname))
       end if
 
    end subroutine MPAS_io_def_var
@@ -1044,7 +1046,7 @@ module mpas_io
 
       type (fieldlist_type), pointer :: field_cursor
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_indices()'
+!      call mpas_log_write('Called MPAS_io_get_var_indices()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -1068,7 +1070,7 @@ module mpas_io
          if (present(ierr)) ierr = MPAS_IO_ERR_UNDEFINED_VAR
          return
       end if
-!write(stderrUnit,*) trim(fieldname), ' has been defined'
+!call mpas_log_write(trim(fieldname)//' has been defined')
 
       if (.not. associated(field_cursor % fieldhandle % decomp)) then
          if (present(ierr)) ierr = MPAS_IO_ERR_NO_DECOMP
@@ -1101,7 +1103,7 @@ module mpas_io
       integer (kind=MPAS_IO_OFFSET_KIND), dimension(:), pointer :: compdof
       type (decomplist_type), pointer :: decomp_cursor, new_decomp
 
-!      write(stderrUnit,*) 'Called MPAS_io_set_var_indices()'
+!      call mpas_log_write('Called MPAS_io_set_var_indices()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -1110,7 +1112,7 @@ module mpas_io
          return 
       end if
 
-!      write(stderrUnit,*) 'Assigning ', size(indices), ' indices for ', trim(fieldname)
+!      call mpas_log_write('Assigning $i indices for '//trim(fieldname), intArgs=(/size(indices)/) )
       !  
       ! Check whether the field has been defined
       !
@@ -1125,7 +1127,7 @@ module mpas_io
          if (present(ierr)) ierr = MPAS_IO_ERR_UNDEFINED_VAR
          return
       end if
-!write(stderrUnit,*) trim(fieldname), ' has been defined'
+!call mpas_log_write(trim(fieldname)//' has been defined')
 
       !
       ! If this is a scalar field, just return
@@ -1133,7 +1135,7 @@ module mpas_io
       if (field_cursor % fieldhandle % ndims == 0 .or. &
           (field_cursor % fieldhandle % ndims == 1 .and. field_cursor % fieldhandle % has_unlimited_dim) .or. &
           field_cursor % fieldhandle % field_type == MPAS_IO_CHAR) then
-!write(stderrUnit,*) 'No need to create a decomposition for a 0d field...'
+!call mpas_log_write('No need to create a decomposition for a 0d field...')
          return
       end if
 
@@ -1142,14 +1144,14 @@ module mpas_io
       ! Check whether a suitable decomposition already exists
       !
       decomp_cursor => handle % ioContext % decomp_list
-!if (.not. associated(decomp_cursor)) write(stderrUnit,*) 'No existing decompositions to check...'
+!if (.not. associated(decomp_cursor)) call mpas_log_write('No existing decompositions to check...')
       early_return = 0
       DECOMP_LOOP: do while (associated(decomp_cursor))
          if (decomp_cursor % decomphandle % field_type == field_cursor % fieldhandle % field_type) then
          if (size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims) then
-!write(stderrUnit,*) 'Number of dimensions matches...'
+!call mpas_log_write('Number of dimensions matches...')
             do i=1,field_cursor % fieldhandle % ndims
-!write(stderrUnit,*) 'Checking dimension ', decomp_cursor % decomphandle % dims(i), field_cursor % fieldhandle % dims(i) % dimsize
+!call mpas_log_write('Checking dimension ', intArgs=(/decomp_cursor % decomphandle % dims(i), field_cursor % fieldhandle % dims(i) % dimsize/) )
                if (decomp_cursor % decomphandle % dims(i) /= field_cursor % fieldhandle % dims(i) % dimsize) then
                   decomp_cursor => decomp_cursor % next
                   cycle DECOMP_LOOP
@@ -1157,14 +1159,14 @@ module mpas_io
             end do
 
             if (size(decomp_cursor % decomphandle % indices) /= size(indices)) then
-!write(stderrUnit,*) 'We do not have the same number of indices in this decomposition...'
+!call mpas_log_write('We do not have the same number of indices in this decomposition...')
                decomp_cursor => decomp_cursor % next
                cycle DECOMP_LOOP
             end if
 
             do i=1,size(decomp_cursor % decomphandle % indices)
                if (indices(i) /= decomp_cursor % decomphandle % indices(i)) then
-!write(stderrUnit,*) 'One of the indices does not match... ', i
+!call mpas_log_write('One of the indices does not match... $i', intArgs=(/i/) )
                   decomp_cursor => decomp_cursor % next
                   cycle DECOMP_LOOP
                end if
@@ -1172,16 +1174,16 @@ module mpas_io
             
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
-!write(stderrUnit,*) 'Found a matching decomposition that we can use'
+!call mpas_log_write('Found a matching decomposition that we can use')
             early_return = 1
             exit DECOMP_LOOP
          else if ((size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims - 1)  &
                   .and. field_cursor % fieldhandle % has_unlimited_dim  &
                  ) then
-!write(stderrUnit,*) 'Number of non-record dimensions matches...'
+!call mpas_log_write('Number of non-record dimensions matches...')
             do i=1,field_cursor % fieldhandle % ndims
                if (field_cursor % fieldhandle % dims(i) % is_unlimited_dim) cycle
-!write(stderrUnit,*) 'Checking dimension ', decomp_cursor % decomphandle % dims(i), field_cursor % fieldhandle % dims(i) % dimsize
+!call mpas_log_write('Checking dimension ', intArgs=(/decomp_cursor % decomphandle % dims(i), field_cursor % fieldhandle % dims(i) % dimsize/) )
                if (decomp_cursor % decomphandle % dims(i) /= field_cursor % fieldhandle % dims(i) % dimsize) then
                   decomp_cursor => decomp_cursor % next
                   cycle DECOMP_LOOP
@@ -1190,14 +1192,14 @@ module mpas_io
 
             ! Type and dimensions match... what about indices?
             if (size(decomp_cursor % decomphandle % indices) /= size(indices)) then
-!write(stderrUnit,*) 'We do not have the same number of indices in this decomposition...'
+!call mpas_log_write('We do not have the same number of indices in this decomposition...')
                decomp_cursor => decomp_cursor % next
                cycle DECOMP_LOOP
             end if
 
             do i=1,size(decomp_cursor % decomphandle % indices)
                if (indices(i) /= decomp_cursor % decomphandle % indices(i)) then
-!write(stderrUnit,*) 'One of the indices does not match... ', i
+!call mpas_log_write('One of the indices does not match... $i', intArgs=(/i/) )
                   decomp_cursor => decomp_cursor % next
                   cycle DECOMP_LOOP
                end if
@@ -1205,7 +1207,7 @@ module mpas_io
             
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
-!write(stderrUnit,*) 'Found a matching decomposition that we can use (aside from record dimension)'
+!call mpas_log_write('Found a matching decomposition that we can use (aside from record dimension)')
             early_return = 1
             exit DECOMP_LOOP
          end if
@@ -1222,7 +1224,7 @@ module mpas_io
       end if
 
 
-!write(stderrUnit,*) 'Creating a new decomposition'
+!call mpas_log_write('Creating a new decomposition')
 
 
       !
@@ -1328,19 +1330,19 @@ module mpas_io
       ! Add new decomposition to the list
       if (.not. associated(handle % ioContext % decomp_list)) then
          handle % ioContext % decomp_list => new_decomp
-!write(stderrUnit,*) 'Adding first item to the decomp_list'
+!call mpas_log_write('Adding first item to the decomp_list')
       else
          new_decomp % next => handle % ioContext % decomp_list
          handle % ioContext % decomp_list => new_decomp
-!write(stderrUnit,*) 'Adding new decomp to the head of the list'
+!call mpas_log_write('Adding new decomp to the head of the list')
       end if
 
-!write(stderrUnit,*) 'Setting decomp in fieldhandle'
+!call mpas_log_write('Setting decomp in fieldhandle')
       field_cursor % fieldhandle % decomp => new_decomp % decomphandle
 
       deallocate(compdof)
       deallocate(dimlist)
-!write(stderrUnit,*) 'All finished.'
+!call mpas_log_write('All finished.')
 
    end subroutine MPAS_io_set_var_indices
 
@@ -1406,12 +1408,12 @@ module mpas_io
          return 
       end if
 
-!      write(stderrUnit,*) 'Reading ', trim(fieldname)
+!      call mpas_log_write('Reading '// trim(fieldname))
 
       !
       ! Check whether the field has been defined
       !
-!      write(stderrUnit,*) 'Checking if field is define'
+!      call mpas_log_write('Checking if field is define')
       field_cursor => handle % fieldlist_head
       do while (associated(field_cursor))
          if (trim(fieldname) == trim(field_cursor % fieldhandle % fieldname)) then
@@ -1426,7 +1428,7 @@ module mpas_io
 
 !!!! Assume array was already allocated by the user
 
-!      write(stderrUnit,*) 'Checking for unlimited dim'
+!      call mpas_log_write('Checking for unlimited dim')
       if (field_cursor % fieldhandle % has_unlimited_dim) then
 #ifdef USE_PIO2
          call PIO_setframe(handle % pio_file, field_cursor % fieldhandle % field_desc, handle % frame_number)
@@ -1441,9 +1443,9 @@ module mpas_io
          count2(2) = 1
       end if
 
-!      write(stderrUnit,*) 'Checking for real, int, char, etc'
+!      call mpas_log_write('Checking for real, int, char, etc')
       if (present(realVal)) then
-!         write (0,*) '  value is real'
+!         call mpas_log_write('  value is real')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             if (field_cursor % fieldhandle % has_unlimited_dim) then
@@ -1468,14 +1470,14 @@ module mpas_io
             end if
          end if
       else if (present(intVal)) then
-!         write (0,*) '  value is int'
+!         call mpas_log_write('  value is int')
          if (field_cursor % fieldhandle % has_unlimited_dim) then
             pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, intVal)
          else
             pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, intVal)
          end if
       else if (present(charVal)) then
-!         write (0,*) '  value is char'
+!         call mpas_log_write('  value is char')
          if (field_cursor % fieldhandle % has_unlimited_dim) then
             count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
             pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, tempchar)
@@ -1487,7 +1489,7 @@ module mpas_io
             charVal(1:count1(1)) = tempchar(1)(1:count1(1))
          end if
       else if (present(charArray1d)) then
-!         write (0,*) '  value is char1'
+!         call mpas_log_write('  value is char1')
          if (field_cursor % fieldhandle % has_unlimited_dim) then
             ! Can only read one string at a time, since the sizes differ so much (i.e. StrLen != StrKIND)
             do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
@@ -1532,7 +1534,7 @@ module mpas_io
             end do
          end if
       else if (present(realArray1d)) then
-!         write (0,*) '  value is real1'
+!         call mpas_log_write('  value is real1')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             allocate(singleArray1d(size(realArray1d,1)))
@@ -1594,7 +1596,7 @@ module mpas_io
             end if
          end if
       else if (present(realArray2d)) then
-!         write (0,*) '  value is real2'
+!         call mpas_log_write('  value is real2')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             allocate(singleArray2d(size(realArray2d,1), size(realArray2d,2)))
@@ -1662,7 +1664,7 @@ module mpas_io
             end if
          end if
       else if (present(realArray3d)) then
-!         write (0,*) '  value is real3'
+!         call mpas_log_write('  value is real3')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             allocate(singleArray3d(size(realArray3d,1),size(realArray3d,2),size(realArray3d,3)))
@@ -1736,7 +1738,7 @@ module mpas_io
             end if
          end if
       else if (present(realArray4d)) then
-!         write (0,*) '  value is real4'
+!         call mpas_log_write('  value is real4')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             allocate(singleArray4d(size(realArray4d,1),size(realArray4d,2),size(realArray4d,3),size(realArray4d,4)))
@@ -1816,7 +1818,7 @@ module mpas_io
             end if
          end if
       else if (present(realArray5d)) then
-!         write (0,*) '  value is real5'
+!         call mpas_log_write('  value is real5')
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
             allocate(singleArray5d(size(realArray5d,1),size(realArray5d,2),size(realArray5d,3),size(realArray5d,4),size(realArray5d,5)))
@@ -1902,7 +1904,7 @@ module mpas_io
             end if
          end if
       else if (present(intArray1d)) then
-!         write (0,*) '  value is int1'
+!         call mpas_log_write('  value is int1')
          if (associated(field_cursor % fieldhandle % decomp)) then
             call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
                                  intArray1d, pio_ierr)
@@ -1920,7 +1922,7 @@ module mpas_io
             end if
          end if
       else if (present(intArray2d)) then
-!         write (0,*) '  value is int2'
+!         call mpas_log_write('  value is int2')
          if (associated(field_cursor % fieldhandle % decomp)) then
             call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
                                  intArray2d, pio_ierr)
@@ -1940,7 +1942,7 @@ module mpas_io
             end if
          end if
       else if (present(intArray3d)) then
-!         write (0,*) '  value is int3'
+!         call mpas_log_write('  value is int3')
          if (associated(field_cursor % fieldhandle % decomp)) then
             call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
                                  intArray3d, pio_ierr)
@@ -1962,7 +1964,7 @@ module mpas_io
             end if
          end if
       else if (present(intArray4d)) then
-!         write (0,*) '  value is int4'
+!         call mpas_log_write('  value is int4')
          if (associated(field_cursor % fieldhandle % decomp)) then
             call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
                                  intArray4d, pio_ierr)
@@ -1987,7 +1989,7 @@ module mpas_io
          end if
       end if
 
-!      write (0,*) 'Checking for error'
+!      call mpas_log_write('Checking for error')
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -2005,7 +2007,7 @@ module mpas_io
       integer, intent(out) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_int0d()'
+!      call mpas_log_write('Called MPAS_io_get_var_int0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, intVal=val, ierr=ierr)
@@ -2022,7 +2024,7 @@ module mpas_io
       integer, dimension(:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_int1d()'
+!      call mpas_log_write('Called MPAS_io_get_var_int1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, intArray1d=array, ierr=ierr)
@@ -2039,7 +2041,7 @@ module mpas_io
       integer, dimension(:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_int2d()'
+!      call mpas_log_write('Called MPAS_io_get_var_int2d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, intArray2d=array, ierr=ierr)
@@ -2056,7 +2058,7 @@ module mpas_io
       integer, dimension(:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_int3d()'
+!      call mpas_log_write('Called MPAS_io_get_var_int3d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, intArray3d=array, ierr=ierr)
@@ -2073,7 +2075,7 @@ module mpas_io
       integer, dimension(:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_int4d()'
+!      call mpas_log_write('Called MPAS_io_get_var_int4d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, intArray4d=array, ierr=ierr)
@@ -2090,7 +2092,7 @@ module mpas_io
       real (kind=RKIND), intent(out) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real0d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realVal=val, ierr=ierr)
@@ -2107,7 +2109,7 @@ module mpas_io
       real (kind=RKIND), dimension(:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real1d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realArray1d=array, ierr=ierr)
@@ -2124,7 +2126,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real2d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real2d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realArray2d=array, ierr=ierr)
@@ -2141,7 +2143,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real3d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real3d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realArray3d=array, ierr=ierr)
@@ -2158,7 +2160,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real4d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real4d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realArray4d=array, ierr=ierr)
@@ -2175,7 +2177,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_real5d()'
+!      call mpas_log_write('Called MPAS_io_get_var_real5d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, realArray5d=array, ierr=ierr)
@@ -2192,7 +2194,7 @@ module mpas_io
       character (len=*), intent(out) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_var_char0d()'
+!      call mpas_log_write('Called MPAS_io_get_var_char0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, charVal=val, ierr=ierr)
@@ -2209,7 +2211,7 @@ module mpas_io
       character (len=*), dimension(:), intent(out) :: val
       integer, intent(out), optional :: ierr
 
-!     write(stderrUnit,*) 'Called MPAS_io_get_var_char1d()'
+!     call mpas_log_write('Called MPAS_io_get_var_char1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
@@ -2317,7 +2319,7 @@ module mpas_io
          end if
       end if
 
-!     write(stderrUnit,*) 'Writing ', trim(fieldname)
+!     call mpas_log_write('Writing '//trim(fieldname))
 
       !
       ! Check whether the field has been defined
@@ -2912,7 +2914,7 @@ module mpas_io
       integer, intent(in) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_int0d()'
+!      call mpas_log_write('Called MPAS_io_put_var_int0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, intVal=val, ierr=ierr)
@@ -2929,7 +2931,7 @@ module mpas_io
       integer, dimension(:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_int1d()'
+!      call mpas_log_write('Called MPAS_io_put_var_int1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, intArray1d=array, ierr=ierr)
@@ -2946,7 +2948,7 @@ module mpas_io
       integer, dimension(:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_int2d()'
+!      call mpas_log_write('Called MPAS_io_put_var_int2d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, intArray2d=array, ierr=ierr)
@@ -2963,7 +2965,7 @@ module mpas_io
       integer, dimension(:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_int3d()'
+!      call mpas_log_write('Called MPAS_io_put_var_int3d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, intArray3d=array, ierr=ierr)
@@ -2980,7 +2982,7 @@ module mpas_io
       integer, dimension(:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_int4d()'
+!      call mpas_log_write('Called MPAS_io_put_var_int4d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, intArray4d=array, ierr=ierr)
@@ -2997,7 +2999,7 @@ module mpas_io
       real (kind=RKIND), intent(in) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real0d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realVal=val, ierr=ierr)
@@ -3014,7 +3016,7 @@ module mpas_io
       real (kind=RKIND), dimension(:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real1d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realArray1d=array, ierr=ierr)
@@ -3031,7 +3033,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real2d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real2d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realArray2d=array, ierr=ierr)
@@ -3048,7 +3050,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real3d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real3d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realArray3d=array, ierr=ierr)
@@ -3065,7 +3067,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real4d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real4d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realArray4d=array, ierr=ierr)
@@ -3082,7 +3084,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_real5d()'
+!      call mpas_log_write('Called MPAS_io_put_var_real5d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, realArray5d=array, ierr=ierr)
@@ -3099,7 +3101,7 @@ module mpas_io
       character (len=*), intent(in) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_char0d()'
+!      call mpas_log_write('Called MPAS_io_put_var_char0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, charVal=val, ierr=ierr)
@@ -3116,7 +3118,7 @@ module mpas_io
       character (len=*), dimension(:), intent(in) :: val
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_var_char1d()'
+!      call mpas_log_write('Called MPAS_io_put_var_char1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_put_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
@@ -3145,7 +3147,7 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_att_int0d()'
+!      call mpas_log_write('Called MPAS_io_get_att_int0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3177,7 +3179,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_INT) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueInt
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3194,7 +3196,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_INT) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueInt
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3235,28 +3237,28 @@ module mpas_io
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_att_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       else
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             handle % attlist_tail % next => new_att_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       end if
 
@@ -3284,7 +3286,7 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_att_int1d()'
+!      call mpas_log_write('Called MPAS_io_get_att_int1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3316,7 +3318,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_INTA) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   allocate(attValue(size(att_cursor % atthandle % attValueIntA)))
                   attValue = att_cursor % atthandle % attValueIntA
                else
@@ -3334,7 +3336,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_INTA) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   allocate(attValue(size(att_cursor % atthandle % attValueIntA)))
                   attValue = att_cursor % atthandle % attValueIntA
                else
@@ -3385,28 +3387,28 @@ module mpas_io
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_att_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       else
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             handle % attlist_tail % next => new_att_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       end if
 
@@ -3438,7 +3440,7 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_att_real0d()'
+!      call mpas_log_write('Called MPAS_io_get_att_real0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3470,7 +3472,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_REAL) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueReal
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3487,7 +3489,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_REAL) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueReal
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3559,28 +3561,28 @@ module mpas_io
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_att_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       else
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             handle % attlist_tail % next => new_att_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       end if
 
@@ -3612,7 +3614,7 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_att_real1d()'
+!      call mpas_log_write('Called MPAS_io_get_att_real1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3644,7 +3646,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_REALA) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   allocate(attValue(size(att_cursor % atthandle % attValueRealA)))
                   attValue = att_cursor % atthandle % attValueRealA
                else
@@ -3662,7 +3664,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_REALA) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   allocate(attValue(size(att_cursor % atthandle % attValueRealA)))
                   attValue = att_cursor % atthandle % attValueRealA
                else
@@ -3749,28 +3751,28 @@ module mpas_io
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_att_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       else
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             handle % attlist_tail % next => new_att_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       end if
 
@@ -3798,7 +3800,7 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
-!      write(stderrUnit,*) 'Called MPAS_io_get_att_text()'
+!      call mpas_log_write('Called MPAS_io_get_att_text()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3830,7 +3832,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_TEXT) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueText
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3847,7 +3849,7 @@ module mpas_io
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
                if (att_cursor % atthandle % attType == MPAS_ATT_TEXT) then
-!write(stderrUnit,*) 'Using cached attribute'
+!call mpas_log_write('Using cached attribute')
                   attValue = att_cursor % atthandle % attValueText
                else
                   if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
@@ -3888,28 +3890,28 @@ module mpas_io
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_att_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       else
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_att_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attName)
+!call mpas_log_write('Assigning att head for '//trim(attName))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_att_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attName)
+!call mpas_log_write('Assigning att tail for '//trim(attName))
          else
             handle % attlist_tail % next => new_att_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attName)
+!call mpas_log_write('Extending att tail for '//trim(attName))
          end if
       end if
 
@@ -3935,7 +3937,7 @@ module mpas_io
 
       attValueLocal = attValue
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_att_int0d()'
+!      call mpas_log_write('Called MPAS_io_put_att_int0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -3973,7 +3975,7 @@ module mpas_io
                attlist_cursor => field_cursor % fieldhandle % attlist_head
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                      if (attlist_cursor % atthandle % attType /= MPAS_ATT_INT .or. &
                          attlist_cursor % atthandle % attValueInt /= attValue) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4000,15 +4002,15 @@ module mpas_io
          ! Add attribute to field attribute list
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_attlist_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
 
       else
@@ -4017,7 +4019,7 @@ module mpas_io
          attlist_cursor => handle % attlist_head
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                if (attlist_cursor % atthandle % attType /= MPAS_ATT_INT .or. &
                    attlist_cursor % atthandle % attValueInt /= attValue) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4034,15 +4036,15 @@ module mpas_io
          ! Add attribute to global attribute list
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             handle % attlist_tail % next => new_attlist_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
       end if
 
@@ -4083,7 +4085,7 @@ module mpas_io
       allocate(attValueLocal(size(attValue, dim=1)))
       attValueLocal(:) = attValue(:)
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_att_int1d()'
+!      call mpas_log_write('Called MPAS_io_put_att_int1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4122,7 +4124,7 @@ module mpas_io
                attlist_cursor => field_cursor % fieldhandle % attlist_head
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                      if (attlist_cursor % atthandle % attType /= MPAS_ATT_INTA .or. &
                          size(attlist_cursor % atthandle % attValueIntA) /= size(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4153,15 +4155,15 @@ module mpas_io
          ! Add attribute to field attribute list
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_attlist_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
 
       else
@@ -4170,7 +4172,7 @@ module mpas_io
          attlist_cursor => handle % attlist_head
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                if (attlist_cursor % atthandle % attType /= MPAS_ATT_INTA .or. &
                    size(attlist_cursor % atthandle % attValueIntA) /= size(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4191,15 +4193,15 @@ module mpas_io
          ! Add attribute to global attribute list
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             handle % attlist_tail % next => new_attlist_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
       end if
 
@@ -4244,7 +4246,7 @@ module mpas_io
 
       attValueLocal = attValue
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_att_real0d()'
+!      call mpas_log_write('Called MPAS_io_put_att_real0d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4287,7 +4289,7 @@ module mpas_io
                attlist_cursor => field_cursor % fieldhandle % attlist_head
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                      if (attlist_cursor % atthandle % attType /= MPAS_ATT_REAL .or. &
                          attlist_cursor % atthandle % attValueReal /= attValue) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4314,15 +4316,15 @@ module mpas_io
          ! Add attribute to field attribute list
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_attlist_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
 
       else
@@ -4331,7 +4333,7 @@ module mpas_io
          attlist_cursor => handle % attlist_head
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                if (attlist_cursor % atthandle % attType /= MPAS_ATT_REAL .or. &
                    attlist_cursor % atthandle % attValueReal /= attValue) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4348,15 +4350,15 @@ module mpas_io
          ! Add attribute to global attribute list
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             handle % attlist_tail % next => new_attlist_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
       end if
 
@@ -4412,7 +4414,7 @@ module mpas_io
 
       attValueLocal(:) = attValue(:)
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_att_real1d()'
+!      call mpas_log_write('Called MPAS_io_put_att_real1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4456,7 +4458,7 @@ module mpas_io
                attlist_cursor => field_cursor % fieldhandle % attlist_head
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                      if (attlist_cursor % atthandle % attType /= MPAS_ATT_REALA .or. &
                          size(attlist_cursor % atthandle % attValueRealA) /= size(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4487,15 +4489,15 @@ module mpas_io
          ! Add attribute to field attribute list
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_attlist_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
 
       else
@@ -4504,7 +4506,7 @@ module mpas_io
          attlist_cursor => handle % attlist_head
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                if (attlist_cursor % atthandle % attType /= MPAS_ATT_REALA .or. &
                    size(attlist_cursor % atthandle % attValueRealA) /= size(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4525,15 +4527,15 @@ module mpas_io
          ! Add attribute to global attribute list
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             handle % attlist_tail % next => new_attlist_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
       end if
 
@@ -4592,13 +4594,14 @@ module mpas_io
       trimmedVal = trim(attValue)
 
       if ( valLen > StrKind ) then
-         write(stderrUnit, *) ' WARNING: Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. It will be cut to a length of ', StrKIND
+         call mpas_log_write('Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. ' // &
+             'It will be cut to a length of $i', MPAS_LOG_WARN, intArgs=(/StrKIND/) )
          attValueLocal = trimmedVal(1:StrKIND)
       else
          attValueLocal = trimmedVal
       end if
 
-!      write(stderrUnit,*) 'Called MPAS_io_put_att_text()'
+!      call mpas_log_write('Called MPAS_io_put_att_text()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4636,7 +4639,7 @@ module mpas_io
                attlist_cursor => field_cursor % fieldhandle % attlist_head
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                      if (attlist_cursor % atthandle % attType /= MPAS_ATT_TEXT .or. &
                          trim(attlist_cursor % atthandle % attValueText) /= trim(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4663,15 +4666,15 @@ module mpas_io
          ! Add attribute to field attribute list
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
             field_cursor % fieldhandle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(field_cursor % fieldhandle % attlist_tail)) then
             field_cursor % fieldhandle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             field_cursor % fieldhandle % attlist_tail % next => new_attlist_node
             field_cursor % fieldhandle % attlist_tail => field_cursor % fieldhandle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
 
       else
@@ -4680,7 +4683,7 @@ module mpas_io
          attlist_cursor => handle % attlist_head
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
-!write(stderrUnit,*) 'Attribute already defined'
+!call mpas_log_write('Attribute already defined')
                if (attlist_cursor % atthandle % attType /= MPAS_ATT_TEXT .or. &
                    trim(attlist_cursor % atthandle % attValueText) /= trim(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
@@ -4697,15 +4700,15 @@ module mpas_io
          ! Add attribute to global attribute list
          if (.not. associated(handle % attlist_head)) then
             handle % attlist_head => new_attlist_node
-!write(stderrUnit,*) 'Assigning att head for '//trim(attname)
+!call mpas_log_write('Assigning att head for '//trim(attname))
          end if
          if (.not. associated(handle % attlist_tail)) then
             handle % attlist_tail => new_attlist_node
-!write(stderrUnit,*) 'Assigning att tail for '//trim(attname)
+!call mpas_log_write('Assigning att tail for '//trim(attname))
          else
             handle % attlist_tail % next => new_attlist_node
             handle % attlist_tail => handle % attlist_tail % next
-!write(stderrUnit,*) 'Extending att tail for '//trim(attname)
+!call mpas_log_write('Extending att tail for '//trim(attname))
          end if
       end if
 
@@ -4762,7 +4765,7 @@ module mpas_io
       integer, intent(in) :: frame
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_set_frame()'
+!      call mpas_log_write('Called MPAS_io_set_frame()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       handle % frame_number = frame
@@ -4777,7 +4780,7 @@ module mpas_io
       type (MPAS_IO_Handle_type), intent(inout) :: handle
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_advance_frame()'
+!      call mpas_log_write('Called MPAS_io_advance_frame()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       handle % frame_number = handle % frame_number + 1
@@ -4792,7 +4795,7 @@ module mpas_io
       type (MPAS_IO_Handle_type), intent(inout) :: handle
       integer, intent(out), optional :: ierr
 
-!      write(stderrUnit,*) 'Called MPAS_io_sync()'
+!      call mpas_log_write('Called MPAS_io_sync()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4817,7 +4820,7 @@ module mpas_io
       type (fieldlist_type), pointer :: fieldlist_ptr, fieldlist_del
       type (attlist_type), pointer :: attlist_ptr, attlist_del
 
-!      write(stderrUnit,*) 'Called MPAS_io_close()'
+!      call mpas_log_write('Called MPAS_io_close()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       ! Sanity checks
@@ -4872,7 +4875,7 @@ module mpas_io
 
       handle % initialized = .false.
 
-!write(stderrUnit,*) 'MGD PIO_closefile'
+!call mpas_log_write('MGD PIO_closefile')
       call PIO_closefile(handle % pio_file)
 
    end subroutine MPAS_io_close
@@ -4889,15 +4892,15 @@ module mpas_io
       integer :: pio_ierr
       type (decomplist_type), pointer :: decomp_cursor, decomp_del
 
-!      write(stderrUnit,*) 'Called MPAS_io_finalize()'
+!      call mpas_log_write('Called MPAS_io_finalize()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       decomp_cursor => ioContext % decomp_list
       do while (associated(decomp_cursor))
          decomp_del => decomp_cursor
          decomp_cursor => decomp_cursor % next
-!write(stderrUnit,*) 'Deallocating a decomposition...'
-!if (.not. associated(decomp_del % decomphandle)) write(stderrUnit,*) 'OOPS... do not have decomphandle'
+!call mpas_log_write('Deallocating a decomposition...')
+!if (.not. associated(decomp_del % decomphandle)) call mpas_log_write('OOPS... do not have decomphandle')
          deallocate(decomp_del % decomphandle % dims)
          deallocate(decomp_del % decomphandle % indices)
          call PIO_freedecomp(ioContext % pio_iosystem, decomp_del % decomphandle % pio_iodesc)
@@ -4905,7 +4908,7 @@ module mpas_io
          deallocate(decomp_del)
       end do
 
-!write(stderrUnit,*) 'MGD PIO_finalize'
+!call mpas_log_write('MGD PIO_finalize')
       if (present(finalize_iosystem)) then
          if ( finalize_iosystem ) then
            call PIO_finalize(ioContext % pio_iosystem, pio_ierr)
@@ -4942,50 +4945,50 @@ module mpas_io
          case (MPAS_IO_NOERR)
             ! ... do nothing ...
          case (MPAS_IO_ERR_INVALID_MODE)
-            write(stderrUnit,*) 'MPAS IO Error: Invalid file access mode'
+            call mpas_log_write('MPAS IO Error: Invalid file access mode', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_INVALID_FORMAT)
-            write(stderrUnit,*) 'MPAS IO Error: Invalid I/O format'
+            call mpas_log_write('MPAS IO Error: Invalid I/O format', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_LONG_FILENAME)
-            write(stderrUnit,*) 'MPAS IO Error: Filename too long'
+            call mpas_log_write('MPAS IO Error: Filename too long', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_UNINIT_HANDLE)
-            write(stderrUnit,*) 'MPAS IO Error: Uninitialized I/O handle'
+            call mpas_log_write('MPAS IO Error: Uninitialized I/O handle', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_PIO)
-            write(stderrUnit,*) 'MPAS IO Error: Bad return value from PIO'
+            call mpas_log_write('MPAS IO Error: Bad return value from PIO', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_DATA_MODE)
-            write(stderrUnit,*) 'MPAS IO Error: Cannot define in data mode'
+            call mpas_log_write('MPAS IO Error: Cannot define in data mode', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_NOWRITE)
-            write(stderrUnit,*) 'MPAS IO Error: File not opened for writing'
+            call mpas_log_write('MPAS IO Error: File not opened for writing', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_REDEF_DIM)
-            write(stderrUnit,*) 'MPAS IO Error: Inconsistent redefinition of dimension'
+            call mpas_log_write('MPAS IO Error: Inconsistent redefinition of dimension', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_REDEF_VAR)
-            write(stderrUnit,*) 'MPAS IO Error: Inconsistent redefinition of field'
+            call mpas_log_write('MPAS IO Error: Inconsistent redefinition of field', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_UNDEFINED_DIM)
-            write(stderrUnit,*) 'MPAS IO Error: Field uses undefined dimension'
+            call mpas_log_write('MPAS IO Error: Field uses undefined dimension', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_UNDEFINED_VAR)
-            write(stderrUnit,*) 'MPAS IO Error: Undefined field'
+            call mpas_log_write('MPAS IO Error: Undefined field', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_REDEF_ATT)
-            write(stderrUnit,*) 'MPAS IO Error: Inconsistent redefinition of attribute'
+            call mpas_log_write('MPAS IO Error: Inconsistent redefinition of attribute', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_WRONG_ATT_TYPE)
-            write(stderrUnit,*) 'MPAS IO Error: Wrong type for requested attribute'
+            call mpas_log_write('MPAS IO Error: Wrong type for requested attribute', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_NO_DECOMP)
-            write(stderrUnit,*) 'MPAS IO Error: Decomposition indices not set for field'
+            call mpas_log_write('MPAS IO Error: Decomposition indices not set for field', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_TWO_UNLIMITED_DIMS)
-            write(stderrUnit,*) 'MPAS IO Error: Defining more than one unlimited dimension'
+            call mpas_log_write('MPAS IO Error: Defining more than one unlimited dimension', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_WRONG_MODE)
-            write(stderrUnit,*) 'MPAS IO Error: Operation not permitted in this file mode'
+            call mpas_log_write('MPAS IO Error: Operation not permitted in this file mode', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_NO_UNLIMITED_DIM)
-            write(stderrUnit,*) 'MPAS IO Error: No unlimited dimension found in dataset'
+            call mpas_log_write('MPAS IO Error: No unlimited dimension found in dataset', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_UNIMPLEMENTED)
-            write(stderrUnit,*) 'MPAS IO Error: Unimplemented functionality'
+            call mpas_log_write('MPAS IO Error: Unimplemented functionality', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_WOULD_CLOBBER)
-            write(stderrUnit,*) 'MPAS IO Error: Would clobber existing file'
+            call mpas_log_write('MPAS IO Error: Would clobber existing file', MPAS_LOG_ERR)
          case (MPAS_IO_ERR_NOEXIST_READ)
-            write(stderrUnit,*) 'MPAS IO Error: Attempting to read a file which does not exist.'
+            call mpas_log_write('MPAS IO Error: Attempting to read a file which does not exist.', MPAS_LOG_ERR)
          case default
-            write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
+            call mpas_log_write('MPAS IO Error: Unrecognized error code...', MPAS_LOG_ERR)
       end select
 
-      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_dmpar_global_abort('ERROR In MPAS_IO')
+      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_log_write('ERROR In MPAS_IO', MPAS_LOG_CRIT)
 
    end subroutine MPAS_io_err_mesg
  

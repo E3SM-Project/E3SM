@@ -18,7 +18,7 @@
 ! module definition
 
       module ESMF_BaseMod
- 
+
 !BOP
 ! !MODULE: ESMF_BaseMod - Base class for all ESMF classes
 !
@@ -47,7 +47,7 @@
       integer, parameter :: ESMF_MAXDIM = 7, &
                             ESMF_MAXDECOMPDIM=3, &
                             ESMF_MAXGRIDDIM=2
-     
+
       integer, parameter :: ESMF_MAJOR_VERSION = 2
       integer, parameter :: ESMF_MINOR_VERSION = 2
       integer, parameter :: ESMF_REVISION      = 3
@@ -67,7 +67,7 @@
                                       ESMF_STATE_ALLOCATED = ESMF_Status(4), &
                                       ESMF_STATE_BUSY = ESMF_Status(5), &
                                       ESMF_STATE_INVALID = ESMF_Status(6)
- 
+
 !------------------------------------------------------------------------------
 !
       type ESMF_Pointer
@@ -102,8 +102,8 @@
                    ESMF_KIND_I2 = selected_int_kind(4), &
                    ESMF_KIND_I4 = selected_int_kind(9), &
                    ESMF_KIND_I8 = selected_int_kind(18), &
-                   ESMF_KIND_R4 = selected_real_kind(6),  & ! 4-byte real
-                   ESMF_KIND_R8 = selected_real_kind(12), & ! 8-byte real
+                   ESMF_KIND_R4 = selected_real_kind(3,25), &
+                   ESMF_KIND_R8 = selected_real_kind(6,45), &
                    ESMF_KIND_C8 = selected_real_kind(3,25), &
                    ESMF_KIND_C16 = selected_real_kind(6,45)
 
@@ -197,7 +197,7 @@
       public ESMF_DATA_INTEGER, ESMF_DATA_REAL, &
              ESMF_DATA_LOGICAL, ESMF_DATA_CHARACTER
 
-      public ESMF_KIND_I1, ESMF_KIND_I2, ESMF_KIND_I4, ESMF_KIND_I8, & 
+      public ESMF_KIND_I1, ESMF_KIND_I2, ESMF_KIND_I4, ESMF_KIND_I8, &
              ESMF_KIND_R4, ESMF_KIND_R8, ESMF_KIND_C8, ESMF_KIND_C16
 
       public ESMF_NULL_POINTER, ESMF_BAD_POINTER
@@ -206,9 +206,9 @@
       public ESMF_FAILURE, ESMF_SUCCESS
       public ESMF_MAXSTR
       public ESMF_MAXDIM, ESMF_MAXDECOMPDIM, ESMF_MAXGRIDDIM
-     
+
       public ESMF_MAJOR_VERSION, ESMF_MINOR_VERSION, ESMF_REVISION
-      public ESMF_VERSION_STRING 
+      public ESMF_VERSION_STRING
 
       public ESMF_Status, ESMF_Pointer, ESMF_DataType
       public ESMF_DataValue, ESMF_Attribute
@@ -224,13 +224,13 @@
 ! !PUBLIC MEMBER FUNCTIONS:
 !
 ! !DESCRIPTION:
-!     The following routines apply to any type in the system.  
+!     The following routines apply to any type in the system.
 !     The attribute routines can be inherited as-is.  The other
 !     routines need to be specialized by the higher level objects.
 !
 !   Base class methods
 !      public ESMF_BaseInit
-   
+
 !      public ESMF_BaseGetConfig
 !      public ESMF_BaseSetConfig
 
@@ -263,7 +263,7 @@
       public ESMF_AttributeGetObjectList
       public ESMF_AttributeCopy
       public ESMF_AttributeCopyAll
- 
+
 !  Misc methods
       public ESMF_SetName
       public ESMF_GetName
@@ -289,9 +289,9 @@
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 
-! overload .eq. & .ne. with additional derived types so you can compare 
+! overload .eq. & .ne. with additional derived types so you can compare
 !  them as if they were simple integers.
- 
+
 
 interface operator (.eq.)
  module procedure ESMF_sfeq
@@ -431,7 +431,7 @@ end function
 
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
-! 
+!
 ! Base methods
 !
 !------------------------------------------------------------------------------
@@ -443,8 +443,8 @@ end function
       subroutine ESMF_BaseInit(base, rc)
 !
 ! !ARGUMENTS:
-      type(ESMF_Base) :: base                 
-      integer, intent(out), optional :: rc     
+      type(ESMF_Base) :: base
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -453,7 +453,7 @@ end function
 !     \begin{description}
 !     \item [base]
 !           In the Fortran interface, this must in fact be a {\tt Base}
-!           derived type object.  It is expected that all specialized 
+!           derived type object.  It is expected that all specialized
 !           derived types will include a {\tt Base} object as the first
 !           entry.
 !     \item [{[rc]}]
@@ -463,7 +463,7 @@ end function
 !
 !EOP
 
-      logical :: rcpresent                          ! Return code present   
+      logical :: rcpresent                          ! Return code present
 
 !     !Initialize return code
       rcpresent = .FALSE.
@@ -490,10 +490,10 @@ end function
       subroutine ESMF_SetName(anytype, name, namespace, rc)
 !
 ! !ARGUMENTS:
-      type(ESMF_Base) :: anytype                 
-      character (len = *), intent(in), optional :: name   
+      type(ESMF_Base) :: anytype
+      character (len = *), intent(in), optional :: name
       character (len = *), intent(in), optional :: namespace
-      integer, intent(out), optional :: rc     
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -502,17 +502,17 @@ end function
 !     \begin{description}
 !     \item [anytype]
 !           In the Fortran interface, this must in fact be a {\tt Base}
-!           derived type object.  It is expected that all specialized 
+!           derived type object.  It is expected that all specialized
 !           derived types will include a {\tt Base} object as the first
 !           entry.
 !     \item [[name]]
-!           Object name.  An error will be returned if a duplicate name 
+!           Object name.  An error will be returned if a duplicate name
 !           is specified.  If a name is not given a unique name will be
 !           generated and can be queried by the {\tt ESMF_GetName} routine.
 !     \item [[namespace]]
 !           Object namespace (e.g. "Application", "Component", "Grid", etc).
 !           If given, the name will be checked that it is unique within
-!           this namespace.  If not given, the generated name will be 
+!           this namespace.  If not given, the generated name will be
 !           unique within this namespace.  If namespace is not specified,
 !           a default "global" namespace will be assumed and the same rules
 !           for names will be followed.
@@ -521,12 +521,12 @@ end function
 !
 !     \end{description}
 !
-! 
+!
 
 !
 !EOP
 ! !REQUIREMENTS:  FLD1.5, FLD1.5.3
-      logical :: rcpresent                          ! Return code present   
+      logical :: rcpresent                          ! Return code present
       character (len = ESMF_MAXSTR) :: ournamespace ! Namespace if not given
       character (len = ESMF_MAXSTR) :: defaultname  ! Name if not given
       integer, save :: seqnum = 0       ! HACK - generate uniq names
@@ -543,7 +543,7 @@ end function
 !     !   is not given.  If a namespace is given, the name has to
 !     !   be unique within that namespace.  Example namespaces could
 !     !   be: Applications, Components, Fields/Bundles, Grids.
-!      
+!
 !     ! Construct a default namespace if one is not given
       if((.not. present(namespace)) .or. (namespace .eq. "")) then
           ournamespace = "global"
@@ -685,7 +685,7 @@ end function
 ! This can be useful in iterating through all attributes in a loop.
 !
 !EOP
-! !REQUIREMENTS: 
+! !REQUIREMENTS:
 
       end subroutine ESMF_AttributeGetbyNumber
 
@@ -718,7 +718,7 @@ end function
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  ESMF_AttributeSetList - set an ESMF object's attributes 
+! !IROUTINE:  ESMF_AttributeSetList - set an ESMF object's attributes
 !
 ! !INTERFACE:
       subroutine ESMF_AttributeSetList(anytype, namelist, valuelist, rc)
@@ -770,7 +770,7 @@ end function
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  ESMF_AttributeSetObjectList - set an attribute on multiple ESMF objects 
+! !IROUTINE:  ESMF_AttributeSetObjectList - set an attribute on multiple ESMF objects
 !
 ! !INTERFACE:
       subroutine ESMF_AttributeSetObjectList(anytypelist, name, value, rc)
@@ -796,7 +796,7 @@ end function
 !BOP
 !
 !
-! !IROUTINE:  ESMF_AttributeGetObjectList - get an attribute from multiple ESMF objects 
+! !IROUTINE:  ESMF_AttributeGetObjectList - get an attribute from multiple ESMF objects
 !
 ! !INTERFACE:
       subroutine ESMF_AttributeGetObjectList(anytypelist, name, typelist, valuelist, rc)
@@ -889,7 +889,7 @@ end function
 ! !ARGUMENTS:
       type(ESMF_AxisIndex), intent(inout) :: ai
       integer, intent(in) :: l, r, max, decomp, gstart
-      integer, intent(out), optional :: rc  
+      integer, intent(out), optional :: rc
 !
 ! !DESCRIPTION:
 !   Set the contents of an AxisIndex type.
@@ -919,7 +919,7 @@ end function
 ! !ARGUMENTS:
       type(ESMF_AxisIndex), intent(inout) :: ai
       integer, intent(out), optional :: l, r, max, decomp, gstart
-      integer, intent(out), optional :: rc  
+      integer, intent(out), optional :: rc
 !
 ! !DESCRIPTION:
 !   Get the contents of an AxisIndex type.
@@ -949,9 +949,9 @@ end function
       subroutine ESMF_SetPointer(ptype, contents, rc)
 !
 ! !ARGUMENTS:
-      type(ESMF_Pointer) :: ptype 
+      type(ESMF_Pointer) :: ptype
       integer*8, intent(in) :: contents
-      integer, intent(out), optional :: rc  
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -975,8 +975,8 @@ end function
       subroutine ESMF_SetNullPointer(ptype, rc)
 !
 ! !ARGUMENTS:
-      type(ESMF_Pointer) :: ptype 
-      integer, intent(out), optional :: rc  
+      type(ESMF_Pointer) :: ptype
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -991,19 +991,19 @@ end function
       if (present(rc)) rc = ESMF_SUCCESS
 
       end subroutine ESMF_SetNullPointer
-!------------------------------------------------------------------------- 
-!BOP 
-!  !IROUTINE:  ESMF_GetPointer - get an opaque value 
-!  
-! !INTERFACE: 
-      function ESMF_GetPointer(ptype, rc) 
+!-------------------------------------------------------------------------
+!BOP
+!  !IROUTINE:  ESMF_GetPointer - get an opaque value
+!
+! !INTERFACE:
+      function ESMF_GetPointer(ptype, rc)
 !
 ! !RETURN VALUE:
       integer*8 :: ESMF_GetPointer
 
 ! !ARGUMENTS:
-      type(ESMF_Pointer), intent(in) :: ptype 
-      integer, intent(out), optional :: rc  
+      type(ESMF_Pointer), intent(in) :: ptype
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -1017,19 +1017,19 @@ end function
 
       end function ESMF_GetPointer
 
-!------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------
 ! misc print routines
-!------------------------------------------------------------------------- 
-!BOP 
+!-------------------------------------------------------------------------
+!BOP
 !  !IROUTINE:  ESMF_StatusString - Return status as a string
-!  
-! !INTERFACE: 
+!
+! !INTERFACE:
       subroutine ESMF_StatusString(status, string, rc)
 !
 ! !ARGUMENTS:
       type(ESMF_Status), intent(in) :: status
       character(len=*), intent(out) :: string
-      integer, intent(out), optional :: rc  
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -1045,22 +1045,22 @@ end function
       if (status .eq. ESMF_STATE_ALLOCATED) string = "Allocated"
       if (status .eq. ESMF_STATE_BUSY) string = "Busy"
       if (status .eq. ESMF_STATE_INVALID) string = "Invalid"
- 
+
       if (present(rc)) rc = ESMF_SUCCESS
 
       end subroutine ESMF_StatusString
 
-!------------------------------------------------------------------------- 
-!BOP 
+!-------------------------------------------------------------------------
+!BOP
 !  !IROUTINE:  ESMF_DataTypeString - Return DataType as a string
-!  
-! !INTERFACE: 
+!
+! !INTERFACE:
       subroutine ESMF_DataTypeString(datatype, string, rc)
 !
 ! !ARGUMENTS:
       type(ESMF_DataType), intent(in) :: datatype
       character(len=*), intent(out) :: string
-      integer, intent(out), optional :: rc  
+      integer, intent(out), optional :: rc
 
 !
 ! !DESCRIPTION:
@@ -1074,7 +1074,7 @@ end function
       if (datatype .eq. ESMF_DATA_REAL) string = "Real"
       if (datatype .eq. ESMF_DATA_LOGICAL) string = "Logical"
       if (datatype .eq. ESMF_DATA_CHARACTER) string = "Character"
- 
+
       if (present(rc)) rc = ESMF_SUCCESS
 
       end subroutine ESMF_DataTypeString

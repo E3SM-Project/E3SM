@@ -13,8 +13,8 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module contains the routines for computing 
-!>  tanhant vertical mixing coefficients.  
+!>  This module contains the routines for computing
+!>  tanhant vertical mixing coefficients.
 !>
 !
 !-----------------------------------------------------------------------
@@ -64,7 +64,7 @@ contains
 !> \brief   Computes coefficients for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
 !
@@ -117,7 +117,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -149,7 +149,7 @@ contains
 !> \brief   Computes coefficients for vertical momentum mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the tanh vertical mixing coefficients for momentum
 !
 !-----------------------------------------------------------------------
@@ -187,34 +187,45 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k
-      integer, pointer :: nVertLevels
+      integer :: k, iEdge, nEdges
+      integer, pointer :: nVertLevels, nEdgesSolve
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
-      real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_zMid_tanh
       real (kind=RKIND), pointer :: config_zWidth_tanh
 
       err = 0
 
       if(.not.tanhViscOn) return
 
+      call mpas_timer_start('vel tanh coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_max_visc_tanh', config_max_visc_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_visc_tanh', config_min_visc_tanh)
-      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zMid_tanh', config_zMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
-      ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
+      nEdges = nEdgesSolve
+
+      ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      do k = 2, nVertLevels
-         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0 &
-            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
-                  / config_zWidth_tanh) &
-            + (config_max_visc_tanh + config_min_visc_tanh) / 2
+      !$omp do schedule(runtime) private(k)
+      do iEdge = 1, nEdges
+         do k = 2, nVertLevels
+            vertViscTopOfEdge(k, iEdge) = vertViscTopOfEdge(k, iEdge) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
+               * tanh((refBottomDepth(k-1) + config_zMid_tanh) &
+                     / config_zWidth_tanh) &
+               + (config_max_visc_tanh + config_min_visc_tanh) / 2
+         end do
       end do
+      !$omp end do
+
+      call mpas_timer_stop('vel tanh coef')
 
 
    !--------------------------------------------------------------------
@@ -228,7 +239,7 @@ contains
 !> \brief   Computes coefficients for vertical tracer mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the tanh vertical mixing coefficients for tracers
 !
 !-----------------------------------------------------------------------
@@ -266,35 +277,46 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k
-      integer, pointer :: nVertLevels
+      integer :: k, iCell, nCells
+      integer, pointer :: nVertLevels, nCellsSolve
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
-      real (kind=RKIND), pointer :: config_max_diff_tanh, config_min_diff_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_max_diff_tanh, config_min_diff_tanh, config_zMid_tanh
       real (kind=RKIND), pointer :: config_zWidth_tanh
 
       err = 0
 
       if ( .not. tanhDiffOn ) return
 
+      call mpas_timer_start('tracer tanh coef')
+
       call mpas_pool_get_config(ocnConfigs, 'config_max_diff_tanh', config_max_diff_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_diff_tanh', config_min_diff_tanh)
-      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zMid_tanh', config_zMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
-      ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
+      nCells = nCellsSolve
+
+      ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      do k=2,nVertLevels
-         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0 &
-            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
-                  / config_zWidth_tanh) &
-            + (config_max_diff_tanh + config_min_diff_tanh) / 2
+      !$omp do schedule(runtime) private(k)
+      do iCell = 1, nCells
+         do k=2,nVertLevels
+            vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
+               * tanh((refBottomDepth(k-1) + config_zMid_tanh) &
+                     / config_zWidth_tanh) &
+               + (config_max_diff_tanh + config_min_diff_tanh) / 2
+         end do
       end do
+      !$omp end do
+
+      call mpas_timer_stop('tracer tanh coef')
 
 
    !--------------------------------------------------------------------
@@ -309,9 +331,9 @@ contains
 !> \brief   Initializes ocean vertical mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  tanh vertical mixing in the ocean. 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  tanh vertical mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 

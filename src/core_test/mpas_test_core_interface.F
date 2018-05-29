@@ -11,7 +11,7 @@ module test_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_constants
-   use mpas_io_units
+   use mpas_log
    use mpas_attlist
    use test_core
 
@@ -40,6 +40,7 @@ module test_core_interface
       core % setup_packages => test_setup_packages
       core % setup_decompositions => test_setup_decompositions
       core % setup_clock => test_setup_clock
+      core % setup_log => test_setup_log
       core % get_mesh_stream => test_get_mesh_stream
       core % setup_immutable_streams => test_setup_immutable_streams
       core % setup_derived_dimensions => test_setup_derived_dimensions
@@ -147,7 +148,7 @@ module test_core_interface
    !
    !  function test_setup_clock
    !
-   !> \brief   Pacakge setup routine
+   !> \brief   Clock setup routine
    !> \author  Michael Duda
    !> \date    6 August 2014
    !> \details 
@@ -193,7 +194,7 @@ module test_core_interface
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write('config_run_duration and config_stop_time are inconsitent: using config_run_duration.', MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -201,12 +202,55 @@ module test_core_interface
          timeStep = stopTime - startTime
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          call mpas_log_write('Neither config_run_duration nor config_stop_time were specified.', MPAS_LOG_ERR)
           ierr = 1
       end if
 
 
    end function test_setup_clock!}}}
+
+
+   !***********************************************************************
+   !
+   !  function test_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman
+   !> \date    14 February 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function test_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types
+      use mpas_log
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, err=local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+   end function test_setup_log!}}}
 
 
    !***********************************************************************

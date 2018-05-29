@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  horizontal mixing tendencies.  
+!>  This module contains the main driver routine for computing
+!>  horizontal mixing tendencies.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
@@ -22,8 +22,10 @@
 
 module ocn_tracer_hmix_del4
 
+   use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_threading
    use ocn_constants
 
    implicit none
@@ -67,13 +69,13 @@ contains
 !> \brief   Computes biharmonic tendency term for horizontal tracer mixing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for tracers
 !>  based on current state using a biharmonic parameterization.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -86,6 +88,8 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -113,16 +117,19 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, num_tracers
+      integer :: iEdge, num_tracers, nCells, nEdges
       integer :: iTracer, k, iCell, cell1, cell2, i
-      integer, pointer :: nEdges, nVertLevels, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell1, invAreaCell2, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
-      real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
+      !real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
+      real (kind=RKIND), dimension(:,:,:), pointer :: delsq_tracer
+      type (field3DReal), pointer :: delsq_tracerField
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
@@ -130,7 +137,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -139,8 +146,10 @@ contains
 
       if ( .not. del4On ) return
 
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_timer_start("tracer del4")
+
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
@@ -159,13 +168,23 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
+      !allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
+      call mpas_pool_get_field(scratchPool, 'delsq_tracer', delsq_tracerField)
 
-      delsq_tracer(:,:,:) = 0.0
+      call mpas_allocate_scratch_field(delsq_tracerField, .true.)
+
+      call mpas_threading_barrier()
+
+      delsq_tracer => delsq_tracerField % array
+
+      ! Need 1 halo around owned cells
+      nCells = nCellsArray( 2 )
 
       ! first del2: div(h \nabla \phi) at cell center
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
-        invAreaCell1 = 1.0 / areaCell(iCell)
+        delsq_tracer(:, :, iCell) = 0.0_RKIND
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           invdcEdge = dvEdge(iEdge) / dcEdge(iEdge)
@@ -178,15 +197,21 @@ contains
               r_tmp1 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell1)
               r_tmp2 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell2)
 
-              delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * (r_tmp2 - r_tmp1) * invAreaCell1
+              delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) &
+                                              * (r_tmp2 - r_tmp1) * invAreaCell1
             end do
           end do
         end do
       end do
+      !$omp end do
+
+      ! Only need tendency on owned cells
+      nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
-        invAreaCell1 = 1.0 / areaCell(iCell)
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1, iEdge)
@@ -197,7 +222,7 @@ contains
           do k = 1, maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers * edgeMask(k, iEdge)
               tracer_turb_flux = (delsq_tracer(iTracer, k, cell2) - delsq_tracer(iTracer, k, cell1))
-                
+
               flux = tracer_turb_flux * invdcEdge
 
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell1
@@ -205,8 +230,13 @@ contains
           end do
         end do
       end do
+      !$omp end do
 
-      deallocate(delsq_tracer)
+      call mpas_threading_barrier()
+      call mpas_deallocate_scratch_field(delsq_tracerField, .true.)
+
+      call mpas_timer_stop("tracer del4")
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_hmix_del4_tend!}}}
@@ -218,9 +248,9 @@ contains
 !> \brief   Initializes ocean tracer horizontal mixing quantities
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  biharmonic horizontal velocity mixing in the ocean. 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  biharmonic horizontal velocity mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -246,7 +276,7 @@ contains
 
       del4on = .false.
 
-      if ( config_tracer_del4 > 0.0 ) then
+      if ( config_tracer_del4 > 0.0_RKIND ) then
           del4On = .true.
           eddyDiff4 = config_tracer_del4
       endif

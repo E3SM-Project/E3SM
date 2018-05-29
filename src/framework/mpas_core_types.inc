@@ -64,6 +64,17 @@
    end interface
 
    abstract interface
+      function mpas_setup_log_function(logInfo, domain) result(iErr)
+         import mpas_log_type
+         import domain_type
+
+         type (mpas_log_type), pointer, intent(inout) :: logInfo
+         type (domain_type), pointer, intent(in) :: domain
+         integer :: iErr
+      end function mpas_setup_log_function
+   end interface
+
+   abstract interface
       function mpas_setup_immutable_streams_function(manager) result(iErr)
          import mpas_streamManager_type
 
@@ -156,6 +167,7 @@
       procedure (mpas_setup_decompositions_function), pointer, nopass :: setup_decompositions => null()
       procedure (mpas_get_mesh_stream_function), pointer, nopass :: get_mesh_stream => null()
       procedure (mpas_setup_clock_function), pointer, nopass :: setup_clock => null()
+      procedure (mpas_setup_log_function), pointer, nopass :: setup_log => null()
       procedure (mpas_setup_block_function), pointer, nopass :: setup_block => null()
       procedure (mpas_setup_immutable_streams_function), pointer, nopass :: setup_immutable_streams => null()
       procedure (mpas_setup_derived_dimensions_function), pointer, nopass :: setup_derived_dimensions => null()

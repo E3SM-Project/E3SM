@@ -147,26 +147,52 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
-                   if ( init_array ) then
-                      f_cursor % array(:) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1)))
-               if ( init_array ) then
-                  f % array(:) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         ! thread 0 first allocates all memory
+         f_cursor => f
+         do while(associated(f_cursor))
+           if(.not.associated(f_cursor % array)) then
+             if ( threadNum == 0 ) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1)))
              end if
-          end if
+           end if
+           f_cursor => f_cursor % next
+         end do
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize it
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do schedule(runtime)
+           do i = 1, f_cursor % dimSizes(1)
+             f_cursor % array(i) = f_cursor % defaultValue
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         ! thread 0 first allocated memory
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize it
+         if ( init_array ) then
+         !$omp do schedule(runtime)
+         do i = 1, f % dimSizes(1)
+           f % array(i) = f % defaultValue
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field1d_integer!}}}
@@ -209,26 +235,56 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
-               if ( init_array ) then
-                  f % array(:, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         ! thread 0 first allocates all memory
+         f_cursor => f
+         do while(associated(f_cursor))
+           if(.not.associated(f_cursor % array)) then
+             if ( threadNum == 0 ) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
              end if
-          end if
+           end if
+           f_cursor => f_cursor % next
+         end do
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize it
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(2) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(2)
+             do j = 1, f_cursor % dimSizes(1)
+               f_cursor % array(j, i) = f_cursor % defaultValue
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         ! thread 0 first allocates memory
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize it
+         if ( init_array ) then
+         !$omp do collapse(2) schedule(runtime)
+         do i = 1, f % dimSizes(2)
+           do j = 1, f % dimSizes(1)
+             f % array(j, i) = f % defaultValue
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field2d_integer!}}}
@@ -271,26 +327,56 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
-               if ( init_array ) then
-                  f % array(:, :, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(3) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(3)
+             do j = 1, f_cursor % dimSizes(2)
+               do k = 1, f_cursor % dimSizes(1)
+                 f_cursor % array(k, j, i) = f_cursor % defaultValue
+               end do
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+           end if
+         endif
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         !$omp do collapse(3) schedule(runtime)
+         do i = 1, f % dimSizes(3)
+           do j = 1, f % dimSizes(2)
+             do k = 1, f % dimSizes(1)
+               f % array(k, j, i) = f % defaultValue
+             end do
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field3d_integer!}}}
@@ -333,26 +419,52 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
-                   if ( init_array ) then
-                      f_cursor % array(:) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1)))
-               if ( init_array ) then
-                  f % array(:) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         ! thread 0 first allocates everything
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do schedule(runtime)
+           do i = 1, f_cursor % dimSizes(1)
+             f_cursor % array(i) = f_cursor % defaultValue
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         ! thread 0 allocates
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize
+         if ( init_array ) then
+         !$omp do schedule(runtime)
+         do i = 1, f % dimSizes(1)
+           f % array(i) = f % defaultValue
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field1d_real!}}}
@@ -395,26 +507,54 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
-               if ( init_array ) then
-                  f % array(:, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         ! thread 0 allocates everything
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(2) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(2)
+             do j = 1, f_cursor % dimSizes(1)
+               f_cursor % array(j, i) = f_cursor % defaultValue
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         !$omp do schedule(runtime) collapse(2)
+         do i = 1, f % dimSizes(2)
+           do j = 1, f % dimSizes(1)
+             f % array(j, i) = f % defaultValue
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field2d_real!}}}
@@ -457,26 +597,56 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
-               if ( init_array ) then
-                  f % array(:, :, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(3) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(3)
+             do j = 1, f_cursor % dimSizes(2)
+               do k = 1, f_cursor % dimSizes(1)
+                 f_cursor % array(k, j, i) = f_cursor % defaultValue
+               end do
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         !$omp do collapse(3) schedule(runtime)
+         do i = 1, f % dimSizes(3)
+           do j = 1, f % dimSizes(2)
+             do k = 1, f % dimSizes(1)
+               f % array(k, j, k) = f % defaultValue
+             end do
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field3d_real!}}}
@@ -519,26 +689,60 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :, :, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4)))
-               if ( init_array ) then
-                  f % array(:, :, :, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(4) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(4)
+             do j = 1, f_cursor % dimSizes(3)
+               do k = 1, f_cursor % dimSizes(2)
+                 do l = 1, f_cursor % dimSizes(1)
+                   f_cursor % array(l, k, j, i) = f_cursor % defaultValue
+                 end do
+               end do
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         !$omp do collapse(4) schedule(runtime)
+         do i = 1, f % dimSizes(4)
+           do j = 1, f % dimSizes(3)
+             do k = 1, f % dimSizes(2)
+               do l = 1, f % dimSizes(1)
+                 f % array(l, k, j, k) = f % defaultValue
+               end do
+             end do
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field4d_real!}}}
@@ -581,26 +785,64 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4), f_cursor % dimSizes(5)))
-                   if ( init_array ) then
-                      f_cursor % array(:, :, :, :, :) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4), f % dimSizes(5)))
-               if ( init_array ) then
-                  f % array(:, :, :, :, :) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4), f_cursor % dimSizes(5)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do collapse(5) schedule(runtime)
+           do i = 1, f_cursor % dimSizes(5)
+             do j = 1, f_cursor % dimSizes(4)
+               do k = 1, f_cursor % dimSizes(3)
+                 do l = 1, f_cursor % dimSizes(2)
+                   do m = 1, f_cursor % dimSizes(1)
+                     f_cursor % array(m, l, k, j, i) = f_cursor % defaultValue
+                   end do
+                 end do
+               end do
+             end do
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4), f % dimSizes(5)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         if ( init_array ) then
+         !$omp do collapse(5) schedule(runtime)
+         do i = 1, f % dimSizes(5)
+           do j = 1, f % dimSizes(4)
+             do k = 1, f % dimSizes(3)
+               do l = 1, f % dimSizes(2)
+                 do m = 1, f % dimSizes(1)
+                   f % array(m, l, k, j, k) = f % defaultValue
+                 end do
+               end do
+             end do
+           end do
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field5d_real!}}}
@@ -643,26 +885,52 @@ module mpas_field_routines
 
        threadNum = mpas_threading_get_thread_num()
 
-       if ( threadNum == 0 ) then
-          if(.not. single_block) then
-             f_cursor => f
-             do while(associated(f_cursor))
-                if(.not.associated(f_cursor % array)) then
-                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
-                   if ( init_array ) then
-                      f_cursor % array(:) = f_cursor % defaultValue
-                   end if
-                end if
-                f_cursor => f_cursor % next
-             end do
-          else
-             if(.not.associated(f % array)) then
-               allocate(f % array(f % dimSizes(1)))
-               if ( init_array ) then
-                  f % array(:) = f % defaultValue
-               end if
+       if(.not. single_block) then
+
+         ! thread 0 first allocates everything
+         f_cursor => f
+         if ( threadNum == 0 ) then
+           do while(associated(f_cursor))
+             if(.not.associated(f_cursor % array)) then
+               allocate(f_cursor % array(f_cursor % dimSizes(1)))
              end if
-          end if
+             f_cursor => f_cursor % next
+           end do
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize
+         if ( init_array ) then
+         f_cursor => f
+         do while(associated(f_cursor))
+           !$omp do schedule(runtime)
+           do i = 1, f_cursor % dimSizes(1)
+             f_cursor % array(i) = f_cursor % defaultValue
+           end do
+           !$omp end do
+           f_cursor => f_cursor % next
+         end do
+         end if
+       else
+
+         ! thread 0 allocates
+         if ( threadNum == 0 ) then
+           if(.not.associated(f % array)) then
+             allocate(f % array(f % dimSizes(1)))
+           end if
+         end if
+
+         call mpas_threading_barrier()
+
+         ! then all threads initialize
+         if ( init_array ) then
+         !$omp do schedule(runtime)
+         do i = 1, f % dimSizes(1)
+           f % array(i) = f % defaultValue
+         end do
+         !$omp end do
+         end if
        end if
 
    end subroutine mpas_allocate_scratch_field1d_char!}}}

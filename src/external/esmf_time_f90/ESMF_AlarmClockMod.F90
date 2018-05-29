@@ -27,8 +27,8 @@
 ! !MODULE: ESMF_AlarmClockMod
 !
 ! !DESCRIPTION:
-! Separate module that uses both ESMF_AlarmMod and ESMF_ClockMod.  
-! Separation is needed to avoid cyclic dependence.  
+! Separate module that uses both ESMF_AlarmMod and ESMF_ClockMod.
+! Separation is needed to avoid cyclic dependence.
 !
 ! Defines F90 wrapper entry points for corresponding
 ! C++ class {\tt ESMC\_Alarm}
