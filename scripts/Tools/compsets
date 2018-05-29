@@ -68,7 +68,7 @@ def _main_func(description):
                     else:
                         logger.warn("Unrecognized longname: {} {} {} ".format(longname, i, elements[i]))
 
-#    print ("compset_dict = {}".format(compset_dict))
+    print ("compset_dict = {}".format(compset_dict))
 
 
 if (__name__ == "__main__"):
