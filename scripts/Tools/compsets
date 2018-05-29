@@ -36,7 +36,7 @@ def _main_func(description):
     files = Files()
 
     comp_classes = ("CPL", "ATM", "ROF", "GLC", "LND", "OCN", "WAV", "ICE", "ESP")
-    components = []
+    components = ["allactive"]
     for comp in comp_classes:
         components.extend(files.get_components("COMP_ROOT_DIR_{}".format(comp)))
     compset_files = []
