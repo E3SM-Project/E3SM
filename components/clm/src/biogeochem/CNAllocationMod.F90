@@ -34,6 +34,7 @@ module CNAllocationMod
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
+  use clm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -3376,8 +3377,13 @@ contains
              retransn_to_npool(p) = avail_retransn(p)
              retransp_to_ppool(p) = avail_retransp(p)
 
-             plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
-             plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p) + biochem_pmin_to_plant(p)
+             if (NFIX_PTASE_plant) then
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p) + biochem_pmin_to_plant(p)
+             else
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             endif
              
              mr = leaf_mr(p) + froot_mr(p)
              if (woody(ivt(p)) == 1.0_r8) then
