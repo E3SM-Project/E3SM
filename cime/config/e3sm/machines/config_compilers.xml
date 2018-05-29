@@ -162,7 +162,7 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -gopt -Mlist  -time </CFLAGS>
+  <CFLAGS> -gopt -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
