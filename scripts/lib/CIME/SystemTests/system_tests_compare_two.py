@@ -38,6 +38,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 from CIME.utils import get_model
+from CIME.test_status import *
 
 import shutil, os, glob
 
@@ -108,6 +109,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._setup_cases_if_not_yet_done()
 
         self._multisubmit = multisubmit
+
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
     # base class
@@ -219,6 +221,11 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case_one_custom_prerun_action()
             self.run_indv(suffix = self._run_one_suffix)
             self._case_one_custom_postrun_action()
+
+            # Add a PENDing compare phase so that we'll notice if the second part of compare two
+            # doesn't run.
+            with self._test_status:
+                self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, self._run_one_suffix, self._run_two_suffix), TEST_PEND_STATUS)
 
         # Second run
         logger.info("_multisubmit {} first phase {}".format(self._multisubmit, first_phase))
