@@ -228,7 +228,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
+      <!-- <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value> -->
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
@@ -247,7 +247,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value>
+      <!-- <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value> -->
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_pes.xml</value>
@@ -310,7 +310,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/testlist_allactive.xml</value>
+      <!-- <value component="allactive">$SRCROOT/cime_config/testlist_allactive.xml</value> -->
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testlist_drv.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testlist_cam.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testlist_cism.xml</value>
@@ -331,7 +331,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/testmods_dirs</value>
+      <!-- <value component="allactive">$SRCROOT/cime_config/testmods_dirs</value> -->
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testmods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
@@ -351,7 +351,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/usermods_dirs</value>
+      <!-- <value component="allactive">$SRCROOT/cime_config/usermods_dirs</value> -->
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/usermods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/usermods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/usermods_dirs</value>
