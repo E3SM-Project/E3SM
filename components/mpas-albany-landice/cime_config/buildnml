@@ -31,6 +31,8 @@ def buildnml(case, caseroot, compname):
     glc_grid          = case.get_value("GLC_GRID")
     #ninst_glc        = case.get_value("NINST_GLC")
     ninst_glc = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_glc_real    = case.get_value("NINST_GLC")
+    ntasks_glc        = case.get_value("NTASKS_GLC")
     rundir            = case.get_value("RUNDIR")
     run_type          = case.get_value("RUN_TYPE")
     run_refdate       = case.get_value("RUN_REFDATE")
@@ -122,6 +124,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
         sysmod += " -date_stamp '{}'".format(grid_date)
         sysmod += " -glc_grid '{}'".format(glc_grid)
+        sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
+        sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 

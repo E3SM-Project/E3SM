@@ -36,6 +36,8 @@ def buildnml(case, caseroot, compname):
     ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_ice_real   = case.get_value("NINST_ICE")
+    ntasks_ice       = case.get_value("NTASKS_ICE")
     rundir           = case.get_value("RUNDIR")
     run_type         = case.get_value("RUN_TYPE")
     run_refdate      = case.get_value("RUN_REFDATE")
@@ -227,6 +229,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ic_mode '{}'".format(ic_mode)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
         sysmod += " -surface_mode '{}'".format(surface_mode)
+        sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
+        sysmod += " -ninst_ice '{}'".format(ninst_ice_real)
 
         # pass in ICE_MASK for now as a short-cut for the grid
         # at some point, we may want to pass both -- but for now this is simpler
