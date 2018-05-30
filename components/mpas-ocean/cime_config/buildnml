@@ -35,9 +35,11 @@ def buildnml(case, caseroot, compname):
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
-    nthrds_ocn        = case.get_value("NTHRDS_OCN")
     ocn_pio_typename  = case.get_value("OCN_PIO_TYPENAME")
     ninst_ocn         = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_ocn_real    = case.get_value("NINST_OCN")
+    nthrds_ocn        = case.get_value("NTHRDS_OCN")
+    ntasks_ocn        = case.get_value("NTASKS_OCN")
     rundir            = case.get_value("RUNDIR")
     run_type          = case.get_value("RUN_TYPE")
     run_refdate       = case.get_value("RUN_REFDATE")
@@ -262,6 +264,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
+        sysmod += " -ntasks_ocn '{}'".format(ntasks_ocn)
+        sysmod += " -ninst_ocn '{}'".format(ninst_ocn_real)
         # pass in OCN_MASK for now as a short-cut for the grid
         # at some point, we may want to pass both -- but for now this is simpler
 
