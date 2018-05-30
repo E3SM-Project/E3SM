@@ -37,6 +37,7 @@ module CNBalanceCheckMod
   use clm_varctl          , only : forest_fert_exp
   use VegetationType      , only : veg_pp
   use pftvarcon           , only: noveg
+  use clm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -309,6 +310,7 @@ contains
          totcoln             =>    nitrogenstate_vars%totcoln_col            , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
          ndep_to_sminn       =>    nitrogenflux_vars%ndep_to_sminn_col       , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn       =>    nitrogenflux_vars%nfix_to_sminn_col       , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         nfix_to_ecosysn     =>    nitrogenflux_vars%nfix_to_ecosysn_col     , &
          fert_to_sminn       =>    nitrogenflux_vars%fert_to_sminn_col       , & ! Input:  [real(r8) (:)]                                          
          soyfixn_to_sminn    =>    nitrogenflux_vars%soyfixn_to_sminn_col    , & ! Input:  [real(r8) (:)]                                          
          supplement_to_sminn =>    nitrogenflux_vars%supplement_to_sminn_col , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)         
@@ -345,7 +347,12 @@ contains
          col_endnb(c) = totcoln(c)
 
          ! calculate total column-level inputs
-         col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
+         if (NFIX_PTASE_plant) then
+            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
+         else
+            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
+         end if
+
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
 

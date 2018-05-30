@@ -34,6 +34,7 @@ module CNAllocationMod
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
+  use clm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -2963,6 +2964,8 @@ contains
          npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
          retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
          sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+         nfix_to_plantn               => nitrogenflux_vars%nfix_to_plantn_patch              , &
+         biochem_pmin_to_plant        => phosphorusflux_vars%biochem_pmin_to_plant_patch     , &
          npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
          npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
          npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
@@ -3374,8 +3377,13 @@ contains
              retransn_to_npool(p) = avail_retransn(p)
              retransp_to_ppool(p) = avail_retransp(p)
 
-             plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
-             plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             if (NFIX_PTASE_plant) then
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p) + biochem_pmin_to_plant(p)
+             else
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             endif
              
              mr = leaf_mr(p) + froot_mr(p)
              if (woody(ivt(p)) == 1.0_r8) then
