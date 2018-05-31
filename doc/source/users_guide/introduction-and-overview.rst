@@ -14,7 +14,7 @@ Prerequisites
 =============
 
 Part 1 of this guide assumes that CIME or a CIME-driven model and the necessary input files
-have been installed on the computer you are using. If that is not the case, see Installing CIME.
+have been installed on the computer you are using. If that is not the case, see :ref:`Porting CIME<porting>`.
 
 Other prerequisites:
 
@@ -58,8 +58,7 @@ See the :ref:`glossary` for a more complete list of terms.
    For each of the 7 physical components (models), there can be three different implementations in a CIME-driven coupled model.
 
    *active*: Solve a complex set of equations to describe the model's behavior. Also called *prognostic* or *full* models.
-   Multiple active models might be available (for example POP and MPAS-ocean to represent the global ocean) but only one at a time
-   can be used in a component set.
+   These can be full General Circulation Models. Multiple active models might be available (for example POP and MPAS-ocean to represent the global ocean) but only one ocean or atmosphere model at a time can be used in a component set.
 
    *data*: For some climate problems, it is necessary to reduce feedbacks within the system by replacing an active model with a
    version that sends and receives the same variables to and from other models, but with the values read from files rather
@@ -72,7 +71,7 @@ See the :ref:`glossary` for a more complete list of terms.
 
 **component set** or **compset**:   The particular combination of active, data and stub versions of the 7 components is referred to
    as a *component set* or  *compset*.  The Case Control System allows one to define
-   several possible compsets and configure and run them on supported platforms.
+   several possible compsets and configure and run them on supported platforms. See :ref:`Component Sets<compsets>` for more information.
 
 **grid** or **model grid**:
    Each active model must solve its equations on a numerical grid. CIME allows models within the system to have
@@ -112,50 +111,9 @@ For variables that can be set in more than one way, the order of precedence is:
 
 - variable is set as an environment variable
 
-- variable is set in ``$HOME/.cime/config``
+- variable is set in ``$HOME/.cime/config`` as explained further :ref:`here<customizing-cime>`.
 
 - variable is set in a ``$CASEROOT`` xml file
-
-Directory content
-==================
-
-If you use CIME as part of a climate model or standalone, the content of the **cime** directory is the same.
-
-If you are using it as part of a climate model, **cime** is usually one of the first subdirectories under the main directory.
-
-The following is the directory structure of e3sm and cesm:
-
-    =============  ======================================
-    README, etc.   typical top-level directory content
-    components/    source code for active models
-    cime           All of CIME code"
-    =============  ======================================
-
-CIME's content is split into several subdirectories. Users should start in the **scripts/** subdirectory.
-
-   ===================== ==================================================================================
-   CMakeLists.txt	 For building with CMake
-   ChangeLog		 Developer-maintained record of changes to CIME
-   ChangeLog_template	 Template for an entry in ChangeLog
-   LICENSE.TXT		 The CIME license
-   README		 Brief intro to CIME
-   README.md		 README in markdown language
-   README.unit_testing	 Instructions for running unit tests with CIME
-   **config/**		 **Shared and model-specific configuration files**
-   config/cesm/	         CESM-specific configuration options
-   config/e3sm/	         E3SM-specific configuration options
-   **scripts/**		 **The CIME user interface**
-   scripts/lib/  	 Infrastructure source code for CIME scripts and functions
-   scripts/Tools/	 Auxiliary tools; scripts and functions
-   **src/**		 **Model source code provided by CIME**
-   src/components/	 CIME-provided components including data and stub models
-   src/drivers/  	 CIME-provided main driver for a climate model
-   src/externals/	 Software provided with CIME for building a climate model
-   src/share/    	 Model source code provided by CIME and used by multiple components
-   **tests/**		 **Tests**
-   **tools/**		 **Standalone climate modeling tools**
-   utils/		 Some Perl source code needed by some prognostic components
-   ===================== ==================================================================================
 
 Discovering available cases with **query_config**
 =================================================
