@@ -960,8 +960,11 @@ class TestScheduler(object):
                     if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                         logger.info( "{} {} (phase {})".format(ts_status, test, phase))
                         rv = False
-                    elif nlfail:
+                    elif ts_status == TEST_PASS_STATUS and nlfail:
                         logger.info( "{} {} (but otherwise OK) {}".format(NAMELIST_FAIL_STATUS, test, phase))
+                        rv = False
+                    elif ts_status == TEST_PEND_STATUS and (not self._no_run and self._no_batch):
+                        logger.info( "{} {} (Some phases left in PEND)".format(TEST_FAIL_STATUS, test))
                         rv = False
                     else:
                         logger.info("{} {} {}".format(status, test, phase))
