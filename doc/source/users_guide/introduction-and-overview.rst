@@ -115,6 +115,30 @@ For variables that can be set in more than one way, the order of precedence is:
 
 - variable is set in a ``$CASEROOT`` xml file
 
+Quick start
+==================
+
+To see an example of how a case is created, configured, built and run with CIME, execute the following commands for an example. (This assumes that CIME has been ported to your current machine).
+::
+
+   > cd cime/scripts
+   > ./create_newcase --case mycase --compset X --res f19_g16
+   > cd mycase
+   > ./case.setup
+   > ./case.build
+   > ./case.submit
+
+The output from each command is explained in the following sections.
+
+After you submit the case, you can follow the progress of your run by monitoring the ``CaseStatus`` file.
+
+::
+
+   > tail CaseStatus
+
+Repeat the command until you see the message ``case.run success``.
+
+
 Discovering available cases with **query_config**
 =================================================
 
@@ -176,32 +200,6 @@ The output will be similar to this::
           _DOCN%SOM : docn slab ocean mode
        _DOCN%SOMAQP : docn aquaplanet slab ocean mode
     _DOCN%SST_AQUAP : docn aquaplanet mode:
-
-
-Quick start
-==================
-
-To see an example of how a case is created, configured, built and run with CIME, execute the following commands for an example. (This assumes that CIME has been ported to your current machine).
-::
-
-   > cd cime/scripts
-   > ./create_newcase --case mycase --compset X --res f19_g16
-   > cd mycase
-   > ./case.setup
-   > ./case.build
-   > ./case.submit
-
-The output from each command is explained in the following sections.
-
-After you submit the case, you can follow the progress of your run by monitoring the ``CaseStatus`` file.
-
-::
-
-   > tail CaseStatus
-
-Repeat the command until you see the message ``case.run success``.
-
-The following are two more detailed examples for how to setup and carry out basic runs.
 
 .. _basic-examples:
 
