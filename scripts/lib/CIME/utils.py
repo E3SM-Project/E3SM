@@ -378,12 +378,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 
