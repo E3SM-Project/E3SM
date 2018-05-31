@@ -208,6 +208,8 @@ class SystemTestsCommon(object):
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
         rundir      = self._case.get_value("RUNDIR")
+        is_batch    = self._case.get_value("BATCH_SYSTEM") != "none"
+
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
             os.remove(compout)
@@ -223,7 +225,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=True)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=is_batch)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
