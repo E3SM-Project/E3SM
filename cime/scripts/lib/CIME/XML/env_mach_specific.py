@@ -144,9 +144,13 @@ class EnvMachSpecific(EnvBase):
         module_system = self.get_module_system_type()
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
-        lines = []
+        lines = ["# This file is for user convenience only and is not used by the model"]
+
+        lines.append("# Changes to this file will be ignored and overwritten")
+        lines.append("# Changes to the environment should be made in env_mach_specific.xml")
+        lines.append("# Run ./case.setup --reset to regenerate this file")
         if sh_init_cmd:
-            lines = ["source {}".format(sh_init_cmd)]
+            lines.append("source {}".format(sh_init_cmd))
 
         if "SOFTENV_ALIASES" in os.environ:
             lines.append("source $SOFTENV_ALIASES")
@@ -179,15 +183,13 @@ class EnvMachSpecific(EnvBase):
 
     def _load_envs(self, envs_to_set, verbose=False):
         for env_name, env_value in envs_to_set:
+            logger_func = logger.warning if verbose else logger.debug
             if env_value is None and env_name in os.environ:
                 del os.environ[env_name]
+                logger_func("Unsetting Environment {}".format(env_name))
             elif env_value is not None:
                 os.environ[env_name] = env_value
-            if verbose:
-                if env_value is not None:
-                    logger.warning("Setting Environment {}={}".format(env_name, env_value))
-                else:
-                    logger.warning("Unsetting Environment {}".format(env_name))
+                logger_func("Setting Environment {}={}".format(env_name, env_value))
 
     def _compute_module_actions(self, module_nodes, case, job=None):
         return self._compute_actions(module_nodes, "command", case, job=job)
@@ -298,11 +300,9 @@ class EnvMachSpecific(EnvBase):
         return cmds
 
     def _load_module_modules(self, modules_to_load, verbose=False):
+        logger_func = logger.warning if verbose else logger.debug
         for cmd in self._get_module_commands(modules_to_load, "python"):
-            if verbose:
-                logger.warning("module command is {}".format(cmd))
-            else:
-                logger.debug("module command is {}".format(cmd))
+            logger_func("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
             expect(stat==0 and (len(errout) == 0 or self.allow_error()),
                    "module command {} failed with message:\n{}".format(cmd, errout))
@@ -311,6 +311,7 @@ class EnvMachSpecific(EnvBase):
     def _load_modules_generic(self, modules_to_load, verbose=False):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
+        logger_func = logger.warning if verbose else logger.debug
 
         # Purpose is for environment management system that does not have
         # a python interface and therefore can only determine what they
@@ -330,10 +331,7 @@ class EnvMachSpecific(EnvBase):
         # Use null terminated lines to give us something more definitive to split on.
         # Env vars can contain newlines, so splitting on newlines can be ambiguous
         cmd += " && env -0"
-        if verbose:
-            logger.warning("cmd: {}".format(cmd))
-        else:
-            logger.debug("cmd: {}".format(cmd))
+        logger_func("cmd: {}".format(cmd))
         output = run_cmd_no_fail(cmd)
 
         ###################################################

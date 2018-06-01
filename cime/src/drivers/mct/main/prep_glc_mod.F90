@@ -40,6 +40,7 @@ module prep_glc_mod
 
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
+  public :: prep_glc_get_l2gacc_lx_one_instance
   public :: prep_glc_get_l2gacc_lx_cnt
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
@@ -1085,6 +1086,12 @@ contains
     type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx(:)
     prep_glc_get_l2gacc_lx => l2gacc_lx(:)
   end function prep_glc_get_l2gacc_lx
+
+  function prep_glc_get_l2gacc_lx_one_instance(lnd_inst)
+    integer, intent(in) :: lnd_inst
+    type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx_one_instance
+    prep_glc_get_l2gacc_lx_one_instance => l2gacc_lx(lnd_inst)
+  end function prep_glc_get_l2gacc_lx_one_instance
 
   function prep_glc_get_l2gacc_lx_cnt()
     integer, pointer :: prep_glc_get_l2gacc_lx_cnt

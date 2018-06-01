@@ -94,43 +94,61 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     rundir = case.get_value("RUNDIR")
     loop = True
 
+    # MPIRUN_RETRY_REGEX allows the mpi command to be reattempted if the
+    # failure described by that regular expression is matched in the model log
+    # case.spare_nodes is overloaded and may also represent the number of
+    # retries to attempt if ALLOCATE_SPARE_NODES is False
+    retry_run_re = case.get_value("MPIRUN_RETRY_REGEX")
+    node_fail_re = case.get_value("NODE_FAIL_REGEX")
+    retry_count = 0
+    if retry_run_re:
+        retry_run_regex = re.compile(re.escape(retry_run_re))
+        retry_count = case.get_value("MPIRUN_RETRY_COUNT")
+    if node_fail_re:
+        node_fail_regex = re.compile(re.escape(node_fail_re))
+
     while loop:
         loop = False
 
         save_prerun_provenance(case)
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
-
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
-        if stat != 0:
-            node_fail_re = case.get_value("NODE_FAIL_REGEX")
-            if node_fail_re:
-                node_fail_regex = re.compile(node_fail_re)
-                model_logfile = os.path.join(rundir, model + ".log." + lid)
-                if os.path.exists(model_logfile):
-                    num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
-                    if num_fails > 0 and case.spare_nodes >= num_fails:
+        if retry_run_re or node_fail_re:
+            model_logfile = os.path.join(rundir, model + ".log." + lid)
+            if os.path.exists(model_logfile):
+                num_node_fails=0
+                num_retry_fails=0
+                if node_fail_re:
+                    num_node_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                if retry_run_re:
+                    num_retry_fails = len(retry_run_regex.findall(open(model_logfile, 'r').read()))
+                logger.debug ("RETRY: num_retry_fails {} spare_nodes {} retry_count {}".
+                              format(num_retry_fails, case.spare_nodes, retry_count))
+                if num_node_fails > 0 and case.spare_nodes >= num_node_fails:
                         # We failed due to node failure!
-                        logger.warning("Detected model run failed due to node failure, restarting")
-
-                        # Archive the last consistent set of restart files and restore them
-                        case.case_st_archive(no_resubmit=True)
+                    logger.warning("Detected model run failed due to node failure, restarting")
+                    case.spare_nodes -= num_node_fails
+                    loop = True
+                    case.set_value("CONTINUE_RUN",
+                                   case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                elif num_retry_fails > 0 and retry_count >= num_retry_fails:
+                    logger.warning("Detected model run failed, restarting")
+                    retry_count -= 1
+                    loop = True
+                if loop:
+                    # Archive the last consistent set of restart files and restore them
+                    if case.get_value("DOUT_S"):
+                        case.case_st_archive(resubmit=False)
                         case.restore_from_archive()
 
-                        case.set_value("CONTINUE_RUN",
-                                       case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                    lid = new_lid()
+                    case.create_namelists()
 
-                        lid = new_lid()
-                        loop = True
-
-                        case.create_namelists()
-
-                        case.spare_nodes -= num_fails
-
-            if not loop:
-                # We failed and we're not restarting
-                expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
+        if stat != 0 and not loop:
+            # We failed and we're not restarting
+            expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
     logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
@@ -188,7 +206,7 @@ def _save_logs(case, lid):
         if os.path.isfile(logfile):
             gzip_existing_file(logfile)
 
-###############################################################################
+######################################################################################
 def _resubmit_check(case):
 ###############################################################################
 
@@ -236,7 +254,7 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
 
 ###############################################################################
-def case_run(self, skip_pnl=False):
+def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
@@ -273,9 +291,7 @@ def case_run(self, skip_pnl=False):
             _do_data_assimilation(data_assimilation_script, self.get_value("CASEROOT"), cycle, lid,
                                  self.get_value("RUNDIR"))
             self.read_xml()
-
-        _save_logs(self, lid)       # Copy log files back to caseroot
-
+        _save_logs(self, lid)
         save_postrun_provenance(self)
 
     if postrun_script:
@@ -285,7 +301,12 @@ def case_run(self, skip_pnl=False):
         self.read_xml()
         _save_logs(self, lid)
 
+    if set_continue_run:
+        self.set_value("CONTINUE_RUN",
+                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+
     logger.warning("check for resubmit")
-    _resubmit_check(self)
+    if submit_resubmits:
+        _resubmit_check(self)
 
     return True

@@ -15,9 +15,10 @@ LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","lib")
 sys.path.append(LIB_DIR)
 # Remove all pyc files to ensure we're testing the right things
 import subprocess, argparse
-subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
-from six import assertRaisesRegex
+subprocess.call('/bin/rm -f $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 import six
+from six import assertRaisesRegex
+
 
 import collections
 
@@ -299,11 +300,10 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
         with Case(testdir, read_only=False) as case:
             case.set_value("CHARGE_ACCOUNT", "fred")
-        # this should fail with a locked file issue
-        run_cmd_assert_result(self, "./case.build",
-                              from_dir=testdir, expected_stat=1)
-        run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
-        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+        # this should not fail with a locked file issue
+        run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
+
+        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
 
         run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
 
@@ -312,10 +312,31 @@ class J_TestCreateNewcase(unittest.TestCase):
     def test_aa_no_flush_on_instantiate(self):
         testdir = os.path.join(self.__class__._testroot, 'testcreatenewcase')
         with Case(testdir, read_only=False) as case:
-            self.assertFalse(case._env_files_that_need_rewrite, msg="Instantiating a case should not trigger a flush call")
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Instantiating a case should not trigger a flush call")
         with Case(testdir, read_only=False) as case:
-            case.set_value("HIST_OPTION","nsteps")
-            self.assertTrue(case._env_files_that_need_rewrite, msg="Expected flush call not triggered")
+            case.set_value("HIST_OPTION","nyears")
+            runfile = case.get_env('run')
+            self.assertTrue(runfile.needsrewrite, msg="Expected flush call not triggered")
+            for env_file in case._files:
+                if env_file != runfile:
+                    self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                     .format(env_file.filename))
+            # Flush the file
+            runfile.write()
+            # set it again to the same value
+            case.set_value("HIST_OPTION","nyears")
+            # now the file should not need to be flushed
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
+
+        # Check once more with a new instance
+        with Case(testdir, read_only=False) as case:
+            case.set_value("HIST_OPTION","nyears")
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
 
     def test_b_user_mods(self):
         cls = self.__class__
@@ -1541,29 +1562,29 @@ class K_TestCimeCase(TestCreateTestCommon):
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
-#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
-#            if CIME.utils.get_model() == 'cesm':
-#                self.assertEqual(model_specific_val, "RASM_OPTION1")
-#            else:
-#                self.assertEqual(model_specific_val, "CESM1_MOD")
-
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    def _batch_test_fixture(self, testcase_name):
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+                                     "--compset X --res f19_g16 --output-root {}").format(
+                                         SCRIPT_DIR, testcase_name, testdir, testdir),
+                              from_dir=SCRIPT_DIR)
+        return testdir
 
     ###########################################################################
     def test_cime_case_prereq(self):
     ###########################################################################
-        if not MACHINE.has_batch_system() or NO_BATCH:
-            self.skipTest("Skipping testing user prerequisites without batch systems")
         testcase_name = 'prereq_test'
-        testdir = os.path.join(TEST_ROOT, testcase_name)
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
-                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
-                              from_dir=SCRIPT_DIR)
-
+        testdir = self._batch_test_fixture(testcase_name)
         with Case(testdir, read_only=False) as case:
+            if case.get_value("depend_string") is None:
+                self.skipTest("Skipping prereq test, depend_string was not provided for this batch system")
             job_name = "case.run"
             prereq_name = 'prereq_test'
             batch_commands = case.submit_jobs(prereq=prereq_name, job=job_name, skip_pnl=True, dry_run=True)
@@ -1579,7 +1600,7 @@ class K_TestCimeCase(TestCreateTestCommon):
                 self.assertTrue(isinstance(batch_cmd[1], six.string_types), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
                 batch_cmd_args = batch_cmd[1]
 
-                jobid_ident = 'jobid'
+                jobid_ident = "jobid"
                 dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
                 self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
                 dep_str = dep_str_fmt[:dep_str_fmt.index(jobid_ident)]
@@ -1593,6 +1614,64 @@ class K_TestCimeCase(TestCreateTestCommon):
                         break
 
                 self.assertTrue(prereq_name in prereq_substr, "Dependencies added, but not the user specified one")
+
+    ###########################################################################
+    def test_cime_case_allow_failed_prereq(self):
+    ###########################################################################
+        testcase_name = 'allow_failed_prereq_test'
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            depend_allow = case.get_value("depend_allow_string")
+            if depend_allow is None:
+                self.skipTest("Skipping allow_failed_prereq test, depend_allow_string was not provided for this batch system")
+            job_name = "case.run"
+            prereq_name = "prereq_allow_fail_test"
+            depend_allow = depend_allow.replace("jobid", prereq_name)
+            batch_commands = case.submit_jobs(prereq=prereq_name, allow_fail=True, job=job_name, skip_pnl=True, dry_run=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            num_submissions = 1
+            if case.get_value("DOUT_S"):
+                num_submissions = 2
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return any job submission strings")
+            self.assertTrue(depend_allow in batch_commands[0][1])
+
+    ###########################################################################
+    def test_cime_case_resubmit_immediate(self):
+    ###########################################################################
+        testcase_name = 'resubmit_immediate_test'
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            depend_string = case.get_value("depend_string")
+            if depend_string is None:
+                self.skipTest("Skipping resubmit_immediate test, depend_string was not provided for this batch system")
+            depend_string = depend_string.replace("jobid", "")
+            job_name = "case.run"
+            num_submissions = 6
+            case.set_value("RESUBMIT", num_submissions - 1)
+            batch_commands = case.submit_jobs(job=job_name, skip_pnl=True, dry_run=True, resubmit_immediate=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            if case.get_value("DOUT_S"):
+                num_submissions = 12
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return {} submitted jobs".format(num_submissions))
+            for i, cmd in enumerate(batch_commands):
+                if i > 0:
+                    self.assertTrue(depend_string in cmd[1])
+
+    ###########################################################################
+    def test_cime_case_st_archive_resubmit(self):
+    ###########################################################################
+        testcase_name = "st_archive_resubmit_test"
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            case.case_setup(clean=False, test_mode=False, reset=True)
+            orig_resubmit = 2
+            case.set_value("RESUBMIT", orig_resubmit)
+            case.case_st_archive(resubmit=False)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue(orig_resubmit == new_resubmit, "st_archive resubmitted when told not to")
+            case.case_st_archive(resubmit=True)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue((orig_resubmit - 1) == new_resubmit, "st_archive did not resubmit when told to")
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
@@ -1773,12 +1852,16 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        self._create_test(["--no-setup", "--machine={}".format(machine), "--queue=slartibartfast", test_name], test_id=self._baseline_name,
+        self._create_test(["--no-setup", "--machine={}".format(machine), test_name], test_id=self._baseline_name,
                           env_changes="unset CIME_GLOBAL_WALLTIME &&")
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_QUEUE=slartibartfast --subgroup=case.test", from_dir=casedir, expected_stat=1)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_QUEUE=slartibartfast --force --subgroup=case.test", from_dir=casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "03:00:00")
