@@ -10,6 +10,7 @@ module med_infodata_mod
   use shr_sys_mod           , only: shr_sys_flush, shr_sys_abort
   use seq_comm_mct          , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct          , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
+  use esmFlds               , only: ncomps, compname
   use esmFlds               , only: flds_scalar_num, flds_scalar_name
   use esmFlds               , only: flds_scalar_index_nx,  flds_scalar_index_ny
   use esmFlds               , only: flds_scalar_index_flood_present
@@ -56,24 +57,26 @@ module med_infodata_mod
   type med_infodata_type
      private
      !--- set via components and held fixed after initialization ---
-     logical                 :: dead_comps              ! do we have dead models
-     logical                 :: rofice_present          ! does rof have iceberg coupling on
-     logical                 :: rof_prognostic          ! does rof component need input data
-     logical                 :: flood_present           ! does rof have flooding on
-     logical                 :: ocnrof_prognostic       ! does component need rof data
-     logical                 :: iceberg_prognostic      ! does the ice model support icebergs
-     logical                 :: glclnd_present          ! does glc have land coupling fields on
-     logical                 :: glcocn_present          ! does glc have ocean runoff on
-     logical                 :: glcice_present          ! does glc have iceberg coupling on
-     logical                 :: glc_coupled_fluxes      ! does glc send fluxes to other components
-                                                        ! (only relevant if glc_present is .true.)
+     logical                 :: dead_comps = .false.     ! do we have dead models
+     logical                 :: rofice_present = .false. ! does rof have iceberg coupling on
+     logical                 :: rof_prognostic = .false. ! does rof component need input data
+     logical                 :: flood_present = .false.  ! does rof have flooding on
+     logical                 :: ocnrof_prognostic        ! does component need rof data
+     logical                 :: iceberg_prognostic = .false. ! does the ice model support icebergs
+     logical                 :: glclnd_present = .false. ! does glc have land coupling fields on
+     logical                 :: glcocn_present = .false. ! does glc have ocean runoff on
+     logical                 :: glcice_present = .false. ! does glc have iceberg coupling on
+     logical                 :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
+                                                         ! (only relevant if glc_present is .true.)
+     integer                 :: nx(ncomps) = -1          ! global nx
+     integer                 :: ny(ncomps) = -1          ! global ny
      !--- set via components and may be time varying ---
      real(SHR_KIND_R8)       :: nextsw_cday = -1.0_SHR_KIND_R8 ! calendar of next atm shortwave
      real(SHR_KIND_R8)       :: precip_fact =  1.0_SHR_KIND_R8 ! precip factor
      type(seq_pause_resume_type), pointer :: pause_resume => NULL()
 
      !--- set by driver and may be time varying
-     logical                 :: glc_valid_input = .true.  ! is valid accumulated data being sent to prognostic glc
+     logical                 :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
   end type med_infodata_type
 
   type (med_infodata_type), target :: med_infodata ! single instance for cpl and all comps
@@ -139,6 +142,7 @@ CONTAINS
     integer,           intent(inout)  :: rc
 
     ! local variables
+    integer                         :: n
     integer                         :: mytask, ierr, len
     character(MPI_MAX_ERROR_STRING) :: lstring
     type(ESMF_Field)                :: field
@@ -146,6 +150,7 @@ CONTAINS
     real(ESMF_KIND_R8), pointer     :: farrayptr(:,:)
     real(ESMF_KIND_R8)              :: data(flds_scalar_num)
     logical                         :: dead_comps
+    character(len=32)               :: ntype
     character(len=*), parameter     :: subname='(med_infodata_CopyStateToInfodata)'
     !----------------------------------------------------------
 
@@ -181,44 +186,38 @@ CONTAINS
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
 
+      do n = 1,ncomps
+         ntype = trim(compname(n))//'2cpli'
+         if (trim(type) == trim(ntype)) then
+            infodata%nx(n) = nint(data(flds_scalar_index_nx))
+            infodata%ny(n) = nint(data(flds_scalar_index_ny))
+            write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
+            call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+            if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
+         endif
+      enddo
+
       if (type == 'atm2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
 
       elseif (type == 'ocn2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
         infodata%precip_fact=data(flds_scalar_index_precip_fact)
 
       elseif (type == 'ice2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
+        ! nothing
 
       elseif (type == 'lnd2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
+        ! nothing
 
       elseif (type == 'rof2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
         infodata%flood_present=(nint(data(flds_scalar_index_flood_present)) /= 0)
         infodata%rofice_present=(nint(data(flds_scalar_index_rofice_present)) /= 0)
 
       elseif (type == 'wav2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
+        ! nothing
 
       elseif (type == 'glc2cpli') then
-        write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-        call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-        if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
+        ! nothing
 
       elseif (type == 'atm2cpl') then
          infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
@@ -318,7 +317,7 @@ CONTAINS
   end subroutine med_infodata_CopyInfodataToState
 
   !===============================================================================
-  subroutine med_infodata_GetData( infodata, flux_epbal, flux_epbalfact)
+  subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
 
     implicit none
 
@@ -326,8 +325,11 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(med_infodata_type),          intent(IN)  :: infodata       ! Input CCSM structure
+    integer(SHR_KIND_IN),   optional, intent(IN)  :: ncomp          ! Component ID
     character(SHR_KIND_CL), optional, intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
     real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact ! adjusted precip factor
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: nx             ! nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ny             ! ny
 
     !----- local -----
     character(len=*), parameter :: subname = '(med_infodata_GetData) '
@@ -349,6 +351,20 @@ CONTAINS
              flux_epbalfact = 1.0_SHR_KIND_R8
           end if
        end if
+    endif
+
+    if (present(nx)) then
+       if (.not.present(ncomp)) then
+          call shr_sys_abort(subname // "Must provide ncmp with nx")
+       endif
+       nx = infodata%nx(ncomp)
+    endif
+
+    if (present(ny)) then
+       if (.not.present(ncomp)) then
+          call shr_sys_abort(subname // "Must provide ncmp with nx")
+       endif
+       ny = infodata%ny(ncomp)
     endif
 
   end subroutine med_infodata_GetData
