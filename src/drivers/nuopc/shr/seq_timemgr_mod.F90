@@ -26,6 +26,7 @@ module seq_timemgr_mod
   public :: seq_timemgr_clockInit              ! Setup the sync clock
   public :: seq_timemgr_EClockGetData          ! Get data from an ESMF clock
   public :: seq_timemgr_EClockDateInSync       ! compare EClock to ymd/tod
+  public :: seq_timemgr_alarmInit              ! initialize an alarm
   public :: seq_timemgr_alarmSetOn             ! Turn an alarm on
   public :: seq_timemgr_alarmSetOff            ! Turn an alarm off
   public :: seq_timemgr_alarmIsOn              ! Is an alarm ringing
@@ -46,7 +47,6 @@ module seq_timemgr_mod
   public :: seq_timemgr_clockPrint ! Print sync clock information
 
   private:: seq_timemgr_alarmGet
-  private:: seq_timemgr_alarmInit
   private:: seq_timemgr_EClockInit
   private:: seq_timemgr_ESMFDebug
 
@@ -749,7 +749,8 @@ contains
             opt_ymd = stop_ymd,            &
             opt_tod = stop_tod,            &
             RefTime = CurrTime,            &
-            alarmname = trim(seq_timemgr_alarm_stop))
+            alarmname = trim(seq_timemgr_alarm_stop), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_datestop),  &
@@ -757,7 +758,8 @@ contains
             opt_ymd = stop_ymd,            &
             opt_tod = stop_tod,            &
             RefTime = StartTime,           &
-            alarmname = trim(seq_timemgr_alarm_datestop))
+            alarmname = trim(seq_timemgr_alarm_datestop), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_restart),  &
@@ -765,7 +767,8 @@ contains
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = CurrTime,            &
-            alarmname = trim(seq_timemgr_alarm_restart))
+            alarmname = trim(seq_timemgr_alarm_restart), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_history),  &
@@ -773,7 +776,8 @@ contains
             opt_n   = history_n,           &
             opt_ymd = history_ymd,         &
             RefTime = StartTime,           &
-            alarmname = trim(seq_timemgr_alarm_history))
+            alarmname = trim(seq_timemgr_alarm_history), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_histavg),  &
@@ -781,7 +785,8 @@ contains
             opt_n   = histavg_n,           &
             opt_ymd = histavg_ymd,         &
             RefTime = StartTime,           &
-            alarmname = trim(seq_timemgr_alarm_histavg))
+            alarmname = trim(seq_timemgr_alarm_histavg), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_barrier),  &
@@ -789,7 +794,8 @@ contains
             opt_n   = barrier_n,           &
             opt_ymd = barrier_ymd,         &
             RefTime = CurrTime,            &
-            alarmname = trim(seq_timemgr_alarm_barrier))
+            alarmname = trim(seq_timemgr_alarm_barrier), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
             EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_tprof),  &
@@ -797,7 +803,8 @@ contains
             opt_n   = tprof_n,             &
             opt_ymd = tprof_ymd,           &
             RefTime = StartTime,           &
-            alarmname = trim(seq_timemgr_alarm_tprof))
+            alarmname = trim(seq_timemgr_alarm_tprof), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_stop), RingTime=StopTime1, rc=rc )
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -818,14 +825,16 @@ contains
                option  = pause_option,                                         &
                opt_n   = pause_n,                                              &
                RefTime = CurrTime,                                             &
-               alarmname = trim(seq_timemgr_alarm_pause))
+               alarmname = trim(seq_timemgr_alarm_pause), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
                EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
                option  = seq_timemgr_optNever,                                 &
                opt_n   = -1,                                                   &
                RefTime = StartTime,                                            &
-               alarmname = trim(seq_timemgr_alarm_pause))
+               alarmname = trim(seq_timemgr_alarm_pause), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
 
     enddo
@@ -980,7 +989,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname)
+  subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname, rc)
 
     ! !DESCRIPTION: Setup an alarm in a clock
 
@@ -993,9 +1002,9 @@ contains
     integer(SHR_KIND_IN),optional, intent(IN)    :: opt_tod   ! alarm tod (sec)
     type(ESMF_Time)     ,optional, intent(IN)    :: RefTime   ! ref time
     character(len=*)    ,optional, intent(IN)    :: alarmname ! alarm name
+    integer                      , intent(INOUT) :: rc        ! Return code
 
     !----- local -----
-    integer                 :: rc               ! Return code
     integer                 :: lymd             ! local ymd
     integer                 :: ltod             ! local tod
     integer                 :: cyy,cmm,cdd,csec ! time info
@@ -1353,7 +1362,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
+  subroutine seq_timemgr_AlarmSetOff( EClock, alarmname, rc)
 
     ! !DESCRIPTION: turn alarm off
 
@@ -1361,10 +1370,10 @@ contains
 
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
     character(len=*), intent(IN), optional :: alarmname  ! alarmname
+    integer         , intent(INOUT) :: rc
 
     !----- local -----
     integer                  :: n
-    integer                  :: rc
     logical                  :: found
     logical                  :: set
     character(len=64)        :: name
@@ -1415,17 +1424,17 @@ contains
 
   !===============================================================================
 
-  logical function seq_timemgr_alarmIsOn( EClock, alarmname)
+  logical function seq_timemgr_alarmIsOn( EClock, alarmname, rc)
 
     ! !DESCRIPTION: check if an alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock), intent(IN) :: EClock     ! clock/alarm
-    character(len=*), intent(IN) :: alarmname  ! which alarm
+    type(ESMF_Clock), intent(IN)    :: EClock     ! clock/alarm
+    character(len=*), intent(IN)    :: alarmname  ! which alarm
+    integer         , intent(INOUT) :: rc         ! return code
 
     !----- local -----
     integer                  :: n
-    integer                  :: rc
     logical                  :: found
     character(len=64)        :: name
     type(ESMF_Time)          :: ETime1, ETime2
@@ -1492,10 +1501,11 @@ contains
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
+    integer :: rc                    ! return code
     character(len=*), parameter :: subname = '(seq_timemgr_restartAlarmIsOn) '
     !-------------------------------------------------------------------------------
 
-    seq_timemgr_restartAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_restart)
+    seq_timemgr_restartAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_restart, rc=rc)
 
   end function seq_timemgr_restartAlarmIsOn
 
@@ -1508,10 +1518,11 @@ contains
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
+    integer :: rc                    ! return code
     character(len=*), parameter :: subname = '(seq_timemgr_stopAlarmIsOn) '
     !-------------------------------------------------------------------------------
 
-    seq_timemgr_stopAlarmIsOn =  seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_stop)
+    seq_timemgr_stopAlarmIsOn =  seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_stop, rc=rc)
 
   end function seq_timemgr_stopAlarmIsOn
 
@@ -1524,10 +1535,11 @@ contains
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
+    integer :: rc                    ! return code
     character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmIsOn) '
     !-------------------------------------------------------------------------------
 
-    seq_timemgr_historyAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_history)
+    seq_timemgr_historyAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_history, rc=rc)
 
   end function seq_timemgr_historyAlarmIsOn
 
@@ -1540,10 +1552,11 @@ contains
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
+    integer :: rc                    ! return code
     character(len=*), parameter :: subname = '(seq_timemgr_pauseAlarmIsOn) '
     !-------------------------------------------------------------------------------
 
-    seq_timemgr_pauseAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_pause)
+    seq_timemgr_pauseAlarmIsOn = seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_pause, rc=rc)
 
   end function seq_timemgr_pauseAlarmIsOn
 
