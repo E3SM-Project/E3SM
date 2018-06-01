@@ -196,6 +196,13 @@ contains
          specPhaseLabel="med_phases_history", specRoutine=med_phases_history, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_history"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_history", specRoutine=med_phases_history, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !------------------
     ! prep and post phases for connectors
     !------------------
@@ -1831,8 +1838,9 @@ contains
        endif
     enddo
 
-       ! set InitializeDataComplete Component Attribute to "true", indicating
-       ! to the driver that this Component has fully initialized its data
+    ! set InitializeDataComplete Component Attribute to "true", indicating
+    ! to the driver that this Component has fully initialized its data
+
     if (allDone) then
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="true", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
