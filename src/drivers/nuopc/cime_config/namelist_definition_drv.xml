@@ -76,6 +76,7 @@
 	    #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
+            MED med_phases_history
 	  @
 	  OCN
   	  OCN -> MED :remapMethod=redist
@@ -122,6 +123,7 @@
             MED med_connectors_post_glc2med
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
+            MED med_phases_history
 	  @
        @
       </value>
@@ -165,6 +167,7 @@
 	    ATM
 	    ATM -> MED :remapMethod=redist
 	    MED med_connectors_post_atm2med
+            MED med_phases_history
 	  @
        @
       </value>
