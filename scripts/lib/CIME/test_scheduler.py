@@ -956,9 +956,13 @@ class TestScheduler(object):
                     ts = TestStatus(self._get_test_dir(test))
                     nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
                     ts_status = ts.get_overall_test_status(ignore_namelists=True, check_memory=False, check_throughput=False)
+                    local_run = not self._no_run and self._no_batch
 
                     if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                         logger.info( "{} {} (phase {})".format(ts_status, test, phase))
+                        rv = False
+                    elif ts_status == TEST_PEND_STATUS and local_run:
+                        logger.info( "{} {} (Some phases left in PEND)".format(TEST_FAIL_STATUS, test))
                         rv = False
                     elif nlfail:
                         logger.info( "{} {} (but otherwise OK) {}".format(NAMELIST_FAIL_STATUS, test, phase))
