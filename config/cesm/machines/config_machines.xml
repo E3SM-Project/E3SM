@@ -1963,7 +1963,7 @@
     <PROJECT>CESM_Highres_Testing</PROJECT>
     <CIME_OUTPUT_ROOT>/projects/CESM_Highres_Testing/cesm/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/CESM_Highres_Testing/cesm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/CESM_Highres_Testing/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC
+    <DIN_LOC_ROOT_CLMFORC>/projects/CESM_Highres_Testing/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/projects/CESM_Highres_Testing/cesm/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/CESM_Highres_Testing/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
