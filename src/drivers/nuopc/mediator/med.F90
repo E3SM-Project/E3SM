@@ -1673,6 +1673,12 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
+       if (is_local%wrap%comp_present(compocn)) then
+          ! Copy the NstateImp(compocn) to FBImp(compocn)
+          call med_connectors_post_ocn2med(gcomp, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
        ! set InitializeDataComplete Component Attribute to "true", indicating
        ! to the driver that this Component has fully initialized its data
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="true", rc=rc)
