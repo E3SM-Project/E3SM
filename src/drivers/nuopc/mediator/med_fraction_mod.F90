@@ -86,6 +86,7 @@ module med_fraction_mod
     real(ESMF_KIND_R8), pointer :: dataPtr(:)
     real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
     integer                     :: i,j,n,n1
+    logical, save               :: first_call = .true.
     character(len=*),parameter  :: subname='(med_fraction_init)'
     !---------------------------------------
 
@@ -94,6 +95,16 @@ module med_fraction_mod
     endif
     rc = ESMF_SUCCESS
 
+    ! query the Component for its clock, importState and exportState
+    call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Get the internal state from Component.
+    nullify(is_local%wrap)
+    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  if (first_call) then
     !--------------------------------------- 
     ! Initialize the fraclist arrays
     !--------------------------------------- 
@@ -109,15 +120,6 @@ module med_fraction_mod
     !--------------------------------------- 
     !--- Initialize mediator FBfrac entries 
     !--------------------------------------- 
-
-    ! query the Component for its clock, importState and exportState
-    call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Get the internal state from Component.
-    nullify(is_local%wrap)
-    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Note - must use import state here - since export state might not
     ! contain anything other than scalar data if the component is not prognostic
@@ -135,6 +137,8 @@ module med_fraction_mod
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     end do
+    first_call = .false.
+  endif
 
     !---------------------------------------
     !--- Initialize fractions on atm grid/decomp
