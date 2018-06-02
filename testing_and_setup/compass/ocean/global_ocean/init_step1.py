@@ -52,7 +52,7 @@ landCoverageMask = '{}/ocean/region/Global_Ocean_90S_to_60S/' \
     'region.geojson'.format(path)
 
 removeFile('land_coverage.geojson')
-# mask the land coverage to exclude the region below 60S
+# Mask the land coverage to exclude the region below 60S.
 args = ['{}/difference_features.py'.format(path),
         '-f', landCoverage,
         '-m', landCoverageMask,
@@ -60,7 +60,7 @@ args = ['{}/difference_features.py'.format(path),
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-# add the appropriate land coverage below 60S (either all ice or grounded ice)
+# Add the appropriate land coverage below 60S (either all ice or grounded ice).
 if options.with_cavities:
     antarcticLandCoverage = '{}/bedmap2/region/AntarcticGroundedIceCoverage/' \
         'region.geojson'.format(path)
@@ -73,20 +73,21 @@ args = ['{}/merge_features.py'.format(path), '-f', antarcticLandCoverage,
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-# create the land mask based on the land coverage
+# Create the land mask based on the land coverage, i.e. coastline data.
 # Run command is:
 # ./MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
-args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'land_mask.nc',
+args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'land_mask_1_from_land_coverage.nc',
         '-f', 'land_coverage.geojson']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
 # Add land-locked cells to land coverage mask.
 args = ['./add_land_locked_cells_to_mask.py',
-        '-f', 'land_mask.nc',
+        '-f', 'land_mask_1_from_land_coverage.nc',
+        '-o', 'land_mask_final.nc',
         '-m', 'base_mesh.nc',
         '-l', '43.0',
-        '-n', '10']
+        '-n', '20']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
@@ -129,21 +130,21 @@ if options.with_critical_passages:
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
 
-    # cull the mesh based on the land mask and keeping critical passages open
+    # Cull the mesh based on the land mask while keeping critical passages open
     # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask.nc
+    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
     # -p critical_passages_mask.nc
     args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
-            '-m', 'land_mask.nc', '-p', 'critical_passages_mask.nc']
+            '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
 else:
 
     # cull the mesh based on the land mask
     # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask.nc
+    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
     args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
-            '-m', 'land_mask.nc']
+            '-m', 'land_mask_final.nc']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
 
