@@ -52,7 +52,6 @@
       <value mach="sooty">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
-      <value mach="oic2">netcdf</value>
       <value mach="oic5">netcdf</value>
       <value mach="lawrencium-lr2">netcdf</value>
       <value mach="lawrencium-lr3">netcdf</value>

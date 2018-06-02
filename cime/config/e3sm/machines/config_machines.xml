@@ -1918,53 +1918,6 @@
 	 </environment_variables>
 </machine>
 
-<machine MACH="oic2">
-         <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>oic2</NODENAME_REGEX>
-         <TESTS>e3sm_developer</TESTS>
-         <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,openmpi</MPILIBS>
-         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
-         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
-         <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-	 <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-         <mpirun mpilib="mpich">
-              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
-	      <arguments>
-			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
-			<arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
-	      </arguments>
-         </mpirun>
-         <mpirun mpilib = "mpi-serial">
-              <executable> </executable>
-         </mpirun>
-	 <module_system type="module">
-	   <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-	   <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-	   <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-	   <cmd_path lang="sh">module</cmd_path>
-	   <cmd_path lang="csh">module</cmd_path>
-	   <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-	   <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-
-	   <environment_variables>
-	     <env name="MPICH_ENV_DISPLAY">1</env>
-	     <env name="MPICH_VERSION_DISPLAY">1</env>
-	     <!-- This increases the stack size, which is necessary
-		  for CICE to run threaded on this machine -->
-	     <env name="OMP_STACKSIZE">64M</env>
-	   </environment_variables>
-	 </module_system>
-</machine>
 
 <machine MACH="oic5">
          <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
