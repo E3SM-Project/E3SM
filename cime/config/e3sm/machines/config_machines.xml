@@ -2923,11 +2923,11 @@
 		<command name="load">netlib-lapack/3.6.1</command>
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
-      <modules compiler="pgi">
+      <modules compiler="pgi.*">
         <command name="load">pgi/18.3</command>
       </modules>
       <modules compiler="ibm">
-        <command name="load">xl/20180406-beta</command>
+        <command name="load">xl/20180502</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
@@ -2940,17 +2940,17 @@
       <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
-      <modules compiler="pgi*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+      <modules compiler="pgi.*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
