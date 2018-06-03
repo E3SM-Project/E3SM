@@ -867,20 +867,6 @@ for mct, etc.
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
 </compiler>
 
-<compiler MACH="oic2" COMPILER="gnu">
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
-  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="pgi">
-  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
-</compiler>
-
 <compiler MACH="oic5" COMPILER="gnu">
   <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
   <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
