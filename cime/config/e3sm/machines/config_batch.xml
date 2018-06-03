@@ -438,16 +438,6 @@
       </queues>
     </batch_system>
 
-   <batch_system MACH="oic2" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-		 <directive>-q esd08q</directive>
-         </directives>
-         <queues>
-           <queue default="true">esd08q</queue>
-         </queues>
-   </batch_system>
-
    <batch_system MACH="oic5" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
