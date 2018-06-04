@@ -321,6 +321,11 @@ module PhosphorusFluxType
      real(r8), pointer :: plant_to_cwd_pflux                        (:)     ! for the purpose of mass balance check
      real(r8), pointer :: supplement_to_plantp                      (:)     ! supplementary P flux for plant 
 
+     real(r8), pointer :: gap_ploss_litter                          (:)     ! total ploss from veg to litter pool due to gap mortality
+     real(r8), pointer :: fire_ploss_litter                         (:)     ! total ploss from veg to litter pool due to fire
+     real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
+     real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
+
    contains
 
      procedure , public  :: Init   
@@ -662,6 +667,10 @@ contains
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
     allocate(this%supplement_to_plantp        (begp:endp                   )) ; this%supplement_to_plantp        (:)   = 0.d0
 
+    allocate(this%gap_ploss_litter            (begp:endp)) ; this%gap_ploss_litter                  (:) = nan
+    allocate(this%fire_ploss_litter           (begp:endp)) ; this%fire_ploss_litter                 (:) = nan
+    allocate(this%hrv_ploss_litter            (begp:endp)) ; this%hrv_ploss_litter                  (:) = nan
+    allocate(this%sen_ploss_litter            (begp:endp)) ; this%sen_ploss_litter                  (:) = nan
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
     allocate(this%plant_pdemand_col                 (begc:endc))
@@ -1105,6 +1114,23 @@ contains
     call hist_addfld1d (fname='PFT_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total pft-level fire P loss', &
          ptr_patch=this%fire_ploss_patch, default='inactive')
+
+    this%gap_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='GAP_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to gap mortality', &
+         ptr_patch=this%gap_ploss_litter, default='inactive')
+    this%fire_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='FIRE_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to fire mortality', &
+         ptr_patch=this%fire_ploss_litter, default='inactive')
+    this%hrv_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='HRV_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to harvest mortality', &
+         ptr_patch=this%hrv_ploss_litter, default='inactive')
+    this%sen_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='SEN_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter pool due to senescence', &
+         ptr_patch=this%sen_ploss_litter, default='inactive')
 
     if (crop_prog) then
        this%fert_p_patch(begp:endp) = spval
@@ -1938,6 +1964,10 @@ contains
        this%wood_harvestp_patch(i)                       = value_patch
        this%fire_ploss_patch(i)                          = value_patch
        this%biochem_pmin_to_plant_patch(i)               = value_patch
+       this%gap_ploss_litter(i)                          = value_patch
+       this%fire_ploss_litter(i)                         = value_patch
+       this%hrv_ploss_litter(i)                          = value_patch
+       this%sen_ploss_litter(i)                          = value_patch
     end do
 
     if ( crop_prog )then
@@ -2230,6 +2260,77 @@ contains
             this%m_deadcrootp_xfer_to_fire_patch(p)     + &
             this%m_retransp_to_fire_patch(p)            + &
             this%m_ppool_to_fire_patch(p)
+
+      this%gap_ploss_litter(p) = &
+           this%m_leafp_to_litter_patch(p)              + &
+           this%m_leafp_storage_to_litter_patch(p)      + &
+           this%m_leafp_xfer_to_litter_patch(p)         + &
+           this%m_frootp_to_litter_patch(p)             + &
+           this%m_frootp_storage_to_litter_patch(p)     + &
+           this%m_frootp_xfer_to_litter_patch(p)        + &
+           this%m_livestemp_to_litter_patch(p)          + &
+           this%m_livestemp_storage_to_litter_patch(p)  + &
+           this%m_livestemp_xfer_to_litter_patch(p)     + &
+           this%m_deadstemp_to_litter_patch(p)          + &
+           this%m_deadstemp_storage_to_litter_patch(p)  + &
+           this%m_deadstemp_xfer_to_litter_patch(p)     + &
+           this%m_livecrootp_to_litter_patch(p)         + &
+           this%m_livecrootp_storage_to_litter_patch(p) + &
+           this%m_livecrootp_xfer_to_litter_patch(p)    + &
+           this%m_deadcrootp_to_litter_patch(p)         + &
+           this%m_deadcrootp_storage_to_litter_patch(p) + &
+           this%m_deadcrootp_xfer_to_litter_patch(p)    + &
+           this%m_retransp_to_litter_patch(p)           + &
+           this%m_ppool_to_litter_patch(p)
+
+      this%fire_ploss_litter(p) = &
+           this%m_deadstemp_to_litter_fire_patch(p)     + &
+           this%m_deadcrootp_to_litter_fire_patch(p)    + &
+           this%m_retransp_to_litter_fire_patch(p)      + &
+           this%m_ppool_to_litter_fire_patch(p)         + &
+           this%m_leafp_to_litter_fire_patch(p)         + &
+           this%m_frootp_to_litter_fire_patch(p)        + &
+           this%m_livestemp_to_litter_fire_patch(p)     + &
+           this%m_livecrootp_to_litter_fire_patch(p)    + &
+           this%m_leafp_storage_to_litter_fire_patch(p) + &
+           this%m_frootp_storage_to_litter_fire_patch(p)       + &
+           this%m_livestemp_storage_to_litter_fire_patch(p)    + &
+           this%m_deadstemp_storage_to_litter_fire_patch(p)    + &
+           this%m_livecrootp_storage_to_litter_fire_patch(p)   + &
+           this%m_deadcrootp_storage_to_litter_fire_patch(p)   + &
+           this%m_leafp_xfer_to_litter_fire_patch(p)           + &
+           this%m_frootp_xfer_to_litter_fire_patch(p)          + &
+           this%m_livestemp_xfer_to_litter_fire_patch(p)       + &
+           this%m_deadstemp_xfer_to_litter_fire_patch(p)       + &
+           this%m_livecrootp_xfer_to_litter_fire_patch(p)      + &
+           this%m_deadcrootp_xfer_to_litter_fire_patch(p)
+
+      this%hrv_ploss_litter(p) = &
+           this%hrv_retransp_to_litter_patch(p)         + &
+           this%hrv_ppool_to_litter_patch(p)            + &
+           this%hrv_leafp_to_litter_patch(p)            + &
+           this%hrv_leafp_storage_to_litter_patch(p)    + &
+           this%hrv_leafp_xfer_to_litter_patch(p)       + &
+           this%hrv_frootp_to_litter_patch(p)           + &
+           this%hrv_frootp_storage_to_litter_patch(p)   + &
+           this%hrv_frootp_xfer_to_litter_patch(p)      + &
+           this%hrv_livestemp_to_litter_patch(p)        + &
+           this%hrv_livestemp_storage_to_litter_patch(p)+ &
+           this%hrv_livestemp_xfer_to_litter_patch(p)   + &
+           this%hrv_deadstemp_storage_to_litter_patch(p)+ &
+           this%hrv_deadstemp_xfer_to_litter_patch(p)   + &
+           this%hrv_livecrootp_to_litter_patch(p)       + &
+           this%hrv_livecrootp_storage_to_litter_patch(p)+ &
+           this%hrv_livecrootp_xfer_to_litter_patch(p)  + &
+           this%hrv_deadcrootp_to_litter_patch(p)       + &
+           this%hrv_deadcrootp_storage_to_litter_patch(p)+ &
+           this%hrv_deadcrootp_xfer_to_litter_patch(p)
+
+       this%sen_ploss_litter(p) = &
+           this%livestemp_to_litter_patch(p)            + &
+           this%leafp_to_litter_patch(p)                + &
+           this%frootp_to_litter_patch(p)
+
     end do
 
 
