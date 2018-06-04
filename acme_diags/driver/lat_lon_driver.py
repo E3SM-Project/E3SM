@@ -50,6 +50,94 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     }
     return metrics_dict
 
+def _get_land_or_ocean_frac(test_file, frac_type):
+    """
+    Get the land or ocean fraction for masking.
+    """
+
+    try:
+        frac = test_file(frac_type)
+    except Exception:
+        mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
+        with cdms2.open(mask_path) as f:
+            frac = f(frac_type)
+
+    return frac
+
+def _handle_special_cases_for_ref(var, ref_name, season, ref):
+    """
+    Handle the special cases for the reference data
+    """
+    if ref_name == 'WARREN':
+        # This is a cdms fix for a bad mask.
+        ref = MV2.masked_where(ref == -0.9, ref)
+
+    elif ref_name == 'AIRS':
+        # This is a cdms fix for a bad mask.
+        ref = MV2.masked_where(ref > 1e+20, ref)
+
+    # cdms didn't properly convert mask with fill value -999.0   .
+    elif ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
+        # This is a cdms fix for a bad mask.
+        ref = MV2.masked_where(ref == -999.0, ref)
+
+        # following should move to derived variable
+        if var == 'PRECT_LAND':
+            days_season = {'ANN': 365, 'DJF': 90,
+                            'MAM': 92, 'JJA': 92, 'SON': 91}
+            # approximate way to convert to seasonal cumulative
+            # precipitation, need to have solution in derived variable,
+            # unit convert from mm/day to cm
+            ref = ref / days_season[season] / \
+                0.1  # convert cm to mm/day instead
+            ref.units = 'mm/day'
+            
+    return ref
+
+def _regrid_and_plot(var, region, test_var, ref_var, ref_name, land_frac, ocean_frac, parameter):
+    """
+    Tentative implementation.
+    For each region, regrid the test and ref data.
+    Then take the difference and plot it.
+    """
+    print("Selected region: {}".format(region))
+
+    test_var_domain, ref_var_domain = utils.select_region(
+        region, test_var, ref_var, land_frac, ocean_frac, parameter)
+
+    # Regrid towards lower resolution of two variables for
+    # calculating difference
+    test_var_reg, ref_var_reg = utils.regrid_to_lower_res(
+        test_var_domain, ref_var_domain, parameter.regrid_tool, parameter.regrid_method)
+
+    # A special case.
+    if var == 'TREFHT_LAND' or var == 'SST':
+        if ref_name == 'WILLMOTT':
+            ref_var_reg = MV2.masked_where(
+                ref_var_reg == ref_var_reg.fill_value, ref_var_reg)
+
+        land_mask = MV2.logical_or(test_var_reg.mask, ref_var_reg.mask)
+        test_var_reg = MV2.masked_where(land_mask, test_var_reg)
+        ref_var_reg = MV2.masked_where(land_mask, ref_var_reg)
+
+    # Plotting
+    diff = test_var_reg - ref_var_reg
+    metrics_dict = create_metrics(
+        ref_var_domain, test_var_domain, ref_var_reg, test_var_reg, diff)
+
+    metrics_dict['unit'] = test_var_reg.units
+
+    fnm = os.path.join(get_output_dir(
+        parameter.current_set, parameter), parameter.output_file)
+    with open(fnm + '.json' , 'w') as outfile:
+            json.dump(metrics_dict,outfile)
+    print('Metrics saved in: ' + fnm + '.json')
+
+    parameter.var_region = region
+    plot(parameter.current_set, ref_var_domain,
+            test_var_domain, diff, metrics_dict, parameter)
+    utils.save_ncfiles(
+        parameter.current_set, test_var_domain, ref_var_domain, diff, parameter)
 
 def run_diag(parameter):
     parameter.reference_data_path
@@ -90,16 +178,8 @@ def run_diag(parameter):
             print('No yrs_averaged exists in global attributes')
             parameter.test_name_yrs = parameter.test_name_yrs
 
-        # save land/ocean fraction for masking
-        try:
-            land_frac = test_file('LANDFRAC')
-            ocean_frac = test_file('OCNFRAC')
-        except BaseException:
-            mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
-            f0 = cdms2.open(mask_path)
-            land_frac = f0('LANDFRAC')
-            ocean_frac = f0('OCNFRAC')
-            f0.close()
+        land_frac = _get_land_or_ocean_frac(test_file, 'LANDFRAC')
+        ocean_frac = _get_land_or_ocean_frac(test_file, 'OCNFRAC')
 
         for var in variables:
             print('Variable: {}'.format(var))
@@ -112,32 +192,7 @@ def run_diag(parameter):
             parameter.viewer_descr[var] = test_var.long_name if hasattr(
                 test_var, 'long_name') else 'No long_name attr in test data.'
 
-            # special case, cdms didn't properly convert mask with fill value
-            # -999.0, filed issue with denise
-            if ref_name == 'WARREN':
-                # this is cdms2 for bad mask, denise's fix should fix
-                ref_var = MV2.masked_where(ref_var == -0.9, ref_var)
-                # following should move to derived variable
-            if ref_name == 'AIRS':
-                # ref_var = MV2.masked_where(ref_var==ref_var.fill_value, ref_var)
-                # this is cdms2 for bad mask, denise's fix should fix
-                ref_var = MV2.masked_where(ref_var > 1e+20, ref_var)
-            if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-                # ref_var = MV2.masked_where(ref_var==ref_var.fill_value, ref_var)
-                # this is cdms2 for bad mask, denise's fix should fix
-                ref_var = MV2.masked_where(ref_var == -999., ref_var)
-
-                # following should move to derived variable
-                if var == 'PRECT_LAND':
-                    days_season = {'ANN': 365, 'DJF': 90,
-                                   'MAM': 92, 'JJA': 92, 'SON': 91}
-                    # test_var = test_var * days_season[season] * 0.1 #following AMWG
-                    # approximate way to convert to seasonal cumulative
-                    # precipitation, need to have solution in derived variable,
-                    # unit convert from mm/day to cm
-                    ref_var = ref_var / days_season[season] / \
-                        0.1  # convert cm to mm/day instead
-                    ref_var.units = 'mm/day'
+            _handle_special_cases_for_ref(var, ref_name, season, ref_var)
 
             if test_var.getLevel() and ref_var.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
@@ -152,7 +207,6 @@ def run_diag(parameter):
                         hyam = f_in('hyam')
                         hybm = f_in('hybm')
                         ps = f_in('PS')  # Pa
-
                         mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plev)
 
                     # levels are presure levels
@@ -166,105 +220,36 @@ def run_diag(parameter):
                         test_var_p = mv_p
                     if f_ind == 1:
                         ref_var_p = mv_p
+
                 # select plev
                 for ilev in range(len(plev)):
                     test_var = test_var_p[ilev, ]
                     ref_var = ref_var_p[ilev, ]
 
                     for region in regions:
-                        print("Selected region: {}".format(region))
-
-                        test_var_domain, ref_var_domain = utils.select_region(
-                            region, test_var, ref_var, land_frac, ocean_frac, parameter)
-
                         parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
 
-                        # Regrid towards lower resolution of two variables for
-                        # calculating difference
-                        test_var_reg, ref_var_reg = utils.regrid_to_lower_res(
-                            test_var_domain, ref_var_domain, parameter.regrid_tool, parameter.regrid_method)
-
-                        # Plotting
-                        diff = test_var_reg - ref_var_reg
-                        metrics_dict = create_metrics(
-                            ref_var_domain, test_var_domain, ref_var_reg, test_var_reg, diff)
-
-                        metrics_dict['unit'] = test_var_reg.units
-
-                        fnm = os.path.join(get_output_dir(
-                            parameter.current_set, parameter), parameter.output_file)
-                        with open(fnm + '.json' , 'w') as outfile:
-                             json.dump(metrics_dict,outfile)
-                        print('Metrics saved in: ' + fnm + '.json')
-
-                        parameter.var_region = region
-                        plot(parameter.current_set, ref_var_domain,
-                             test_var_domain, diff, metrics_dict, parameter)
-                        utils.save_ncfiles(
-                            parameter.current_set, test_var_domain, ref_var_domain, diff, parameter)
+                        _regrid_and_plot(var, region, test_var, ref_var, ref_name, land_frac, ocean_frac, parameter)
 
             # for variables without z axis:
             elif test_var.getLevel() is None and ref_var.getLevel() is None:
 
-                # select region
-                if len(regions) == 0:
-                    regions = ['global']
-
                 for region in regions:
-                    print("Selected region: {}".format(region))
-
-                    test_var_domain, ref_var_domain = utils.select_region(
-                        region, test_var, ref_var, land_frac, ocean_frac, parameter)
-
                     parameter.output_file = '-'.join(
-                        [ref_name, var, season, region])
-                    parameter.main_title = str(' '.join([var, season, region]))
+                        [ref_name, var, str(int(plev[ilev])), season, region])
+                    parameter.main_title = str(
+                        ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
 
-                    # regrid towards lower resolution of two variables for
-                    # calculating difference
-                    test_var_reg, ref_var_reg = utils.regrid_to_lower_res(
-                        test_var_domain, ref_var_domain, parameter.regrid_tool, parameter.regrid_method)
-
-                    # if var is 'SST' or var is 'TREFHT_LAND': #special case
-
-                    if var == 'TREFHT_LAND'or var == 'SST':  # use "==" instead of "is"
-                        if ref_name == 'WILLMOTT':
-                            ref_var_reg = MV2.masked_where(
-                                ref_var_reg == ref_var_reg.fill_value, ref_var_reg)
-                            print(ref_name)
-
-                            # if mv.mask is False:
-                            #    mv = MV2.masked_less_equal(mv, mv._FillValue)
-                            #    print("*************",mv.count())
-                        land_mask = MV2.logical_or(test_var_reg.mask, ref_var_reg.mask)
-                        test_var_reg = MV2.masked_where(land_mask, test_var_reg)
-                        ref_var_reg = MV2.masked_where(land_mask, ref_var_reg)
-
-                    diff = test_var_reg - ref_var_reg
-                    metrics_dict = create_metrics(
-                        ref_var_domain, test_var_domain, ref_var_reg, test_var_reg, diff)
-
-                    metrics_dict['unit'] = test_var_reg.units
-
-                    fnm = os.path.join(get_output_dir(
-                        parameter.current_set, parameter), parameter.output_file)
-                    with open(fnm + '.json' , 'w') as outfile:
-                         json.dump(metrics_dict,outfile)
-                    print('Metrics saved in: ' + fnm + '.json')
-
-                    parameter.var_region = region
-                    plot(parameter.current_set, ref_var_domain,
-                         test_var_domain, diff, metrics_dict, parameter)
-                    utils.save_ncfiles(parameter.current_set,
-                                       test_var_domain, ref_var_domain, diff, parameter)
+                    _regrid_and_plot(var, region, test_var, ref_var, ref_name, land_frac, ocean_frac, parameter)
 
             else:
                 raise RuntimeError(
                     "Dimensions of two variables are difference. Abort")
+
         ref_file.close()
         test_file.close()
+
     return parameter
-    
