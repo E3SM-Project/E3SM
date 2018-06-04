@@ -15,7 +15,9 @@ from acme_diags.driver.utils import get_output_dir
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
-    """Creates the mean, max, min, rmse, corr in a dictionary"""
+    """
+    Creates the mean, max, min, rmse, corr in a dictionary
+    """
     metrics_dict = {}
     metrics_dict['ref'] = {
         'min': float(min_cdms(ref)),
@@ -54,10 +56,9 @@ def _get_land_or_ocean_frac(test_file, frac_type):
     """
     Get the land or ocean fraction for masking.
     """
-
     try:
         frac = test_file(frac_type)
-    except Exception:
+    except:
         mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
         with cdms2.open(mask_path) as f:
             frac = f(frac_type)
@@ -76,7 +77,7 @@ def _handle_special_cases_for_ref(var, ref_name, season, ref):
         # This is a cdms fix for a bad mask.
         ref = MV2.masked_where(ref > 1e+20, ref)
 
-    # cdms didn't properly convert mask with fill value -999.0   .
+    # cdms didn't properly convert mask with fill value -999.0
     elif ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
         # This is a cdms fix for a bad mask.
         ref = MV2.masked_where(ref == -999.0, ref)
@@ -93,6 +94,29 @@ def _handle_special_cases_for_ref(var, ref_name, season, ref):
             ref.units = 'mm/day'
             
     return ref
+
+def _convert_to_pressure_levels(mv, mv_file, plevs):
+    """
+    Given either test or reference data with a z-axis,
+    convert to the desired pressure levels.
+    """
+    mv_plv = mv.getLevel()
+    # var(time,lev,lon,lat) convert from hybrid level to pressure
+    if mv_plv.long_name.lower().find('hybrid') != -1:
+        hyam = mv_file('hyam')
+        hybm = mv_file('hybm')
+        ps = mv_file('PS')  # Pa
+        mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
+
+    # levels are pressure levels
+    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
+        mv_p = utils.pressure_to_plevs(mv, plevs)
+
+    else:
+        raise RuntimeError(
+            "Vertical level is neither hybrid nor pressure. Aborting.")
+    
+    return mv_p
 
 def _regrid_and_plot(var, region, test_var, ref_var, ref_name, land_frac, ocean_frac, parameter):
     """
@@ -165,11 +189,8 @@ def run_diag(parameter):
         test_file = cdms2.open(test_fnm)
         ref_file = cdms2.open(ref_fnm)
         
-        if parameter.short_test_name:
-            parameter.test_name_yrs = parameter.short_test_name
-        else:
-            parameter.test_name_yrs = parameter.test_name
-        
+        parameter.test_name_yrs = parameter.short_test_name if parameter.short_test_name else parameter.test_name
+
         try:
             yrs_averaged =  test_file.getglobal('yrs_averaged')
             parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
@@ -196,30 +217,10 @@ def run_diag(parameter):
 
             if test_var.getLevel() and ref_var.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
+
                 print('Selected pressure level: {}'.format(plev))
-                f_ins = [test_file, ref_file]
-                for f_ind, mv in enumerate([test_var, ref_var]):
-                    mv_plv = mv.getLevel()
-                    # var(time,lev,lon,lat) convert from hybrid level to
-                    # pressure
-                    if mv_plv.long_name.lower().find('hybrid') != -1:
-                        f_in = f_ins[f_ind]
-                        hyam = f_in('hyam')
-                        hybm = f_in('hybm')
-                        ps = f_in('PS')  # Pa
-                        mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plev)
-
-                    # levels are presure levels
-                    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
-                        mv_p = utils.pressure_to_plevs(mv, plev)
-
-                    else:
-                        raise RuntimeError(
-                            "Vertical level is neither hybrid nor pressure. Abort")
-                    if f_ind == 0:
-                        test_var_p = mv_p
-                    if f_ind == 1:
-                        ref_var_p = mv_p
+                test_var_p = _convert_to_pressure_levels(test_var, test_file, plev)
+                ref_var_p = _convert_to_pressure_levels(ref_var, ref_file, plev)
 
                 # select plev
                 for ilev in range(len(plev)):
