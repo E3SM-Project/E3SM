@@ -3,7 +3,6 @@ module shr_nuopc_fldList_mod
   use ESMF
   use NUOPC
   use shr_kind_mod   , only : CX => shr_kind_CX, CXX => shr_kind_CXX, CS=>shr_kind_CS, CL=>shr_kind_CL
-  use shr_sys_mod    , only : shr_sys_abort
   use shr_string_mod , only : shr_string_lastindex
 
   implicit none
@@ -17,6 +16,7 @@ module shr_nuopc_fldList_mod
   public :: shr_nuopc_fldList_AddFld
   public :: shr_nuopc_fldList_AddDomain
   public :: shr_nuopc_fldList_AddMetadata
+  public :: shr_nuopc_fldList_GetMetadata
   public :: shr_nuopc_fldList_AddMap
   public :: shr_nuopc_fldList_Deactivate
   public :: shr_nuopc_fldList_GetFldNames
@@ -84,8 +84,8 @@ module shr_nuopc_fldList_mod
 
   integer           :: dbrc
   character(len=CL) :: infostr
-  character(*), parameter :: u_FILE_u = &
-       __FILE__
+  character(len=*),parameter :: u_FILE_u = &
+     __FILE__
 
 !================================================================================
 contains
@@ -106,6 +106,11 @@ contains
     character(len=*),parameter :: subname = '(shr_nuopc_fldList_concat) '
     !-------------------------------------------------------------------------------
     
+    if (len_trim(concat_src) + len_trim(FldsFr%flds(n)%shortname) + 1 >= len(concat_src)) then
+       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       return
+    end if
+
     do n = 1,size(FldsFr%flds)
        if (trim(FldsFr%flds(n)%shortname) /= flds_scalar_name) then
           if (trim(concat_src) == '') then
@@ -115,10 +120,12 @@ contains
           end if
        end if
     end do
-    if (len_trim(concat_src) >= CXX) then
-       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
-    end if
     
+    if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
+       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       return
+    end if
+
     do n = 1,size(FldsTo%flds)
        if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
           if (trim(concat_dst) == '') then
@@ -128,9 +135,6 @@ contains
           end if
        end if
     end do
-    if (len_trim(concat_dst) >= CXX) then
-       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
-    end if
     
   end subroutine shr_nuopc_fldList_Concat
 
@@ -151,14 +155,15 @@ contains
     character(len=*),parameter :: subname = '(fldList_AddDomain) '
     !-------------------------------------------------------------------------------
 
+    if (len_trim(fldlist) + len_trim(fldname) + 1 >= len(fldlist)) then
+       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       return
+    end if
+
     if (trim(fldlist) == '') then
        fldlist = trim(fldname)
     else
        fldlist = trim(fldlist)//':'//trim(fldname)
-    end if
-
-    if (len_trim(fldlist) >= CXX) then
-       call shr_sys_abort(subname//'ERROR: maximum length of xxx or xxx has been exceeded')
     end if
 
     if (present(longname) .and. present(stdname) .and. present(units)) then
@@ -178,18 +183,120 @@ contains
     character(len=*), intent(in) :: units
 
     ! local variables
-    integer :: i, j
+    integer :: n
+    logical :: found,FDfound
     integer :: rc
     character(len=*),parameter :: subname = '(fldList_AddMetadata) '
     !-------------------------------------------------------------------------------
 
+    FDfound = .true.
     if (.not.NUOPC_FieldDictionaryHasEntry(fldname)) then
-       call ESMF_LogWrite(subname//': Add:'//trim(fldname), ESMF_LOGMSG_INFO, rc=rc)
+       FDfound = .false.
+       call ESMF_LogWrite(subname//': Add:'//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
        call NUOPC_FieldDictionaryAddEntry(standardName=fldname, canonicalUnits=units, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+    endif
+
+    found = .false.
+    ! only do the search if it was already in the FD.  If it wasn't, 
+    ! then assume it's also not in the metadata table.
+    if (FDfound) then
+       n = 1
+       do while (n <= n_entries .and. .not.found)
+          if (fldname == shr_nuopc_fldList_Metadata(n,1)) found=.true.
+          n = n + 1
+       enddo
+    endif
+
+    if (.not. found) then
+       n_entries = n_entries + 1
+       if (n_entries > nmax) then
+          write(infostr,*) subname,' ERROR: n_entries= ',n_entries,' nmax = ',nmax,' fldname= ',trim(fldname)
+          call ESMF_LogWrite(trim(infostr),ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          write(infostr,*) subname,' ERROR: n_entries gt nmax'
+          call ESMF_LogWrite(trim(infostr),ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       end if
+       shr_nuopc_fldList_Metadata(n_entries,1) = trim(fldname)
+       shr_nuopc_fldList_Metadata(n_entries,2) = trim(longname)
+       shr_nuopc_fldList_Metadata(n_entries,3) = trim(stdname )
+       shr_nuopc_fldList_Metadata(n_entries,4) = trim(units   )
     endif
 
   end subroutine shr_nuopc_fldList_AddMetadata
+
+  !===============================================================================
+
+  subroutine shr_nuopc_fldList_GetMetadata(shortname, longname, stdname, units)
+
+    ! !USES:
+    implicit none
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    character(len=*), intent(in)  :: shortname
+    character(len=*),optional, intent(out) :: longname
+    character(len=*),optional, intent(out) :: stdname
+    character(len=*),optional, intent(out) :: units
+
+    !EOP
+
+    !--- local ---
+    integer :: i,n
+    character(len=CSS) :: llongname, lstdname, lunits, lshortname  ! local copies
+    character(len=*),parameter :: unknown = 'unknown'
+    logical :: found
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_GetMetadata) '
+
+    !--- define field metadata (name, long_name, standard_name, units) ---
+
+    llongname = trim(unknown)
+    lstdname  = trim(unknown)
+    lunits    = trim(unknown)
+
+    found = .false.
+
+    if (.not.found) then
+       i = 1
+       do while (i <= n_entries .and. .not.found)
+          lshortname = trim(shortname)
+          if (trim(lshortname) == trim(shr_nuopc_fldList_Metadata(i,1))) then
+             llongname = trim(shr_nuopc_fldList_Metadata(i,2))
+             lstdname  = trim(shr_nuopc_fldList_Metadata(i,3))
+             lunits    = trim(shr_nuopc_fldList_Metadata(i,4))
+             found     =.true.
+          end if
+          i = i + 1
+       end do
+    endif
+
+    if (.not.found) then
+       i = 1
+       do while (i <= n_entries .and. .not.found)
+          n = shr_string_lastIndex(shortname,"_")
+          lshortname = ""
+          if (n < len_trim(shortname)) lshortname = shortname(n+1:len_trim(shortname))
+          if (trim(lshortname) == trim(shr_nuopc_fldList_Metadata(i,1))) then
+             llongname = trim(shr_nuopc_fldList_Metadata(i,2))
+             lstdname  = trim(shr_nuopc_fldList_Metadata(i,3))
+             lunits    = trim(shr_nuopc_fldList_Metadata(i,4))
+             found     = .true.
+          end if
+          i = i + 1
+       end do
+    endif
+
+    if (present(longname)) then
+       longname = trim(llongname)
+    endif
+    if (present(stdname))  then
+       stdname = trim(lstdname)
+    endif
+    if (present(units)) then
+       units = trim(lunits)
+    endif
+
+  end subroutine shr_nuopc_fldList_GetMetadata
 
   !================================================================================
 
@@ -381,7 +488,7 @@ contains
 
     if (present(grid) .and. present(mesh)) then
        call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR both grid and mesh not allowed", &
-            ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
        rc = ESMF_FAILURE
        return
     endif
@@ -392,14 +499,14 @@ contains
     nullify(ItemNameList)
 
     call ESMF_StateGet(state, itemCount=itemCount, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
     write(infostr,'(i6)') itemCount
     call ESMF_LogWrite(trim(subname)//trim(tag)//" count = "//trim(infostr), ESMF_LOGMSG_INFO, rc=dbrc)
     if (itemCount > 0) then
        allocate(itemNameList(itemCount))
        call ESMF_StateGet(state, itemNameList=itemNameList, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
        do n = 1,itemCount
           call ESMF_LogWrite(trim(subname)//trim(tag)//" itemNameList = "//trim(itemNameList(n)), ESMF_LOGMSG_INFO, rc=dbrc)
        enddo
@@ -409,7 +516,7 @@ contains
 #if (1 == 0)
     call NUOPC_GetStateMemberLists(state, StandardNameList=StandardNameList, ConnectedList=ConnectedList, &
          NamespaceList=NamespaceList, itemNameList=itemNameList, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
     write(infostr,'(i6)') size(StandardNameList)
     call ESMF_LogWrite(trim(subname)//trim(tag)//" size = "//trim(infostr), ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -442,10 +549,10 @@ contains
           if (NUOPC_IsConnected(state, fieldName=shortname)) then
              
              call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
              call NUOPC_GetAttribute(field, name="TransferActionGeomObject", value=transferAction, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
              if (trim(transferAction) == "accept") then  ! accept
 
@@ -458,32 +565,32 @@ contains
                    call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected on root pe", &
                         ESMF_LOGMSG_INFO, rc=dbrc)
                    call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
                 elseif (present(grid)) then
                    call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using grid", &
                         ESMF_LOGMSG_INFO, rc=dbrc)
                    ! Create the field
                    field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=shortname,rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
                 elseif (present(mesh)) then
                    call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using mesh", &
                         ESMF_LOGMSG_INFO, rc=dbrc)
                    ! Create the field
                    field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
                 else
                    call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR grid or mesh expected", &
-                        ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                        ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
                    rc = ESMF_FAILURE
                    return
                 endif
 
                 ! NOW call NUOPC_Realize
                 call NUOPC_Realize(state, field=field, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
                 ! call ESMF_FieldPrint(field=field, rc=rc)
-                ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
              endif
 
@@ -492,7 +599,7 @@ contains
              call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(shortname) // " is not connected.", &
                   ESMF_LOGMSG_INFO, rc=dbrc)
              call ESMF_StateRemove(state, (/shortname/), rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
           end if
              
@@ -522,17 +629,17 @@ contains
 
       ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
       distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
       grid = ESMF_GridCreate(distgrid, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
       field = ESMF_FieldCreate(name=trim(flds_scalar_name), &
            grid=grid, &
            typekind=ESMF_TYPEKIND_R8, &
            ungriddedLBound=(/1/), &
            ungriddedUBound=(/flds_scalar_num/), rc=rc)  
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
     end subroutine SetScalarField
 

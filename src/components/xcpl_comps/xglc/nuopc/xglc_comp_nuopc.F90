@@ -377,11 +377,11 @@ module xglc_comp_nuopc
     call shr_nuopc_grid_ArrayToState(d2x, flds_g2x, exportState, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 

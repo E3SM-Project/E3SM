@@ -23,7 +23,9 @@ module MED
   use esmFlds                   , only: fldListFr, fldListTo
   use esmFlds                   , only: ncomps, compmed, compatm, compocn
   use esmFlds                   , only: compice, complnd, comprof, compwav, compglc, compname
+  use esmFlds                   , only: fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_Realize
+  use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetFldNames
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetNumFlds
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetFldInfo
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_FB_Init
@@ -72,7 +74,8 @@ module MED
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
   use med_phases_aofluxes_mod   , only: med_phases_aofluxes_init 
   use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
-  use med_fraction_mod          , only: med_fraction_set
+  use med_phases_history_mod    , only: med_phases_history
+  use med_fraction_mod          , only: med_fraction_init, med_fraction_set
   use med_constants_mod         , only: med_constants_dbug_flag
   use med_constants_mod         , only: med_constants_spval_init
   use med_constants_mod         , only: med_constants_spval
@@ -81,6 +84,7 @@ module MED
   use med_constants_mod         , only: med_constants_spval_rhfile
   use med_map_mod               , only: med_map_RouteHandles_init
   use med_map_mod               , only: med_map_MapNorm_init
+  use med_io_mod                , only: med_io_cpl_init
 
   implicit none
   private
@@ -179,6 +183,17 @@ contains
 
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_DataInitialize, &
          specRoutine=DataInitialize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! setup mediator history phase
+    !------------------
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_history"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_history", specRoutine=med_phases_history, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -1226,21 +1241,29 @@ contains
 
     !----------------------------------------------------------
     ! Finish initialization and resolve data dependencies
+    ! There will be multiple passes
     ! For first time through:
+    !   Do not assume any import fields are connected, just allocate space and such
     !   -- Check present flags
     !   -- Check for active coupling interactions
     !   -- Initialize connector count arrays in med_internal_state
     !   -- Create FBs: FBImp, FBExp, FBImpAccum, FBExpAccum
-    !   -- Create FBfrac
     !   -- Create mediator specific field bundles (not part of import/export states)
     !   -- Initialize med_infodata, Accums (to zero), and FBImp (from NStateImp)
-    !   -- Initialize fractions
     !   -- Read mediator restarts
     !   -- Initialize route handles 
     !   -- Initialize field bundles for normalization
-    !   -- Carry out aofflux_init if appropriate
-    !   -- If atmosphere is not present, than data initialization is complete
-    ! Carry out data dependency for atm initialization if needed
+    !   -- return!
+    ! For second loop:
+    !   -- Copy import fields to local FBs
+    !   -- Create FBfrac and initialize fractions
+    ! Once the ocean is ready:
+    !   -- Copy import fields to local FBs
+    !   -- Re-initialize fractions
+    !   -- Carry out ocnalb_init 
+    !   -- Carry out aoffluxes_init
+    ! Once the atm is ready:
+    !   -- Copy import fields to local FBs
     !----------------------------------------------------------
 
     type(ESMF_GridComp)  :: gcomp
@@ -1257,9 +1280,11 @@ contains
     integer                            :: n1,n2,n
     integer                            :: cntn1, cntn2
     integer                            :: fieldCount
+    character(SHR_KIND_CL), pointer    :: fldnames(:)
     character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
     character(len=128)                 :: value
     character(SHR_KIND_CL)             :: cvalue
+    logical                            :: LocalDone
     logical,save                       :: atmDone = .false.
     logical,save                       :: ocnDone = .false.
     logical,save                       :: allDone = .false.
@@ -1273,7 +1298,8 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! the MED needs valid ATM export Fields to initialize its internal state
+    call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! query the Component for its clock, importState and exportState
     call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -1428,6 +1454,14 @@ contains
                  name='FBExpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+            is_local%wrap%FBImpAccumCnt(n1) = 0
+            is_local%wrap%FBExpAccumCnt(n1) = 0
+
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1), value=czero, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          endif
          if (mastertask) call shr_sys_flush(llogunit)
 
@@ -1455,29 +1489,6 @@ contains
          enddo
       enddo
       if (mastertask) call shr_sys_flush(llogunit)
-
-      !---------------------------------------
-      ! Initialize med_infodata, Accums (to zero), and FBImp (from NStateImp)
-      !---------------------------------------
-
-      do n1 = 1,ncomps
-         is_local%wrap%FBImpAccumCnt(n1) = 0
-         is_local%wrap%FBExpAccumCnt(n1) = 0
-         if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
-            call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, trim(compname(n1))//'2cpli', &
-                 is_local%wrap%mpicom, rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1), value=czero, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-      enddo
 
 #if (1 == 0)
       !---------------------------------------
@@ -1512,19 +1523,130 @@ contains
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       
       !---------------------------------------
-      ! Initialize field bundles needed for mediator phases
-      ! - initialize fractions
-      ! - initialize ocn albedo and ocn/atm flux calculation 
+      ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
 
-      call med_phases_init(gcomp, llogunit, rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      if (is_local%wrap%med_coupling_active(compocn,compatm) .and. &
+          is_local%wrap%med_coupling_active(compatm,compocn)) then
 
+         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
+         ! rather than NStateExp(n2), since the export state might only
+         ! contain control data and no grid information if if the target
+         ! component (n2) is not prognostic only receives control data back
+
+         ! Create field bundles for ocean albedo computation
+
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb_o)
+         allocate(fldnames(fieldCount))
+         call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb_o%flds, fldnames)
+
+         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+            STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+            STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         deallocate(fldnames)
+
+         ! Create field bundles for ocean/atmosphere flux computation
+
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux_o)
+         allocate(fldnames(fieldCount))
+         call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_a%flds, fldnames)
+
+         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
+            STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
+            STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         deallocate(fldnames)
+      end if
+
+      !----------------------------------------------------------
+      ! Create mediator specific field bundles needed in phases routines
+      ! TODO: this needs to be filled in
+      !----------------------------------------------------------
+
+      ! FBs for lnd <-> glc accumulation and elevation class downscaling
+      if (is_local%wrap%comp_present(complnd) .and. is_local%wrap%comp_present(compglc)) then
+         ! call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_l2x_to_glc_accum, &
+         !      STgeom=is_local%wrap%NStateImp(complnd), fieldnamelist=flds_l2x_to_glc, name='FBMed_l2g_l_accum', rc=rc)
+         ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+         ! call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_g2x_to_lnd, &
+         !      STgeom=is_local%wrap%NStateImp(complnd), fieldnamelist=flds_g2x_to_lnd, name='FBMed_g2x_to_lnd', rc=rc)
+         ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      end if
+
+      first_call = .false.
+      call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      return
     endif  ! end first_call if-block
-    first_call = .false.
 
     !---------------------------------------
-    ! End of first_call block - reset first_call to .false.
+    ! Initialize mediator fields and infodata
+    ! This is called every loop around DataInitialize
+    !---------------------------------------
+
+    do n1 = 1,ncomps
+       LocalDone = .true.
+       if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
+
+          call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemCount=fieldCount, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+ 
+          allocate(fieldNameList(fieldCount))
+          call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemNameList=fieldNameList, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          do n=1, fieldCount
+             call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemName=fieldNameList(n), field=field, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             if (atCorrectTime) then
+                if (fieldNameList(n) == flds_scalar_name) then
+                   call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
+                        trim(compname(n1))//'2cpli', is_local%wrap%mpicom, rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency CSTI "//trim(compname(n1)), &
+                        ESMF_LOGMSG_INFO, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                endif
+             else
+                LocalDone=.false.
+             endif
+          enddo
+          deallocate(fieldNameList)
+
+          if (LocalDone) then
+             call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          endif
+       endif
+    enddo
+
+    !----------------------------------------------------------
+    ! Create FBfrac field bundles and initialize fractions
+    ! This has some complex dependencies on fractions from import States
+    !  and appropriate checks are not implemented.  These fractions are needed
+    !  also in the ocean ocnalb_init and ocnaoflux_init.  We might need to split 
+    !  out the fraction FB allocation and the fraction initialization
+    !----------------------------------------------------------
+    
+    call med_fraction_init(gcomp,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    ! Carry out data dependency for ocn initialization if needed
     !---------------------------------------
 
     if (.not. is_local%wrap%comp_present(compocn)) then
@@ -1534,10 +1656,6 @@ contains
     if (.not. is_local%wrap%comp_present(compocn)) then
        atmDone = .true.
     endif
-
-    !---------------------------------------
-    ! Carry out data dependency for ocn initialization if needed
-    !---------------------------------------
 
     if (.not. ocnDone .and. is_local%wrap%comp_present(compocn)) then
 
@@ -1577,6 +1695,12 @@ contains
             call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+            if (is_local%wrap%comp_present(compocn)) then
+              ! Copy the NstateImp(compocn) to FBImp(compocn)
+              call med_connectors_post_ocn2med(gcomp, rc=rc)
+              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           end if
+
             ! TODO: the following causes an abort
             !!Copy the NstateImp(compocn) to FBImp(compocn)
             ! call med_connectors_post_ocn2med(gcomp, rc=rc)
@@ -1584,6 +1708,10 @@ contains
 
             ! Initialize the atm/ocean fluxes and compute the ocean albedos
             call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ! Update fractions again in case any import fields have changed
+            call med_fraction_init(gcomp,rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Initialize ocean albedo module and compute ocean albedos
@@ -1633,6 +1761,10 @@ contains
 
        if (.not. atmdone) then  ! atmdone is not true
 
+          ! Update fractions again in case any import fields have changed
+          call med_fraction_init(gcomp,rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           ! initialize fractions
           call med_fraction_set(gcomp, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1666,25 +1798,55 @@ contains
     end if
 
     if (atmDone .and. ocnDone) then
-
        if (is_local%wrap%comp_present(compatm)) then
           ! Copy the NstateImp(compatm) to FBImp(compatm)
           call med_connectors_post_atm2med(gcomp, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
+    endif
 
-       if (is_local%wrap%comp_present(compocn)) then
-          ! Copy the NstateImp(compocn) to FBImp(compocn)
-          call med_connectors_post_ocn2med(gcomp, rc=rc)
+    allDone = .true.
+    do n1 = 1,ncomps
+       if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
+
+          call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemCount=fieldCount, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+ 
+          allocate(fieldNameList(fieldCount))
+          call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemNameList=fieldNameList, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       ! set InitializeDataComplete Component Attribute to "true", indicating
-       ! to the driver that this Component has fully initialized its data
+          do n=1, fieldCount
+             call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemName=fieldNameList(n), field=field, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             if (.not. atCorrectTime) then
+                allDone=.false.
+             endif
+          enddo
+          deallocate(fieldNameList)
+       endif
+    enddo
+
+    ! set InitializeDataComplete Component Attribute to "true", indicating
+    ! to the driver that this Component has fully initialized its data
+
+    if (allDone) then
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="true", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call ESMF_LogWrite("MED - Initialize-Data-Dependency from ATM is SATISFIED!!!", ESMF_LOGMSG_INFO, rc=rc)
+       call ESMF_LogWrite("MED - Initialize-Data-Dependency allDone check Passed", ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call med_io_cpl_init()
+    else
+       call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_LogWrite("MED - Initialize-Data-Dependency allDone check Failed, another loop is required", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
