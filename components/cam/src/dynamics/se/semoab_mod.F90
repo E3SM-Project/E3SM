@@ -9,7 +9,7 @@ module semoab_mod
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
 
-  use dimensions_mod, only: nelem, ne, np
+  use dimensions_mod, only: nelem, ne, np, nlev
   use element_mod, only : element_t
   use parallel_mod, only : parallel_t
 
@@ -20,7 +20,14 @@ module semoab_mod
 
   use seq_comm_mct,  only: MHID, MHFID !  app id on moab side, for homme moab coarse and fine mesh
 
+  use dyn_comp,       only: dyn_import_t, dyn_export_t
+
   implicit none
+
+  save
+
+  integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
+  integer, target, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
 #include "moab/MOABConfig.h"
   
@@ -55,7 +62,7 @@ contains
     integer, dimension(:), allocatable :: indx  !  this will be ordered
 
     !  this will be moab vertex handle locally
-    integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:), elemids(:), vgids(:), gdofel(:)
+    integer, target, allocatable :: moabvh(:), vdone(:), elemids(:), vgids(:), gdofel(:)
     integer, target, allocatable :: vdone_c(:), moabconn_c(:), moabvh_c(:)
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
@@ -63,7 +70,7 @@ contains
     integer  tagtype, numco, tag_sto_len, ent_type, tagindex
     type (cartesian3D_t)             :: cart
     integer  igcol, ii
-    integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
+
     ! for np=4,
     !      28, 32, 36, 35
     !      25, 29, 33, 34
@@ -420,6 +427,24 @@ contains
       ent_type = 0 ! vertex type
       ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nverts_c , ent_type, vdone_c)
 
+      ! create a new tag, for transfer example ; will use it now for temperature on the surface
+      !  (bottom atm to surface of ocean)
+      tagname='a2oTAG'//CHAR(0) !  atm to ocean tag
+      tagtype = 1  ! dense, double
+      numco = np*np !  usually, it is 16; each element will have the same order as dofs
+      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create atm to ocean tag')
+
+      ! create a new tag, for transfer example ; will use it now for temperature on the surface
+      !  (bottom atm to surface of ocean); for debugging, use it on fine mesh
+      tagname='a2oDBG'//CHAR(0) !  atm to ocean tag
+      tagtype = 1  ! dense, double
+      numco = 1 !  usually, it is 1; one value per gdof
+      ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create atm to ocean tag')
+
 
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 5) then
@@ -443,7 +468,7 @@ contains
 
      ! deallocate
      deallocate(moabvh)
-     deallocate(moabconn)
+!     deallocate(moabconn) keep it , it is useful to set the tag on fine mesh
      deallocate(vdone)
      deallocate(gdofel)
      deallocate(indx)
@@ -455,6 +480,82 @@ contains
 !    end copy
 
   end subroutine create_moab_mesh_fine
+
+  subroutine moab_export_data(dyn_out)
+
+    type(dyn_export_t) , intent(in) ::  dyn_out
+    type(element_t),    pointer :: elem(:)
+
+    integer num_elem, ierr
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    integer, external :: iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    integer :: size_tag_array, nvalperelem, ie, i, j, ent_type, ii, ix, idx
+
+    real(kind=real_kind), allocatable, target :: valuesTag(:)
+    character*100 outfile, wopts, tagname
+
+    elem  => dyn_out%elem
+
+    ierr  = iMOAB_GetMeshInfo ( MHID, nvert, nvise, nbl, nsurf, nvisBC );
+    ! find out the number of local elements in moab mesh
+    num_elem = nvise(1)
+    ! now print the temperature from the state, and set it
+    nvalperelem = np*np
+    size_tag_array = nvalperelem*num_elem
+    !print *, 'num_elem  = ', num_elem
+    !print *, ((local_map(i,j), i=1,np), j=1,np)
+    !print *, (moabconn(i), i=1,np*np)
+    ! now load the values on both tags
+    allocate(valuesTag(size_tag_array))  ! will use the same array for vertex array
+
+    do ie=1,num_elem
+      do j=1,np
+        do i=1,np
+          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%T(i,j,nlev,1) ! time level 1?
+        enddo
+      enddo
+    enddo
+    ! set the tag
+    tagname='a2oTAG'//CHAR(0) !  atm to ocean tag
+    ent_type = 1 ! element type
+    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set a2oTAG tag for coarse elements')
+
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeATM_T.h5m'//CHAR(0)
+    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the mesh file')
+
+    ! for debugging, set the tag on fine mesh too (for visu)
+    do ie=1,num_elem
+      do ii=1,elem(ie)%idxp%NumUniquePts
+        i=elem(ie)%idxp%ia(ii)
+        j=elem(ie)%idxp%ja(ii)
+        ix = local_map(i,j)
+        idx = moabconn((ie-1)*(np-1)*(np-1)*4 + ix) !
+        valuesTag ( idx ) = elem(ie)%state%T(i,j,nlev,1)
+      end do
+    end do
+
+    tagname='a2oDBG'//CHAR(0) !  atm to ocean tag, on fine mesh
+    ierr  = iMOAB_GetMeshInfo ( MHFID, nvert, nvise, nbl, nsurf, nvisBC );
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetDoubleTagStorage ( MHFID, tagname, nvert(1), ent_type, valuesTag)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set a2oTAG tag for coarse elements')
+
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeFineATM_T.h5m'//CHAR(0)
+
+    ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the fine mesh file, with a temperature on it')
+
+    deallocate(valuesTag)
+  end subroutine moab_export_data
 
 end module semoab_mod
 
