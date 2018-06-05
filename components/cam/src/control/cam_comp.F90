@@ -431,7 +431,7 @@ end subroutine cam_run4
 #ifdef HAVE_MOAB
 subroutine  cam_moab_export() ! load data from cam dynamics to moab api
   !
-  call moab_export_data(dyn_out)
+  call moab_export_data(dyn_out%elem)
 end subroutine cam_moab_export
 #endif
 !
