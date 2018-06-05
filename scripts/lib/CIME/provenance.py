@@ -348,7 +348,6 @@ def _save_postrun_timing_e3sm(case, lid):
     globs_to_copy.append("CaseStatus")
 
     for glob_to_copy in globs_to_copy:
-        glob_to_copy = glob_to_copy if glob_to_copy.startswith("/") else os.path.join(caseroot,glob_to_copy)
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
             basename = os.path.basename(item)
             if basename != timing_saved_file:
