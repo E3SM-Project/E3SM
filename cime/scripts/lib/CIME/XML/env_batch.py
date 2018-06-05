@@ -47,6 +47,10 @@ class EnvBatch(EnvBase):
                     expect(False, "could not interpret format for wallclock time {}".format(value))
                 value = format_time(walltime_format, t_spec, value)
 
+        if item == "JOB_QUEUE":
+            expect(value in self._get_all_queue_names() or ignore_type,
+                   "Unknown Job Queue specified use --force to set")
+
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
             gnodes = self.get_children("group")
@@ -214,7 +218,7 @@ class EnvBatch(EnvBase):
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
 
-        if self._batchtype == 'none':
+        if self._batchtype == "none":
             return
 
         known_jobs = self.get_jobs()
@@ -267,9 +271,9 @@ class EnvBatch(EnvBase):
                     queue = self.text(default_queue_node)
                     walltime = self.get_queue_specs(queue)[3]
 
+            specs = self.get_queue_specs(queue)
             if walltime is None:
                 # Figure out walltime
-                specs = self.get_queue_specs(queue)
                 if specs is None:
                     # Queue is unknown, use specs from default queue
                     walltime = self.get(self.get_default_queue(), "walltimemax")
@@ -278,7 +282,7 @@ class EnvBatch(EnvBase):
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
-            self.set_value("JOB_QUEUE", queue, subgroup=job)
+            self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
@@ -321,6 +325,10 @@ class EnvBatch(EnvBase):
 
         roots = self.get_children("batch_system")
         queue = self.get_value("JOB_QUEUE", subgroup=job)
+        if self._batchtype != "none" and not queue in self._get_all_queue_names():
+            qnode = self.get_default_queue()
+            queue = self.text(qnode)
+
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
@@ -405,8 +413,8 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None,
-                    skip_pnl=False, mail_user=None, mail_type=None,
+    def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
+                    allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
                     batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
@@ -439,41 +447,117 @@ class EnvBatch(EnvBase):
         depid = OrderedDict()
         jobcmds = []
 
-        for job, dependency in jobs:
-            if dependency is not None:
-                deps = dependency.split()
-            else:
-                deps = []
-            dep_jobs = []
-            if user_prereq is not None:
-                dep_jobs.append(user_prereq)
-            for dep in deps:
-                if dep in depid.keys() and depid[dep] is not None:
-                    dep_jobs.append(str(depid[dep]))
+        if resubmit_immediate:
+            num_submit = case.get_value("RESUBMIT") + 1
+            case.set_value("RESUBMIT", 0)
+            if num_submit <= 0:
+                num_submit = 1
+        else:
+            num_submit = 1
 
-            logger.info("job {} depends on {}".format(job, dep_jobs))
-            result = self._submit_single_job(case, job,
-                                             dep_jobs=dep_jobs,
-                                             no_batch=no_batch,
-                                             skip_pnl=skip_pnl,
-                                             mail_user=mail_user,
-                                             mail_type=mail_type,
-                                             batch_args=batch_args,
-                                             dry_run=dry_run)
-            batch_job_id = str(alljobs.index(job)) if dry_run else result
-            depid[job] = batch_job_id
-            jobcmds.append( (job, result) )
-            if self._batchtype == "cobalt":
-                break
+        prev_job = None
+
+        for _ in range(num_submit):
+            for job, dependency in jobs:
+                if dependency is not None:
+                    deps = dependency.split()
+                else:
+                    deps = []
+                dep_jobs = []
+                if user_prereq is not None:
+                    dep_jobs.append(user_prereq)
+                for dep in deps:
+                    if dep in depid.keys() and depid[dep] is not None:
+                        dep_jobs.append(str(depid[dep]))
+                if prev_job is not None:
+                    dep_jobs.append(prev_job)
+
+                logger.debug("job {} depends on {}".format(job, dep_jobs))
+                result = self._submit_single_job(case, job,
+                                                 skip_pnl=skip_pnl,
+                                                 resubmit_immediate=resubmit_immediate,
+                                                 dep_jobs=dep_jobs,
+                                                 allow_fail=allow_fail,
+                                                 no_batch=no_batch,
+                                                 mail_user=mail_user,
+                                                 mail_type=mail_type,
+                                                 batch_args=batch_args,
+                                                 dry_run=dry_run)
+                batch_job_id = str(alljobs.index(job)) if dry_run else result
+                depid[job] = batch_job_id
+                jobcmds.append( (job, result) )
+                if self._batchtype == "cobalt":
+                    break
+            prev_job = batch_job_id
+
 
         if dry_run:
             return jobcmds
         else:
             return depid
 
-    def _submit_single_job(self, case, job, dep_jobs=None, no_batch=False,
-                           skip_pnl=False, mail_user=None, mail_type=None,
-                           batch_args=None, dry_run=False):
+    @staticmethod
+    def _get_supported_args(job, no_batch):
+        """
+        Returns a map of the supported parameters and their arguments to the given script
+        TODO: Maybe let each script define this somewhere?
+
+        >>> EnvBatch._get_supported_args("", False)
+        {}
+        >>> EnvBatch._get_supported_args("case.test", False)
+        {'skip_pnl': '--skip-preview-namelist'}
+        >>> EnvBatch._get_supported_args("case.st_archive", True)
+        {'resubmit': '--resubmit'}
+        """
+        supported = {}
+        if job in ["case.run", "case.test"]:
+            supported["skip_pnl"] = "--skip-preview-namelist"
+        if job == "case.run":
+            supported["set_continue_run"] = "--completion-sets-continue-run"
+        if job in ["case.st_archive", "case.run"]:
+            if job == "case.st_archive" and no_batch:
+                supported["resubmit"] = "--resubmit"
+            else:
+                supported["submit_resubmits"] = "--resubmit"
+        return supported
+
+    @staticmethod
+    def _build_run_args(job, no_batch, **run_args):
+        """
+        Returns a map of the filtered parameters for the given script,
+        as well as the values passed and the equivalent arguments for calling the script
+
+        >>> EnvBatch._build_run_args("case.run", False, skip_pnl=True, cthulu="f'taghn")
+        {'skip_pnl': (True, '--skip-preview-namelist')}
+        >>> EnvBatch._build_run_args("case.run", False, skip_pnl=False, cthulu="f'taghn")
+        {}
+        """
+        supported_args = EnvBatch._get_supported_args(job, no_batch)
+        args = {}
+        for arg_name, arg_value in run_args.items():
+            if arg_value and (arg_name in supported_args.keys()):
+                args[arg_name] = (arg_value, supported_args[arg_name])
+        return args
+
+    def _build_run_args_str(self, job, no_batch, **run_args):
+        """
+        Returns a string of the filtered arguments for the given script,
+        based on the arguments passed
+        """
+        args = self._build_run_args(job, no_batch, **run_args)
+        run_args_str = " ".join(param for _, param in args.values())
+        if run_args_str is None:
+            return ""
+
+        batch_env_flag = self.get_value("batch_env", subgroup=None)
+        if not batch_env_flag:
+            return run_args_str
+        else:
+            return "{} ARGS_FOR_SCRIPT='{}'".format(batch_env_flag, run_args_str)
+
+    def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
+                           no_batch=False, skip_pnl=False, mail_user=None, mail_type=None,
+                           batch_args=None, dry_run=False, resubmit_immediate=False):
         if not dry_run:
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -481,10 +565,9 @@ class EnvBatch(EnvBase):
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
             if not dry_run:
-                if "archive" not in function_name:
-                    getattr(case,function_name)(skip_pnl=skip_pnl)
-                else:
-                    getattr(case,function_name)()
+                args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+                                            submit_resubmits=not resubmit_immediate)
+                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
 
             return
 
@@ -494,10 +577,20 @@ class EnvBatch(EnvBase):
             submitargs = args_override
 
         if dep_jobs is not None and len(dep_jobs) > 0:
-            logger.info("dependencies: {}".format(dep_jobs))
-            dep_string = self.get_value("depend_string", subgroup=None)
+            logger.debug("dependencies: {}".format(dep_jobs))
+            if allow_fail:
+                dep_string = self.get_value("depend_allow_string", subgroup=None)
+                if dep_string is None:
+                    logger.warning("'depend_allow_string' is not defined for this batch system, " +
+                                   "falling back to the 'depend_string'")
+                    dep_string = self.get_value("depend_string", subgroup=None)
+            else:
+                dep_string = self.get_value("depend_string", subgroup=None)
+            expect(dep_string is not None, "'depend_string' is not defined for this batch system")
+
             separator_string = self.get_value("depend_separator", subgroup=None)
             expect(separator_string is not None,"depend_separator string not defined")
+
             expect("jobid" in dep_string, "depend_string is missing jobid for prerequisite jobs")
             dep_ids_str = str(dep_jobs[0])
             for dep_id in dep_jobs[1:]:
@@ -546,24 +639,15 @@ class EnvBatch(EnvBase):
         expect(batchsubmit is not None,
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
-        submitcmd = ''
         batch_env_flag = self.get_value("batch_env", subgroup=None)
+        run_args = self._build_run_args_str(job, False, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
+                                            submit_resubmits=not resubmit_immediate)
         if batch_env_flag:
-            sequence = (batchsubmit, submitargs, "skip_pnl", batchredirect, get_batch_script_for_job(job))
+            sequence = (batchsubmit, submitargs, run_args, batchredirect, get_batch_script_for_job(job))
         else:
-            sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), "skip_pnl")
+            sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
-        for string in sequence:
-            if string == "skip_pnl":
-                if job in ['case.run', 'case.test'] and skip_pnl:
-                    batch_env_flag = self.get_value("batch_env", subgroup=None)
-                    if not batch_env_flag:
-                        submitcmd += " --skip-preview-namelist "
-                    else:
-                        submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist' ".format(batch_env_flag)
-
-            elif string is not None:
-                submitcmd += string + " "
+        submitcmd = " ".join(s.strip() for s in sequence if s is not None)
 
         if dry_run:
             return submitcmd
@@ -627,16 +711,24 @@ class EnvBatch(EnvBase):
 
         return True
 
+    def _get_all_queue_names(self):
+        all_queues = []
+        all_queues = self.get_all_queues()
+        # Default queue needs to be first
+        all_queues.insert(0, self.get_default_queue())
+
+        queue_names = []
+        for queue in all_queues:
+            queue_names.append(self.text(queue))
+
+        return queue_names
+
     def select_best_queue(self, num_nodes, num_tasks, walltime=None, job=None):
         # Make sure to check default queue first.
-        all_queues = []
-        all_queues.append( self.get_default_queue())
-        all_queues = all_queues + self.get_all_queues()
-        for queue in all_queues:
-            if queue is not None:
-                qname = self.text(queue)
-                if self.queue_meets_spec(qname, num_nodes, num_tasks, walltime=walltime, job=job):
-                    return qname
+        qnames = self._get_all_queue_names()
+        for qname in qnames:
+            if self.queue_meets_spec(qname, num_nodes, num_tasks, walltime=walltime, job=job):
+                return qname
 
         return None
 
