@@ -683,15 +683,19 @@ contains
             ! sum total
             sop_tot = 0._r8
             do l = 1,ndecomp_pools
+              if (is_soil(l)) then
                 sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
+              end if
             end do
             ! get profile
             do l = 1,ndecomp_pools
+              if (is_soil(l)) then
                 if (sop_tot > 1e-12) then 
                     sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                 else
                     sop_profile(l) = 0._r8
                 end if
+              end if
             end do
             ! cauculation actual biochem_pmin_ppool
             do l = 1,ndecomp_pools
