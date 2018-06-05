@@ -20,8 +20,6 @@ module semoab_mod
 
   use seq_comm_mct,  only: MHID, MHFID !  app id on moab side, for homme moab coarse and fine mesh
 
-  use dyn_comp,       only: dyn_import_t, dyn_export_t
-
   implicit none
 
   save
@@ -481,9 +479,8 @@ contains
 
   end subroutine create_moab_mesh_fine
 
-  subroutine moab_export_data(dyn_out)
+  subroutine moab_export_data(elem)
 
-    type(dyn_export_t) , intent(in) ::  dyn_out
     type(element_t),    pointer :: elem(:)
 
     integer num_elem, ierr
@@ -493,8 +490,6 @@ contains
 
     real(kind=real_kind), allocatable, target :: valuesTag(:)
     character*100 outfile, wopts, tagname
-
-    elem  => dyn_out%elem
 
     ierr  = iMOAB_GetMeshInfo ( MHID, nvert, nvise, nbl, nsurf, nvisBC );
     ! find out the number of local elements in moab mesh
