@@ -1,5 +1,77 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 6-5-2018
+Tag: cime_cesm2_0_rel_04
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Remove a "this is a test" line.
+    - Module updates for theta and edison
+    - Update PyCECT tool to v3.0.7
+    - Improvements to addmetadata script.
+    - More doc updates.
+    - Check options in config sections main and create_test and make sure each is supported. 
+    - Remove entries duplicated in components.
+    - Add half degree grid.
+    - Allow space after string in namelist.
+    - Fix issues with mpi-serial build.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1da3a1d Merge pull request #2638 from billsacks/fix_doc
+e2fd6fa Merge pull request #2637 from ESMCI/fischer/machines_update
+db6080f Merge pull request #2634 from ESMCI/fischer/pyCECT
+87648e4 Merge pull request #2632 from ESMCI/fischer/addmetadata
+84ffa89 Merge pull request #2628 from ESMCI/mvertens/more_doc_updates
+827272e Merge pull request #2626 from jedwards4b/config_sanity
+3fd63b6 Merge pull request #2625 from jedwards4b/config_archive_update
+d3073e9 Merge pull request #2624 from jedwards4b/new_half_degree
+0e6c7a7 allow space after string in namelists
+30d0879 Merge pull request #2623 from jedwards4b/mpi_serial_bugfix
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/workflows.rst
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/externals/pio1/pio/box_rearrange.F90.in
+M	src/externals/pio1/pio/pio_support.F90
+M	src/externals/pio1/pio/piolib_mod.F90
+M	tools/statistical_ensemble_test/addmetadata.sh
+A	tools/statistical_ensemble_test/pyCECT/.gitignore
+A	tools/statistical_ensemble_test/pyCECT/EET.py
+M	tools/statistical_ensemble_test/pyCECT/LICENSE.txt
+M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M	tools/statistical_ensemble_test/pyCECT/ens_excluded_varlist.json
+A	tools/statistical_ensemble_test/pyCECT/ens_sub.pbs
+M	tools/statistical_ensemble_test/pyCECT/ens_sub.sh
+A	tools/statistical_ensemble_test/pyCECT/exclude_empty.json
+A	tools/statistical_ensemble_test/pyCECT/included_varlist.json
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 5-22-2018
 Tag: cime_cesm2_0_rel_03
