@@ -489,7 +489,7 @@ contains
     integer num_elem, ierr
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     integer, external :: iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
-    integer :: size_tag_array, nvalperelem, ie, i, j, ent_type, ii, ix, idx
+    integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
 
     real(kind=real_kind), allocatable, target :: valuesTag(:)
     character*100 outfile, wopts, tagname
@@ -531,12 +531,13 @@ contains
 
     ! for debugging, set the tag on fine mesh too (for visu)
     do ie=1,num_elem
-      do ii=1,elem(ie)%idxp%NumUniquePts
-        i=elem(ie)%idxp%ia(ii)
-        j=elem(ie)%idxp%ja(ii)
-        ix = local_map(i,j)
-        idx = moabconn((ie-1)*(np-1)*(np-1)*4 + ix) !
-        valuesTag ( idx ) = elem(ie)%state%T(i,j,nlev,1)
+      je = (ie-1)*(np-1)*(np-1)*4
+      do j=1,np
+        do i= 1,np
+         ix = local_map(i,j)
+         idx = moabconn( je + ix ) !
+         valuesTag ( idx ) = elem(ie)%state%T(i,j,nlev,1)
+        end do
       end do
     end do
 
