@@ -26,7 +26,8 @@ contains
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
-    use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
+    use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date, &
+                                 is_first_step, is_first_restart_step
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
     use domainMod        , only: ldomain
@@ -199,7 +200,8 @@ contains
         met_nvars=7
         if (metdata_type(1:3) == 'cpl') met_nvars=14
 
-        if (nstep .eq. 0) then
+        !if (nstep .eq. 0) then
+        if(is_first_step() .or. is_first_restart_step()) then
           !meteorological forcing
           if (index(metdata_type, 'qian') .gt. 0) then 
             atm2lnd_vars%metsource = 0   
@@ -718,7 +720,8 @@ contains
         end if
 
         !figure out which point to get
-        if (nstep .eq. 0) then 
+        !if (nstep .eq. 0) then
+        if(is_first_step() .or. is_first_restart_step()) then
           mindist=99999
           do thisx = 1,720
               do thisy = 1,360
@@ -743,7 +746,9 @@ contains
         atm2lnd_vars%forc_hdm(g) = hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
                                    hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
 
-        if (nstep .eq. 0 .and. masterproc .and. i .eq. 1) then 
+        !if (nstep .eq. 0 .and. masterproc .and. i .eq. 1) then
+        if((is_first_step() .or. is_first_restart_step()) .and. &
+           (masterproc .and. i.eq.1) ) then
           ! Read light_streams namelist to get filename
           nu_nml = getavu()
           open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
@@ -766,12 +771,14 @@ contains
           ierr = nf90_get_var(ncid, varid, lnfm1)
           ierr = nf90_close(ncid)
         end if
-        if (nstep .eq. 0 .and. i .eq. 1) then
+        !if (nstep .eq. 0 .and. i .eq. 1) then
+        if((is_first_step() .or. is_first_restart_step()) .and. i.eq.1) then
             call mpi_bcast(lnfm1, 192*94*2920, MPI_REAL8, 0, mpicom, ier)
             call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
             call mpi_bcast (smapt62_lat, 94, MPI_REAL8, 0, mpicom, ier)
         end if
-        if (nstep .eq. 0) then
+        !if (nstep .eq. 0) then
+        if(is_first_step() .or. is_first_restart_step()) then
           mindist=99999
           do thisx = 1,192
             do thisy = 1,94
@@ -802,7 +809,10 @@ contains
         nindex(1) = min(max(yr-1848,2), 158)
         nindex(2) = min(nindex(1)+1, 158)
 
-        if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+        !if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then
+        if((is_first_step() .or. is_first_restart_step()) .or. &
+           (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0) ) then
+
           if (masterproc .and. i .eq. 1) then 
             nu_nml = getavu()
             open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
@@ -844,7 +854,8 @@ contains
            end if
         end if
 
-        if (nstep .eq. 0) then 
+        !if (nstep .eq. 0) then
+        if(is_first_step() .or. is_first_restart_step()) then
           mindist=99999
           do thisx = 1,144
             do thisy = 1,96
@@ -873,7 +884,9 @@ contains
                                             ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
 
    !------------------------------------Aerosol forcing--------------------------------------------------
-       if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+       !if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then
+       if((is_first_step() .or. is_first_restart_step()) .or. &
+          (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0) ) then
           if (masterproc .and. i .eq. 1) then 
             aerovars(1) = 'BCDEPWET'
             aerovars(2) = 'BCPHODRY'
@@ -1029,7 +1042,8 @@ contains
        else if (co2_type_idx == 2) then
 #ifdef CPL_BYPASS
         !atmospheric CO2 (to be used for transient simulations only)
-        if (nstep .eq. 0) then 
+        !if (nstep .eq. 0) then
+        if(is_first_step() .or. is_first_restart_step()) then
           ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
           ierr = nf90_inq_dimid(ncid, 'time', dimid)
           ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)
