@@ -1,8 +1,8 @@
 .. _testing:
 
-**************************
-Testing with create_test
-**************************
+**********
+Testing
+**********
 
 `create_test <../Tools_user/create_test.html>`_ 
 is the tool we use to test both CIME and CIME-driven models. 
@@ -232,6 +232,7 @@ TESTMODS     A subdirectory of GROUP containing files which set non-default valu
 ============ =====================================================================================
 
 
+
 Each test run by `create_test <../Tools_user/create_test.html>`_  includes the following mandatory steps:
 
 * CREATE_NEWCASE: creating the create
@@ -287,6 +288,7 @@ such as queue, walltime, etc..
 Using **create_test** (E3SM)
 ============================
 .. _`Using create_test (E3SM)`:
+
 
 Usage will differ slightly depending on if you're using E3SM or CESM.
 

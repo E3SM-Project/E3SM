@@ -278,6 +278,8 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_archive.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_archive.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
+      <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
+      <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
