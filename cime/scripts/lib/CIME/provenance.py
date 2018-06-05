@@ -342,12 +342,13 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
-    globs_to_copy.append("{}/e3sm.log.{}.gz".format(rundir,lid))
-    globs_to_copy.append("{}/cpl.log.{}.gz".format(rundir,lid))
+    globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
 
     for glob_to_copy in globs_to_copy:
+        glob_to_copy = glob_to_copy if glob_to_copy.startswith("/") else os.path.join(caseroot,glob_to_copy)
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
             basename = os.path.basename(item)
             if basename != timing_saved_file:
