@@ -156,16 +156,16 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             else:
                 case.set_value("TOTALPES", case.total_tasks*case.thread_count)
 
-            # create batch files
+
+            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch = case.get_env("batch")
+            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
+
+            # create batch files
             env_batch.make_all_batch_files(case)
             if get_model() == "e3sm" and not case.get_value("TEST"):
                 input_batch_script = os.path.join(case.get_value("MACHDIR"), "template.case.run.sh")
                 env_batch.make_batch_script(input_batch_script, "case.run", case, outfile=get_batch_script_for_job("case.run.sh"))
-
-            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
-            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
-            case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -204,6 +204,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file("sh", case)
         env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
+
+        logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
 ###############################################################################
 def case_setup(self, clean=False, test_mode=False, reset=False):

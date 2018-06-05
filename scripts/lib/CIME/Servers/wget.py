@@ -1,5 +1,5 @@
 """
-WGET Server class.  Interact with a server using WGET protocal
+WGET Server class.  Interact with a server using WGET protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
@@ -23,7 +23,7 @@ class WGET(GenericServer):
         full_url = os.path.join(self._server_loc, rel_path)
         stat, out, err = run_cmd("wget {} --spider {}".format(self._args, full_url))
         if (stat != 0):
-            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out, err))
+            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out.encode('utf-8'), err.encode('utf-8')))
             return False
         return True
 

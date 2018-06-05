@@ -50,7 +50,8 @@ contains
     vnot_analyzed = 0
     vnotfound=0
     if(n==2 .and. .not.ignoretime) then
-       call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1))
+       call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1), &
+            err_str='These files don''t have a time dimension, use cprnc with -m')
 
        ns1 = file(1)%dim(file(1)%unlimdimid)%dimsize
        if(n==2) then

@@ -119,8 +119,10 @@ class SystemTestsCommon(object):
         """
         Perform an individual build
         """
+        model = self._case.get_value('MODEL')
         build.case_build(self._caseroot, case=self._case,
-                         sharedlib_only=sharedlib_only, model_only=model_only)
+                         sharedlib_only=sharedlib_only, model_only=model_only,
+                         save_build_provenance=not model=='cesm')
 
     def clean_build(self, comps=None):
         if comps is None:
@@ -206,6 +208,8 @@ class SystemTestsCommon(object):
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
         rundir      = self._case.get_value("RUNDIR")
+        is_batch    = self._case.get_value("BATCH_SYSTEM") != "none"
+
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
             os.remove(compout)
@@ -221,7 +225,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=is_batch)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
@@ -230,7 +234,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            self._case.case_st_archive()
+            self._case.case_st_archive(resubmit=True)
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfiles = self._get_latest_cpl_logs()
