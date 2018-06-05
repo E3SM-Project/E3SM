@@ -10,7 +10,7 @@ module med_constants_mod
 
   public
 
-  integer           , parameter :: med_constants_dbug_flag = 6
+  integer           , parameter :: med_constants_dbug_flag = 0
  !logical           , parameter :: med_constants_statewrite_flag = .true.
   logical           , parameter :: med_constants_statewrite_flag = .false.
   real(ESMF_KIND_R8), parameter :: med_constants_spval_init = 0.0_ESMF_KIND_R8  ! spval for initialization

@@ -1695,16 +1695,9 @@ contains
             call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            if (is_local%wrap%comp_present(compocn)) then
-              ! Copy the NstateImp(compocn) to FBImp(compocn)
-              call med_connectors_post_ocn2med(gcomp, rc=rc)
-              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           end if
-
-            ! TODO: the following causes an abort
-            !!Copy the NstateImp(compocn) to FBImp(compocn)
-            ! call med_connectors_post_ocn2med(gcomp, rc=rc)
-            ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            ! Copy the NstateImp(compocn) to FBImp(compocn)
+            call med_connectors_post_ocn2med(gcomp, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Initialize the atm/ocean fluxes and compute the ocean albedos
             call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
@@ -1847,6 +1840,9 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_LogWrite("MED - Initialize-Data-Dependency allDone check Failed, another loop is required", ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_LogWrite("MED - Initialize-Data-Dependency from OCN is SATISFIED!!!", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
