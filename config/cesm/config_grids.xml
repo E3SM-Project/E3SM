@@ -271,6 +271,12 @@
       <grid name="rof">JRA025</grid>
     </model_grid>
 
+    <model_grid alias="T62_t061" not_compset="_CAM">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">tx0.66v1</grid>
+    </model_grid>
+
     <model_grid alias="T62_g16" not_compset="_CAM">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -1120,17 +1126,19 @@
     </domain>
 
     <domain name="T62">
-      <nx>192</nx>  <ny>96</ny>
+      <nx>192</nx>  <ny>94</ny>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx1v7.151008.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx1v6.090320.nc</file>
       <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx3v7.090911.nc</file>
       <file grid="atm|lnd" mask="tx1v1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx1v1.090122.nc</file>
+      <file grid="atm|lnd" mask="tx0.66v1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx0.66v1.180605.nc</file>
       <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx0.1v2_090623.nc</file>
       <file grid="atm|lnd" mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx0.1v3.170929.nc</file>
       <file grid="atm|lnd" mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU120.160325.nc</file>
       <file grid="ocnice" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx1v6.130409.nc</file>
       <file grid="ocnice" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx1v7.151008.nc</file>
       <file grid="ocnice" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx3v7.130409.nc</file>
+      <file grid="ocnice" mask="tx0.66v1">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_tx0.66v1.180605.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
@@ -1342,6 +1350,13 @@
       <nx>100</nx> <ny>116</ny>
       <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx3v7.120323.nc</file>
       <desc>gx3v7 is displaced Greenland pole v7 3-deg grid:</desc>
+    </domain>
+
+    <domain name="tx0.66v1">
+      <nx>540</nx> <ny>458</ny>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.66v1.180605.nc</file>
+      <desc>tx0.66v1 is tripole v1 0.66-deg MOM6 grid:</desc>
+      <support>Experimental for MOM6 experiments</support>
     </domain>
 
     <domain name="tx0.1v2">
@@ -1669,6 +1684,13 @@
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_T62_aave.151008.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_T62_aave.151008.nc</map>
     </gridmap>
+    <gridmap atm_grid="T62" ocn_grid="tx0.66v1">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_TO_tx0.66v1_aave.180605.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_tx0.66v1_blin.180605.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_TO_tx0.66v1_blin.180605.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/tx0.66v1/map_tx0.66v1_TO_T62_aave.180605.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/tx0.66v1/map_tx0.66v1_TO_T62_aave.180605.nc</map>
+    </gridmap>
     <gridmap atm_grid="T62" ocn_grid="tx1v1">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_T62_to_tx1v1_aave_da_090122.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_T62_to_tx1v1_bilin_da_090122.nc</map>
@@ -1926,6 +1948,10 @@
     <gridmap rof_grid="rx1" ocn_grid="tx1v1" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx1v1_e1000r300_161214.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx1v1_e1000r300_161214.nc</map>
+    </gridmap>
+    <gridmap rof_grid="rx1" ocn_grid="tx0.66v1" >
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_180604.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_180604.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
