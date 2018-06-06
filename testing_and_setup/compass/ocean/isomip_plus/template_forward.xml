@@ -38,6 +38,7 @@
 		<option name="config_use_activeTracers_interior_restoring">.true.</option>
 		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
 		<option name="config_check_ssh_consistency">.false.</option>
+		<option name="config_AM_timeSeriesStatsMonthly_enable">.true.</option>
 	</namelist>
 
 	<streams>
@@ -65,10 +66,56 @@
 				<member name="atmosphericPressure" type="var"/>
 			</add_contents>
 		</stream>
+
+		<stream name="timeSeriesStatsMonthlyOutput">
+			<attribute name="name">timeSeriesStatsMonthlyOutput</attribute>
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">timeSeriesStatsMonthly.$Y-$M-$D.nc</attribute>
+			<attribute name="filename_interval">00-01-00_00:00:00</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="io_type">pnetcdf</attribute>
+			<attribute name="packages">timeSeriesStatsMonthlyAMPKG</attribute>
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<add_contents>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="tracersSurfaceValue" type="var_array"/>
+				<member name="surfaceVelocity" type="var_array"/>
+				<member name="ssh" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="vertVelocityTop" type="var"/>
+				<member name="normalTransportVelocity" type="var"/>
+				<member name="transportVelocityZonal" type="var"/>
+				<member name="transportVelocityMeridional" type="var"/>
+				<member name="vertTransportVelocityTop" type="var"/>
+				<member name="tThreshMLD" type="var"/>
+				<member name="dThreshMLD" type="var"/>
+				<member name="landIceFreshwaterFlux" type="var"/>
+				<member name="landIceHeatFlux" type="var"/>
+				<member name="heatFluxToLandIce" type="var"/>
+				<member name="areaCellGlobal" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="timeSeriesStatsMonthlyRestart">
+			<attribute name="name">timeSeriesStatsMonthlyRestart</attribute>
+			<attribute name="filename_interval">output_interval</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+			<attribute name="filename_template">restarts/restart.AM.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input;output</attribute>
+			<attribute name="immutable">true</attribute>
+			<add_contents>
+			</add_contents>
+		</stream>
+
 		<stream name="output">
 			<attribute name="type">output</attribute>
 			<attribute name="filename_template">output.nc</attribute>
-			<attribute name="output_interval">0000-00-05_00:00:00</attribute>
+			<attribute name="output_interval">0001-00-00_00:00:00</attribute>
 			<attribute name="clobber_mode">overwrite</attribute>
 			<add_contents>
 				<member name="tracers" type="var_struct"/>
@@ -92,12 +139,6 @@
 				<member name="velocityX" type="var"/>
 				<member name="velocityY" type="var"/>
 			</add_contents>
-		</stream>
-
-		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
-		<stream name="land_ice_fluxes">
-			<attribute name="clobber_mode">overwrite</attribute>
-			<attribute name="output_interval">0000-00-05_00:00:00</attribute>
 		</stream>
 
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
