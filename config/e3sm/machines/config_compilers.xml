@@ -83,10 +83,10 @@ for mct, etc.
     <append MODEL="clm"> -DCOLUMN_MODE </append>
   </CPPDEFS>
   <FFLAGS>
-    <append MODEL="clm"> -I<env>CLM_PFLOTRAN_SOURCE_DIR</env> </append>
+    <append MODEL="clm"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} </append>
   </FFLAGS>
   <LDFLAGS>
-    <append MODEL="driver"> -L<env>CLM_PFLOTRAN_SOURCE_DIR</env> -lpflotran <env>PETSC_LIB</env> </append>
+    <append MODEL="driver"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append>
   </LDFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -821,10 +821,10 @@ for mct, etc.
   <MPICXX> CC </MPICXX>
   <MPIFC> ftn </MPIFC>
   <MPI_LIB_NAME> mpich </MPI_LIB_NAME>
-  <MPI_PATH> <env>MPICH_DIR</env></MPI_PATH>
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
+  <MPI_PATH> $ENV{MPICH_DIR}</MPI_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PARALLEL_NETCDF_DIR</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
   <SCC> cc </SCC>
   <SCXX> CC </SCXX>
   <SFC> ftn </SFC>
@@ -963,9 +963,9 @@ for mct, etc.
   </CXX_LIBS>
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <MPI_PATH MPILIB="mvapich">/blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/mvapich2-2.2b-sdh7nhddicl4sh5mgxjyzxtxox3ajqey</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
@@ -974,12 +974,12 @@ for mct, etc.
 <compiler MACH="blues" COMPILER="intel">
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/intel-15.0</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas </append>
-    <append> -Wl,-rpath -Wl,<env>NETCDFROOT</env>/lib </append>
+    <append> -Wl,-rpath -Wl,$ENV{NETCDFROOT}/lib </append>
     <append MPILIB="mpich"> -mkl=cluster </append>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpt"> -mkl=cluster </append>
@@ -995,9 +995,9 @@ for mct, etc.
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/intel-13.1</MPI_PATH>
   <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-intel-13.1</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
     <append MPILIB="mpich"> -mkl=cluster </append>
@@ -1013,9 +1013,9 @@ for mct, etc.
 <compiler MACH="blues" COMPILER="nag">
   <MPI_LIB_NAME MPILIB="mpich"> mpi </MPI_LIB_NAME>
   <MPI_PATH MPILIB="mpich">/home/robl/soft/mpich-3.1.4-nag-6.0</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$(shell $NETCDF_PATH/bin/nf-config --flibs) $SHELL{$NETCDF_PATH/bin/nc-config --libs} -llapack -lblas</append>
   </SLIBS>
@@ -1027,12 +1027,12 @@ for mct, etc.
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
   <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> -rpath <env>NETCDFROOT</env>/lib </append>
+    <append> -rpath $ENV{NETCDFROOT}/lib </append>
   </SLIBS>
 </compiler>
 
@@ -1132,11 +1132,11 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L<env>MKL_PATH</env>/lib/intel64 -lmkl_rt </base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH}/lib/intel64 -lmkl_rt </base>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
   </SLIBS>
@@ -1158,12 +1158,12 @@ for mct, etc.
   <LDFLAGS>
     <append compile_threaded="true">  </append>
   </LDFLAGS>
-  <MPI_PATH MPILIB="mvapich2"> <env>MPI_LIB</env></MPI_PATH>
-  <NETCDF_PATH><env>NETCDF_ROOT</env></NETCDF_PATH>
+  <MPI_PATH MPILIB="mvapich2"> $ENV{MPI_LIB}</MPI_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_ROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append> -L<env>NETCDF_ROOT</env>/lib -lnetcdf -lnetcdff -L<env>MKL_PATH</env> -lmkl_rt</append>
+    <append> -L$ENV{NETCDF_ROOT}/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH} -lmkl_rt</append>
   </SLIBS>
 </compiler>
 
@@ -1173,7 +1173,7 @@ for mct, etc.
     <append> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </append>
   </CPPDEFS>
   <CXX_LIBS>
-    <base> -llapack -lblas -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </base>
+    <base> -llapack -lblas -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </base>
   </CXX_LIBS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
@@ -1189,7 +1189,7 @@ for mct, etc.
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
     <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf -L$HDF5_PATH/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
-    <append compile_threaded="true"> -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
+    <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -1208,11 +1208,11 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L<env>MKL_PATH</env> -lmkl_rt</base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
@@ -1230,11 +1230,11 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 -kind=byte </append>
     <append DEBUG="TRUE"> -C=all  -g  -O0 -v </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L<env>MKL_PATH</env> -lmkl_rt</base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
@@ -1253,11 +1253,11 @@ for mct, etc.
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
     <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L<env>MPI_LIB</env> -lmpich</base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MPI_LIB} -lmpich</base>
   </SLIBS>
 </compiler>
 
@@ -1279,12 +1279,12 @@ for mct, etc.
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
-  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
 </compiler>
@@ -1317,12 +1317,12 @@ for mct, etc.
   <MPIFC MPILIB="impi"> mpiifort </MPIFC>
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. Must also set environment variables in config_machines.xml -->
   <MPI_LIB_NAME MPILIB="impi">impi</MPI_LIB_NAME>
-  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
 </compiler>
@@ -1340,7 +1340,7 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi </base>
@@ -1351,9 +1351,9 @@ for mct, etc.
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
-  <NETCDF_PATH><env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <SLIBS>
-    <append> -L<env>NETCDF_HOME</env>/lib/ -lnetcdff -lnetcdf -lcurl -llapack -lblas </append>
+    <append> -L$ENV{NETCDF_HOME}/lib/ -lnetcdff -lnetcdf -lcurl -llapack -lblas </append>
   </SLIBS>
 </compiler>
 
@@ -1374,12 +1374,12 @@ for mct, etc.
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
-  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
 </compiler>
@@ -1425,7 +1425,7 @@ for mct, etc.
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
-  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -1433,7 +1433,7 @@ for mct, etc.
   <SFC> ifort </SFC>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
@@ -1458,8 +1458,8 @@ for mct, etc.
   <MPICXX> CC </MPICXX>
   <MPIFC> ftn </MPIFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
-    <append> <env>MKLROOT</env>/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group <env>MKLROOT</env>/lib/intel64/libmkl_intel_lp64.a <env>MKLROOT</env>/lib/intel64/libmkl_core.a <env>MKLROOT</env>/lib/intel64/libmkl_sequential.a -Wl,--end-group <env>MKLROOT</env>/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+    <append> $ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </append>
   </SLIBS>
 </compiler>
 
@@ -1476,10 +1476,10 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <MPI_PATH MPILIB="openmpi">/opt/openmpi-1.8-intel</MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
     <append MPILIB="openmpi"> -mkl=cluster </append>
@@ -1500,7 +1500,7 @@ for mct, etc.
   <SFC>gfortran</SFC>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> <env>MKLROOT</env>/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group <env>MKLROOT</env>/lib/intel64/libmkl_intel_lp64.a <env>MKLROOT</env>/lib/intel64/libmkl_core.a <env>MKLROOT</env>/lib/intel64/libmkl_sequential.a -Wl,--end-group <env>MKLROOT</env>/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+    <append> $ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
   </SLIBS>
 </compiler>
 
@@ -1572,7 +1572,7 @@ for mct, etc.
     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
   <SLIBS>
     <append> -lnetcdff -lnetcdf -mkl</append>
   </SLIBS>
@@ -1583,15 +1583,15 @@ for mct, etc.
     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
   <SLIBS>
     <append> -lnetcdff -lnetcdf -mkl</append>
   </SLIBS>
 </compiler>
 
 <compiler MACH="linux-generic" COMPILER="gnu">
-  <NETCDF_PATH> <env>NETCDF_PATH</env></NETCDF_PATH>
-  <PNETCDF_PATH> <env>PNETCDF_PATH</env></PNETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SLIBS>
     <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} </append>
   </SLIBS>
@@ -1601,7 +1601,7 @@ for mct, etc.
   <LDFLAGS>
     <append>-framework Accelerate</append>
   </LDFLAGS>
-  <NETCDF_PATH> <env>NETCDF_PATH</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
   <SLIBS>
     <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
@@ -1621,9 +1621,9 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$SEMS_PFUNIT_ROOT</PFUNIT_PATH>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
@@ -1643,8 +1643,8 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
@@ -1705,7 +1705,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </append>
   </CPPDEFS>
   <CXX_LIBS>
-    <base> -llapack -lblas -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </base>
+    <base> -llapack -lblas -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </base>
   </CXX_LIBS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
@@ -1723,7 +1723,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
     <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf -L$HDF5_PATH/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
-    <append compile_threaded="true"> -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
+    <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -1773,7 +1773,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_LIB</env>/..</NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_LIB}/..</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi </base>
@@ -1793,7 +1793,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_LIB</env>/..</NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_LIB}/..</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi </base>
@@ -1837,13 +1837,13 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <MPI_PATH MPILIB="openmpi"><env>MPIHOME</env></MPI_PATH>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <MPI_PATH MPILIB="openmpi">$ENV{MPIHOME}</MPI_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -L/projects/ccsm/BLAS-intel -lblas_LINUX -L<env>MKL_LIBS</env> -lmkl_rt</append>
+    <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -L/projects/ccsm/BLAS-intel -lblas_LINUX -L$ENV{MKL_LIBS} -lmkl_rt</append>
     <append MPILIB="openmpi"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
   </SLIBS>
@@ -1863,11 +1863,11 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
-  <NETCDF_PATH><env>NETCDF_PATH</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L<env>MKLROOT</env> -lmkl_rt</base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKLROOT} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
@@ -1884,7 +1884,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_LIB</env>/..</NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_LIB}/..</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi </base>
@@ -1916,7 +1916,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS_NOOPT>
     <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
-  <HDF5_PATH><env>TACC_HDF5_DIR</env></HDF5_PATH>
+  <HDF5_PATH>$ENV{TACC_HDF5_DIR}</HDF5_PATH>
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
@@ -1924,10 +1924,10 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <MPICXX> mpicxx </MPICXX>
   <MPIFC> mpif90 </MPIFC>
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
-  <NETCDF_PATH MPILIB="impi"><env>TACC_NETCDF_DIR</env></NETCDF_PATH>
-  <NETCDF_PATH MPILIB="mpi-serial"><env>TACC_NETCDF_DIR</env></NETCDF_PATH>
-  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
-  <PNETCDF_PATH MPILIB="impi"><env>TACC_PNETCDF_DIR</env></PNETCDF_PATH>
+  <NETCDF_PATH MPILIB="impi">$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <NETCDF_PATH MPILIB="mpi-serial">$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <PNETCDF_PATH MPILIB="impi">$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
@@ -1949,8 +1949,8 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 </append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
 </compiler>
@@ -1970,8 +1970,8 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -O0 -g -qfree=f90  </append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 </append>
+    <append>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
   </LDFLAGS>
   <MPICC> mpixlc </MPICC>
@@ -1993,8 +1993,8 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 </append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -2016,8 +2016,8 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </FFLAGS>
   <LDFLAGS>
     <append>-ta=tesla:cc70,pinned</append>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 </append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -2038,7 +2038,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -O0 -g -qfree=f90  </append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib64 -llapack</append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib64 -llapack</append>
   </LDFLAGS>
   <MPICC> mpixlc </MPICC>
   <MPICXX> mpixlC </MPICXX>
@@ -2059,7 +2059,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -2082,7 +2082,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <LDFLAGS>
     <!-- Specifying cc60 implies cuda8.0, just making sure -->
     <append>-ta=tesla:cc60,cuda8.0,pinned</append>
-    <append>-L<env>NETCDF_C_PATH</env>/lib -lnetcdf -L<env>NETCDF_FORTRAN_PATH</env>/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L<env>HDF5_PATH</env>/lib -lhdf5_hl -lhdf5 -L<env>ESSL_PATH</env>/lib64 -lessl -L<env>NETLIB_LAPACK_PATH</env>/lib -llapack</append>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -2166,7 +2166,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env>/lib -lnetcdff -L<env>NETCDF_DIR</env>/lib -lnetcdf -Wl,-rpath -Wl,<env>NETCDF_DIR</env>/lib </append>
+    <append> -L$ENV{NETCDF_DIR}/lib -lnetcdff -L$ENV{NETCDF_DIR}/lib -lnetcdf -Wl,-rpath -Wl,$ENV{NETCDF_DIR}/lib </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
 </compiler>
@@ -2204,7 +2204,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base> -lfmpich -lmpichf90_pgi <env>PGI_PATH</env>/linux86-64/<env>PGI_VERSION</env>/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </base>
+    <base> -lfmpich -lmpichf90_pgi $ENV{PGI_PATH}/linux86-64/$ENV{PGI_VERSION}/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -2235,7 +2235,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base> -lfmpich -lmpichf90_pgi <env>PGI_PATH</env>/linux86-64/<env>PGI_VERSION</env>/lib/f90main.o </base>
+    <base> -lfmpich -lmpichf90_pgi $ENV{PGI_PATH}/linux86-64/$ENV{PGI_VERSION}/lib/f90main.o </base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -2268,7 +2268,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="gnu">
-  <ALBANY_PATH><env>ALBANY_PATH</env></ALBANY_PATH>
+  <ALBANY_PATH>$ENV{ALBANY_PATH}</ALBANY_PATH>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -2281,7 +2281,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
+  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="intel">
@@ -2301,7 +2301,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append MPILIB="impi"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
   </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
+  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="pgi">
@@ -2314,7 +2314,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
+  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 </config_compilers>
