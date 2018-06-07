@@ -303,7 +303,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         # this should not fail with a locked file issue
         run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
 
-        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.st_archive --test-all", from_dir=testdir)
 
         cls._do_teardown.append(testdir)
 
