@@ -118,14 +118,11 @@ class CompilerBlock(object):
         output = self._db.text(elem)
         if output is None:
             output = ""
+
         logger.debug("Initial output={}".format(output))
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
-        shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
-        nesting_ref_re = re.compile(r'\$SHELL\{[^}]+\$\w*\{')
-
-        expect(nesting_ref_re.search(output) is None,
-               "Nesting not allowed in this syntax, use xml syntax <shell> <env> if nesting is required")
+        shell_prefix = "$SHELL{"
 
         for m in reference_re.finditer(output):
             var_name = m.groups()[0]
@@ -143,12 +140,22 @@ class CompilerBlock(object):
 
         logger.debug("postenv pass output={}".format(output))
 
-        for s in shell_ref_re.finditer(output):
-            command = s.groups()[0]
+        while shell_prefix in output:
+            sidx = output.index(shell_prefix)
+            brace_count = 1
+            for idx in range(sidx + len(shell_prefix), len(output)):
+                if output[idx] == "{":
+                    brace_count += 1
+                elif output[idx] == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        break
+
+            command = output[sidx + len(shell_prefix) : idx]
             logger.debug("execute {} in shell, command {}".format(output, command))
             new_set_up, inline, new_tear_down = \
                 writer.shell_command_strings(command)
-            output = output.replace(s.group(), inline)
+            output = output.replace(output[sidx:idx+1], inline, 1)
             if new_set_up is not None:
                 set_up.append(new_set_up)
             if new_tear_down is not None:
