@@ -1183,6 +1183,8 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="theta">
   <ADD_SLIBS>$(shell nf-config --flibs)</ADD_SLIBS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">
