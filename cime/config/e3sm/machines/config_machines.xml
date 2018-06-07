@@ -1187,7 +1187,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks" > -n {{ total_tasks }}</arg>
+        <arg name="num_tasks" > -l -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
