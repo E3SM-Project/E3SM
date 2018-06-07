@@ -23,7 +23,7 @@ module prim_driver_base
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
-  use test_mod,         only: set_test_initial_conditions, compute_test_forcing
+  use test_mod,         only: set_test_initial_conditions, compute_test_forcing, finalize_test
 #endif
 
   implicit none
@@ -705,6 +705,8 @@ contains
           write(iulog,*) 'runtype: RESTART of primitive equations'
        end if
 
+       call set_test_initial_conditions(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
 
        ! scale PS to achieve prescribed dry mass
@@ -1236,6 +1238,8 @@ contains
 
   subroutine prim_finalize()
 
+    implicit none
+
 #ifdef TRILINOS
   interface
     subroutine noxfinish() bind(C,name='noxfinish')
@@ -1247,6 +1251,7 @@ contains
 
 #endif
 
+    call finalize_test;
     ! ==========================
     ! end of the hybrid program
     ! ==========================

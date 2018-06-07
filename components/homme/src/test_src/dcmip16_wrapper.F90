@@ -31,7 +31,6 @@ use time_mod,             only: time_at, TimeLevel_t
 implicit none
 
 real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
-
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
@@ -41,6 +40,19 @@ real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas co
 real(rl) :: sample_period  = 60.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 contains
+
+!init routine to call before any dcmip16 inin routines, including restart runs
+subroutine dcmip2016_init(nets,nete)
+  implicit none
+  integer, intent(in) :: nets,nete
+  allocate(precl(np,np,nete-nets))
+end subroutine dcmip2016_init
+!_____________________________________________________________________
+!init routine to call before any dcmip16 inin routines, including restart runs
+subroutine dcmip2016_finalize
+  implicit none
+  deallocate(precl)
+end subroutine dcmip2016_finalize
 
 !_____________________________________________________________________
 subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
@@ -64,9 +76,9 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,5):: q
 
-real(rl) :: min_thetav, max_thetav
-min_thetav = +huge(rl)
-max_thetav = -huge(rl)
+  real(rl) :: min_thetav, max_thetav
+  min_thetav = +huge(rl)
+  max_thetav = -huge(rl)
 
   moist = 0
   if (use_moisture) moist=1
@@ -74,9 +86,8 @@ max_thetav = -huge(rl)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
   if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
+
+  precl(:,:,:) = 0.0
 
   ! set initial conditions
   do ie = nets,nete
@@ -131,9 +142,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
 
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
+  precl(:,:,:) = 0.0
 
   ! set initial conditions
   do ie = nets,nete
@@ -193,9 +202,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
 
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
+  precl(:,:,:) = 0.0
 
   ! initialize hydrostatic state
   call supercell_init()
@@ -349,7 +356,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   do ie = nets,nete
 
-    precl(:,:,ie) = -1.0d0
+    precl(:,:,ie - nets + 1) = -1.0d0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -396,7 +403,8 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
+      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
+                             precl(i,j,ie - nets + 1), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -434,7 +442,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
@@ -475,7 +483,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   do ie = nets,nete
 
-    precl(:,:,ie) = -1.0d0
+    precl(:,:,ie - nets + 1) = -1.0d0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -519,7 +527,8 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
+      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
+                             precl(i,j,ie - nets + 1), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -547,7 +556,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
@@ -581,7 +590,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   do ie = nets,nete
 
-    precl(:,:,ie) = 0
+    precl(:,:,ie - nets + 1) = 0.0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -627,7 +636,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         dt,               &
         z_inv(i,j,:),     &
         nlev,             &
-        precl(i,j,ie))
+        precl(i,j,ie - nets + 1))
 
     enddo; enddo;
 
@@ -650,7 +659,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
