@@ -152,13 +152,11 @@
     </values>
   </entry>
 
-  <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_TYPENAME">
     <values>
-      <value></value>
+      <value mach="bebop" compset=".*CLM45.+MALISIA.*">netcdf</value>
     </values>
   </entry>
-  -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="ROF_PIO_STRIDE">
