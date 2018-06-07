@@ -204,7 +204,6 @@ module init_atm_cases
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
-               call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
             end if
 
             if (config_native_gwd_static) then
