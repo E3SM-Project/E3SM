@@ -2583,7 +2583,7 @@ class H_TestMakeMacros(unittest.TestCase):
         # This is a special case of the next test, which also checks circular
         # references.
         xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
-        err_msg = ".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
@@ -2591,7 +2591,7 @@ class H_TestMakeMacros(unittest.TestCase):
         """Test that cyclical $VAR references are rejected."""
         xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
-        err_msg = ".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
@@ -2600,7 +2600,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME>$MPI_PATH</MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
-        err_msg = ".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
