@@ -6,7 +6,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.XML.compilerblock import CompilerBlock
-from CIME.BuildTools.macrowriterbase import write_macros_file_v1
 from CIME.BuildTools.makemacroswriter import MakeMacroWriter
 from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
 from CIME.BuildTools.macroconditiontree import merge_optional_trees
@@ -143,17 +142,7 @@ class Compilers(GenericXML):
 
     def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
         if self._version <= 1.0:
-            # Parse the xml settings into the $macros hash structure
-            # put conditional settings in the _COND_ portion of the hash
-            # and handle them seperately
-            macros = {"_COND_" : {}}
-
-            # Do worst matches first
-            for compiler_node in reversed(self.compiler_nodes):
-                _add_to_macros(self, compiler_node, macros)
-            write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file=macros_file,
-                                        output_format=output_format)
+            expect(False, "No longer supported")
         else:
             if output_format == "make":
                 format_ = "Makefile"
@@ -164,11 +153,11 @@ class Compilers(GenericXML):
 
             if isinstance(macros_file, six.string_types):
                 with open(macros_file, "w") as macros:
-                    self._write_macros_file_v2(format_, macros)
+                    self._write_macros_file(format_, macros)
             else:
-                self._write_macros_file_v2(format_, macros_file, xml)
+                self._write_macros_file(format_, macros_file, xml)
 
-    def _write_macros_file_v2(self, build_system, output, xml=None):
+    def _write_macros_file(self, build_system, output, xml=None):
         """Write a Macros file for this machine.
 
         Arguments:

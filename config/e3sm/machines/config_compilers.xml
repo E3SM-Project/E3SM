@@ -1622,7 +1622,7 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$SEMS_PFUNIT_ROOT</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> $SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
