@@ -59,6 +59,7 @@
       <value mach="grizzly">netcdf</value>
       <value mach="wolf">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
+      <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
     </values>
   </entry>
 
