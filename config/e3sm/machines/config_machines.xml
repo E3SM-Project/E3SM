@@ -188,6 +188,8 @@
     <env name="OMP_STACKSIZE">64M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
+
+    <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -329,8 +331,6 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-
-    <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
