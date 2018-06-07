@@ -3149,7 +3149,7 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="mira|cetus">
+    <mach name="mira|cetus|bebop">
       <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALI.+SWAV" pesize="any">
         <comment>-compset MALI</comment>
         <ntasks>
@@ -4588,7 +4588,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%ne30np4">
-    <mach name="anvil">
+    <mach name="anvil|bebop">
       <pes compset="any" pesize="S">
         <comment>ne30_ne30 grid on 40 nodes 36 ppn pure-MPI</comment>
         <ntasks>
@@ -6528,7 +6528,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="blues|bebop">
+    <mach name="blues">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -6564,19 +6564,19 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62_l%T62_oi%oQU120_r%rx1.+">
+  <grid name="a%T62.+_oi%oQU120_r%rx1.+">
     <mach name="bebop">
       <pes compset=".*MPAS.*" pesize="any">
-        <comment>T62_oQU120 grid for MPAS tests on 1024 nodes pure-MPI</comment>
+        <comment>T62_oQU120 grid for MPAS tests on 20 nodes pure-MPI</comment>
         <ntasks>
-          <ntasks_atm>1024</ntasks_atm>
-          <ntasks_lnd>1024</ntasks_lnd>
-          <ntasks_rof>1024</ntasks_rof>
-          <ntasks_ice>1024</ntasks_ice>
-          <ntasks_ocn>1024</ntasks_ocn>
-          <ntasks_glc>1024</ntasks_glc>
-          <ntasks_wav>1024</ntasks_wav>
-          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_atm>720</ntasks_atm>
+          <ntasks_lnd>720</ntasks_lnd>
+          <ntasks_rof>720</ntasks_rof>
+          <ntasks_ice>720</ntasks_ice>
+          <ntasks_ocn>720</ntasks_ocn>
+          <ntasks_glc>720</ntasks_glc>
+          <ntasks_wav>720</ntasks_wav>
+          <ntasks_cpl>720</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -7505,7 +7505,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4.*">
-    <mach name="anvil">
+    <mach name="anvil|bebop">
       <pes compset="any" pesize="any">
         <comment>ne4 grid on 4 nodes pure-MPI </comment>
         <ntasks>
@@ -7542,7 +7542,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30">
-    <mach name="anvil">
+    <mach name="anvil|bebop">
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI </comment>
         <ntasks>
