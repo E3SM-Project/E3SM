@@ -1613,6 +1613,7 @@ for mct, etc.
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
+    <append > -I$ENV{NETCDFROOT}/include  </append>
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
