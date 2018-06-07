@@ -30,7 +30,7 @@ In more detail:
 - For each <compiler> element, Build.write_macros creates a CompilerBlock
   instance. This object is responsible for translating the XML in its block, in
   order to populate the PossibleValues instances. This includes handling the
-  <var>/<env>/<shell> tags, and keeping track of dependencies induced by one
+  $VAR, $ENV{...} and $SHELL{...} and keeping track of dependencies induced by one
   variable referencing another's value.
 
 - The PossibleValues object holds the information about how one variable can be
@@ -101,8 +101,8 @@ class CompilerBlock(object):
     def _handle_references(self, elem, set_up, tear_down, depends):
         """Expand markup used internally.
 
-        This function is responsible for expanding <env>, <var>, and
-        <shell> tags into Makefile/CMake syntax.
+        This function is responsible for expanding $ENV{...}, $VAR, and
+        $SHELL{...} syntax into Makefile/CMake syntax.
 
         Arguments:
         elem - An ElementTree.Element containing text to expand.
@@ -164,38 +164,6 @@ class CompilerBlock(object):
             logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
 
         logger.debug("First pass output={}".format(output))
-
-        for child in self._db.get_children(root=elem):
-            if self._db.name(child) == "env":
-                # <env> tags just need to be expanded by the writer.
-                output += writer.environment_variable_string(self._db.text(child))
-            elif self._db.name(child) == "shell":
-                # <shell> tags can contain other tags, so handle those.
-                command = self._handle_references(child, set_up, tear_down,
-                                                  depends)
-                new_set_up, inline, new_tear_down = \
-                                    writer.shell_command_strings(command)
-                output += inline
-                if new_set_up is not None:
-                    set_up.append(new_set_up)
-                if new_tear_down is not None:
-                    tear_down.append(new_tear_down)
-                logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
-            elif self._db.name(child) == "var":
-                # <var> commands also need expansion by the writer, and can
-                # add dependencies.
-                var_name = self._db.text(child)
-                output += writer.variable_string(var_name)
-                depends.add(var_name)
-            else:
-                expect(False,
-                       "Unexpected tag "+self._db.name(child)+" encountered in "
-                       "config_build.xml. Check that the file is valid "
-                       "according to the schema.")
-            if child.xml_element.tail is not None:
-                output += child.xml_element.tail
-
-        logger.debug("Second pass output={}".format(output))
 
         return output
 
