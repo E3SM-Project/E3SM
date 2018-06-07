@@ -90,18 +90,18 @@ private
 !======================================================
        umax_local(ie) = MAXVAL(ulatlon(:,:,1))
        vmax_local(ie) = MAXVAL(ulatlon(:,:,2))
-       pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) 
-       !balu removed ps. SW GW speed = sqrt(g*depth) not sqrt(g*depth+topo)
+       pmax_local(ie) = MAXVAL((elem(ie)%state%p(:,:,k,n0)+pmean)) !balu changing pmax/pmin
+       !+ MAXVAL(elem(ie)%state%ps(:,:))
 !======================================================
        umin_local(ie) = MINVAL(ulatlon(:,:,1))
        vmin_local(ie) = MINVAL(ulatlon(:,:,2))
-       pmin_local(ie) = MINVAL((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + MINVAL(elem(ie)%state%ps(:,:))
+       pmin_local(ie) = MINVAL((elem(ie)%state%p(:,:,k,n0)+pmean)) !balu
+       !+ MINVAL(elem(ie)%state%ps(:,:))
 !======================================================
        usum_local(ie) = SUM(ulatlon(:,:,1))
        vsum_local(ie) = SUM(ulatlon(:,:,2))
-       psum_local(ie) = SUM((elem(ie)%state%p(:,:,k,n0)+pmean)/g) &
-                      + SUM(elem(ie)%state%ps(:,:))
+       psum_local(ie) = SUM((elem(ie)%state%p(:,:,k,n0)+pmean)) !balu
+       !+ SUM(elem(ie)%state%ps(:,:))
 !======================================================
      endif
 
@@ -151,7 +151,8 @@ private
     endif
 
     if(hybrid%masterthread) then 
-      if (k==nlev) print *,'sqrt(g(h0+max(h)) = ',sqrt(pmean+pmax)
+      if (k==nlev) print *,'sqrt(g(h0+max(h)) = ',sqrt(pmax), pmean, pmax
+       !balu SW GW speed = sqrt(g*depth) not sqrt(g*mean_depth+ max(depth+topo))
       if (k==nlev) print *
     endif
 
