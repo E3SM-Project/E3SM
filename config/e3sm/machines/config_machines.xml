@@ -1636,7 +1636,7 @@
         <command name="load">PrgEnv-cray/6.0.4</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/6.3.0</command>
+        <command name="load">gcc/7.3.0</command>
         <command name="load">PrgEnv-gnu/6.0.4</command>
       </modules>
       <modules compiler="!intel">
