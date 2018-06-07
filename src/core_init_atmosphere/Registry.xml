@@ -343,7 +343,6 @@
                         <var name="shdmin" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="shdmax" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="albedo12m" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="varsso" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="var2d" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="con" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="oa1" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -437,7 +436,6 @@
                         <var name="shdmin"/>
                         <var name="shdmax"/>
                         <var name="albedo12m"/>
-                        <var name="varsso"/>
                         <var name="var2d"/>
                         <var name="con"/>
                         <var name="oa1"/>
@@ -588,7 +586,6 @@
                 <var name="albedo12m"                            type="real"     dimensions="nMonths nCells"/>
 
                 <!-- GWDO fields -->
-                <var name="varsso"                               type="real"     dimensions="nCells"/>
                 <var name="var2d"                                type="real"     dimensions="nCells"/>
                 <var name="con"                                  type="real"     dimensions="nCells"/>
                 <var name="oa1"                                  type="real"     dimensions="nCells"/>
