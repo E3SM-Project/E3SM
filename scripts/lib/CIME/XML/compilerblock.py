@@ -143,6 +143,7 @@ class CompilerBlock(object):
         while shell_prefix in output:
             sidx = output.index(shell_prefix)
             brace_count = 1
+            idx = 0
             for idx in range(sidx + len(shell_prefix), len(output)):
                 if output[idx] == "{":
                     brace_count += 1
