@@ -1063,7 +1063,7 @@ module ocn_time_integration_split
                 end do  ! block
 
                 edgeHaloComputeCounter = edgeHaloComputeCounter - 1
-                if ( BtrCorIter >= 1 .or. config_btr_solve_SSH2 == .false.) then
+                if ( BtrCorIter >= 1 .or. config_btr_solve_SSH2 .eqv. .false.) then
                   cellHaloComputeCounter = cellHaloComputeCounter - 1
                 end if
 
