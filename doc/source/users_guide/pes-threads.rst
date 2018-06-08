@@ -294,4 +294,4 @@ when running with mixed active and data models.
 
 - Assume that hardware performance can vary due to contention on the interconnect, file systems, or other areas. If you are unsure of a timing result, run cases multiple times.
 
-.. todo:: give an example of a fully active case - show the pe-layout and timing file here.
+The pe-layout and the associated timings are found in the  :ref:`timing files <model-timing-data>` generated for your run.

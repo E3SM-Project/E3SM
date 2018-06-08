@@ -6,9 +6,6 @@ Creating a Case
 
 Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
 
-This is a test.
-
-
 ===================================
 Calling **create_newcase**
 ===================================
