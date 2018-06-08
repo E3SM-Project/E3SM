@@ -568,7 +568,6 @@ contains
       integer  :: day                      ! day of month (1, ..., 31)
       integer  :: sec                      ! seconds of the day
       integer  :: nlevsoil                 ! number of soil layers at the site
-      integer  :: nld_si                   ! site specific number of decomposition layers
       integer  :: current_year             
       integer  :: current_month
       integer  :: current_day
@@ -722,6 +721,7 @@ contains
       integer  :: s                        ! site index
       integer  :: c                        ! column index (HLM)
       integer  :: nc                       ! clump index
+      integer  :: nld_si
       real(r8) :: dtime
 
       dtime = real(get_step_size(),r8)
@@ -732,7 +732,7 @@ contains
 
          carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_met_lit) = 0._r8
          carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_lig_lit) = 0._r9
+         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
 
          nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
 
