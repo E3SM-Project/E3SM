@@ -102,6 +102,7 @@ module shr_map_mod
      integer(SHR_KIND_IN),pointer :: idst(:)  ! output grid index
      character(SHR_KIND_CS)       :: fill     ! string to check if filled
      character(SHR_KIND_CS)       :: init     ! initialization of dst array
+     logical                      :: gunit_default ! if default grid unit (i.e. degrees)
   end type shr_map_mapType
 
   ! PUBLIC MEMBER FUNCTIONS:
@@ -1018,7 +1019,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine shr_map_mapSet_global(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,name,type,algo,mask,vect,rc)
+  subroutine shr_map_mapSet_global(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,name,type,algo,mask,vect,rc,gunit_default)
 
     implicit none
 
@@ -1037,6 +1038,8 @@ contains
     character(*) ,optional,intent(in) :: mask       ! mask
     character(*) ,optional,intent(in) :: vect       ! vect
     integer(SHR_KIND_IN),optional,intent(out) :: rc ! error code
+
+    logical      ,optional,intent(in) :: gunit_default ! gunit_default (.true., grid unit in degrees)
 
     !EOP
 
@@ -1089,6 +1092,9 @@ contains
     if (present(vect)) call shr_map_put(map,shr_map_fs_vect,vect,verify=.true.)
     map%init = inispval
 
+    map%gunit_default = .true.
+    if (present(gunit_default)) map%gunit_default = gunit_default
+
     if (.NOT.shr_map_checkInit(map)) then
        call shr_map_abort(subName//' ERROR map not initialized')
     endif
@@ -1096,7 +1102,7 @@ contains
     !--- is lat/lon degrees or radians? ---
     cang = 360._SHR_KIND_R8
     units = 'degrees'
-    if (shr_map_checkRad(Ysrc)) then
+    if (shr_map_checkRad(Ysrc) .and. .not.map%gunit_default) then
        cang=c2*pi
        units = 'radians'
     endif
@@ -1498,7 +1504,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine shr_map_mapSet_dest(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,ndst,Idst,name,type,algo,mask,vect,rc)
+  subroutine shr_map_mapSet_dest(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,ndst,Idst,name,type,algo,mask,vect,rc,gunit_default)
 
     implicit none
 
@@ -1519,6 +1525,8 @@ contains
     character(*) ,optional,intent(in) :: mask       ! mask
     character(*) ,optional,intent(in) :: vect       ! vect
     integer(SHR_KIND_IN),optional,intent(out) :: rc ! error code
+
+    logical      ,optional,intent(in) :: gunit_default ! gunit_default (.true., grid unit in degrees)
 
     !EOP
 
@@ -1574,6 +1582,9 @@ contains
     if (present(vect)) call shr_map_put(map,shr_map_fs_vect,vect,verify=.true.)
     map%init = inispval
 
+    map%gunit_default = .true.
+    if (present(gunit_default)) map%gunit_default = gunit_default
+
     if (.NOT.shr_map_checkInit(map)) then
        call shr_map_abort(subName//' ERROR map not initialized')
     endif
@@ -1581,7 +1592,7 @@ contains
     !--- is lat/lon degrees or radians? ---
     cang = 360._SHR_KIND_R8
     units = 'degrees'
-    if (shr_map_checkRad(Ysrc)) then
+    if (shr_map_checkRad(Ysrc) .and. .not.map%gunit_default) then
        cang=c2*pi
        units = 'radians'
     endif
@@ -3363,6 +3374,7 @@ contains
     !-------------------------------------------------------------------------------
 
     shr_map_checkRad = .false.
+
     rmin = minval(Grid)
     rmax = maxval(Grid)
     if (rmax.ne.rmin) then
@@ -3370,6 +3382,7 @@ contains
     else
        shr_map_checkRad = .true.
     end if
+
 
   end function shr_map_checkRad
 
