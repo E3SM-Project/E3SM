@@ -13,7 +13,6 @@ from CIME.XML.machines import Machines
 from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
-import subprocess
 import socket
 #=================================================
 # Standard library modules.
