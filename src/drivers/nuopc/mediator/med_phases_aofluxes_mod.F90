@@ -7,9 +7,7 @@ module med_phases_aofluxes_mod
   use shr_sys_mod           , only : shr_sys_abort
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_dead_comps
   use esmFlds               , only : fldListFr, fldListTo
-  use esmFlds               , only : flds_scalar_index_dead_comps
   use esmFlds               , only : compatm, compocn, compname
   use esmFlds               , only : fldListMed_aoflux_o
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
@@ -251,8 +249,6 @@ contains
     type(InternalState) :: is_local
     type(ESMF_Clock)    :: clock
     character(CL)       :: cvalue
-    real(ESMF_KIND_R8)  :: rdead_comps
-    logical             :: dead_comps
     logical             :: ocn_prognostic
     character(CL)       :: aoflux_grid
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
@@ -271,19 +267,6 @@ contains
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine dead_comps
-    call shr_nuopc_methods_State_GetScalar(is_local%wrap%NStateImp(compatm), &
-         scalar_id=flds_scalar_index_dead_comps, value=rdead_comps, mpicom=is_local%wrap%mpicom, &
-         flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dead_comps = (rdead_comps /= 0._ESMF_KIND_r8)
-
-    call shr_nuopc_methods_State_GetScalar(is_local%wrap%NStateImp(compocn), &
-         scalar_id=flds_scalar_index_dead_comps, value=rdead_comps, mpicom=is_local%wrap%mpicom, &
-         flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    dead_comps = (rdead_comps /= 0._ESMF_KIND_r8)
 
     ! Determine if ocean is prognostic
     ocn_prognostic = NUOPC_IsConnected(is_local%wrap%NStateImp(compocn))
@@ -307,7 +290,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Calculate atm/ocn fluxes on the destination grid
-       call med_aofluxes_run(gcomp, clock, ocn_prognostic, dead_comps, rc)
+       call med_aofluxes_run(gcomp, clock, ocn_prognostic, rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
@@ -334,7 +317,7 @@ contains
        end if
 
        ! Calculate atm/ocn fluxes on the destination grid
-       call med_aofluxes_run(gcomp, clock, ocn_prognostic, dead_comps, rc)
+       call med_aofluxes_run(gcomp, clock, ocn_prognostic, rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
@@ -601,9 +584,12 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (geomtype == ESMF_GEOMTYPE_MESH) then
-          call ESMF_LogWrite(trim(subname)//" : FBAtm is on a mesh ", ESMF_LOGMSG_INFO, rc=rc)
+          if (dbug_flag > 5) then
+             call ESMF_LogWrite(trim(subname)//" : FBAtm is on a mesh ", ESMF_LOGMSG_INFO, rc=rc)
+          end if
           call ESMF_FieldGet(lfield, mesh=lmesh, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           call ESMF_MeshGet(lmesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           if (numOwnedElements /= lsize) then
@@ -614,30 +600,19 @@ contains
           allocate(ownedElemCoords(spatialDim*numOwnedElements))
           allocate(lons(numOwnedElements))
           allocate(lats(numOwnedElements))
-          ! tcraig tcx temporary until update esmf 
-          ! TODO: WHY THIS? - causes all comparisons to fail when ocean albedos are needed - was this needed for MOM6?
-          !lons = 0.0
-          !lats = 0.0
-
-          ! TODO: For now - removing comments that tcraig put in
           call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             lons(n) = ownedElemCoords(2*n-1)
-             lats(n) = ownedElemCoords(2*n)
-          end do
-       else if (geomtype == ESMF_GEOMTYPE_GRID) then
-          call ESMF_LogWrite(trim(subname)//" : FBATM is on a grid ", ESMF_LOGMSG_INFO, rc=rc)
-          call ESMF_FieldGet(lfield, grid=lgrid, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_GridGet(lgrid, dimCount=dimCount, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_GridGetCoord(lgrid, coordDim=1, farrayPtr=lons, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_GridGetCoord(lgrid, coordDim=2, farrayPtr=lats, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
+             !TODO: the following is only needed for MOM6 until ESMF is updated - uncomment if you are using MOM6
+             lons(:) = 0.0
+             lats(:) = 0.0
+          else
+             do n = 1,lsize
+                lons(n) = ownedElemCoords(2*n-1)
+                lats(n) = ownedElemCoords(2*n)
+             end do
+          end if
        else
-          call ESMF_LogWrite(trim(subname)//": ERROR FBATM must be either on a grid or a mesh", ESMF_LOGMSG_INFO, rc=rc)
+          call ESMF_LogWrite(trim(subname)//": ERROR FBATM must be either on a mesh", ESMF_LOGMSG_INFO, rc=rc)
           rc = ESMF_FAILURE
           return
        end if
@@ -683,7 +658,7 @@ contains
 
 !===============================================================================
 
-  subroutine med_aofluxes_run(gcomp, clock, ocn_prognostic, dead_comps, rc)
+  subroutine med_aofluxes_run(gcomp, clock, ocn_prognostic, rc)
 
     !-----------------------------------------------------------------------
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
@@ -697,7 +672,6 @@ contains
     type(ESMF_GridComp)   :: gcomp
     type(ESMF_Clock)      :: clock
     logical , intent(in)  :: ocn_prognostic
-    logical , intent(in)  :: dead_comps
     integer , intent(out) :: rc
     !
     ! Local variables
@@ -771,8 +745,8 @@ contains
 
     lsize = size(mask)
 
-    write(tmpstr,'(3L4,i12)') cold_start,first_call,dead_comps,lsize
-    call ESMF_LogWrite(trim(subname)//" : c,f,d,lsize= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    write(tmpstr,'(3L4,i12)') cold_start,first_call,lsize
+    call ESMF_LogWrite(trim(subname)//" : coldstart,firstcall,lsize= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(rmask),sum(mask)
     call ESMF_LogWrite(trim(subname)//" : maskA= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
@@ -787,78 +761,19 @@ contains
     ! Update ocean surface fluxes
     !----------------------------------
 
-    ! Must fabricate "reasonable" data (when using dead components)
-
-    if (dead_comps) then
-       ! TODO: this should be done in the first_call block and not again
-       do n = 1,lsize
-          mask        (n) =   1      ! ocn domain mask            ~ 0 <=> inactive cell
-          tocn        (n) = 290.0_r8 ! ocn temperature            ~ Kelvin
-          uocn        (n) =   0.0_r8 ! ocn velocity, zonal        ~ m/s
-          vocn        (n) =   0.0_r8 ! ocn velocity, meridional   ~ m/s
-          zbot        (n) =  55.0_r8 ! atm height of bottom layer ~ m
-          ubot        (n) =   0.0_r8 ! atm velocity, zonal        ~ m/s
-          vbot        (n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
-          thbot       (n) = 301.0_r8 ! atm potential temperature  ~ Kelvin
-          shum        (n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
-
-          !wiso note: shum_* should be multiplied by Rstd_* here?
-          shum_16O    (n) = 1.e-2_r8 ! H216O specific humidity ~ kg/kg
-          shum_HDO    (n) = 1.e-2_r8 ! HD16O specific humidity ~ kg/kg
-          shum_18O    (n) = 1.e-2_r8 ! H218O specific humidity ~ kg/kg
-          roce_16O    (n) = 1.0_r8   ! H216O surface ratio     ~ mol/mol
-          roce_HDO    (n) = 1.0_r8   ! HDO   surface ratio     ~ mol/mol
-          roce_18O    (n) = 1.0_r8   ! H218O surface ratio     ~ mol/mol
-
-          dens        (n) = 1.0_r8   ! atm density             ~ kg/m^3
-          tbot        (n) = 300.0_r8 ! atm temperature         ~ Kelvin
-          uGust       (n) = 0.0_r8
-          lwdn        (n) = 0.0_r8
-          prec        (n) = 0.0_r8
-          prec_gust   (n) = 0.0_r8
-          fswpen      (n) = 0.0_r8
-          ocnsal      (n) = 0.0_r8
-
-          if (do_flux_diurnal) then
-             warm        (n) = 0.0_r8
-             salt        (n) = 0.0_r8
-             speed       (n) = 0.0_r8
-             regime      (n) = 0.0_r8
-             warmMax     (n) = 0.0_r8
-             windMax     (n) = 0.0_r8
-             qSolAvg     (n) = 0.0_r8
-             windAvg     (n) = 0.0_r8
-             warmMaxInc  (n) = 0.0_r8
-             windMaxInc  (n) = 0.0_r8
-             qSolInc     (n) = 0.0_r8
-             windInc     (n) = 0.0_r8
-             tbulk       (n) = 0.0_r8
-             tskin       (n) = 0.0_r8
-             tskin_day   (n) = 0.0_r8
-             tskin_night (n) = 0.0_r8
-             cskin       (n) = 0.0_r8
-             cskin_night (n) = 0.0_r8
-             swdn        (n) = 0.0_r8
-             swup        (n) = 0.0_r8
-          end if
-       enddo
-    else
-       do n = 1,lsize
-          if (mask(n) /= 0) then
-             !--- mask missing atm or ocn data if found
-             if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
-                mask(n) = 0
-             endif
-             !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
-             uGust(n) = 0.0_r8
-             prec(n) = rainc(n) + rainl(n) + snowc(n) + snowl(n)
-             prec_gust(n) = rainc(n)
-             ! Note: swdn and swup are set in flux_ocnalb using data from previous timestep
-          end if
-       enddo
-    end if
-
     do n = 1,lsize
+       if (mask(n) /= 0) then
+          !--- mask missing atm or ocn data if found
+          if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
+             mask(n) = 0
+          endif
+
+          !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
+          uGust(n) = 0.0_r8
+          prec(n) = rainc(n) + rainl(n) + snowc(n) + snowl(n)
+          prec_gust(n) = rainc(n)
+          ! Note: swdn and swup are set in flux_ocnalb using data from previous timestep
+       end if
        sen(n)  = shr_const_spval
        lat(n)  = shr_const_spval
        lwup(n) = shr_const_spval
@@ -902,22 +817,21 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             duu10n, ustar, re, ssq)
 
-!        do n = 1,lsize
-!           write(6,100)'import: n,zbot      = ',n,zbot(n)
-!           write(6,100)'import: n,ubot      = ',n,ubot(n)
-!           write(6,100)'import: n,vbot      = ',n,vbot(n)
-!           write(6,100)'import: n,thbot     = ',n,thbot(n)
-!           write(6,100)'import: n,prec_gust = ',n,prec_gust(n)
-!           write(6,100)'import: n,tocn      = ',n,tocn(n)
-!           write(6,100)'import: n,uocn      = ',n,uocn(n)
-!           write(6,100)'import: n,vocn      = ',n,vocn(n)
-!           write(6,100)'export: n,latent    = ',n,lat(n)
-!           write(6,100)'export: n,sensible  = ',n,lat(n)
-!           write(6,100)'export: n,taux      = ',n,taux(n)
-!           write(6,100)'export: n,tauy      = ',n,tauy(n)
-!        end do
-! 100    format ('(atmocn_flux) ',a,i8,d21.14)
-!        call shr_sys_abort()
+       !        do n = 1,lsize
+       !           write(6,100)'import: n,zbot      = ',n,zbot(n)
+       !           write(6,100)'import: n,ubot      = ',n,ubot(n)
+       !           write(6,100)'import: n,vbot      = ',n,vbot(n)
+       !           write(6,100)'import: n,thbot     = ',n,thbot(n)
+       !           write(6,100)'import: n,prec_gust = ',n,prec_gust(n)
+       !           write(6,100)'import: n,tocn      = ',n,tocn(n)
+       !           write(6,100)'import: n,uocn      = ',n,uocn(n)
+       !           write(6,100)'import: n,vocn      = ',n,vocn(n)
+       !           write(6,100)'export: n,latent    = ',n,lat(n)
+       !           write(6,100)'export: n,sensible  = ',n,lat(n)
+       !           write(6,100)'export: n,taux      = ',n,taux(n)
+       !           write(6,100)'export: n,tauy      = ',n,tauy(n)
+       !        end do
+       ! 100    format ('(atmocn_flux) ',a,i8,d21.14)
     endif
 
     do n = 1,lsize

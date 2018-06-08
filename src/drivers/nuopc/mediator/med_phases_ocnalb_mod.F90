@@ -175,28 +175,17 @@ contains
        allocate(ownedElemCoords(spatialDim*numOwnedElements))
        allocate(lons(numOwnedElements))
        allocate(lats(numOwnedElements))
-       ! tcraig tcx temporary until update esmf 
-       ! TODO: WHY THIS? - causes all comparisons to fail when ocean albedos are needed - was this needed for MOM6?
-       !lons = 0.0
-       !lats = 0.0
-
-       ! TODO: For now - removing comments that tcraig put in
        call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       do n = 1,lsize
-          lons(n) = ownedElemCoords(2*n-1)
-          lats(n) = ownedElemCoords(2*n)
-       end do
-    else if (geomtype == ESMF_GEOMTYPE_GRID) then
-       call ESMF_LogWrite(trim(subname)//" : FBATM is on a grid ", ESMF_LOGMSG_INFO, rc=rc)
-       call ESMF_FieldGet(lfield, grid=lgrid, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_GridGet(lgrid, dimCount=dimCount, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_GridGetCoord(lgrid, coordDim=1, farrayPtr=lons, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_GridGetCoord(lgrid, coordDim=2, farrayPtr=lats, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
+          !TODO: the following is only needed for MOM6 until ESMF is updated - uncomment if you are using MOM6
+          lons(:) = 0.0
+          lats(:) = 0.0
+       else
+          do n = 1,lsize
+             lons(n) = ownedElemCoords(2*n-1)
+             lats(n) = ownedElemCoords(2*n)
+          end do
+       end if
     else
       call ESMF_LogWrite(trim(subname)//": ERROR FBATM must be either on a grid or a mesh", ESMF_LOGMSG_INFO, rc=rc)
       rc = ESMF_FAILURE
