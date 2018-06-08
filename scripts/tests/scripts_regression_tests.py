@@ -1570,7 +1570,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
-                                     "--compset X --res f19_g16 --output-root {}").format(
+                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
                                          SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
         return testdir
