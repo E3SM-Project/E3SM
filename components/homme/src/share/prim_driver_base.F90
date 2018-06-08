@@ -1099,6 +1099,9 @@ contains
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
     use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
+#ifndef CAM
+    use prim_advance_mod,   only: applycamforcing_tracers
+#endif
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1145,6 +1148,16 @@ contains
     !   ftype= 1: forcing was applied time-split in CAM coupling layer
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
+
+! previously, standalone homme ran with ftype=0 logic only.
+! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
+! standalone version, in the same manner as in EAM, that is, only once per dt_remap.
+! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
+#ifndef CAM
+    if ( ( (ftype == 2 ) .or. (ftype == 3) .or. (ftype == 4) ) .and. (rstep == 1) ) then
+      call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    endif
+#endif
 
     if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this sub withing prim_run_subcycle
       call t_startf("ApplyCAMForcing")
