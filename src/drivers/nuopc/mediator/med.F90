@@ -72,7 +72,6 @@ module MED
   use med_phases_prep_glc_mod   , only: med_phases_prep_glc
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_init 
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
-  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_init 
   use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
   use med_phases_history_mod    , only: med_phases_history
   use med_fraction_mod          , only: med_fraction_init, med_fraction_set
@@ -1585,6 +1584,7 @@ contains
       call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       return
+
     endif  ! end first_call if-block
 
     !---------------------------------------
@@ -1637,25 +1637,22 @@ contains
     !----------------------------------------------------------
     ! Create FBfrac field bundles and initialize fractions
     ! This has some complex dependencies on fractions from import States
-    !  and appropriate checks are not implemented.  These fractions are needed
-    !  also in the ocean ocnalb_init and ocnaoflux_init.  We might need to split 
-    !  out the fraction FB allocation and the fraction initialization
+    ! and appropriate checks are not implemented.  
+    ! ocean ocnalb_init.  We might need to split 
+    ! out the fraction FB allocation and the fraction initialization
     !----------------------------------------------------------
     
     call med_fraction_init(gcomp,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call med_fraction_set(gcomp,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! Carry out data dependency for ocn initialization if needed
     !---------------------------------------
 
-    if (.not. is_local%wrap%comp_present(compocn)) then
-       ocnDone = .true.
-    endif
-
-    if (.not. is_local%wrap%comp_present(compocn)) then
-       atmDone = .true.
-    endif
+    if (.not. is_local%wrap%comp_present(compocn)) ocnDone = .true.
+    if (.not. is_local%wrap%comp_present(compocn)) atmDone = .true.
 
     if (.not. ocnDone .and. is_local%wrap%comp_present(compocn)) then
 
@@ -1689,32 +1686,12 @@ contains
          deallocate(fieldNameList)
 
          if (ocnDone) then
-            !---------------------------------------
-            ! Initialize the atm/ocean fluxes and compute the ocean albedos
-            !---------------------------------------
-            call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Copy the NstateImp(compocn) to FBImp(compocn)
-            call med_connectors_post_ocn2med(gcomp, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Initialize the atm/ocean fluxes and compute the ocean albedos
-            call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
             ! Update fractions again in case any import fields have changed
             call med_fraction_init(gcomp,rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Initialize ocean albedo module and compute ocean albedos
-            ! This will update the relevant module arrays in med_phases_ocnalb_mod
             call med_phases_ocnalb_init(gcomp, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Initialize atm/ocn fluxes module
-            ! This will update the relevant module arrays in med_phases_aoflux_mod
-            call med_phases_aofluxes_init(gcomp, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          endif
       end if

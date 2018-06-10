@@ -35,8 +35,6 @@ module med_fraction_mod
   public med_fraction_init
   public med_fraction_set
 
-  private med_fraction_check
-
   integer, parameter :: nfracs = 5
   character(len=5)   :: fraclist(nfracs,ncomps)
 
@@ -74,7 +72,7 @@ module med_fraction_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    ! This subroutine initializes the fractions
+    ! Initialize the fractions
 
     ! local variables
     type(ESMF_Clock)            :: clock
@@ -104,41 +102,41 @@ module med_fraction_mod
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  if (first_call) then
-    !--------------------------------------- 
-    ! Initialize the fraclist arrays
-    !--------------------------------------- 
-    fraclist(:,:) = ' '
-    fraclist(1:size(fraclist_a),compatm) = fraclist_a
-    fraclist(1:size(fraclist_o),compocn) = fraclist_o
-    fraclist(1:size(fraclist_i),compice) = fraclist_i
-    fraclist(1:size(fraclist_l),complnd) = fraclist_l
-    fraclist(1:size(fraclist_r),comprof) = fraclist_r
-    fraclist(1:size(fraclist_w),compwav) = fraclist_w
-    fraclist(1:size(fraclist_g),compglc) = fraclist_g
+    if (first_call) then
+       !--------------------------------------- 
+       ! Initialize the fraclist arrays
+       !--------------------------------------- 
+       fraclist(:,:) = ' '
+       fraclist(1:size(fraclist_a),compatm) = fraclist_a
+       fraclist(1:size(fraclist_o),compocn) = fraclist_o
+       fraclist(1:size(fraclist_i),compice) = fraclist_i
+       fraclist(1:size(fraclist_l),complnd) = fraclist_l
+       fraclist(1:size(fraclist_r),comprof) = fraclist_r
+       fraclist(1:size(fraclist_w),compwav) = fraclist_w
+       fraclist(1:size(fraclist_g),compglc) = fraclist_g
 
-    !--------------------------------------- 
-    !--- Initialize mediator FBfrac entries 
-    !--------------------------------------- 
+       !--------------------------------------- 
+       !--- Initialize mediator FBfrac entries 
+       !--------------------------------------- 
 
-    ! Note - must use import state here - since export state might not
-    ! contain anything other than scalar data if the component is not prognostic
-    do n1 = 1,ncomps
-       if (is_local%wrap%comp_present(n1) .and. &
-            ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
-            ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
+       ! Note - must use import state here - since export state might not
+       ! contain anything other than scalar data if the component is not prognostic
+       do n1 = 1,ncomps
+          if (is_local%wrap%comp_present(n1) .and. &
+               ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
+               ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
 
-          call shr_nuopc_methods_FB_init(is_local%wrap%FBfrac(n1), flds_scalar_name, &
-               STgeom=is_local%wrap%NStateImp(n1), fieldNameList=fraclist(:,n1), &
-               name='FBfrac'//trim(compname(n1)), rc=rc)
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBfrac(n1), flds_scalar_name, &
+                  STgeom=is_local%wrap%NStateImp(n1), fieldNameList=fraclist(:,n1), &
+                  name='FBfrac'//trim(compname(n1)), rc=rc)
 
-          ! zero out FBfracs
-          call shr_nuopc_methods_FB_reset(is_local%wrap%FBfrac(n1), value=czero, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-    first_call = .false.
-  endif
+             ! zero out FBfracs
+             call shr_nuopc_methods_FB_reset(is_local%wrap%FBfrac(n1), value=czero, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       end do
+       first_call = .false.
+    endif
 
     !---------------------------------------
     !--- Initialize fractions on atm grid/decomp
@@ -454,24 +452,6 @@ module med_fraction_mod
     endif
 
     !---------------------------------------
-    !--- update time varying fractions
-    !---------------------------------------
-
-    call med_fraction_set(gcomp, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- check fractions
-    !---------------------------------------
-
-    do n1 = 1,ncomps
-      if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n1),rc=rc)) then
-        call med_fraction_check(is_local%wrap%FBfrac(n1), compname(n1)//'frac init', rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      endif
-    enddo
-
-    !---------------------------------------
     !--- clean up
     !---------------------------------------
 
@@ -487,7 +467,7 @@ module med_fraction_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    ! Initialize Fractions
+    ! Update time varying fractions
 
     ! local variables
     type(ESMF_Clock)            :: clock
@@ -498,7 +478,7 @@ module med_fraction_mod
     type(InternalState)         :: is_local
     real(ESMF_KIND_R8), pointer :: dataPtr(:)
     real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
-    integer                     :: i,j,n
+    integer                     :: i,j,n,n1
     character(len=*),parameter  :: subname='(med_fraction_set)'
     !---------------------------------------
 
@@ -614,44 +594,15 @@ module med_fraction_mod
     !---------------------------------------
 
     if (dbug_flag > 5) then
+       do n1 = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n1),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n1), subname // trim(compname(n1))//' frac', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          endif
+       enddo
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
   end subroutine med_fraction_set
-
-  !-----------------------------------------------------------------------------
-
-  subroutine med_fraction_check(FB, string, rc)
-    type(ESMF_FieldBundle)  :: FB
-    character(len=*), intent(in)  :: string
-    integer         , intent(out) :: rc
-
-    ! This subroutine initializes the fractions
-
-    character(len=*),parameter  :: subname='(med_fraction_check)'
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc = ESMF_SUCCESS
-
-    !---------------------------------------
-    !--- write fraction info
-    !---------------------------------------
-
-    call shr_nuopc_methods_FB_diagnose(FB, subname // trim(string) // ' ', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- clean up
-    !---------------------------------------
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine med_fraction_check
-
-  !-----------------------------------------------------------------------------
 
 end module med_fraction_mod
