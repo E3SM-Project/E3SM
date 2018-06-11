@@ -56,6 +56,8 @@ Note that
 
 To see the result of change, call `preview_namelists <../Tools_user/preview_namelists.html>`_  and verify that the new value appears in **CaseDocs/drv_in**.
 
+.. _basic_example:
+
 Setting up a multi-year run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
