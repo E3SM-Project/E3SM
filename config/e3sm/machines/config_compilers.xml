@@ -77,9 +77,6 @@ for mct, etc.
 <!-- Define default values that can be overridden by specific
      compilers -->
 <compiler>
-  <CPPDEFS>
-    <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-  </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
 
@@ -90,7 +87,6 @@ for mct, etc.
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
-    <append MODEL="pop"> -DDIR=NOOP </append>
     <append MODEL="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
   <FC_AUTO_R8>
@@ -246,7 +242,6 @@ for mct, etc.
     <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp -qsuppress=1520-045 </append>
     <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
     <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
-    <append DEBUG="TRUE" MODEL="pop"> -C </append>
   </FFLAGS>
   <FIXEDFLAGS>
     <base>  -qsuffix=f=f -qfixed=132 </base>
@@ -353,7 +348,7 @@ for mct, etc.
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs}</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -405,7 +400,7 @@ for mct, etc.
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs}</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -457,7 +452,7 @@ for mct, etc.
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs}</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -544,7 +539,7 @@ for mct, etc.
 
 <compiler COMPILER="pgi">
   <CFLAGS>
-    <base> -gopt -Mlist  -time </base>
+    <base> -gopt -time </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
   </CFLAGS>
@@ -571,7 +566,6 @@ for mct, etc.
     <!--                     * inv: invalid operands         -->
     <!--                     * divz divide by zero           -->
     <!--                     * ovf: floating point overflow   -->
-    <!--  -Mlist          => Create a listing file             -->
     <!--  -F              => leaves file.f for each preprocessed file.F file  -->
     <!--  -time           => Print execution time for each compiler step  -->
     <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </append>
@@ -624,7 +618,7 @@ for mct, etc.
 
 <compiler COMPILER="pgiacc">
   <CFLAGS>
-    <base> -Mlist -time </base>
+    <base> -time </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
   </CFLAGS>
@@ -651,7 +645,6 @@ for mct, etc.
     <!--                     * inv: invalid operands         -->
     <!--                     * divz divide by zero           -->
     <!--                     * ovf: floating point overflow   -->
-    <!--  -Mlist          => Create a listing file             -->
     <!--  -F              => leaves file.f for each preprocessed file.F file  -->
     <!--  -time           => Print execution time for each compiler step  -->
     <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </append>
@@ -661,7 +654,7 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -Mlist  -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
     <append MODEL="cam"> </append>
@@ -865,7 +858,7 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
 </compiler>
 
@@ -875,7 +868,7 @@ for mct, etc.
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
 </compiler>
 
@@ -900,7 +893,7 @@ for mct, etc.
   </LDFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -Wl,-rpath -Wl,$NETCDF_PATH/lib</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib</append>
     <append>-mkl</append>
   </SLIBS>
 </compiler>
@@ -908,8 +901,8 @@ for mct, etc.
 <compiler MACH="anvil" COMPILER="pgi">
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> -rpath $NETCDF_PATH/lib </append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append> -rpath $ENV{NETCDF_PATH}/lib </append>
   </SLIBS>
 </compiler>
 
@@ -1099,6 +1092,7 @@ for mct, etc.
     <base> -ffree-form </base>
   </FREEFLAGS>
   <HDF5_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0</HDF5_PATH>
+  <NETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</NETCDF_PATH>
   <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
   <LDFLAGS>
     <append compile_threaded="true"> -fopenmp </append>
@@ -1108,7 +1102,6 @@ for mct, etc.
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
   <MPIFC>mpif90</MPIFC>
-  <NETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</NETCDF_PATH>
   <SCC>gcc</SCC>
   <SCXX>gcpp</SCXX>
   <SFC>gfortran</SFC>
@@ -1492,7 +1485,7 @@ for mct, etc.
   <SCXX>g++</SCXX>
   <SFC>gfortran</SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
     <append> $ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
   </SLIBS>
 </compiler>
@@ -1509,7 +1502,7 @@ for mct, etc.
   <SCXX>icpc</SCXX>
   <SFC>ifort</SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
 </compiler>
 
@@ -1720,22 +1713,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="gnu">
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SLIBS>
-    <append>-L/user/lib64 -llapack -lblas -lnetcdff </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="pgi">
-  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
 </compiler>
 
 <compiler MACH="oic5" COMPILER="gnu">
@@ -1964,7 +1941,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -O0 -g -qfree=f90  </append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append>-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$PNETCDF_PATH/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
   </LDFLAGS>
@@ -2130,6 +2107,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
   <SLIBS>
     <append>$SHELL{nf-config --flibs}</append>
   </SLIBS>
@@ -2239,7 +2222,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </LDFLAGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} </append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -2273,7 +2256,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCXX>g++</SCXX>
   <SFC>gfortran</SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
   <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
@@ -2286,7 +2269,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCXX>icpc</SCXX>
   <SFC>ifort</SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
     <append MPILIB="mpich"> -mkl=cluster </append>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpt"> -mkl=cluster </append>
@@ -2306,7 +2289,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCXX>pgc++</SCXX>
   <SFC>pgfortran</SFC>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
   <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
