@@ -1,4 +1,4 @@
-1module med_map_mod
+module med_map_mod
 
   use ESMF
   use NUOPC
