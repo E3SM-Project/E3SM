@@ -1,4 +1,4 @@
-module med_map_mod
+1module med_map_mod
 
   use ESMF
   use NUOPC
@@ -641,10 +641,6 @@ contains
                 call shr_nuopc_methods_FB_FieldRegrid( FBSrcTmp, 'data_srctmp', FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
-
-             ! regrid FBNormSrc to from the source to the desination grid (FBNormDst)
-             call shr_nuopc_methods_FB_reset(FBNormSrc, value=czero, rc=rc)
-             if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
 
              call shr_nuopc_methods_FB_FieldRegrid(FBNormSrc, mapnorm, FBNormDst, mapnorm, RouteHandles(mapindex), rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
