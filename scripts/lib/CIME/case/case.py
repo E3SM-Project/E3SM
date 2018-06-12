@@ -897,8 +897,8 @@ class Case(object):
             output_root = self.get_value("CIME_OUTPUT_ROOT")
         self.set_value("CIME_OUTPUT_ROOT", output_root)
         if non_local:
-            self.set_value("EXEROOT", os.path.join(output_root, "bld"))
-            self.set_value("RUNDIR", os.path.join(output_root, "run"))
+            self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
+            self.set_value("RUNDIR", os.path.join(output_root, self.get_value("CASE"), "run"))
             self.set_value("NONLOCAL", True)
 
         # Overwriting an existing exeroot or rundir can cause problems
