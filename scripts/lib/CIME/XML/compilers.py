@@ -224,32 +224,3 @@ class Compilers(GenericXML):
                 big_normal_tree.write_out(writer)
             if big_append_tree is not None:
                 big_append_tree.write_out(writer)
-
-def _add_to_macros(db, node, macros):
-    for child in db.get_children(root=node):
-        name = db.name(child)
-        attrib = db.attrib(child)
-        value = db.text(child)
-
-        if not attrib:
-            if name.startswith("ADD_"):
-                basename = name[4:]
-                if basename in macros:
-                    macros[basename] = "{} {}".format(macros[basename], value)
-                elif name in macros:
-                    macros[name] = "{} {}".format(macros[name], value)
-                else:
-                    macros[name] = value
-            else:
-                macros[name] = value
-
-        else:
-            cond_macros = macros["_COND_"]
-            for key, value2 in attrib.items():
-                if key not in cond_macros:
-                    cond_macros[key] = {}
-                if value2 not in cond_macros[key]:
-                    cond_macros[key][value2] = {}
-                cond_macros = cond_macros[key][value2]
-
-            cond_macros[name] = value
