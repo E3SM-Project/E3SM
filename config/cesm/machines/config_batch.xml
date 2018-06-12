@@ -80,7 +80,7 @@
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
     <batch_cancel>qdel</batch_cancel>
-    <batch_env>-v</batch_env>
+    <batch_env>--env</batch_env>
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
