@@ -137,6 +137,10 @@ def parse_command_line(args, cimeroot, description):
     # Select a driver. No selection implies mct driver
     parser.add_argument("--driver", help=argparse.SUPPRESS)
 
+    parser.add_argument("-n", "--non-local", action="store_true",
+                        help="Use when you've requested a machine that you aren't on. "
+                        "Will reduce errors for missing directories etc.")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.srcroot is not None:
@@ -173,7 +177,7 @@ def parse_command_line(args, cimeroot, description):
         args.user_mods_dir, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver
+        run_unsupported, args.answer, args.input_dir, args.driver, args.non_local
 
 ###############################################################################
 def _main_func(description):
@@ -185,7 +189,7 @@ def _main_func(description):
         user_mods_dir, pesfile, \
         user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir, driver = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver, non_local = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -210,7 +214,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver)
+                    input_dir=input_dir, driver=driver, non_local=non_local)
 
 ###############################################################################
 

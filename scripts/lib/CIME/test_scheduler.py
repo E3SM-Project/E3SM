@@ -119,7 +119,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False, non_local=False):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -132,6 +132,7 @@ class TestScheduler(object):
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
         self._allow_pnl       = allow_pnl
+        self._non_local       = non_local
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -425,6 +426,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --output-root {} ".format(self._output_root)
         if self._input_dir is not None:
             create_newcase_cmd += " --input-dir {} ".format(self._input_dir)
+        if self._non_local:
+            create_newcase_cmd += " --non-local"
 
         if self._pesfile is not None:
             create_newcase_cmd += " --pesfile {} ".format(self._pesfile)
