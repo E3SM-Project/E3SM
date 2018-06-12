@@ -2151,7 +2151,7 @@
       <modules mpilib="!mpi-serial">
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
