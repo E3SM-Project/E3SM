@@ -8,6 +8,10 @@ module med_phases_history_mod
   use NUOPC
   use shr_kind_mod            , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
   use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
+  use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
+  use shr_cal_mod             , only : shr_cal_ymd2date
+  use seq_timemgr_mod         , only : seq_timemgr_AlarmInit, seq_timemgr_AlarmIsOn
+  use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff
   use esmFlds                 , only : compatm, complnd, compocn, compice, comprof, compglc
   use esmFlds                 , only : ncomps, compname 
   use esmFlds                 , only : fldListFr, fldListTo
@@ -20,10 +24,6 @@ module med_phases_history_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
-  use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
-  use shr_cal_mod             , only : shr_cal_ymd2date
-  use seq_timemgr_mod         , only : seq_timemgr_AlarmInit, seq_timemgr_AlarmIsOn
-  use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
   use med_infodata_mod        , only : med_infodata, med_infodata_GetData
@@ -48,45 +48,47 @@ module med_phases_history_mod
 
   public  :: med_phases_history
 
-!-----------------------------------------------------------------------------
-  contains
-!-----------------------------------------------------------------------------
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine med_phases_history(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    ! Carry out fast accumulation for the ocean
+    ! Write mediator history file
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: currtime, reftime, starttime, nexttime
-    type(ESMF_TimeInterval)     :: timediff       ! Used to calculate curr_time
-    type(ESMF_CalKind_Flag)     :: calkindflag
-    character(len=64)           :: currtimestr, nexttimestr
-    type(InternalState)         :: is_local
-    integer                     :: i,j,m,n,n1,ncnt
-    logical,save                :: first_call = .true.
-    integer(IN)   :: curr_ymd     ! Current date YYYYMMDD
-    integer(IN)   :: curr_tod     ! Current time-of-day (s)
-    integer(IN)   :: start_ymd    ! Starting date YYYYMMDD
-    integer(IN)   :: start_tod    ! Starting time-of-day (s)
-    integer(IN)   :: nx,ny        ! global grid size
-    integer(IN)   :: yr,mon,day,sec ! time units
-    real(r8)      :: rval         ! real tmp value
-    real(r8)      :: dayssince    ! Time interval since reference time
-    integer(IN)   :: fk           ! index
-    character(CL) :: time_units   ! units of time variable
-    character(CL) :: calendar     ! calendar type
-    character(CL) :: case_name    ! case name
-    character(CL) :: hist_file    ! Local path to history filename
-    character(CS) :: cpl_inst_tag ! instance tag
-    character(CL) :: cvalue       ! attribute string
-    character(CL) :: freq_option  ! freq_option setting (ndays, nsteps, etc)
-    integer(IN)   :: freq_n       ! freq_n setting relative to freq_option
-    logical       :: alarmIsOn    ! generic alarm flag
-    real(r8)      :: tbnds(2)     ! CF1.0 time bounds
-    logical       :: whead,wdata  ! for writing restart/history cdf files
+    type(InternalState)     :: is_local
+    type(ESMF_VM)           :: vm
+    type(ESMF_Clock)        :: clock
+    type(ESMF_Time)         :: currtime
+    type(ESMF_Time)         :: reftime
+    type(ESMF_Time)         :: starttime
+    type(ESMF_Time)         :: nexttime
+    type(ESMF_TimeInterval) :: timediff       ! Used to calculate curr_time
+    type(ESMF_CalKind_Flag) :: calkindflag
+    character(len=64)       :: currtimestr
+    character(len=64)       :: nexttimestr
+    integer                 :: i,j,m,n,n1,ncnt
+    logical,save            :: first_call = .true.
+    integer(IN)             :: start_ymd      ! Starting date YYYYMMDD
+    integer(IN)             :: start_tod      ! Starting time-of-day (s)
+    integer(IN)             :: nx,ny          ! global grid size
+    integer(IN)             :: yr,mon,day,sec ! time units
+    real(r8)                :: dayssince      ! Time interval since reference time
+    character(CL)           :: time_units     ! units of time variable
+    character(CL)           :: calendar       ! calendar type
+    character(CL)           :: case_name      ! case name
+    character(CL)           :: hist_file      ! Local path to history filename
+    character(CS)           :: cpl_inst_tag   ! instance tag
+    character(CL)           :: cvalue         ! attribute string
+    character(CL)           :: freq_option    ! freq_option setting (ndays, nsteps, etc)
+    integer(IN)             :: freq_n         ! freq_n setting relative to freq_option
+    logical                 :: alarmIsOn      ! generic alarm flag
+    real(r8)                :: tbnds(2)       ! CF1.0 time bounds
+    logical                 :: whead,wdata    ! for writing restart/history cdf files
+    integer                 :: mpicom, iam 
     character(len=*), parameter :: subname='(med_phases_history)'
     !---------------------------------------
 
@@ -94,6 +96,16 @@ module med_phases_history_mod
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
+
+    !---------------------------------------
+    ! --- Get the communicator and localpet
+    !---------------------------------------
+
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Get the internal state
@@ -121,6 +133,7 @@ module med_phases_history_mod
 
     call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (calkindflag == ESMF_CALKIND_GREGORIAN) then
       calendar = shr_cal_gregorian
     elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
@@ -187,11 +200,12 @@ module med_phases_history_mod
     if (alarmIsOn) then
 
        write(hist_file,"(6a)") &
-!         trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(currtimestr),'.nc'
-          trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
+            !trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(currtimestr),'.nc'
+            trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
 
        call ESMF_LogWrite(trim(subname)//": write "//trim(hist_file), ESMF_LOGMSG_INFO, rc=dbrc)
-       call med_io_wopen(hist_file,clobber=.true.)
+       call med_io_wopen(hist_file, mpicom, iam, clobber=.true.)
+
        do m = 1,2
           whead=.false.
           wdata=.false.
@@ -206,11 +220,11 @@ module med_phases_history_mod
           !------- tcx nov 2011 tbnds of same values causes problems in ferret                  
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
-             call med_io_write(hist_file,&
+             call med_io_write(hist_file, iam, &
                   time_units=time_units, time_cal=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata)
           else
-             call med_io_write(hist_file, &
+             call med_io_write(hist_file, iam, &
                   time_units=time_units, time_cal=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, tbnds=tbnds)
           endif
@@ -221,7 +235,8 @@ module med_phases_history_mod
                    call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-                   call med_io_write(hist_file, is_local%wrap%FBimp(n,n), &
+
+                   call med_io_write(hist_file, iam, is_local%wrap%FBimp(n,n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Imp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
@@ -229,7 +244,8 @@ module med_phases_history_mod
                    call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-                   call med_io_write(hist_file, is_local%wrap%FBexp(n), &
+
+                   call med_io_write(hist_file, iam, is_local%wrap%FBexp(n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Exp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
@@ -237,7 +253,8 @@ module med_phases_history_mod
           enddo
 
        enddo
-       call med_io_close(hist_file)
+
+       call med_io_close(hist_file, iam)
 
     endif
 

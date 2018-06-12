@@ -20,7 +20,6 @@ module med_phases_ocnalb_mod
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use seq_timemgr_mod       , only : seq_timemgr_EclockGetData
   use med_map_mod           , only : med_map_FB_Regrid_Norm 
   use med_constants_mod     , only : med_constants_dbug_flag
   use med_constants_mod     , only : med_constants_czero
@@ -33,27 +32,34 @@ module med_phases_ocnalb_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-  public med_phases_ocnalb_init
   public med_phases_ocnalb_run
   public med_phases_ocnalb_mapo2a
+
+  !--------------------------------------------------------------------------
+  ! Private interfaces
+  !--------------------------------------------------------------------------
+
+  private med_phases_ocnalb_init
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
 
-  real(r8) , pointer :: lats  (:) ! latitudes  (degrees)
-  real(r8) , pointer :: lons  (:) ! longitudes (degrees)
-  integer  , pointer :: mask  (:) ! ocn domain mask: 0 <=> inactive cell
-  real(r8) , pointer :: anidr (:) ! albedo: near infrared, direct
-  real(r8) , pointer :: avsdr (:) ! albedo: visible      , direct
-  real(r8) , pointer :: anidf (:) ! albedo: near infrared, diffuse
-  real(r8) , pointer :: avsdf (:) ! albedo: visible      , diffuse
-  real(r8) , pointer :: swndr (:) ! direct near-infrared  incident solar radiation
-  real(r8) , pointer :: swndf (:) ! diffuse near-infrared incident solar radiation
-  real(r8) , pointer :: swvdr (:) ! direct visible  incident solar radiation
-  real(r8) , pointer :: swvdf (:) ! diffuse visible incident solar radiation
-  real(r8) , pointer :: swdn  (:) ! short wave, downward (only used for diurnal calc)
-  real(r8) , pointer :: swup  (:) ! short wave, upward (only used for diurnal calc)
+  type ocnalb_type
+     real(r8) , pointer :: lats  (:) ! latitudes  (degrees)
+     real(r8) , pointer :: lons  (:) ! longitudes (degrees)
+     integer  , pointer :: mask  (:) ! ocn domain mask: 0 <=> inactive cell
+     real(r8) , pointer :: anidr (:) ! albedo: near infrared, direct
+     real(r8) , pointer :: avsdr (:) ! albedo: visible      , direct
+     real(r8) , pointer :: anidf (:) ! albedo: near infrared, diffuse
+     real(r8) , pointer :: avsdf (:) ! albedo: visible      , diffuse
+     real(r8) , pointer :: swndr (:) ! direct near-infrared  incident solar radiation
+     real(r8) , pointer :: swndf (:) ! diffuse near-infrared incident solar radiation
+     real(r8) , pointer :: swvdr (:) ! direct visible  incident solar radiation
+     real(r8) , pointer :: swvdf (:) ! diffuse visible incident solar radiation
+     real(r8) , pointer :: swdn  (:) ! short wave, downward (only used for diurnal calc)
+     real(r8) , pointer :: swup  (:) ! short wave, upward (only used for diurnal calc)
+  end type ocnalb_type
 
   ! Conversion from degrees to radians
   integer                :: dbug_flag = med_constants_dbug_flag
@@ -67,7 +73,7 @@ module med_phases_ocnalb_mod
 contains
 !===============================================================================
 
-  subroutine med_phases_ocnalb_init(gcomp, rc)
+  subroutine med_phases_ocnalb_init(gcomp, ocnalb, rc)
 
     !-----------------------------------------------------------------------
     ! Initialize pointers to the module variables and then use the module
@@ -76,8 +82,9 @@ contains
     !-----------------------------------------------------------------------
 
     ! Arguments
-    type(ESMF_GridComp)    :: gcomp
-    integer, intent(out)   :: rc
+    type(ESMF_GridComp)              :: gcomp
+    type(ocnalb_type), intent(inout) :: ocnalb
+    integer, intent(out)             :: rc
     !
     ! Local variables
     type(ESMF_VM)               :: vm
@@ -122,26 +129,26 @@ contains
     ! These must must be on the ocean grid since the ocean albedo computation is on the ocean grid
     ! The following sets pointers to the module arrays
 
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swndr', fldptr1=swndr, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swndr', fldptr1=ocnalb%swndr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swndf', fldptr1=swndf, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swndf', fldptr1=ocnalb%swndf, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swvdr', fldptr1=swvdr, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swvdr', fldptr1=ocnalb%swvdr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swvdf', fldptr1=swvdf, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), fldname='Faxa_swvdf', fldptr1=ocnalb%swvdf, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdr', fldptr1=avsdr, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdr', fldptr1=ocnalb%avsdr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdf', fldptr1=avsdf, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdf', fldptr1=ocnalb%avsdf, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidr', fldptr1=anidr, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidr', fldptr1=ocnalb%anidr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidf', fldptr1=anidf, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidf', fldptr1=ocnalb%anidf, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='Faox_swdn', fldptr1=swdn, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='Faox_swdn', fldptr1=ocnalb%swdn, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='Faox_swup', fldptr1=swup, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='Faox_swup', fldptr1=ocnalb%swup, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
@@ -163,7 +170,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_MeshGet(lmesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       lsize = size(swndr)
+       lsize = size(ocnalb%swndr)
        if (numOwnedElements /= lsize) then
           write(tempc1,'(i10)') numOwnedElements
           write(tempc2,'(i10)') lsize
@@ -173,17 +180,17 @@ contains
           return
        end if
        allocate(ownedElemCoords(spatialDim*numOwnedElements))
-       allocate(lons(numOwnedElements))
-       allocate(lats(numOwnedElements))
+       allocate(ocnalb%lons(numOwnedElements))
+       allocate(ocnalb%lats(numOwnedElements))
        call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
           !TODO: the following is only needed for MOM6 until ESMF is updated - uncomment if you are using MOM6
-          lons(:) = 0.0
-          lats(:) = 0.0
+          ocnalb%lons(:) = 0.0
+          ocnalb%lats(:) = 0.0
        else
           do n = 1,lsize
-             lons(n) = ownedElemCoords(2*n-1)
-             lats(n) = ownedElemCoords(2*n)
+             ocnalb%lons(n) = ownedElemCoords(2*n-1)
+             ocnalb%lats(n) = ownedElemCoords(2*n)
           end do
        end if
     else
@@ -191,12 +198,6 @@ contains
       rc = ESMF_FAILURE
       return
     end if
-
-    ! Compute ocean albedoes
-    ! This will update the relevant module arrays 
-
-    call med_phases_ocnalb_run(gcomp, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -214,7 +215,7 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical                       :: first_time = .true.
+    type(ocnalb_type), save       :: ocnalb     
     logical                       :: update_alb
     type(InternalState)           :: is_local
     type(ESMF_Clock)              :: clock
@@ -240,6 +241,7 @@ contains
     real(ESMF_KIND_R8)            :: obliqr           ! Earth orbit
     real(ESMF_KIND_R8)            :: delta            ! Solar declination angle  in radians
     real(ESMF_KIND_R8)            :: eccf             ! Earth orbit eccentricity factor
+    logical                       :: first_call = .true.
     real(ESMF_KIND_R8), parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(ESMF_KIND_R8), parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
@@ -266,7 +268,10 @@ contains
     ! for now will just assume that nextsw_cday is not computed on
     ! initialization and is read from the restart file.
 
-    if (first_time) then
+    if (first_call) then
+
+       call med_phases_ocnalb_init(gcomp, ocnalb, rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
        call NUOPC_CompAttributeGet(gcomp, name='start_type', value=cvalue, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
@@ -292,7 +297,7 @@ contains
           call ESMF_TimeGet( currTime, dayOfYear_r8=nextsw_cday, rc=rc )
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
        end if
-       first_time = .false.
+       first_call = .false.
 
     else
 
@@ -361,21 +366,14 @@ contains
     ! Calculate ocean albedos on the ocean grid
 
     update_alb = .false.
-    lsize = size(anidr)
+    lsize = size(ocnalb%anidr)
 
     if (flux_albav) then
        do n = 1,lsize
-          anidr(n) = albdir
-          avsdr(n) = albdir
-          anidf(n) = albdif
-          avsdf(n) = albdif
-
-          ! Albedo is now function of latitude (will be new implementation)
-          !rlat = const_deg2rad * lats(n)
-          !anidr = 0.069_r8 - 0.011_r8 * cos(2._r8 * rlat)
-          !avsdr = anidr
-          !anidf = anidr
-          !avsdf = anidr
+          ocnalb%anidr(n) = albdir
+          ocnalb%avsdr(n) = albdir
+          ocnalb%anidf(n) = albdif
+          ocnalb%avsdf(n) = albdif
        end do
        update_alb = .true.
     else
@@ -383,13 +381,13 @@ contains
        ! swdn & albedos are time-aligned  BEFORE albedos get updated below ---
 
        do n=1,lsize
-          if ( anidr(n) == 1.0_r8 ) then ! dark side of earth
-             swup(n) = 0.0_r8
-             swdn(n) = 0.0_r8
+          if ( ocnalb%anidr(n) == 1.0_r8 ) then ! dark side of earth
+             ocnalb%swup(n) = 0.0_r8
+             ocnalb%swdn(n) = 0.0_r8
           else
-             swup(n) = swndr(n) * (-anidr(n)) + swndf(n) * (-anidf(n)) + &
-                       swvdr(n) * (-avsdr(n)) + swvdf(n) * (-avsdf(n))
-             swdn(n) = swndr(n) + swndf(n) + swvdr(n) + swvdf(n)
+             ocnalb%swup(n) = ocnalb%swndr(n) * (-ocnalb%anidr(n)) + ocnalb%swndf(n) * (-ocnalb%anidf(n)) + &
+                              ocnalb%swvdr(n) * (-ocnalb%avsdr(n)) + ocnalb%swvdf(n) * (-ocnalb%avsdf(n))
+             ocnalb%swdn(n) = ocnalb%swndr(n) + ocnalb%swndf(n) + ocnalb%swvdr(n) + ocnalb%swvdf(n)
           end if
        end do
 
@@ -401,21 +399,21 @@ contains
 
           ! Compute albedos
           do n = 1,lsize
-             rlat = const_deg2rad * lats(n)
-             rlon = const_deg2rad * lons(n)
+             rlat = const_deg2rad * ocnalb%lats(n)
+             rlon = const_deg2rad * ocnalb%lons(n)
              cosz = shr_orb_cosz( nextsw_cday, rlat, rlon, delta )
              if (cosz  >  0.0_r8) then !--- sun hit --
-                anidr(n) = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
-                           (.150_r8*(cosz         - 0.100_r8 ) *   &
-                           (cosz - 0.500_r8 ) * (cosz - 1.000_r8 )  )
-                avsdr(n) = anidr(n)
-                anidf(n) = albdif
-                avsdf(n) = albdif
+                ocnalb%anidr(n) = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
+                                  (.150_r8*(cosz         - 0.100_r8 ) *   &
+                                  (cosz - 0.500_r8 ) * (cosz - 1.000_r8 )  )
+                ocnalb%avsdr(n) = ocnalb%anidr(n)
+                ocnalb%anidf(n) = albdif
+                ocnalb%avsdf(n) = albdif
              else !--- dark side of earth ---
-                anidr(n) = 1.0_r8
-                avsdr(n) = 1.0_r8
-                anidf(n) = 1.0_r8
-                avsdf(n) = 1.0_r8
+                ocnalb%anidr(n) = 1.0_r8
+                ocnalb%avsdr(n) = 1.0_r8
+                ocnalb%anidf(n) = 1.0_r8
+                ocnalb%avsdf(n) = 1.0_r8
              end if
           end do
           update_alb = .true.
