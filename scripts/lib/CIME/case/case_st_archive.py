@@ -714,6 +714,8 @@ def test_env_archive(self, testdir="env_archive_test"):
         if (compname == 's'+comp.lower() or compname == 'x'+comp.lower()) and comp != 'ESP':
             logger.info("Not testing component {}".format(comp))
             components.remove(comp)
+        elif comp == 'ESP' and self.get_value('MODEL') == 'e3sm':
+            components.remove(comp)
         else:
             if compname == 'cpl':
                 compname = 'drv'
