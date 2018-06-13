@@ -1413,10 +1413,7 @@ for mct, etc.
   </LDFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
-  <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
   <SFC> ifort </SFC>
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
