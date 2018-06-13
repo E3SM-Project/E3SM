@@ -367,7 +367,8 @@ This allows using a different mpirun command to launch unit tests
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_USE_ARRAY"/>
-      <env name="ESMFMKFILE">/glade/u/home/tcraig/ESMF-INSTALLS/ESMF_7_1_0_bs42-Intel17.0.1-NetCDF4.4.1.1-g/lib/esmf.mk</env>
+      <!-- <env name="ESMFMKFILE">/glade/u/home/tcraig/ESMF-INSTALLS/ESMF_7_1_0_bs42-Intel17.0.1-NetCDF4.4.1.1-g/lib/esmf.mk</env> -->
+      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs7/lib/libO/Linux.intel.64.mpich2.default/esmf.mk</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <!-- It's possible that we also need to set:
