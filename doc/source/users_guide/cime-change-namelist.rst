@@ -3,9 +3,12 @@
 Customizing your input variables
 ================================
 
-CIME and CIME-compliant components currently use Fortran namelists to control runtime options.
+CIME and CIME-compliant components primarily use Fortran namelists to control runtime options.  Some components use
+other text-based files for runtime options.
 
-All CIME-compliant components generate their namelist file using a **buildnml** script located in the component's **cime_config** directory.  **buildnml** may call other scripts to complete the namelist.
+All CIME-compliant components generate their input variable files using a **buildnml** script typically located in the
+component's **cime_config** directory (or other location as set in **config_file.xml**).
+**buildnml** may call other scripts to complete construction of the input file.
 
 For example, the CIME data atmosphere model (DATM) generates namelists using the script **$CIMEROOT/components/data_comps/datm/cime_config/buildnml**.
 
@@ -62,7 +65,7 @@ Setting up a multi-year run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This shows all of the steps necessary to do a multi-year simulation starting from a "cold start" for all components.  The
-compset and resolution in this example are for CESM but the steps are similar for other compets.
+compset and resolution in this example are for a CESM fully-coupled case but the steps are similar for other models and cases.
 
 1. Create a new case named EXAMPLE_CASE in your **$HOME** directory.
 
@@ -81,7 +84,7 @@ compset and resolution in this example are for CESM but the steps are similar fo
       > ./case.setup
       > ./case.build
 
-   .. warning:: The case.build script is can be compute intensive and may not be suitable to run on a login node. As an alternative you would submit this job to an interactive queue.
+   .. warning:: The case.build script can be compute intensive and may not be suitable to run on a login node. As an alternative you would submit this job to an interactive queue.
                 For example, on the NCAR cheyenne platform, you would use **qcmd -- ./case.build** to do this.
 
 3. In your case directory, set the job to run 12 model months, set the wallclock time, and submit the job.
@@ -109,7 +112,7 @@ compset and resolution in this example are for CESM but the steps are similar fo
       > ./case.submit
 
    By default resubmitted runs are not submitted until the previous run is completed.  For 10 1-year runs as configured in this
-   example, CIME will first submit a job for one year, then when its finished submit a job for another year.  There will be
+   example, CIME will first submit a job for one year, then when that job completes it will submit a job for another year.  There will be
    only one job in the queue at a time.
    To change this behavior, and submit all jobs at once (with batch dependencies such that only one job is run at a time), use the command:
 
