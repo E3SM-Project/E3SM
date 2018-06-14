@@ -351,16 +351,23 @@ contains
       call state_read(elem,statesave,n0,nets,nete)
       call t_stopf("ARS232_timestep")
 !======================================================================================================
-    elseif (tstep_type==8) then ! kgs242
-      call t_startf("KGS242_timestep")
+    elseif (tstep_type==8) then ! IMEX-KG232
+      call t_startf("IMEX-KG232_timestep")
       ! denote the stages as k1,...,k4 and note that k1 = un0
-      a1 = 0.5
-      a2 = 0.5
-      a3 = 1.0
-      dhat2 = 2.25
-      dhat1 = (0.5-dhat2)/(1.0-dhat2)
-      ahat2 = 0.5-dhat2
-      ahat3 = 1.0
+      a1 = 1./2.
+      a2 = 1./2.
+      a3 = 1.
+      dhat3 = 0.
+      ahat3 = 1.
+      ! IMEX-KG232a
+      dhat2 = (2.-sqrt(2.))/2.
+      ! IMEX-KG232b
+!      dhat2 = (2.+sqrt(2.))/2.
+      ! IMEX-KG232c
+!      dhat2 = 2.
+      dhat1 = (1/2.-dhat2)/(1.-dhat2)
+      ahat2 = 1./2. - dhat2
+      ahat1 = 0.
 
       ! compute un0 + dt*a1*n(k1=u(n0))+dt*ahat1*s(k1) and store at np1
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
@@ -388,20 +395,28 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat3/a3,1d0)
 
-      call t_stopf("KGS242_timestep")
+      call t_stopf("IMEX-KG232_timestep")
 !===========================================================================================
-    elseif (tstep_type==9) then ! kgs252
-      call t_startf("KGS252_timestep")
+    elseif (tstep_type==9) then ! IMEX-KG242
+      call t_startf("IMEX-KG242_timestep")
       ! denote the stages as k1,...,k4 and note that k1 = un0
-      a1 = 0.25
-      a2 = 1d0/3d0
-      a3 = 0.5
-      a4 = 1.0
-      dhat2 = 2.25
-      dhat1 = (0.5-dhat2)/(1.0-dhat2)
-      ahat3= 0.5-dhat2
-      ahat4 = 1.0
 
+      a1 = 1./4.
+      a2 = 1./3.
+      a3 = 1./2.
+      a4 = 1.0 
+
+      ahat4 = 1.
+      ahat1 = 0.
+
+      ! IMEX-KGNO242
+      dhat1 = 0.
+      dhat3 = (2.+sqrt(2.))/2.; 
+      dhat2 = (1./2.-dhat3)/(1.-dhat3); 
+      ahat2 = 2.*dhat1 - 2.*dhat1*dhat2; ahat3 = 1./2.-dhat3;
+
+      ahat1 = 0.
+      ahat5 = 1.
      ! ============ first stage is pure explicit =======================
 
      ! compute k2 = u(n)+dt*a1*n(k1=u(n)) and store at np1
@@ -415,7 +430,7 @@ contains
       ! solve k3 = u(n)+dt*a2*n(k2)+dt*dhat1*s(k3) and store at np1
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  !     print *, maxiter
  !     print *, itertol
@@ -429,7 +444,7 @@ contains
       ! solve k4 = u(n)+dt*a3*n(k3)+dt*ahat3*s(k3)+dt*dhat2*s(k4) and store at np1
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  !     print *, maxiter
  !     print *, itertol
@@ -440,19 +455,28 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
      deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
 
-      call t_stopf("KGS252_timestep")
+      call t_stopf("IMEX-KG242_timestep")
 !===========================================================================================
-    elseif (tstep_type==10)  then ! kgs 262
-      call t_startf("KGS262_timestep")
+    elseif (tstep_type==10)  then ! IMEX-KG252
+      call t_startf("IMEX-KG252_timestep")
+      a1 = 1./4.
+      a2 = 1./3.
+      a3 = 3./8.
+      a4 = 1./2. 
+      a5 = 1.
+      ahat1 = 0.
+      ahat5 = 1.
 
-     a1 = .25
-     a2 = 1.0/6.0
-     a3 = 3.0/8.0
-     a4 = .5
-     a5 = 1.0
-     dhat2 = 2.25
-     ahat4 = 0.5-dhat2
-     dhat1 = (0.5-dhat2)/(1-dhat2)
+      ! IMEX-KG252
+      dhat1 = 0.
+      dhat2 = 0.
+      dhat4 = (2.+sqrt(2.))/2.
+      ahat4 = 1./2.-dhat4;
+      dhat3= ahat4/(1.-dhat4)
+
+      ! IMEX-KG252
+      ahat3 = 0.
+      ahat2 = 0. 
 
     ! ======== first two stages are pure explicit  =============
      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
@@ -467,10 +491,10 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w*a3,1d0,0d0,1d0)
 
-      ! solve k3 = u(n)+dt*a3*n(k2)+dt*dhat1*s(k3) and store at np1
+      ! solve k3 = u(n)+dt*a3*n(k2)+dt*dhat3*s(k3) and store at np1
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  !     print *, maxiter
  !     print *, itertol
@@ -480,10 +504,10 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
 
-     ! solve k4 = u(n)+dt*a4*n(k2)+dt*ahat4*s(k3)+dt*dhat2*s(k4) and store at np1
+     ! solve k4 = u(n)+dt*a4*n(k2)+dt*ahat4*s(k3)+dt*dhat4*s(k4) and store at np1
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !      print *, maxiter
 !      print *, itertol
@@ -494,65 +518,25 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,1d0,1d0)
 
-      call t_stopf("KGS262_timestep")
+      call t_stopf("IMEX-KG252_timestep")
 !=========================================================================================
-    elseif (tstep_type == 11 ) then
-      call t_startf("KGS272_timestep")
-     a1 = 1./6.
-     a2 = 2./15.
-     a3 = 1./4.
-     a4 = 1./3.
-     a5 = .5
-     a6 = 1.0
-     dhat2 = 2.25
-     ahat5 = 0.5-dhat2
-     ahat6 = 1.
-     dhat1 = (0.5-dhat2)/(1-dhat2)
+    elseif (tstep_type == 11) then  ! IMEX-KG243
+      call t_startf("IMEX-KG243_timestep")
 
-    ! ======== first two stages are pure explicit  =============
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,0d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,0d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,0d0,1d0)
-
-      ! solve k3 = u(n)+dt*a3*n(k2)+dt*dhat1*s(k3) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,ahat5/a5,1d0)
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
-
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a6,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a6,1d0,1d0,1d0)
-
-      call t_stopf("KGS272_timestep")
-!==============================================================================================
-    elseif (tstep_type == 12) then 
-      call t_startf("KGS242-3_timestep")
-      dhat1 = 1.
-      dhat2 = 1.
-      ahat2 = 2.
-      dhat3 = (ahat2/2. + dhat2 - 1.0)/(ahat2-dhat1**2)
-      ahat3 = 0.5-dhat3
-      ahat4 = 1.
-      a4 = 1.
-      a3 = 1./2. 
-      a2 = 1./3.
       a1 = 1./4.
+      a2 = 1./3.
+      a3 = 1./2.
+      a4 = 1.0
+
+      ahat4 = 1.
+      ahat1 = 0.
+
+      ! IMEX-KGNO243
+      dhat2 = (1.+sqrt(3.)/3.)/2.
+      dhat3 = dhat2
+      ahat3 = 1./2.-dhat3
+      dhat1 = (ahat3-dhat2+dhat2*dhat3)/(1.-dhat2-dhat3)
+      ahat2 = (dhat1-dhat1*dhat3-dhat1*dhat2+dhat1*dhat2*dhat3)/(1.-dhat3)
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
@@ -587,21 +571,29 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
 
-      call t_stopf("KGS242-3_timestep")
+      call t_stopf("IMEX-KG243_timestep")
 !==============================================================================================
-    elseif (tstep_type == 13) then 
-      call t_startf("KGS252-3_timestep")
-     a1 = .25
-     a2 = 1.0/6.0
-     a3 = 3.0/8.0
-     a4 = .5
-     a5 = 1.0
-     dhat1 = 1.
-     dhat2 = 1.
-     ahat3 = 2.
-     dhat3 = (ahat3/2. + dhat2 - 1.0)/(ahat3-dhat1**2)
-     ahat4 = 0.5-dhat3
-     ahat5 = 1.
+    elseif (tstep_type == 12) then 
+      call t_startf("IMEX-KG253_timestep")
+
+      a1 = 1./4.
+      a2 = 1./3.
+      a3 = 3./8.
+      a4 = 1./2.
+      a5 = 1.
+      ahat1 = 0.
+      ahat5 = 1.
+
+      ! IMEX-KG253
+      dhat1 = 0.
+      dhat4 = (1.+sqrt(3.)/3.)/2. 
+      dhat3 = dhat4
+      ahat4 = 1./2.-dhat4
+      dhat2= dhat4
+
+      ! IMEX-KG253
+      ahat3 = (-ahat4*ahat5*dhat2+ahat5*dhat2*dhat3- dhat2*dhat3*dhat4)/(-ahat4*ahat5)
+      ahat2 = 0.
 
     ! ======== first two stages are pure explicit  =============
      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
@@ -611,7 +603,7 @@ contains
 
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  !     print *, maxiter
  !     print *, itertol
@@ -622,7 +614,7 @@ contains
 
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !      print *, maxiter
 !      print *, itertol
@@ -632,7 +624,7 @@ contains
 
       maxiter=10
       itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 !      print *, maxiter
 !      print *, itertol
@@ -640,27 +632,44 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,ahat5/a5,1d0)
 
-      call t_stopf("KGS252-3_timestep")
+      call t_stopf("IMEX-KG253_timestep")
 !==============================================================================================
-    elseif (tstep_type == 14) then 
-      call t_startf("KGS252-4_timestep")
-      a1 = .25
-      a2 = 1.0/6.0
-      a3 = 3.0/8.0
-      a4 = .5
-      a5 = 1.0
-      dhat1 = 2./3.
-      dhat2 = 2./3.
-      dhat3 = 2./3.
-      dhat4 = (dhat1+dhat2+dhat3+dhat1*dhat2+dhat1*dhat3+dhat2*dhat3-.5)/&
-        (dhat1+dhat2+dhat3-1.)
-      ahat4 = 0.5-dhat4
-      ahat3 = (ahat4*dhat1+ahat4*dhat2-dhat2*dhat2-dhat1*dhat3-dhat2*dhat3+&
-        dhat1*dhat2*dhat3+dhat1*dhat2*dhat4+dhat1*dhat3*dhat4+dhat2*dhat3*dhat4)/ahat4
-      ahat2 = (ahat3*ahat4-ahat4*dhat1*dhat2+dhat1*dhat2*dhat3-dhat1*dhat2*dhat3*dhat4)&
-        /(ahat3*ahat4)
-      ahat5 = 1.0
- 
+    elseif (tstep_type == 13) then 
+      call t_startf("IMEX-KG254_timestep")
+      a1 = 1./4.
+      a2 = 1./6.
+      a3 = 3./8.
+      a4 = 1./2.
+      a5 = 1
+      ahat1 = 0.
+      ahat5 = 1.
+
+      ! IMEX-KGO254c coefficients
+!      dhat2 = 5./6.
+!      dhat3 = 5./6.
+!      dhat4 = 2./3.
+!      ahat4 = 1./2.-dhat4
+!       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+!        (ahat5-dhat3-dhat2-dhat4)
+
+      ! IMEX-KGO254b coefficients NOT GOOD
+!      dhat2 = 1./6.
+!      dhat3 = 1./6.
+!      dhat4 = 1./6.
+!      ahat4 = 1./2.-dhat4
+!!      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+!       (ahat5-dhat3-dhat2-dhat4)
+
+
+
+      ! IMEX-KG254
+      ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
+        ahat5*dhat2*dhat3- dhat1*dhat2*dhat3 - dhat1*dhat2*dhat4 - dhat1*dhat3*dhat4- &
+        dhat2*dhat3*dhat4)/(-ahat4*ahat5)
+      ahat2 = ( - ahat3*ahat4*ahat5*dhat1 + ahat4*ahat5*dhat1*dhat2 -&
+        ahat5*dhat1*dhat2*dhat3 + dhat1*dhat2*dhat3*dhat4)/(-ahat3*ahat4*ahat5)
+
+
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
       maxiter=10
@@ -700,10 +709,10 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a5,1d0,ahat5/a5,1d0)
 
-      call t_stopf("KGS252-4_timestep")
+      call t_stopf("IMEX-KG254_timestep")
 !==============================================================================================
-    elseif (tstep_type == 15) then
-      call t_startf("KGS242_explicit_timestep")
+    elseif (tstep_type == 14) then
+      call t_startf("IMEX-KG232_explicit_timestep")
       a1 = 0.5
       a2 = 0.5
       a3 = 1.0
@@ -713,13 +722,13 @@ contains
         deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-      call t_stopf("KGS242_explicit_timestep")
+      call t_stopf("IMEX-KG232_explicit_timestep")
 !===============================================================================================
-    elseif (tstep_type == 16) then 
-      call t_startf("KGS252_explicit_timestep")
+    elseif (tstep_type == 15) then 
+      call t_startf("IMEX-KG242_explicit_timestep")
      ! denote the stages as k1,...,k4 and note that k1 = un0
       a1 = 0.25
-      a2 = 1d0/3d0
+      a2 = 1./3.
       a3 = 0.5
       a4 = 1.0
      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
@@ -730,10 +739,10 @@ contains
      deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
      deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-      call t_stopf("KGS252_explicit_timestep")  
+      call t_stopf("IMEX_KG242_explicit_timestep")  
 !=================================================================================================
-    elseif (tstep_type == 17) then
-      call t_startf("KGS262_explicit_timestep")
+    elseif (tstep_type == 16) then
+      call t_startf("IMEX-KG252_explicit_timestep")
      a1 = 1./4.
      a2 = 1.0/6.0
      a3 = 3.0/8.0
@@ -749,30 +758,7 @@ contains
         deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,1d0,1d0)
-      call t_stopf("KGS262_explicit_timestep")
-!=================================================================================================
-    elseif (tstep_type == 18) then
-     call t_startf("KGS272_explicit_timestep")
-     a1 = 1./6.
-     a2 = 2./15.
-     a3 = 1./4.
-     a4 = 1./3.
-     a5 = .5
-     a6 = 1.0
-    ! ======== first two stages are pure explicit  =============
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a6,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a6,1d0,1d0,1d0)
-      call t_stopf("KGS272_explicit_timestep")
+      call t_stopf("IMEX-KG252_explicit_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
