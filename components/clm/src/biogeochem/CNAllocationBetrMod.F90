@@ -713,7 +713,7 @@ contains
      sucsat   => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)
      soilpsi  => soilstate_vars%soilpsi_col      & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)
   )
-  q10 = CNParamsShareInst%q10
+  q10 = CNParamsShareInst%q10_hr
   froz_q10 = CNParamsShareInst%froz_q10
 
   do j = 1, nlevdecomp

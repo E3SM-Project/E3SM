@@ -601,7 +601,7 @@ contains
          sminp_to_plant        =>  phosphorusflux_vars%sminp_to_plant_col      , &
          cascade_receiver_pool =>  decomp_cascade_con%cascade_receiver_pool    , &
          pf                    =>  phosphorusflux_vars                         , &
-         ps                    =>  phosphorusstate_vars                          &
+         ps                    =>  phosphorusstate_vars                        , &
          som_p_leached         =>  phosphorusflux_vars%som_p_leached_col       , &
          supplement_to_sminp_surf_col => phosphorusflux_vars%supplement_to_sminp_surf_col, &
          sminp_runoff_col      => phosphorusflux_vars%sminp_runoff_col   , &

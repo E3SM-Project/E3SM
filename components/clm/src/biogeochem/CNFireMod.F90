@@ -579,7 +579,7 @@ contains
                       decomp_cascade_con%spinup_factor(i_cwd) 
                   else if (spinup_state == 1 .and. kyr >= 40) then 
                     fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
-                      decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c)
+                      decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c,j)
                   else  
                     fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
                   end if 
@@ -1486,7 +1486,7 @@ contains
                     m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
                       decomp_cascade_con%spinup_factor(l) 
                     if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
-                      m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c)
+                      m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
                   end if             
                end if
              end do
