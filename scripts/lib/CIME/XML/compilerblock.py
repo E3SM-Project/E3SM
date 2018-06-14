@@ -3,7 +3,7 @@ Classes used to build the CIME Macros file.
 
 The main "public" class here is Build. It is initialized with machine-specific
 information, and its write_macros method is the driver for translating the
-config_build.xml file into a Makefile or CMake-format Macros file.
+config_compilers.xml file into a Makefile or CMake-format Macros file.
 
 For developers, here's the role of the other classes in the process:
 
@@ -188,8 +188,10 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        setting = ValueSetting(value_text, self._db.name(elem) == "append",
+        append = self._db.name(elem) == "append" or (self._db.name(elem) == "base" and self._compiler and self._db.compiler != self._compiler)
+        setting = ValueSetting(value_text, append,
                                conditions, set_up, tear_down)
+
         return (setting, depends)
 
     def _add_elem_to_lists(self, name, elem, value_lists):

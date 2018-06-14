@@ -2067,7 +2067,7 @@ class MockMachines(object):
 
 
 def get_macros(macro_maker, build_xml, build_system):
-    """Generate build system ("Macros" file) output from config_build XML.
+    """Generate build system ("Macros" file) output from config_compilers XML.
 
     Arguments:
     macro_maker - The underlying Build object.
@@ -2093,16 +2093,16 @@ def get_macros(macro_maker, build_xml, build_system):
     return str(output.getvalue())
 
 
-def _wrap_config_build_xml(inner_string):
-    """Utility function to create a config_build XML string.
+def _wrap_config_compilers_xml(inner_string):
+    """Utility function to create a config_compilers XML string.
 
     Pass this function a string containing <compiler> elements, and it will add
     the necessary header/footer to the file.
     """
     _xml_template = """<?xml version="1.0" encoding="UTF-8"?>
-<config_build>
+<config_compilers>
 {}
-</config_build>
+</config_compilers>
 """
 
     return _xml_template.format(inner_string)
@@ -2311,7 +2311,7 @@ class G_TestMacrosBasic(unittest.TestCase):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
         maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
-        test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
+        test_xml = _wrap_config_compilers_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
@@ -2341,16 +2341,16 @@ class H_TestMakeMacros(unittest.TestCase):
     Aside from the usual setUp and test methods, this class has a utility method
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
     """
-
-    test_os = "SomeOS"
-    test_machine = "mymachine"
-
     def setUp(self):
+        self.test_os = "SomeOS"
+        self.test_machine = "mymachine"
+        self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
+
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         return MakefileTester(self, get_macros(self._maker, test_xml, "Makefile"))
 
     def test_generic_item(self):
@@ -2388,6 +2388,25 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
         tester = self.xml_to_tester(xml2+xml1)
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
+
+    def test_mach_other_compiler(self):
+        """The macro writer chooses machine-specific over os-specific matches."""
+        xml1 = """<compiler COMPILER="{}"><CFLAGS><base>a b c</base></CFLAGS></compiler>""".format(self.test_compiler)
+        xml2 = """<compiler MACH="{}" COMPILER="other"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine)
+        xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml3)
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml4)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml4+xml1)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2428,7 +2447,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH>/path/to/other_default</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_duplicates(self):
@@ -2437,7 +2456,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich2</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_ambiguous(self):
@@ -2446,7 +2465,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH DEBUG="FALSE">/path/to/mpi-debug</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_compiler_changeable_at_build_time(self):
@@ -2566,7 +2585,7 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("FFLAGS", "-O2 -fast", env={"OPT_LEVEL": "2"})
 
     def test_config_variable_insertion(self):
-        """Test that $VAR insert variables from config_build."""
+        """Test that $VAR insert variables from config_compilers."""
         # Construct an absurd chain of references just to sure that we don't
         # pass by accident, e.g. outputting things in the right order just due
         # to good luck in a hash somewhere.
@@ -2619,7 +2638,7 @@ class I_TestCMakeMacros(H_TestMakeMacros):
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         if (NO_CMAKE):
             self.skipTest("Skipping cmake test")
         else:
