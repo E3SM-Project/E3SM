@@ -1041,6 +1041,16 @@ class Case(object):
             else:
                 safe_copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
+        # add archive_metadata to the CASEROOT but only for CESM
+        if get_model() == "cesm":
+            try:
+                exefile = os.path.join(toolsdir, "archive_metadata")
+                destfile = os.path.join(self._caseroot,os.path.basename(exefile))
+                os.symlink(exefile, destfile)
+            except Exception as e:
+                logger.warning("FAILED to set up exefiles: {}".format(str(e)))
+
+
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
         components.extend(['share', 'drv'])
