@@ -2390,7 +2390,7 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
 
     def test_mach_other_compiler(self):
-        """The macro writer chooses machine-specific over os-specific matches."""
+        """The macro writer compiler-specific logic works as expected."""
         xml1 = """<compiler COMPILER="{}"><CFLAGS><base>a b c</base></CFLAGS></compiler>""".format(self.test_compiler)
         xml2 = """<compiler MACH="{}" COMPILER="other"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine)
         xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
