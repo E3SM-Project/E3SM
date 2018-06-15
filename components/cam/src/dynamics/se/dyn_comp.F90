@@ -103,6 +103,7 @@ CONTAINS
     use cam_abortutils,   only : endrun
 #ifdef HAVE_MOAB
     use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
+    use seq_comm_mct,      only: ATMID
 #endif
 
     ! PARAMETERS:
@@ -190,7 +191,7 @@ CONTAINS
     if(par%dynproc) then
 #ifdef HAVE_MOAB
        appname="HM_COARSE"//CHAR(0)
-       ATM_ID1 = 19
+       ATM_ID1 = ATMID(1) ! first atmosphere instance; it should be 5
        ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHID)
        if (ierr > 0 )  &
            call endrun('Error: cannot register moab app')

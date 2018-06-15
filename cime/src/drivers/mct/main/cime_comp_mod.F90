@@ -165,6 +165,9 @@ module cime_comp_mod
    use prep_glc_mod
    use prep_ocn_mod
    use prep_atm_mod
+#ifdef HAVE_MOAB
+   use prep_atm_mod       , only: prep_atm_ocn_moab, prep_atm_migrate_moab
+#endif
    use prep_aoflux_mod
 
    !--- mapping routines ---
@@ -3480,6 +3483,10 @@ end subroutine cime_init
                  mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
                  timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
                  timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
+#ifdef HAVE_MOAB
+            ! will migrate the tag from component pes to coupler pes, on atm mesh
+            call prep_atm_migrate_moab(infodata)
+#endif
          endif
 
          !----------------------------------------------------------
