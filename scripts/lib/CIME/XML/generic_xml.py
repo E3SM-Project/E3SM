@@ -285,13 +285,6 @@ class GenericXML(object):
         version = 1.0 if version is None else float(version)
         return version
 
-    def find_xmllint(self):
-        if "XMLLINT" in os.environ:
-            xmllint = os.environ["XMLLINT"]
-        else:
-            xmllint = find_executable("xmllint")
-        return xmllint
-
     def write(self, outfile=None, force_write=False):
         """
         Write an xml file from data in self
@@ -307,7 +300,7 @@ class GenericXML(object):
         xmlstr = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
-        xmllint = self.find_xmllint()
+        xmllint = find_executable("xmllint")
         if xmllint is not None:
             if isinstance(outfile, six.string_types):
                 run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
@@ -483,7 +476,7 @@ class GenericXML(object):
         """
         expect(os.path.isfile(filename),"xml file not found {}".format(filename))
         expect(os.path.isfile(schema),"schema file not found {}".format(schema))
-        xmllint = self.find_xmllint()
+        xmllint = find_executable("xmllint")
         if xmllint is not None:
             logger.debug("Checking file {} against schema {}".format(filename, schema))
             run_cmd_no_fail("{} --noout --schema {} {}".format(xmllint, schema, filename))

@@ -241,7 +241,7 @@ using a fortran linker.
   <FREEFLAGS>
     <base> -free </base>
   </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
@@ -467,6 +467,9 @@ using a fortran linker.
     <append MODEL="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+</compiler>
+<compiler MACH="bluewaters" COMPILER="intel">
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 <compiler MACH="bluewaters" COMPILER="pgi">
