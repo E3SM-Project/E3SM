@@ -2705,6 +2705,51 @@
   <module_system type="none"/>
 </machine>
 
+<machine MACH="snl-white">
+    <DESC>IBM Power 8 Testbed machine</DESC>
+    <NODENAME_REGEX>white</NODENAME_REGEX>
+    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+    <OS>LINUX</OS>
+    <TESTS>e3sm_developer</TESTS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/e3sm/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/e3sm/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/projects/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <SUPPORTED_BY>mdeakin at sandia dot gov</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="python">module</cmd_path>
+      <modules>
+        <command name="load">zlib/1.2.8</command>
+        <command name="load">cuda/8.0.44</command>
+        <command name="load">openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
+        <command name="load">openblas/0.2.19/gcc/5.4.0</command>
+        <command name="load">netcdf/4.4.1/openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
+        <command name="load">netcdf-f/4.4.4/openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDF_C_PATH">$ENV{NETCDF_ROOT}</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDFF_ROOT}</env>
+    </environment_variables>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments></arguments>
+    </mpirun>
+</machine>
+
 <machine MACH="summitdev">
 	 <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
