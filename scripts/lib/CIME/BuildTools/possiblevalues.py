@@ -108,7 +108,7 @@ class PossibleValues(object):
             for other in self.settings[i+1:]:
                 expect(not self.settings[i].is_ambiguous_with(other),
                        "Variable "+self.name+" is set ambiguously in "
-                       "config_build.xml. Check the file for these "
+                       "config_compilers.xml. Check the file for these "
                        "conflicting settings: \n1: {}\n2: {}".format(
                            self.settings[i].conditions, other.conditions))
 
