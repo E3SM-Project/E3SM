@@ -553,7 +553,7 @@ class EnvBatch(EnvBase):
         if not batch_env_flag:
             return run_args_str
         else:
-            return "{} ARGS_FOR_SCRIPT='{}'".format(batch_env_flag, run_args_str)
+            return "{} ARGS_FOR_SCRIPT=\'{}\'".format(batch_env_flag, run_args_str)
 
     def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
                            no_batch=False, skip_pnl=False, mail_user=None, mail_type=None,

@@ -468,6 +468,9 @@ using a fortran linker.
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
 </compiler>
+<compiler MACH="bluewaters" COMPILER="intel">
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+</compiler>
 
 <compiler MACH="bluewaters" COMPILER="pgi">
   <CFLAGS>
