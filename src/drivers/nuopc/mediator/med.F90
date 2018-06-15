@@ -59,7 +59,6 @@ module MED
   use med_connectors_mod        , only: med_connectors_post_rof2med
   use med_connectors_mod        , only: med_connectors_post_wav2med
   use med_connectors_mod        , only: med_connectors_post_glc2med
-  use med_phases_mod            , only: med_phases_init 
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_map
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_merge
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_fast
@@ -812,8 +811,10 @@ contains
 
             if (geomtype == ESMF_GEOMTYPE_GRID) then
 
-               call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (dbug_flag > 1) then
+                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               end if
 
                call ESMF_AttributeGet(field, name="ArbDimCount", value=arbDimCount, &
                     convention="NUOPC", purpose="Instance", rc=rc)
@@ -1030,8 +1031,10 @@ contains
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                   endif
 
-                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
-                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  if (dbug_flag > 1) then
+                     call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  end if
                enddo
 
             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
@@ -1041,8 +1044,10 @@ contains
                        ESMF_LOGMSG_INFO, rc=dbrc)
                end if
 
-               call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (dbug_flag > 1) then
+                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               end if
 
             else  ! geomtype
 
@@ -1140,11 +1145,13 @@ contains
         call shr_nuopc_methods_State_reset(is_local%wrap%NStateExp(n1), value=spval_init, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call shr_nuopc_methods_State_GeomPrint(is_local%wrap%NStateExp(n1),'gridExp'//trim(compname(n1)),rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        if (dbug_flag > 1) then
+           call shr_nuopc_methods_State_GeomPrint(is_local%wrap%NStateExp(n1),'gridExp'//trim(compname(n1)),rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call shr_nuopc_methods_State_GeomWrite(is_local%wrap%NStateExp(n1), 'grid_med_'//trim(compname(n1)), rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           call shr_nuopc_methods_State_GeomWrite(is_local%wrap%NStateExp(n1), 'grid_med_'//trim(compname(n1)), rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        end if
       endif
     enddo
 
@@ -1191,8 +1198,10 @@ contains
 
           if (geomtype == ESMF_GEOMTYPE_GRID .and. fieldName /= flds_scalar_name) then
             ! Grab grid
-            call shr_nuopc_methods_Field_GeomPrint(fieldList(n),trim(fieldName)//'_premesh',rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (dbug_flag > 1) then
+               call shr_nuopc_methods_Field_GeomPrint(fieldList(n),trim(fieldName)//'_premesh',rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
             call ESMF_FieldGet(fieldList(n), grid=grid, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1218,8 +1227,10 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif   ! fieldStatus
 
-          call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (dbug_flag > 1) then
+             call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
 
         enddo
         deallocate(fieldList)

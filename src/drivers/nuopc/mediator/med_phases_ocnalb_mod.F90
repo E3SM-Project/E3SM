@@ -183,18 +183,13 @@ contains
        allocate(ocnalb%lons(numOwnedElements))
        allocate(ocnalb%lats(numOwnedElements))
        call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
-          !TODO: the following is only needed for MOM6 until ESMF is updated - uncomment if you are using MOM6
-          ocnalb%lons(:) = 0.0
-          ocnalb%lats(:) = 0.0
-       else
-          do n = 1,lsize
-             ocnalb%lons(n) = ownedElemCoords(2*n-1)
-             ocnalb%lats(n) = ownedElemCoords(2*n)
-          end do
-       end if
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       do n = 1,lsize
+          ocnalb%lons(n) = ownedElemCoords(2*n-1)
+          ocnalb%lats(n) = ownedElemCoords(2*n)
+       end do
     else
-      call ESMF_LogWrite(trim(subname)//": ERROR FBATM must be either on a grid or a mesh", ESMF_LOGMSG_INFO, rc=rc)
+      call ESMF_LogWrite(trim(subname)//": ERROR field bundle must be either on mesh", ESMF_LOGMSG_INFO, rc=rc)
       rc = ESMF_FAILURE
       return
     end if
