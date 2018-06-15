@@ -1093,6 +1093,10 @@ for mct, etc.
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="snl-white">
+  <ADD_LDFLAGS MODEL="driver">-lhdf5_hl -ldl -lz -lpnetcdf -lhdf5</ADD_LDFLAGS>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="summit">
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
