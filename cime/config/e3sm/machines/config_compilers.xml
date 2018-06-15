@@ -1792,6 +1792,10 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC> pgfortran </SFC>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="snl-white">
+  <ADD_LDFLAGS MODEL="driver">-lhdf5_hl -ldl -lz -lpnetcdf -lhdf5</ADD_LDFLAGS>
+</compiler>
+
 <compiler MACH="summitdev" COMPILER="ibm">
   <CONFIG_ARGS>
     <base> --host=Linux </base>
