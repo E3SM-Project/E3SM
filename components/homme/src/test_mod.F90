@@ -181,6 +181,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   use dcmip12_wrapper, only:  dcmip2012_test2_x_forcing
   use held_suarez_mod, only: hs_forcing
+  use control_mod,     only: ftype
   implicit none
   type(element_t),  intent(inout) :: elem(:)                            ! element array
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
@@ -189,7 +190,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
   integer,          intent(in)    :: nets,nete,nt,ntQ
   type(TimeLevel_t),intent(in)    :: tl
 
-  integer :: ie,q
+  integer :: ie,q,k
+  real (kind=real_kind) :: dp(np,np)
 
   ! zero out forcing terms
   do ie=nets,nete
@@ -217,6 +219,22 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
        enddo
 
   endselect
+
+
+  if(ftype == 3) then
+    !initialize dp3d from ps
+    do ie=nets,nete
+      do k=1,nlev
+        dp(:,:)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
+        elem(ie)%derived%FT(:,:,k) = elem(ie)%derived%FT(:,:,k) * dp(:,:)
+        elem(ie)%derived%FM(:,:,1,k) = elem(ie)%derived%FM(:,:,1,k) * dp(:,:)
+        elem(ie)%derived%FM(:,:,2,k) = elem(ie)%derived%FM(:,:,2,k) * dp(:,:)
+      enddo
+    enddo
+  endif
+    
+
 
 end subroutine
 
