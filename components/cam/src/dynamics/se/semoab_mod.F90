@@ -26,6 +26,7 @@ module semoab_mod
 
   integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
   integer, target, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
+  integer                         num_calls_export
 
 #include "moab/MOABConfig.h"
   
@@ -464,6 +465,9 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
 
+     ! initialize
+     num_calls_export = 0
+
      ! deallocate
      deallocate(moabvh)
 !     deallocate(moabconn) keep it , it is useful to set the tag on fine mesh
@@ -489,8 +493,10 @@ contains
     integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
 
     real(kind=real_kind), allocatable, target :: valuesTag(:)
-    character*100 outfile, wopts, tagname
+    character*100 outfile, wopts, tagname, lnum
 
+    ! count number of calls
+    num_calls_export = num_calls_export + 1
     ierr  = iMOAB_GetMeshInfo ( MHID, nvert, nvise, nbl, nsurf, nvisBC );
     ! find out the number of local elements in moab mesh
     num_elem = nvise(1)
@@ -544,8 +550,8 @@ contains
       call endrun('Error: fail to set a2oTAG tag for coarse elements')
 
     !     write out the mesh file to disk, in parallel
-    outfile = 'wholeFineATM_T.h5m'//CHAR(0)
-
+    write(lnum,"(I0.2)")num_calls_export
+    outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
     ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the fine mesh file, with a temperature on it')

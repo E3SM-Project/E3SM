@@ -528,10 +528,11 @@ CONTAINS
        call atm_export( cam_out, a2x_a%rattr )
        call t_stopf ('CAM_export')
        
+    end do
+
 #ifdef HAVE_MOAB
        call cam_moab_export()
 #endif
-    end do
 
     ! Get time of next radiation calculation - albedos will need to be 
     ! calculated by each surface model at this time
