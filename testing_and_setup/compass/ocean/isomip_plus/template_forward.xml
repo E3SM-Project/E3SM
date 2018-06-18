@@ -39,6 +39,8 @@
 		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
 		<option name="config_check_ssh_consistency">.false.</option>
 		<option name="config_AM_timeSeriesStatsMonthly_enable">.true.</option>
+		<option name="config_pio_num_iotasks">2</option>
+		<option name="config_pio_stride">68</option>
 	</namelist>
 
 	<streams>
