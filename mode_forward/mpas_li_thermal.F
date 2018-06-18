@@ -928,7 +928,7 @@ module li_thermal
             allocate(superdiagonal(nVertLevels+2))
             allocate(rhs(nVertLevels+2))
             allocate(solution(nVertLevels+2))
-            allocate(diffusivity(nVertLevels+1))
+            allocate(diffusivity(nVertLevels+2))
 
             if (config_print_thermal_info) then
                call mpas_log_write(' ')
@@ -2047,7 +2047,7 @@ module li_thermal
 
       do k = 1, nVertLevels
          enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
-                      + waterfrac(k) * rho_water * (cp_ice * (pmpTemperature(k)+kelvin_to_celsius) + latent_heat_ice)
+                      + waterfrac(k) * rhoi * (cp_ice * (pmpTemperature(k)+kelvin_to_celsius) + latent_heat_ice)
       end do
 
     end subroutine li_temperature_to_enthalpy_kelvin
@@ -2114,7 +2114,7 @@ module li_thermal
 
       do k = 1, nVertLevels
          enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
-                      + waterfrac(k) * rho_water * (cp_ice * pmpTemperature(k) + latent_heat_ice)
+                      + waterfrac(k) * rhoi * (cp_ice * pmpTemperature(k) + latent_heat_ice)
       end do
 
     end subroutine li_temperature_to_enthalpy
@@ -2214,7 +2214,7 @@ module li_thermal
          if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
             temperature(k) = pmpTemperature(k)
             waterfrac(k) = (enthalpy(k) - pmpenthalpy(k)) /        &
-                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rho_water*latent_heat_ice)
+                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rhoi *latent_heat_ice)
          else   ! cold ice
             temperature(k) = enthalpy(k) / (rhoi*cp_ice)
             waterfrac(k) = 0.0_RKIND
@@ -2351,7 +2351,7 @@ module li_thermal
          if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
             temperature(k) = (pmpTemperature(k)+kelvin_to_celsius)
             waterfrac(k) = (enthalpy(k) - pmpEnthalpy(k)) /        &
-                          ((rho_water-rhoi)*cp_ice*(pmpTemperature(k)+kelvin_to_celsius) + rho_water*latent_heat_ice)
+                          ((rho_water-rhoi)*cp_ice*(pmpTemperature(k)+kelvin_to_celsius) + rhoi *latent_heat_ice)
          else   ! cold ice
             temperature(k) = enthalpy(k) / (rhoi*cp_ice)
             waterfrac(k) = 0.0_RKIND
@@ -2673,7 +2673,7 @@ module li_thermal
                                     ! if false, take the arithmetic average
 
       diffusivityCold = iceConductivity / (rhoi*cp_ice)
-      diffusivityTemperate = diffusivityCold / 1.0_RKIND
+      diffusivityTemperate = diffusivityCold / 1.0e5_RKIND
 
       ! set enthalpy at surface and bed
       surfaceEnthalpy = surfaceTemperature * rhoi*cp_ice
@@ -2745,24 +2745,13 @@ module li_thermal
 
          dEnthalpyTemp = enthalpyTemp(k) - enthalpyTemp(k-1)   ! = dEnthalpy in cold ice, < dEnthalpy in temperate ice
 
-         !if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
-         !   avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
-         !   avgFactor = min(1.0_RKIND, avgFactor)
-         !else
-         !   avgFactor = 0.0_RKIND
-         !endif
-         ! I think the above lines are probably problematic...
-
-         if (abs(dEnthalpy) > 0.0_RKIND) then
-             if (dEnthalpyTemp/dEnthalpy == 1) then
-                 avgFactor = 1
-             else
-                 avgFactor = 1
-             endif
+         if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
+            avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
+            avgFactor = min(1.0_RKIND, avgFactor)
+            !call mpas_log_write('avgFactor dEnthalpy $i $r', intArgs=(/k/), realArgs=(/dEnthalpyTemp/dEnthalpy/))
          else
-             avgFactor = 1
+            avgFactor = 0.0_RKIND
          endif
-         ! Always use diffusivityCold
 
          if (harmonic_avg) then  ! take a harmonic average
                                  ! This gives slower cooling of temperate layers and allows
@@ -2771,11 +2760,11 @@ module li_thermal
          else   ! take an arithmetic average
                 ! This gives faster cooling of temperate layers and smaller gradients
             diffusivity(k) = avgFactor*diffusivityCold + (1.0_RKIND - avgFactor)*diffusivityTemperate
-            diffusivity(k) = diffusivityCold 
-            ! Not sure if we need diffusivityTemperate. I think we can just use diffusivityCold for everywhere. 
+            !call mpas_log_write('avgFactor diffusivity $r $r', realArgs=(/avgFactor, diffusivity(k)/))
          endif
 
       end do
+
 
       ! Compute subdiagonal, diagonal, and superdiagonal matrix elements
       ! Assume backward Euler time stepping
@@ -2784,16 +2773,29 @@ module li_thermal
       subd(1) = 0.0_RKIND
       diag(1) = 1.0_RKIND
       supd(1) = 0.0_RKIND
-      rhs(1)  = surfaceEnthalpy
+      rhs(1)  = 910.0*2009.0*(-3)
+      !rhs(1)  = surfaceEnthalpy
 
       ! ice interior, layers 1:nVertLevels  (matrix elements 2:nVertLevels+1)
 
       factor = deltat / thickness**2
 
-      subd(2:nVertLevels+1) = -factor * diffusivityCold   * dsigmaTerm(1:nVertLevels,1)
-      supd(2:nVertLevels+1) = -factor * diffusivityCold * dsigmaTerm(1:nVertLevels,2)
+      !subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels)   * dsigmaTerm(1:nVertLevels,1)
+      supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1)   * dsigmaTerm(1:nVertLevels,2)
+      !supd(2:nVertLevels+1) = -factor * (diffusivity(2:nVertLevels+1) * dsigmaTerm(1:nVertLevels,2) &
+      !    -0.2/scyr*sqrt(dsigmaTerm(1:nVertLevels,2))*thickness)
+      subd(2:nVertLevels+1) = -factor * (diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1) &
+          +0.2/scyr*sqrt(dsigmaTerm(1:nVertLevels,1))*thickness)
       diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
-      rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
+      rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + 0*heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice + &
+          2.0_RKIND*5.3e-24_RKIND*((910.0_RKIND*9.81_RKIND*sin(4.0_RKIND*pii/180.0_RKIND))**4)*((thickness*layerCenterSigma(1:nVertLevels))**4)*deltat
+
+      do k = 2, nVertLevels+1
+            call mpas_log_write('layerCentersigma $r', realArgs=(/layerCenterSigma(k)/))
+      enddo
+        
+
+      
 
       ! Note: heatDissipation has units of phi/rhoi/cp_ice, where phi has units of W m^-3..
       ! For an enthalpy calculation, we want just phi, hence heatDissipation * rhoi * cp_ice
@@ -2814,28 +2816,32 @@ module li_thermal
 
       else    ! grounded ice
 
-           call mpas_log_write('basalTemperature, pmpTemperatureBed $r $r', realArgs=(/basalTemperature, pmpTemperatureBed/))
+     !      call mpas_log_write('basalTemperature, pmpTemperatureBed $r $r', realArgs=(/basalTemperature, pmpTemperatureBed/))
 
-         !if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
+         if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
 
             ! Positive-thickness basal temperate boundary Layer
             !WHL - Not sure whether this condition is ideal. It implies that basalEnthalpy = enthalpy(nVertLevels).
 
-         !   subd(nVertLevels+2) = -1.0_RKIND
-         !   diag(nVertLevels+2) =  1.0_RKIND
-         !   supd(nVertLevels+2) =  0.0_RKIND
-         !   rhs(nVertLevels+2)  =  0.0_RKIND
+            subd(nVertLevels+2) = -1.0_RKIND
+            diag(nVertLevels+2) =  1.0_RKIND
+            supd(nVertLevels+2) =  0.0_RKIND
+            rhs(nVertLevels+2)  =  0.0_RKIND
 
          ! Don't need this for now
 
-         if (abs(basalTemperature -  pmpTemperatureBed) < 0.001_RKIND) then  ! melting
+         elseif (abs(basalTemperature -  pmpTemperatureBed) < 0.001_RKIND) then  ! melting
+        !    call mpas_log_write("basalT pmpT  $r $r", realArgs=(/basalTemperature, pmpTemperature/))
 
             ! Zero-thickness basal temperate boundary layer
             ! Hold basal temperature at pressure melting point
             subd(nVertLevels+2) = 0.0_RKIND
             diag(nVertLevels+2) = 1.0_RKIND
+         !   diag(nVertLevels+2) = -2.0_RKIND
             supd(nVertLevels+2) = 0.0_RKIND
+         !   supd(nVertLevels+2) = 3.0_RKIND
             rhs(nVertLevels+2)  = pmpTemperatureBed * rhoi*cp_ice
+         !   rhs(nVertLevels+2)  = 0
 
          else  ! cold ice at bed
 
@@ -2972,7 +2978,7 @@ module li_thermal
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
 
       real(kind=RKIND), parameter :: &
-           maxWaterfrac = 0.01_RKIND       ! maximum allowed water fraction; excess drains to bed
+           maxWaterfrac = 0.10_RKIND       ! maximum allowed water fraction; excess drains to bed
 
       real(kind=RKIND), parameter :: &
            eps11 = 1.0e-11_RKIND           ! small number
@@ -3103,9 +3109,9 @@ module li_thermal
             ! Note: I don't think energy conservation is violated here, because no energy is associated with
             !       the infinitesimally thin layer at the bed.
 
-            !if (groundedBasalMassBal(iCell) > 0.0_RKIND .and. basalWaterThickness(iCell) == 0.0_RKIND .and. &
-            !     basalTemperature(iCell) >= pmpTemperatureBed) then
-            if (basalWaterThickness(iCell) == 0.0_RKIND .and. basalTemperature(iCell) >= pmpTemperatureBed) then
+            if (groundedBasalMassBal(iCell) > 0.0_RKIND .and. basalWaterThickness(iCell) == 0.0_RKIND .and. &
+                 basalTemperature(iCell) >= pmpTemperatureBed) then
+            !if (basalWaterThickness(iCell) == 0.0_RKIND .and. basalTemperature(iCell) >= pmpTemperatureBed) then
                basalTemperature(iCell) = pmpTemperatureBed - 0.01_RKIND
             endif
 

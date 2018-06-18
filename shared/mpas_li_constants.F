@@ -42,11 +42,11 @@ module li_constants
    ! physical constants
    real (kind=RKIND), parameter, public :: cp_ice = 2009.0_RKIND        !< heat capacity of ice (J/kg/K)
    real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0e3_RKIND !< Latent heat of melting of ice (J/kg)
-   real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
+   real (kind=RKIND), parameter, public :: triple_point = 273.15_RKIND  !< Triple point of water (K)
    real (kind=RKIND), parameter, public :: rho_water = 1000.0_RKIND     !< Density of fresh water (kg m^-3)
    real (kind=RKIND), parameter, public :: cp_freshwater = 4.188e3_RKIND        !< heat capacity of freshwater (J/kg/K)
    real (kind=RKIND), parameter, public :: pii = 3.141592653589793_RKIND !< Constant: Pi
-   real (kind=RKIND), parameter, public :: gravity = 9.80616_RKIND       !< Constant: Acceleration due to gravity [m s-2]
+   real (kind=RKIND), parameter, public :: gravity = 9.81_RKIND       !< Constant: Acceleration due to gravity [m s-2]
 
 #endif
 
@@ -62,11 +62,11 @@ module li_constants
                                                            !< http://www.csgnetwork.com/h2ofreezecalc.html (25 Nov. 2014)
 
    real (kind=RKIND), parameter, public :: &
-        iceMeltingPointPressureDependence = 9.7456e-8_RKIND  ! Dependence of ice melting point on pressure (K Pa^-1)
+        iceMeltingPointPressureDependence = 0.0e-8_RKIND  ! Dependence of ice melting point on pressure (K Pa^-1)
 
    !  conversion factors
    real (kind=RKIND), parameter, public :: kelvin_to_celsius = 273.15_RKIND    !< factor to convert Kelvin to Celsius
-   real (kind=RKIND), parameter, public :: scyr = 31536000.0_RKIND       !< seconds in a 365-day year; used for diagnostics
+   real (kind=RKIND), parameter, public :: scyr = 31556926.0_RKIND       !< seconds in a 365-day year; used for diagnostics
    real (kind=RKIND), parameter, public :: seconds_per_day = 86400.0_RKIND  !< Conversion from days to seconds
 
 !***********************************************************************
