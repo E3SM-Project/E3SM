@@ -3492,6 +3492,10 @@ contains
                   mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
                   timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
                   timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
+#ifdef HAVE_MOAB
+            ! will migrate the tag from component pes to coupler pes, on atm mesh
+            call prep_atm_migrate_moab(infodata)
+#endif
           endif
 
           !----------------------------------------------------------

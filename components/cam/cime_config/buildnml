@@ -87,8 +87,9 @@ def buildnml(case, caseroot, compname):
         ocn = "pop" if (comp_ocn == "docn" and case.get_value("DOCN_MODE") == "som") else comp_ocn
 
         comp = ""
-        if comp_interface == "mct" or comp_interface == "moab":  comp = "mct"
+        if comp_interface == "mct":  comp = "mct"
         if comp_interface == "esmf": comp = "esmf"
+        if comp_interface == "moab":  comp = "moab"
 
         cam_lib_dirs = "-cosp_libdir {}/atm/obj/cosp".format(exeroot) if "cosp" in cam_config_opts else ""
 

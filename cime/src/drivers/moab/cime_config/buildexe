@@ -39,7 +39,7 @@ def _main_func():
 
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
-        out.write(os.path.join(cimeroot, "src", "drivers", "mct", "main") + "\n")
+        out.write(os.path.join(cimeroot, "src", "drivers", "moab", "main") + "\n")
 
     # build model executable
 

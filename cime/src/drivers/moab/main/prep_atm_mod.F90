@@ -53,7 +53,7 @@ module prep_atm_mod
   public :: prep_atm_get_mapper_Fi2a
 
 #ifdef HAVE_MOAB
-  public :: prep_atm_ocn_moab
+  public :: prep_atm_ocn_moab, prep_atm_migrate_moab
 #endif
 
   !--------------------------------------------------------------------------
@@ -311,6 +311,83 @@ contains
     endif
 
   end subroutine prep_atm_ocn_moab
+
+  subroutine prep_atm_migrate_moab(infodata)
+  !---------------------------------------------------------------
+    ! Description
+    ! After a2oTAG was loaded on atm mesh, it needs to be migrated to the coupler pes, for weight application later
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    integer :: ierr
+
+    logical                          :: atm_present    ! .true.  => atm is present
+    logical                          :: ocn_present    ! .true.  => ocn is present
+    integer                  :: id_join
+    integer                  :: mpicom_join
+    integer                  :: atmid
+    character*32             :: dm1, dm2, tagName
+    character*32             :: outfile, wopts, tagnameProj
+    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
+
+    integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
+
+    call seq_infodata_getData(infodata, &
+         atm_present=atm_present,       &
+         ocn_present=ocn_present)
+
+  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
+  !  intx ocean atm are in mbintxoa ; remapper also has some info about coverage mesh
+  ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
+  ! how to get mpicomm for joint atm + coupler
+    id_join = atm(1)%cplcompid
+    atmid   = atm(1)%compid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+
+
+    ! now send the tag a2oTAG from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
+    tagName = 'a2oTAG'//CHAR(0) ! it is defined in semoab_mod.F90!!!
+    tagNameProj = 'a2oTAG_proj'//CHAR(0)
+    if (mhid .ge. 0) then !  send because we are on atm pes
+
+      ! basically, adjust the migration of the tag we want to project; it was sent initially with
+      ! trivial partitioning, now we need to adjust it for "coverage" mesh
+      ! as always, use nonblocking sends
+
+       ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join)
+
+    endif
+    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+      ! receive on atm on coupler pes, that was redistributed according to coverage
+       ierr = iMOAB_ReceiveElementTag(mbaxid, id_join, atmid, tagName, mpicom_join)
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+    ! we can now free the sender buffers
+    if (mhid .ge. 0) then
+       ierr = iMOAB_FreeSenderBuffers(mhid, mpicom_join, id_join)
+       ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+    endif
+
+    ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
+    ! the actual migrate could happen later , from coupler pes to the ocean pes
+    if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
+      ! we could apply weights
+      ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, tagName, tagNameProj)
+
+      ! we can also write the ocean mesh to file, just to see the projectd tag
+      !      write out the mesh file to disk
+      outfile = 'ocn_proj.h5m'//CHAR(0)
+      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+  end subroutine prep_atm_migrate_moab
 #endif
 
   !================================================================================================

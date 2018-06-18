@@ -505,7 +505,7 @@ contains
     mpoid = -1
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
-    mbint
+    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
 #endif
     deallocate(comps,comms)
 
