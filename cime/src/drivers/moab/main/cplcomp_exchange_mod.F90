@@ -999,10 +999,11 @@ contains
     integer                  :: mpigrp_cplid ! coupler pes
     integer                  :: mpigrp_old   !  component group pes
     integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
-    integer, external        :: iMOAB_WriteMesh
+    integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage
     integer                  :: ierr
-    character*32             :: appname, outfile, wopts
+    character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO ! max pids for moab apps
+    integer                  :: tagtype, numco,  tagindex
 
     !-----------------------------------------------------
 
@@ -1025,14 +1026,14 @@ contains
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO
     endif
-    ! this works now for atmosphere only;
+    ! this works now for atmosphere;
     if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
       ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_new);
+        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
@@ -1052,7 +1053,7 @@ contains
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_new);
+        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
@@ -1062,6 +1063,13 @@ contains
         ! debug test
         outfile = 'recMeshOcn.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+
+        ! define here the tag that will be projected from atmosphere
+        tagnameProj = 'a2oTAG_proj'//CHAR(0)
+        tagtype = 1  ! dense, double
+        numco = 1 !  one value per cell
+        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
       endif
