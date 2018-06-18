@@ -123,7 +123,7 @@ contains
     !  the following will be replaced with something more general. Jinyun Tang
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
      call get_proc_bounds(bounds_proc)
-     call ep_betr%readParams(ncid, bounds_proc)
+     call ep_betr%readParams(bounds_proc)
      call readCNAllocBeTRParams(ncid)
     endif
 
