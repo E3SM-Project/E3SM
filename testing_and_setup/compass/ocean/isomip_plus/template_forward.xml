@@ -25,8 +25,8 @@
 		<option name="config_land_ice_flux_boundaryLayerThickness">10.0</option>
 		<option name="config_land_ice_flux_topDragCoeff">2.5e-3</option>
 		<option name="config_land_ice_flux_rms_tidal_velocity">1e-2</option>
-		<option name="config_land_ice_flux_jenkins_heat_transfer_coefficient">0.0146</option>
-		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">0.00041785579</option>
+		<option name="config_land_ice_flux_jenkins_heat_transfer_coefficient">0.0184</option>
+		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">0.00052478511</option>
 		<option name="config_implicit_bottom_drag_coeff">2.5e-3</option>
 		<option name="config_eos_type">'linear'</option>
 		<option name="config_eos_linear_alpha">0.03836</option>
