@@ -808,6 +808,11 @@ contains
 
 
 !  the following parameter are defined uniformly for all grids
+     km_decomp_nh4                => veg_vp%km_decomp_nh4                         , &
+     km_decomp_no3                => veg_vp%km_decomp_no3                         , &
+     km_decomp_p                  => veg_vp%km_decomp_p                           , &
+     km_nit                       => veg_vp%km_nit                                , &
+     km_den                       => veg_vp%km_den                                , &
 
      km_plant_nh4                 => veg_vp%km_plant_nh4                          , &
      km_plant_no3                 => veg_vp%km_plant_no3                          , &
@@ -823,8 +828,17 @@ contains
      plant_p_km_vr_patch          => PlantMicKinetics_vars%plant_p_km_vr_patch        , & !
      vmax_minsurf_p_vr_col        => PlantMicKinetics_vars%vmax_minsurf_p_vr_col      , & !
      km_minsurf_p_vr_col          => PlantMicKinetics_vars%km_minsurf_p_vr_col        , &
+     km_den_no3_vr_col            => PlantMicKinetics_vars%km_den_no3_vr_col          , &
+     km_nit_nh4_vr_col            => PlantMicKinetics_vars%km_nit_nh4_vr_col          , &
+     km_decomp_p_vr_col           => PlantMicKinetics_vars%km_decomp_p_vr_col         , &
+     km_decomp_nh4_vr_col         => PlantMicKinetics_vars%km_decomp_nh4_vr_col       , &
+     km_decomp_no3_vr_col         => PlantMicKinetics_vars%km_decomp_no3_vr_col       , &
      plant_eff_ncompet_b          => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch  , &
      plant_eff_pcompet_b          => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch  , &
+     decomp_eff_ncompet_b         => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
+     decomp_eff_pcompet_b         => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
+     den_eff_ncompet_b            => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col   , &
+     nit_eff_ncompet_b            => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col   , &
      minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
      minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &
      km_minsurf_nh4_vr_col        => PlantMicKinetics_vars%km_minsurf_nh4_vr_col      , &
@@ -854,15 +868,11 @@ contains
         leaf_totc=leafc(p) + leafc_storage(p) + leafc_xfer(p)
         leaf_totn=leafn(p) + leafn_storage(p) + leafn_xfer(p)
         leaf_totp=leafp(p) + leafp_storage(p) + leafp_xfer(p)
-        if(abs(leaf_totc)<1.e-20_r8)then
-          cn_scalar(p) = 1._r8
-          cp_scalar(p) = 1._r8
-        else
-          cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1.e-20_r8) - leafcn(ivt(p))*(1._r8- cn_stoich_var)) / &
+        cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1.e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
                 (leafcn(ivt(p)) - leafcn(ivt(p))*(1._r8- cn_stoich_var)),0.0_r8),1.0_r8)
-          cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1.e-20_r8) - leafcp(ivt(p))*(1._r8- cp_stoich_var)) / &
-            (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
-        endif
+
+        cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1.e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
+           (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
       else
         cn_scalar(p) = 1._r8
         cp_scalar(p) = 1._r8
@@ -892,6 +902,13 @@ contains
       endif
       !the following is temporary set using alm, in the future, it will be
       !set through the betr_alm interface
+      km_den_no3_vr_col(c,j) = km_den
+      km_nit_nh4_vr_col(c,j) = km_nit
+      km_decomp_p_vr_col(c,j) = km_decomp_p
+      km_decomp_no3_vr_col(c,j) = km_decomp_no3
+      km_decomp_nh4_vr_col(c,j) = km_decomp_nh4
+      decomp_eff_ncompet_b(c,j) = 0._r8
+      decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
           plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) 
@@ -930,9 +947,19 @@ contains
           plant_eff_ncompet_b(p,j) = 0._r8
           plant_eff_pcompet_b(p,j) = 0._r8
         end if
+        !effective n competing decomposers
+        decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
+              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
+        !effective p competing decomposers
+        decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
+              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
 
       end do
 
+
+      !lines below are a crude approximation
+      den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
+      nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
     enddo
   end do
   end associate
@@ -945,7 +972,7 @@ contains
         cnstate_vars, carbonstate_vars, carbonflux_vars     , &
         c13_carbonflux_vars, c14_carbonflux_vars            , &
         nitrogenstate_vars, nitrogenflux_vars               , &
-        phosphorusstate_vars, phosphorusflux_vars, crop_vars)
+        phosphorusstate_vars, phosphorusflux_vars,crop_vars)
     !! PHASE-3 of CNAllocation: start new pft loop to distribute the available N/P between the
     ! competing patches on the basis of relative demand, and allocate C/N/P to new growth and storage
 
@@ -969,7 +996,7 @@ contains
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
 !    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(crop_type)          , intent(inout)    :: crop_vars
+    type(crop_type)          , intent(inout)  :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
@@ -1441,10 +1468,10 @@ contains
             nlc_adjust_high = nlc_adjust_high + max((leafp(p)+leafp_storage(p) + leafp_xfer(p))* cpl *  (1 + cp_stoich_var ) - &
                   (leafc(p)+leafc_storage(p) + leafc_xfer(p)),0.0_r8)/dt ! upper bound of allocatable C to leaf account for offsetting current leaf N deficit
          else !  CNP mode
-            nlc_adjust_high = min(plant_nalloc(p) / n_allometry(p) * (1 + cn_stoich_var ) + max((leafn(p)+leafn_storage(p) &
-                 + leafn_xfer(p))* cnl *  (1 + cn_stoich_var ) - (leafc(p)+leafc_storage(p) + leafc_xfer(p)),0.0_r8)/dt, &
-                  plant_palloc(p) / p_allometry(p) * (1 + cp_stoich_var ) + max((leafp(p)+leafp_storage(p) + leafp_xfer(p))* cpl &
-                  *  (1 + cp_stoich_var ) - (leafc(p)+leafc_storage(p) + leafc_xfer(p)),0.0_r8)/dt)
+            nlc_adjust_high = min(plant_nalloc(p) / n_allometry(p) * (1 + cn_stoich_var ) + max((leafn(p)+leafn_storage(p) + leafn_xfer(p))* cnl *  (1 + cn_stoich_var ) - &
+                  (leafc(p)+leafc_storage(p) + leafc_xfer(p)),0.0_r8)/dt, &
+                  plant_palloc(p) / p_allometry(p) * (1 + cp_stoich_var ) + max((leafp(p)+leafp_storage(p) + leafp_xfer(p))* cpl *  (1 + cp_stoich_var ) - &
+                  (leafc(p)+leafc_storage(p) + leafc_xfer(p)),0.0_r8)/dt)
          end if
 
          ! calculate excess carbon
