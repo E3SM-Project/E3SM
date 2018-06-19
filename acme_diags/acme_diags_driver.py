@@ -92,6 +92,11 @@ def main():
     parser = ACMEParser()
     args = parser.view_args()
 
+    # There weren't any arguments defined
+    if not any(getattr(args, arg) for arg in vars(args)):
+        parser.print_help()
+        sys.exit()
+
     if args.parameters and not args.other_parameters:  # -p only
         cmdline_parameter = parser.get_cmdline_parameters()
         # If just a -p with no command line parameters, check the py for errors
@@ -174,4 +179,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
