@@ -11,7 +11,7 @@ module CNStateType
   use clm_varcon     , only : spval, ispval, c14ratio, grlnd
   use landunit_varcon, only : istsoil, istcrop
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
-  use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
+  use clm_varctl     , only : use_vertsoilc, use_c14, use_cn, use_betr
   use clm_varctl     , only : iulog, fsurdat
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
@@ -171,7 +171,7 @@ module CNStateType
      logical           :: pdatasets_present          ! surface dataset has p pools info
      !!! annual mortality rate dynamically calcaulted at patch
      real(r8), pointer :: r_mort_cal_patch                 (:)     ! patch annual mortality rate  
-
+     integer , pointer :: lithoclass_col(:)
    contains
 
      procedure, public  :: Init         
@@ -355,7 +355,7 @@ contains
     allocate(fert_start                       (begc:endc))                   ; fert_start    (:) = 0
     allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
     allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = nan
-
+    allocate(this%lithoclass_col              (begc:endc))                   ; this%lithoclass_col(:) = -999
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -793,6 +793,18 @@ contains
        end do 
     end if
 
+    if(use_betr)then
+       allocate(soilorder_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='lithological_class', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%lithoclass_col(c) = soilorder_rdin(g)
+       end do
+       deallocate(soilorder_rdin)
+    endif
     ! --------------------------------------------------------------------
     ! forest fertilization experiments info, Q. Z. 2017
     ! --------------------------------------------------------------------

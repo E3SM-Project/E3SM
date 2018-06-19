@@ -2287,14 +2287,14 @@ contains
         this%fire_ploss_col(c) = this%fire_ploss_p2c_col(c)  + this%fire_decomp_ploss_col(c)
      end do
      ! vertically integrate inorganic P flux
-     do j = 1, nlevdecomp
-        do fc = 1,num_soilc
-           c = filter_soilc(fc)
-           this%primp_to_labilep_col(c) = &
-                this%primp_to_labilep_col(c) + &
-                this%primp_to_labilep_vr_col(c,j) * dzsoi_decomp(j)
-        end do
-     end do
+!     do j = 1, nlevdecomp
+!        do fc = 1,num_soilc
+!           c = filter_soilc(fc)
+!           this%primp_to_labilep_col(c) = &
+!                this%primp_to_labilep_col(c) + &
+!                this%primp_to_labilep_vr_col(c,j) * dzsoi_decomp(j)
+!        end do
+!     end do
 
      do fc = 1,num_soilc
         c = filter_soilc(fc)
