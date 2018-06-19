@@ -15,10 +15,15 @@ from acme_diags.plot import get_colormap
 plotTitle = {'fontsize': 11.5}
 plotSideTitle = {'fontsize': 9.0}
 
+# Position and sizes of subplot axes in page coordinates (0 to 1)
 panel = [(0.27, 0.65, 0.3235, 0.25),
          (0.27, 0.35, 0.3235, 0.25),
          (0.27, 0.05, 0.3235, 0.25),
          ]
+
+# Border padding relative to subplot axes for saving individual panels
+# (left, bottom, right, top) in page coordinates
+border = (-0.02, -0.01, 0.14, 0.04)
 
 
 def add_cyclic(var):
@@ -179,3 +184,23 @@ def plot(reference, test, diff, metrics_dict, parameter):
         plt.savefig(fnm + '.' + f)
         _chown(fnm + '.' + f, parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
+
+    # Save individual subplots
+    for f in parameter.output_format_subplot:
+        fnm = os.path.join(get_output_dir(
+            parameter.current_set, parameter), parameter.output_file)
+        page = fig.get_size_inches()
+        i = 0
+        for p in panel:
+            # Extent of subplot
+            subpage = np.array(p).reshape(2,2)
+            subpage[1,:] = subpage[0,:] + subpage[1,:]
+            subpage = subpage + np.array(border).reshape(2,2)
+            subpage = list(((subpage)*page).flatten())
+            extent = matplotlib.transforms.Bbox.from_extents(*subpage)
+            # Save suplot
+            fname = fnm + '.%i.' %(i) + f
+            plt.savefig(fname, bbox_inches=extent)
+            _chown(fname, parameter.user)
+            print('Sub-plot saved in: ' + fname)
+            i += 1
