@@ -641,17 +641,17 @@ contains
          basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
 
          ! ---
-         ! --- Calculate strain rates on cell centers
-         ! ---
-         call calculate_strain_rates(meshPool, velocityPool, err_tmp)
-         err = ior(err, err_tmp)
-
-         ! ---
          ! --- Remove floating ice where velocity is unrealistically fast
          ! --- (Removed ice is added to calving flux)
          ! --- (TODO: make this a namelist option?)
          ! ---
-         call remove_fast_ice(surfaceSpeed, geometryPool)
+         call remove_fast_ice(meshPool, surfaceSpeed, basalSpeed, normalVelocity, geometryPool)
+
+         ! ---
+         ! --- Calculate strain rates on cell centers
+         ! ---
+         call calculate_strain_rates(meshPool, velocityPool, err_tmp)
+         err = ior(err, err_tmp)
 
          block => block % next
       end do
@@ -947,19 +947,22 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine remove_fast_ice(surfaceSpeed, geometryPool)
+   subroutine remove_fast_ice(meshPool, surfaceSpeed, basalSpeed, normalVelocity, geometryPool)
 
       use li_mask
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:) :: surfaceSpeed
+      type (mpas_pool_type), intent(in) :: meshPool
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), intent(inout) :: surfaceSpeed
       type (mpas_pool_type), intent(inout) :: geometryPool
+      real(kind=RKIND), dimension(:), intent(inout) :: basalSpeed
+      real(kind=RKIND), dimension(:,:), intent(inout) :: normalVelocity
 
       !-----------------------------------------------------------------
       ! output variables
@@ -968,19 +971,43 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
       real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
       integer, dimension(:), pointer :: cellMask
       real(kind=RKIND), parameter :: highSpeed = 0.00318471337_RKIND ! 100,000 m/yr in m/s
+      integer :: iCell, iEdgeOnCell, iEdge
+      integer :: cellCount
 
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
 
-      where (li_mask_is_floating_ice(cellMask) .and. (surfaceSpeed > highSpeed))
+
+      cellCount = 0
+      do iCell = 1, nCells
+         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > highSpeed)) then
          ! "fast" ice that is removed is added to the calving flux
-         calvingThickness = calvingThickness + thickness
-         thickness = 0.0_RKIND
-      end where
+            calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+            thickness(iCell) = 0.0_RKIND
+            surfaceSpeed(iCell) = 0.0_RKIND
+            basalSpeed(iCell) = 0.0_RKIND
+            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(iEdgeOnCell,iCell)
+               normalVelocity(:,iEdge) = 0.0_RKIND
+            enddo
+            ! TODO Should also zero temperature/tracers, upper/lowerSurface
+            cellCount = cellCount + 1
+         endif
+      end do
+
+      if (cellCount > 0) then
+         call mpas_log_write("Removed $i cells due to speeds greater than $r m/s.", intArgs=(/cellCount/), realArgs=(/highSpeed/))
+      endif
 
    !--------------------------------------------------------------------
    end subroutine remove_fast_ice
