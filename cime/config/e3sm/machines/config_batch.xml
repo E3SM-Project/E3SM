@@ -509,6 +509,11 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="snl-blake" type="slurm" >
+     <queues>
+       <queue walltimemax="02:00" default="true">blake</queue>
+     </queues>
+   </batch_system>
 
    <batch_system MACH="summitdev" type="lsf" >
      <directives>
