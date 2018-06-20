@@ -82,7 +82,7 @@ _EXCLUDE_FILES = ['archive_metadata','case.build',
                   'archive_files', 'Makefile', 'check_lockedfiles', 'getTiming',
                   'lt_archive.sh', 'mkDepends', 'mkSrcfiles', 'save_provenance',
                   'README.archive','case.qstatus','pelayout','preview_run']
-_EXCLUDE_DIRS = ['archive_files','Tools','.svn','.git']
+_EXCLUDE_DIRS = ['archive_files','Tools','.svn','.git','tmp']
 
 # -------------------------------------------------------------------------------
 class PasswordPromptAction(argparse.Action):
@@ -455,16 +455,21 @@ def check_svn():
     logger.debug('check_svn')
 
     cmd = ['svn','--version']
+    svn_exists = True
     try: 
         result = subprocess.check_output(cmd)
         if 'version' not in result:
             msg = 'SVN is not available. Ignoring SVN update'
             raise SVNException(msg)
+            svn_exists = False
     except subprocess.CalledProcessError as e:
         msg = _SVNError_template.substitute(function='check_svn',cmd=cmd,
                                             error=e.returncode, strerror=e.output)
         logger.info(msg)
         raise SVNException(msg)
+        svn_exists = False
+    
+    return svn_exists
 
 # ---------------------------------------------------------------------
 def create_temp_archive(case_dict):
@@ -489,11 +494,11 @@ def create_temp_archive(case_dict):
     return temp_archive_dir
 
 # ---------------------------------------------------------------------
-def pbs_files(case_dict):
+def get_PBS_files(case_dict):
 # ---------------------------------------------------------------------
     """ return a list of PBS output files from a CESM case
     """
-    logger.debug('pbs_files')
+    logger.debug('get_PBS_files')
 
     files = list()
     tmp_files = list()
@@ -838,22 +843,6 @@ def populate_local_repo(case_dict, ignoreLogs):
                                                 error=e.errno, strerror=e.strerror)
                 logger.warning(msg)
 
-        
-    # add files with casename as the suffix 
-    # commenting out because the files with the casename in them no longer
-    # need to be in the case repo - they're just batch output files
-##    case_files = glob.glob('{0}.*'.format(case_dict['CASE']))
-##    for case_file in case_files:
-##        if os.path.isfile(case_file):
-##            try:
-##                shutil.copy2(case_file, case_dict['archive_temp_dir'])
-##            except OSError as e:
-##                msg = _copy_template.substitute(function='populate_local_repo',
-##                                                source=case_file, dest=case_dict['archive_temp_dir'],
-##                                                error=e.errno, strerror=e.strerror)
-##                logger.warning(msg)
-
-
     # check if ignoreLogs is specified
     if ignoreLogs:
         os.chdir(case_dict['archive_temp_dir'])
@@ -954,34 +943,35 @@ def update_repo(ignoreLogs, case_dict, username, password):
 
     try:
         # check if svn client is installed
-        check_svn()
+        svn_exists = check_svn()
 
-        # check if the case repo exists
-        case_dict['svn_repo_url'] = '{0}/{1}'.format(_SVN_expdb_url, case_dict['CASE'])
-        repo_exists = check_svn_repo(case_dict, username, password)
-        case_dict['archive_temp_dir'] = create_temp_archive(case_dict)
+        if svn_exists:
+            # check if the case repo exists
+            case_dict['svn_repo_url'] = '{0}/{1}'.format(_SVN_expdb_url, case_dict['CASE'])
+            repo_exists = check_svn_repo(case_dict, username, password)
+            case_dict['archive_temp_dir'] = create_temp_archive(case_dict)
 
-        if repo_exists:
-            # need to update trunk and make a new tag
-            last_tag = get_trunk_tag(case_dict, username, password)
-            new_tag = '{0}_{1}'.format(case_dict['CASE'],str(last_tag+1).zfill(4))
-            checkout_repo(case_dict, username, password)
-            update_local_repo(case_dict, ignoreLogs)
-            msg = 'update case metadata for {0} by {1}'.format(case_dict['CASE'],username)
-            checkin_trunk(case_dict, 'ci', msg, username, password)
-            create_tag(case_dict, new_tag, username, password)
-            logger.info('SVN repository trunk updated at URL "%s"', case_dict['svn_repo_url'])
-            logger.info('   and a new trunk tag created for  "%s"', new_tag)
-        else:
-            # create a new case repo
-            new_tag = '{0}_0001'.format(case_dict['CASE'])
-            create_readme(case_dict)
-            populate_local_repo(case_dict, ignoreLogs)
-            msg = 'initial import of case metadata for {0} by {1}'.format(case_dict['CASE'],username)
-            checkin_trunk(case_dict, 'import', msg, username, password)
-            create_tag(case_dict, new_tag, username, password)
-            logger.info('SVN repository imported to trunk URL "%s"', case_dict['svn_repo_url'])
-            logger.info('   and a new trunk tag created for  "%s"', new_tag)
+            if repo_exists:
+                # need to update trunk and make a new tag
+                last_tag = get_trunk_tag(case_dict, username, password)
+                new_tag = '{0}_{1}'.format(case_dict['CASE'],str(last_tag+1).zfill(4))
+                checkout_repo(case_dict, username, password)
+                update_local_repo(case_dict, ignoreLogs)
+                msg = 'update case metadata for {0} by {1}'.format(case_dict['CASE'],username)
+                checkin_trunk(case_dict, 'ci', msg, username, password)
+                create_tag(case_dict, new_tag, username, password)
+                logger.info('SVN repository trunk updated at URL "%s"', case_dict['svn_repo_url'])
+                logger.info('   and a new trunk tag created for  "%s"', new_tag)
+            else:
+                # create a new case repo
+                new_tag = '{0}_0001'.format(case_dict['CASE'])
+                create_readme(case_dict)
+                populate_local_repo(case_dict, ignoreLogs)
+                msg = 'initial import of case metadata for {0} by {1}'.format(case_dict['CASE'],username)
+                checkin_trunk(case_dict, 'import', msg, username, password)
+                create_tag(case_dict, new_tag, username, password)
+                logger.info('SVN repository imported to trunk URL "%s"', case_dict['svn_repo_url'])
+                logger.info('   and a new trunk tag created for  "%s"', new_tag)
 
     except SVNException as e:
         pass
