@@ -1093,6 +1093,11 @@ for mct, etc.
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="snl-blake">
+  <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
+  <ADD_LDFLAGS MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</ADD_LDFLAGS>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="snl-white">
   <ADD_LDFLAGS MODEL="driver">-lhdf5_hl -ldl -lz -lpnetcdf -lhdf5</ADD_LDFLAGS>
 </compiler>
