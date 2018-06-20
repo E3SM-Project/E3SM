@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+"""
+Testmod which sets up a watercycle case which uses HOMMEXX as the dycore rather than HOMME
+"""
+
+import subprocess, sys, os
+
+_CIMEROOT = subprocess.check_output(["./xmlquery", "CIMEROOT"]).split()[1]
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+
+logger = logging.getLogger(__name__)
+
+# CAM_TARGET=preqx_cxx
+# FORCE_BUILD_SMP=TRUE
+# NTHRDS_ATM=2
+
+def _main():
+    logger.info("Setting up the case to be built with HOMMEXX")
+    with Case(os.getcwd()) as case:
+        case.set_value("CAM_TARGET", "preqx_cxx")
+        case.set_value("FORCE_BUILD_SMP", True)
+        #case.set_value("NTHRDS_ATM", 2)
+
+if __name__ == "__main__":
+    _main()
