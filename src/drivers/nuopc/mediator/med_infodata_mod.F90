@@ -17,12 +17,10 @@ module med_infodata_mod
   use esmFlds               , only: flds_scalar_index_rofice_present
   use esmFlds               , only: flds_scalar_index_precip_fact
   use esmFlds               , only: flds_scalar_index_nextsw_cday
-  use esmFlds               , only: flds_scalar_index_dead_comps
   use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
   use med_internalstate_mod , only: logunit, loglevel
 
   implicit none
-
   private  ! default private
 
   ! !PUBLIC TYPES:
@@ -56,20 +54,21 @@ module med_infodata_mod
   ! InputInfo derived type
   type med_infodata_type
      private
+
      !--- set via components and held fixed after initialization ---
-     logical                 :: dead_comps = .false.     ! do we have dead models
-     logical                 :: rofice_present = .false. ! does rof have iceberg coupling on
-     logical                 :: rof_prognostic = .false. ! does rof component need input data
-     logical                 :: flood_present = .false.  ! does rof have flooding on
-     logical                 :: ocnrof_prognostic        ! does component need rof data
+     integer                 :: nx(ncomps) = -1              ! global nx
+     integer                 :: ny(ncomps) = -1              ! global ny
+     logical                 :: rofice_present = .false.     ! does rof have iceberg coupling on
+     logical                 :: rof_prognostic = .false.     ! does rof component need input data
+     logical                 :: flood_present = .false.      ! does rof have flooding on
+     logical                 :: ocnrof_prognostic            ! does component need rof data
      logical                 :: iceberg_prognostic = .false. ! does the ice model support icebergs
-     logical                 :: glclnd_present = .false. ! does glc have land coupling fields on
-     logical                 :: glcocn_present = .false. ! does glc have ocean runoff on
-     logical                 :: glcice_present = .false. ! does glc have iceberg coupling on
+     logical                 :: glclnd_present = .false.     ! does glc have land coupling fields on
+     logical                 :: glcocn_present = .false.     ! does glc have ocean runoff on
+     logical                 :: glcice_present = .false.     ! does glc have iceberg coupling on
      logical                 :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
-                                                         ! (only relevant if glc_present is .true.)
-     integer                 :: nx(ncomps) = -1          ! global nx
-     integer                 :: ny(ncomps) = -1          ! global ny
+                                                             ! (only relevant if glc_present is .true.)
+
      !--- set via components and may be time varying ---
      real(SHR_KIND_R8)       :: nextsw_cday = -1.0_SHR_KIND_R8 ! calendar of next atm shortwave
      real(SHR_KIND_R8)       :: precip_fact =  1.0_SHR_KIND_R8 ! precip factor
@@ -86,11 +85,11 @@ module med_infodata_mod
   character(len=1024)    :: msgString
   character(*),parameter :: u_FILE_u = &
     __FILE__
-  !===============================================================================
 
+!===============================================================================
 CONTAINS
+!===============================================================================
 
-  !===============================================================================
   subroutine med_infodata_init1(infodata)
 
     ! !DESCRIPTION:
@@ -149,7 +148,6 @@ CONTAINS
     type(ESMF_StateItem_Flag)       :: itemType
     real(ESMF_KIND_R8), pointer     :: farrayptr(:,:)
     real(ESMF_KIND_R8)              :: data(flds_scalar_num)
-    logical                         :: dead_comps
     character(len=32)               :: ntype
     character(len=*), parameter     :: subname='(med_infodata_CopyStateToInfodata)'
     !----------------------------------------------------------
@@ -193,7 +191,6 @@ CONTAINS
             infodata%ny(n) = nint(data(flds_scalar_index_ny))
             write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
             call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-            if (infodata%dead_comps .or. nint(data(flds_scalar_index_dead_comps))/=0) infodata%dead_comps = .true.
          endif
       enddo
 
@@ -268,7 +265,6 @@ CONTAINS
     type(ESMF_Field)            :: field
     type(ESMF_StateItem_Flag)   :: ItemType
     real(ESMF_KIND_R8), pointer :: farrayptr(:,:)
-    logical                     :: dead_comps
     real(ESMF_KIND_R8)          :: nextsw_cday, precip_fact
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
@@ -300,27 +296,16 @@ CONTAINS
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-
         farrayptr(1,flds_scalar_index_nextsw_cday) = infodata%nextsw_cday
         farrayptr(1,flds_scalar_index_precip_fact) = infodata%precip_fact
-
-        ! TODO: the following should not be here during run time?
-        if (infodata%dead_comps) then
-           farrayptr(1,flds_scalar_index_dead_comps) = 1._ESMF_KIND_R8
-        else
-           farrayptr(1,flds_scalar_index_dead_comps) = 0._ESMF_KIND_R8
-        end if
-
       endif
+
     endif
 
   end subroutine med_infodata_CopyInfodataToState
 
   !===============================================================================
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
-
-    implicit none
-
     ! Get values out of the infodata object.
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -355,14 +340,14 @@ CONTAINS
 
     if (present(nx)) then
        if (.not.present(ncomp)) then
-          call shr_sys_abort(subname // "Must provide ncmp with nx")
+          call shr_sys_abort(subname // " Must provide nx")
        endif
        nx = infodata%nx(ncomp)
     endif
 
     if (present(ny)) then
        if (.not.present(ncomp)) then
-          call shr_sys_abort(subname // "Must provide ncmp with nx")
+          call shr_sys_abort(subname // "Must provide ny")
        endif
        ny = infodata%ny(ncomp)
     endif

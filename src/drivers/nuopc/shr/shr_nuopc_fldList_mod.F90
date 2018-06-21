@@ -106,13 +106,12 @@ contains
     character(len=*),parameter :: subname = '(shr_nuopc_fldList_concat) '
     !-------------------------------------------------------------------------------
     
-    if (len_trim(concat_src) + len_trim(FldsFr%flds(n)%shortname) + 1 >= len(concat_src)) then
-       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-       return
-    end if
-
     do n = 1,size(FldsFr%flds)
        if (trim(FldsFr%flds(n)%shortname) /= flds_scalar_name) then
+          if (len_trim(concat_src) + len_trim(FldsFr%flds(n)%shortname) + 1 >= len(concat_src)) then
+             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+             return
+          end if
           if (trim(concat_src) == '') then
              concat_src = trim(FldsFr%flds(n)%shortname)
           else
@@ -121,13 +120,12 @@ contains
        end if
     end do
     
-    if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
-       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-       return
-    end if
-
     do n = 1,size(FldsTo%flds)
        if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
+          if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
+             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+             return
+          end if
           if (trim(concat_dst) == '') then
              concat_dst = trim(FldsTo%flds(n)%shortname)
           else

@@ -40,7 +40,6 @@ module med_internalstate_mod
 
   ! private internal state to keep instance data
   type InternalStateStruct
-
     ! NState_Imp and NState_Exp are the standard NUOPC coupling datatypes
     ! FBImp and FBExp are the internal mediator datatypes
     ! NState_Exp(n) = FBExp(n), copied in the connector prep phase
@@ -61,15 +60,19 @@ module med_internalstate_mod
     type(ESMF_FieldBundle):: FBExp(ncomps)                      ! Export data for various components, on their grid
     type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
     integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
+    integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
+    integer               :: conn_post_cnt(ncomps)              ! Connector post count
+    integer               :: mpicom
+
+    ! CESM-specific internal state fields
     type(ESMF_FieldBundle):: FBMed_ocnalb_o                     ! Ocn albedo on ocn grid
     type(ESMF_FieldBundle):: FBMed_ocnalb_a                     ! Ocn albedo on atm grid
     type(ESMF_FieldBundle):: FBMed_aoflux_o                     ! Ocn/Atm flux fields on ocn grid
     type(ESMF_FieldBundle):: FBMed_aoflux_a                     ! Ocn/Atm flux fields on atm grid
+    type(ESMF_FieldBundle):: FBMed_aoflux_diurnl_o              ! Ocn/Atm flux fields only needed for history
+    type(ESMF_FieldBundle):: FBMed_aoflux_diurnl_a              ! Ocn/Atm flux fields only needed for history
     type(ESMF_FieldBundle):: FBMed_l2x_to_glc_l                 ! FB only in mediator- Land->glc on lnd grid
     type(ESMF_FieldBundle):: FBMed_l2x_to_glc_accum_l           ! FB only in mediator- Land->glc accumulator on lnd grid
-    integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
-    integer               :: conn_post_cnt(ncomps)              ! Connector post count
-    integer               :: mpicom
   end type
 
   type InternalState

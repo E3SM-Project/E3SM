@@ -15,7 +15,6 @@ module docn_comp_nuopc
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
   use esmFlds               , only : flds_scalar_index_nx, flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_dead_comps
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -460,10 +459,6 @@ module docn_comp_nuopc
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(0.0_r8, flds_scalar_index_dead_comps, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !--------------------------------
     ! diagnostics
     !--------------------------------
@@ -599,13 +594,6 @@ module docn_comp_nuopc
     !--------------------------------
 
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_o2x, exportState, grid_option, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Need to reset scalars that will be used after initialization, since shr_nuopc_grid_ArrayToState calls
-    ! shr_nuopc_methods_State_reset(state, value = -9999._R8, rc=rc) - so that all scalar values will be set to -9999
-    ! unless they are reset
-    call shr_nuopc_methods_State_SetScalar(0.0_r8, flds_scalar_index_dead_comps, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
