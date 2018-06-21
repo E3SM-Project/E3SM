@@ -2412,6 +2412,7 @@ contains
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
               trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option) == 'NUOPC'           .or. &
               trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
              call cime_run_atmocn_setup()
           end if
