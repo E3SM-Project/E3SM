@@ -156,10 +156,14 @@ contains
                    ! Determine the mapping type for mapping field nf from n1 to n2 
                    mapindex = fldListFr(n1)%flds(nf)%mapindex(n2)
 
+                   ! separate check first since Fortran does not have short-circuit evaluation
+                   if (mapindex == mapunset) cycle
+
                    ! Create route handle for target mapindex if route handle is required
                    ! (i.e. mapindex /= mapunset) and route handle has not already been created
-                   if (mapindex /= mapunset .and. &
-                        .not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
+                   if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
+
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                       mapname  = trim(mapnames(mapindex))
                       mapfile  = trim(fldListFr(n1)%flds(nf)%mapfile(n2))
@@ -641,10 +645,6 @@ contains
                 call shr_nuopc_methods_FB_FieldRegrid( FBSrcTmp, 'data_srctmp', FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
-
-             ! regrid FBNormSrc to from the source to the desination grid (FBNormDst)
-             call shr_nuopc_methods_FB_reset(FBNormSrc, value=czero, rc=rc)
-             if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
 
              call shr_nuopc_methods_FB_FieldRegrid(FBNormSrc, mapnorm, FBNormDst, mapnorm, RouteHandles(mapindex), rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

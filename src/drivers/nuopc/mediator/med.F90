@@ -59,7 +59,6 @@ module MED
   use med_connectors_mod        , only: med_connectors_post_rof2med
   use med_connectors_mod        , only: med_connectors_post_wav2med
   use med_connectors_mod        , only: med_connectors_post_glc2med
-  use med_phases_mod            , only: med_phases_init 
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_map
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_merge
   use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_fast
@@ -70,9 +69,7 @@ module MED
   use med_phases_prep_rof_mod   , only: med_phases_prep_rof
   use med_phases_prep_wav_mod   , only: med_phases_prep_wav
   use med_phases_prep_glc_mod   , only: med_phases_prep_glc
-  use med_phases_ocnalb_mod     , only: med_phases_ocnalb_init 
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
-  use med_phases_aofluxes_mod   , only: med_phases_aofluxes_init 
   use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
   use med_phases_history_mod    , only: med_phases_history
   use med_fraction_mod          , only: med_fraction_init, med_fraction_set
@@ -84,7 +81,7 @@ module MED
   use med_constants_mod         , only: med_constants_spval_rhfile
   use med_map_mod               , only: med_map_RouteHandles_init
   use med_map_mod               , only: med_map_MapNorm_init
-  use med_io_mod                , only: med_io_cpl_init
+  use med_io_mod                , only: med_io_init
 
   implicit none
   private
@@ -814,8 +811,10 @@ contains
 
             if (geomtype == ESMF_GEOMTYPE_GRID) then
 
-               call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (dbug_flag > 1) then
+                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               end if
 
                call ESMF_AttributeGet(field, name="ArbDimCount", value=arbDimCount, &
                     convention="NUOPC", purpose="Instance", rc=rc)
@@ -1032,8 +1031,10 @@ contains
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                   endif
 
-                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
-                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  if (dbug_flag > 1) then
+                     call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  end if
                enddo
 
             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
@@ -1043,8 +1044,10 @@ contains
                        ESMF_LOGMSG_INFO, rc=dbrc)
                end if
 
-               call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (dbug_flag > 1) then
+                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               end if
 
             else  ! geomtype
 
@@ -1142,11 +1145,13 @@ contains
         call shr_nuopc_methods_State_reset(is_local%wrap%NStateExp(n1), value=spval_init, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call shr_nuopc_methods_State_GeomPrint(is_local%wrap%NStateExp(n1),'gridExp'//trim(compname(n1)),rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        if (dbug_flag > 1) then
+           call shr_nuopc_methods_State_GeomPrint(is_local%wrap%NStateExp(n1),'gridExp'//trim(compname(n1)),rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call shr_nuopc_methods_State_GeomWrite(is_local%wrap%NStateExp(n1), 'grid_med_'//trim(compname(n1)), rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           call shr_nuopc_methods_State_GeomWrite(is_local%wrap%NStateExp(n1), 'grid_med_'//trim(compname(n1)), rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        end if
       endif
     enddo
 
@@ -1193,8 +1198,10 @@ contains
 
           if (geomtype == ESMF_GEOMTYPE_GRID .and. fieldName /= flds_scalar_name) then
             ! Grab grid
-            call shr_nuopc_methods_Field_GeomPrint(fieldList(n),trim(fieldName)//'_premesh',rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (dbug_flag > 1) then
+               call shr_nuopc_methods_Field_GeomPrint(fieldList(n),trim(fieldName)//'_premesh',rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
             call ESMF_FieldGet(fieldList(n), grid=grid, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1220,8 +1227,10 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif   ! fieldStatus
 
-          call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (dbug_flag > 1) then
+             call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
 
         enddo
         deallocate(fieldList)
@@ -1585,6 +1594,7 @@ contains
       call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       return
+
     endif  ! end first_call if-block
 
     !---------------------------------------
@@ -1630,6 +1640,8 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (n1 == compocn) ocnDone = .true.
+             if (n1 == compatm) atmDone = .true.
           endif
        endif
     enddo
@@ -1637,118 +1649,35 @@ contains
     !----------------------------------------------------------
     ! Create FBfrac field bundles and initialize fractions
     ! This has some complex dependencies on fractions from import States
-    !  and appropriate checks are not implemented.  These fractions are needed
-    !  also in the ocean ocnalb_init and ocnaoflux_init.  We might need to split 
-    !  out the fraction FB allocation and the fraction initialization
+    ! and appropriate checks are not implemented. We might need to split 
+    ! out the fraction FB allocation and the fraction initialization
     !----------------------------------------------------------
     
     call med_fraction_init(gcomp,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    ! Carry out data dependency for ocn initialization if needed
-    !---------------------------------------
-
-    if (.not. is_local%wrap%comp_present(compocn)) then
-       ocnDone = .true.
-    endif
-
-    if (.not. is_local%wrap%comp_present(compocn)) then
-       atmDone = .true.
-    endif
-
-    if (.not. ocnDone .and. is_local%wrap%comp_present(compocn)) then
-
-      ocnDone = .true.  ! reset if an item is found that is not done
-
-      if (is_local%wrap%med_coupling_active(compocn,compatm) .and. &
-          is_local%wrap%med_coupling_active(compatm,compocn)) then
-
-         call ESMF_StateGet(is_local%wrap%NStateImp(compocn), itemCount=fieldCount, rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         allocate(fieldNameList(fieldCount))
-         call ESMF_StateGet(is_local%wrap%NStateImp(compocn), itemNameList=fieldNameList, rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         do n=1, fieldCount
-            call ESMF_StateGet(is_local%wrap%NStateImp(compocn), itemName=fieldNameList(n), field=field, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            if (.not. atCorrectTime) then
-               ! If any ocn import fields are not time stamped correctly, then dependency is not satisified - must return to ocn
-               call ESMF_LogWrite("MED - Initialize-Data-Dependency from OCN NOT YET SATISFIED!!!", ESMF_LOGMSG_INFO, rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-               ocnDone = .false.
-               exit  ! break out of the loop when first not satisfied found
-            endif
-         enddo
-         deallocate(fieldNameList)
-
-         if (ocnDone) then
-            !---------------------------------------
-            ! Initialize the atm/ocean fluxes and compute the ocean albedos
-            !---------------------------------------
-            call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            if (is_local%wrap%comp_present(compocn)) then
-              ! Copy the NstateImp(compocn) to FBImp(compocn)
-              call med_connectors_post_ocn2med(gcomp, rc=rc)
-              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-           end if
-
-            ! TODO: the following causes an abort
-            !!Copy the NstateImp(compocn) to FBImp(compocn)
-            ! call med_connectors_post_ocn2med(gcomp, rc=rc)
-            ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Initialize the atm/ocean fluxes and compute the ocean albedos
-            call ESMF_LogWrite("MED - initialize atm/ocn fluxes and compute ocean albedo", ESMF_LOGMSG_INFO, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Update fractions again in case any import fields have changed
-            call med_fraction_init(gcomp,rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Initialize ocean albedo module and compute ocean albedos
-            ! This will update the relevant module arrays in med_phases_ocnalb_mod
-            call med_phases_ocnalb_init(gcomp, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            ! Initialize atm/ocn fluxes module
-            ! This will update the relevant module arrays in med_phases_aoflux_mod
-            call med_phases_aofluxes_init(gcomp, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
-      end if
-
-    endif
+    call med_fraction_set(gcomp,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! Carry out data dependency for atm initialization if needed
     !---------------------------------------
 
-    if (.not. atmDone .and. ocnDone .and. is_local%wrap%comp_present(compatm)) then
+    if (.not. is_local%wrap%comp_present(compocn)) ocnDone = .true.
+    if (.not. is_local%wrap%comp_present(compocn)) atmDone = .true.
 
+    if (.not. atmDone .and. ocnDone .and. is_local%wrap%comp_present(compatm)) then
        atmDone = .true.  ! reset if an item is found that is not done
 
        call ESMF_StateGet(is_local%wrap%NStateImp(compatm), itemCount=fieldCount, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        allocate(fieldNameList(fieldCount))
        call ESMF_StateGet(is_local%wrap%NStateImp(compatm), itemNameList=fieldNameList, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        do n=1, fieldCount 
           call ESMF_StateGet(is_local%wrap%NStateImp(compatm), itemName=fieldNameList(n), field=field, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
           atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
           if (.not. atCorrectTime) then
              ! If any atm import fields are not time stamped correctly, then dependency is not satisified - must return to atm
              call ESMF_LogWrite("MED - Initialize-Data-Dependency from ATM NOT YET SATISFIED!!!", ESMF_LOGMSG_INFO, rc=rc)
@@ -1760,13 +1689,14 @@ contains
        deallocate(fieldNameList)
 
        if (.not. atmdone) then  ! atmdone is not true
-
           ! Update fractions again in case any import fields have changed
           call med_fraction_init(gcomp,rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          ! initialize fractions
           call med_fraction_set(gcomp, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! Initialize ocean albedo module and compute ocean albedos
+          call med_phases_ocnalb_run(gcomp, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
           ! do the merge to the atmospheric component
@@ -1795,14 +1725,10 @@ contains
           call ESMF_LogWrite("MED - Initialize-Data-Dependency Sending Data to ATM", ESMF_LOGMSG_INFO, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
-    end if
-
-    if (atmDone .and. ocnDone) then
-       if (is_local%wrap%comp_present(compatm)) then
-          ! Copy the NstateImp(compatm) to FBImp(compatm)
-          call med_connectors_post_atm2med(gcomp, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+   else
+      ! Copy the NstateImp(compatm) to FBImp(compatm)
+      call med_connectors_post_atm2med(gcomp, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
     allDone = .true.
@@ -1811,24 +1737,21 @@ contains
 
           call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemCount=fieldCount, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
- 
           allocate(fieldNameList(fieldCount))
           call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemNameList=fieldNameList, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
           do n=1, fieldCount
              call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemName=fieldNameList(n), field=field, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
              atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
              if (.not. atCorrectTime) then
                 allDone=.false.
              endif
           enddo
           deallocate(fieldNameList)
        endif
+
     enddo
 
     ! set InitializeDataComplete Component Attribute to "true", indicating
@@ -1841,7 +1764,7 @@ contains
        call ESMF_LogWrite("MED - Initialize-Data-Dependency allDone check Passed", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call med_io_cpl_init()
+       call med_io_init()
     else
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

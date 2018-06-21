@@ -16,7 +16,6 @@ module dice_comp_nuopc
   use esmFlds               , only : flds_scalar_num
   use esmFlds               , only : flds_scalar_index_nx
   use esmFlds               , only : flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_dead_comps
   use esmFlds               , only : flds_scalar_index_iceberg_prognostic
   use esmFlds               , only : flds_scalar_index_nextsw_cday
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
@@ -456,14 +455,6 @@ module dice_comp_nuopc
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_nuopc_methods_State_SetScalar(0.0_r8, flds_scalar_index_dead_comps, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_nuopc_methods_State_SetScalar(0.0_r8, flds_scalar_index_dead_comps, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 

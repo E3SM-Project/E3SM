@@ -841,11 +841,12 @@ module ESM
     call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_DriverPrint(driver, orderflag=.true.)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    ! Uncomment these to add debugging information for driver
+    ! call NUOPC_DriverPrint(driver, orderflag=.true.)
+    ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    !   line=__LINE__, &
+    !   file=__FILE__)) &
+    !   return  ! bail out
 
     if (mastertask) then
        call NUOPC_FreeFormatPrint(runSeqFF, rc=rc)
