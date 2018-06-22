@@ -228,6 +228,10 @@ CONTAINS
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     character(CL)                    :: case_name      ! case name
+    real(R8)                         :: orbEccen       ! orb eccentricity (unit-less)
+    real(R8)                         :: orbMvelpp      ! orb moving vernal eq (radians)
+    real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)
+    real(R8)                         :: orbObliqr      ! orb obliquity (radians)
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     logical                          :: write_restart  ! restart now
     integer(IN)                      :: currentYMD    ! model date
@@ -246,17 +250,40 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
-    call seq_infodata_GetData(infodata, case_name=case_name)
-
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    call seq_infodata_GetData(infodata, &
+         case_name=case_name, &
+         orb_eccen=orbEccen, &
+         orb_mvelpp=orbMvelpp, &
+         orb_lambm0=orbLambm0, &
+         orb_obliqr=orbObliqr)
 
     ! For mct - the component clock is advance at the beginning of the time interval
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
 
-    call datm_comp_run(EClock, x2a, a2x, &
-       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+
+    call datm_comp_run(&
+         Eclock=EClock, &
+         x2a=x2a, &
+         a2x=a2x, &
+         SDATM=SDATM, &
+         gsmap=gsmap, &
+         gggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=maskter_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         orbEccen = orbEccen, &
+         orbMvelpp = orbMvelpp, &
+         orbLambm0 = orbLambm0, &
+         orbObliqr = orbObliqr, &
+         nextsw_cday=nextsw_cday, &
+         write_restart=write_restart, &
+         currentYMD=currentYMD, &
+         currentTOD=currentTOD, &
+         case_name=case_name)
 
     if (dbug > 1) then
        if (my_task == master_task) then

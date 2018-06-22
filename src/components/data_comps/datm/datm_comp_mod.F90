@@ -215,7 +215,6 @@ CONTAINS
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, nextsw_cday)
 
     ! !DESCRIPTION: initialize data atm model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
@@ -311,9 +310,6 @@ CONTAINS
 
     k = mct_aVect_indexRA(SDATM%grid%data,'frac')
     SDATM%grid%data%rAttr(k,:) = 1.0_R8
-
-    !--- set data needed for cosz t-interp method ---
-    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDATM,'ATM data')
@@ -547,15 +543,32 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-
-    write_restart = .false.
-    call datm_comp_run(EClock, x2a, a2x, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, nextsw_cday, write_restart, &
-         currentYMD, currentTOD)
+    call datm_comp_run(&
+         Eclock=EClock, &
+         x2a=x2a, &
+         a2x=a2x, &
+         SDATM=SDATM, &
+         gsmap=gsmap, &
+         gggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=maskter_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         orbEccen = orbEccen, &
+         orbMvelpp = orbMvelpp, &
+         orbLambm0 = orbLambm0, &
+         orbObliqr = orbObliqr, &
+         nextsw_cday=nextsw_cday, &
+         write_restart=write_retart, &
+         currentYMD=currentYMD, &
+         currentTOD=current TOD, &
+         case_name=case_name)
 
     call t_adj_detailf(-2)
 
+    write_restart = .false.
     call t_stopf('DATM_INIT')
 
   end subroutine datm_comp_init
@@ -564,12 +577,11 @@ CONTAINS
 
   subroutine datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, write_restart, &
-       currentYMD, currentTOD, case_name)
+       inst_suffix, logunit, &
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+       nextsw_cday, write_restart, currentYMD, currentTOD, case_name)
 
     ! !DESCRIPTION: run method for datm model
-
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
@@ -584,6 +596,10 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     logical                , intent(in)    :: write_restart    ! restart alarm is on
     integer(IN)            , intent(in)    :: currentYMD       ! model date
@@ -637,8 +653,10 @@ CONTAINS
     call seq_timemgr_EClockGetData( EClock, calendar=calendar, stepno=stepno)
     nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
 
-    !--- copy all fields from streams to a2x as default ---
+    !--- set data needed for cosz t-interp method ---
+    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
 
+    !--- copy all fields from streams to a2x as default ---
     call t_startf('datm_strdata_advance')
     call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
     call t_stopf('datm_strdata_advance')
@@ -1177,7 +1195,6 @@ CONTAINS
   subroutine datm_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION: finalize method for datm model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom

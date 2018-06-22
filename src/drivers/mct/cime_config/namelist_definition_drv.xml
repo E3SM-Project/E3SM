@@ -292,7 +292,6 @@
     </values>
   </entry>
 
-<!--      CURRENTLY DOES NOT EXIST
   <entry id="model_version" modify_via_xml="CCSM_REPOTAG">
     <type>char</type>
     <category>expdef</category>
@@ -301,10 +300,9 @@
       model version documentation,
     </desc>
     <values>
-      <value>unset</value>
+      <value>$MODEL_VERSION</value>
     </values>
   </entry>
--->
 
   <entry id="model_doi_url" modify_via_xml="MODEL_DOI_URL">
     <type>char</type>
@@ -442,6 +440,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
+      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -455,6 +454,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -468,6 +469,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -1166,12 +1169,26 @@
     </values>
   </entry>
 
-  <entry id="histaux_l2x1yr">
+  <entry id="histaux_l2x1yrg">
     <type>logical</type>
     <category>history</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on coupler history stream for annual sno to coupler fields.
+      turns on coupler history stream for annual lnd to coupler glc forcing fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="histaux_double_precision">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      if true, use double-precision rather than single-precision for
+      coupler auxiliary history files
       default: false
     </desc>
     <values>

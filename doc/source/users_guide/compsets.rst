@@ -8,7 +8,7 @@ In CIME, multiple components can define compsets that are targeted to their mode
 
 Each component supports a set of compset longnames that are used in testing and supported in out of the box configurations.
 
-To determine if the compset name to **create_newcase** is a supported component, CIME looks in the **config_files.xml** file and parses the
+To determine if the compset name to `create_newcase  <../Tools_user/create_newcase.html>`_ is a supported component, CIME looks in the **config_files.xml** file and parses the
 the xml element ``COMPSETS_SPEC_FILE`` in order to determine which component is defining the compset.
 
 In the case of CESM, this xml element has the contents shown here, where ``$SRCROOT`` is the root of your CESM sandbox and contains ``$CIMEROOT`` as a subdirectory:
@@ -61,14 +61,12 @@ Supported values for each element of the longname::
   WAV  = [SWAV, XWAV]
   ESP  = [SESP]
 
-A CIME-driven model may have other options available.  Use **query_config** to determine the available options.
+A CIME-driven model may have other options available.  Use `query_config  <../Tools_user/query_config.html>`_ to determine the available options.
 
 The OPTIONAL %phys attributes specify sub-modes of the given system.
 For example, DOCN%DOM is the DOCN data ocean (rather than slab-ocean) mode.
-ALL the possible %phys choices for each component are listed by
-calling **query_case** with the --compsets all argument.  ALL data models have
-a %phys option that corresponds to the data model mode.
-
+**All** the possible %phys choices for each component are listed by calling `query_config --compsets <../Tools_user/query_config.html>`_.
+**All** data models have a %phys option that corresponds to the data model mode.
 
 .. _defining-component-specific-compset-settings:
 
@@ -126,10 +124,9 @@ As an example, the possible atmosphere components for CESM have the following as
 
 If the compset's atm component attribute is ``datm``, the file ``$CIMEROOT/components/data_comps/datm/cime_config/config_component.xml`` specifies all possible component settings for ``DATM``.
 
-The schema for every **config_component.xml** file has a ``<description>`` node that specifies all possible values that can follow the ``%`` character in the compset name. To list the possible values, use the **query_case** command with ``--components`` as shown in this example for CAM:
-::
+The schema for every **config_component.xml** file has a ``<description>`` node that specifies all possible values that can follow the ``%`` character in the compset name.
 
-  query_case --components cam
+To list the possible values, use the `query_config --component datm <../Tools_user/query_config.html>`_ command.
 
 .. _creating-new-compsets:
 
