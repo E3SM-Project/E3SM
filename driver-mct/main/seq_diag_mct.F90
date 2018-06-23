@@ -45,6 +45,7 @@ module seq_diag_mct
   use component_type_mod, only : COMPONENT_GET_DOM_CX, COMPONENT_GET_C2X_CX, &
        COMPONENT_GET_X2C_CX, COMPONENT_TYPE
   use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+  use shr_reprosum_mod, only: shr_reprosum_calc
 
   implicit none
   save
@@ -2237,7 +2238,9 @@ contains
     integer(in)                      :: iam         ! pe number
     integer(in)                      :: km,ka       ! field indices
     integer(in)                      :: ns          ! size of local AV
+    integer(in)                      :: rcode       ! allocate return code
     real(r8),                pointer :: weight(:)   ! weight
+    real(r8), allocatable            :: weighted_data(:,:) ! weighted data
     type(mct_string)                 :: mstring     ! mct char type
     character(CL)                    :: lcomment    ! should be long enough
     character(CL)                    :: itemc       ! string converted to char
@@ -2274,7 +2277,9 @@ contains
     if (bfbflag) then
 
        npts = mct_aVect_lsize(AV)
-       allocate(weight(npts))
+       allocate(weight(npts),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
+
        weight(:) = 1.0_r8
        do n = 1,npts
           if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
@@ -2284,57 +2289,29 @@ contains
           endif
        enddo
 
-       allocate(maxbuf(kflds),maxbufg(kflds))
-       maxbuf = 0.0_r8
+       allocate(weighted_data(npts,kflds),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weighted_data')
 
+       weighted_data = 0.0_r8
        do n = 1,npts
           do k = 1,kflds
              if (.not. shr_const_isspval(AV%rAttr(k,n))) then
-                maxbuf(k) = max(maxbuf(k),abs(AV%rAttr(k,n)*weight(n)))
+                weighted_data(n,k) = AV%rAttr(k,n)*weight(n)
              endif
           enddo
        enddo
 
-       call shr_mpi_max(maxbuf,maxbufg,mpicom,subname,all=.true.)
-       call shr_mpi_sum(npts,nptsg,mpicom,subname,all=.true.)
+       call shr_reprosum_calc (weighted_data, sumbufg, npts, npts, kflds, &
+                               commid=mpicom)
 
-       do k = 1,kflds
-          if (maxbufg(k) < 1000.0*TINY(maxbufg(k)) .or. &
-               maxbufg(k) > HUGE(maxbufg(k))/(2.0_r8*nptsg)) then
-             maxbufg(k) = 0.0_r8
-          else
-             maxbufg(k) = (1.1_r8) * maxbufg(k) * nptsg
-          endif
-       enddo
-
-       allocate(isumbuf(kflds),isumbufg(kflds))
-       isumbuf = 0
-       ihuge = HUGE(isumbuf)
-
-       do n = 1,npts
-          do k = 1,kflds
-             if (.not. shr_const_isspval(AV%rAttr(k,n))) then
-                if (abs(maxbufg(k)) > 1000.0_r8 * TINY(maxbufg)) then
-                   isumbuf(k) = isumbuf(k) + int((AV%rAttr(k,n)*weight(n)/maxbufg(k))*ihuge,i8)
-                endif
-             endif
-          enddo
-       enddo
-
-       call shr_mpi_sum(isumbuf,isumbufg,mpicom,subname)
-
-       do k = 1,kflds
-          sumbufg(k) = isumbufg(k)*maxbufg(k)/ihuge
-       enddo
-
-       deallocate(weight)
-       deallocate(maxbuf,maxbufg)
-       deallocate(isumbuf,isumbufg)
+       deallocate(weight, weighted_data)
 
     else
 
        npts = mct_aVect_lsize(AV)
-       allocate(weight(npts))
+       allocate(weight(npts),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
+
        weight(:) = 1.0_r8
        do n = 1,npts
           if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
