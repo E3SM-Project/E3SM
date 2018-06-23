@@ -176,6 +176,7 @@ MODULE seq_infodata_mod
      logical                 :: mct_usevector   ! flag for mct vector
 
      logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
+     logical                 :: reprosum_allow_infnan ! allow INF and NaN summands
      real(SHR_KIND_R8)       :: reprosum_diffmax    ! maximum difference tolerance
      logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
      ! if reprosum_diffmax is exceeded
@@ -412,6 +413,7 @@ CONTAINS
     real(SHR_KIND_R8)      :: eps_ogrid          ! ocn grid error tolerance
     real(SHR_KIND_R8)      :: eps_oarea          ! ocn area error tolerance
     logical                :: reprosum_use_ddpdd ! use ddpdd algorithm
+    logical                :: reprosum_allow_infnan ! allow INF and NaN summands
     real(SHR_KIND_R8)      :: reprosum_diffmax   ! maximum difference tolerance
     logical                :: reprosum_recompute ! recompute reprosum with nonscalable algorithm
     ! if reprosum_diffmax is exceeded
@@ -452,7 +454,8 @@ CONTAINS
          eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
-         reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute, &
+         reprosum_use_ddpdd, reprosum_allow_infnan,        &
+         reprosum_diffmax, reprosum_recompute,             &
          mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url
 
     !-------------------------------------------------------------------------------
@@ -560,6 +563,7 @@ CONTAINS
        eps_ogrid             = 1.0e-02_SHR_KIND_R8
        eps_oarea             = 1.0e-01_SHR_KIND_R8
        reprosum_use_ddpdd    = .false.
+       reprosum_allow_infnan = .false.
        reprosum_diffmax      = -1.0e-8
        reprosum_recompute    = .false.
        mct_usealltoall       = .false.
@@ -685,6 +689,7 @@ CONTAINS
        infodata%eps_ogrid             = eps_ogrid
        infodata%eps_oarea             = eps_oarea
        infodata%reprosum_use_ddpdd    = reprosum_use_ddpdd
+       infodata%reprosum_allow_infnan = reprosum_allow_infnan
        infodata%reprosum_diffmax      = reprosum_diffmax
        infodata%reprosum_recompute    = reprosum_recompute
        infodata%mct_usealltoall       = mct_usealltoall
@@ -977,7 +982,8 @@ CONTAINS
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
        glc_nx, glc_ny, eps_frac, eps_amask,                               &
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
-       reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
+       reprosum_use_ddpdd, reprosum_allow_infnan,                         &
+       reprosum_diffmax, reprosum_recompute,                              &
        atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
        glc_resume, rof_resume, wav_resume, cpl_resume,                    &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
@@ -1085,6 +1091,7 @@ CONTAINS
     real(SHR_KIND_R8),      optional, intent(OUT) :: eps_ogrid               ! ocn grid error tolerance
     real(SHR_KIND_R8),      optional, intent(OUT) :: eps_oarea               ! ocn area error tolerance
     logical,                optional, intent(OUT) :: reprosum_use_ddpdd      ! use ddpdd algorithm
+    logical,                optional, intent(OUT) :: reprosum_allow_infnan   ! allow INF and NaN summands
     real(SHR_KIND_R8),      optional, intent(OUT) :: reprosum_diffmax        ! maximum difference tolerance
     logical,                optional, intent(OUT) :: reprosum_recompute      ! recompute if tolerance exceeded
     logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
@@ -1261,6 +1268,7 @@ CONTAINS
     if ( present(eps_ogrid)      ) eps_ogrid      = infodata%eps_ogrid
     if ( present(eps_oarea)      ) eps_oarea      = infodata%eps_oarea
     if ( present(reprosum_use_ddpdd)) reprosum_use_ddpdd = infodata%reprosum_use_ddpdd
+    if ( present(reprosum_allow_infnan)) reprosum_allow_infnan = infodata%reprosum_allow_infnan
     if ( present(reprosum_diffmax)  ) reprosum_diffmax   = infodata%reprosum_diffmax
     if ( present(reprosum_recompute)) reprosum_recompute = infodata%reprosum_recompute
     if ( present(mct_usealltoall)) mct_usealltoall = infodata%mct_usealltoall
@@ -1555,7 +1563,8 @@ CONTAINS
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
        glc_nx, glc_ny, eps_frac, eps_amask,                               &
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
-       reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
+       reprosum_use_ddpdd, reprosum_allow_infnan,                         &
+       reprosum_diffmax, reprosum_recompute,                              &
        atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
        glc_resume, rof_resume, wav_resume, cpl_resume,                    &
        mct_usealltoall, mct_usevector, glc_valid_input)
@@ -1661,6 +1670,7 @@ CONTAINS
     real(SHR_KIND_R8),      optional, intent(IN)    :: eps_ogrid          ! ocn grid error tolerance
     real(SHR_KIND_R8),      optional, intent(IN)    :: eps_oarea          ! ocn area error tolerance
     logical,                optional, intent(IN)    :: reprosum_use_ddpdd ! use ddpdd algorithm
+    logical,                optional, intent(IN)    :: reprosum_allow_infnan ! allow INF and NaN summands
     real(SHR_KIND_R8),      optional, intent(IN)    :: reprosum_diffmax   ! maximum difference tolerance
     logical,                optional, intent(IN)    :: reprosum_recompute ! recompute if tolerance exceeded
     logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
@@ -1835,6 +1845,7 @@ CONTAINS
     if ( present(eps_ogrid)      ) infodata%eps_ogrid      = eps_ogrid
     if ( present(eps_oarea)      ) infodata%eps_oarea      = eps_oarea
     if ( present(reprosum_use_ddpdd)) infodata%reprosum_use_ddpdd = reprosum_use_ddpdd
+    if ( present(reprosum_allow_infnan)) infodata%reprosum_allow_infnan = reprosum_allow_infnan
     if ( present(reprosum_diffmax)  ) infodata%reprosum_diffmax   = reprosum_diffmax
     if ( present(reprosum_recompute)) infodata%reprosum_recompute = reprosum_recompute
     if ( present(mct_usealltoall)) infodata%mct_usealltoall = mct_usealltoall
@@ -2257,6 +2268,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%eps_ogrid,               mpicom)
     call shr_mpi_bcast(infodata%eps_oarea,               mpicom)
     call shr_mpi_bcast(infodata%reprosum_use_ddpdd,      mpicom)
+    call shr_mpi_bcast(infodata%reprosum_allow_infnan,   mpicom)
     call shr_mpi_bcast(infodata%reprosum_diffmax,        mpicom)
     call shr_mpi_bcast(infodata%reprosum_recompute,      mpicom)
     call shr_mpi_bcast(infodata%mct_usealltoall,         mpicom)
@@ -2931,6 +2943,7 @@ CONTAINS
     write(logunit,F0R) subname,'eps_oarea                = ', infodata%eps_oarea
 
     write(logunit,F0L) subname,'reprosum_use_ddpdd       = ', infodata%reprosum_use_ddpdd
+    write(logunit,F0L) subname,'reprosum_allow_infnan    = ', infodata%reprosum_allow_infnan
     write(logunit,F0R) subname,'reprosum_diffmax         = ', infodata%reprosum_diffmax
     write(logunit,F0L) subname,'reprosum_recompute       = ', infodata%reprosum_recompute
 
