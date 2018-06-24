@@ -549,22 +549,21 @@ CONTAINS
          a2x=a2x, &
          SDATM=SDATM, &
          gsmap=gsmap, &
-         gggrid=ggrid, &
+         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
-         master_task=maskter_task, &
+         master_task=master_task, &
          inst_suffix=inst_suffix, &
          logunit=logunit, &
-         orbEccen = orbEccen, &
-         orbMvelpp = orbMvelpp, &
-         orbLambm0 = orbLambm0, &
-         orbObliqr = orbObliqr, &
+         orbEccen=orbEccen, &
+         orbMvelpp=orbMvelpp, &
+         orbLambm0=orbLambm0, &
+         orbObliqr=orbObliqr, &
          nextsw_cday=nextsw_cday, &
-         write_restart=write_retart, &
+         write_restart=write_restart, &
          currentYMD=currentYMD, &
-         currentTOD=current TOD, &
-         case_name=case_name)
+         currentTOD=currentTOD)
 
     call t_adj_detailf(-2)
 
@@ -604,7 +603,7 @@ CONTAINS
     logical                , intent(in)    :: write_restart    ! restart alarm is on
     integer(IN)            , intent(in)    :: currentYMD       ! model date
     integer(IN)            , intent(in)    :: currentTOD       ! model sec into model date
-    character(CL)          , intent(in), optional :: case_name ! case name
+    character(CL)          , intent(in), optional :: case_name        ! case name
 
     !--- local ---
     integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
@@ -638,9 +637,16 @@ CONTAINS
     call t_startf('DATM_RUN')
 
     call t_startf('datm_run1')
-    call seq_timemgr_EClockGetData( EClock, dtime=idt)
-    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    call seq_timemgr_EClockGetData( EClock, &
+         dtime=idt,                         &
+         curr_yr=yy,                        &
+         curr_mon=mm,                       &
+         curr_day=dd,                       &
+         curr_tod=tod,                      &
+         calendar=calendar,                 &
+         stepno=stepno)
     dt = idt * 1.0_r8
+    nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
     call t_stopf('datm_run1')
 
     !--------------------
@@ -649,9 +655,6 @@ CONTAINS
 
     call t_barrierf('datm_BARRIER',mpicom)
     call t_startf('datm')
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar, stepno=stepno)
-    nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
 
     !--- set data needed for cosz t-interp method ---
     call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
@@ -1149,7 +1152,6 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd, curr_tod=tod)
        call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
 
        write(rest_file,"(6a)") &

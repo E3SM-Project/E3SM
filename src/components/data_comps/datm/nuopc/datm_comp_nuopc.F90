@@ -87,6 +87,11 @@ module datm_comp_nuopc
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
   character(CXX)             :: flds_a2x = ''
   character(CXX)             :: flds_x2a = ''
+  !TODO: need to have the following orbital values come in through infodata at runtime
+  real(R8)                   :: orbEccen                  ! orb eccentricity (unit-less)
+  real(R8)                   :: orbMvelpp                 ! orb moving vernal eq (radians)
+  real(R8)                   :: orbLambm0                 ! orb mean long of perhelion (radians)
+  real(R8)                   :: orbObliqr                 ! orb obliquity (radians)
 
   !----- formats -----
   character(*),parameter :: modName =  "(datm_comp_nuopc)"
@@ -341,10 +346,6 @@ module datm_comp_nuopc
     logical                      :: scmMode = .false.         ! single column mode
     real(R8)                     :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                     :: scmLon  = shr_const_SPVAL ! single column lon
-    real(R8)                     :: orbEccen                  ! orb eccentricity (unit-less)
-    real(R8)                     :: orbMvelpp                 ! orb moving vernal eq (radians)
-    real(R8)                     :: orbLambm0                 ! orb mean long of perhelion (radians)
-    real(R8)                     :: orbObliqr                 ! orb obliquity (radians)
     real(R8)                     :: nextsw_cday               ! calendar of next atm sw
     logical                      :: connected                 ! is field connected?
     integer                      :: klon, klat
@@ -625,10 +626,27 @@ module datm_comp_nuopc
     nextTime = currTime + timeStep
     call seq_timemgr_ETimeGet( nextTime, ymd=CurrentYMD, tod=CurrentTOD )
 
-    call datm_comp_run(clock, x2d, d2x, &
-       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
+    call datm_comp_run(clock, &
+         x2a=x2d, &
+         a2x=d2x, &
+         SDATM=SDATM, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         orbEccen=orbEccen, &
+         orbMvelpp=orbMvelpp, &
+         orbLambm0=orbLambm0, &
+         orbObliqr=orbObliqr, &
+         nextsw_cday=nextsw_cday, &
+         write_restart=write_restart, &
+         currentYMD=currentYMD, &
+         currentTOD=currentTOD, &
+         case_name=case_name)
 
     !--------------------------------
     ! Pack export state

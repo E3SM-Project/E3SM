@@ -268,11 +268,11 @@ CONTAINS
          a2x=a2x, &
          SDATM=SDATM, &
          gsmap=gsmap, &
-         gggrid=ggrid, &
+         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
-         master_task=maskter_task, &
+         master_task=master_task, &
          inst_suffix=inst_suffix, &
          logunit=logunit, &
          orbEccen = orbEccen, &
