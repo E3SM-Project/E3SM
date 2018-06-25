@@ -38,7 +38,7 @@ CIME supports out-of-the-box *component sets*, *model grids* and *hardware platf
 
 ``CASEROOT`` can be a full path specifying where the case should be created; the name of
 the case will be the last component of the path. If not a full path, then the case is
-created under the current working directory.
+created in a location relative to the current working directory.
 
 ======================================
 Results of calling **create_newcase**
