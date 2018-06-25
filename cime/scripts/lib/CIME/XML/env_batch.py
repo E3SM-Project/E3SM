@@ -518,7 +518,7 @@ class EnvBatch(EnvBase):
             if job == "case.st_archive" and no_batch:
                 supported["resubmit"] = "--resubmit"
             else:
-                supported["submit_resubmits"] = "--resubmit"
+                supported["submit_resubmits"] = "--no-resubmit"
         return supported
 
     @staticmethod
@@ -552,8 +552,15 @@ class EnvBatch(EnvBase):
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if not batch_env_flag:
             return run_args_str
+        elif len(run_args_str) > 0:
+            batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
+            logger.info("batch_system: {}: ".format(batch_system))
+            if batch_system == "lsf":
+                return "{} \"all, ARGS_FOR_SCRIPT={}\"".format(batch_env_flag, run_args_str)
+            else:
+                return "{} ARGS_FOR_SCRIPT='{}'".format(batch_env_flag, run_args_str)
         else:
-            return "{} ARGS_FOR_SCRIPT='{}'".format(batch_env_flag, run_args_str)
+            return ""
 
     def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
                            no_batch=False, skip_pnl=False, mail_user=None, mail_type=None,
@@ -566,7 +573,7 @@ class EnvBatch(EnvBase):
             function_name = job.replace(".", "_")
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
-                                            submit_resubmits=not resubmit_immediate)
+                                            submit_resubmits=resubmit_immediate)
                 getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
 
             return
@@ -641,7 +648,7 @@ class EnvBatch(EnvBase):
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         run_args = self._build_run_args_str(job, False, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
-                                            submit_resubmits=not resubmit_immediate)
+                                            submit_resubmits=resubmit_immediate)
         if batch_env_flag:
             sequence = (batchsubmit, submitargs, run_args, batchredirect, get_batch_script_for_job(job))
         else:
