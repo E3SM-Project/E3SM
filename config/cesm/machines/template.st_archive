@@ -49,8 +49,11 @@ def parse_command_line(args, description):
     parser.add_argument("--force-move", default=False, action="store_true",
                         help="Move the files even if it's unsafe to do so, dangerous if used with --copy-only.")
 
-    parser.add_argument("--test", default=False, action="store_true",
-                        help="Run tests of st_archiver functionality")
+    parser.add_argument("--test-all", default=False, action="store_true",
+                        help="Run tests of st_archiver functionality on config_arvchive.xml")
+
+    parser.add_argument("--test-case", default=False, action="store_true",
+                        help="Run tests of st_archiver functionality on env_arvchive.xml")
 
     parser.add_argument("--resubmit", default=False, action="store_true",
                         help="If RESUBMIT is set, this performs the resubmissions."
@@ -68,17 +71,19 @@ def parse_command_line(args, description):
         args.copy_only = False
 
     return (args.caseroot, args.last_date, args.no_incomplete_logs, args.copy_only,
-            args.test, args.resubmit)
+            args.test_all, args.test_case, args.resubmit)
 
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
-    caseroot, last_date, no_incomplete_logs, copy_only, test, resubmit = parse_command_line(sys.argv, description)
+    caseroot, last_date, no_incomplete_logs, copy_only, testall, testcase, resubmit = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        if test:
+        if testall:
             success = case.test_st_archive()
+        elif testcase:
+            success = case.test_env_archive()
         else:
             success = case.case_st_archive(last_date_str=last_date,
                                            archive_incomplete_logs=not no_incomplete_logs,

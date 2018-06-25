@@ -159,6 +159,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
+    logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
     logger.info("{} POST_RUN_CHECK BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     _post_run_check(case, lid)
     logger.info("{} POST_RUN_CHECK HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
@@ -324,6 +326,10 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.read_xml()
         _save_logs(self, lid)
         logger.info("{} POSTRUN_SCRIPT HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+    if set_continue_run:
+        self.set_value("CONTINUE_RUN",
+                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
     if set_continue_run:
         self.set_value("CONTINUE_RUN",

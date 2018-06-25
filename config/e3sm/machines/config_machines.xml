@@ -651,7 +651,7 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
-    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
+    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>e3sm_developer</TESTS>
     <OS>LINUX</OS>
@@ -2013,13 +2013,6 @@
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
       <environment_variables compiler="gnu" mpilib="openmpi">
         <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
-      </environment_variables>
-      <environment_variables>
-       <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
-       <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
-       <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
-       <!-- dir for pflotran source code -->
-       <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</env>
       </environment_variables>
 </machine>
 
