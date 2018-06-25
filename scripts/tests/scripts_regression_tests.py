@@ -1972,6 +1972,21 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(problems, "", msg=problems)
 
+    ###########################################################################
+    def test_case_submit_interface(self):
+    ###########################################################################
+        try:
+            import imp
+        except ImportError:
+            print("imp not found, skipping case.submit interface test")
+            return
+        sys.path.append(TOOLS_DIR)
+        case_submit_path = os.path.join(TOOLS_DIR, "case.submit")
+        submit_interface = imp.load_source("case_submit_interface", case_submit_path)
+        sys.argv = ["case.submit", "--batch-args", "'random_arguments_here.%j'",
+                    "--mail-type", "fail", "--mail-user", "'random_arguments_here.%j'"]
+        submit_interface._main_func(None, True)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
