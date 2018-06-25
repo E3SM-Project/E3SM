@@ -1798,7 +1798,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <ADD_LDFLAGS MODEL="driver">-lhdf5_hl -ldl -lz -lpnetcdf -lhdf5</ADD_LDFLAGS>
+  <MPICXX>/ascldap/users/mdeakin/tpl-sources/kokkos/bin/nvcc_wrapper</MPICXX>
+  <KOKKOS_PATH>/ascldap/users/mdeakin/white/kokkos-release</KOKKOS_PATH>
+  <ADD_CXXFLAGS> -expt-extended-lambda -DCUDA_BUILD </ADD_CXXFLAGS>
 </compiler>
 
 <compiler MACH="summitdev" COMPILER="ibm">
