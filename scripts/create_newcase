@@ -31,7 +31,7 @@ def parse_command_line(args, cimeroot, description):
                         help="(required) Specify a compset. "
                         "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
 
-    parser.add_argument("--res", "-res", required=True,
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
                         help="(required) Specify a model grid resolution. "
                         "\nTo see list of current model resolutions, use the utility "
                         "\n./query_config --grids in this directory.")
