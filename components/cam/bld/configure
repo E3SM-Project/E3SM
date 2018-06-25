@@ -2904,11 +2904,6 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq 'se' and $opts{'dyn_target'} eq 'preqx_cxx') {
-	print $fh " -DHOMMEXX";
-	print $fh " -DHOMMEXX_DEFAULT_SPACE";
-	print $fh " -DHOMMEXX_MPI_ON_DEVICE=1";
-	print $fh " -DAVX_VERSION=0";
-	print $fh " -DHOMMEXX_CUDA_MIN_WARP_PER_TEAM=4"
     }
 
     print $fh "\n";
