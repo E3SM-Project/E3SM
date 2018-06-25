@@ -26,15 +26,19 @@ See the options for `create_newcase  <../Tools_user/create_newcase.html>`_ in th
 
 The only required arguments to `create_newcase  <../Tools_user/create_newcase.html>`_ are::
 
-  > create_newcase --case CASE --compset COMPSET --res GRID
+  > create_newcase --case CASEROOT --compset COMPSET --res GRID
 
 Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms* (machines).
 
 .. warning::
-   The ``CASE`` argument must be a string and may not contain any of the following special characters
+   The ``CASEROOT`` argument must be a string and may not contain any of the following special characters
    ::
-      > + * ? < > / { } [ ] ~ ` @ :
+      > + * ? < > { } [ ] ~ ` @ :
+
+``CASEROOT`` can be a full path specifying where the case should be created; the name of
+the case will be the last component of the path. If not a full path, then the case is
+created under the current working directory.
 
 ======================================
 Results of calling **create_newcase**
