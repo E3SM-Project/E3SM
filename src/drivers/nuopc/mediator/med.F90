@@ -4,8 +4,12 @@ module MED
   ! Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use NUOPC
+  use ESMF                      , only: ESMF_VM, ESMF_GRIDCOMP, ESMF_STATE, ESMF_CLOCK, ESMF_TIMEINTERVAL, ESMF_FIELD, ESMF_DISTGRID
+  use ESMF                      , only: ESMF_DISTGRIDCONNECTION, ESMF_GEOMTYPE_FLAG, ESMF_FIELDSTATUS_FLAG, ESMF_GRID, ESMF_MESH, ESMF_TIME
+  use ESMF                      , only: ESMF_STATEITEM_FLAG, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE,  ESMF_GridCompSetEntryPoint, ESMF_METHOD_RUN
+  use ESMF                      , only : ESMF_METHODREMOVE, ESMF_GridCompGet, ESMF_AttributeGet, ESMF_VMGet, ESMF_LOGMSG_INFO, ESMF_LogWrite
+  use ESMF                      , only : ESMF_UtilString2Int
+  use NUOPC                    , only: NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize, NUOPC_NOOP
   use NUOPC_Mediator, only: &
     mediator_routine_SS             => SetServices, &
     mediator_routine_Run            => routine_Run, &
@@ -17,7 +21,7 @@ module MED
     mediator_label_Finalize         => label_Finalize, &
     NUOPC_MediatorGet
 
-  use shr_kind_mod              , only: SHR_KIND_CX, SHR_KIND_CL, SHR_KIND_CS
+  use shr_kind_mod              , only: SHR_KIND_CX, SHR_KIND_CL, SHR_KIND_CS, R8=>SHR_KIND_R8
   use shr_sys_mod               , only: shr_sys_flush, shr_sys_abort
   use esmFlds                   , only: flds_scalar_name
   use esmFlds                   , only: flds_scalar_num
@@ -97,9 +101,9 @@ module MED
   integer            :: dbug_flag = med_constants_dbug_flag
 
   character(len=*)  , parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
-  real(ESMF_KIND_R8), parameter :: spval_init  = med_constants_spval_init
-  real(ESMF_KIND_R8), parameter :: spval       = med_constants_spval
-  real(ESMF_KIND_R8), parameter :: czero       = med_constants_czero
+  real(R8), parameter :: spval_init  = med_constants_spval_init
+  real(R8), parameter :: spval       = med_constants_spval
+  real(R8), parameter :: czero       = med_constants_czero
   integer           , parameter :: ispval_mask = med_constants_ispval_mask
   character(*)      , parameter :: u_FILE_u    = __FILE__
 
@@ -421,7 +425,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
-    ! phase routine for ocn/atm flux computation 
+    ! phase routine for ocn/atm flux computation
     !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
@@ -466,7 +470,7 @@ contains
     ! attach specializing method(s)
     ! -> NUOPC specializes by default --->>> first need to remove the default
     !------------------
-    
+
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Finalize, &
          specRoutine=med_finalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -659,10 +663,10 @@ contains
 
     ! local variables
     integer                         :: i, j
-    real(kind=ESMF_KIND_R8),pointer :: lonPtr(:), latPtr(:)
+    real(kind=R8),pointer :: lonPtr(:), latPtr(:)
     type(InternalState)             :: is_local
     integer                         :: lmpicom
-    real(ESMF_KIND_R8)              :: intervalSec
+    real(R8)              :: intervalSec
     type(ESMF_TimeInterval)         :: timeStep
     ! tcx XGrid
     ! type(ESMF_Field)              :: fieldX, fieldA, fieldO
@@ -1283,7 +1287,7 @@ contains
     !   -- Create mediator specific field bundles (not part of import/export states)
     !   -- Initialize med_infodata, Accums (to zero), and FBImp (from NStateImp)
     !   -- Read mediator restarts
-    !   -- Initialize route handles 
+    !   -- Initialize route handles
     !   -- Initialize field bundles for normalization
     !   -- return!
     ! For second loop:
@@ -1292,7 +1296,7 @@ contains
     ! Once the ocean is ready:
     !   -- Copy import fields to local FBs
     !   -- Re-initialize fractions
-    !   -- Carry out ocnalb_init 
+    !   -- Carry out ocnalb_init
     !   -- Carry out aoffluxes_init
     ! Once the atm is ready:
     !   -- Copy import fields to local FBs
@@ -1511,7 +1515,7 @@ contains
                ! The NStateImp(n2) should be used here rather than NStateExp(n2), since
                ! the export state might only contain control data and no grid information if
                ! if the target component (n2) is not prognostic only receives control data back
-               ! But if STgeom=is_local%wrap%NStateImp(n2) is substituted for STgeom=is_local%wrap%NStateExp(n2) 
+               ! But if STgeom=is_local%wrap%NStateImp(n2) is substituted for STgeom=is_local%wrap%NStateExp(n2)
                ! then an error occurs as follows
 
                call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
@@ -1527,13 +1531,13 @@ contains
       !---------------------------------------
       !--- Initialize route handles and required normalization field bunds
       !---------------------------------------
-      
+
       call med_map_RouteHandles_init(gcomp, llogunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      
+
       call med_map_MapNorm_init(gcomp, llogunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      
+
       !---------------------------------------
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
@@ -1611,7 +1615,7 @@ contains
 
           call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemCount=fieldCount, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
- 
+
           allocate(fieldNameList(fieldCount))
           call ESMF_StateGet(is_local%wrap%NStateImp(n1), itemNameList=fieldNameList, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1652,10 +1656,10 @@ contains
     !----------------------------------------------------------
     ! Create FBfrac field bundles and initialize fractions
     ! This has some complex dependencies on fractions from import States
-    ! and appropriate checks are not implemented. We might need to split 
+    ! and appropriate checks are not implemented. We might need to split
     ! out the fraction FB allocation and the fraction initialization
     !----------------------------------------------------------
-    
+
     call med_fraction_init(gcomp,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call med_fraction_set(gcomp,rc=rc)
@@ -1676,7 +1680,7 @@ contains
        allocate(fieldNameList(fieldCount))
        call ESMF_StateGet(is_local%wrap%NStateImp(compatm), itemNameList=fieldNameList, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       do n=1, fieldCount 
+       do n=1, fieldCount
           call ESMF_StateGet(is_local%wrap%NStateImp(compatm), itemName=fieldNameList(n), field=field, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           atCorrectTime = NUOPC_IsAtTime(field, time, rc=rc)
@@ -1895,7 +1899,7 @@ contains
     integer, intent(out) :: rc
 
     rc = ESMF_SUCCESS
-    
+
     if (mastertask) then
        write(llogunit,*)' SUCCESSFUL TERMINATION '
     end if
