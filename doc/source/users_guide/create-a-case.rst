@@ -53,7 +53,8 @@ Here, $CIMEROOT is the full pathname of the root directory of the CIME distribut
 In the example, the command creates a ``$CASEROOT`` directory: ``~/cime/example1``.
 If that directory already exists, a warning is printed and the command aborts.
 
-In the argument to ``--case``, the directory path is ignored and only the string after the last backslash is used as the [CASE].
+In the argument to ``--case``, the directory path is ignored and only the string after the
+last slash is used as the case name --- so here the case name is ``example1``.
 
 The output from create_newcase includes information such as.
 
