@@ -216,7 +216,8 @@ def main():
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
-    save_provenance(parameters[0].results_dir, parser)
+    if not parameters[0].no_viewer:  # Only save provenance for full runs.
+        save_provenance(parameters[0].results_dir, parser)
 
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
