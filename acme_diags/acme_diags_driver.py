@@ -76,7 +76,48 @@ def _save_env_yml(results_dir):
     print('Saved environment yml file to: {}'.format(fnm))
 
 
-def save_provenance(results_dir):
+def _save_parameter_files(results_dir, parser):
+    """
+    Save the command line arguments used, and any py or cfg files.
+    """
+    cmd_used = ' '.join(sys.argv)
+    fnm = os.path.join(results_dir, 'cmd_used.txt')
+    with open(fnm, 'w') as f:
+        f.write(cmd_used)
+    print('Saved command used to: {}'.format(fnm))
+
+    args = parser.view_args()
+
+    if hasattr(args, 'parameters') and args.parameters:
+        fnm = args.parameters
+        if not os.path.isfile(fnm):
+            print('File does not exist: {}'.format(fnm))
+        else:
+            with open(fnm, 'r') as f:
+                contents = ''.join(f.readlines())
+            # Remove any path, just keep the filename
+            new_fnm = fnm.split('/')[-1]
+            new_fnm = os.path.join(results_dir, new_fnm)
+            with open(new_fnm, 'w') as f:
+                f.write(contents)
+            print('Saved py file to: {}'.format(new_fnm))
+
+    if hasattr(args, 'other_parameters') and args.other_parameters:
+        fnm = args.other_parameters[0]
+        if not os.path.isfile(fnm):
+            print('File does not exist: {}'.format(fnm))
+        else:
+            with open(fnm, 'r') as f:
+                contents = ''.join(f.readlines())
+            # Remove any path, just keep the filename
+            new_fnm = fnm.split('/')[-1]
+            new_fnm = os.path.join(results_dir, new_fnm)
+            with open(new_fnm, 'w') as f:
+                f.write(contents)
+            print('Saved cfg file to: {}'.format(new_fnm))
+
+
+def save_provenance(results_dir, parser):
     """
     Store the provenance in results_dir.
     """
@@ -85,6 +126,7 @@ def save_provenance(results_dir):
         os.makedirs(results_dir, 0o775)
 
     _save_env_yml(results_dir)
+    _save_parameter_files(results_dir, parser)
 
 
 def run_diag(parameters):
@@ -174,7 +216,7 @@ def main():
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
-    save_provenance(parameters[0].results_dir)
+    save_provenance(parameters[0].results_dir, parser)
 
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
