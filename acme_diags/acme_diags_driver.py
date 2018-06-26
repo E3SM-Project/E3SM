@@ -64,7 +64,7 @@ def _save_env_yml(results_dir):
     Save the yml to recreate the environment in results_dir.
     """
     cmd = 'conda env export'
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, err = p.communicate()
     if err:
         print(err)
