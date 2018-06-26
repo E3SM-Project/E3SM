@@ -23,10 +23,12 @@ from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
 def _get_default_diags(set_num, dataset, run_type):
-    """Returns the path for the default diags corresponding to set_num"""
+    """
+    Returns the path for the default diags corresponding to set_num.
+    """
     set_num = get_set_name(set_num)
 
-    if dataset and run_type in ['model_vs_obs', 'obs_vs_model']:  # either 'ACME' or 'AMWG', use the jsons
+    if dataset and run_type == 'model_vs_obs':  # either 'ACME' or 'AMWG', use the jsons
         fnm = '{}_{}.json'.format(set_num, dataset)
     else:  # use the cfgs
         fnm = '{}_{}.cfg'.format(set_num, run_type)
@@ -40,9 +42,11 @@ def _get_default_diags(set_num, dataset, run_type):
     return pth
 
 
-def _collaspse_results(parameters):
-    """When using cdp_run, parameters is a list of lists: [[Parameters], ...].
-       Make this just a list: [Parameters]."""
+def _collapse_results(parameters):
+    """
+    When using cdp_run, parameters is a list of lists: [[Parameters], ...].
+    Make this just a list: [Parameters, ...].
+    """
     output_parameters = []
 
     for p1 in parameters:
@@ -55,21 +59,38 @@ def _collaspse_results(parameters):
     return output_parameters
 
 
-def provenance(results_dir):
-    """Store a JSON of the environmental provenance in results_dir"""
-    cmd = 'conda list'
+def _save_env_yml(results_dir):
+    """
+    Save the yml to recreate the environment in results_dir.
+    """
+    cmd = 'conda env export'
     p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = p.communicate()
-    fnm = os.path.join(results_dir, 'env_prov.txt')
+    if err:
+        print(err)
 
+    fnm = os.path.join(results_dir, 'environment.yml')
     with open(fnm, 'w') as f:
         f.write(output.decode('utf-8'))
-        f.write(err.decode('utf-8'))
-    print('Saving provenance data in: {}'.format(fnm))
+
+    print('Saved environment yml file to: {}'.format(fnm))
+
+
+def save_provenance(results_dir):
+    """
+    Store the provenance in results_dir.
+    """
+    results_dir = os.path.join(results_dir, 'prov')
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir, 0o775)
+
+    _save_env_yml(results_dir)
 
 
 def run_diag(parameters):
-    """For a single set of parameters, run the corresponding diags."""
+    """
+    For a single set of parameters, run the corresponding diags.
+    """
     results = []
     for pset in parameters.sets:
         set_name = get_set_name(pset)
@@ -78,11 +99,10 @@ def run_diag(parameters):
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
         try:
             module = importlib.import_module(mod_str)
-            print('Starting to run E3SM Diagnostics.')
             single_result = module.run_diag(parameters)
             print('')
             results.append(single_result)
-        except Exception as e:
+        except:
             print('Error in {}'.format(mod_str))
             traceback.print_exc()
             if parameters.debug:
@@ -140,10 +160,7 @@ def main():
         parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
             other_parameters=other_parameters, cmd_default_vars=False)
 
-    elif args.parameters and args.other_parameters:  # -p and -d
-        parameters = parser.get_parameters(cmd_default_vars=False)
-
-    else:  # command line args without -p or -d
+    else:  # -p and -d, or just command line arguments
         parameters = parser.get_parameters(cmd_default_vars=False)
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -157,6 +174,8 @@ def main():
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
+    save_provenance(parameters[0].results_dir)
+
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
@@ -164,13 +183,11 @@ def main():
     else:
         parameters = cdp.cdp_run.serial(run_diag, parameters)
 
-    parameters = _collaspse_results(parameters)
+    parameters = _collapse_results(parameters)
 
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
-    else:
-        provenance(parameters[0].results_dir)
-        
+    else:        
         if parameters[0].no_viewer:
             print('Viewer not created because the no_viewer parameter is True.')
         else:
