@@ -3,35 +3,15 @@ module MED
   !-----------------------------------------------------------------------------
   ! Mediator Component.
   !-----------------------------------------------------------------------------
-
+  use shr_kind_mod              , only: SHR_KIND_CX, R8=>SHR_KIND_R8
+#ifdef DOTHIS
   use ESMF                      , only: ESMF_VM, ESMF_GRIDCOMP, ESMF_STATE, ESMF_CLOCK, ESMF_TIMEINTERVAL, ESMF_FIELD, ESMF_DISTGRID
   use ESMF                      , only: ESMF_DISTGRIDCONNECTION, ESMF_GEOMTYPE_FLAG, ESMF_FIELDSTATUS_FLAG, ESMF_GRID, ESMF_MESH, ESMF_TIME
   use ESMF                      , only: ESMF_STATEITEM_FLAG, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE,  ESMF_GridCompSetEntryPoint, ESMF_METHOD_RUN
   use ESMF                      , only : ESMF_METHODREMOVE, ESMF_GridCompGet, ESMF_AttributeGet, ESMF_VMGet, ESMF_LOGMSG_INFO, ESMF_LogWrite
-  use ESMF                      , only : ESMF_UtilString2Int
-  use NUOPC                    , only: NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize, NUOPC_NOOP
-  use NUOPC_Mediator, only: &
-    mediator_routine_SS             => SetServices, &
-    mediator_routine_Run            => routine_Run, &
-    mediator_label_DataInitialize   => label_DataInitialize, &
-    mediator_label_Advance          => label_Advance, &
-    mediator_label_CheckImport      => label_CheckImport, &
-    mediator_label_TimestampExport  => label_TimestampExport, &
-    mediator_label_SetRunClock      => label_SetRunClock, &
-    mediator_label_Finalize         => label_Finalize, &
-    NUOPC_MediatorGet
 
-  use shr_kind_mod              , only: SHR_KIND_CX, SHR_KIND_CL, SHR_KIND_CS, R8=>SHR_KIND_R8
-  use shr_sys_mod               , only: shr_sys_flush, shr_sys_abort
-  use esmFlds                   , only: flds_scalar_name
-  use esmFlds                   , only: flds_scalar_num
-  use esmFlds                   , only: fldListFr, fldListTo
-  use esmFlds                   , only: ncomps, compmed, compatm, compocn
-  use esmFlds                   , only: compice, complnd, comprof, compwav, compglc, compname
-  use esmFlds                   , only: fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetFldNames
-  use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetNumFlds
   use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetFldInfo
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_FB_Init
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_FB_Reset
@@ -45,11 +25,11 @@ module MED
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_State_getNumFields
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_State_Diagnose
   use shr_nuopc_methods_mod     , only: shr_nuopc_methods_clock_timeprint
-  use shr_nuopc_methods_mod     , only: shr_nuopc_methods_ChkErr
   use med_infodata_mod          , only: med_infodata_CopyStateToInfodata
   use med_infodata_mod          , only: med_infodata
   use med_internalstate_mod     , only: InternalState, llogunit=>logunit
   use med_internalstate_mod     , only: med_coupling_allowed
+
   use med_connectors_mod        , only: med_connectors_prep_med2atm
   use med_connectors_mod        , only: med_connectors_prep_med2ocn
   use med_connectors_mod        , only: med_connectors_prep_med2ice
@@ -88,25 +68,20 @@ module MED
   use med_map_mod               , only: med_map_RouteHandles_init
   use med_map_mod               , only: med_map_MapNorm_init
   use med_io_mod                , only: med_io_init
+#endif
+  use med_constants_mod         , only: med_constants_dbug_flag
+  use med_constants_mod         , only: spval_init => med_constants_spval_init
+  use med_constants_mod         , only: spval => med_constants_spval
+  use med_constants_mod         , only: czero => med_constants_czero
+  use med_constants_mod         , only: ispval_mask => med_constants_ispval_mask
+  use shr_nuopc_methods_mod     , only: shr_nuopc_methods_ChkErr
 
   implicit none
   private
 
-  integer            :: dbrc
-  integer            :: stat
-  character(len=1024):: msgString
-  type(ESMF_VM)      :: vm
-  integer            :: localPet
-  logical            :: mastertask
-  integer            :: dbug_flag = med_constants_dbug_flag
-
   character(len=*)  , parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
-  real(R8), parameter :: spval_init  = med_constants_spval_init
-  real(R8), parameter :: spval       = med_constants_spval
-  real(R8), parameter :: czero       = med_constants_czero
-  integer           , parameter :: ispval_mask = med_constants_ispval_mask
   character(*)      , parameter :: u_FILE_u    = __FILE__
-
+  integer :: dbug_flag = med_constants_dbug_flag
   public  SetServices
 
   private InitializeP0
@@ -123,6 +98,48 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine SetServices(gcomp, rc)
+    use ESMF    , only: ESMF_SUCCESS, ESMF_GridCompSetEntryPoint, ESMF_METHOD_INITIALIZE, ESMF_METHOD_RUN
+    use ESMF    , only: ESMF_GridComp, ESMF_MethodRemove
+    use NUOPC   , only: NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize, NUOPC_NOOP
+    use NUOPC_Mediator, only:  mediator_routine_SS             => SetServices
+    use NUOPC_Mediator, only:      mediator_routine_Run            => routine_Run
+    use NUOPC_Mediator, only:      mediator_label_DataInitialize   => label_DataInitialize
+    use NUOPC_Mediator, only:      mediator_label_Advance          => label_Advance
+    use NUOPC_Mediator, only:      mediator_label_CheckImport      => label_CheckImport
+    use NUOPC_Mediator, only:      mediator_label_TimestampExport  => label_TimestampExport
+    use NUOPC_Mediator, only:      mediator_label_SetRunClock      => label_SetRunClock
+    use NUOPC_Mediator, only:      mediator_label_Finalize         => label_Finalize
+    use NUOPC_Mediator, only:      NUOPC_MediatorGet
+    use med_phases_history_mod    , only: med_phases_history
+    use med_connectors_mod        , only: med_connectors_prep_med2atm
+    use med_connectors_mod        , only: med_connectors_prep_med2ocn
+    use med_connectors_mod        , only: med_connectors_prep_med2ice
+    use med_connectors_mod        , only: med_connectors_prep_med2lnd
+    use med_connectors_mod        , only: med_connectors_prep_med2rof
+    use med_connectors_mod        , only: med_connectors_prep_med2wav
+    use med_connectors_mod        , only: med_connectors_prep_med2glc
+    use med_connectors_mod        , only: med_connectors_post_atm2med
+    use med_connectors_mod        , only: med_connectors_post_ocn2med
+    use med_connectors_mod        , only: med_connectors_post_ice2med
+    use med_connectors_mod        , only: med_connectors_post_lnd2med
+    use med_connectors_mod        , only: med_connectors_post_rof2med
+    use med_connectors_mod        , only: med_connectors_post_wav2med
+    use med_connectors_mod        , only: med_connectors_post_glc2med
+    use med_phases_prep_atm_mod   , only: med_phases_prep_atm
+    use med_phases_prep_ice_mod   , only: med_phases_prep_ice
+    use med_phases_prep_lnd_mod   , only: med_phases_prep_lnd
+    use med_phases_prep_rof_mod   , only: med_phases_prep_rof
+    use med_phases_prep_wav_mod   , only: med_phases_prep_wav
+    use med_phases_prep_glc_mod   , only: med_phases_prep_glc
+    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_map
+    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_merge
+    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_fast
+    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_avg
+    use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
+    use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
+    use med_fraction_mod          , only: med_fraction_init, med_fraction_set
+
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -480,14 +497,23 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
+    use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
+    use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
+    use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
+    use NUOPC , only : NUOPC_CompFilterPhaseMap
     type(ESMF_GridComp)   :: gcomp
     type(ESMF_State)      :: importState, exportState
     type(ESMF_Clock)      :: clock
     integer, intent(out)  :: rc
 
     ! local variables
+    type(ESMF_VM)      :: vm
     character(len=*),parameter :: subname='(module_MED:InitializeP0)'
     character(len=128)         :: value
+    integer            :: dbrc
+    integer            :: localPet
+    logical            :: mastertask
+    character(len=SHR_KIND_CX):: msgString
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -527,7 +553,18 @@ contains
   !-----------------------------------------------------------------------
 
   subroutine InitializeIPDv03p1(gcomp, importState, exportState, clock, rc)
-
+    use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_SUCCESS, ESMF_LogFoundAllocError
+    use ESMF, only : ESMF_LogMsg_Info, ESMF_LogWrite
+    use NUOPC   , only : NUOPC_AddNamespace, NUOPC_Advertise
+    use shr_kind_mod, only : shr_kind_cs
+    use med_internalstate_mod     , only: InternalState
+    use esmFlds                   , only: flds_scalar_name
+    use esmFlds                   , only: flds_scalar_num
+    use esmFlds                   , only: ncomps, compmed, compatm, compocn
+    use esmFlds                   , only: compice, complnd, comprof, compwav, compglc, compname
+    use esmFlds                   , only: fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFlds                   , only: fldListFr, fldListTo
+    use shr_nuopc_fldList_mod     , only: shr_nuopc_fldList_GetNumFlds
     ! Mediator advertises its import and export Fields and sets the
     ! TransferOfferGeomObject Attribute.
 
@@ -543,6 +580,8 @@ contains
     character(len=SHR_KIND_CS) :: transferOffer
     type(InternalState)        :: is_local
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p1)'
+    integer            :: dbrc
+    integer            :: stat
     !-----------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -653,7 +692,14 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeIPDv03p3(gcomp, importState, exportState, clock, rc)
-
+    use MPI         , only : MPI_Comm_Dup
+    use ESMF        , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
+    use ESMF        , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_TimeInterval, ESMF_GridCompGetInternalState
+    use ESMF        , only : ESMF_VMGet, ESMF_StateIsCreated
+    use shr_kind_mod,  only : shr_kind_cl, r8=> shr_kind_r8
+    use med_internalstate_mod     , only: InternalState
+    use esmFlds                   , only: ncomps
+    use esmFlds                   , only: fldListFr, fldListTo
     ! Realize connected Fields with transfer action "provide"
 
     type(ESMF_GridComp)  :: gcomp
@@ -671,10 +717,13 @@ contains
     ! tcx XGrid
     ! type(ESMF_Field)              :: fieldX, fieldA, fieldO
     ! type(ESMF_XGrid)              :: xgrid
+    type(ESMF_VM)      :: vm
     integer                         :: n, n1, n2
     character(SHR_KIND_CL)          :: cvalue
     logical                         :: connected
     character(len=*),parameter      :: subname='(module_MED:InitializeIPDv03p3)'
+    integer            :: dbrc
+    integer            :: stat
     !-----------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -715,6 +764,10 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeIPDv03p4(gcomp, importState, exportState, clock, rc)
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_GridCompGetInternalState, ESMF_GRIDCOMP, ESMF_CLOCK, ESMF_STATE
+    use med_internalstate_mod     , only: InternalState
+    use esmFlds                   , only: ncomps
 
     ! Optionally modify the decomp/distr of transferred Grid/Mesh
 
@@ -776,7 +829,8 @@ contains
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     subroutine realizeConnectedGrid(State,string,rc)
-
+      use ESMF, only : ESMF_STATE, ESMF_Field, ESMF_Grid, ESMF_DistGrid, ESMF_DistGridConnection
+      use ESMF, only : ESMF_MAXSTR, ESMF_FieldStatus_Flag, ESMF_GeomType_Flag
       type(ESMF_State)   , intent(inout) :: State
       character(len=*)   , intent(in)    :: string
       integer            , intent(out)   :: rc
@@ -1117,6 +1171,10 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeIPDv03p5(gcomp, importState, exportState, clock, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_LogWrite
+    use ESMF, only : ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use med_internalstate_mod     , only: InternalState
+    use esmFlds                   , only: ncomps
 
     !----------------------------------------------------------
     ! realize all Fields with transfer action "accept"
@@ -1189,7 +1247,11 @@ contains
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     subroutine completeFieldInitialization(State,rc)
-
+      use ESMF, only : ESMF_State, ESMF_MAXSTR, ESMF_Grid, ESMF_Mesh, ESMF_Field, ESMF_FieldStatus_Flag
+      use ESMF, only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
+      use ESMF, only : ESMF_GeomType_Flag
+      use esmFlds                   , only: flds_scalar_name
+      use esmFlds                   , only: flds_scalar_num
       type(ESMF_State)   , intent(inout) :: State
       integer            , intent(out)   :: rc
 
@@ -1274,7 +1336,6 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine DataInitialize(gcomp, rc)
-
     !----------------------------------------------------------
     ! Finish initialization and resolve data dependencies
     ! There will be multiple passes
@@ -1301,6 +1362,13 @@ contains
     ! Once the atm is ready:
     !   -- Copy import fields to local FBs
     !----------------------------------------------------------
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use ESMF, only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_StateItem_Flag, ESMF_MAXSTR
+    use med_internalstate_mod     , only: InternalState
+    use shr_sys_mod               , only: shr_sys_flush
+    use esmFlds                   , only: ncomps
+    use esmFlds                   , only: flds_scalar_name
+    use esmFlds                   , only: flds_scalar_num
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1806,6 +1874,8 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine SetRunClock(gcomp, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_CLOCK, ESMF_Time, ESMF_TimeInterval
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_ClockGet, ESMF_ClockSet
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -1895,6 +1965,7 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_finalize(gcomp, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_SUCCESS
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
