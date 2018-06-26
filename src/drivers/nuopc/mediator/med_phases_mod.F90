@@ -4,37 +4,8 @@ module med_phases_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use NUOPC
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL
-  use esmFlds                 , only : compatm, complnd, compocn
-  use esmFlds                 , only : compice, comprof, compglc
-  use esmFlds                 , only : ncomps, compname 
-  use esmFlds                 , only : flds_scalar_name
-  use esmFlds                 , only : fldListFr, fldListTo
-  use esmFlds                 , only : fldListMed_aoflux_a
-  use esmFlds                 , only : fldListMed_aoflux_o
-  use esmFlds                 , only : fldListMed_ocnalb_o
-  use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetFldNames
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-  use med_fraction_mod        , only : med_fraction_init
-  use med_constants_mod       , only : med_constants_dbug_flag
-  use med_constants_mod       , only : med_constants_czero
-  use med_merge_mod           , only : med_merge_auto
-  use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_internalstate_mod   , only : InternalState
-
   implicit none
   private
-
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer                       :: dbrc
-  logical                       :: mastertask
 
   public  :: med_phases_init
 
@@ -43,6 +14,28 @@ module med_phases_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_init(gcomp, llogunit, rc)
+    use ESMF                    ,only : ESMF_GridCompGet, ESMF_VMGet
+    use ESMF                    ,only : ESMF_GRIDCOMP, ESMF_VM, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use shr_kind_mod            ,only : CL=>SHR_KIND_CL, R8 => SHR_KIND_R8
+    use esmFlds                 , only : compatm, complnd, compocn
+    use esmFlds                 , only : compice, comprof, compglc
+    use esmFlds                 , only : ncomps, compname
+    use esmFlds                 , only : flds_scalar_name
+    use esmFlds                 , only : fldListFr, fldListTo
+    use esmFlds                 , only : fldListMed_aoflux_a
+    use esmFlds                 , only : fldListMed_aoflux_o
+    use esmFlds                 , only : fldListMed_ocnalb_o
+    use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetFldNames
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
+    use med_fraction_mod        , only : med_fraction_init
+    use med_constants_mod       , only : med_constants_dbug_flag
+    use med_constants_mod       , only : med_constants_czero
+    use med_merge_mod           , only : med_merge_auto
+    use med_map_mod             , only : med_map_FB_Regrid_Norm
+    use med_internalstate_mod   , only : InternalState
 
     !----------------------------------------------------------
     ! Initialize field bundles, etc. that are needed as part of
@@ -59,6 +52,12 @@ module med_phases_mod
     integer                :: localPet
     integer                :: n, n1, n2, ncomp, nflds
     character(CL), pointer :: fldnames(:)
+    logical                       :: mastertask
+
+    integer           , parameter :: dbug_flag = med_constants_dbug_flag
+    real(R8)         , parameter :: czero     = med_constants_czero
+    character(*)      , parameter :: u_FILE_u  = __FILE__
+
     !-----------------------------------------------------------
 
     if (dbug_flag > 1) then
@@ -82,7 +81,7 @@ module med_phases_mod
     !----------------------------------------------------------
     ! Create FBfrac field bundles and initialize fractions
     !----------------------------------------------------------
-    
+
     call med_fraction_init(gcomp,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
