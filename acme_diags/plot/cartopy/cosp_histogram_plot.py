@@ -191,4 +191,5 @@ def plot(reference, test, diff, _, parameter):
             _chown(fname, parameter.user)
             print('Sub-plot saved in: ' + fname)
             i += 1
-
+            
+    plt.close()

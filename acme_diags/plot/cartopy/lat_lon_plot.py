@@ -187,3 +187,4 @@ def plot(reference, test, diff, metrics_dict, parameter):
             print('Sub-plot saved in: ' + fname)
             i += 1
 
+    plt.close()
