@@ -72,6 +72,7 @@ module med_io_mod
   !EOP
 
   interface med_io_read
+     module procedure med_io_read_FB
 !     module procedure med_io_read_av
 !     module procedure med_io_read_avs
 !     module procedure med_io_read_avscomp
@@ -520,6 +521,7 @@ contains
     ng = maxval(maxIndexPTile)
     lnx = ng
     lny = 1
+    deallocate(minIndexPTile, maxIndexPTile)
 
     frame = -1
     if (present(nt)) then
@@ -1754,6 +1756,199 @@ contains
     endif
 
   end subroutine med_io_write_time
+
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: med_io_read_FB - read FB to netcdf file
+  !
+  ! !DESCRIPTION:
+  !    Read FB to netcdf file
+  !
+  ! !REVISION HISTORY:
+  !    2018-May-16 - T. Craig - initial version
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
+
+  subroutine med_io_read_FB(filename,FB,pre,rc)
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    implicit none
+    character(len=*),intent(in) :: filename ! file
+    type(ESMF_FieldBundle),intent(in) :: FB ! data to be written
+    character(len=*),optional,intent(in) :: pre      ! prefix to variable name
+    integer, intent(out) :: rc
+
+    !EOP
+
+!tcx
+    type(ESMF_Field)    :: field
+    type(ESMF_Mesh)     :: mesh
+    type(ESMF_Distgrid) :: distgrid
+    integer(in) :: rcode
+    integer(in) :: iam,mpicom
+    integer(in) :: nf,ns,ng
+    integer(in) :: k,n,ndims
+!    integer(in),target  :: dimid2(2)
+!    integer(in),target  :: dimid3(3)
+    integer(in),pointer :: dimid(:)
+    type(file_desc_t) :: pioid
+    type(var_desc_t)  :: varid
+    type(io_desc_t)   :: iodesc
+!    integer(kind=Pio_Offset_Kind) :: frame
+    character(CL)     :: itemc       ! string converted to char
+    character(CL)     :: name1       ! var name
+!    character(CL)    :: cunit       ! var units
+!    character(CL)    :: lname       ! long name
+!    character(CL)    :: sname       ! standard name
+    character(CL)     :: lpre        ! local prefix
+!    logical :: lwhead, lwdata
+!    logical :: luse_float
+    integer(in) :: lnx,lny
+    real(r8)    :: lfillvalue
+    logical     :: exists
+    integer, pointer :: minIndexPTile(:,:), maxIndexPTile(:,:)
+    integer :: dimCount, tileCount
+    integer, pointer :: Dof(:)
+!    integer :: lfile_ind
+    real(r8), pointer :: fldptr1(:)
+    character(*),parameter :: subName = '(med_io_read_FB) '
+
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    rc = ESMF_Success
+
+    lpre = ' '
+    if (present(pre)) then
+       lpre = trim(pre)
+    endif
+
+    if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
+
+    call ESMF_FieldBundleGet(FB, fieldCount=nf, rc=rc)
+    write(tmpstr,*) subname//' field count = '//trim(lpre),nf
+    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    if (nf < 1) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    if (iam==0) inquire(file=trim(filename),exist=exists)
+    call shr_mpi_bcast(exists,mpicom,'med_io_read_fb exists')
+    if (exists) then
+       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
+       call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=dbrc)
+    else
+       call ESMF_LogWrite(trim(subname)//' ERROR: file invalid '//trim(filename), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    endif
+
+    do k = 1,nf
+       call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       name1 = trim(lpre)//'_'//trim(itemc)
+       call ESMF_LogWrite(trim(subname)//' read field '//trim(name1), ESMF_LOGMSG_INFO, rc=dbrc)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid,trim(name1),varid)
+       if (rcode == pio_noerr) then
+
+          if (k == 1) then
+             rcode = pio_inq_varndims(pioid, varid, ndims)
+             write(tmpstr,*) trim(subname),' ndims = ',ndims,k
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             allocate(dimid(ndims))
+             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
+             write(tmpstr,*) trim(subname),' lnx = ',lnx
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             if (ndims>=2) then
+                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
+             else
+                lny = 1
+             end if
+             deallocate(dimid)
+             write(tmpstr,*) trim(subname),' lny = ',lny
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             ng = lnx * lny
+
+             call shr_nuopc_methods_FB_getFieldN(FB, k, field, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_FieldGet(field, mesh=mesh, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(minIndexPTile(dimCount, tileCount), &
+                      maxIndexPTile(dimCount, tileCount))
+             call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+                      maxIndexPTile=maxIndexPTile, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+!             write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
+!             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+
+             if (ng > maxval(maxIndexPTile)) then
+                write(tmpstr,*) subname,' ERROR: dimensions do not match', lnx, lny, maxval(maxIndexPTile)
+                call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                rc = ESMF_Failure
+                return
+             endif
+
+             call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(dof(ns))
+             call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
+             write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+             deallocate(dof)
+          endif
+
+          call pio_read_darray(pioid, varid, iodesc, fldptr1, rcode)
+          rcode = pio_get_att(pioid,varid,"_FillValue",lfillvalue)
+          if (rcode /= pio_noerr) then
+             lfillvalue = fillvalue
+          endif
+          do n = 1,size(fldptr1)
+             if (fldptr1(n) == lfillvalue) fldptr1(n) = 0.0_r8
+          enddo
+       else
+          fldptr1 = 0.0_r8
+       endif
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    enddo
+
+    deallocate(minIndexPTile, maxIndexPTile)
+    call pio_freedecomp(pioid, iodesc)
+    call pio_closefile(pioid)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+
+  end subroutine med_io_read_FB
 
 #if (1 == 0)
   !===============================================================================

@@ -178,31 +178,31 @@ contains
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rain by flux_epbalfact '
+       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rain by flux_epbalfact '
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_snow', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_snow by flux_epbalfact '
+       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_snow by flux_epbalfact '
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_prec', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_prec' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_prec by flux_epbalfact '
+       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_prec by flux_epbalfact '
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_rofl', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rofl' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofl by flux_epbalfact '
+       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofl by flux_epbalfact '
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_rofi', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rofi' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofi by flux_epbalfact '
+       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofi by flux_epbalfact '
     end if
 
     !---------------

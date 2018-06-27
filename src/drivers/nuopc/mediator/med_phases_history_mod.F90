@@ -46,13 +46,13 @@ module med_phases_history_mod
   integer, parameter            :: SecPerDay = 86400    ! Seconds per day
   type(ESMF_Alarm)              :: AlarmHist
 
-  public  :: med_phases_history
+  public  :: med_phases_history_write
 
 !-----------------------------------------------------------------------------
   contains
 !-----------------------------------------------------------------------------
 
-  subroutine med_phases_history(gcomp, rc)
+  subroutine med_phases_history_write(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -87,7 +87,7 @@ module med_phases_history_mod
     logical       :: alarmIsOn    ! generic alarm flag
     real(r8)      :: tbnds(2)     ! CF1.0 time bounds
     logical       :: whead,wdata  ! for writing restart/history cdf files
-    character(len=*), parameter :: subname='(med_phases_history)'
+    character(len=*), parameter :: subname='(med_phases_history_write)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -148,7 +148,7 @@ module med_phases_history_mod
     call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    timediff = currtime - reftime
+    timediff = nexttime - reftime
     call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
     dayssince = day + sec/real(SecPerDay,R8)
 
@@ -251,6 +251,6 @@ module med_phases_history_mod
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
-  end subroutine med_phases_history
+  end subroutine med_phases_history_write
 
 end module med_phases_history_mod

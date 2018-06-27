@@ -10,7 +10,9 @@ module dice_comp_nuopc
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
   use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use seq_timemgr_mod       , only : seq_timemgr_ETimeGet
+  use seq_timemgr_mod       , only : seq_timemgr_EClockPrint, seq_timemgr_AlarmGet
+  use seq_timemgr_mod       , only : seq_timemgr_ETimeGet, seq_timemgr_alarmSetOff
+  use seq_timemgr_mod       , only : seq_timemgr_alarm_restart, seq_timemgr_alarmIsOn
   use esmFlds               , only : fldListFr, fldListTo, compice, compname
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
@@ -84,6 +86,7 @@ module dice_comp_nuopc
   logical                    :: unpack_import
   logical                    :: read_restart              ! start from restart
   character(CL)              :: case_name                 ! case name
+  character(CL)              :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
@@ -545,6 +548,8 @@ module dice_comp_nuopc
     logical                 :: write_restart ! restart alarm is ringing
     integer(IN)             :: currentYMD    ! model date
     integer(IN)             :: currentTOD    ! model sec into model date
+    integer(IN)             :: nextYMD       ! model date
+    integer(IN)             :: nextTOD       ! model sec into model date
     type(ESMF_Time)         :: currTime, nextTime
     type(ESMF_TimeInterval) :: timeStep
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
@@ -584,17 +589,10 @@ module dice_comp_nuopc
     ! Run model
     !--------------------------------
 
-    call ESMF_ClockGetAlarm(clock, alarmname='seq_timemgr_alarm_restart', alarm=alarm, rc=rc)
+    write_restart = seq_timemgr_alarmIsOn(clock, seq_timemgr_alarm_restart, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       write_restart = .true.
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_AlarmRingerOff( alarm, rc=rc )
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       write_restart = .false.
-    endif
+    call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for
@@ -602,13 +600,14 @@ module dice_comp_nuopc
     call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     nextTime = currTime + timeStep
-    call seq_timemgr_ETimeGet( nextTime, ymd=CurrentYMD, tod=CurrentTOD )
+    call seq_timemgr_ETimeGet( currTime, ymd=CurrentYMD, tod=CurrentTOD )
+    call seq_timemgr_ETimeGet( nextTime, ymd=NextYMD, tod=NextTOD )
 
     call dice_comp_run(clock, x2d, d2x, &
          flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
-         currentYMD, currentTOD, case_name=case_name)
+         nextymd, nexttod, case_name=case_name)
 
     !--------------------------------
     ! Pack export state
@@ -673,6 +672,9 @@ module dice_comp_nuopc
     call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+!    call shr_nuopc_methods_Clock_TimePrint(dClock,trim(subname)//'driver clock1',rc)
+!    call shr_nuopc_methods_Clock_TimePrint(mclock,trim(subname)//'model  clock1',rc)
+
     call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -680,40 +682,19 @@ module dice_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
-    ! check that the current time in the model and driver are the same
-    !--------------------------------
-
-    if (mcurrtime /= dcurrtime) then
-      call ESMF_TimeGet(dcurrtime, timeString=dtimestring, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      call ESMF_TimeGet(mcurrtime, timeString=mtimestring, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      rc=ESMF_Failure
-
-      call ESMF_LogWrite(subname//" ERROR in time consistency; "//trim(dtimestring)//" ne "//trim(mtimestring),  &
-           ESMF_LOGMSG_ERROR, rc=dbrc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    !--------------------------------
-    ! force the driver timestep into the model clock for consistency
-    ! by default, the model timestep is probably the slowest timestep in the system
-    ! while the driver timestep will be the timestep for this NUOPC slot
-    ! also update the model stop time for this timestep
+    ! force model clock currtime and timestep to match driver and set stoptime
     !--------------------------------
 
     mstoptime = mcurrtime + dtimestep
-
-    call ESMF_ClockSet(mclock, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
     !--------------------------------
+
+    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (alarmCount == 0) then
        call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
@@ -724,7 +705,7 @@ module dice_comp_nuopc
 
        do n = 1, alarmCount
           !call ESMF_AlarmPrint(alarmList(n), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_AlarmSet(dalarm, clock=mclock, rc=rc)
@@ -733,6 +714,16 @@ module dice_comp_nuopc
 
        deallocate(alarmList)
     endif
+
+    !--------------------------------
+    ! Advance model clock to trigger alarms then reset model clock back to currtime
+    !--------------------------------
+
+    call ESMF_ClockAdvance(mclock,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
