@@ -66,14 +66,17 @@ def _save_env_yml(results_dir):
     cmd = 'conda env export'
     p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, err = p.communicate()
+
     if err:
+        print('Error when creating env yml file:')
         print(err)
 
-    fnm = os.path.join(results_dir, 'environment.yml')
-    with open(fnm, 'w') as f:
-        f.write(output.decode('utf-8'))
+    else:
+        fnm = os.path.join(results_dir, 'environment.yml')
+        with open(fnm, 'w') as f:
+            f.write(output.decode('utf-8'))
 
-    print('Saved environment yml file to: {}'.format(fnm))
+        print('Saved environment yml file to: {}'.format(fnm))
 
 
 def _save_parameter_files(results_dir, parser):
@@ -125,7 +128,11 @@ def save_provenance(results_dir, parser):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, 0o775)
 
-    _save_env_yml(results_dir)
+    try:
+        _save_env_yml(results_dir)
+    except:
+        traceback.print_exc()
+
     _save_parameter_files(results_dir, parser)
 
 
