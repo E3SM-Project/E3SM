@@ -1,3 +1,73 @@
+6/27/18
+
+* Modifications to seq_infodata_mod.F90:
+
+* mostly just search for "lnd", and wherever you see variable definitions
+  or function arguments that have that, you'll see similar sections for
+  every component, so add an "iac" version.
+
+! But!  Down in the function seq_infodata_Exchange() there's a little more
+  to it - that function is used to broadcast some of infodata between pes
+  to exchange information (really, just make it global).  But I need to
+  analyze that function first to see what is involve - I could just mimic
+  rof or wav or somethign like that, but I'd rather get a sense of what
+  this function is doing wrt to what I think iac should be doing.
+
+  ...okay, it looks like just an interface for broadcasting the simple
+  infodata info like "lnd_present" and whatever.  Good, I can just copy
+  it. 
+
+* Okay, seq_infodata_mod.F90 all done!
+
+* The final thing is seq_comm_mct.F90, I think, before I'm ready for the
+  initial commit.
+
+! Need to track down component type.
+
+6/25/18
+
+* Some random notes on things I've been wondering about:
+
+* xxx_prognostic means "does model xxx need input from the driver",
+  according to the description in seq_infodata_mod.F90.   I suspect this is
+  to allow the model to run several time steps while only interacting with
+  the driver some of them - once per day, etc.  This means xxx_prognostic
+  is probably set at the top of every driver loop.
+
+* xxx_present means "does xxx component actually exist", so it's set at run
+  time. 
+
+? My current question I'm pondering is what do we do when we are in the
+  coupler, the lnd (e.g.) model is running, so it does the standard
+  prep_lnd_calc_z2x_lx() call to set up getting the inputs from iac ('z')
+  to lnd ('l')...but it's not the one time a year in which the iac is run?
+  What does the z2x_lx(:) Avect hold when the model hasn't run this loop?
+  What does the lnd model do with that information?  Does
+  prep_lnd_calc_z2x_lx() have some kind of interface or alarm for
+  determining that iac has run now and now we need to apply its output this
+  run, or do we assume we are going to use the same iac outputs for every
+  sample of the upcoming year, or what?
+
+* There's a lot of stuff in seq_infodata_mod.F90 that comes from the
+  namelist or is set in some other way, so it's going to take me a bit to
+  track down all the various ways adding iac to this mod will matter.
+
+5/23/18
+
+* I'm way far behind, because of personal stuff, but we want to be ready
+  with some kind of initial checkin for the code review on July 1.  And we
+  don't want to dump a whole garbage can full of code modifications all at
+  once and have them tell me I'm doing it wrong.
+
+  So, my initial checkin will be modifications mostly to the coupler code
+  to have IAC sections in there - stubbing out the actual calls to setup
+  and run GCAM, but getting all the infrastructure together, possibly with
+  an initial version of the GCAM code at least in its directory.
+
+  This will let code reviewers see what I'm planning on doing, and also
+  might allow somebody to look it over and help me figure out some of the
+  problems I've been having.
+
 1/5/18
 
 * Here is my checklist and working notes as I continue the port.  I'm
@@ -111,6 +181,11 @@
 @ Coupling flags: L1508.  I'm just faking it here, and maybe I need to
   check on prognostic...
 
+  I *think* we may need to do prognostic here - the comments at the top 
+  sketchily suggest that "prognostic" means "expect input", which is what
+  lnd and atm need from iac.  The question is - do we need an
+  iac_prognostic to to couple lnd_c2_iac?
+
 ? L1691: prognostic instances, and making sure num_inst_xxx =
   num_inst_max.  I really don't understand that, but I'll need to figure
   out the prognostic stuff, first.
@@ -160,3 +235,156 @@
 
 ! Finally, cesm_run(), which is I think something I know a little about.
   Let's find out how wrong I am!
+
+@ L2167: seq_comm_mct.mod.F90, iac_layout
+
+* L2171: hashcnt - I have notes on this somewhere, but I still don't know
+  if it applies to iac or not.  We'll have to revisit this.
+
+? L2193: Do I need to set iac_phase=1?  We don't have wav or rof, and iac
+  is less connected than anything, so why don't I skip this for now.
+
+@ L2252: define iacrun_alarm somewhere, seq_timmgr_alarmIsOn(),
+  seq_timemgr_alarm_iacrun.  This hopefully will make it clearer how alarms
+  go and when to run things.  Also, maybe review glcrun_avg_alarm and
+  ocnnext_alarm and see why they need extra alarms for those comps.
+
+@ L2542: prep_lnd_calc_z2x_lx() - need to write this function, to do the
+  iac preparations for updating the land model.  I need to do something
+  like this for atm prep, as well.
+
+? 
+? The Big Quesiton I have so far is how this works with the fact that we
+? run IAC yearly or five yearly, not on the same time grid as the lnd and
+  atm models.  Presumably, prep_lnd_calc_z2x_lx() and
+  prep_atm_calc_z2x_lx() will simply do nothing except on the right time
+  scale, but it's not clear to me how that works.  Do any other components
+  have this delayed and/or long term application?
+
+! OKay, as I understand it, we want to run IAC at the start of a given
+  year (or 5-year block), which finally uses the averaged inputs from the
+  previous year, and then use that input to modify atm and lnd.  So, if my
+  understanding is right, that means we RUN iac before we SETUP lnd and
+  atm.  Is that right?  Do we do a full setup/run/post on IAC before doing
+  anything else?  That suggests we should put the IAC stuff right at the
+  top.
+
+  Let me review other modules and see if I can see that - right now it
+  seems like we do setup (all comps), run (all comps), post (all comps),
+  but that could be just because they are all on the same time scale.
+
+  Alternatively, I guess, we could run iac at the end, and that post will
+  then be available to the next one.  But don't do this - let's run right
+  at the top.
+
+  I'm pretty sure it's okay - we apparently have a lot of options for when
+  ocn/atm models are run and how they are set up, and they happen spread
+! throughout this function.  So, my guess is that I will have to couple in
+  iac in a couple different places - stick with the lnd stuff; whereever we
+  see lnd_c2_atm then activate an iac_c2_atm as well.
+
+! 
+! Okay, I think I'm gonna revise my plan, and just implement iac just like
+! all the other components - serial in setup, then use the same parallel
+  mechanism and barriers as other components.  I believe what this means is
+  that we'll have the previous one year of lnd as input to iac, and then
+  the resulting output of the iac will apply on the *second* timestep of
+  the year for lnd and cam.  I don't think this is a gross violation of the
+  methodolgy, and allows GCAM to be run fully in parallel like other
+  components. 
+
+  It's probably not a big deal either way, as GCAM is not computationally
+  intensive and runs once a year anyway, but if I ran GCAM serially in the
+  coupler before running everybody else's setup (which is essentially how
+  it runs in iESM) it would make this component different than the others,
+  which is harder to maintain and, crucially, more likely for me to get
+  wrong.  Also, who is to say we won't have a CPU intensive IAC module to
+  hook in some point in the future?
+
+! l. 2349 - iac_prognostic - I'm not sure what this means, but I think it
+  suggests that if we are providing input to IAC this is the section where
+  we build those inputs.  When would iac_prognostic NOT be on?  I need to
+  ask Kate about this, but for now I'm keeping the form that the other
+  modules use.  (I'm following ROF as a template).
+
+? Could iac_prognostic be variable, so it's set only on time steps where we
+  need to do stuff?  Hmm.
+
+* prep_iac_accum_avg() - this function should take the average of the accum
+  vars.  I know this one.
+
+* prep_iac_calc_l2r_rx() - I still don't know what fractions_Xx suggest,
+  but thi sis obviously the function that grabs the lnd vars out of the
+  coupler and makes them availalbe (or ready?) for iac to use.
+
+! l. 2361 - prep_iac_mrg() - review what it means to "merge" in this
+  context.  Is this just prep work for the diagnostic in the next line, or
+@ is this more setup for iac to use?  Review what ROF merge does.
+
+! l. 2376 - figure out how component_exch() works, what it does and what
+  all the arguments are.  I'm not sure the timer/barrier format string, but maybe
+  it doesn't matter that much.
+
+* l.2772 - the run call is straightforward, but I still am not sure whether
+  "_fluxes" is what we are sending or not.  I need to know the difference
+  between a flux and state variable, since they seem to be treated
+  differently.  
+
+* l.2849 - Just to be cheeky, I'm putting the IAC RECV before everybody
+  else.  I'm 78% sure it doesn't really matter, as everything is in
+  parallel, but just in case it does I want to run at the top so the lnd
+  can use it later.  Also, this WILL matter if at some point we decide to
+  simply run in the coupler before doing anything else, or something like
+  that (although I think at that point we'll move all these things together
+  in one block).
+
+@ l.2878+ - prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() - functions
+  in the land and atm components that I have to write to pull the important
+  outputs from iac.  This might be the toughest thing, because I'm not at
+  all conversent in those other models and do not know how they use these
+  inputs.  I hope the iESM code helps with regard to this, but since it
+  couples differently I'm not at all sure that will be the case.
+
+  (Also, make sure these functions are named correctly - I'm still a little
+  shaky on the naming arcana).
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXX See below, after seq_hist_write()
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+! l.2895_ - not sure what do_hist_z2x might imply - writing out history
+  files?  Just follow the template and figure it out later.  It may mean
+  figuring out seq_hist_writeaux() to add in the var names or something.
+
+  (especially with regard to nx, ny, the write_now argument?  I set
+  write_now to the t1yr_alarm, because we run yearly, but, yes, well, hmm.) 
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+@ l.3779 - restart file - seq_rest_write() - another in the endless string
+  of functions that I hope are easy to modify to deal with an iac
+  component.  Add in fractions_zx and the iac component, and hope for the
+  best.  
+
+@ l.3803 - seq_hist_write() - same thing.
+  l.3812 - seq_hist_write_avg()
+
+? Huh, down here is where some do_hist_a2x stuff happens.  Also the 1 year
+  lnd writes; maybe move iac down here?  Do we even need iac hist writes?
+
+! You know what? Screw the do_hist_z2x stuff.  We'll add it in later if we
+  want it,  maybe right here, maybe after iac post like rof does.
+
+* Restart -
+  l.3953 - seq_rest_read()
+
+* l.4032 - just follow the pattern - see if root, whatever.
+
+! Whoo-hoo, done with cesm_run - now cesm_final():
+
+* l. 4129 - component_final() - review.  It might be part of what you do to
+  create a component in the first place.
+
+* Hey, that's it. For cesm_comp_mod.F90.
+
+
+
+ 

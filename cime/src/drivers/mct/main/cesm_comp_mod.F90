@@ -1477,6 +1477,7 @@ subroutine cesm_init()
       if (atm_prognostic) lnd_c2_atm = .true.
       if (rof_prognostic) lnd_c2_rof = .true.
       if (glc_prognostic) lnd_c2_glc = .true.
+      if (iac_prognostic) lnd_c2_iac = .true.
    endif
    if (ocn_present) then
       if (atm_prognostic) ocn_c2_atm = .true.
@@ -1504,9 +1505,8 @@ subroutine cesm_init()
    endif
 
    if (iac_present) then
-      if (lnd_present) lnd_c2_iac = .true.
-      if (lnd_present) iac_c2_lnd = .true.
-      if (atm_present) iac_c2_atm = .true.
+      if (lnd_prognostic) iac_c2_lnd = .true.
+      if (atm_prognostic) iac_c2_atm = .true.
    endif
 
    !----------------------------------------------------------
@@ -1690,6 +1690,8 @@ subroutine cesm_init()
       call shr_sys_abort(subname//' ERROR: rof_prognostic but num_inst_rof not num_inst_max')
    if (wav_prognostic .and. num_inst_wav /= num_inst_max) &
       call shr_sys_abort(subname//' ERROR: wav_prognostic but num_inst_wav not num_inst_max')
+   if (iac_prognostic .and. num_inst_iac /= num_inst_max) &
+      call shr_sys_abort(subname//' ERROR: iac_prognostic but num_inst_wav not num_inst_max')
 
    !----------------------------------------------------------
    !| Initialize attribute vectors for prep_c2C_init_avs routines and fractions
@@ -1702,9 +1704,9 @@ subroutine cesm_init()
       call t_adj_detailf(+2)
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-      call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
+      call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
 
-      call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
+      call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
       call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn)
 
@@ -1716,7 +1718,7 @@ subroutine cesm_init()
 
       call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
-      call prep_iac_init(infodata, lnd_c2_iac, iac_c2_lnd, iac_c2_atm)
+      call prep_iac_init(infodata, lnd_c2_iac)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
       call t_adj_detailf(-2)
@@ -2164,7 +2166,7 @@ end subroutine cesm_init
 
  subroutine cesm_run()
    use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
-        rof_layout, ocn_layout, wav_layout, esp_layout
+        rof_layout, ocn_layout, wav_layout, esp_layout, iac_layout
    use shr_string_mod, only: shr_string_listGetIndexF
 
    ! gptl timer lookup variables
@@ -2249,6 +2251,7 @@ end subroutine cesm_init
       esprun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_esprun)
       ocnrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_ocnrun)
       ocnnext_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_ocnnext)
+      iacrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_iacrun)
       restart_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_restart)
       history_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_history)
       histavg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_histavg)
@@ -2324,7 +2327,7 @@ end subroutine cesm_init
             write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
                  ' aliogrw run alarms = ',  atmrun_alarm, lndrun_alarm, &
                  icerun_alarm, ocnrun_alarm, glcrun_alarm, &
-                 rofrun_alarm, wavrun_alarm, esprun_alarm
+                 rofrun_alarm, wavrun_alarm, esprun_alarm, iacrun_alarm
             write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
                  ' 1.2.3.6.12.24 run alarms = ',  t1hr_alarm, t2hr_alarm, &
                  t3hr_alarm, t6hr_alarm, t12hr_alarm, t24hr_alarm
@@ -2334,6 +2337,53 @@ end subroutine cesm_init
 
       call t_stopf ('CPL:CLOCK_ADVANCE')
 
+      !----------------------------------------------------------
+      !| IAC SETUP-SEND
+      !----------------------------------------------------------
+      if (iac_present .and. iac_alarm) then
+         !-------------------------------------------------------
+         ! | iac prep-merge
+         !-------------------------------------------------------
+
+         if (iamin_CPLID .and. iac_prognostic) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:IACPREP_BARRIER')
+
+            call t_drvstartf ('CPL:IACPREP', cplrun=.true., barrier=mpicom_CPLID)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+            ! Average our accumulators
+            call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+
+            ! Setup lnd inputs on iac grid.  Right now I think they will be the same 
+            ! thing, but I'm trying to code for the general case
+            if (lnd_c2_iac) then
+               call prep_iac_calc_l2x_zx(timer='CPL:iacprep_lnd2iac')
+            endif
+
+            
+            call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+
+            call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
+                 info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
+
+            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+            call t_drvstopf  ('CPL:IACPREP',cplrun=.true.)
+         endif
+
+         !----------------------------------------------------
+         !| cpl -> iac
+         !----------------------------------------------------
+
+         if (iamin_CPLALLIACID .and. iac_prognostic) then
+            call component_exch(iac, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2iac_run', &
+                 mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+                 timer_barrier='CPL:C2Z_BARRIER', timer_comp_exch='CPL:C2Z', &
+                 timer_map_exch='CPL:c2z_iacx2iacr', timer_infodata_exch='CPL:c2z_infoexch')
+         endif
+
+      endif
+         
       !----------------------------------------------------------
       !| MAP ATM to OCN
       !  Set a2x_ox as a module variable in prep_ocn_mod
@@ -2538,6 +2588,11 @@ end subroutine cesm_init
                call prep_lnd_calc_a2x_lx(timer='CPL:lndprep_atm2lnd')
             endif
 
+            ! IAC export onto lnd grid
+            if (iac_c2_lnd) then
+               call prep_lnd_calc_z2x_lx(timer='CPL:lndprep_iac2lnd')
+            endif
+
             if (lnd_prognostic) then
                call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
@@ -2715,6 +2770,18 @@ end subroutine cesm_init
       endif
 
       !----------------------------------------------------------
+      !| RUN IAC MODEL
+      !----------------------------------------------------------
+      if (iac_present .and. iacrun_alarm) then
+         call component_run(Eclock_z, iac, iac_run, infodata, &
+              seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
+              comp_prognostic=iac_prognostic, comp_num=comp_num_iac, &
+              timer_barrier= 'CPL:IAC_RUN_BARRIER', timer_comp_run='CPL:IAC_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=iac_layout)
+      endif
+
+      !----------------------------------------------------------
       !| RUN ICE MODEL
       !----------------------------------------------------------
 
@@ -2779,6 +2846,49 @@ end subroutine cesm_init
               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
               timer_barrier= 'CPL:OCNT_RUN_BARRIER', timer_comp_run='CPL:OCNT_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
+      endif
+
+      !----------------------------------------------------------
+      !| IAC RECV-POST
+      !----------------------------------------------------------
+
+      if (iac_present .and. iacrun_alarm) then
+
+         !----------------------------------------------------------
+         !| iac -> cpl
+         !----------------------------------------------------------
+
+         if (iamin_CPLALLIACID) then
+            call component_exch(rof, flow='c2x', &
+                 infodata=infodata, infodata_string='iac2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLIACID, run_barriers=run_barriers, &
+                 timer_barrier='CPL:Z2C_BARRIER', timer_comp_exch='CPL:Z2C', &
+                 timer_map_exch='CPL:z2c_iacr2iacx', timer_infodata_exch='CPL:z2c_infoexch')
+         endif
+
+         !----------------------------------------------------------
+         !| iac post
+         !----------------------------------------------------------
+
+         if (iamin_CPLID) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:IACPOST_BARRIER')
+            call t_drvstartf  ('CPL:IACPOST',cplrun=.true.,barrier=mpicom_CPLID)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+            call component_diag(infodata, iac, flow='c2x', comment= 'recv iac', &
+                 info_debug=info_debug, timer_diag='CPL:iacpost_diagav')
+
+            ! TRS I think this is wrong - review these prep functions.  I think it's more likely 
+            if (iac_c2_lnd) then
+               call prep_lnd_calc_z2x_lx(timer='CPL:iacpost_iac2lnd')
+            endif
+
+            if (iac_c2_atm) then
+               call prep_atm_calc_z2x_ax(timer='CPL:iacpost_iac2atm')
+            endif
+
+            call t_drvstopf  ('CPL:IACPOST', cplrun=.true.)
+         endif
       endif
 
       !----------------------------------------------------------
@@ -2990,6 +3100,11 @@ end subroutine cesm_init
             endif
             if (lnd_c2_glc) then
                call prep_glc_accum(timer='CPL:lndpost_accl2g' )
+            endif
+
+            ! Accum iac inputs - prep_iac_mod
+            if (lnd_c2_iac) then
+               call prep_iac_accum(timer='CPL:lndpost_accl2z')
             endif
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -3409,6 +3524,10 @@ end subroutine cesm_init
                call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:atmprep_lnd2atm')
             endif
 
+            if (iac_c2_atm) then
+               call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:atmprep_iac2atm')
+            endif
+
             if (associated(xao_ax)) then
                call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
             endif
@@ -3671,9 +3790,9 @@ end subroutine cesm_init
          endif
 
          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-              atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+              atm, lnd, ice, ocn, rof, glc, wav, esp, iac             &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-              fractions_rx, fractions_gx, fractions_wx)
+              fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
@@ -3695,16 +3814,16 @@ end subroutine cesm_init
             endif
 
             call seq_hist_write(infodata, EClock_d, &
-                 atm, lnd, ice, ocn, rof, glc, wav, &
+                 atm, lnd, ice, ocn, rof, glc, wav, iac, &
                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-                 fractions_rx, fractions_gx, fractions_wx)
+                 fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          endif
 
          if (do_histavg) then
             call seq_hist_writeavg(infodata, EClock_d, &
-                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm)
+                 atm, lnd, ice, ocn, rof, glc, wav, iac, histavg_alarm)
          endif
 
          if (do_hist_a2x) then
@@ -3845,9 +3964,9 @@ end subroutine cesm_init
          end if
          if (iamin_CPLID) then
             call seq_rest_read(drv_resume, infodata,                          &
-                 atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
+                 atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
-                 fractions_rx, fractions_gx, fractions_wx)
+                 fractions_rx, fractions_gx, fractions_wx, fractions_zx)
          end if
          ! Clear the resume file so we don't try to read it again
          drv_resume = ' '
@@ -3923,7 +4042,8 @@ end subroutine cesm_init
               lnd(ens1)%iamroot_compid .or. &
               ice(ens1)%iamroot_compid .or. &
               glc(ens1)%iamroot_compid .or. &
-              wav(ens1)%iamroot_compid) then
+              wav(ens1)%iamroot_compid .or. &
+              iac(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss,.true.)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
@@ -4019,6 +4139,7 @@ end subroutine cesm_init
    call component_final(EClock_o, ocn, ocn_final)
    call component_final(EClock_g, glc, glc_final)
    call component_final(EClock_w, wav, wav_final)
+   call component_final(EClock_w, iac, iac_final)
 
    !------------------------------------------------------------------------
    ! End the run cleanly
