@@ -422,6 +422,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
+      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -435,6 +436,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -448,6 +451,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -952,14 +957,10 @@
     </values>
   </entry>
 
-  <!-- =========================================== -->
-  <!-- MED general attributes                      -->
-  <!-- =========================================== -->
-
   <entry id="flux_convergence">
     <type>real</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Iterate atmocn flux calculation to this % difference
       Setting this to zero will always do flux_max_iteration
@@ -973,7 +974,7 @@
   <entry id="flux_max_iteration">
     <type>integer</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Iterate atmocn flux calculation a max of this value
     </desc>
@@ -986,15 +987,19 @@
   <entry id="coldair_outbreak_mod">
     <type>logical</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
+      <value cime_model='e3sm'>.false.</value>
     </values>
   </entry>
+
+  <!-- =========================================== -->
+  <!-- MED general attributes                      -->
+  <!-- =========================================== -->
 
   <entry id="info_debug" modify_via_xml="INFO_DBUG">
     <type>integer</type>

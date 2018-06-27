@@ -14,6 +14,7 @@ module MED
     mediator_label_CheckImport      => label_CheckImport, &
     mediator_label_TimestampExport  => label_TimestampExport, &
     mediator_label_SetRunClock      => label_SetRunClock, &
+    mediator_label_Finalize         => label_Finalize, &
     NUOPC_MediatorGet
 
   use shr_kind_mod              , only: SHR_KIND_CX, SHR_KIND_CL, SHR_KIND_CS
@@ -110,6 +111,7 @@ module MED
   private InitializeIPDv03p5 ! realize all Fields with transfer action "accept"
   private DataInitialize     ! finish initialization and resolve data dependencies
   private SetRunClock
+  private med_finalize
 
 !-----------------------------------------------------------------------------
 contains
@@ -446,6 +448,15 @@ contains
     call ESMF_MethodRemove(gcomp, mediator_label_SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_SetRunClock, specRoutine=SetRunClock, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! attach specializing method(s)
+    ! -> NUOPC specializes by default --->>> first need to remove the default
+    !------------------
+    
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Finalize, &
+         specRoutine=med_finalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine SetServices
@@ -2013,6 +2024,20 @@ contains
 
   end subroutine Mediator_restart
 #endif
+
+  !-----------------------------------------------------------------------------
+
+  subroutine med_finalize(gcomp, rc)
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    rc = ESMF_SUCCESS
+    
+    if (mastertask) then
+       write(llogunit,*)' SUCCESSFUL TERMINATION '
+    end if
+
+  end subroutine med_finalize
 
   !-----------------------------------------------------------------------------
 

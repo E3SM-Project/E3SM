@@ -168,15 +168,23 @@ def _post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
+    driver = case.get_value("COMP_INTERFACE")
+
+    if driver == 'mct':
+        file_prefix = 'cpl'
+    elif driver == 'nuopc':
+        file_prefix = 'med'
+
     cpl_ninst = 1
     if case.get_value("MULTI_DRIVER"):
         cpl_ninst = case.get_value("NINST_MAX")
     cpl_logs = []
+
     if cpl_ninst > 1:
         for inst in range(cpl_ninst):
-            cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
+            cpl_logs.append(os.path.join(rundir, file_prefix + "_%04d.log." % (inst+1) + lid))
     else:
-        cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
+        cpl_logs = [os.path.join(rundir, file_prefix + ".log." + lid)]
     cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
@@ -259,6 +267,7 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
     postrun_script = self.get_value("POSTRUN_SCRIPT")
+    driver = self.get_value("COMP_INTERFACE")
 
     data_assimilation_cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = self.get_value("DATA_ASSIMILATION_SCRIPT")
@@ -283,8 +292,12 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
 
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
 
-        if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-            get_timing(self, lid)     # Run the getTiming script
+        # TODO: remove the hard-wiring for nuopc below
+        if driver == 'mct':
+            if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
+                get_timing(self, lid)     # Run the getTiming script
+        else:
+            self.set_value("CHECK_TIMING",False)
 
         if data_assimilation:
             self.flush()

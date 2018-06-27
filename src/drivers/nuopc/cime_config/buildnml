@@ -31,6 +31,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #--------------------------------
     config = {}
     config['cime_model'] = get_model()
+    config['iyear'] = case.get_value('COMPSET').split('_')[0]
     config['BGC_MODE'] = case.get_value("CCSM_BGC")
     config['CPL_I2O_PER_CAT'] = case.get_value('CPL_I2O_PER_CAT')
     config['COMP_RUN_BARRIERS'] = case.get_value('COMP_RUN_BARRIERS')
@@ -47,6 +48,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['timer_level'] = 'pos' if case.get_value('TIMER_LEVEL') >= 1 else 'neg'
     config['bfbflag'] = 'on' if case.get_value('BFBFLAG') else 'off'
     config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
+
+    # needed for determining the run sequence
     config['COMP_ATM'] = case.get_value("COMP_ATM")
     config['COMP_ICE'] = case.get_value("COMP_ICE")
     config['COMP_GLC'] = case.get_value("COMP_GLC")
@@ -66,6 +69,14 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
+
+    #--------------------------------
+    # Overwrite: set brnch_retain_casename
+    #--------------------------------
+    start_type = nmlgen.get_value('start_type')
+    if start_type != 'startup':
+        if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
+            nmlgen.set_value('brnch_retain_casename' , value='.true.')
 
     #--------------------------------
     # Overwrite: set component coupling frequencies
@@ -104,6 +115,13 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             nmlgen.add_default(comp.lower() + '_cpl_dt', value=cpl_dt)
             mindt = min(mindt, cpl_dt)
             # elif comp.lower() is not 'cpl':
+
+    # sanity check
+    comp_atm = case.get_value("COMP_ATM")
+    if comp_atm is not None and comp_atm not in('datm', 'xatm', 'satm'):
+        atmdt = int(basedt / case.get_value('ATM_NCPL'))
+        expect(atmdt == mindt, 'Active atm should match shortest model timestep atmdt={} mindt={}'
+               .format(atmdt, mindt))
 
     #--------------------------------
     # Overwrite: set start_ymd
@@ -371,11 +389,6 @@ def buildnml(case, caseroot, component):
 
     # create cplconf/namelist
     infile_text = ""
-    # if case.get_value('COMP_ATM') == 'cam':
-    #     # cam is actually changing the driver namelist settings
-    #     cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
-    #     if "aquaplanet" in cam_config_opts:
-    #         infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
     # determine infile list for nmlgen
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
