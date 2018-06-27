@@ -15,7 +15,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []
-        self.seasons = []
+        self.seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
         self.regions = ['global']
         self.regrid_tool = 'esmf'
         self.regrid_method = 'conservative'
