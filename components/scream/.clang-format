@@ -1,0 +1,10 @@
+---
+BasedOnStyle: Google
+IndentWidth: 2
+SpaceBeforeParens: Never
+TabWidth: 2
+UseTab: Never
+---
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Right
