@@ -23,11 +23,11 @@ def parse_command_line(args, cimeroot, description):
     except:
         cime_config = None
 
-    parser.add_argument("--case", "-case", required=True, metavar="CASEROOT",
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
                         help="(required) Specify the case name. "
-                        "\nCan be a full path specifying where the case should be created; "
-                        "\nthe name of the case will be the last component of the path. "
-                        "\nIf not a full path, then the case is created in a location relative to the current working directory.")
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
