@@ -2230,10 +2230,10 @@ This allows using a different mpirun command to launch unit tests
     <PROJECT>nems</PROJECT>
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
     <CIME_OUTPUT_ROOT>/scratch4/NCEPDEV/nems/noscrub/$USER/cimecases</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch4/NCEPDEV/nems/noscrub/Anthony.Craig/cesm_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/BASELINES</BASELINE_ROOT>
     <!--<CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>-->
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
