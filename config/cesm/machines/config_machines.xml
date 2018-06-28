@@ -261,6 +261,8 @@ This allows using a different mpirun command to launch unit tests
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <!-- <DIN_LOC_ROOT>/glade/scratch/mvertens/inputdata2</DIN_LOC_ROOT> -->
+    <!-- <DIN_LOC_ROOT_CLMFORC>/glade/scratch/mvertens/inputdata/atm2/datm7</DIN_LOC_ROOT_CLMFORC> -->
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>

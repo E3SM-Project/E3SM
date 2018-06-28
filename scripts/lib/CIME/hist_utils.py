@@ -24,6 +24,9 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     # Match hist files produced by run
     test_hists = glob.glob("{}/{}.{}*.h?.nc{}".format(from_dir, testcase, model, suffix))
     test_hists.extend(glob.glob("{}/{}.{}*.h.nc{}".format(from_dir, testcase, model, suffix)))
+    #for mom files - TODO need conforming file names from MOM
+    # test_hists.extend(glob.glob("{}/{}.{}6.f*.nc".format(from_dir, testcase, model)))
+    test_hists.extend(glob.glob("{}/{}.{}6*nc".format(from_dir, testcase, model)))
 
     # Match multi-instance files produced by run
     test_hists.extend(glob.glob("{}/{}.{}*.h?.*.nc{}".format(from_dir, testcase, model, suffix)))
@@ -38,6 +41,7 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
         test_hists.extend(glob.glob("{}/{}*.h?.*.nc".format(from_dir, model)))
 
     test_hists.sort()
+    logger.debug("test_hists for model {} are {}".format(model, test_hists))
     return test_hists
 
 def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
@@ -352,11 +356,35 @@ def get_extension(model, filepath):
     '0002.h0'
     >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
+    >>> get_extension("mom","SMS_Vnuopc_Ld5.T62_g16.CMOM.cheyenne_intel.mom-nuopc_cap.mom6.frc._0001_001.nc")
+    'frc'
+    >>> get_extension("mom","SMS_Vnuopc_Ld5.T62_g16.CMOM.cheyenne_intel.mom-nuopc_cap.mom6.hm._0001_001.nc")
+    'hm'
+    >>> get_extension("mom","SMS_Vnuopc_Ld5.T62_g16.CMOM.cheyenne_intel.mom-nuopc_cap.mom6.hmz._0001_001.nc")
+    'hmz'
+    >>> get_extension("mom","SMS_Vnuopc_Ld5.T62_g16.CMOM.cheyenne_intel.mom-nuopc_cap.mom6.prog._0001_001.nc")
+    'prog'
     """
     basename = os.path.basename(filepath)
     ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-
     m = ext_regex.match(basename)
+    if model == 'mom':
+        if (m is None): 
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+        if (m is None):
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](hmz)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+        if (m is None):
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](prog)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+        if (m is None):
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+        if (m is None):
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](static)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
     if m.group(1) is not None:
