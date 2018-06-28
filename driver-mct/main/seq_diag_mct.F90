@@ -2253,11 +2253,8 @@ contains
     ! print instantaneous budget data
     !-------------------------------------------------------------------------------
 
-    call seq_comm_setptrs(ID,&
-         mpicom=mpicom, iam=iam)
-
-    call seq_infodata_GetData(infodata,&
-         bfbflag=bfbflag)
+    call seq_comm_setptrs(ID, mpicom=mpicom, iam=iam)
+    call seq_infodata_GetData(infodata, bfbflag=bfbflag)
 
     lcomment = ''
     if (present(comment)) then
@@ -2270,25 +2267,23 @@ contains
     km = mct_aVect_indexRA(dom%data,'mask')
     ka = mct_aVect_indexRA(dom%data,afldname)
     kflds = mct_aVect_nRattr(AV)
-    allocate(sumbuf(kflds),sumbufg(kflds))
+    allocate(sumbufg(kflds),stat=rcode)
+    if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate sumbufg')
 
-    sumbuf =       0.0_r8
+    npts = mct_aVect_lsize(AV)
+    allocate(weight(npts),stat=rcode)
+    if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
+
+    weight(:) = 1.0_r8
+    do n = 1,npts
+       if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
+          weight(n) = 0.0_r8
+       else
+          weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
+       endif
+    enddo
 
     if (bfbflag) then
-
-       npts = mct_aVect_lsize(AV)
-       allocate(weight(npts),stat=rcode)
-       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
-
-       weight(:) = 1.0_r8
-       do n = 1,npts
-          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
-             weight(n) = 0.0_r8
-          else
-             weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
-          endif
-       enddo
-
        allocate(weighted_data(npts,kflds),stat=rcode)
        if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weighted_data')
 
@@ -2304,22 +2299,12 @@ contains
        call shr_reprosum_calc (weighted_data, sumbufg, npts, npts, kflds, &
                                commid=mpicom)
 
-       deallocate(weight, weighted_data)
+       deallocate(weighted_data)
 
     else
-
-       npts = mct_aVect_lsize(AV)
-       allocate(weight(npts),stat=rcode)
-       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
-
-       weight(:) = 1.0_r8
-       do n = 1,npts
-          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
-             weight(n) = 0.0_r8
-          else
-             weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
-          endif
-       enddo
+       allocate(sumbuf(kflds),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate sumbuf')
+       sumbuf = 0.0_r8
 
        do n = 1,npts
           do k = 1,kflds
@@ -2332,9 +2317,10 @@ contains
        !--- global reduction ---
        call shr_mpi_sum(sumbuf,sumbufg,mpicom,subname)
 
-       deallocate(weight)
+       deallocate(sumbuf)
 
     endif
+    deallocate(weight)
 
     if (iam == 0) then
        !      write(logunit,*) 'sdAV: *** writing ',trim(lcomment),': k fld min/max/sum ***'
@@ -2351,7 +2337,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-    deallocate(sumbuf,sumbufg)
+    deallocate(sumbufg)
 
 100 format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a,1x,a)
 101 format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
