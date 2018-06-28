@@ -104,6 +104,7 @@
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
+    <batch_env>-env</batch_env>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
@@ -486,8 +487,12 @@
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-       <directive compiler="!pgiacc">-alloc_flags smt2</directive>
-       <directive compiler="pgiacc">-alloc_flags "gpumps smt2"</directive>
+     </directives>
+     <directives compiler="!pgiacc">
+       <directive>-alloc_flags smt2</directive>
+     </directives>
+     <directives compiler="pgiacc">
+       <directive>-alloc_flags "gpumps smt2"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>

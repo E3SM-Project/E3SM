@@ -3,24 +3,32 @@
 Customizing your input variables
 ================================
 
-CIME and current CIME-compliant components currently primarily uses fortran namelists.
+CIME and CIME-compliant components primarily use Fortran namelists to control runtime options.  Some components use
+other text-based files for runtime options.
 
-All CIME-compliant components generate their input variable settings using a **buildnml** file located in the component's **cime_config** directory.
+All CIME-compliant components generate their input variable files using a **buildnml** script typically located in the
+component's **cime_config** directory (or other location as set in **config_file.xml**).
+**buildnml** may call other scripts to complete construction of the input file.
 
 For example, the CIME data atmosphere model (DATM) generates namelists using the script **$CIMEROOT/components/data_comps/datm/cime_config/buildnml**.
 
-You can customize your namelists  in one of two ways:
+You can customize a model's namelists in one of two ways:
 
 1. by editing the **$CASEROOT/user_nl_xxx** files
 
-  These files should be modified via keyword-value pairs that correspond to new namelist or input data settings.
+  These files should be modified via keyword-value pairs that correspond to new namelist or input data settings.  They use the
+  syntax of Fortran namelists.
 
 2. by calling `xmlchange <../Tools_user/xmlchange.html>`_ to modify xml variables in your ``$CASEROOT``.
 
-You can preview the component namelists by running `preview_namelists <../Tools_user/preview_namelists.html>`_  from ``$CASEROOT``.
+   Many of these variables are converted to Fortran namelist values for input by the models.  Variables that have
+   to be coordinated between models in a coupled system (such as how many steps to run for) are usually in a CIME xml file.
+
+You can generate the component namelists by running `preview_namelists <../Tools_user/preview_namelists.html>`_  from ``$CASEROOT``.
 
 This results in the creation of component namelists (for example, atm_in, lnd_in, and so on) in ``$CASEROOT/CaseDocs/``.
-The namelist files are there only for user reference and **SHOULD NOT BE EDITED** since they are overwritten every time `preview_namelists <../Tools_user/preview_namelists.html>`_ and `case.submit <../Tools_user/case.submit.html>`_ are called.
+
+.. warning:: The namelist files in ``CaseDocs`` are  there only for user reference and **SHOULD NOT BE EDITED** since they are overwritten every time `preview_namelists <../Tools_user/preview_namelists.html>`_ and `case.submit <../Tools_user/case.submit.html>`_ are called and the files read at runtime are not the ones in ``CaseDocs``.
 
 .. _use-cases-modifying-driver-namelists:
 
@@ -50,10 +58,139 @@ On the hand, to change the driver namelist value of the starting year/month/day,
 Note that
 
 To see the result of change, call `preview_namelists <../Tools_user/preview_namelists.html>`_  and verify that the new value appears in **CaseDocs/drv_in**.
+
+.. _basic_example:
+
+Setting up a multi-year run
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This shows all of the steps necessary to do a multi-year simulation starting from a "cold start" for all components.  The
+compset and resolution in this example are for a CESM fully-coupled case but the steps are similar for other models and cases.
+
+1. Create a new case named EXAMPLE_CASE in your **$HOME** directory.
+
+   ::
+
+      > cd $CIME/scripts
+      > ./create_newcase --case ~/EXAMPLE_CASE --compset B1850 --res f09_g17
+
+2. Check the pe-layout by running **./pelayout**. Make sure it is suitable for your machine.
+   If it is not use `xmlchange <../Tools_user/xmlchange.html>`_ or  `pelayout <../Tools_user/pelayout.html>`_ to modify your pe-layout.
+   Then setup your case and build your executable.
+
+   ::
+
+      > cd ~/EXAMPLE_CASE
+      > ./case.setup
+      > ./case.build
+
+   .. warning:: The case.build script can be compute intensive and may not be suitable to run on a login node. As an alternative you would submit this job to an interactive queue.
+                For example, on the NCAR cheyenne platform, you would use **qcmd -- ./case.build** to do this.
+
+3. In your case directory, set the job to run 12 model months, set the wallclock time, and submit the job.
+
+   ::
+
+      > ./xmlchange STOP_OPTION=nmonths
+      > ./xmlchange STOP_N=12
+      > ./xmlchange JOB_WALLCLOCK_TIME=06:00 --subgroup case.run
+      > ./case.submit
+
+4. Make sure the run succeeded.
+
+   You should see the following line or similar at the end of the **cpl.log** file in your run directory or your short term archiving directory, set by ``$DOUT_S_ROOT``.
+
+   ::
+
+      (seq_mct_drv): ===============       SUCCESSFUL TERMINATION OF CPL7-cesm ===============
+
+5. In the same case directory, Set the case to resubmit itself 10 times so it will run a total of 11 years (including the initial year), and resubmit the case. (Note that a resubmit will automatically change the run to be a continuation run).
+
+   ::
+
+      > ./xmlchange RESUBMIT=10
+      > ./case.submit
+
+   By default resubmitted runs are not submitted until the previous run is completed.  For 10 1-year runs as configured in this
+   example, CIME will first submit a job for one year, then when that job completes it will submit a job for another year.  There will be
+   only one job in the queue at a time.
+   To change this behavior, and submit all jobs at once (with batch dependencies such that only one job is run at a time), use the command:
+
+   ::
+
+      > ./case.submit --resubmit-immediate
+
+Setting up a branch or hybrid run
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A branch or hybrid run uses initialization data from a previous run. Here is an example in which a valid load-balanced scenario is assumed.
+
+1. The first step in setting up a branch or hybrid run is to create a new case. A CESM compset and resolution is assumed below.
+
+   ::
+
+      > cd $CIMEROOT/scripts
+      > create_newcase --case ~/NEW_CASE --compset B1850 --res f09_g17
+      > cd ~/NEW_CASE
+
+
+2. For a branch run, use the following `xmlchange <../Tools_user/xmlchange.html>`_  commands to make **NEW_CASE** be a branch off of **EXAMPLE_CASE** at year 0001-02-01.
+
+   ::
+
+      > ./xmlchange RUN_TYPE=branch
+      > ./xmlchange RUN_REFCASE=EXAMPLE_CASE
+      > ./xmlchange RUN_REFDATE=0001-02-01
+
+3. For a hybrid run, use the following `xmlchange <../Tools_user/xmlchange.html>`_  command to start **NEW_CASE** from **EXAMPLE_CASE** at year 0001-02-01.
+
+   ::
+
+      > ./xmlchange RUN_TYPE=hybrid
+      > ./xmlchange RUN_REFCASE=EXAMPLE_CASE
+      > ./xmlchange RUN_REFDATE=0001-02-01
+
+   For a branch run, your **env_run.xml** file for **NEW_CASE** should be identical to the file for **EXAMPLE_CASE** except for the ``$RUN_TYPE`` setting.
+
+   Also, modifications introduced into **user_nl_** files in **EXAMPLE_CASE** should be reintroduced in **NEW_CASE**.
+
+4. Next, set up and build your case executable.
+   ::
+
+      > ./case.setup
+      > ./case.build
+
+5. Pre-stage the necessary restart/initial data in ``$RUNDIR``. Assume for this example that it was created in the **/rest/0001-02-01-00000** directory shown here:
+
+   ::
+      > cd $RUNDIR
+      > cp /user/archive/EXAMPLE_CASE/rest/0001-02-01-00000/* .
+
+   It is assumed that you already have a valid load-balanced scenario.
+   Go back to the case directory, set the job to run 12 model months, and submit the job.
+   ::
+
+      > cd ~/NEW_CASE
+      > ./xmlchange STOP_OPTION=nmonths
+      > ./xmlchange STOP_N=12
+      > ./xmlchange JOB_WALLCLOCK_TIME=06:00
+      > ./case.submit
+
+6.  Make sure the run succeeded (see above directions) and then change
+    the run to a continuation run. Set it to resubmit itself 10 times
+    so it will run a total of 11 years (including the initial year),
+    then resubmit the case.
+    ::
+
+       > ./xmlchange CONTINUE_RUN=TRUE
+       > ./xmlchange RESUMIT=10
+       > ./case.submit
+
 .. _changing-data-model-namelists:
 
 Customizing data model input variable and stream files
 ------------------------------------------------------
+
+Each data model can be runtime-configured with its own namelist.
 
 Data Atmosphere (DATM)
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -12,6 +12,7 @@
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
+  <xs:attribute name="allow_error" type="xs:boolean"/>
 
   <!-- simple elements -->
   <xs:simpleType name="upperBoolean">
@@ -191,6 +192,7 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
       <xs:attribute ref="type" use="required"/>
+      <xs:attribute ref="allow_error" />
     </xs:complexType>
   </xs:element>
   <xs:element name="init_path">
