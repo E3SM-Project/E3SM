@@ -1,42 +1,97 @@
 ======================================================================
 
-Originator: Chris Fischer
-Date: 5-22-2018
-Tag: cime_cesm2_0_rel_03
+Originator:Chris Fischer 
+Date: 6-25-2018
+Tag: cime5.7.0
 Answer Changes: None
-Tests: scripts_regression_tests, build tests on Cori.
+Tests: scripts_regression_tests
+       xmllint of env_mach_specific.xml
 Dependencies:
 
-Brief Summary: Third release candidate.
-    - Update environment modules for Cori.
-    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
-    - Tweaks to cism-specific documentation.
-    - Update for Sphinx v1.7 and doc version 5.6.
-    - More doc updates.
-    - Maint 5.6 - documentation updates.
+Brief Summary:
+    - Merge in changes from maint-5.6(CESM release) branch.
+    - Fix issue with e3sm mali file archiving.
+    - Config compiler parser fix.
+    - XSD definitions did not match implementation.
+    - config_compilers.xml updates from e3sm.
+    - Fix minor issue with recent non-local PR.
+    - Allow users to go up through the setup phase on non-local machines.
+    - e3sm st_archive fix for ESP. 
+    - Import fixes and updates from e3sm.
+    - Update e3sm to compilers v2.
+    - Maint 5.6 merge to master.
+    - Add the allow_error flag to schema.
+    - Fix weird whitespace.
+    - Improve robustness of compare-two tests.
+    - Fix find_circular_dependency.py.
+    - Maint 5.6 merge to master.
+    - Jgfouca/branch for acme split 2018 05 18.
+    - Add commas to output using --value.
+    - Multisubmit tests were not resubmitting.
+    - New script to add additional metadata for stat ensemble test.
+    - Fix formatting issue.
+    - Update iyear for 2000 runs.
+    - Merge branch 'master' of github.com:ESMCI/cime.
+    - Add grid neede for cime standalone testing.
+    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
 
 User interface changes: 
+    - New --non-local flag for create_test/create_newcase.
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
-ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
-c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
-1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
-08f12ea Merge pull request #2616 from bertinia/maint-5.6
-72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
-7049dab Merge pull request #2614 from bertinia/maint-5.6
+6ceaf73 Merge pull request #2690 from ESMCI/maint-5.6
+aeaac31 Merge pull request #2683 from jedwards4b/e3sm_st_archive_fix
+b78593b Merge pull request #2671 from jedwards4b/config_compiler_test
+58a5e43 Merge pull request #2670 from ESMCI/jgfouca/fix_directive_selection
+95fe393 config_compilers.xml updates from e3sm
+4888867 Fix minor issue with recent non-local PR
+43a6812 Merge pull request #2665 from ESMCI/jgfouca/allow_non_local_machine_setup
+8a2f9d5 Merge pull request #2663 from jedwards4b/e3sm_st_archive
+22ab62b Merge pull request #2661 from ESMCI/jgfouca/fix_e3sm_compilers
+18f23fc Merge pull request #2655 from ESMCI/jgfouca/update_e3sm_to_compilersv2
+c1eff51 Merge pull request #2657 from ESMCI/maint-5.6
+6b01d3b Merge pull request #2654 from jedwards4b/validate_allow_error
+8e4054b Fix weird whitespace
+ed9d13b Merge pull request #2635 from ESMCI/jgfouca/preemptively_add_compare_pend
+3d65363 Merge pull request #2630 from gold2718/fix_circular
+5dd50b1 Merge pull request #2627 from ESMCI/maint-5.6
+6933518 Merge pull request #2613 from ESMCI/jgfouca/branch-for-acme-split-2018-05-18
+2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
+f1d501f Merge pull request #2600 from jedwards4b/test_issues
+5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
+8ce38a4 fix formatting issue
+6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
+c04da3c Merge branch 'master' of github.com:ESMCI/cime
+166a40c these grids are needed for cime standalone testing
+7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+
 
 Modified files: git diff --name-status [previous_tag]
 M	.gitignore
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
 M	config/cesm/machines/config_machines.xml
 M	config/cesm/machines/template.case.run
 M	config/cesm/machines/template.case.test
 M	config/cesm/machines/template.st_archive
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/template.st_archive
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/testlist.xsd
 M	doc/Makefile
 M	doc/README
 D	doc/source/README
 M	doc/source/conf.py
 M	doc/source/users_guide/building-a-case.rst
 A	doc/source/users_guide/cime-change-namelist.rst
+A	doc/source/users_guide/cime-dir.rst
 M	doc/source/users_guide/cloning-a-case.rst
 M	doc/source/users_guide/compsets.rst
 M	doc/source/users_guide/create-a-case.rst
@@ -62,85 +117,48 @@ D	doc/source/users_guide/use_cases/use-cases.rst
 A	doc/source/users_guide/workflows.rst
 M	doc/tools_autodoc.cfg
 M	doc/tools_autodoc.py
+M	scripts/Tools/Makefile
 M	scripts/Tools/xmlquery
-D	scripts/manage_pes
-M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 5-17-2018
-Tag: cime_cesm2_0_rel_02
-Answer Changes: Round Off for Cheyenne gnu
-Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
-Dependencies:
-
-Brief Summary:
-    - Update Cheyenne gnu compiler to 7.3.0
-
-User interface changes: 
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-    Merge pull request #2611 from ESMCI/fischer/gnu7
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_compilers.xml
-M       config/cesm/machines/config_machines.xml
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 5-17-2018
-Tag: cime_cesm2_0_rel_01
-Answer Changes: None
-Tests: scripts_regression_tests
-Dependencies:
-
-Brief Summary:
-    - Move cam section out of config archive.
-    - Add commas to output using --value.
-    - Fix multisubmit tests were not resubmitting.
-    - A new script to add additional metadata for stat ensemble test.
-    - Fix formatting issue.
-    - Update iyear for 2000 runs.
-    - Merge branch 'master' of github.com:ESMCI/cime
-    - These grids are needed for cime standalone testing.
-    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
-
-User interface changes: 
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-950cda0 Merge pull request #2608 from jedwards4b/config_archive_dist
-2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
-f1d501f Merge pull request #2600 from jedwards4b/test_issues
-5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
-8ce38a4 fix formatting issue
-6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
-c04da3c Merge branch 'master' of github.com:ESMCI/cime
-166a40c these grids are needed for cime standalone testing
-7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
-
-Modified files: git diff --name-status [previous_tag]
-M	config/cesm/config_archive.xml
-M	config/cesm/config_grids.xml
-M	config/cesm/machines/config_machines.xml
-M	config/cesm/machines/template.case.test
-M	config/cesm/machines/template.st_archive
-M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/BuildTools/possiblevalues.py
+M	scripts/lib/CIME/Servers/gftp.py
 M	scripts/lib/CIME/SystemTests/pet.py
 M	scripts/lib/CIME/SystemTests/system_tests_common.py
 M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
 M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
 M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_setup.py
 M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/compare_namelists.py
 M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+D	scripts/manage_pes
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
 M	src/components/data_comps/datm/datm_comp_mod.F90
 M	src/components/data_comps/datm/mct/atm_comp_mct.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
 M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/externals/pio1/pio/box_rearrange.F90.in
+M	src/externals/pio1/pio/pio_support.F90
+M	src/externals/pio1/pio/piolib_mod.F90
 M	tools/mapping/check_maps/README
 M	tools/mapping/check_maps/check_map.sh
 M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
@@ -162,8 +180,22 @@ M	tools/mapping/map_field/src/Makefile
 M	tools/statistical_ensemble_test/README
 A	tools/statistical_ensemble_test/addmetadata.sh
 A	tools/statistical_ensemble_test/ensemble.py
+A	tools/statistical_ensemble_test/pyCECT/.gitignore
+A	tools/statistical_ensemble_test/pyCECT/EET.py
+M	tools/statistical_ensemble_test/pyCECT/LICENSE.txt
+M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M	tools/statistical_ensemble_test/pyCECT/ens_excluded_varlist.json
+A	tools/statistical_ensemble_test/pyCECT/ens_sub.pbs
+M	tools/statistical_ensemble_test/pyCECT/ens_sub.sh
+A	tools/statistical_ensemble_test/pyCECT/exclude_empty.json
+A	tools/statistical_ensemble_test/pyCECT/included_varlist.json
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
 A	tools/statistical_ensemble_test/single_run.py
-
+M	tools/utils/find_circular_dependency.py
 
 ======================================================================
 
