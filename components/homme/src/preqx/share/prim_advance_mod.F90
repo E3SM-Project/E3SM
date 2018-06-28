@@ -671,7 +671,7 @@ contains
   enddo
   end subroutine applyCAMforcing
 
-
+!GET RID OF DUPL CODE
 !only for standalone homme. this is exact copy of applyCAMforcing, except only
 !tracers code is in here
   subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)

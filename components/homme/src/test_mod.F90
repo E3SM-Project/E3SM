@@ -24,7 +24,7 @@ use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_
                                 dcmip2012_test4_init, mtest_init
 use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, &
                                 dcmip2016_forcing,dcmip2016_test1_forcing, dcmip2016_test3_forcing, &
-                                dcmip2016_init, dcmip2016_finalize
+                                dcmip2016_init
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -64,9 +64,9 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test2_2');
     case('dcmip2012_test3');
     case('dcmip2012_test4');
-    case('dcmip2016_test1');    call dcmip2016_init(nets,nete);
-    case('dcmip2016_test2');    call dcmip2016_init(nets,nete);
-    case('dcmip2016_test3');    call dcmip2016_init(nets,nete);
+    case('dcmip2016_test1');    call dcmip2016_init();
+    case('dcmip2016_test2');    call dcmip2016_init();
+    case('dcmip2016_test3');    call dcmip2016_init();
     case('mtest1');
     case('mtest2');
     case('mtest3');
@@ -129,9 +129,9 @@ subroutine finalize_test
     case('dcmip2012_test2_2');
     case('dcmip2012_test3');
     case('dcmip2012_test4');
-    case('dcmip2016_test1');    call dcmip2016_finalize;
-    case('dcmip2016_test2');    call dcmip2016_finalize;
-    case('dcmip2016_test3');    call dcmip2016_finalize;
+    case('dcmip2016_test1');    
+    case('dcmip2016_test2');    
+    case('dcmip2016_test3');    
     case('mtest1');
     case('mtest2');
     case('mtest3');

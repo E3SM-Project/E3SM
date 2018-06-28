@@ -42,18 +42,22 @@ real(rl) :: rad2dg = 180.0_rl/pi
 contains
 
 !init routine to call before any dcmip16 inin routines, including restart runs
-subroutine dcmip2016_init(nets,nete)
+subroutine dcmip2016_init()
   implicit none
-  integer, intent(in) :: nets,nete
-  allocate(precl(np,np,nete-nets))
-end subroutine dcmip2016_init
-!_____________________________________________________________________
-!init routine to call before any dcmip16 inin routines, including restart runs
-subroutine dcmip2016_finalize
-  implicit none
-  deallocate(precl)
-end subroutine dcmip2016_finalize
+! put here barrier and omp master, allocate precl which should be member of
+! dcmip16_mod
 
+!$OMP BARRIER
+!$OMP MASTER
+  if (.not.allocated(precl)) then
+    allocate(precl(np,np,nelemd))
+  else
+    call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
+  endif
+!$OMP END MASTER
+!$OMP BARRIER
+
+end subroutine dcmip2016_init
 !_____________________________________________________________________
 subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
@@ -87,7 +91,11 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
 
-  precl(:,:,:) = 0.0
+  if (allocated(precl)) then
+    precl(:,:,nets:nete) = 0.0
+  else
+    call abortmp('ERROR: in dcmip2016_test1() precl is not allocated')
+  endif
 
   ! set initial conditions
   do ie = nets,nete
@@ -142,7 +150,11 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
 
-  precl(:,:,:) = 0.0
+  if (allocated(precl)) then
+    precl(:,:,nets:nete) = 0.0
+  else
+    call abortmp('ERROR: in dcmip2016_test2() precl is not allocated')
+  endif
 
   ! set initial conditions
   do ie = nets,nete
@@ -202,7 +214,11 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
 
-  precl(:,:,:) = 0.0
+  if (allocated(precl)) then
+    precl(:,:,nets:nete) = 0.0
+  else
+     call abortmp('ERROR: in dcmip2016_test3() precl is not allocated')
+  endif
 
   ! initialize hydrostatic state
   call supercell_init()
@@ -354,9 +370,13 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
 
+  if (.not.allocated(precl)) then
+     call abortmp('ERROR: in dcmip2016_test1_forcing() precl is not allocated')
+  endif
+
   do ie = nets,nete
 
-    precl(:,:,ie - nets + 1) = -1.0d0
+    precl(:,:,ie) = -1.0d0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -404,7 +424,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
-                             precl(i,j,ie - nets + 1), pbl_type, prec_type)
+                             precl(i,j,ie), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -442,7 +462,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
@@ -481,9 +501,13 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
 
+  if (.not.allocated(precl)) then
+    call abortmp('ERROR: in dcmip2016_forcing() precl is not allocated')
+  endif
+
   do ie = nets,nete
 
-    precl(:,:,ie - nets + 1) = -1.0d0
+    precl(:,:,ie) = -1.0d0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -528,7 +552,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
-                             precl(i,j,ie - nets + 1), pbl_type, prec_type)
+                             precl(i,j,ie), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -556,7 +580,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
@@ -588,9 +612,13 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
 
+  if (.not.allocated(precl)) then
+    call abortmp('ERROR: in dcmip2016_test3_forcing() precl is not allocated')
+  endif
+
   do ie = nets,nete
 
-    precl(:,:,ie - nets + 1) = 0.0
+    precl(:,:,ie) = 0.0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
@@ -636,7 +664,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         dt,               &
         z_inv(i,j,:),     &
         nlev,             &
-        precl(i,j,ie - nets + 1))
+        precl(i,j,ie))
 
     enddo; enddo;
 
@@ -659,7 +687,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie - nets + 1)) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo
