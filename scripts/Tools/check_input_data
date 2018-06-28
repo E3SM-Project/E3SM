@@ -56,7 +56,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     protocal, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
-
     with Case() as case:
         sys.exit(0 if case.check_all_input_data(protocal=protocal,
                                                 address=address,

@@ -183,7 +183,6 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                             no_files_missing = False
                         else:
                             logging.debug("  Found input file: '{}'".format(full_path))
-
                     else:
                         # There are some special values of rel_path that
                         # we need to ignore - some of the component models
@@ -193,12 +192,12 @@ def check_input_data(case, protocal="svn", address=None, input_data_root=None, d
                         # value and ignore it (perhaps with a warning)
                         if ("/" in rel_path and not os.path.exists(full_path)):
                             logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
-
+                            success = False
                             if (download):
                                 success = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
                                                                isdirectory=rel_path.endswith(os.sep))
-                                if not success:
-                                    no_files_missing = False
+                            if not success:
+                                no_files_missing = False
                         else:
                             logging.debug("  Already had input file: '{}'".format(full_path))
 
