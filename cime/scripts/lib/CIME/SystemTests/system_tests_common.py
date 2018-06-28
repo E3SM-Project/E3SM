@@ -152,6 +152,9 @@ class SystemTestsCommon(object):
 
             self._check_for_memleak()
 
+            self._st_archive_case_test()
+
+
         except BaseException as e:
             success = False
             msg = e.__str__()
@@ -278,6 +281,15 @@ class SystemTestsCommon(object):
         tests
         """
         return compare_test(self._case, suffix1, suffix2)
+
+    def _st_archive_case_test(self):
+        result = self._case.test_env_archive()
+        with self._test_status:
+            if result:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_PASS_STATUS)
+            else:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
+
 
     def _get_mem_usage(self, cpllog):
         """
