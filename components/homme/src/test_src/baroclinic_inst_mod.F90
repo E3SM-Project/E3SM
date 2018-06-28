@@ -41,7 +41,7 @@ module baroclinic_inst_mod
     use hybvcoord_mod, only : hvcoord_t 
     ! ====================
     use coordinate_systems_mod, only : spherical_polar_t
-    use viscosity_mod, only : compute_zeta_C0
+    use viscosity_mod, only : compute_zeta_C0, make_c0
 
 
   implicit none
