@@ -598,7 +598,7 @@
       <arg flag="-l procs=" name=" $TOTALPES"/>
     </submit_args>
     <queues>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="35">debug</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="35">batch</queue>
     </queues>
   </batch_system>
 
