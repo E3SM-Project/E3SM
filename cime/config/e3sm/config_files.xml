@@ -353,7 +353,6 @@
     <default_value>unset</default_value>
     <values>
       <value component="mali">$SRCROOT/components/mpas-albany-landice/cime_config/config_component.xml</value>
-      <value component="malisia">$SRCROOT/components/mpas-albany-landice/cime_config/config_component.xml</value>
       <value component="dglc">$CIMEROOT/src/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml</value>
       <value component="xglc">$CIMEROOT/src/components/xcpl_comps/xglc/cime_config/config_component.xml</value>

@@ -154,7 +154,7 @@
 
   <entry id="LND_PIO_TYPENAME">
     <values>
-      <value mach="bebop" compset=".*CLM45.+MALISIA.*">netcdf</value>
+      <value mach="bebop" compset=".*CLM45.+MALI%SIA.*">netcdf</value>
     </values>
   </entry>
 
