@@ -1,9 +1,5 @@
 """
-<<<<<<< HEAD
-GridFTP Server class.  Interact with a server using GridFTP protocal
-=======
 GridFTP Server class.  Interact with a server using GridFTP protocol
->>>>>>> ed9d13ba43769259c792a60208e95ada36fd9b90
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *

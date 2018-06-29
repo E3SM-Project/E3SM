@@ -303,9 +303,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         # this should not fail with a locked file issue
         run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
 
-        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
-
-        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.st_archive --test-all", from_dir=testdir)
 
         cls._do_teardown.append(testdir)
 
@@ -1572,7 +1570,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
-                                     "--compset X --res f19_g16 --output-root {}").format(
+                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
                                          SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
         return testdir
@@ -1974,6 +1972,21 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(problems, "", msg=problems)
 
+    ###########################################################################
+    def test_case_submit_interface(self):
+    ###########################################################################
+        try:
+            import imp
+        except ImportError:
+            print("imp not found, skipping case.submit interface test")
+            return
+        sys.path.append(TOOLS_DIR)
+        case_submit_path = os.path.join(TOOLS_DIR, "case.submit")
+        submit_interface = imp.load_source("case_submit_interface", case_submit_path)
+        sys.argv = ["case.submit", "--batch-args", "'random_arguments_here.%j'",
+                    "--mail-type", "fail", "--mail-user", "'random_arguments_here.%j'"]
+        submit_interface._main_func(None, True)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
@@ -2069,7 +2082,7 @@ class MockMachines(object):
 
 
 def get_macros(macro_maker, build_xml, build_system):
-    """Generate build system ("Macros" file) output from config_build XML.
+    """Generate build system ("Macros" file) output from config_compilers XML.
 
     Arguments:
     macro_maker - The underlying Build object.
@@ -2095,16 +2108,16 @@ def get_macros(macro_maker, build_xml, build_system):
     return str(output.getvalue())
 
 
-def _wrap_config_build_xml(inner_string):
-    """Utility function to create a config_build XML string.
+def _wrap_config_compilers_xml(inner_string):
+    """Utility function to create a config_compilers XML string.
 
     Pass this function a string containing <compiler> elements, and it will add
     the necessary header/footer to the file.
     """
     _xml_template = """<?xml version="1.0" encoding="UTF-8"?>
-<config_build>
+<config_compilers>
 {}
-</config_build>
+</config_compilers>
 """
 
     return _xml_template.format(inner_string)
@@ -2313,7 +2326,7 @@ class G_TestMacrosBasic(unittest.TestCase):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
         maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
-        test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
+        test_xml = _wrap_config_compilers_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
@@ -2343,16 +2356,16 @@ class H_TestMakeMacros(unittest.TestCase):
     Aside from the usual setUp and test methods, this class has a utility method
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
     """
-
-    test_os = "SomeOS"
-    test_machine = "mymachine"
-
     def setUp(self):
+        self.test_os = "SomeOS"
+        self.test_machine = "mymachine"
+        self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
+
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         return MakefileTester(self, get_macros(self._maker, test_xml, "Makefile"))
 
     def test_generic_item(self):
@@ -2390,6 +2403,25 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
         tester = self.xml_to_tester(xml2+xml1)
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
+
+    def test_mach_other_compiler(self):
+        """The macro writer compiler-specific logic works as expected."""
+        xml1 = """<compiler COMPILER="{}"><CFLAGS><base>a b c</base></CFLAGS></compiler>""".format(self.test_compiler)
+        xml2 = """<compiler MACH="{}" COMPILER="other"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine)
+        xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml3)
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml1+xml4)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester = self.xml_to_tester(xml4+xml1)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2430,7 +2462,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH>/path/to/other_default</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_duplicates(self):
@@ -2439,7 +2471,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich2</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_ambiguous(self):
@@ -2448,7 +2480,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH DEBUG="FALSE">/path/to/mpi-debug</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_compiler_changeable_at_build_time(self):
@@ -2542,11 +2574,7 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", env={"DEBUG": "TRUE"})
 
     def test_environment_variable_insertion(self):
-        """Test that <env> elements insert environment variables."""
-        xml1 = """<compiler><LDFLAGS><append>-L<env>NETCDF</env> -lnetcdf</append></LDFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("LDFLAGS", "-L/path/to/netcdf -lnetcdf",
-                                      env={"NETCDF": "/path/to/netcdf"})
+        """Test that ENV{..} inserts environment variables."""
         # DO it again with $ENV{} style
         xml1 = """<compiler><LDFLAGS><append>-L$ENV{NETCDF} -lnetcdf</append></LDFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
@@ -2554,46 +2582,28 @@ class H_TestMakeMacros(unittest.TestCase):
                                       env={"NETCDF": "/path/to/netcdf"})
 
     def test_shell_command_insertion(self):
-        """Test that <shell> elements insert shell command output."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -fast</base></FFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        """Test that $SHELL insert shell command output."""
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
     def test_multiple_shell_commands(self):
-        """Test that more than one <shell> element can be used."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -<shell>echo fast</shell></base></FFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        """Test that more than one $SHELL element can be used."""
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -$SHELL{echo fast}</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
     def test_env_and_shell_command(self):
-        """Test that <env> elements work inside <shell> elements."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo <env>OPT_LEVEL</env></shell> -fast</base></FFLAGS></compiler>"""
+        """Test that $ENV works inside $SHELL elements."""
+        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast", env={"OPT_LEVEL": "2"})
-        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
-        err_msg = "Nesting not allowed.*"
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester(xml1)
 
     def test_config_variable_insertion(self):
-        """Test that <var> elements insert variables from config_build."""
+        """Test that $VAR insert variables from config_compilers."""
         # Construct an absurd chain of references just to sure that we don't
         # pass by accident, e.g. outputting things in the right order just due
         # to good luck in a hash somewhere.
-        xml1 = """<MPI_LIB_NAME>stuff-<var>MPI_PATH</var>-stuff</MPI_LIB_NAME>"""
-        xml2 = """<MPI_PATH><var>MPICC</var></MPI_PATH>"""
-        xml3 = """<MPICC><var>MPICXX</var></MPICC>"""
-        xml4 = """<MPICXX><var>MPIFC</var></MPICXX>"""
-        xml5 = """<MPIFC>mpicc</MPIFC>"""
-        tester = self.xml_to_tester("<compiler>"+xml1+xml2+xml3+xml4+xml5+"</compiler>")
-        tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
-
         xml1 = """<MPI_LIB_NAME>stuff-${MPI_PATH}-stuff</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPICC}</MPI_PATH>"""
         xml3 = """<MPICC>${MPICXX}</MPICC>"""
@@ -2603,45 +2613,28 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
 
     def test_config_reject_self_references(self):
-        """Test that <var> self-references are rejected."""
+        """Test that $VAR self-references are rejected."""
         # This is a special case of the next test, which also checks circular
         # references.
-        xml1 = """<MPI_LIB_NAME><var>MPI_LIB_NAME</var></MPI_LIB_NAME>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester("<compiler>"+xml1+"</compiler>")
-
         xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
-        err_msg = ".* has bad <var> references."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
     def test_config_reject_cyclical_references(self):
-        """Test that cyclical <var> references are rejected."""
-        xml1 = """<MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME>"""
-        xml2 = """<MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
+        """Test that cyclical $VAR references are rejected."""
         xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
-        err_msg = ".* has bad <var> references."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
     def test_variable_insertion_with_machine_specific_setting(self):
-        """Test that machine-specific <var> dependencies are correct."""
+        """Test that machine-specific $VAR dependencies are correct."""
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
-        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
-        xml3 = """<compiler><MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH></compiler>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester(xml1+xml2+xml3)
-
-        xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
-        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
+        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME>$MPI_PATH</MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
-        err_msg = ".* has bad <var> references."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
@@ -2660,7 +2653,7 @@ class I_TestCMakeMacros(H_TestMakeMacros):
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         if (NO_CMAKE):
             self.skipTest("Skipping cmake test")
         else:

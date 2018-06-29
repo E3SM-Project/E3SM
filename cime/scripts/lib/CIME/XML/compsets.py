@@ -89,3 +89,10 @@ class Compsets(GenericXML):
         for compset in compsets:
             logger.info("   {:20} : {}".format(self.text(self.get_child("alias",root=compset)),
                                                self.text(self.get_child("lname", root=compset))))
+
+    def get_compset_longnames(self):
+        compset_nodes = self.get_children("compset")
+        longnames = []
+        for comp in compset_nodes:
+            longnames.append(self.text(self.get_child("lname", root=comp)))
+        return(longnames)

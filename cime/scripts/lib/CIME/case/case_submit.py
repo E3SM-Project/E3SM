@@ -169,6 +169,11 @@ def check_case(self):
     logger.info("Checking that inputdata is available as part of case submission")
     self.check_all_input_data()
 
+    if self.get_value('COMP_WAV') == 'ww':
+        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        self.create_namelists(component='WAV')
+
+
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")
