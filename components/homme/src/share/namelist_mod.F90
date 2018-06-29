@@ -992,6 +992,13 @@ module namelist_mod
 #endif
 ! ^ ifndef CAM
 
+#ifndef CAM
+#ifdef HOMME_SHA1
+      write(iulog,*)"HOMME SHA = ", HOMME_SHA1
+#endif
+#endif
+
+
 !=======================================================================================================!
     endif
 
