@@ -11,6 +11,7 @@
       use cam_abortutils,   only : endrun
 #ifdef SPMD
       use mpishorthand, only : mpicom,mpiint,mpir8, mpilog, mpir4
+      use perf_mod
 #endif
       use spmd_utils,   only : masterproc
 
@@ -160,6 +161,8 @@
       integer :: i, k, m, n
       integer :: wrk_ndx(phtcnt)
       character(len=256) :: locfn
+      
+      integer :: shantmp(4)
 
       Masterproc_only : if( masterproc ) then
          !------------------------------------------------------------------------------
@@ -271,10 +274,15 @@
 
 #ifdef SPMD
 !        call mpibarrier( mpicom )
-      call mpibcast( numj,  1, mpiint, 0, mpicom )
-      call mpibcast( nt,    1, mpiint, 0, mpicom )
-      call mpibcast( nw,    1, mpiint, 0, mpicom )
-      call mpibcast( np_xs, 1, mpiint, 0, mpicom )
+      shantmp(1) = numj
+      shantmp(2) = nt
+      shantmp(3) = nw
+      shantmp(4) = np_xs
+      call mpibcast( shantmp,  4, mpiint, 0, mpicom )
+      numj  = shantmp(1)
+      nt    = shantmp(2)
+      nw    = shantmp(3)
+      np_xs = shantmp(4)
       call mpibcast( lng_indexer, phtcnt, mpiint, 0, mpicom )
 #endif
       if( .not. masterproc ) then
@@ -354,6 +362,8 @@
       real(r8) :: wrk
       character(len=256) :: locfn
 
+      integer :: shantmp(4)
+
       Masterproc_only : if( masterproc ) then
          !------------------------------------------------------------------------------
          !       ... open NetCDF File
@@ -376,10 +386,24 @@
       end if Masterproc_only
 #ifdef SPMD
 !        call mpibarrier( mpicom )
+      call t_startf("WWWW1")
+#ifdef BCAST_OPTS
+      shantmp(1) = nump
+      shantmp(2) = numsza
+      shantmp(3) = numalb
+      shantmp(4) = numcolo3
+      call mpibcast( shantmp,     4, mpiint, 0, mpicom )
+      nump     = shantmp(1)
+      numsza   = shantmp(2)
+      numalb   = shantmp(3)
+      numcolo3 = shantmp(4)
+#else
       call mpibcast( nump,     1, mpiint, 0, mpicom )
       call mpibcast( numsza,   1, mpiint, 0, mpicom )
       call mpibcast( numalb,   1, mpiint, 0, mpicom )
       call mpibcast( numcolo3, 1, mpiint, 0, mpicom )
+#endif
+      call t_stopf("WWWW1")
 #endif
 !------------------------------------------------------------------------------
 !       ... allocate arrays
@@ -464,6 +488,7 @@
 
       end if Masterproc_only2
 #ifdef SPMD
+
       call mpibcast( wc,      nw,       mpir8, 0, mpicom )
       call mpibcast( wlintv,  nw,       mpir8, 0, mpicom )
       call mpibcast( p,       nump,     mpir8, 0, mpicom )
@@ -471,9 +496,9 @@
       call mpibcast( alb,     numalb,   mpir8, 0, mpicom )
       call mpibcast( o3rat,   numcolo3, mpir8, 0, mpicom )
       call mpibcast( colo3,   nump,     mpir8, 0, mpicom )
-      do w = 1,nw
-         call mpibcast( rsf_tab(w,:,:,:,:), numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
-      enddo
+
+      call mpibcast( rsf_tab, nw*numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
+
 #endif
 #ifdef USE_BDE
       if (masterproc) write(iulog,*) 'Jlong using bdes'

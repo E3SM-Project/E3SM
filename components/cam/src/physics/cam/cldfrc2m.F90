@@ -68,12 +68,15 @@ subroutine cldfrc2m_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'cldfrc2m_readnl'
+
+   real(r8) :: shanr8(2)
 
    namelist /cldfrc2m_nl/ cldfrc2m_rhmini, cldfrc2m_rhmaxi
    !-----------------------------------------------------------------------------
@@ -99,8 +102,11 @@ subroutine cldfrc2m_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(rhmini_const,      1, mpir8,  0, mpicom)
-   call mpibcast(rhmaxi_const,      1, mpir8,  0, mpicom)
+   shanr8(1) = rhmini_const
+   shanr8(2) = rhmaxi_const
+   call mpibcast(shanr8,      2, mpir8,  0, mpicom)
+   rhmini_const = shanr8(1)
+   rhmaxi_const = shanr8(2)
 #endif
 
 end subroutine cldfrc2m_readnl

@@ -116,6 +116,7 @@ subroutine gw_drag_readnl(nlfile)
   use namelist_utils,  only: find_group_name
   use units,           only: getunit, freeunit
   use mpishorthand
+  use perf_mod
 
   ! File containing namelist input.
   character(len=*), intent(in) :: nlfile
@@ -127,6 +128,8 @@ subroutine gw_drag_readnl(nlfile)
   ! More specific name for dc to prevent a name clash or confusion in the
   ! namelist.
   real(r8) :: gw_dc = unset_r8
+
+  real(r8) :: shanr8(7)
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
        effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd
@@ -149,14 +152,22 @@ subroutine gw_drag_readnl(nlfile)
 #ifdef SPMD
   ! Broadcast namelist variables
   call mpibcast(pgwv,        1, mpiint, 0, mpicom)
-  call mpibcast(gw_dc,       1, mpir8,  0, mpicom)
   call mpibcast(tau_0_ubc,   1, mpilog, 0, mpicom)
-  call mpibcast(effgw_beres, 1, mpir8,  0, mpicom)
-  call mpibcast(effgw_cm,    1, mpir8,  0, mpicom)
-  call mpibcast(effgw_oro,   1, mpir8,  0, mpicom)
-  call mpibcast(fcrit2,      1, mpir8,  0, mpicom)
-  call mpibcast(frontgfc,    1, mpir8,  0, mpicom)
-  call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
+  shanr8(1) = gw_dc
+  shanr8(2) = effgw_beres
+  shanr8(3) = effgw_cm
+  shanr8(4) = effgw_oro
+  shanr8(5) = fcrit2
+  shanr8(6) = frontgfc
+  shanr8(7) = taubgnd
+  call mpibcast(shanr8,       7, mpir8,  0, mpicom)
+  gw_dc = shanr8(1)
+  effgw_beres = shanr8(2)
+  effgw_cm = shanr8(3)
+  effgw_oro = shanr8(4)
+  fcrit2 = shanr8(5)
+  frontgfc = shanr8(6)
+  taubgnd = shanr8(7)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
 #endif
 

@@ -95,12 +95,15 @@ subroutine zmconv_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zmconv_readnl'
+
+   real(r8) :: shanr8(7)
 
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
            zmconv_dmpdz, zmconv_alfa, zmconv_trigmem, zmconv_tiedke_add,     &
@@ -142,14 +145,22 @@ subroutine zmconv_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(c0_lnd,            1, mpir8,  0, mpicom)
-   call mpibcast(c0_ocn,            1, mpir8,  0, mpicom)
-   call mpibcast(ke,                1, mpir8,  0, mpicom)
-   call mpibcast(tau,               1, mpir8,  0, mpicom)
-   call mpibcast(dmpdz,             1, mpir8,  0, mpicom)
-   call mpibcast(alfa_scalar,       1, mpir8,  0, mpicom)
+   shanr8(1) = c0_lnd
+   shanr8(2) = c0_ocn
+   shanr8(3) = ke
+   shanr8(4) = tau
+   shanr8(5) = dmpdz
+   shanr8(6) = alfa_scalar
+   shanr8(7) = tiedke_add
+   call mpibcast(shanr8,            7, mpir8,  0, mpicom)
+   c0_lnd = shanr8(1)
+   c0_ocn = shanr8(2)
+   ke = shanr8(3)
+   tau = shanr8(4)
+   dmpdz = shanr8(5)
+   alfa_scalar = shanr8(6)
+   tiedke_add = shanr8(7)
    call mpibcast(trigmem,           1, mpilog, 0, mpicom)
-   call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
    call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
 #endif

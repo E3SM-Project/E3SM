@@ -92,6 +92,7 @@ subroutine chem_surfvals_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -111,6 +112,8 @@ subroutine chem_surfvals_readnl(nlfile)
    ! waccm/cam-chem naemlist
    namelist /chem_surfvals_nl/ flbc_type, flbc_cycle_yr, flbc_fixed_ymd, flbc_fixed_tod, flbc_list, flbc_file
 
+   real(r8) :: shanr8(8)
+   integer  :: shanint(7)
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -129,27 +132,41 @@ subroutine chem_surfvals_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast (co2vmr,                          1,   mpir8, 0, mpicom)
-   call mpibcast (n2ovmr,                          1,   mpir8, 0, mpicom)
-   call mpibcast (ch4vmr,                          1,   mpir8, 0, mpicom)
-   call mpibcast (f11vmr,                          1,   mpir8, 0, mpicom)
-   call mpibcast (f12vmr,                          1,   mpir8, 0, mpicom)
-   call mpibcast (co2vmr_rad,                      1,   mpir8, 0, mpicom)
+   shanr8(1) = co2vmr
+   shanr8(2) = n2ovmr
+   shanr8(3) = ch4vmr
+   shanr8(4) = f11vmr
+   shanr8(5) = f12vmr
+   shanr8(6) = co2vmr_rad
+   shanr8(7) = ramp_co2_annual_rate
+   shanr8(8) = ramp_co2_cap
+   call mpibcast (shanr8,                          8,   mpir8, 0, mpicom)
+   co2vmr         = shanr8(1)
+   n2ovmr         = shanr8(2)
+   ch4vmr         = shanr8(3)
+   f11vmr         = shanr8(4)
+   f12vmr         = shanr8(5)
+   co2vmr_rad     = shanr8(6)
+   ramp_co2_annual_rate = shanr8(7)
+   ramp_co2_cap   = shanr8(8)
    call mpibcast (scenario_ghg,    len(scenario_ghg), mpichar, 0, mpicom)
-   call mpibcast (rampyear_ghg,                    1,  mpiint, 0, mpicom)
    call mpibcast (bndtvghg,            len(bndtvghg), mpichar, 0, mpicom)
-   call mpibcast (ramp_co2_start_ymd,              1,  mpiint, 0, mpicom)
-   call mpibcast (ramp_co2_annual_rate,            1,   mpir8, 0, mpicom)
-   call mpibcast (ramp_co2_cap,                    1,   mpir8, 0, mpicom)
-   call mpibcast (ghg_yearstart_model,             1,  mpiint, 0, mpicom)
-   call mpibcast (ghg_yearstart_data,              1,  mpiint, 0, mpicom)
-   
-   ! waccm/cam-chem fixed lower boundary 
-   
+   shanint(1) = rampyear_ghg
+   shanint(2) = ramp_co2_start_ymd
+   shanint(3) = ghg_yearstart_model
+   shanint(4) = ghg_yearstart_data
+   shanint(5) = flbc_cycle_yr
+   shanint(6) = flbc_fixed_ymd
+   shanint(7) = flbc_fixed_tod
+   call mpibcast (shanint,                    7,  mpiint, 0, mpicom)
+   rampyear_ghg        = shanint(1)
+   ramp_co2_start_ymd  = shanint(2)
+   ghg_yearstart_model = shanint(3)
+   ghg_yearstart_data  = shanint(4)
+   flbc_cycle_yr       = shanint(5)
+   flbc_fixed_ymd      = shanint(6)
+   flbc_fixed_tod      = shanint(7)
    call mpibcast (flbc_type,         len(flbc_type),                  mpichar, 0, mpicom)
-   call mpibcast (flbc_cycle_yr,     1,                               mpiint,  0, mpicom)
-   call mpibcast (flbc_fixed_ymd,    1,                               mpiint,  0, mpicom)
-   call mpibcast (flbc_fixed_tod,    1,                               mpiint,  0, mpicom)
    call mpibcast (flbc_list,         len(flbc_list(1))*pcnst,         mpichar, 0, mpicom)
    call mpibcast (flbc_file,         len(flbc_file),                  mpichar, 0, mpicom)
 

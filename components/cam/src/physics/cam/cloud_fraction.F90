@@ -82,12 +82,16 @@ subroutine cldfrc_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'cldfrc_readnl'
+  
+   real(r8) :: shanr8(10)
+   logical  :: shanlog(2)
 
    namelist /cldfrc_nl/ cldfrc_freeze_dry,      cldfrc_ice,    cldfrc_rhminl, &
                         cldfrc_rhminl_adj_land, cldfrc_rhminh, cldfrc_sh1,    &
@@ -125,20 +129,35 @@ subroutine cldfrc_readnl(nlfile)
    end if
 
 #ifdef SPMD
-   ! Broadcast namelist variables
-   call mpibcast(cldfrc_freeze_dry, 1, mpilog, 0, mpicom)
-   call mpibcast(cldfrc_ice,        1, mpilog, 0, mpicom)
-   call mpibcast(rhminl,            1, mpir8,  0, mpicom)
-   call mpibcast(rhminl_adj_land,   1, mpir8,  0, mpicom)
-   call mpibcast(rhminh,            1, mpir8,  0, mpicom)
-   call mpibcast(sh1   ,            1, mpir8,  0, mpicom)
-   call mpibcast(sh2   ,            1, mpir8,  0, mpicom)
-   call mpibcast(dp1   ,            1, mpir8,  0, mpicom)
-   call mpibcast(dp2   ,            1, mpir8,  0, mpicom)
-   call mpibcast(premit,            1, mpir8,  0, mpicom)
-   call mpibcast(premib,            1, mpir8,  0, mpicom)
+   shanlog(1) = cldfrc_freeze_dry
+   shanlog(2) = cldfrc_ice
+   call mpibcast(shanlog,        2, mpilog, 0, mpicom)
+   cldfrc_freeze_dry = shanlog(1)
+   cldfrc_ice        = shanlog(2)
+   
+   shanr8(1) = rhminl
+   shanr8(2) = rhminl_adj_land
+   shanr8(3) = rhminh
+   shanr8(4) = sh1
+   shanr8(5) = sh2
+   shanr8(6) = dp1
+   shanr8(7) = dp2
+   shanr8(8) = premit
+   shanr8(9) = premib
+   shanr8(10) = icecrit
+   call mpibcast(shanr8   ,            10, mpir8,  0, mpicom)
+   rhminl  = shanr8(1)
+   rhminl_adj_land = shanr8(2)
+   rhminh = shanr8(3)
+   sh1    = shanr8(4)
+   sh2    = shanr8(5)
+   dp1    = shanr8(6)
+   dp2    = shanr8(7)
+   premit = shanr8(8)
+   premib = shanr8(9)
+   icecrit = shanr8(10)
+
    call mpibcast(iceopt,            1, mpiint, 0, mpicom)
-   call mpibcast(icecrit,           1, mpir8,  0, mpicom)
 #endif
 
 end subroutine cldfrc_readnl

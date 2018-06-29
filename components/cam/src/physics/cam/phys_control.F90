@@ -165,12 +165,17 @@ subroutine phys_ctl_readnl(nlfile)
    use units,           only: getunit, freeunit
    use mpishorthand
    use cam_control_mod, only: cam_ctrl_set_physics_type
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'phys_ctl_readnl'
+
+   integer :: shanint(8)
+   logical :: shanlog(47)
+   real(r8) :: shanr8(6)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
@@ -218,65 +223,140 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(microp_scheme,    len(microp_scheme)    , mpichar, 0, mpicom)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
-   call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
-   call mpibcast(use_subcol_microp,               1 , mpilog,  0, mpicom)
-   call mpibcast(atm_dep_flux,                    1 , mpilog,  0, mpicom)
-   call mpibcast(history_amwg,                    1 , mpilog,  0, mpicom)
-   call mpibcast(history_verbose,                 1 , mpilog,  0, mpicom)
-   call mpibcast(history_vdiag,                   1 , mpilog,  0, mpicom)
-   call mpibcast(history_eddy,                    1 , mpilog,  0, mpicom)
-   call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
-   call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
-   call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
-   call mpibcast(history_budget_histfile_num,     1 , mpiint,  0, mpicom)
-   call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
-   call mpibcast(history_clubb,                   1 , mpilog,  0, mpicom)
-   call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
-   call mpibcast(do_aerocom_ind3,                 1 , mpilog,  0, mpicom)
-   call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
-   call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
-   call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
-   call mpibcast(l_ieflx_fix,             1 , mpilog,  0, mpicom)
-   call mpibcast(ieflx_opt,               1 , mpiint,  0, mpicom)
-   call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
-   call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
-   call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
-   call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
-   call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
-   call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
-   call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
-   call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
-   call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
-   call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
-   call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)
-   call mpibcast(convproc_do_aer,                 1 , mpiint,  0, mpicom)
-   call mpibcast(convproc_do_gas,                 1 , mpilog,  0, mpicom)
-   call mpibcast(convproc_method_activate,        1 , mpilog,  0, mpicom)
-   call mpibcast(mam_amicphys_optaa,              1 , mpilog,  0, mpicom)
-   call mpibcast(n_so4_monolayers_pcage,          1 , mpir8,   0, mpicom)
-   call mpibcast(micro_mg_accre_enhan_fac,        1 , mpir8,   0, mpicom)
-   call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)
-   call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)
-   call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)
-   call mpibcast(pergro_mods,                     1 , mpilog,  0, mpicom)
-   call mpibcast(pergro_test_active,              1 , mpilog,  0, mpicom)
-   call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
-   call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
-   call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
-   call mpibcast(l_gw_drag,                       1 , mpilog,  0, mpicom)
-   call mpibcast(l_ac_energy_chk,                 1 , mpilog,  0, mpicom)
-   call mpibcast(l_bc_energy_fix,                 1 , mpilog,  0, mpicom)
-   call mpibcast(l_dry_adj,                       1 , mpilog,  0, mpicom)
-   call mpibcast(l_st_mac,                        1 , mpilog,  0, mpicom)
-   call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
-   call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
-   call mpibcast(cld_macmic_num_steps,            1 , mpiint,  0, mpicom)
-   call mpibcast(prc_coef1,                       1 , mpir8,   0, mpicom)
-   call mpibcast(prc_exp,                         1 , mpir8,   0, mpicom)
-   call mpibcast(prc_exp1,                        1 , mpir8,   0, mpicom)
-   call mpibcast(mg_prc_coeff_fix,                1 , mpilog,  0, mpicom)
-   call mpibcast(rrtmg_temp_fix,                  1 , mpilog,  0, mpicom)
-   call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
+   shanr8(1) = n_so4_monolayers_pcage
+   shanr8(2) = micro_mg_accre_enhan_fac
+   shanr8(3) = prc_coef1
+   shanr8(4) = prc_exp
+   shanr8(5) = prc_exp1
+   shanr8(6) = cld_sed
+   
+   call mpibcast(shanr8,          6 , mpir8,   0, mpicom)
+
+   n_so4_monolayers_pcage = shanr8(1)
+   micro_mg_accre_enhan_fac = shanr8(2)
+   prc_coef1 = shanr8(3)
+   prc_exp = shanr8(4)
+   prc_exp1 = shanr8(5)
+   cld_sed = shanr8(6)
+
+   shanlog(1) = use_subcol_microp
+   shanlog(2) = atm_dep_flux
+   shanlog(3) = history_amwg
+   shanlog(4) = history_verbose
+   shanlog(5) = history_vdiag
+   shanlog(6) = history_eddy
+   shanlog(7) = history_aerosol
+   shanlog(8) = history_aero_optics
+   shanlog(9) = history_budget
+   shanlog(10) = history_waccm
+   shanlog(11) = history_clubb
+   shanlog(12) = do_clubb_sgs
+   shanlog(13) = do_aerocom_ind3
+   shanlog(14) = do_tms
+   shanlog(15) = use_mass_borrower
+   shanlog(16) = l_ieflx_fix
+   shanlog(17) = use_qqflx_fixer
+   shanlog(18) = print_fixer_message
+   shanlog(19) = micro_do_icesupersat
+   shanlog(20) = state_debug_checks
+   shanlog(21) = use_hetfrz_classnuc
+   shanlog(22) = use_gw_oro
+   shanlog(23) = use_gw_front
+   shanlog(24) = use_gw_convect
+   shanlog(25) = fix_g1_err_ndrop
+   shanlog(26) = ssalt_tuning
+   shanlog(27) = resus_fix
+   shanlog(28) = convproc_do_gas
+!   shanlog(29) = convproc_method_activate
+!   shanlog(30) = mam_amicphys_optaa
+   shanlog(31) = liqcf_fix
+   shanlog(32) = regen_fix
+   shanlog(33) = demott_ice_nuc
+   shanlog(34) = pergro_mods
+   shanlog(35) = pergro_test_active
+   shanlog(36) = l_tracer_aero
+   shanlog(37) = l_vdiff
+   shanlog(38) = l_rayleigh
+   shanlog(39) = l_gw_drag
+   shanlog(40) = l_ac_energy_chk
+   shanlog(41) = l_bc_energy_fix
+   shanlog(42) = l_dry_adj
+   shanlog(43) = l_st_mac
+   shanlog(44) = l_st_mic
+   shanlog(45) = l_rad
+   shanlog(46) = mg_prc_coeff_fix
+   shanlog(47) = rrtmg_temp_fix
+   
+   call mpibcast(shanlog,                    128 , mpilog,  0, mpicom)
+
+   use_subcol_microp = shanlog(1)
+   atm_dep_flux = shanlog(2)
+   history_amwg = shanlog(3)
+   history_verbose = shanlog(4)
+   history_vdiag = shanlog(5)
+   history_eddy = shanlog(6)
+   history_aerosol = shanlog(7)
+   history_aero_optics = shanlog(8)
+   history_budget = shanlog(9)
+   history_waccm = shanlog(10)
+   history_clubb = shanlog(11)
+   do_clubb_sgs = shanlog(12)
+   do_aerocom_ind3 = shanlog(13)
+   do_tms = shanlog(14)
+   use_mass_borrower = shanlog(15)
+   l_ieflx_fix = shanlog(16)
+   use_qqflx_fixer = shanlog(17)
+   print_fixer_message = shanlog(18)
+   micro_do_icesupersat = shanlog(19)
+   state_debug_checks = shanlog(20)
+
+   use_hetfrz_classnuc = shanlog(21)
+   use_gw_oro = shanlog(22)
+   use_gw_front = shanlog(23)
+   use_gw_convect = shanlog(24)
+   fix_g1_err_ndrop = shanlog(25)
+   ssalt_tuning = shanlog(26)
+   resus_fix = shanlog(27)
+   convproc_do_gas = shanlog(28)
+!   convproc_method_activate = shanlog(29)
+!   mam_amicphys_optaa = shanlog(30)
+   liqcf_fix = shanlog(31)
+   regen_fix = shanlog(32)
+   demott_ice_nuc = shanlog(33)
+   pergro_mods = shanlog(34)
+   pergro_test_active = shanlog(35)
+   l_tracer_aero = shanlog(36)
+   l_vdiff = shanlog(37)
+   l_rayleigh = shanlog(38)
+   l_gw_drag = shanlog(39)
+   l_ac_energy_chk = shanlog(40)
+   l_bc_energy_fix = shanlog(41)
+   l_dry_adj = shanlog(42)
+   l_st_mac = shanlog(43)
+   l_st_mic = shanlog(44)
+   l_rad = shanlog(45)
+   mg_prc_coeff_fix = shanlog(46)
+   rrtmg_temp_fix = shanlog(47)
+
+   shanint(1) = srf_flux_avg
+   shanint(2) = history_budget_histfile_num
+   shanint(3) = conv_water_in_rad
+   shanint(4) = ieflx_opt
+   shanint(5) = convproc_do_aer
+   shanint(6) = cld_macmic_num_steps
+   shanint(7) = convproc_method_activate
+   shanint(8) = mam_amicphys_optaa
+   
+   call mpibcast(shanint,                    8 , mpiint,  0, mpicom)
+
+   srf_flux_avg = shanint(1)
+   history_budget_histfile_num = shanint(2)
+   conv_water_in_rad = shanint(3)
+   ieflx_opt = shanint(4)
+   convproc_do_aer = shanint(5)
+   cld_macmic_num_steps = shanint(6)
+   convproc_method_activate = shanint(7)
+   mam_amicphys_optaa = shanint(8)
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)

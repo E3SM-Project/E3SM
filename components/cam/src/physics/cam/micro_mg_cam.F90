@@ -283,6 +283,10 @@ subroutine micro_mg_cam_readnl(nlfile)
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
 
+  integer :: shanint(3)
+  logical :: shanlog(6)
+  real(r8) :: shanr8(7)
+
   namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
        micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, ice_sed_ai,&
 !!== KZ_DCS
@@ -360,23 +364,44 @@ subroutine micro_mg_cam_readnl(nlfile)
 
 #ifdef SPMD
   ! Broadcast namelist variables
-  call mpibcast(micro_mg_version,            1, mpiint, 0, mpicom)
-  call mpibcast(micro_mg_sub_version,        1, mpiint, 0, mpicom)
-  call mpibcast(do_cldice,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_cldliq,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_nccons,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_nicons,                   1, mpilog, 0, mpicom)
-  call mpibcast(micro_mg_dcs_tdep,           1, mpilog, 0, mpicom)
-  call mpibcast(num_steps,                   1, mpiint, 0, mpicom)
-  call mpibcast(microp_uniform,              1, mpilog, 0, mpicom)
-  call mpibcast(micro_mg_dcs,                1, mpir8,  0, mpicom)
-  call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
-  call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
-  call mpibcast(nccons,                      1, mpir8,  0, mpicom)
-  call mpibcast(nicons,                      1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
-  call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
-  call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
+  shanr8(1) = micro_mg_dcs
+  shanr8(2) = micro_mg_berg_eff_factor
+  shanr8(3) = ice_sed_ai
+  shanr8(4) = nccons
+  shanr8(5) = nicons
+  shanr8(6) = micro_mg_mass_gradient_alpha
+  shanr8(7) = micro_mg_mass_gradient_beta
+  call mpibcast(shanr8,                  7, mpir8,  0, mpicom)
+  micro_mg_dcs = shanr8(1)
+  micro_mg_berg_eff_factor = shanr8(2)
+  ice_sed_ai = shanr8(3)
+  nccons = shanr8(4)
+  nicons = shanr8(5)
+  micro_mg_mass_gradient_alpha = shanr8(6)
+  micro_mg_mass_gradient_beta = shanr8(7)
+
+  shanlog(1) = do_cldice
+  shanlog(2) = do_cldliq
+  shanlog(3) = do_nccons
+  shanlog(4) = do_nicons
+  shanlog(5) = micro_mg_dcs_tdep
+  shanlog(6) = microp_uniform
+  call mpibcast(shanlog,                   6, mpilog, 0, mpicom)
+  do_cldice = shanlog(1)
+  do_cldliq = shanlog(2)
+  do_nccons = shanlog(3)
+  do_nicons = shanlog(4)
+  micro_mg_dcs_tdep = shanlog(5)
+  microp_uniform = shanlog(6)
+
+  shanint(1) = micro_mg_version
+  shanint(2) = micro_mg_sub_version
+  shanint(3) = num_steps
+  call mpibcast(shanint,            3, mpiint, 0, mpicom)
+  micro_mg_version = shanint(1)
+  micro_mg_sub_version = shanint(2)
+  num_steps = shanint(3)
 
 #endif
 

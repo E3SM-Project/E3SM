@@ -124,12 +124,16 @@ subroutine nucleate_ice_cam_readnl(nlfile)
   use namelist_utils,  only: find_group_name
   use units,           only: getunit, freeunit
   use mpishorthand
+  use perf_mod
 
   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
   ! Local variables
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'nucleate_ice_cam_readnl'
+
+  real(r8) :: shanr8(2)
+  logical  :: shanlog(4)
 
   namelist /nucleate_ice_nl/ use_preexisting_ice, hist_preexisting_ice, &
                              use_nie_nucleate, use_dem_nucleate,        &
@@ -154,12 +158,22 @@ subroutine nucleate_ice_cam_readnl(nlfile)
 
 #ifdef SPMD
   ! Broadcast namelist variables
-  call mpibcast(use_preexisting_ice,  1, mpilog, 0, mpicom)
-  call mpibcast(hist_preexisting_ice, 1, mpilog, 0, mpicom)
-  call mpibcast(use_nie_nucleate, 1, mpilog, 0, mpicom)
-  call mpibcast(use_dem_nucleate, 1, mpilog, 0, mpicom)
-  call mpibcast(nucleate_ice_subgrid, 1, mpir8, 0, mpicom)
-  call mpibcast(so4_sz_thresh_icenuc, 1, mpir8, 0, mpicom)
+  shanr8(1) = nucleate_ice_subgrid
+  shanr8(2) = so4_sz_thresh_icenuc
+  call mpibcast(shanr8, 2, mpir8, 0, mpicom)
+  nucleate_ice_subgrid = shanr8(1)
+  so4_sz_thresh_icenuc = shanr8(2)
+
+  shanlog(1) = use_preexisting_ice
+  shanlog(2) = hist_preexisting_ice
+  shanlog(3) = use_nie_nucleate
+  shanlog(4) = use_dem_nucleate
+  call mpibcast(shanlog, 4, mpilog, 0, mpicom)
+  use_preexisting_ice = shanlog(1)
+  hist_preexisting_ice = shanlog(2)
+  use_nie_nucleate = shanlog(3)
+  use_dem_nucleate = shanlog(4)
+
 #endif
 
 end subroutine nucleate_ice_cam_readnl

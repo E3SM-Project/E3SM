@@ -101,6 +101,7 @@ contains
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -116,6 +117,8 @@ contains
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'cldwat_readnl'
+
+   real(r8) :: shanr8(4)
 
    namelist /cldwat_nl/ cldwat_icritw, cldwat_icritc, cldwat_conke, cldwat_r3lcrit
 
@@ -146,10 +149,15 @@ contains
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(icritw,            1, mpir8,  0, mpicom)
-   call mpibcast(icritc,            1, mpir8,  0, mpicom)
-   call mpibcast(conke,             1, mpir8,  0, mpicom)
-   call mpibcast(r3lcrit,           1, mpir8,  0, mpicom)
+   shanr8(1) = icritw
+   shanr8(2) = icritc
+   shanr8(3) = conke
+   shanr8(4) = r3lcrit
+   call mpibcast(shanr8,            4, mpir8,  0, mpicom)
+   icritw  = shanr8(1)
+   icritc  = shanr8(2)
+   conke   = shanr8(3)
+   r3lcrit = shanr8(4)
 #endif
 
 end subroutine cldwat_readnl

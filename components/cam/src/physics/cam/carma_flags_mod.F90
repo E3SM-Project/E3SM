@@ -74,6 +74,7 @@ contains
     use units,           only: getunit, freeunit
     use mpishorthand
     use carma_model_flags_mod, only: carma_model_readnl
+    use perf_mod
   
     ! args
   
@@ -123,6 +124,10 @@ contains
       carma_rhcrit, &
       carma_vf_const
   
+    logical :: shanlog(22)
+    integer :: shanint(3)
+    real(r8)  :: shanr8(10)
+
     if (masterproc) then
        unitn = getunit()
        open( unitn, file=trim(nlfile), status='old' )
@@ -138,41 +143,81 @@ contains
     end if
   
 #ifdef SPMD
-    call mpibcast (carma_flag,            1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_aerosol,      1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_cldliq,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_cldice,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_clearsky,     1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_coag,         1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_detrain,      1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_drydep,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_emission,     1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_fixedinit,    1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_hetchem,      1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_explised,     1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_incloud,      1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_grow,         1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_optics,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_pheat,        1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_pheatatm,     1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_substep,      1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_thermo,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_wetdep,       1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_vdiff,        1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_do_vtran,        1 ,mpilog, 0,mpicom)
-    call mpibcast (carma_maxsubsteps,     1 ,mpiint, 0,mpicom)
-    call mpibcast (carma_minsubsteps,     1 ,mpiint, 0,mpicom)
-    call mpibcast (carma_maxretries,      1 ,mpiint, 0,mpicom)
-    call mpibcast (carma_conmax,          1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_dgc_threshold,   1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_ds_threshold,    1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_dt_threshold,    1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_tstick,          1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_gsticki,         1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_gstickl,         1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_cstick,          1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_rhcrit,          1 ,mpir8,  0,mpicom)
-    call mpibcast (carma_vf_const,        1 ,mpir8,  0,mpicom)
+    shanlog(1)  = carma_flag
+    shanlog(2)  = carma_do_aerosol
+    shanlog(3)  = carma_do_cldliq
+    shanlog(4)  = carma_do_cldice
+    shanlog(5)  = carma_do_clearsky
+    shanlog(6)  = carma_do_coag
+    shanlog(7)  = carma_do_detrain
+    shanlog(8)  = carma_do_drydep
+    shanlog(9)  = carma_do_emission
+    shanlog(10) = carma_do_fixedinit
+    shanlog(11) = carma_do_hetchem
+    shanlog(12) = carma_do_explised
+    shanlog(13) = carma_do_incloud
+    shanlog(14) = carma_do_grow
+    shanlog(15) = carma_do_optics
+    shanlog(16) = carma_do_pheat
+    shanlog(17) = carma_do_pheatatm
+    shanlog(18) = carma_do_substep
+    shanlog(19) = carma_do_thermo
+    shanlog(20) = carma_do_wetdep
+    shanlog(21) = carma_do_vdiff
+    shanlog(22) = carma_do_vtran
+    call mpibcast (shanlog,            22 ,mpilog, 0,mpicom)
+    carma_flag         = shanlog(1)
+    carma_do_aerosol   = shanlog(2)
+    carma_do_cldliq    = shanlog(3)
+    carma_do_cldice    = shanlog(4)
+    carma_do_clearsky  = shanlog(5)
+    carma_do_coag      = shanlog(6)
+    carma_do_detrain   = shanlog(7)
+    carma_do_drydep    = shanlog(8)
+    carma_do_emission  = shanlog(9)
+    carma_do_fixedinit = shanlog(10)
+    carma_do_hetchem   = shanlog(11)
+    carma_do_explised  = shanlog(12)
+    carma_do_incloud   = shanlog(13)
+    carma_do_grow      = shanlog(14)
+    carma_do_optics    = shanlog(15)
+    carma_do_pheat     = shanlog(16)
+    carma_do_pheatatm  = shanlog(17)
+    carma_do_substep   = shanlog(18)
+    carma_do_thermo    = shanlog(19)
+    carma_do_wetdep    = shanlog(20)
+    carma_do_vdiff     = shanlog(21)
+    carma_do_vtran     = shanlog(22)
+
+    shanint(1) = carma_maxsubsteps
+    shanint(2) = carma_minsubsteps
+    shanint(3) = carma_maxretries
+    call mpibcast (shanint,     3 ,mpiint, 0,mpicom)
+    carma_maxsubsteps = shanint(1)
+    carma_minsubsteps = shanint(2)
+    carma_maxretries  = shanint(3)
+
+    shanr8(1) = carma_conmax
+    shanr8(2) = carma_dgc_threshold
+    shanr8(3) = carma_ds_threshold
+    shanr8(4) = carma_dt_threshold
+    shanr8(5) = carma_tstick
+    shanr8(6) = carma_gsticki
+    shanr8(7) = carma_gstickl
+    shanr8(8) = carma_cstick
+    shanr8(9) = carma_rhcrit
+    shanr8(10) = carma_vf_const
+    call mpibcast (shanr8,          10 ,mpir8,  0,mpicom)
+    carma_conmax         = shanr8(1)
+    carma_dgc_threshold  = shanr8(2)
+    carma_ds_threshold   = shanr8(3)
+    carma_dt_threshold   = shanr8(4)
+    carma_tstick         = shanr8(5)
+    carma_gsticki        = shanr8(6)
+    carma_gstickl        = shanr8(7)
+    carma_cstick         = shanr8(8)
+    carma_rhcrit         = shanr8(9)
+    carma_vf_const       = shanr8(10)
     call mpibcast (carma_model, len(carma_model), mpichar, 0, mpicom)
     call mpibcast (carma_reftfile, len(carma_reftfile), mpichar, 0, mpicom)
 #endif

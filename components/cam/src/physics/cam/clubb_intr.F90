@@ -371,6 +371,8 @@ end subroutine clubb_init_cnst
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)      
 
     integer :: iunit, read_status
+    logical :: shanlog(9)
+    real(r8) :: shanr8(8)
 
     namelist /clubb_his_nl/ clubb_history, clubb_rad_history
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
@@ -417,24 +419,43 @@ end subroutine clubb_init_cnst
     end if
 
 #ifdef SPMD
-! Broadcast namelist variables
-      call mpibcast(clubb_history,            1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_rad_history,        1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_cloudtop_cooling,   1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_rainevap_turb,      1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_expldiff,           1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_do_adv,             1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_do_deep,            1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_timestep,           1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_stabcorrect,        1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_rnevap_effic,       1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_liq_deep,           1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_liq_sh,             1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_ice_deep,           1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_ice_sh,             1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
-      call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
-      call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
+      shanlog(1) = clubb_history
+      shanlog(2) = clubb_rad_history
+      shanlog(3) = clubb_cloudtop_cooling
+      shanlog(4) = clubb_rainevap_turb
+      shanlog(5) = clubb_expldiff
+      shanlog(6) = clubb_do_adv
+      shanlog(7) = clubb_do_deep
+      shanlog(8) = clubb_stabcorrect
+      shanlog(9) = relvar_fix
+      call mpibcast(shanlog,               9,   mpilog,  0, mpicom)
+      clubb_history = shanlog(1)
+      clubb_rad_history = shanlog(2)
+      clubb_cloudtop_cooling = shanlog(3)
+      clubb_rainevap_turb = shanlog(4)
+      clubb_expldiff = shanlog(5)
+      clubb_do_adv   = shanlog(6)
+      clubb_do_deep  = shanlog(7)
+      clubb_stabcorrect = shanlog(8)
+      relvar_fix = shanlog(9)
+
+      shanr8(1) = clubb_timestep
+      shanr8(2) = clubb_rnevap_effic
+      shanr8(3) = clubb_liq_deep
+      shanr8(4) = clubb_liq_sh
+      shanr8(5) = clubb_ice_deep
+      shanr8(6) = clubb_ice_sh
+      shanr8(7) = clubb_tk1
+      shanr8(8) = clubb_tk2
+      call mpibcast(shanr8,                8,   mpir8,   0, mpicom)
+      clubb_timestep = shanr8(1)
+      clubb_rnevap_effic = shanr8(2)
+      clubb_liq_deep = shanr8(3)
+      clubb_liq_sh   = shanr8(4)
+      clubb_ice_deep = shanr8(5)
+      clubb_ice_sh   = shanr8(6)
+      clubb_tk1 = shanr8(7)
+      clubb_tk2 = shanr8(8)
 #endif
 
     !  Overwrite defaults if they are true

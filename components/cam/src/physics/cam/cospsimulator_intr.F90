@@ -539,6 +539,9 @@ subroutine cospsimulator_intr_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'cospsimulator_intr_readnl'
 
+   logical :: shanlog(19)
+   integer :: shanint(4)
+
     !!! this list should include any variable that you might want to include in the namelist
     !!! philosophy is to not include COSP output flags but just important COSP settings and cfmip controls. 
     namelist /cospsimulator_nl/ docosp, cosp_active, cosp_amwg, cosp_atrainorbitdata, cosp_cfmip_3hr, cosp_cfmip_da, &
@@ -565,30 +568,57 @@ subroutine cospsimulator_intr_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(docosp,               1,  mpilog, 0, mpicom)
    call mpibcast(cosp_atrainorbitdata, len(cosp_atrainorbitdata), mpichar, 0, mpicom)
-   call mpibcast(cosp_amwg,            1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lite,            1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_passive,         1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_active,          1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_isccp,           1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_runall,          1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_cfmip_3hr,       1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_cfmip_da,        1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_cfmip_mon,       1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_cfmip_off,       1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lfrac_out,       1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lradar_sim,      1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_llidar_sim,      1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lisccp_sim,      1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lmisr_sim,       1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_lmodis_sim,      1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_ncolumns,        1,  mpiint, 0, mpicom)
-   call mpibcast(cosp_sample_atrain,   1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_histfile_num,    1,  mpiint, 0, mpicom)
-   call mpibcast(cosp_histfile_aux_num,1,  mpiint, 0, mpicom)
-   call mpibcast(cosp_histfile_aux,    1,  mpilog, 0, mpicom)
-   call mpibcast(cosp_nradsteps,       1,  mpiint, 0, mpicom)
+    shanlog(1) = docosp
+    shanlog(2) = cosp_amwg
+    shanlog(3) = cosp_lite
+    shanlog(4) = cosp_passive
+    shanlog(5) = cosp_active
+    shanlog(6) = cosp_isccp
+    shanlog(7) = cosp_runall
+    shanlog(8) = cosp_cfmip_3hr
+    shanlog(9) = cosp_cfmip_da
+    shanlog(10) = cosp_cfmip_mon
+    shanlog(11) = cosp_cfmip_off
+    shanlog(12) = cosp_lfrac_out
+    shanlog(13) = cosp_lradar_sim
+    shanlog(14) = cosp_llidar_sim
+    shanlog(15) = cosp_lisccp_sim
+    shanlog(16) = cosp_lmisr_sim
+    shanlog(17) = cosp_lmodis_sim
+    shanlog(18) = cosp_sample_atrain
+    shanlog(19) = cosp_histfile_aux
+    call mpibcast(shanlog,            19,  mpilog, 0, mpicom) 
+    docosp = shanlog(1)
+    cosp_amwg = shanlog(2)
+    cosp_lite = shanlog(3)
+    cosp_passive = shanlog(4)
+    cosp_active = shanlog(5)
+    cosp_isccp = shanlog(6)
+    cosp_runall = shanlog(7)
+    cosp_cfmip_3hr = shanlog(8)
+    cosp_cfmip_da = shanlog(9)
+    cosp_cfmip_mon = shanlog(10)
+    cosp_cfmip_off = shanlog(11)
+    cosp_lfrac_out = shanlog(12)
+    cosp_lradar_sim = shanlog(13)
+    cosp_llidar_sim = shanlog(14)
+    cosp_lisccp_sim = shanlog(15)
+    cosp_lmisr_sim = shanlog(16)
+    cosp_lmodis_sim = shanlog(17)
+    cosp_sample_atrain = shanlog(18)
+    cosp_histfile_aux = shanlog(19)
+
+    shanint(1) = cosp_ncolumns
+    shanint(2) = cosp_histfile_num
+    shanint(3) = cosp_histfile_aux_num
+    shanint(4) = cosp_nradsteps
+    call mpibcast(shanint,       4,  mpiint, 0, mpicom)
+    cosp_ncolumns = shanint(1)
+    cosp_histfile_num = shanint(2)
+    cosp_histfile_aux_num = shanint(3)
+    cosp_nradsteps = shanint(4)
+
 #endif
 
    !! reset COSP namelist variables based on input from cam namelist variables

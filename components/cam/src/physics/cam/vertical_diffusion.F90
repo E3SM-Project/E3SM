@@ -158,6 +158,9 @@ contains
     integer :: unitn, ierr
     character(len=*), parameter :: subname = 'vd_readnl'
   
+    real(r8) :: shanr8(7)
+    logical  :: shanlog(2)
+
     namelist /vert_diff_nl/ kv_top_pressure, kv_top_scale, kv_freetrop_scale, eddy_lbulk_max, eddy_leng_max, &
          eddy_max_bot_pressure, eddy_moist_entrain_a2l, diff_cnsrv_mass_check, do_iss
     !-----------------------------------------------------------------------------
@@ -178,15 +181,26 @@ contains
   
 #ifdef SPMD
     ! Broadcast namelist variables
-    call mpibcast(kv_top_pressure,                 1 , mpir8,   0, mpicom)
-    call mpibcast(kv_top_scale,                    1 , mpir8,   0, mpicom)
-    call mpibcast(kv_freetrop_scale,               1 , mpir8,   0, mpicom)
-    call mpibcast(eddy_lbulk_max,                  1 , mpir8,   0, mpicom)
-    call mpibcast(eddy_leng_max,                   1 , mpir8,   0, mpicom)
-    call mpibcast(eddy_max_bot_pressure,           1 , mpir8,   0, mpicom)
-    call mpibcast(eddy_moist_entrain_a2l,          1 , mpir8,   0, mpicom)
-    call mpibcast(diff_cnsrv_mass_check,           1 , mpilog,  0, mpicom)
-    call mpibcast(do_iss,                          1 , mpilog,  0, mpicom)
+   shanr8(1) = kv_top_pressure
+   shanr8(2) = kv_top_scale
+   shanr8(3) = kv_freetrop_scale
+   shanr8(4) = eddy_lbulk_max
+   shanr8(5) = eddy_leng_max
+   shanr8(6) = eddy_max_bot_pressure
+   shanr8(7) = eddy_moist_entrain_a2l
+   call mpibcast(shanr8,                 7 , mpir8,   0, mpicom)
+   kv_top_pressure = shanr8(1)
+   kv_top_scale = shanr8(2)
+   kv_freetrop_scale = shanr8(3)
+   eddy_lbulk_max = shanr8(4)
+   eddy_leng_max = shanr8(5)
+   eddy_max_bot_pressure = shanr8(6)
+   eddy_moist_entrain_a2l = shanr8(7)
+   shanlog(1) = diff_cnsrv_mass_check
+   shanlog(2) = do_iss
+   call mpibcast(shanlog,                          2 , mpilog,  0, mpicom)
+   diff_cnsrv_mass_check = shanlog(1)
+   do_iss = shanlog(2)
 #endif
 
   end subroutine vd_readnl

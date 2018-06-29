@@ -61,8 +61,11 @@ subroutine ref_pres_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   real(r8) :: shanr8(4)
 
    ! Local variables
    integer :: unitn, ierr
@@ -94,10 +97,15 @@ subroutine ref_pres_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(trop_cloud_top_press,            1 , mpir8,   0, mpicom)
-   call mpibcast(clim_modal_aero_top_press,       1 , mpir8,   0, mpicom)
-   call mpibcast(do_molec_press,                  1 , mpir8,   0, mpicom)
-   call mpibcast(molec_diff_bot_press,            1 , mpir8,   0, mpicom)
+   shanr8(1) = trop_cloud_top_press
+   shanr8(2) = clim_modal_aero_top_press
+   shanr8(3) = do_molec_press
+   shanr8(4) = molec_diff_bot_press
+   call mpibcast(shanr8,            4 , mpir8,   0, mpicom)   
+   trop_cloud_top_press = shanr8(1)
+   clim_modal_aero_top_press = shanr8(2)
+   do_molec_press = shanr8(3)
+   molec_diff_bot_press = shanr8(4)
 #endif
 
 end subroutine ref_pres_readnl

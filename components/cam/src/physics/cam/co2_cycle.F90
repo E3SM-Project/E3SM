@@ -83,12 +83,15 @@ subroutine co2_cycle_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
+   use perf_mod
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
    ! Local variables
    integer :: unitn, ierr, i
    character(len=*), parameter :: subname = 'co2_cycle_readnl'
+
+   logical :: shanlog(3)
 
    namelist /co2_cycle_nl/ co2_flag, co2_readFlux_ocn, co2_readFlux_fuel, &
                            co2flux_ocn_file, co2flux_fuel_file
@@ -110,9 +113,14 @@ subroutine co2_cycle_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast (co2_flag,                               1,   mpilog,  0, mpicom)
-   call mpibcast (co2_readFlux_ocn,                       1,   mpilog,  0, mpicom)
-   call mpibcast (co2_readFlux_fuel,                      1,   mpilog,  0, mpicom)
+   shanlog(1) = co2_flag
+   shanlog(2) = co2_readFlux_ocn
+   shanlog(3) = co2_readFlux_fuel
+   call mpibcast (shanlog,                               3,   mpilog,  0, mpicom)
+   co2_flag = shanlog(1)
+   co2_readFlux_ocn = shanlog(2)
+   co2_readFlux_fuel = shanlog(3)
+
    call mpibcast (co2flux_ocn_file,   len(co2flux_ocn_file),   mpichar, 0, mpicom)
    call mpibcast (co2flux_fuel_file, len(co2flux_fuel_file),   mpichar, 0, mpicom)
 #endif
