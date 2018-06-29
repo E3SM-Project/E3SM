@@ -645,12 +645,12 @@ contains
       ahat5 = 1.
 
       ! IMEX-KGO254c coefficients
-!      dhat2 = 5./6.
-!      dhat3 = 5./6.
-!      dhat4 = 2./3.
-!      ahat4 = 1./2.-dhat4
-!       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-!        (ahat5-dhat3-dhat2-dhat4)
+      dhat2 = 5./6.
+      dhat3 = 5./6.
+      dhat4 = 2./3.
+      ahat4 = 1./2.-dhat4
+       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+        (ahat5-dhat3-dhat2-dhat4)
 
       ! IMEX-KGO254b coefficients NOT GOOD
 !      dhat2 = 1./6.
