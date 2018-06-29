@@ -19,7 +19,7 @@
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, ,AQUAP, SOCN]
     ROF  = [RTM, MOSART, SROF]
-    GLC  = [MALI, MALISIA, CISM1, CISM2, SGLC]
+    GLC  = [MALI, CISM1, CISM2, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
     ESP  = [SESP]
     BGC  = optional BGC scenario
