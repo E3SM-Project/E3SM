@@ -1707,9 +1707,7 @@ subroutine micro_mg_tend ( &
 
         ! Add evaporation of rain number.
         if (pre(i,k) < 0._r8) then
-           dum = pre(i,k)*deltat/qr(i,k)
-           dum = max(-1._r8,dum)
-           nsubr(i,k) = dum*nr(i,k)/deltat
+           nsubr(i,k) = pre(i,k)*nr(i,k)/qr(i,k)
         else
            nsubr(i,k) = 0._r8
         end if
