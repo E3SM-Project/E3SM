@@ -736,6 +736,12 @@ contains
               zLevelParticle = min(max(zMid(maxLevelCell(iCell),iCell), zLevelParticle), zMid(1,iCell))
             end if
             iLevel = mpas_get_vertical_id(maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell))
+
+            if (verticalTreatment == 1) then !('indexLevel')
+              ! assign indexLevel particle vertical position to dz/2 location in vertical cell midpoint
+              zLevelParticle = zMid(indexLevel, iCell)
+              iLevel = indexLevel
+            end if
 #ifdef MPAS_DEBUG
             call mpas_timer_stop("mpas_get_vertical_idLPT")
 #endif
@@ -1853,9 +1859,11 @@ contains
             ! interpolate the scalars now (assumes that scalar value is constant within a particular cell)
             call interp_cell_scalars(iLevelBuoyancy, maxLevelCell(iCell), buoyancyParticle, buoyancyTimeInterp(:,iCell), &
               zMid(:,iCell), zLevelParticle)
+          else if (verticalTreatment == 1) then !('indexLevel')
+            zLevelParticle = zMid(indexLevel, iCell)
+            iLevel = indexLevel
           else
             ! make sure final zLevelParticle is ok so that it can't extent past zMid range
-
             iLevel = mpas_get_vertical_id(maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell))
           end if
 
