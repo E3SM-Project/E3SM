@@ -95,8 +95,25 @@ contains
 
     use physics_buffer,  only: pbuf_add_field, dtype_r8
 
+    ! Dummy index with which to register fields on the physics buffer
+    integer :: idx
+
+    ! Register heating rates; global scope because these need to be written to
+    ! restart files
     call pbuf_add_field('QRS' , 'global',dtype_r8,(/pcols,pver/), qrs_idx) ! shortwave radiative heating rate 
     call pbuf_add_field('QRL' , 'global',dtype_r8,(/pcols,pver/), qrl_idx) ! longwave  radiative heating rate 
+
+    ! Register surface and TOA fluxes, needed by other components in the model
+    ! so these need to persist across timesteps and restarts. Note that the
+    ! naming convention here follows that from CESM: the first letter stands for
+    ! "Flux", the second either "Shortwave" or "Longwave", the third one of
+    ! "Downward", "Upward", or "Net", and the fourth "Surface" or "Top of
+    ! model".
+    call pbuf_add_field('FSDS', 'global', dtype_r8, (/pcols/), idx)
+    call pbuf_add_field('FSNS', 'global', dtype_r8, (/pcols/), idx)
+    call pbuf_add_field('FSNT', 'global', dtype_r8, (/pcols/), idx)
+    call pbuf_add_field('FLNS', 'global', dtype_r8, (/pcols/), idx)
+    call pbuf_add_field('FLNT', 'global', dtype_r8, (/pcols/), idx)
 
   end subroutine radiation_register
 
@@ -517,11 +534,8 @@ end function radiation_nextsw_cday
 
 !===============================================================================
   
-  subroutine radiation_tend(state,ptend, pbuf, &
-       cam_out, cam_in, &
-       landfrac,landm,icefrac,snowh, &
-       fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, is_cmip6_volc)
+  subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, &
+                            net_flx, is_cmip6_volc)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -539,7 +553,7 @@ end function radiation_nextsw_cday
     ! 2004-08-30  B. Eaton         Replace chem_get_cnst by rad_constituent_get.
     !-----------------------------------------------------------------------
 
-    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx, pbuf_get_index
     
     use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
     use physics_types,   only: physics_state, physics_ptend
@@ -566,15 +580,6 @@ end function radiation_nextsw_cday
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false
-    real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
-    real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
-    real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
-    real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
-    real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
-    real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
-    real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
-    real(r8), intent(inout) :: flnt(pcols)      ! Net outgoing lw flux at model top
-    real(r8), intent(inout) :: fsds(pcols)      ! Surface solar down flux
     real(r8), intent(inout) :: net_flx(pcols)
 
     type(physics_state), intent(in), target :: state
@@ -621,6 +626,13 @@ end function radiation_nextsw_cday
     real(r8) :: clon(pcols)                   ! current longitudes(radians)
     real(r8) coszrs(pcols)                     ! Cosine solar zenith angle
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
+
+    ! Fluxes on the physics buffer
+    real(r8), pointer :: fsns(:)      ! Surface solar absorbed flux
+    real(r8), pointer :: fsnt(:)      ! Net column abs solar flux at model top
+    real(r8), pointer :: flns(:)      ! Srf longwave cooling (up-down) flux
+    real(r8), pointer :: flnt(:)      ! Net outgoing lw flux at model top
+    real(r8), pointer :: fsds(:)      ! Surface solar down flux
 
     integer i, k                  ! index
     integer :: istat
@@ -708,8 +720,14 @@ end function radiation_nextsw_cday
     call pbuf_get_field(pbuf, rel_idx, rel    )
     call pbuf_get_field(pbuf, rei_idx, rei    )
 
-
-    !  For CRM, make cloud equal to input observations:
+    ! Get pointers to fluxes on the physics buffer
+    call pbuf_get_field(pbuf, pbuf_get_index('FSDS'), fsds)
+    call pbuf_get_field(pbuf, pbuf_get_index('FSNS'), fsns)
+    call pbuf_get_field(pbuf, pbuf_get_index('FSNT'), fsnt)
+    call pbuf_get_field(pbuf, pbuf_get_index('FLNS'), flns)
+    call pbuf_get_field(pbuf, pbuf_get_index('FLNT'), flnt)
+   
+    ! For CRM, make cloud equal to input observations:
     if (single_column.and.scm_crm_mode.and.have_cld) then
        do k = 1,pver
           cld(:ncol,k)= cldobs(k)
@@ -721,7 +739,7 @@ end function radiation_nextsw_cday
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
 
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+    call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0

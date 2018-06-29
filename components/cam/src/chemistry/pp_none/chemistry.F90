@@ -150,7 +150,7 @@ contains
 
 !===============================================================================
 
-  subroutine chem_timestep_tend( state, ptend, cam_in, cam_out, dt, pbuf, fh2o, fsds )
+  subroutine chem_timestep_tend( state, ptend, cam_in, cam_out, dt, pbuf, fh2o)
     use physics_buffer,           only: physics_buffer_desc
     use camsrfexch,       only: cam_in_t, cam_out_t
     !-----------------------------------------------------------------------
@@ -165,8 +165,6 @@ contains
     real(r8),            intent(out)   :: fh2o(pcols)     ! h2o flux to balance source from chemistry
     type(physics_buffer_desc), pointer :: pbuf(:)
     
-    real(r8),            intent(in)    :: fsds(pcols)     ! longwave down at sfc
-
     return
   end subroutine chem_timestep_tend
 

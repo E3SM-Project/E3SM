@@ -929,7 +929,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (defined BFB_CAM_SCAM_IOP )
     use cam_history,    only: outfld
 #endif
-    use comsrf,         only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
+    use comsrf,         only: sgh, sgh30, landm
     use cam_abortutils,     only: endrun
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
@@ -1031,8 +1031,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
 
-          call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
-                       phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
+          call tphysbc (ztodt, phys_state(c),        &
+                       phys_tend(c), phys_buffer_chunk,  landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        end do
@@ -1148,7 +1148,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30
     use physconst,      only: stebol, latvap
     use carma_intr,     only: carma_accumulate_stats
 #if ( defined OFFLINE_DYN )
@@ -1238,10 +1238,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
 
-       call tphysac(ztodt, cam_in(c),  &
-            sgh(1,c), sgh30(1,c), cam_out(c),                              &
-            phys_state(c), phys_tend(c), phys_buffer_chunk,&
-            fsds(1,c))
+       call tphysac(ztodt, cam_in(c), sgh(1,c), sgh30(1,c), cam_out(c), &
+                    phys_state(c), phys_tend(c), phys_buffer_chunk)
     end do                    ! Chunk loop
 
     !call t_adj_detailf(-1)
@@ -1297,10 +1295,8 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
 end subroutine phys_final
 
 
-subroutine tphysac (ztodt,   cam_in,  &
-       sgh,     sgh30,                                     &
-       cam_out,  state,   tend,    pbuf,            &
-       fsds    )
+subroutine tphysac (ztodt,   cam_in, sgh,     sgh30, &
+                    cam_out,  state,   tend,    pbuf)
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1362,7 +1358,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     ! Arguments
     !
     real(r8), intent(in) :: ztodt                  ! Two times model timestep (2 delta-t)
-    real(r8), intent(in) :: fsds(pcols)            ! down solar flux
     real(r8), intent(in) :: sgh(pcols)             ! Std. deviation of orography for gwd
     real(r8), intent(in) :: sgh30(pcols)           ! Std. deviation of 30s orography for tms
 
@@ -1540,7 +1535,7 @@ if (l_tracer_aero) then
     ! Chemistry calculation
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
-            pbuf,  fh2o, fsds)
+            pbuf,  fh2o)
 
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
@@ -1780,10 +1775,8 @@ end if ! l_ac_energy_chk
 
 end subroutine tphysac
 
-subroutine tphysbc (ztodt,               &
-       fsns,    fsnt,    flns,    flnt,    state,   &
-       tend,    pbuf,     fsds,    landm,            &
-       sgh, sgh30, cam_out, cam_in )
+subroutine tphysbc (ztodt, state, tend,    pbuf,     landm, &
+                    sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1858,11 +1851,6 @@ subroutine tphysbc (ztodt,               &
     ! Arguments
     !
     real(r8), intent(in) :: ztodt                            ! 2 delta t (model time increment)
-    real(r8), intent(inout) :: fsns(pcols)                   ! Surface solar absorbed flux
-    real(r8), intent(inout) :: fsnt(pcols)                   ! Net column abs solar flux at model top
-    real(r8), intent(inout) :: flns(pcols)                   ! Srf longwave cooling (up-down) flux
-    real(r8), intent(inout) :: flnt(pcols)                   ! Net outgoing lw flux at model top
-    real(r8), intent(inout) :: fsds(pcols)                   ! Surface solar down flux
     real(r8), intent(in) :: landm(pcols)                     ! land fraction ramp
     real(r8), intent(in) :: sgh(pcols)                       ! Std. deviation of orography
     real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
@@ -2705,12 +2693,7 @@ if (l_rad) then
     !===================================================
     call t_startf('radiation')
 
-
-    call radiation_tend(state,ptend, pbuf, &
-         cam_out, cam_in, &
-         cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
-         fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc)
+    call radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flx, is_cmip6_volc)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

@@ -318,19 +318,18 @@ contains
 
   !================================================================================================
   !================================================================================================
-  subroutine output_rad_data(  pbuf, state, cam_in, landm, coszen )
+  subroutine output_rad_data(  pbuf, state, cam_in, coszen )
 
     use physics_types,    only: physics_state
     use camsrfexch,       only: cam_in_t     
-    
     use constituents,     only: cnst_get_ind
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use comsrf,           only: landm 
     implicit none
     type(physics_buffer_desc), pointer :: pbuf(:)
     
     type(physics_state), intent(in), target :: state
     type(cam_in_t),      intent(in) :: cam_in
-    real(r8),            intent(in) :: landm(pcols)
     real(r8),            intent(in) :: coszen(pcols)
 
     ! Local variables

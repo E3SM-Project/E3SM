@@ -34,8 +34,8 @@ module comsrf
 !
 ! Public data
 !
-  public landm, sgh, sgh30, fv, ram1, soilw, fsns, fsds
-  public fsnt, flns, flnt, srfrpdel, psm1, prcsnw
+  public landm, sgh, sgh30, fv, ram1, soilw
+  public srfrpdel, psm1, prcsnw
   public trefmxav, trefmnav
 
   real(r8), allocatable:: landm(:,:)     ! land/ocean/sea ice flag
@@ -44,11 +44,6 @@ module comsrf
   real(r8), allocatable:: fv(:,:)        ! needed for dry dep velocities (over land)
   real(r8), allocatable:: ram1(:,:)      ! needed for dry dep velocities (over land)
   real(r8), allocatable:: soilw(:,:)     ! needed for dust emission (over land)
-  real(r8), allocatable:: fsns(:,:)      ! surface absorbed solar flux
-  real(r8), allocatable:: fsds(:,:)      ! downward solar flux
-  real(r8), allocatable:: fsnt(:,:)      ! Net column abs solar flux at model top
-  real(r8), allocatable:: flns(:,:)      ! Srf longwave cooling (up-down) flux
-  real(r8), allocatable:: flnt(:,:)      ! Net outgoing lw flux at model top
   real(r8), allocatable:: srfrpdel(:,:)  ! 1./(pint(k+1)-pint(k))
   real(r8), allocatable:: psm1(:,:)      ! surface pressure
   real(r8), allocatable:: prcsnw(:,:)    ! cam tot snow precip
@@ -106,11 +101,6 @@ CONTAINS
        allocate (fv      (pcols,begchunk:endchunk))
        allocate (ram1    (pcols,begchunk:endchunk))
        allocate (soilw   (pcols,begchunk:endchunk))
-       allocate (fsns    (pcols,begchunk:endchunk))         
-       allocate (fsds    (pcols,begchunk:endchunk))         
-       allocate (fsnt    (pcols,begchunk:endchunk))         
-       allocate (flns    (pcols,begchunk:endchunk))         
-       allocate (flnt    (pcols,begchunk:endchunk))         
        allocate (srfrpdel(pcols,begchunk:endchunk))
        allocate (psm1    (pcols,begchunk:endchunk))
        allocate (prcsnw  (pcols,begchunk:endchunk))
@@ -124,11 +114,6 @@ CONTAINS
        landm    (:,:) = nan
        sgh      (:,:) = nan
        sgh30    (:,:) = nan
-       fsns     (:,:) = nan
-       fsds     (:,:) = nan
-       fsnt     (:,:) = nan
-       flns     (:,:) = nan
-       flnt     (:,:) = nan
        srfrpdel (:,:) = nan
        psm1     (:,:) = nan
        prcsnw   (:,:) = nan
