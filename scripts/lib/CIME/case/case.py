@@ -123,6 +123,7 @@ class Case(object):
         self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
+        self.srun_binding = None
 
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
@@ -177,6 +178,8 @@ class Case(object):
         self.cores_per_task = self.thread_count / threads_per_core
 
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+
+        self.srun_binding = max_mpitasks_per_node / self.tasks_per_node
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
