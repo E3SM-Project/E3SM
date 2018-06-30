@@ -38,9 +38,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--squash", action="store_true",
                         help="Do the split as squashy as possible")
 
-    parser.add_argument("--squash", action="store_true",
-                        help="Do the split as squahy as possible")
-
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(not (args.resume and args.abort), "Makes no sense to abort and resume")

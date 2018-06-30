@@ -34,6 +34,7 @@ _TESTS = {
 
     "e3sm_atm_integration" : (None, None,
                               ("ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
+                              ("SMS_Ld1.ne4_ne4.FC5AV1C-L-AQUAP","cam-clubb_only"),
                                ("PET_Ln5.ne4_ne4.FC5AV1C-L","allactive-mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
@@ -86,8 +87,7 @@ _TESTS = {
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MALI",
                            "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
-			   ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"),
-                           ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"))
+                           ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
     "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",), None,
