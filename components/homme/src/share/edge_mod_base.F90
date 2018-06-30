@@ -3,14 +3,20 @@
 #endif
 
 module edge_mod_base
-
+!
+! Revisions
+!   2018/3 Mark Taylor: update FreeEdgeBuffer to fix memory leak
+!   2018/4 Mark Taylor: update to only communicate data packed in an edge buffer, instead
+!                       of the entire edge buffer.  requires new interface: edgeVpack_nlyr
+!                       allows all code to share a single large edge buffer
+!
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
   use thread_mod, only: hthreads, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
-  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
+  use parallel_mod, only : abortmp, MPIreal_t, iam,parallel_t, &
       MAX_ACTIVE_MSG, HME_status_size, BNDRY_TAG_BASE
   use edgetype_mod, only : edgedescriptor_t, edgebuffer_t, &
       Longedgebuffer_t, Ghostbuffer3d_t, initedgebuffer_callid
@@ -30,7 +36,8 @@ module edge_mod_base
   !--------------------------------------------------------- 
   ! Pack/unpack routines that use the New format Edge buffer
   !--------------------------------------------------------- 
-  public :: edgeVpack, edgeVunpack
+  public :: edgeVpack, edgeVunpack            ! old interface
+  public :: edgeVpack_nlyr, edgeVunpack_nlyr  ! new interface, allows setting nlyr_tot
   public :: edgeVunpackMIN, edgeVunpackMAX
   public :: edgeDGVpack, edgeDGVunpack
   public :: edgeVunpackVert
@@ -42,6 +49,10 @@ module edge_mod_base
   !----------------------------------------------------------------
   public :: edgeSpack
   public :: edgeSunpackMIN, edgeSunpackMAX
+
+  ! A global edge buffer that can be used by all models
+  type (EdgeBuffer_t) :: edge_g
+  public :: edge_g
 
   logical, private :: threadsafe=.true.
 
@@ -184,7 +195,8 @@ contains
 
 
 !$OMP MASTER
-    edge%nlyr=nlyr
+    edge%nlyr=0           ! number of layers used
+    edge%nlyr_max=nlyr    ! maximum number of layers allowed 
     edge%nbuf=nbuf
 !$OMP END MASTER
 !$OMP BARRIER
@@ -202,9 +214,10 @@ contains
     edge%tag = BNDRY_TAG_BASE + MODULO(edge%id, MAX_ACTIVE_MSG) 
 
     iam = par%rank
-    allocate(edge%putmap(max_neigh_edges,nelemd))
-    allocate(edge%getmap(max_neigh_edges,nelemd))
-    allocate(edge%reverse(max_neigh_edges,nelemd))
+!    allocate(edge%putmap(max_neigh_edges,nelemd))
+!    allocate(edge%getmap(max_neigh_edges,nelemd))
+!    allocate(edge%reverse(max_neigh_edges,nelemd))
+    allocate(edge%desc(nelemd))
 
 #if 0
 if(present(NewMethod)) then 
@@ -221,6 +234,8 @@ if(present(NewMethod)) then
 endif
 #endif
     do ie=1,nelemd
+       edge%desc(ie)=elem(ie)%desc
+#if 0
        do i=1,max_neigh_edges
           if(elem(ie)%desc%putmapP(i) == -1) then 
               edge%putmap(i,ie) = -1
@@ -242,16 +257,17 @@ endif
           endif
           edge%reverse(i,ie) = elem(ie)%desc%reverse(i) 
        enddo
+#endif
     enddo
 
     ! Determine the most optimal way to move data in the bndry_exchange call 
     pSchedule  => Schedule(1)
     if(present(NewMethod)) then 
-        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthS
-        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrS -1) + 1 
+        moveLength = pSchedule%MoveCycle(1)%lengthS
+        ptr       = (pSchedule%MoveCycle(1)%ptrS -1) 
     else
-        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
-        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
+        moveLength = pSchedule%MoveCycle(1)%lengthP
+        ptr       = (pSchedule%MoveCycle(1)%ptrP -1) 
     endif
 
 #if 0
@@ -275,32 +291,37 @@ endif
     endif
      
     allocate(edge%moveLength(nlen))
-    allocate(edge%movePtr(nlen))
+    allocate(edge%movePtr0(nlen))
 
     if (numthreads > 1) then 
        ! the master thread performs no data movement because it is busy with the
        ! MPI messaging 
        edge%moveLength(1) = -1
-       edge%movePtr(1) = 0
+       edge%movePtr0(1) = 0
        
        ! Calculate the length of the local copy in bndy_exchange
+!       llen = nlyr*ceiling(real(moveLength,kind=real_kind)/real(numthreads-1,kind=real_kind))
+!       iptr = ptr*nlyr
        llen = ceiling(real(moveLength,kind=real_kind)/real(numthreads-1,kind=real_kind))
        iptr = ptr
        mLen = 0
        do i=2,numthreads
+!         if( (mLen+llen) <= moveLength*nlyr)  then 
          if( (mLen+llen) <= moveLength)  then 
             tlen = llen 
          else
+!            tlen = moveLength*nlyr - mLen 
             tlen = moveLength - mLen 
          endif
-         edge%moveLength(i) = tlen
-         edge%movePtr(i)    = iptr
+         if (tlen<0) call abortmp('initEdgeBuffer: fatal pointer setup error')
+         edge%moveLength(i) = tlen  ! *nlyr
+         edge%movePtr0(i)    = iptr ! *nlyr 
          iptr = iptr + tlen
          mLen = mLen + tLen 
        enddo
     else
-       edge%moveLength(1) = moveLength
-       edge%movePtr(1) = ptr
+       edge%moveLength(1) = moveLength !*nlyr
+       edge%movePtr0(1) = ptr          !*nlyr
     endif
 
     ! allocate the MPI Send/Recv request handles
@@ -313,58 +334,14 @@ endif
     allocate(edge%receive(nbuf))   
     allocate(edge%buf(nbuf))
 
-!    ithr = omp_get_thread_num()+1
-!    ! first touch for message buffers
-!    iptr   = edge%moveptr(ithr)
-!    length = edge%moveLength(ithr)
-!    if(length>0) then
-!        edge%buf(iptr:iptr+length-1) = 0.0D0
-!        edge%receive(iptr:iptr+length-1) = 0.0D0
-!    endif
-
-!    dont do this, to improve first touch data placement
-!    edge%buf    (:)=0.0D0
-!    edge%receive(:)=0.0D0
 
 !$OMP END MASTER
-! MT: This next barrier is also needed - threads cannot start using edge()
-! until MASTER is done initializing it
+
+! threads cannot start using edge() until MASTER is done initializing it
 !$OMP BARRIER
-
-!JMD DEBUGGING print statements 
-!if(present(NewMethod)) then 
-!    nSendCycles = pSchedule%nSendCycles
-!    nRecvCycles = pSchedule%nRecvCycles
-!    do icycle=1,nRecvCycles
-!       pCycle => pSchedule%RecvCycle(icycle)
-!       length = nlyr * pCycle%lengthS
-!       iptr   = nlyr * (pCycle%ptrS - 1) + 1
-!       print *,'IAM: ', iam, 'RecvCycle: Pointer: ',iptr,' LENGTH: ',length
-!    enddo
-!    do icycle=1,nSendCycles
-!       pCycle => pSchedule%SendCycle(icycle)
-!       length = nlyr * pCycle%lengthS
-!!!       iptr   = nlyr * (pCycle%ptrS - 1) + 1
-!       print *,'IAM: ', iam, 'SendCycle: Pointer: ',iptr,' LENGTH: ',length
-!    enddo
-!    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrS - 1) + 1
-!    length = nlyr*pSchedule%MoveCycle(1)%lengthS
-!    print *,'IAM: ',iam,'MoveCycle: Pointers: ', iptr,' LENGTH: ',length 
-!endif
-!    print *,'IAM: ',iam,'MoveCycle: Pointers: ',edge%movePtr  
-!    print *,'IAM: ',iam,'MoveCycle: LENGTH: ',edge%moveLength  
-
-!    stop 'initNewEdgeBuffer'
-!    allocate(edge%buf(nbuf))
-!    allocate(edge%receive(nbuf))
-!    edge%buf    (:)=0.0D0
-!    edge%receive(:)=0.0D0
-
-
-!    call t_stopf('initedgebuffer')
-!    call t_adj_detailf(-3)
-
   end subroutine initEdgeBuffer
+
+
   ! =========================================
   ! initLongEdgeBuffer:
   !
@@ -382,7 +359,7 @@ endif
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
-       call haltmp('ERROR: initLongEdgeBuffer must be called before threaded reagion')
+       call abortmp('ERROR: initLongEdgeBuffer must be called before threaded reagion')
     endif
 
     nbuf=4*(np+max_corner_elem)*nelemd
@@ -412,9 +389,30 @@ endif
     ! This code is just a wrapper call the 
     !   normal oldedgeVpack
     ! =========================================
-    call edgeVpack(edge,v,vlyr,kptr,ielem)
+    call edgeVpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr,edge%nlyr_max)
 
   end subroutine edgeDGVpack
+
+  ! =========================================
+  ! edgeVpack:
+  !
+  ! Pack edges of v into buf (old interface for fixed nlyr_tot)
+  ! =========================================
+  subroutine edgeVpack(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np
+    type (EdgeBuffer_t)                      :: edge
+    integer,              intent(in)   :: vlyr
+    real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
+    integer,              intent(in)   :: kptr
+    integer,              intent(in)   :: ielem
+
+    ! =========================================
+    ! This code is just a wrapper call the 
+    !   normal oldedgeVpack
+    ! =========================================
+    call edgeVpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr,edge%nlyr_max)
+
+  end subroutine edgeVpack
 
   ! ===========================================
   !  FreeEdgeBuffer:
@@ -431,11 +429,23 @@ endif
 #endif
     deallocate(edge%buf)
     deallocate(edge%receive)
-    deallocate(edge%putmap)
-    deallocate(edge%getmap)
-    deallocate(edge%reverse)
+!    deallocate(edge%putmap)
+!    deallocate(edge%getmap)
+!    deallocate(edge%reverse)
+    deallocate(edge%desc)
+
+    deallocate(edge%moveLength)
+    deallocate(edge%movePtr0)
+
+    deallocate(edge%Srequest)
+    deallocate(edge%Rrequest)
+    deallocate(edge%status)
+
+
+
 #if (defined HORIZ_OPENMP)
 !$OMP END MASTER
+!$OMP BARRIER
 #endif
 
   end subroutine FreeEdgeBuffer
@@ -455,6 +465,7 @@ endif
     deallocate(buffer%receive)
 #if (defined HORIZ_OPENMP)
 !$OMP END MASTER
+!$OMP BARRIER
 #endif
 
   end subroutine FreeGhostBuffer3D
@@ -490,7 +501,7 @@ endif
   !! @param[in] kptr Vertical pointer to the place in the edge buffer where 
   !! data will be located.
   ! =========================================
-  subroutine edgeVpack(edge,v,vlyr,kptr,ielem)
+  subroutine edgeVpack_nlyr(edge,desc,v,vlyr,kptr,nlyr_tot)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
@@ -498,27 +509,30 @@ endif
     integer,              intent(in)   :: vlyr
     real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
     integer,              intent(in)   :: kptr
-    integer,              intent(in)   :: ielem
-!    type (EdgeDescriptor_t),intent(in) :: desc
-
+    integer,              intent(in)   :: nlyr_tot
+    type (EdgeDescriptor_t)            :: desc        ! =>elem(ie)%desc
     ! Local variables
     integer :: i,k,ir,ll,llval,iptr
 
+
     integer :: is,ie,in,iw
 
-    !call t_adj_detailf(+2)
-    !call t_startf('edgeVpack')
-
-    is = edge%putmap(south,ielem)
-    ie = edge%putmap(east,ielem)
-    in = edge%putmap(north,ielem)
-    iw = edge%putmap(west,ielem)
-    if (edge%nlyr < (kptr+vlyr) ) then
-       print *,'edge%nlyr = ',edge%nlyr
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       print *,'edge%nlyr_max = ',edge%nlyr_max
        print *,'kptr+vlyr = ',kptr+vlyr
-       call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
+       call abortmp('edgeVpack: Buffer overflow: edge%nlyr_max too small for kptr')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       print *,'edge%nlyr_max = ',edge%nlyr_max
+       print *,'nlyr_tot = ',nlyr_tot
+       call abortmp('edgeVpack: Buffer overflow: edge%nlyr_max too small for nlyr_tot')
     endif
 
+    is = nlyr_tot*desc%putmapP(south)
+    ie = nlyr_tot*desc%putmapP(east)
+    in = nlyr_tot*desc%putmapP(north)
+    iw = nlyr_tot*desc%putmapP(west)
+   
 !dir$ ivdep
     do k=1,vlyr
        iptr = np*(kptr+k-1)
@@ -532,7 +546,7 @@ endif
 
     !  This is really kludgy way to setup the index reversals
     !  But since it is so a rare event not real need to spend time optimizing
-    if(edge%reverse(south,ielem)) then
+    if(desc%reverse(south)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr = np*(kptr+k-1)+is
@@ -542,7 +556,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(east,ielem)) then
+    if(desc%reverse(east)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+ie
@@ -552,7 +566,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(north,ielem)) then
+    if(desc%reverse(north)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+in
@@ -562,7 +576,7 @@ endif
        enddo
     endif
 
-    if(edge%reverse(west,ielem)) then
+    if(desc%reverse(west)) then
 !dir$ ivdep
        do k=1,vlyr
           iptr=np*(kptr+k-1)+iw
@@ -574,59 +588,60 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(1  ,1 ,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(1  ,1 ,k)
             end do
         end if
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(np ,1 ,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(np ,1 ,k)
             end do
         end if
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(np ,np,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(np ,np,k)
             end do
         end if
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapP(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(1  ,np,k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(1  ,np,k)
             end do
         end if
     end do
 
-    !call t_stopf('edgeVpack')
-    !call t_adj_detailf(-2)
+    edge%nlyr = nlyr_tot  ! set total amount of data for bndry exchange 
 
-  end subroutine edgeVpack
+  end subroutine edgeVpack_nlyr
 
-  subroutine edgeSpack(edge,v,vlyr,kptr,ielem)
+
+
+  subroutine edgeSpack(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t)                :: edge
-    integer,              intent(in)   :: vlyr
+    integer,              intent(in)   :: vlyr,nlyr_tot
     real (kind=real_kind),intent(in)   :: v(vlyr)
     integer,              intent(in)   :: kptr
     integer,              intent(in)   :: ielem
@@ -634,20 +649,25 @@ endif
 
     ! Local variables
     integer :: i,k,ir,ll,llval,iptr
-
+    type (EdgeDescriptor_t), pointer  :: desc
     integer :: is,ie,in,iw
     real (kind=real_kind) :: tmp
 
-!pw call t_adj_detailf(+2)
-!pw call t_startf('edgeSpack')
-
-    is = edge%putmap(south,ielem)
-    ie = edge%putmap(east,ielem)
-    in = edge%putmap(north,ielem)
-    iw = edge%putmap(west,ielem)
-    if (edge%nlyr < (kptr+vlyr) ) then
-       call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
     endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
+    endif
+
+
+    desc => edge%desc(ielem)
+    edge%nlyr = nlyr_tot          ! set size actually used for bndry_exchange()
+
+    is = nlyr_tot*desc%putmapS(south)
+    ie = nlyr_tot*desc%putmapS(east)
+    in = nlyr_tot*desc%putmapS(north)
+    iw = nlyr_tot*desc%putmapS(west)
 
 !dir$ ivdep
     do k=1,vlyr
@@ -659,52 +679,51 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        llval=edge%putmap(ll,ielem)
+        llval=desc%putmapS(ll)
         if (llval /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                edge%buf(kptr+k+llval)=v(k)
+                edge%buf(kptr+k+nlyr_tot*llval)=v(k)
             end do
         end if
     end do
 
-!pw call t_stopf('edgeSpack')
-!pw call t_adj_detailf(-2)
-
   end subroutine edgeSpack
+
+
 
   ! =========================================
   ! LongEdgeVpack:
@@ -842,22 +861,37 @@ endif
 !$dir assume_aligned v:64
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
-    !type (EdgeDescriptor_t)            :: desc
+
+    call edgeVunpack_nlyr(edge,edge%desc(ielem),v,vlyr,kptr,edge%nlyr_max)
+  end subroutine edgeVunpack
+
+
+  subroutine edgeVunpack_nlyr(edge,desc,v,vlyr,kptr,nlyr_tot)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    type (EdgeBuffer_t),         intent(in)  :: edge
+
+    integer,               intent(in)  :: vlyr,nlyr_tot
+    real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
+    type (EdgeDescriptor_t)  :: desc
+
+!$dir assume_aligned v:64
+    integer,               intent(in)  :: kptr
+
 
     ! Local
     integer :: i,k,ll,iptr
     integer :: is,ie,in,iw
     integer :: ks,ke,kblock
-    logical :: done
     integer :: getmapL
 
-    !call t_adj_detailf(+2)
-    !call t_startf('edgeVunpack')
+    ! for nlyr_tot, dont use edge%nlyr, since some threads may be ahead of this thread
+    ! and will change edge%nlyr and start packing into the send buffer
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    is = nlyr_tot*desc%getmapP(south)
+    ie = nlyr_tot*desc%getmapP(east)
+    in = nlyr_tot*desc%getmapP(north)
+    iw = nlyr_tot*desc%getmapP(west)
 
 !dir$ ivdep
     do k=1,vlyr
@@ -872,52 +906,50 @@ endif
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
-        getmapL = edge%getmap(ll,ielem)
+        getmapL = desc%getmapP(ll)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive((kptr+k-1)+getmapL+1)
+                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive((kptr+k-1)+nlyr_tot*getmapL+1)
             enddo
         endif
     end do
 
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
-        getmapL = edge%getmap(ll,ielem)
+        getmapL = desc%getmapP(ll)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=v(np,1 ,k)+edge%receive((kptr+k-1)+getmapL+1)
+                v(np ,1 ,k)=v(np,1 ,k)+edge%receive((kptr+k-1)+nlyr_tot*getmapL+1)
             enddo
         endif
     end do
 
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        getmapL = edge%getmap(ll,ielem)
+        getmapL = desc%getmapP(ll)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=v(np,np,k)+edge%receive((kptr+k-1)+getmapL+1)
+                v(np ,np,k)=v(np,np,k)+edge%receive((kptr+k-1)+nlyr_tot*getmapL+1)
             enddo
         endif
     end do
 
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        getmapL = edge%getmap(ll,ielem)
+        getmapL = desc%getmapP(ll)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=v(1 ,np,k)+edge%receive((kptr+k-1)+getmapL+1)
+                v(1  ,np,k)=v(1 ,np,k)+edge%receive((kptr+k-1)+nlyr_tot*getmapL+1)
             enddo
         endif
     end do
 
-    !call t_stopf('edgeVunpack')
-    !call t_adj_detailf(-2)
 
-  end subroutine edgeVunpack
+  end subroutine edgeVunpack_nlyr
 
 
   subroutine edgeVunpackVert(edge,v,ielem)
@@ -932,22 +964,26 @@ endif
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
     integer :: i,k,l, nce
-    integer :: is,ie,in,iw,ine,inw,isw,ise
+    integer :: is,ie,in,iw,ine,inw,isw,ise,nlyr_tot
+    type (EdgeDescriptor_t), pointer   :: desc
 
     threadsafe=.false.
 
-    if (max_corner_elem.ne.1 .and. ne==0) then
+    if (max_corner_elem.ne.1 .or. ne==0) then
         ! MNL: this is used to construct the dual grid on the cube,
         !      currently only supported for the uniform grid. If
         !      this is desired on a refined grid, a little bit of
         !      work will be required.
-        call haltmp("edgeVunpackVert should not be called with unstructured meshes")
+        call abortmp("edgeVunpackVert should not be called with unstructured meshes")
     end if
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr_max
+
+    is=nlyr_tot*desc%getmapP(south)
+    ie=nlyr_tot*desc%getmapP(east)
+    in=nlyr_tot*desc%getmapP(north)
+    iw=nlyr_tot*desc%getmapP(west)
 
 
     ! N+S
@@ -1041,14 +1077,14 @@ endif
     nce = max_corner_elem
     do l=swest,swest+max_corner_elem-1
        ! find the one active corner, then exist
-        isw=edge%getmap(l,ielem)
+        isw=desc%getmapP(l)
         if(isw /= -1) then 
             ! v(1,1,1)%x=edge%receive(1,desc%getmapP(l)+1)
-            v(1,1,1)%x=edge%receive(isw+1)
+            v(1,1,1)%x=edge%receive(nlyr_tot*isw+1)
             ! v(1,1,1)%y=edge%receive(2,desc%getmapP(l)+1)
-            v(1,1,1)%y=edge%receive(nce+isw+1)
+            v(1,1,1)%y=edge%receive(nce+nlyr_tot*isw+1)
             ! v(1,1,1)%z=edge%receive(3,desc%getmapP(l)+1)
-            v(1,1,1)%z=edge%receive(2*nce+isw+1)
+            v(1,1,1)%z=edge%receive(2*nce+nlyr_tot*isw+1)
             exit 
         else
             v(1,1,1)%x=0_real_kind
@@ -1060,14 +1096,14 @@ endif
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
        ! find the one active corner, then exist
-        ise=edge%getmap(l,ielem)
+        ise=desc%getmapP(l)
         if(ise /= -1) then 
             ! v(2,np,1)%x=edge%receive(1,desc%getmapP(l)+1)
-            v(2,np,1)%x=edge%receive(ise+1)
+            v(2,np,1)%x=edge%receive(nlyr_tot*ise+1)
             ! v(2,np,1)%y=edge%receive(2,desc%getmapP(l)+1)
-            v(2,np,1)%y=edge%receive(nce+ise+1)
+            v(2,np,1)%y=edge%receive(nce+nlyr_tot*ise+1)
             ! v(2,np,1)%z=edge%receive(3,desc%getmapP(l)+1)
-            v(2,np,1)%z=edge%receive(2*nce+ise+1)
+            v(2,np,1)%z=edge%receive(2*nce+nlyr_tot*ise+1)
             exit
         else
             v(2,np,1)%x=0_real_kind
@@ -1079,11 +1115,11 @@ endif
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
        ! find the one active corner, then exist
-        ine=edge%getmap(l,ielem)
+        ine=desc%getmapP(l)
         if(ine /= -1) then 
-            v(3,np,np)%x=edge%receive(ine+1)
-            v(3,np,np)%y=edge%receive(nce+ine+1)
-            v(3,np,np)%z=edge%receive(2*nce+ine+1)
+            v(3,np,np)%x=edge%receive(nlyr_tot*ine+1)
+            v(3,np,np)%y=edge%receive(nce+nlyr_tot*ine+1)
+            v(3,np,np)%z=edge%receive(2*nce+nlyr_tot*ine+1)
             exit
         else
             v(3,np,np)%x=0_real_kind
@@ -1095,11 +1131,11 @@ endif
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
        ! find the one active corner, then exist
-        inw = edge%getmap(l,ielem)
+        inw = desc%getmapP(l)
         if(inw/= -1) then 
-            v(4,1,np)%x=edge%receive(inw+1)
-            v(4,1,np)%y=edge%receive(nce+inw+1)
-            v(4,1,np)%z=edge%receive(2*nce+inw+1)
+            v(4,1,np)%x=edge%receive(nlyr_tot*inw+1)
+            v(4,1,np)%y=edge%receive(nce+nlyr_tot*inw+1)
+            v(4,1,np)%z=edge%receive(2*nce+nlyr_tot*inw+1)
             exit
         else
             v(4,1,np)%x=0_real_kind
@@ -1176,14 +1212,18 @@ endif
 
     ! Local
     integer :: i,k,iptr,nce
-    integer :: is,ie,in,iw
+    integer :: is,ie,in,iw, nlyr_tot
+    type (EdgeDescriptor_t), pointer   :: desc
 
     threadsafe=.false.
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr_max
+
+    is=nlyr_tot*desc%getmapP(south)
+    ie=nlyr_tot*desc%getmapP(east)
+    in=nlyr_tot*desc%getmapP(north)
+    iw=nlyr_tot*desc%getmapP(west)
 !dir$ ivdep
     do k=1,vlyr
        iptr=np*(kptr+k-1)
@@ -1195,37 +1235,7 @@ endif
        end do
     end do
 
-    nce = max_corner_elem
-!   this is probably broken.  nce should be 1?  MT 2016/2/9
-    i = swest
-    if(edge%getmap(i,ielem) /= -1) then
-!dir$ ivdep
-      do k=1,vlyr
-        v(0,0,k) = edge%receive(nce*(kptr+k-1)+edge%getmap(i,ielem)+1)
-      end do
-    end if
-    i = swest+max_corner_elem
-    if(edge%getmap(i,ielem) /= -1) then
-!dir$ ivdep
-      do k=1,vlyr
-        v(np+1,0,k) = edge%receive(nce*(kptr+k-1)+edge%getmap(i,ielem)+1)
-      end do
-    end if
-    i = swest+3*max_corner_elem
-    if(edge%getmap(i,ielem) /= -1) then
-!dir$ ivdep
-      do k=1,vlyr
-        v(np+1,np+1,k) = edge%receive(nce*(kptr+k-1)+edge%getmap(i,ielem)+1)
-      end do
-    end if
-    i = swest+2*max_corner_elem
-    if(edge%getmap(i,ielem) /= -1) then
-!dir$ ivdep
-      do k=1,vlyr
-        v(0,np+1,k) = edge%receive(nce*(kptr+k-1)+edge%getmap(i,ielem)+1)
-      end do
-    end if
-
+    ! DG code ignores all corner data
   end subroutine edgeDGVunpack
 
   ! ========================================
@@ -1246,14 +1256,18 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
-    integer :: getmapL
+    integer :: getmapL, nlyr_tot
+    type (EdgeDescriptor_t), pointer   :: desc
 
     threadsafe=.false.
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr_max
+
+    is=nlyr_tot*desc%getmapP(south)
+    ie=nlyr_tot*desc%getmapP(east)
+    in=nlyr_tot*desc%getmapP(north)
+    iw=nlyr_tot*desc%getmapP(west)
 !dir$ ivdep
     do k=1,vlyr
        iptr=np*(kptr+k-1)
@@ -1267,56 +1281,56 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(kptr+k+getmapL))
+                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(kptr+k+getmapL))
+                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=MAX(v(np,np,k),edge%receive(kptr+k+getmapL))
+                v(np ,np,k)=MAX(v(np,np,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(kptr+k+getmapL))
+                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
     
   end subroutine edgeVunpackMAX
 
-  subroutine edgeSunpackMAX(edge,v,vlyr,kptr,ielem)
+  subroutine edgeSunpackMAX(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
-    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: vlyr,nlyr_tot
     real (kind=real_kind), intent(inout) :: v(vlyr)
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
@@ -1325,14 +1339,23 @@ endif
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
     integer :: getmapL
+    type (EdgeDescriptor_t), pointer   :: desc
 
-!pw call t_startf('edgeSunpack')
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       call abortmp('edgeSunpackMAX: Buffer overflow: edge%nlyr_max too small')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSunpackMAX: Buffer overflow: edge%nlyr_max too small')
+    endif
+
     threadsafe=.false.
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+
+    is=nlyr_tot*desc%getmapS(south)
+    ie=nlyr_tot*desc%getmapS(east)
+    in=nlyr_tot*desc%getmapS(north)
+    iw=nlyr_tot*desc%getmapS(west)
 !dir$ ivdep
     do k=1,vlyr
        iptr=(kptr+k-1)
@@ -1341,61 +1364,61 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MAX(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MAX(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MAX(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
                 iptr = (kptr+k-1)
-                v(k)=MAX(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MAX(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
-!pw call t_stopf('edgeSunpack')
+
     
   end subroutine edgeSunpackMAX
 
-  subroutine edgeSunpackMIN(edge,v,vlyr,kptr,ielem)
+  subroutine edgeSunpackMIN(edge,v,vlyr,kptr,nlyr_tot,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
-    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: vlyr,nlyr_tot
     real (kind=real_kind), intent(inout) :: v(vlyr)
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
@@ -1406,14 +1429,24 @@ endif
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
     integer :: getmapL
+    type (EdgeDescriptor_t), pointer   :: desc
 
 !pw call t_startf('edgeSunpack')
+    if (edge%nlyr_max < (kptr+vlyr) ) then
+       call abortmp('edgeSunpackMIN: Buffer overflow: edge%nlyr_max too small')
+    endif
+    if (edge%nlyr_max < nlyr_tot ) then
+       call abortmp('edgeSunpackMIN: Buffer overflow: edge%nlyr_max too small')
+    endif
+
     threadsafe=.false.
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+
+    is=nlyr_tot*desc%getmapS(south)
+    ie=nlyr_tot*desc%getmapS(east)
+    in=nlyr_tot*desc%getmapS(north)
+    iw=nlyr_tot*desc%getmapS(west)
 !dir$ ivdep
     do k=1,vlyr
        iptr=(kptr+k-1)
@@ -1422,44 +1455,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MiN(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MiN(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MIN(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MIN(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapS(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(kptr+k+getmapL))
+                v(k)=MIN(v(k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
@@ -1480,14 +1513,19 @@ endif
     ! Local
     integer :: i,k,l,iptr
     integer :: is,ie,in,iw
-    integer :: getmapL
+    integer :: getmapL,nlyr_tot
+    type (EdgeDescriptor_t), pointer   :: desc
+
 
     threadsafe=.false.
 
-    is=edge%getmap(south,ielem)
-    ie=edge%getmap(east,ielem)
-    in=edge%getmap(north,ielem)
-    iw=edge%getmap(west,ielem)
+    desc => edge%desc(ielem)
+    nlyr_tot = edge%nlyr_max
+
+    is=nlyr_tot*desc%getmapP(south)
+    ie=nlyr_tot*desc%getmapP(east)
+    in=nlyr_tot*desc%getmapP(north)
+    iw=nlyr_tot*desc%getmapP(west)
 !dir$ ivdep
     do k=1,vlyr
        iptr = np*(kptr+k-1)
@@ -1501,44 +1539,44 @@ endif
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(kptr+k+getmapL))
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(kptr+k+getmapL))
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(np ,np,k)=MIN(v(np,np,k),edge%receive(kptr+k+getmapL))
+                v(np ,np,k)=MIN(v(np,np,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
 
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        getmapL = edge%getmap(l,ielem)
+        getmapL = desc%getmapP(l)
         if(getmapL /= -1) then 
 !dir$ ivdep
             do k=1,vlyr
-                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(kptr+k+getmapL))
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(kptr+k+nlyr_tot*getmapL))
             enddo
         endif
     end do
@@ -1838,7 +1876,7 @@ endif
 
     ! make sure buffer is big enough:
     if ( (nc2-nc1+1) <  3*nc ) then
-       call haltmp("GhostVunpack:  insufficient ghost cell region")
+       call abortmp("GhostVunpack:  insufficient ghost cell region")
     endif
 
 
@@ -2103,7 +2141,7 @@ endif
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
-       call haltmp('ERROR: initGhostBuffer must be called before threaded region')
+       call abortmp('ERROR: initGhostBuffer must be called before threaded region')
     endif
 
     if (present(nhc_in)) then

@@ -3,6 +3,7 @@ module edgetype_mod
 
   use kinds, only : int_kind, log_kind, real_kind
   use coordinate_systems_mod, only : cartesian3D_t
+  use dimensions_mod, only : max_elements_attached_to_node
 
   implicit none 
   private 
@@ -11,31 +12,39 @@ module edgetype_mod
   integer, public :: initedgebuffer_callid = 0
 
   type, public :: EdgeDescriptor_t
+!
+!   max_neigh_edges = 4 + 4*max_corner_elem
+!   max_corner_elem = max_elements_attached_to_node-3
+! arrays should be of size max_neigh_edges = 4*max_elements_attached_to_node-8
+!
+  integer, public  :: EdgeDescriptor_t
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind), pointer  :: putmapP(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP(:) => null()
-     integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: putmapS(:) => null()
-     integer(kind=int_kind), pointer  :: getmapS(:) => null()
-     integer(kind=int_kind), pointer  :: globalID(:) => null()
-     integer(kind=int_kind), pointer  :: loc2buf(:) => null()
+     integer(kind=int_kind)  :: putmapP(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: getmapP(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: putmapP_ghost(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: getmapP_ghost(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: putmapS(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: getmapS(4*max_elements_attached_to_node-8) 
+     integer(kind=int_kind)  :: globalID(4*max_elements_attached_to_node-8)
+     integer(kind=int_kind)  :: loc2buf(4*max_elements_attached_to_node-8)
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
-     logical(kind=log_kind), pointer  :: reverse(:) => null()
+     logical(kind=log_kind)  :: reverse(4*max_elements_attached_to_node-8)
   end type EdgeDescriptor_t
 
   type, public :: EdgeBuffer_t
      real (kind=real_kind), dimension(:), allocatable :: buf
      real (kind=real_kind), dimension(:), allocatable :: receive
-     integer(kind=int_kind), pointer :: putmap(:,:) => null()
-     integer(kind=int_kind), pointer :: getmap(:,:) => null()
-     logical(kind=log_kind), pointer :: reverse(:,:) => null()
+!     integer(kind=int_kind), pointer :: putmap(:,:) => null()
+!     integer(kind=int_kind), pointer :: getmap(:,:) => null()
+!     logical(kind=log_kind), pointer :: reverse(:,:) => null()
      integer(kind=int_kind), pointer :: moveLength(:) => null()
-     integer(kind=int_kind), pointer :: movePtr(:) => null()
+     integer(kind=int_kind), pointer :: movePtr0(:) => null()
+     type (EdgeDescriptor_t), pointer :: desc(:)  
      integer(kind=int_kind), dimension(:), allocatable :: Rrequest,Srequest
      integer(kind=int_kind), dimension(:,:), allocatable :: status
-     integer :: nlyr ! Number of layers
+     integer :: nlyr ! Number of layers for the current pack/exchange/unpack
+     integer :: nlyr_max = 0 ! maximum number of layers allocated
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
      integer :: id
      integer :: tag

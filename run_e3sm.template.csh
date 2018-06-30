@@ -11,7 +11,7 @@
 ### BASIC INFO ABOUT RUN
 set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
-set resolution     = ne4np4_oQU240
+set resolution     = ne4_oQU240
 set machine        = default
 set walltime       = default
 setenv project       default
@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.20
+set script_ver = 3.0.22
 
 #===========================================
 # DEFINE ALIASES
@@ -538,6 +538,7 @@ if ( -f ${create_newcase_exe} ) then
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
   set shortterm_archive_script = $case_scripts_dir/case.st_archive
+  set preview_namelists_exe = $case_scripts_dir/preview_namelists
 else                                                                   # No version of create_newcase found
   e3sm_print 'ERROR: ${create_newcase_exe} not found'
   e3sm_print '       This is most likely because fetch_code should be true.'
@@ -987,6 +988,11 @@ else
   endif
 endif
 
+# Some user_nl settings won't be updated to *_in files under the run directory
+# until namelists are built again.
+# Call preview_namelists to make sure *_in and user_nl files are consistent.
+$preview_namelists_exe
+
 #============================================
 # BATCH JOB OPTIONS
 #============================================
@@ -1008,22 +1014,12 @@ endif
 
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
 
-set batch_options = ''
-
 if ( $machine =~ 'cori*' || $machine == edison ) then
-    set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
-
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/ST+'${case_name}'.o%j'  $shortterm_archive_script
-
+    $xmlchange_exe --subgroup case.run BATCH_COMMAND_FLAGS="--job-name=${job_name} --output=batch_output/${case_name}.o%j"
+    $xmlchange_exe --subgroup case.st_archive BATCH_COMMAND_FLAGS="--job-name=ST+${job_name} --output=batch_output/ST+${case_name}.o%j --account=${project}"
 else if ( $machine == titan || $machine == eos ) then
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
-    sed -i /"#PBS \( \)*-A"/c"#PBS  -A ${project}"                                 ${case_run_exe}
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
-
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
+    $xmlchange_exe --subgroup case.run BATCH_COMMAND_FLAGS="-N ${job_name} -A ${project} -o batch_output/${case_name}.o%j"
+    $xmlchange_exe --subgroup case.st_archive BATCH_COMMAND_FLAGS="-N ST+${job_name} -o batch_output/ST+${case_name}.o%j"
 
 else if ( $machine == anvil ) then
 # Priority for Anvil
@@ -1036,7 +1032,7 @@ else if ( $machine == anvil ) then
     set anvil_priority   = default
     if ( `lowercase ${anvil_priority}` != default ) then
 	sed -i 's:qsub:qsub.py:g' env_batch.xml
-	set batch_options="-W x=QOS:pri${anvil_priority}"
+	$xmlchange_exe BATCH_COMMAND_FLAGS="-W x=QOS:pri${anvil_priority}"
     endif
 
 else
@@ -1055,7 +1051,8 @@ endif
 
 ### Only specially authorized people can use the special_e3sm qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set batch_options = "${batch_options} --qos=special_e3sm"
+#  set batch_options = `$xmlquery_exe BATCH_COMMAND_FLAGS --value`
+#  $xmlchange_exe BATCH_COMMAND_FLAGS="${batch_options} --qos=special_e3sm"
 #endif
 
 #============================================
@@ -1258,8 +1255,8 @@ endif
 
 if ( `lowercase $submit_run` == 'true' ) then
   e3sm_print '         SUBMITTING JOB:'
-  e3sm_print ${case_submit_exe} --batch-args " ${batch_options} "
-  ${case_submit_exe} --batch-args " ${batch_options} "
+  e3sm_print ${case_submit_exe}
+  ${case_submit_exe}
 else
     e3sm_print 'Run NOT submitted because $submit_run = '$submit_run
 endif

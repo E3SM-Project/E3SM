@@ -1786,6 +1786,14 @@ contains
                  atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
               else if ( config_ecosys_atm_co2_option == 'diagnostic') then
                  atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else if ( config_ecosys_atm_co2_option == 'bcrc') then
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_co2_option == 'bcrd') then
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_co2_option == 'bdrc') then
+                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else if ( config_ecosys_atm_co2_option == 'bdrd') then
+                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
               else
                  atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
               end if
@@ -1794,6 +1802,14 @@ contains
               if ( config_ecosys_atm_alt_co2_option == 'prognostic') then
                  atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
               else if ( config_ecosys_atm_alt_co2_option == 'diagnostic') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else if ( config_ecosys_atm_alt_co2_option == 'bcrc') then
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_alt_co2_option == 'bcrd') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+              else if ( config_ecosys_atm_alt_co2_option == 'bdrc') then
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_alt_co2_option == 'bdrd') then
                  atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
               else
                  atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
@@ -2065,6 +2081,7 @@ contains
                                      forcingPool,          &
                                      statePool,            &
                                      tracersPool,          &
+                                     ecosysAuxiliary,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
@@ -2073,7 +2090,7 @@ contains
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
-                                               CO2Flux, DMSFlux, surfaceUpwardCO2Flux, &
+                                               avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
                                                avgOceanSurfaceDON, &
                                                avgOceanSurfaceNO3, &
@@ -2143,6 +2160,13 @@ contains
      end if
 
      ! BGC fields
+     if (config_use_ecosysTracers) then
+
+        call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+        call mpas_pool_get_array(ecosysAuxiliary, 'avgCO2_gas_flux', avgCO2_gas_flux)
+
+     end if
+
      if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
 
@@ -2209,6 +2233,10 @@ contains
        end if
 
        ! BGC fields
+       if (config_use_ecosysTracers) then
+          ! convert from mmolC/m2/s to kg CO2/m2/s
+          o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = avgCO2_gas_flux(i)*44.e-6_RKIND
+       endif
        if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
           o2x_o % rAttr(index_o2x_So_algae1, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(1,i))
           o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))

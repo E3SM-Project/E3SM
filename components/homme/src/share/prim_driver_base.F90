@@ -1,8 +1,9 @@
 ! ------------------------------------------------------------------------------------------------
 ! prim_driver_mod: 
 !
+! Revisions:
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
-!
+! 03/2018: M. Taylor  fix memory leak
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -99,6 +100,8 @@ contains
     use physical_constants, only : dd_pi
     ! --------------------------------
     use bndry_mod, only : sort_neighbor_buffer_mapping
+    ! --------------------------------
+    use edge_mod, only : initedgebuffer, edge_g
     ! --------------------------------
 #ifndef CAM
     use repro_sum_mod,      only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
@@ -487,9 +490,23 @@ contains
     do j = 1, MetaVertex(1)%nmembers
        call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
     end do
+    do j = 1, MetaVertex(1)%nedges
+       deallocate(MetaVertex(1)%edges(j)%members)
+       deallocate(MetaVertex(1)%edges(j)%edgeptrP)
+       deallocate(MetaVertex(1)%edges(j)%edgeptrS)
+       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost)
+    end do
+    deallocate(MetaVertex(1)%edges)
+    deallocate(MetaVertex(1)%members)
     deallocate(MetaVertex)
     deallocate(TailPartition)
     deallocate(HeadPartition)
+
+    ! single global edge buffer for all models:
+    ! hydrostatic 4*nlev      NH:  6*nlev
+    ! SL tracers: (qsize+1)*nlev
+    ! if this is too small, code will abort with an error message
+    call initEdgeBuffer(par,edge_g,elem,max(qsize+1,6)*nlev)
 
 
     allocate(dom_mt(0:hthreads-1))

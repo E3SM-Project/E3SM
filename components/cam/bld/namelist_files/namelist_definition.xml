@@ -2328,6 +2328,18 @@ Add diagnostics for pre-existing ice option in ice nucleation code to history ou
 Default: .false.
 </entry>
 
+<entry id="use_nie_nucleate" type="logical" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+Use Niemand et al. ice nucleation scheme for mixed-phase cloud
+Default: .false.
+</entry>
+
+<entry id="use_dem_nucleate" type="logical" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+Use DeMott et al. ice nucleation scheme for mixed-phase cloud
+Default: .false.
+</entry>
+
 <entry id="nucleate_ice_subgrid" type="real" category="microphys"
        group="nucleate_ice_nl" valid_values="" >
 Subgrid scaling factor for relative humidity in ice nucleation code.
@@ -2737,7 +2749,7 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="Hack,UW,CLUBB_SGS,UNICON" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS,UNICON" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
 'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
 for CLUBB_SGS; or UNICON which doesn't distinquish shallow and deep.

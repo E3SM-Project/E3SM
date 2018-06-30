@@ -248,10 +248,6 @@ contains
        ig                  = MetaVertex%members(ie)%number
        elem(ie)%GlobalId   = ig
        elem(ie)%LocalId    = ie  
-#if 0
-       call LLInsertEdge(eroot,ig,jmd)
-       !DBG write(iulog,*)'After call to LLInsertEdge in schedule: ie,ig ',ie,ig,jmd
-#endif
     enddo
 
     deallocate(Global2Local)
