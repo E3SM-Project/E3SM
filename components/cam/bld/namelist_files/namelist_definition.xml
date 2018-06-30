@@ -3973,7 +3973,7 @@ Default: set by build-namelist.
 </entry>
 
 <entry id="iradae" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval between absorptivity/emissivity calculations in time steps (if
 positive) or model hours (if negative).  To avoid having the abs/ems values
 saved on the restart output, make sure that the interval of the abs/ems
@@ -3982,34 +3982,34 @@ Default: -12
 </entry>
 
 <entry id="iradlw" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval of long-wave radiation calculation in timesteps (if positive) or
 model hours (if negative).
 Default: -1
 </entry>
 
 <entry id="iradsw" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval of short-wave radiation calculation in timesteps (if positive) or
 model hours (if negative).
 Default: -1
 </entry>
 
 <entry id="irad_always" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Specifies length of time in timesteps (positive) or hours (negative) SW/LW
 radiation will be run for every timestep from the start of an initial run.
 Default: 0
 </entry>
 
 <entry id="spectralflux" type="logical"  category="radiation"
-       group="cam_inparm" valid_values="" >
+       group="radiation_nl" valid_values="" >
 Return fluxes per band in addition to the total fluxes.
 Default: FALSE
 </entry>
 
 <entry id="use_rad_dt_cosz" type="logical"  category="radiation"
-       group="cam_inparm" valid_values="" >
+       group="radiation_nl" valid_values="" >
 If true, then use the radiation timestep for all cosz calculations.
 NOTE: This logical flag is *temporary*. It should be REMOVED after we decide
 to make this functionality default
