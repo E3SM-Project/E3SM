@@ -1121,25 +1121,6 @@ contains
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
-! logic below for applying tendencies would only work for qsplit=1
-! we want to apply tendencies for each dyn step independedntly of qslipt, so the
-! code should be modified (later, i dont want to do bfb verif right now).
-! smth like this:
-!     if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this
-!     sub withing prim_run_subcycle
-!      call t_startf("ApplyCAMForcing")
-!      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-!      call t_stopf("ApplyCAMForcing")
-!    elseif ( ( ftype==2 ) .and r==1. ) then
-!      call t_startf("ApplyCAMForcing_dynamics")
-!      call ApplyCAMForcing_dynamics(elem,hvcoord, tl%n0, dt_remap, nets, nete)
-!      call t_stopf("ApplyCAMForcing_dynamics")
-!    endif 
-! and before each call to prim_advance_exp call for ApplyCAMforcing?.....
-! probabbly better to leave the code at the top as is, for energy calculations
-!and then insert ApllyCAMforcing into q=2,qsplit loop.
-
-
 
 !#if 1
     ! Apply CAM Physics forcing
