@@ -1212,6 +1212,14 @@ contains
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
+
+       if ( (ftype == 3) .or. (ftype == 4) ) then
+         call t_startf("ApplyCAMForcing_dynamics")
+         if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
+         if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt, nets, nete)
+         call t_stopf("ApplyCAMForcing_dynamics")
+       endif
+
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
