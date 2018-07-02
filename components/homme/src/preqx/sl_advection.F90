@@ -1152,7 +1152,7 @@ subroutine dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
            elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
         end do
      end do
-     call edgeVpack(edge_g, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+     call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
   enddo
 
   call t_startf('SLMM_bexchV')
@@ -1160,7 +1160,7 @@ subroutine dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
   call t_stopf('SLMM_bexchV')
 
   do ie = nets, nete
-     call edgeVunpack(edge_g, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+     call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
      do q = 1, qsize
         do k = 1, nlev
            elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%rspheremp(:,:)
