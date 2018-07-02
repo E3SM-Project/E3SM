@@ -637,7 +637,8 @@ contains
                                           atm2lnd_vars%var_offset(12,g,mon)), 0.0_r8)
             forc_snowl = max((((atm2lnd_vars%atm_input(13,g,1,tindex(13,2))*atm2lnd_vars%scale_factors(13)+ &
                                           atm2lnd_vars%add_offsets(13)))*atm2lnd_vars%var_mult(13,g,mon) + &
-                                          atm2lnd_vars%var_offset(13,g,mon)), 0.0_r8)
+                                         atm2lnd_vars%var_offset(13,g,mon)), 0.0_r8)
+         !   if (g==2) forc_rainl = 0.003_r8
         else
             frac = (atm2lnd_vars%forc_t_not_downscaled_grc(g) - SHR_CONST_TKFRZ)*0.5_R8       ! ramp near freezing
             frac = min(1.0_R8,max(0.0_R8,frac))           ! bound in [0,1]
