@@ -934,10 +934,68 @@ contains
     ! should this call stay here or be moved into prim_step?
     ! if here, it mimics eam forcings computations, if in prim_step, it may make 
     ! tests with physics look better without using minimal rsplit=1.
+! CHECK WHAT TESTS COMPUTE< most likely, not dp*FM, adjust depending on ftype
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
 
+    ! Apply CAM Physics forcing
+    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+    !   ftype= 1: forcing was applied time-split in CAM coupling layer
+    !   ftype= 0: apply all forcing here
+    !   ftype=-1: do not apply forcing
+    ! previously, standalone homme ran with ftype=0 logic only.
+    ! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
+    ! standalone version, in the same manner as in EAM, that is, only once per
+    ! dt_remap.
+    ! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
+
+
+! things to consider: aplyCAMforcing_dynamics_dp needs dp3d,
+! dp3d needs to be computed AFTER applyCAMforcing or applyCAMforcing_tracers
+
+#if 0
+   !call applyCAMforcing_ps:
+    if (ftype==0) then
+      call t_startf("ApplyCAMForcing")
+      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing")
+!does not need dp3d...
+    elseif (ftype==2) then
+      call t_startf("ApplyCAMForcing_dynamics")
+      call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing_dynamics")
+    endif
+#ifndef CAM
+    if ftype2,3,4
+!does standalone homme need these timers????
+      call t_startf("ApplyCAMForcing_tracers")
+      call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing_tracers")
+#endif
+#endif
+
+    if (compute_diagnostics) then
+    ! E(1) Energy after CAM forcing
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    ! qmass and variance, using Q(n0),Qdp(n0)
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+    endif
+
+    ! initialize dp3d from ps
+    do ie=nets,nete
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+       enddo
+    enddo
+
+!has to be done after tracers are adjusted
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
@@ -1079,56 +1137,6 @@ contains
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
-    ! Apply CAM Physics forcing
-
-    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 1: forcing was applied time-split in CAM coupling layer
-    !   ftype= 0: apply all forcing here
-    !   ftype=-1: do not apply forcing
-
-    ! previously, standalone homme ran with ftype=0 logic only.
-    ! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
-    ! standalone version, in the same manner as in EAM, that is, only once per dt_remap.
-    ! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
-
-#ifndef CAM
-    if ( ( (ftype == 2 ) .or. (ftype == 3) .or. (ftype == 4) ) .and. (rstep == 1) ) then
-      call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-    endif
-#endif
-
-    if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this sub within prim_run_subcycle
-      call t_startf("ApplyCAMForcing")
-      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-      call t_stopf("ApplyCAMForcing")
-    elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
-      call t_startf("ApplyCAMForcing_dynamics")
-      if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt_remap, nets, nete)
-      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
-      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
-      call t_stopf("ApplyCAMForcing_dynamics")
-    endif
-
-    !initialize dp3d from ps
-    do ie=nets,nete
-      do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-      enddo
-    enddo
-
-
-    if (compute_diagnostics) then
-    ! E(1) Energy after CAM forcing
-      call t_startf("prim_energy_halftimes")
-      call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
-    ! qmass and variance, using Q(n0),Qdp(n0)
-      call t_startf("prim_diag_scalars")
-      call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_diag_scalars")
-    endif
 
     dt_q = dt*qsplit
  
@@ -1150,6 +1158,22 @@ contains
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
 
+
+
+!applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
+!energy diagnostics is broken for ftype 3,4
+#if 0
+    !call applyCAMforcing_dp3d:
+    !notify the user to make sure they call it with valid dp3d
+    call t_startf("ApplyCAMForcing_dynamics")
+    if ftype3
+      call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt_remap,nets,nete)
+    if ftype4
+      call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt_remap,nets,nete)
+    call t_stopf("ApplyCAMForcing_dynamics")
+#endif
+
+
     ! ===============
     ! Dynamical Step
     ! ===============
@@ -1159,12 +1183,18 @@ contains
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
 
-       if ( (ftype == 3) .or. (ftype == 4) ) then
-         call t_startf("ApplyCAMForcing_dynamics")
-         if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, dt, nets, nete)
-         if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, dt, nets, nete)
-         call t_stopf("ApplyCAMForcing_dynamics")
-       endif
+!applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
+!energy diagnostics is broken for ftype 3,4
+#if 0
+       !call applyCAMforcing_dp3d:
+       !notify the user to make sure they call it with valid dp3d
+       call t_startf("ApplyCAMForcing_dynamics")
+       if ftype3
+         call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt_remap,nets,nete)
+       if ftype4
+         call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt_remap,nets,nete)
+       call t_stopf("ApplyCAMForcing_dynamics")
+#endif
 
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
